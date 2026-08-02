@@ -1,0 +1,213 @@
+/*
+# AI Admin Assistant — Database Schema
+
+## Purpose
+Supports a production-ready AI Admin Assistant inside the Admin Dashboard.
+The AI helps administrators manage products, orders, customers, shipping, payments,
+promotions, and banners using natural language. Customers never see or access it.
+
+## Changes
+
+### 1. Extend `profiles` table
+- Add `is_admin` (boolean, default false) — marks a user as an administrator.
+
+### 2. New table `ai_settings`
+- Stores the active AI provider and per-provider API keys.
+- Singleton (one row only).
+
+### 3. New table `ai_chat_history`
+- Stores conversation history between admin and the AI assistant.
+
+### 4. New table `promotions`
+- Stores promotional banners and discount campaigns.
+
+### 5. Extend `showroom_listings` for general products
+- Add seo_keywords, tags, specifications, subcategory, stock_quantity, sku, is_active.
+- Relax listing_type CHECK to allow 'product'.
+
+## Security
+- ai_settings: admin-only read/update.
+- ai_chat_history: admin-only, own data.
+- promotions: public read active; admin CRUD all.
+- showroom_listings: existing public read kept; new admin-only write policies.
+*/
+
+-- ── 1. Extend profiles with is_admin ──────────────────────────
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;
+
+-- ── 2. ai_settings (singleton) ───────────────────────────────
+CREATE TABLE IF NOT EXISTS public.ai_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  active_provider text NOT NULL DEFAULT 'openai' CHECK (active_provider IN ('openai','gemini','anthropic')),
+  openai_api_key text,
+  gemini_api_key text,
+  anthropic_api_key text,
+  openai_model text NOT NULL DEFAULT 'gpt-4o',
+  gemini_model text NOT NULL DEFAULT 'gemini-1.5-flash',
+  anthropic_model text NOT NULL DEFAULT 'claude-3-5-sonnet-20241022',
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ai_settings_singleton ON public.ai_settings ((1));
+
+INSERT INTO public.ai_settings (id, active_provider)
+SELECT gen_random_uuid(), 'openai'
+WHERE NOT EXISTS (SELECT 1 FROM public.ai_settings);
+
+ALTER TABLE public.ai_settings ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION public.is_current_user_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT COALESCE(
+    (SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()),
+    false
+  );
+$$;
+
+DROP POLICY IF EXISTS "admin_read_ai_settings" ON public.ai_settings;
+CREATE POLICY "admin_read_ai_settings"
+ON public.ai_settings FOR SELECT
+TO authenticated
+USING (public.is_current_user_admin());
+
+DROP POLICY IF EXISTS "admin_update_ai_settings" ON public.ai_settings;
+CREATE POLICY "admin_update_ai_settings"
+ON public.ai_settings FOR UPDATE
+TO authenticated
+USING (public.is_current_user_admin())
+WITH CHECK (public.is_current_user_admin());
+
+-- ── 3. ai_chat_history ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.ai_chat_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user','assistant')),
+  content text NOT NULL DEFAULT '',
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.ai_chat_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "admin_read_own_chat" ON public.ai_chat_history;
+CREATE POLICY "admin_read_own_chat"
+ON public.ai_chat_history FOR SELECT
+TO authenticated
+USING (auth.uid() = user_id AND public.is_current_user_admin());
+
+DROP POLICY IF EXISTS "admin_insert_own_chat" ON public.ai_chat_history;
+CREATE POLICY "admin_insert_own_chat"
+ON public.ai_chat_history FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = user_id AND public.is_current_user_admin());
+
+DROP POLICY IF EXISTS "admin_delete_own_chat" ON public.ai_chat_history;
+CREATE POLICY "admin_delete_own_chat"
+ON public.ai_chat_history FOR DELETE
+TO authenticated
+USING (auth.uid() = user_id AND public.is_current_user_admin());
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_user_created ON public.ai_chat_history(user_id, created_at DESC);
+
+-- ── 4. promotions ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.promotions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  description text,
+  promo_type text NOT NULL DEFAULT 'banner' CHECK (promo_type IN ('banner','discount','flash_sale','coupon')),
+  discount_value numeric,
+  discount_type text CHECK (discount_type IN ('percentage','fixed')),
+  coupon_code text,
+  banner_text text,
+  banner_color text DEFAULT '#2563eb',
+  start_date timestamptz,
+  end_date timestamptz,
+  is_active boolean NOT NULL DEFAULT true,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.promotions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "public_read_active_promotions" ON public.promotions;
+CREATE POLICY "public_read_active_promotions"
+ON public.promotions FOR SELECT
+TO anon, authenticated
+USING (is_active = true);
+
+DROP POLICY IF EXISTS "admin_read_all_promotions" ON public.promotions;
+CREATE POLICY "admin_read_all_promotions"
+ON public.promotions FOR SELECT
+TO authenticated
+USING (public.is_current_user_admin());
+
+DROP POLICY IF EXISTS "admin_insert_promotions" ON public.promotions;
+CREATE POLICY "admin_insert_promotions"
+ON public.promotions FOR INSERT
+TO authenticated
+WITH CHECK (public.is_current_user_admin());
+
+DROP POLICY IF EXISTS "admin_update_promotions" ON public.promotions;
+CREATE POLICY "admin_update_promotions"
+ON public.promotions FOR UPDATE
+TO authenticated
+USING (public.is_current_user_admin())
+WITH CHECK (public.is_current_user_admin());
+
+DROP POLICY IF EXISTS "admin_delete_promotions" ON public.promotions;
+CREATE POLICY "admin_delete_promotions"
+ON public.promotions FOR DELETE
+TO authenticated
+USING (public.is_current_user_admin());
+
+-- ── 5. Extend showroom_listings for general products ─────────
+ALTER TABLE public.showroom_listings
+  ADD COLUMN IF NOT EXISTS seo_keywords jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS tags jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS specifications jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS subcategory text,
+  ADD COLUMN IF NOT EXISTS stock_quantity int,
+  ADD COLUMN IF NOT EXISTS sku text,
+  ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'showroom_listings_listing_type_check'
+      AND conrelid = 'public.showroom_listings'::regclass
+  ) THEN
+    ALTER TABLE public.showroom_listings DROP CONSTRAINT showroom_listings_listing_type_check;
+  END IF;
+END $$;
+
+ALTER TABLE public.showroom_listings
+  ADD CONSTRAINT showroom_listings_listing_type_check
+  CHECK (listing_type IN ('property','vehicle','product'));
+
+DROP POLICY IF EXISTS "admin_insert_listings" ON public.showroom_listings;
+CREATE POLICY "admin_insert_listings"
+ON public.showroom_listings FOR INSERT
+TO authenticated
+WITH CHECK (public.is_current_user_admin());
+
+DROP POLICY IF EXISTS "admin_update_listings" ON public.showroom_listings;
+CREATE POLICY "admin_update_listings"
+ON public.showroom_listings FOR UPDATE
+TO authenticated
+USING (public.is_current_user_admin())
+WITH CHECK (public.is_current_user_admin());
+
+DROP POLICY IF EXISTS "admin_delete_listings" ON public.showroom_listings;
+CREATE POLICY "admin_delete_listings"
+ON public.showroom_listings FOR DELETE
+TO authenticated
+USING (public.is_current_user_admin());
+
+CREATE INDEX IF NOT EXISTS idx_showroom_listings_active ON public.showroom_listings(is_active);
+CREATE INDEX IF NOT EXISTS idx_showroom_listings_sku ON public.showroom_listings(sku);

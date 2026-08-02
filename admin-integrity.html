@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Product Integrity System | KCO Global Online Marketplace</title>
+  <meta name="description" content="AI-powered product integrity monitoring and repair system">
+  <meta property="og:title" content="AI Product Integrity System | KCO Global Online Marketplace">
+  <meta property="og:description" content="AI-powered product integrity monitoring and repair system">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script type="module" src="/src/supabase-client.js"></script>
+  <script type="module" src="/src/auth.js"></script>
+  <link rel="stylesheet" href="/src/styles.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #070b16; }
+    .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); }
+    .glass-soft { background: rgba(15, 23, 42, 0.4); }
+    .slide-up { animation: slideUp 0.4s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .health-bar { transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .pulse-dot { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .scan-progress { animation: scanProgress 1.5s ease-in-out infinite; }
+    @keyframes scanProgress { 0%, 100% { transform: translateX(-100%); } 50% { transform: translateX(100%); } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.4); }
+  </style>
+</head>
+<body class="bg-[#070b16] text-white min-h-screen">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-30 glass border-b border-blue-500/15 h-16 flex items-center justify-between px-4 sm:px-6">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-600/20">
+        <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <span class="text-lg font-black tracking-tight text-white block leading-tight">Product Integrity System</span>
+        <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Powered by Google Gemini</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btn-full-scan" onclick="startFullScan()" class="btn-press flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2 rounded-xl transition shadow-lg shadow-emerald-600/30 hover:from-emerald-500 hover:to-emerald-600">
+        <i data-lucide="scan-line" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">Run Full Scan</span>
+      </button>
+      <a href="/admin.html" class="btn-press flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-white px-3 py-2 rounded-xl transition">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">Dashboard</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Access denied -->
+  <div id="access-denied" class="hidden fixed inset-0 z-[100] bg-[#070b16] flex items-center justify-center p-6">
+    <div class="glass border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center slide-up">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-red-500/10 rounded-2xl mb-4">
+        <i data-lucide="lock" class="w-8 h-8 text-red-400"></i>
+      </div>
+      <h2 class="text-xl font-bold text-white mb-2">Admin Access Required</h2>
+      <p class="text-sm text-gray-400 mb-6">You need admin privileges to access the Product Integrity System.</p>
+      <a href="/auth.html?redirect=/admin-integrity.html" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">
+        <i data-lucide="log-in" class="w-4 h-4"></i> Sign In
+      </a>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+    <!-- Scanning overlay -->
+    <div id="scanning-overlay" class="hidden mb-4 glass border border-emerald-500/30 rounded-2xl p-6 slide-up">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+          <i data-lucide="loader-2" class="w-5 h-5 text-emerald-400 animate-spin"></i>
+        </div>
+        <div>
+          <p class="text-sm font-bold text-white">Scanning in progress...</p>
+          <p class="text-xs text-gray-500">AI is analyzing every product and image across your marketplace</p>
+        </div>
+      </div>
+      <div class="relative h-1 bg-slate-800 rounded-full overflow-hidden">
+        <div class="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-emerald-500 to-transparent scan-progress"></div>
+      </div>
+    </div>
+
+    <!-- Metrics grid -->
+    <div id="metrics-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- Automation status + notifications -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div class="glass border border-emerald-500/20 rounded-2xl p-5 slide-up">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i data-lucide="bot" class="w-4 h-4 text-emerald-400"></i> Automation Engine
+        </h3>
+        <div id="automation-status">
+          <p class="text-xs text-gray-500">Loading automation status...</p>
+        </div>
+      </div>
+      <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i data-lucide="bell" class="w-4 h-4 text-blue-400"></i> Notifications
+        </h3>
+        <div id="automation-notifications" class="space-y-2 max-h-64 overflow-y-auto">
+          <p class="text-xs text-gray-500">Loading notifications...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two-column layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+
+      <!-- Issue breakdown -->
+      <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Issue Breakdown
+        </h3>
+        <div id="issue-breakdown" class="space-y-2">
+          <p class="text-xs text-gray-500">No scan data yet. Run a full scan to see results.</p>
+        </div>
+      </div>
+
+      <!-- Scan history -->
+      <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i data-lucide="history" class="w-4 h-4 text-blue-400"></i> Scan History
+        </h3>
+        <div id="scan-history" class="space-y-2 max-h-64 overflow-y-auto">
+          <p class="text-xs text-gray-500">No scans yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review queue -->
+    <div class="glass border border-amber-500/20 rounded-2xl p-5 slide-up mb-6">
+      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
+        <i data-lucide="clipboard-check" class="w-4 h-4 text-amber-400"></i> Review Queue
+        <span id="review-count-badge" class="hidden text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full"></span>
+      </h3>
+      <div id="review-queue" class="space-y-3">
+        <p class="text-xs text-gray-500">No items pending review.</p>
+      </div>
+    </div>
+
+    <!-- Unhealthy products -->
+    <div class="glass border border-red-500/20 rounded-2xl p-5 slide-up mb-6">
+      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
+        <i data-lucide="heart-pulse" class="w-4 h-4 text-red-400"></i> Products Needing Attention
+      </h3>
+      <div id="unhealthy-products" class="space-y-2">
+        <p class="text-xs text-gray-500">All products are healthy. Run a scan to verify.</p>
+      </div>
+    </div>
+
+    <!-- Recent repairs -->
+    <div class="glass border border-emerald-500/20 rounded-2xl p-5 slide-up mb-6">
+      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
+        <i data-lucide="wrench" class="w-4 h-4 text-emerald-400"></i> Recent Repairs
+      </h3>
+      <div id="recent-repairs" class="space-y-2">
+        <p class="text-xs text-gray-500">No repairs yet.</p>
+      </div>
+    </div>
+
+    <!-- Open issues -->
+    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up mb-6">
+      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
+        <i data-lucide="list-alerts" class="w-4 h-4 text-blue-400"></i> Open Issues
+      </h3>
+      <div id="open-issues" class="space-y-2 max-h-96 overflow-y-auto">
+        <p class="text-xs text-gray-500">No open issues.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-[200] transform translate-y-20 opacity-0 bg-gray-900 border border-blue-500/30 text-white px-5 py-3 rounded-xl shadow-xl text-xs flex items-center gap-2 font-medium transition-all duration-300 pointer-events-none">
+    <i data-lucide="info" class="w-4 h-4 text-blue-400"></i><span id="toast-msg">Action</span>
+  </div>
+
+  <script type="module" src="/src/admin-integrity-page.js"></script>
+</body>
+</html>
