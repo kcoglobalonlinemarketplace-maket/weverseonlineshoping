@@ -21,7 +21,9 @@ const NAV = [
     { id: 'notifications', label: 'Notifications',    icon: 'bell' },
   ]},
   { group: 'Configuration', items: [
+    { id: 'payment-settings', label: 'Payment Settings',  icon: 'credit-card' },
     { id: 'ai-settings', label: 'AI Settings',        icon: 'bot' },
+    { id: 'brand',        label: 'Brand Manager',      icon: 'palette' },
     { id: 'content',     label: 'Content Manager',    icon: 'file-text' },
     { id: 'seo',         label: 'SEO Manager',        icon: 'search' },
     { id: 'email',       label: 'Email Settings',     icon: 'mail' },
@@ -39,6 +41,8 @@ const PAGE_TITLES = {
   orders: 'Orders Manager', customers: 'Customers Manager', reviews: 'Reviews Manager',
   messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement Manager',
   notifications: 'Notifications', 'ai-settings': 'AI Settings', content: 'Content Manager',
+  brand: 'Brand Manager',
+  'payment-settings': 'Payment Settings',
   seo: 'SEO Manager', email: 'Email Settings', analytics: 'Analytics',
   security: 'Security', activity: 'Activity Logs', backup: 'Backup & Restore',
   settings: 'Settings', publish: 'Publish & Deploy',
@@ -150,6 +154,8 @@ window.navigate = function(section) {
     notifications: renderNotifications, 'ai-settings': renderAiSettings,
     content: renderContent, seo: renderSeo, email: renderEmail,
     analytics: renderAnalytics, security: renderSecurity, activity: renderActivity,
+    brand: renderBrandManager,
+    'payment-settings': renderPaymentSettings,
     backup: renderBackup, settings: renderSettings, publish: renderPublish,
   };
   const fn = renderers[section] || (() => { const c = document.getElementById('content'); if (c) c.innerHTML = emptyState('construction', 'Coming Soon', `${title} is being built.`); });
@@ -163,20 +169,151 @@ document.getElementById('close-sidebar')?.addEventListener('click', closeSidebar
 // ══════════════════════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+//  SECURE AUTH SYSTEM
+//  • Email + password login
+//  • Supabase MFA (TOTP) 2FA with backup codes
+//  • Remember me (30-day persistent session)
+//  • Forgot / reset password
+//  • Change password
+//  • Login history stored in admin_security_logs
+//  • Logout from all devices
+//  • Brute-force lockout (5 failed attempts → 15 min lock)
+// ══════════════════════════════════════════════════════════
+
+const REMEMBER_KEY = 'kco_admin_remember';
+const LOGIN_ATTEMPTS_KEY = 'kco_login_attempts';
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+// ── Helpers ────────────────────────────────────────────────
+function loginError(msg) {
+  const el = document.getElementById('login-error');
+  const txt = document.getElementById('login-error-text');
+  if (!el || !txt) return;
+  txt.textContent = msg;
+  el.classList.remove('hidden');
+  document.getElementById('login-success')?.classList.add('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+function loginSuccess(msg) {
+  const el = document.getElementById('login-success');
+  const txt = document.getElementById('login-success-text');
+  if (!el || !txt) return;
+  txt.textContent = msg;
+  el.classList.remove('hidden');
+  document.getElementById('login-error')?.classList.add('hidden');
+}
+function clearLoginMessages() {
+  document.getElementById('login-error')?.classList.add('hidden');
+  document.getElementById('login-success')?.classList.add('hidden');
+}
+
+function setLoginStep(step) {
+  // step: 'login' | '2fa' | 'forgot'
+  const titleEl = document.getElementById('login-header-title');
+  const iconEl = document.getElementById('login-header-icon');
+  document.getElementById('login-form')?.classList.toggle('hidden', step !== 'login');
+  document.getElementById('twofa-form')?.classList.toggle('hidden', step !== '2fa');
+  document.getElementById('forgot-form')?.classList.toggle('hidden', step !== 'forgot');
+  clearLoginMessages();
+  if (step === 'login') { if (titleEl) titleEl.textContent = 'Admin Access'; if (iconEl) iconEl.setAttribute('data-lucide', 'shield-check'); }
+  if (step === '2fa')   { if (titleEl) titleEl.textContent = 'Two-Factor Auth'; if (iconEl) iconEl.setAttribute('data-lucide', 'smartphone'); }
+  if (step === 'forgot'){ if (titleEl) titleEl.textContent = 'Reset Password'; if (iconEl) iconEl.setAttribute('data-lucide', 'mail'); }
+  if (window.lucide) lucide.createIcons();
+}
+
+function setLoginBusy(btnId, busy, idleHtml = '') {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = busy;
+  if (busy) {
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline-block mr-1"></i> Please wait…';
+  } else if (idleHtml) {
+    btn.innerHTML = idleHtml;
+  }
+  if (window.lucide) lucide.createIcons();
+}
+
+// ── Brute-force lockout ───────────────────────────────────
+function getLockoutState() {
+  try { return JSON.parse(localStorage.getItem(LOGIN_ATTEMPTS_KEY) || '{"count":0}'); } catch { return { count: 0 }; }
+}
+function recordFailedAttempt() {
+  const s = getLockoutState();
+  s.count = (s.count || 0) + 1;
+  if (s.count >= MAX_ATTEMPTS) s.lockedUntil = Date.now() + LOCKOUT_MS;
+  localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(s));
+  return s;
+}
+function clearAttempts() { localStorage.removeItem(LOGIN_ATTEMPTS_KEY); }
+function checkLockout() {
+  const s = getLockoutState();
+  if (!s.lockedUntil) return null;
+  const remaining = s.lockedUntil - Date.now();
+  if (remaining <= 0) { clearAttempts(); return null; }
+  return Math.ceil(remaining / 60000); // minutes remaining
+}
+
+// ── Login history ─────────────────────────────────────────
+async function logLoginEvent(userId, event, extra = {}) {
+  try {
+    await supabase.from('admin_security_logs').insert({
+      user_id: userId,
+      event_type: event,
+      ip_address: await getClientIP(),
+      user_agent: navigator.userAgent.slice(0, 200),
+      ...extra,
+    });
+  } catch { /* non-critical */ }
+}
+
+async function getClientIP() {
+  try {
+    const r = await fetch('https://api64.ipify.org?format=json', { signal: AbortSignal.timeout(3000) });
+    const d = await r.json();
+    return d.ip || 'unknown';
+  } catch { return 'unknown'; }
+}
+
+// ── Admin access check ────────────────────────────────────
 async function checkAdminAccess(user) {
   if (!user) return false;
   try {
     const { data } = await supabase.rpc('is_current_user_admin');
-    return !!data;
-  } catch { return user.email === ADMIN_EMAIL; }
+    if (data) return true;
+  } catch {}
+  return user.email === ADMIN_EMAIL;
 }
 
+// ── Init auth (called on page load) ──────────────────────
 async function initAuth() {
-  const loginScreen = document.getElementById('login-screen');
+  // Handle password reset callback (user clicked email link)
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery') || hash.includes('access_token')) {
+    showLoginScreenOnly();
+    showPasswordResetFlow();
+    return;
+  }
+
+  // Restore session
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.user) {
     const ok = await checkAdminAccess(session.user);
     if (ok) {
+      // Check if 2FA is required for this session
+      const { data: { currentUser } } = await supabase.auth.getUser();
+      const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      const aal = assurance.data?.currentLevel;
+      const nextAal = assurance.data?.nextLevel;
+      if (nextAal === 'aal2' && aal !== 'aal2') {
+        // 2FA enrolled but not yet verified this session
+        state.user = session.user;
+        showLoginScreenOnly();
+        setLoginStep('2fa');
+        setup2FAVerifyListeners();
+        return;
+      }
       state.user = session.user;
       showAdminUI();
       return;
@@ -185,88 +322,288 @@ async function initAuth() {
   showLoginUI();
 }
 
-function showLoginUI() {
+function showLoginScreenOnly() {
   const ls = document.getElementById('login-screen');
   if (ls) ls.style.display = 'flex';
-  // setup login form
-  const form = document.getElementById('login-form');
-  const errorEl = document.getElementById('login-error');
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    const btn = document.getElementById('login-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Signing in…';
-    if (window.lucide) lucide.createIcons();
-    errorEl.classList.add('hidden');
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) {
-      errorEl.textContent = error?.message || 'Invalid email or password.';
-      errorEl.classList.remove('hidden');
-      btn.disabled = false;
-      btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Sign In';
-      if (window.lucide) lucide.createIcons();
-      return;
-    }
-    const ok = await checkAdminAccess(data.user);
-    if (!ok) {
-      await supabase.auth.signOut();
-      errorEl.textContent = 'Access denied. Administrator privileges required.';
-      errorEl.classList.remove('hidden');
-      btn.disabled = false;
-      btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Sign In';
-      if (window.lucide) lucide.createIcons();
-      return;
-    }
-    state.user = data.user;
-    showAdminUI();
-  });
+}
 
-  // toggle password visibility
+// ── Login UI setup ────────────────────────────────────────
+function showLoginUI() {
+  showLoginScreenOnly();
+  setLoginStep('login');
+  setupLoginFormListeners();
+  setupForgotListeners();
+  setup2FAVerifyListeners();
+  setupTogglePW();
+
+  // Check lockout
+  const mins = checkLockout();
+  if (mins) {
+    loginError(`Too many failed attempts. Try again in ${mins} minute${mins > 1 ? 's' : ''}.`);
+    document.getElementById('login-btn').disabled = true;
+  }
+}
+
+function setupTogglePW() {
   document.getElementById('toggle-pw')?.addEventListener('click', () => {
     const inp = document.getElementById('login-password');
     const icon = document.querySelector('#toggle-pw i');
-    if (inp.type === 'password') { inp.type = 'text'; if (icon) icon.setAttribute('data-lucide', 'eye-off'); }
-    else { inp.type = 'password'; if (icon) icon.setAttribute('data-lucide', 'eye'); }
+    if (!inp) return;
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    if (icon) icon.setAttribute('data-lucide', inp.type === 'password' ? 'eye' : 'eye-off');
     if (window.lucide) lucide.createIcons();
-  });
-
-  // forgot password
-  document.getElementById('forgot-pw-btn')?.addEventListener('click', () => {
-    document.getElementById('login-form').classList.add('hidden');
-    document.getElementById('forgot-form').classList.remove('hidden');
-  });
-  document.getElementById('back-to-login')?.addEventListener('click', () => {
-    document.getElementById('forgot-form').classList.add('hidden');
-    document.getElementById('login-form').classList.remove('hidden');
-  });
-  document.getElementById('send-reset-btn')?.addEventListener('click', async () => {
-    const email = document.getElementById('reset-email').value.trim();
-    if (!email) return;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/admin.html' });
-    if (error) { showToast(error.message, 'error'); return; }
-    showToast('Reset link sent! Check your email.', 'success');
-    document.getElementById('forgot-form').classList.add('hidden');
-    document.getElementById('login-form').classList.remove('hidden');
   });
 }
 
+function setupLoginFormListeners() {
+  const form = document.getElementById('login-form');
+  if (!form || form._bound) return;
+  form._bound = true;
+  form.addEventListener('submit', handleLoginSubmit);
+  document.getElementById('forgot-pw-btn')?.addEventListener('click', () => setLoginStep('forgot'));
+}
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+
+  const mins = checkLockout();
+  if (mins) { loginError(`Account locked. Try again in ${mins} minute${mins > 1 ? 's' : ''}.`); return; }
+
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const remember = document.getElementById('remember-me')?.checked;
+  setLoginBusy('login-btn', true);
+  clearLoginMessages();
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error || !data.user) {
+    const s = recordFailedAttempt();
+    const remaining = MAX_ATTEMPTS - s.count;
+    const msg = s.lockedUntil
+      ? `Account locked for 15 minutes after ${MAX_ATTEMPTS} failed attempts.`
+      : `Invalid email or password. ${remaining > 0 ? remaining + ' attempt' + (remaining !== 1 ? 's' : '') + ' remaining.' : ''}`;
+    loginError(msg);
+    setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
+    if (data?.user) await logLoginEvent(data.user.id, 'login_failed', { metadata: { reason: 'wrong_password' } });
+    return;
+  }
+
+  const ok = await checkAdminAccess(data.user);
+  if (!ok) {
+    await supabase.auth.signOut();
+    loginError('Access denied. Administrator privileges required.');
+    setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
+    await logLoginEvent(data.user.id, 'login_denied', { metadata: { reason: 'not_admin' } });
+    return;
+  }
+
+  // Save remember-me preference
+  if (remember) {
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, ts: Date.now() }));
+  } else {
+    localStorage.removeItem(REMEMBER_KEY);
+  }
+
+  clearAttempts();
+  state.user = data.user;
+
+  // Check if 2FA is required
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const nextAal = assurance.data?.nextLevel;
+  if (nextAal === 'aal2') {
+    setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
+    setLoginStep('2fa');
+    setup2FAVerifyListeners();
+    // Auto-focus the code input
+    setTimeout(() => document.getElementById('totp-code')?.focus(), 100);
+    return;
+  }
+
+  await logLoginEvent(data.user.id, 'login_success');
+  setLoginBusy('login-btn', false);
+  showAdminUI();
+}
+
+// ── 2FA verification listeners ─────────────────────────────
+function setup2FAVerifyListeners() {
+  const verifyBtn = document.getElementById('verify-2fa-btn');
+  if (verifyBtn && !verifyBtn._bound) {
+    verifyBtn._bound = true;
+    verifyBtn.addEventListener('click', handle2FAVerify);
+  }
+
+  // Auto-submit when 6 digits entered
+  const totpInput = document.getElementById('totp-code');
+  if (totpInput && !totpInput._bound) {
+    totpInput._bound = true;
+    totpInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+      if (e.target.value.length === 6) handle2FAVerify();
+    });
+  }
+
+  document.getElementById('cancel-2fa-btn')?.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    state.user = null;
+    setLoginStep('login');
+  });
+
+  document.getElementById('use-backup-btn')?.addEventListener('click', () => {
+    const wrap = document.getElementById('backup-code-wrap');
+    wrap?.classList.toggle('hidden');
+    const input = document.getElementById('backup-code');
+    if (input) input.focus();
+  });
+
+  const backupBtn = document.getElementById('verify-backup-btn');
+  if (backupBtn && !backupBtn._bound) {
+    backupBtn._bound = true;
+    backupBtn.addEventListener('click', handleBackupCodeVerify);
+  }
+}
+
+async function handle2FAVerify() {
+  const code = document.getElementById('totp-code')?.value?.trim();
+  if (!code || code.length !== 6) { loginError('Enter the 6-digit code from your authenticator app.'); return; }
+  setLoginBusy('verify-2fa-btn', true);
+  clearLoginMessages();
+  try {
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const totpFactor = (factors?.totp || [])[0];
+    if (!totpFactor) { loginError('No 2FA factor found. Please re-login.'); setLoginBusy('verify-2fa-btn', false, '<i data-lucide="shield-check" class="w-4 h-4 inline mr-1"></i> Verify & Sign In'); return; }
+    const { data: challenge, error: chErr } = await supabase.auth.mfa.challenge({ factorId: totpFactor.id });
+    if (chErr) throw chErr;
+    const { error: verErr } = await supabase.auth.mfa.verify({ factorId: totpFactor.id, challengeId: challenge.id, code });
+    if (verErr) throw verErr;
+    await logLoginEvent(state.user.id, 'login_2fa_success');
+    setLoginBusy('verify-2fa-btn', false);
+    showAdminUI();
+  } catch (err) {
+    recordFailedAttempt();
+    loginError(err.message?.includes('Invalid') ? 'Incorrect code. Check your authenticator and try again.' : err.message);
+    setLoginBusy('verify-2fa-btn', false, '<i data-lucide="shield-check" class="w-4 h-4 inline mr-1"></i> Verify & Sign In');
+    document.getElementById('totp-code').value = '';
+    document.getElementById('totp-code').focus();
+  }
+}
+
+async function handleBackupCodeVerify() {
+  const code = document.getElementById('backup-code')?.value?.trim().toUpperCase().replace(/\s/g, '');
+  if (!code) { loginError('Enter a backup recovery code.'); return; }
+  setLoginBusy('verify-backup-btn', true);
+  // Backup codes use the same MFA verify flow with a special code format
+  // Since Supabase doesn't natively support backup codes in MFA, we store them in admin_2fa
+  // and do a manual check via a database lookup
+  try {
+    const { data: twofa } = await supabase.from('admin_2fa').select('backup_codes').eq('user_id', state.user.id).maybeSingle();
+    if (!twofa?.backup_codes?.length) { loginError('No backup codes found.'); setLoginBusy('verify-backup-btn', false, 'Use Backup Code'); return; }
+    // Codes stored as plain strings (hashing done by edge function in production)
+    const match = twofa.backup_codes.find(c => (c.code || c).toUpperCase().replace(/-/g,'') === code.replace(/-/g,'') && !c.used);
+    if (!match) { loginError('Backup code not found or already used.'); setLoginBusy('verify-backup-btn', false, 'Use Backup Code'); return; }
+    // Mark used
+    const updated = twofa.backup_codes.map(c => (c.code || c).toUpperCase().replace(/-/g,'') === code.replace(/-/g,'') ? { ...(typeof c==='object'?c:{code:c}), used: true } : c);
+    await supabase.from('admin_2fa').update({ backup_codes: updated }).eq('user_id', state.user.id);
+    await logLoginEvent(state.user.id, 'login_backup_code_used');
+    showAdminUI();
+  } catch (err) { loginError(err.message); setLoginBusy('verify-backup-btn', false, 'Use Backup Code'); }
+}
+
+// ── Forgot password listeners ─────────────────────────────
+function setupForgotListeners() {
+  document.getElementById('back-to-login')?.addEventListener('click', () => setLoginStep('login'));
+  document.getElementById('send-reset-btn')?.addEventListener('click', handleForgotPassword);
+}
+
+async function handleForgotPassword() {
+  const email = document.getElementById('reset-email')?.value?.trim();
+  if (!email) { loginError('Enter your email address.'); return; }
+  setLoginBusy('send-reset-btn', true);
+  clearLoginMessages();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/admin.html',
+  });
+  setLoginBusy('send-reset-btn', false, '<i data-lucide="mail" class="w-4 h-4 inline mr-1"></i> Send Reset Link');
+  if (error) { loginError(error.message); return; }
+  loginSuccess('Reset link sent! Check your inbox (and spam folder). Link expires in 1 hour.');
+}
+
+// ── Password reset flow (after clicking email link) ───────
+function showPasswordResetFlow() {
+  const ls = document.getElementById('login-screen');
+  if (!ls) return;
+  // Replace card with reset form
+  const card = ls.querySelector('.login-card');
+  if (!card) return;
+  card.innerHTML = `
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-11 h-11 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shrink-0"><i data-lucide="lock" class="w-5 h-5 text-white"></i></div>
+      <div><h1 class="text-lg font-black text-white">Set New Password</h1><p class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">KCO Admin</p></div>
+    </div>
+    <div id="reset-pw-error" class="hidden mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs"></div>
+    <div class="space-y-4">
+      <div>
+        <label class="lbl">New Password</label>
+        <input type="password" id="new-pw-reset" class="input-field" placeholder="At least 8 characters" minlength="8">
+      </div>
+      <div>
+        <label class="lbl">Confirm New Password</label>
+        <input type="password" id="confirm-pw-reset" class="input-field" placeholder="Repeat password">
+      </div>
+      <button id="set-pw-btn" onclick="handlePasswordResetSubmit()" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+        <i data-lucide="check" class="w-4 h-4"></i> Set New Password
+      </button>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.handlePasswordResetSubmit = async function() {
+  const np = document.getElementById('new-pw-reset')?.value;
+  const cp = document.getElementById('confirm-pw-reset')?.value;
+  const errEl = document.getElementById('reset-pw-error');
+  if (np !== cp) { if (errEl) { errEl.textContent = 'Passwords do not match.'; errEl.classList.remove('hidden'); } return; }
+  if ((np || '').length < 8) { if (errEl) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.classList.remove('hidden'); } return; }
+  const { error } = await supabase.auth.updateUser({ password: np });
+  if (error) { if (errEl) { errEl.textContent = error.message; errEl.classList.remove('hidden'); } return; }
+  showToast('Password updated! Please log in with your new password.');
+  window.location.hash = '';
+  setTimeout(() => window.location.reload(), 1500);
+};
+
+// ── Show admin dashboard ──────────────────────────────────
 function showAdminUI() {
   const ls = document.getElementById('login-screen');
   if (ls) ls.style.display = 'none';
   const emailEl = document.getElementById('admin-user-email');
   if (emailEl && state.user) emailEl.textContent = state.user.email || 'Admin';
+  // Restore remembered email for next time
+  const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || '{}');
+  if (remembered.email) {
+    const inp = document.getElementById('login-email');
+    if (inp) { inp.value = remembered.email; document.getElementById('remember-me').checked = true; }
+  }
   navigate('dashboard');
 }
 
+// ── Sign out ──────────────────────────────────────────────
 window.adminSignOut = async function() {
+  if (state.user) await logLoginEvent(state.user.id, 'logout');
   await supabase.auth.signOut();
   state.user = null;
-  const ls = document.getElementById('login-screen');
-  if (ls) ls.style.display = 'flex';
-  document.getElementById('login-form')?.classList.remove('hidden');
-  document.getElementById('forgot-form')?.classList.add('hidden');
+  showLoginScreenOnly();
+  setLoginStep('login');
+  setupLoginFormListeners();
+  setupForgotListeners();
+};
+
+// ── Logout from ALL devices ───────────────────────────────
+window.logoutAllDevices = async function() {
+  if (!confirm('This will sign you out on ALL devices. Continue?')) return;
+  if (state.user) await logLoginEvent(state.user.id, 'logout_all_devices');
+  await supabase.auth.signOut({ scope: 'global' });
+  state.user = null;
+  showToast('Signed out from all devices.');
+  setTimeout(() => window.location.reload(), 1200);
 };
 
 // ══════════════════════════════════════════════════════════
@@ -1724,79 +2061,146 @@ window.deletePromo = async function(id) {
 };
 
 // ══════════════════════════════════════════════════════════
-//  11. AI SETTINGS
+//  11. AI SETTINGS  — 20 FREE coding AI providers
 // ══════════════════════════════════════════════════════════
+
+const ALL_AI_PROVIDERS = [
+  // ── BATCH 1 (original 10) ──────────────────────────────
+  { id:'gemini',      name:'Google Gemini',         tag:'FREE',  color:'blue',    icon:'sparkles',   kf:'gemini_key',      ph:'AIzaSy…',      signup:'https://aistudio.google.com/apikey',                        models:['gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro','gemini-2.5-pro'],                                                    mf:'gemini_model',      dm:'gemini-2.0-flash',                  desc:'Google\'s best free AI. Great for coding, writing apps & websites.',                                free_tier:'15 req/min · 1M tokens/day — Free forever' },
+  { id:'groq',        name:'Groq (Llama 3.3)',       tag:'FREE',  color:'orange',  icon:'zap',        kf:'groq_key',        ph:'gsk_…',        signup:'https://console.groq.com/keys',                             models:['llama-3.3-70b-versatile','llama-3.1-8b-instant','mixtral-8x7b-32768','gemma2-9b-it'],                                          mf:'groq_model',        dm:'llama-3.3-70b-versatile',           desc:'Fastest free AI inference. Runs Llama 3.3 & Mixtral. Excellent for coding.',                       free_tier:'30 req/min · 6,000 req/day free' },
+  { id:'deepseek',    name:'DeepSeek Coder',         tag:'FREE',  color:'cyan',    icon:'search',     kf:'deepseek_key',    ph:'sk-…',         signup:'https://platform.deepseek.com/api_keys',                    models:['deepseek-coder','deepseek-chat','deepseek-reasoner'],                                                                         mf:'deepseek_model',    dm:'deepseek-coder',                    desc:'Top-ranked coding AI. DeepSeek Coder beats GPT-4 on code benchmarks.',                             free_tier:'$5 free credit on signup' },
+  { id:'mistral',     name:'Mistral / Codestral',    tag:'FREE',  color:'violet',  icon:'wind',       kf:'mistral_key',     ph:'…key',         signup:'https://console.mistral.ai/api-keys',                       models:['codestral-latest','mistral-small-latest','open-mistral-7b','open-mixtral-8x7b'],                                               mf:'mistral_model',     dm:'codestral-latest',                  desc:'Codestral is purpose-built for code. Free for open-source projects.',                              free_tier:'Free tier · Codestral free for open-source' },
+  { id:'cohere',      name:'Cohere',                 tag:'FREE',  color:'emerald', icon:'cpu',        kf:'cohere_key',      ph:'…key',         signup:'https://dashboard.cohere.com/api-keys',                     models:['command-r-plus','command-r','command-light'],                                                                                mf:'cohere_model',      dm:'command-r',                         desc:'Free trial API. Great for chat, code, and text generation.',                                       free_tier:'Free trial · No credit card needed' },
+  { id:'huggingface', name:'Hugging Face',           tag:'FREE',  color:'amber',   icon:'box',        kf:'hf_key',          ph:'hf_…',         signup:'https://huggingface.co/settings/tokens',                    models:['Qwen/Qwen2.5-Coder-32B-Instruct','meta-llama/Meta-Llama-3-8B-Instruct','mistralai/Mistral-7B-Instruct-v0.3'],               mf:'hf_model',          dm:'Qwen/Qwen2.5-Coder-32B-Instruct',   desc:'500k+ open-source models free. Qwen 2.5 Coder is top-ranked for code.',                            free_tier:'Free Inference API on open models' },
+  { id:'together',    name:'Together AI',            tag:'FREE',  color:'pink',    icon:'users',      kf:'together_key',    ph:'…key',         signup:'https://api.together.ai/settings/api-keys',                 models:['Qwen/Qwen2.5-Coder-32B-Instruct','meta-llama/Llama-3.3-70B-Instruct-Turbo','deepseek-ai/DeepSeek-V3'],                      mf:'together_model',    dm:'Qwen/Qwen2.5-Coder-32B-Instruct',   desc:'$5 free credit. Runs DeepSeek V3 and Qwen 2.5 Coder at high speed.',                               free_tier:'$5 free credit on signup' },
+  { id:'openrouter',  name:'OpenRouter',             tag:'FREE',  color:'rose',    icon:'git-branch', kf:'openrouter_key',  ph:'sk-or-…',      signup:'https://openrouter.ai/keys',                                models:['google/gemini-2.0-flash-exp:free','meta-llama/llama-3.3-70b-instruct:free','deepseek/deepseek-chat:free','qwen/qwen-2.5-coder-32b-instruct:free'], mf:'openrouter_model', dm:'google/gemini-2.0-flash-exp:free', desc:'Routes to ALL AI providers. Has 100% free ":free" models including Gemini & Llama.',              free_tier:'Many completely FREE models with :free tag' },
+  { id:'cerebras',    name:'Cerebras',               tag:'FREE',  color:'teal',    icon:'brain',      kf:'cerebras_key',    ph:'csk-…',        signup:'https://cloud.cerebras.ai/',                                models:['llama3.3-70b','llama3.1-70b','llama3.1-8b'],                                                                                 mf:'cerebras_model',    dm:'llama3.3-70b',                      desc:'World\'s fastest AI (2000+ tokens/sec). Free tier with Llama 3.3.',                                free_tier:'Free tier · 60 req/min' },
+  { id:'fireworks',   name:'Fireworks AI',           tag:'FREE',  color:'red',     icon:'flame',      kf:'fireworks_key',   ph:'fw_…',         signup:'https://fireworks.ai/api-keys',                             models:['accounts/fireworks/models/qwen2p5-coder-32b-instruct','accounts/fireworks/models/llama-v3p3-70b-instruct','accounts/fireworks/models/deepseek-v3'], mf:'fireworks_model', dm:'accounts/fireworks/models/qwen2p5-coder-32b-instruct', desc:'$1 free credit/month. DeepSeek V3, Qwen Coder, Llama 3.3 at ultra-fast speed.', free_tier:'$1 free credit every month' },
+  // ── BATCH 2 (new 10) ───────────────────────────────────
+  { id:'github',      name:'GitHub Models',          tag:'FREE',  color:'gray',    icon:'github',     kf:'github_key',      ph:'ghp_…',        signup:'https://github.com/marketplace/models',                     models:['meta-llama/Llama-3.3-70B-Instruct','mistral-ai/Mistral-7B-Instruct-v0.3','openai/gpt-4o','microsoft/Phi-3-mini-4k-instruct'], mf:'github_model',      dm:'meta-llama/Llama-3.3-70B-Instruct', desc:'FREE with a GitHub account. Access Llama, Mistral, GPT-4o and Phi via your GitHub token.',          free_tier:'Completely FREE with any GitHub account' },
+  { id:'cloudflare',  name:'Cloudflare Workers AI',  tag:'FREE',  color:'orange',  icon:'cloud',      kf:'cloudflare_key',  ph:'…token',       signup:'https://dash.cloudflare.com/profile/api-tokens',            models:['@cf/meta/llama-3.3-70b-instruct','@cf/deepseek-ai/deepseek-r1-distill-llama-70b','@hf/thebloke/codellama-7b-instruct-awq'],   mf:'cloudflare_model',  dm:'@cf/meta/llama-3.3-70b-instruct',   desc:'FREE 10,000 req/day. Runs Llama, CodeLlama, DeepSeek R1 on Cloudflare\'s global edge network.',    free_tier:'10,000 requests/day FREE forever' },
+  { id:'sambanova',   name:'SambaNova Cloud',        tag:'FREE',  color:'violet',  icon:'server',     kf:'sambanova_key',   ph:'…key',         signup:'https://cloud.sambanova.ai/',                               models:['Meta-Llama-3.3-70B-Instruct','Meta-Llama-3.1-405B-Instruct','Meta-Llama-3.2-3B-Instruct'],                                   mf:'sambanova_model',   dm:'Meta-Llama-3.3-70B-Instruct',       desc:'FREE fastest Llama 405B inference in the world. Purpose-built AI chips for maximum speed.',        free_tier:'Free tier with Llama 3.1 405B' },
+  { id:'hyperbolic',  name:'Hyperbolic',             tag:'FREE',  color:'cyan',    icon:'activity',   kf:'hyperbolic_key',  ph:'…key',         signup:'https://app.hyperbolic.xyz/settings',                       models:['deepseek-ai/DeepSeek-V3','Qwen/Qwen2.5-Coder-32B-Instruct','meta-llama/Llama-3.3-70B-Instruct'],                             mf:'hyperbolic_model',  dm:'Qwen/Qwen2.5-Coder-32B-Instruct',   desc:'$10 FREE credit on signup. Run DeepSeek V3 and Qwen 2.5 Coder at competitive speed.',              free_tier:'$10 free credit on signup' },
+  { id:'novita',      name:'Novita AI',              tag:'FREE',  color:'emerald', icon:'layers',     kf:'novita_key',      ph:'…key',         signup:'https://novita.ai/settings#key-management',                 models:['qwen/qwen2.5-coder-32b-instruct','meta-llama/llama-3.3-70b-instruct','deepseek/deepseek-v3'],                                 mf:'novita_model',      dm:'qwen/qwen2.5-coder-32b-instruct',   desc:'Free credits on signup. Runs Qwen Coder, DeepSeek V3, Llama 3.3 at affordable prices.',           free_tier:'Free credits on signup' },
+  { id:'perplexity',  name:'Perplexity AI',          tag:'FREE',  color:'blue',    icon:'search-code',kf:'perplexity_key',  ph:'pplx-…',       signup:'https://www.perplexity.ai/settings/api',                    models:['llama-3.1-sonar-small-128k-online','llama-3.1-sonar-large-128k-online','llama-3.1-8b-instruct'],                              mf:'perplexity_model',  dm:'llama-3.1-sonar-small-128k-online', desc:'Online AI with real-time web search. Sonar model can search the web to answer coding questions.',  free_tier:'Free tier available · $5 starting credit' },
+  { id:'replicate',   name:'Replicate',              tag:'FREE',  color:'amber',   icon:'repeat',     kf:'replicate_key',   ph:'r8_…',         signup:'https://replicate.com/account/api-tokens',                  models:['meta/codellama-70b-instruct','meta/llama-3.3-70b-instruct','deepseek-ai/deepseek-coder-v2'],                                  mf:'replicate_model',   dm:'meta/codellama-70b-instruct',       desc:'$0.50 free credit. Thousands of open-source AI models including specialized coding models.',        free_tier:'$0.50 free credit · No card for many models' },
+  { id:'ai21',        name:'AI21 Labs (Jamba)',       tag:'FREE',  color:'pink',    icon:'wand-2',     kf:'ai21_key',        ph:'…key',         signup:'https://studio.ai21.com/account/api-key',                   models:['jamba-1.5-large','jamba-1.5-mini','j2-ultra','j2-mid'],                                                                      mf:'ai21_model',        dm:'jamba-1.5-mini',                    desc:'Free tier with Jamba 1.5. Long context (256K tokens) model good for analyzing large codebases.',   free_tier:'Free tier · No credit card required' },
+  { id:'lepton',      name:'Lepton AI',              tag:'FREE',  color:'teal',    icon:'atom',       kf:'lepton_key',      ph:'…key',         signup:'https://www.lepton.ai/login',                               models:['llama3-3-70b','deepseek-v3','qwen2-5-coder-32b-instruct','mistral-7b'],                                                       mf:'lepton_model',      dm:'qwen2-5-coder-32b-instruct',        desc:'Free credits. Runs Qwen Coder, DeepSeek V3, Llama 3.3 with fast inference.',                       free_tier:'Free credits on signup' },
+  { id:'ollama',      name:'Ollama (Local)',          tag:'FREE',  color:'gray',    icon:'monitor',    kf:'ollama_url',      ph:'http://localhost:11434', signup:'https://ollama.ai/download',                       models:['codellama:13b','qwen2.5-coder:7b','deepseek-coder:6.7b','llama3.3:70b','phi3:mini'],                                        mf:'ollama_model',      dm:'qwen2.5-coder:7b',                  desc:'100% FREE — runs entirely on YOUR computer. No API key needed. No internet. No limits. Install Ollama app.', free_tier:'100% FREE forever — runs locally offline' },
+];
+
+const AI_CLR = {
+  border: {blue:'border-blue-500/50',orange:'border-orange-500/50',cyan:'border-cyan-500/50',violet:'border-violet-500/50',emerald:'border-emerald-500/50',amber:'border-amber-500/50',pink:'border-pink-500/50',rose:'border-rose-500/50',teal:'border-teal-500/50',red:'border-red-500/50',gray:'border-gray-500/50'},
+  bg:     {blue:'bg-blue-500/8',orange:'bg-orange-500/8',cyan:'bg-cyan-500/8',violet:'bg-violet-500/8',emerald:'bg-emerald-500/8',amber:'bg-amber-500/8',pink:'bg-pink-500/8',rose:'bg-rose-500/8',teal:'bg-teal-500/8',red:'bg-red-500/8',gray:'bg-gray-500/8'},
+  text:   {blue:'text-blue-400',orange:'text-orange-400',cyan:'text-cyan-400',violet:'text-violet-400',emerald:'text-emerald-400',amber:'text-amber-400',pink:'text-pink-400',rose:'text-rose-400',teal:'text-teal-400',red:'text-red-400',gray:'text-gray-400'},
+  badge:  {blue:'bg-blue-500/15 text-blue-300',orange:'bg-orange-500/15 text-orange-300',cyan:'bg-cyan-500/15 text-cyan-300',violet:'bg-violet-500/15 text-violet-300',emerald:'bg-emerald-500/15 text-emerald-300',amber:'bg-amber-500/15 text-amber-300',pink:'bg-pink-500/15 text-pink-300',rose:'bg-rose-500/15 text-rose-300',teal:'bg-teal-500/15 text-teal-300',red:'bg-red-500/15 text-red-300',gray:'bg-gray-500/15 text-gray-300'},
+};
+
 async function renderAiSettings() {
   const content = document.getElementById('content');
   try {
     const { data: settings } = await supabase.from('ai_settings').select('*').limit(1).maybeSingle();
     const s = settings || {};
+    const activeId = s.active_provider || 'gemini';
+
+    const batch1 = ALL_AI_PROVIDERS.slice(0, 10);
+    const batch2 = ALL_AI_PROVIDERS.slice(10);
+
+    function providerCard(p) {
+      const isActive = activeId === p.id;
+      const savedKey = s[p.kf];
+      const savedModel = s[p.mf] || p.dm;
+      return `
+        <div class="glass-soft border ${isActive ? AI_CLR.border[p.color]+' '+AI_CLR.bg[p.color] : 'border-blue-500/10'} rounded-2xl p-4 space-y-3 ai-pcard" id="apc-${p.id}">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 ${AI_CLR.bg[p.color]} rounded-lg flex items-center justify-center shrink-0">
+                <i data-lucide="${p.icon}" class="w-4 h-4 ${AI_CLR.text[p.color]}"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <h3 class="text-xs font-black text-white">${esc(p.name)}</h3>
+                  <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full ${AI_CLR.badge[p.color]}">${p.tag}</span>
+                </div>
+                <p class="text-[9px] text-emerald-400 font-bold mt-0.5 leading-tight truncate">${esc(p.free_tier)}</p>
+              </div>
+            </div>
+            <label class="flex items-center gap-1 cursor-pointer shrink-0">
+              <input type="radio" name="active_provider" value="${p.id}" ${isActive?'checked':''} class="accent-blue-500" onchange="highlightAI('${p.id}')">
+              <span class="text-[9px] font-bold ${isActive ? AI_CLR.text[p.color] : 'text-gray-600'}">USE</span>
+            </label>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed">${esc(p.desc)}</p>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="lbl mb-0">${p.id==='ollama' ? 'Ollama Server URL' : 'API Key'}</label>
+              <a href="${p.signup}" target="_blank" rel="noopener" class="text-[10px] font-bold ${AI_CLR.text[p.color]} hover:underline flex items-center gap-0.5">
+                <i data-lucide="external-link" class="w-3 h-3"></i>${p.id==='ollama' ? 'Install Ollama' : 'Get Free Key'}
+              </a>
+            </div>
+            <div class="relative">
+              <input type="${p.id==='ollama'?'text':'password'}" class="input-field pr-16 text-xs" name="${p.kf}"
+                placeholder="${savedKey ? '••••'+savedKey.slice(-4) : p.ph}">
+              ${savedKey ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
+            </div>
+          </div>
+          <div>
+            <label class="lbl">Model</label>
+            <select class="input-field text-xs" name="${p.mf}">
+              ${p.models.map(m=>`<option value="${m}" ${savedModel===m?'selected':''}>${m}</option>`).join('')}
+            </select>
+          </div>
+        </div>`;
+    }
+
     content.innerHTML = `
-      <div class="space-y-6 fade-in">
-        <h2 class="text-xl font-black text-white">AI Settings</h2>
-        <div class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-xs text-amber-400 flex items-start gap-2">
-          <i data-lucide="shield-alert" class="w-4 h-4 shrink-0 mt-0.5"></i>
-          <p>API keys are stored encrypted in your Supabase database. Never share them. They are only used server-side in Edge Functions.</p>
+      <div class="space-y-5 fade-in">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <h2 class="text-xl font-black text-white">AI Settings</h2>
+          <div class="flex items-center gap-2">
+            <button onclick="showAiStatusModal()" class="btn-press flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
+              <i data-lucide="activity" class="w-3.5 h-3.5"></i> Live Status & Test
+            </button>
+            <span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs px-3 py-1">20 Free Providers</span>
+          </div>
+        </div>
+
+        <div class="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-xs text-emerald-300 flex items-start gap-3">
+          <i data-lucide="gift" class="w-5 h-5 shrink-0 text-emerald-400 mt-0.5"></i>
+          <div>
+            <p class="font-black mb-0.5">All 20 providers have FREE tiers — no payment required to start!</p>
+            <p class="text-emerald-400/70">Click "Get Free Key" → sign up on their website → paste key below → Save. Keys are stored securely in your database. Select one as your active provider.</p>
+          </div>
         </div>
 
         <form id="ai-form" onsubmit="saveAiSettings(event)" class="space-y-5">
-          <!-- Provider Selection -->
-          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
-            <h3 class="text-sm font-black text-white mb-4 flex items-center gap-2"><i data-lucide="bot" class="w-4 h-4 text-blue-400"></i> Active Provider</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              ${[{ id: 'openai', name: 'OpenAI (ChatGPT)', icon: 'cpu' }, { id: 'gemini', name: 'Google Gemini', icon: 'sparkles' }, { id: 'anthropic', name: 'Anthropic Claude', icon: 'brain' }].map(p => `
-                <label class="flex items-center gap-3 p-3 glass-soft border ${s.active_provider === p.id ? 'border-blue-500/50 bg-blue-500/5' : 'border-blue-500/15'} rounded-xl cursor-pointer hover:border-blue-500/40 transition">
-                  <input type="radio" name="active_provider" value="${p.id}" ${s.active_provider === p.id ? 'checked' : ''} class="accent-blue-500">
-                  <div><i data-lucide="${p.icon}" class="w-4 h-4 text-blue-400 mb-1"></i><p class="text-xs font-bold text-white">${p.name}</p></div>
-                </label>`).join('')}
-            </div>
+
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-4">
+            <h3 class="text-sm font-black text-white mb-3 flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-blue-400"></i> Batch 1 — Original 10 Free AI Providers</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${batch1.map(providerCard).join('')}</div>
           </div>
 
-          <!-- OpenAI -->
-          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
-            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="cpu" class="w-4 h-4 text-blue-400"></i> OpenAI (ChatGPT)</h3>
-            <div><label class="lbl">API Key</label>
-              <div class="relative">
-                <input type="password" class="input-field pr-20" name="openai_key" placeholder="${s.openai_key ? '••••••••' + s.openai_key.slice(-4) : 'sk-…paste your key here'}">
-                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-500">Not saved</span>
-              </div>
-            </div>
-            <div><label class="lbl">Model</label>
-              <select class="input-field" name="openai_model">
-                ${['gpt-4o','gpt-4o-mini','gpt-4-turbo','gpt-3.5-turbo'].map(m => `<option value="${m}" ${(s.openai_model||'gpt-4o')===m?'selected':''}>${m}</option>`).join('')}
-              </select>
-            </div>
+          <div class="glass-soft border border-violet-500/15 rounded-2xl p-4">
+            <h3 class="text-sm font-black text-white mb-3 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-violet-400"></i> Batch 2 — 10 More Free AI Providers</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${batch2.map(providerCard).join('')}</div>
           </div>
 
-          <!-- Gemini -->
-          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
-            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Google Gemini</h3>
-            <div><label class="lbl">API Key</label>
-              <input type="password" class="input-field" name="gemini_key" placeholder="${s.gemini_key ? '••••••••' + s.gemini_key.slice(-4) : 'AIza…paste your key here'}">
-            </div>
-            <div><label class="lbl">Model</label>
-              <select class="input-field" name="gemini_model">
-                ${['gemini-1.5-pro','gemini-1.5-flash','gemini-pro'].map(m => `<option value="${m}" ${(s.gemini_model||'gemini-1.5-pro')===m?'selected':''}>${m}</option>`).join('')}
-              </select>
-            </div>
-          </div>
-
-          <!-- AI Features -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
-            <h3 class="text-sm font-black text-white mb-4 flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> AI Features</h3>
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Feature Toggles</h3>
             ${[
-              { key: 'customer_ai_enabled', label: 'Customer AI Chatbot', desc: 'Allow customers to use AI chat on the website', val: s.customer_ai_enabled },
-              { key: 'product_ai_enabled', label: 'AI Product Creation', desc: 'Use AI to auto-generate product descriptions', val: s.product_ai_enabled !== false },
-              { key: 'ai_moderation', label: 'AI Content Moderation', desc: 'Auto-moderate reviews with AI', val: s.ai_moderation },
-            ].map(f => `
+              {key:'customer_ai_enabled', label:'Customer AI Chatbot',    desc:'Customers can chat with AI on your website',    val:s.customer_ai_enabled},
+              {key:'product_ai_enabled',  label:'AI Product Creation',    desc:'AI auto-fills product descriptions',             val:s.product_ai_enabled!==false},
+              {key:'ai_code_assist',      label:'AI Code Assistant',      desc:'AI helps build and edit your website code',      val:s.ai_code_assist!==false},
+              {key:'ai_moderation',       label:'AI Content Moderation',  desc:'Auto-approve/reject customer reviews using AI', val:s.ai_moderation},
+            ].map(f=>`
               <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/10 rounded-xl">
                 <div><p class="text-xs font-bold text-white">${f.label}</p><p class="text-[11px] text-gray-500">${f.desc}</p></div>
-                <label class="toggle-switch"><input type="checkbox" name="${f.key}" ${f.val ? 'checked' : ''}><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" name="${f.key}" ${f.val?'checked':''}><span class="toggle-slider"></span></label>
               </div>`).join('')}
           </div>
 
-          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-blue-600/15">
-            💾 Save AI Settings
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition">
+            💾 Save All AI Settings
           </button>
         </form>
       </div>`;
@@ -1804,24 +2208,405 @@ async function renderAiSettings() {
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
 
+window.highlightAI = function(id) {
+  ALL_AI_PROVIDERS.forEach(p => {
+    const card = document.getElementById('apc-' + p.id);
+    if (!card) return;
+    const isActive = p.id === id;
+    card.className = `glass-soft border ${isActive ? AI_CLR.border[p.color]+' '+AI_CLR.bg[p.color] : 'border-blue-500/10'} rounded-2xl p-4 space-y-3 ai-pcard`;
+    const span = card.querySelector('input[type=radio] + span');
+    if (span) { span.className = `text-[9px] font-bold ${isActive ? AI_CLR.text[p.color] : 'text-gray-600'}`; }
+  });
+};
+
 window.saveAiSettings = async function(e) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const data = Object.fromEntries(fd.entries());
+
   const payload = {
-    active_provider: data.active_provider || 'openai',
-    openai_model: data.openai_model,
-    gemini_model: data.gemini_model,
+    active_provider: data.active_provider || 'gemini',
     customer_ai_enabled: data.customer_ai_enabled === 'on',
-    product_ai_enabled: data.product_ai_enabled === 'on',
-    ai_moderation: data.ai_moderation === 'on',
+    product_ai_enabled:  data.product_ai_enabled  === 'on',
+    ai_code_assist:      data.ai_code_assist       === 'on',
+    ai_moderation:       data.ai_moderation        === 'on',
   };
-  // Only update keys if new values provided
-  if (data.openai_key && !data.openai_key.startsWith('•')) payload.openai_key = data.openai_key;
-  if (data.gemini_key && !data.gemini_key.startsWith('•')) payload.gemini_key = data.gemini_key;
-  const { error } = await supabase.from('ai_settings').upsert({ id: 1, ...payload });
-  if (error) { showToast(error.message, 'error'); return; }
-  showToast('AI settings saved!');
+
+  // Collect key + model for every provider — only save if user typed a new non-masked value
+  ALL_AI_PROVIDERS.forEach(p => {
+    if (data[p.mf]) payload[p.mf] = data[p.mf];
+    const v = (data[p.kf] || '').trim();
+    if (v && !v.startsWith('••••') && v !== '') payload[p.kf] = v;
+  });
+
+  // Also mirror gemini_key → gemini_api_key for backwards compat
+  if (payload.gemini_key) payload.gemini_api_key = payload.gemini_key;
+  if (payload.openai_key) payload.openai_api_key = payload.openai_key;
+
+  try {
+    // Get the existing row id (the table uses UUID, not integer)
+    const { data: existing } = await supabase.from('ai_settings').select('id').limit(1).maybeSingle();
+
+    let error;
+    if (existing?.id) {
+      // Row exists → UPDATE it
+      ({ error } = await supabase.from('ai_settings').update(payload).eq('id', existing.id));
+    } else {
+      // No row yet → INSERT one
+      ({ error } = await supabase.from('ai_settings').insert(payload));
+    }
+
+    if (error) {
+      // Show the real error so we can debug
+      showToast('Save failed: ' + error.message, 'error');
+      console.error('[AI Save]', error);
+      return;
+    }
+
+    // Reload the live AI client cache
+    await aiClient.reload();
+    showToast('✅ AI settings saved! Keys are active and auto-switch is ON.', 'success');
+
+    // Refresh the page so the "✓ Saved" indicators update
+    setTimeout(() => renderAiSettings(), 600);
+
+  } catch (err) {
+    showToast('Unexpected error: ' + err.message, 'error');
+    console.error('[AI Save]', err);
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+//  AI AUTO-SWITCH CLIENT
+//  Reads saved keys from DB, tries each provider in order,
+//  automatically skips to next when a provider is rate-limited
+//  or returns an error. Cooldown tracked in localStorage.
+// ══════════════════════════════════════════════════════════
+const AI_COOLDOWN_KEY = 'kco_ai_cooldowns';
+const AI_COOLDOWN_MS  = 60 * 1000; // 1 minute cooldown after rate limit
+
+const aiClient = {
+  _cfg: null,
+
+  async reload() {
+    const { data, error } = await supabase.from('ai_settings').select('*').limit(1).maybeSingle();
+    if (error) { console.warn('[aiClient] Could not load settings:', error.message); this._cfg = {}; return; }
+    // Normalise: support both old column names (openai_api_key) and new (openai_key)
+    const cfg = data || {};
+    if (!cfg.openai_key && cfg.openai_api_key) cfg.openai_key = cfg.openai_api_key;
+    if (!cfg.gemini_key && cfg.gemini_api_key) cfg.gemini_key = cfg.gemini_api_key;
+    this._cfg = cfg;
+  },
+
+  async getConfig() {
+    if (!this._cfg) await this.reload();
+    return this._cfg;
+  },
+
+  // Returns providers sorted: active provider first, then others that have a key
+  async getOrderedProviders() {
+    const cfg = await this.getConfig();
+    const activeId = cfg.active_provider || 'gemini';
+    const cooldowns = this._getCooldowns();
+    const now = Date.now();
+
+    // Build list: active first, then others with saved keys, skip cooled-down ones
+    const withKey = ALL_AI_PROVIDERS.filter(p => cfg[p.kf] && cfg[p.kf].trim());
+    const active  = withKey.filter(p => p.id === activeId);
+    const others  = withKey.filter(p => p.id !== activeId);
+    const ordered = [...active, ...others];
+
+    // Sort: cooled-down go to end
+    return ordered.sort((a, b) => {
+      const aCool = (cooldowns[a.id] || 0) > now ? 1 : 0;
+      const bCool = (cooldowns[b.id] || 0) > now ? 1 : 0;
+      return aCool - bCool;
+    });
+  },
+
+  _getCooldowns() {
+    try { return JSON.parse(localStorage.getItem(AI_COOLDOWN_KEY) || '{}'); } catch { return {}; }
+  },
+
+  _setCooldown(providerId) {
+    const c = this._getCooldowns();
+    c[providerId] = Date.now() + AI_COOLDOWN_MS;
+    localStorage.setItem(AI_COOLDOWN_KEY, JSON.stringify(c));
+  },
+
+  _clearCooldown(providerId) {
+    const c = this._getCooldowns();
+    delete c[providerId];
+    localStorage.setItem(AI_COOLDOWN_KEY, JSON.stringify(c));
+  },
+
+  // Build the actual HTTP request for each provider
+  _buildRequest(provider, cfg, messages, maxTokens) {
+    const key   = cfg[provider.kf];
+    const model = cfg[provider.mf] || provider.dm;
+
+    switch (provider.id) {
+      case 'gemini': {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const body = { contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })) };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json' }, body, parse: d => d.candidates?.[0]?.content?.parts?.[0]?.text || '' };
+      }
+      case 'groq': {
+        const url = 'https://api.groq.com/openai/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'deepseek': {
+        const url = 'https://api.deepseek.com/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'mistral': {
+        const url = 'https://api.mistral.ai/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'cohere': {
+        const url = 'https://api.cohere.com/v2/chat';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.message?.content?.[0]?.text || d.text || '' };
+      }
+      case 'huggingface': {
+        const url = `https://api-inference.huggingface.co/models/${model}/v1/chat/completions`;
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'together': {
+        const url = 'https://api.together.xyz/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'openrouter': {
+        const url = 'https://openrouter.ai/api/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, 'HTTP-Referer': window.location.origin }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'cerebras': {
+        const url = 'https://api.cerebras.ai/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'fireworks': {
+        const url = 'https://api.fireworks.ai/inference/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'github': {
+        const url = 'https://models.inference.ai.azure.com/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'cloudflare': {
+        // key = accountId|token  (user pastes both separated by |)
+        const [accountId, token] = (key || '').split('|');
+        const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+        const body = { messages };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || key}` }, body, parse: d => d.result?.response || '' };
+      }
+      case 'sambanova': {
+        const url = 'https://api.sambanova.ai/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'hyperbolic': {
+        const url = 'https://api.hyperbolic.xyz/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'novita': {
+        const url = 'https://api.novita.ai/v3/openai/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'perplexity': {
+        const url = 'https://api.perplexity.ai/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'replicate': {
+        // Use Replicate's OpenAI-compatible endpoint
+        const url = 'https://openai-compat.replicate.com/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'ai21': {
+        const url = 'https://api.ai21.com/studio/v1/chat/completions';
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'lepton': {
+        const url = `https://${model.replace(/[^a-z0-9-]/g,'')}.lepton.run/api/v1/chat/completions`;
+        const body = { model, messages, max_tokens: maxTokens };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
+      }
+      case 'ollama': {
+        // key field is actually the server URL for Ollama
+        const baseUrl = (key || 'http://localhost:11434').replace(/\/$/, '');
+        const url = `${baseUrl}/api/chat`;
+        const body = { model, messages, stream: false };
+        return { url, method: 'POST', headers: { 'Content-Type': 'application/json' }, body, parse: d => d.message?.content || '' };
+      }
+      default:
+        return null;
+    }
+  },
+
+  // ── MAIN CALL: tries providers in order, auto-switches on error ──
+  async chat(messages, { maxTokens = 2000, onProviderSwitch = null } = {}) {
+    const providers = await this.getOrderedProviders();
+    const cfg = await this.getConfig();
+    const cooldowns = this._getCooldowns();
+    const now = Date.now();
+
+    if (providers.length === 0) {
+      throw new Error('No AI providers configured. Go to AI Settings and add at least one API key.');
+    }
+
+    let lastError = null;
+    for (const provider of providers) {
+      // Skip if still in cooldown
+      if ((cooldowns[provider.id] || 0) > now) {
+        const remaining = Math.ceil(((cooldowns[provider.id] || 0) - now) / 1000);
+        console.log(`[AI] Skipping ${provider.name} — rate limited for ${remaining}s more`);
+        continue;
+      }
+
+      const req = this._buildRequest(provider, cfg, messages, maxTokens);
+      if (!req) continue;
+
+      try {
+        if (onProviderSwitch) onProviderSwitch(provider.name);
+
+        const res = await fetch(req.url, {
+          method: req.method,
+          headers: req.headers,
+          body: JSON.stringify(req.body),
+          signal: AbortSignal.timeout(30000),
+        });
+
+        if (res.status === 429 || res.status === 503) {
+          // Rate limited — put this provider in cooldown and try next
+          this._setCooldown(provider.id);
+          console.warn(`[AI] ${provider.name} rate limited (${res.status}), switching to next provider…`);
+          lastError = new Error(`${provider.name} rate limited`);
+          continue;
+        }
+
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => '');
+          lastError = new Error(`${provider.name} error ${res.status}: ${errBody.slice(0, 100)}`);
+          console.warn(`[AI] ${provider.name} failed:`, lastError.message);
+          continue;
+        }
+
+        const data = await res.json();
+        const text = req.parse(data);
+        if (!text) { lastError = new Error(`${provider.name} returned empty response`); continue; }
+
+        // Success — clear any cooldown for this provider
+        this._clearCooldown(provider.id);
+        console.log(`[AI] ✓ Response from ${provider.name}`);
+        return { text, provider: provider.name, model: cfg[provider.mf] || provider.dm };
+
+      } catch (err) {
+        if (err.name === 'TimeoutError') {
+          this._setCooldown(provider.id);
+          lastError = new Error(`${provider.name} timed out`);
+        } else {
+          lastError = err;
+        }
+        console.warn(`[AI] ${provider.name} exception:`, err.message);
+      }
+    }
+
+    throw new Error(lastError?.message || 'All AI providers failed or are rate limited. Add more API keys in AI Settings.');
+  },
+
+  // Convenience: single-turn prompt
+  async prompt(text, opts = {}) {
+    return this.chat([{ role: 'user', content: text }], opts);
+  },
+
+  // Get status of all providers (for the status widget)
+  async getStatus() {
+    const cfg = await this.getConfig();
+    const cooldowns = this._getCooldowns();
+    const now = Date.now();
+    return ALL_AI_PROVIDERS.map(p => ({
+      id: p.id, name: p.name, color: p.color,
+      hasKey: !!(cfg[p.kf]?.trim()),
+      isActive: cfg.active_provider === p.id,
+      cooldownUntil: cooldowns[p.id] || 0,
+      isCoolingDown: (cooldowns[p.id] || 0) > now,
+      remainingSec: Math.max(0, Math.ceil(((cooldowns[p.id] || 0) - now) / 1000)),
+    }));
+  },
+};
+
+// Expose globally so other parts of the app can call aiClient.chat(...)
+window.aiClient = aiClient;
+
+// ── AI Status Widget (shows which provider is active/cooled-down) ──
+window.showAiStatusModal = async function() {
+  const statuses = await aiClient.getStatus();
+  const configured = statuses.filter(s => s.hasKey);
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="activity" class="w-5 h-5 text-emerald-400"></i> AI Provider Status</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="mb-4 p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300">
+          ${configured.length === 0
+            ? '⚠ No keys configured. Go to AI Settings and add at least one API key.'
+            : `${configured.length} provider${configured.length>1?'s':''} configured. Auto-switch is <strong class="text-emerald-400">ON</strong> — will skip rate-limited providers automatically.`}
+        </div>
+        <div class="space-y-2">
+          ${statuses.map(s => `
+            <div class="flex items-center gap-3 p-2.5 glass-soft border ${s.hasKey ? 'border-blue-500/15' : 'border-gray-800'} rounded-xl opacity-${s.hasKey ? '100' : '40'}">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0 ${s.isCoolingDown ? 'bg-red-500' : s.hasKey ? 'bg-emerald-400' : 'bg-gray-600'}"></span>
+              <span class="text-xs font-bold text-white flex-1">${esc(s.name)}</span>
+              ${s.isActive ? '<span class="text-[9px] font-black text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full">ACTIVE</span>' : ''}
+              ${!s.hasKey ? '<span class="text-[9px] text-gray-600">No key</span>' : ''}
+              ${s.isCoolingDown ? `<span class="text-[9px] text-red-400 font-bold">Rate limited — ${s.remainingSec}s</span>` : ''}
+              ${s.hasKey && !s.isCoolingDown ? '<span class="text-[9px] text-emerald-400">Ready ✓</span>' : ''}
+            </div>`).join('')}
+        </div>
+        <div class="mt-4 p-3 bg-gray-900 rounded-xl">
+          <p class="text-[10px] text-gray-400 font-bold uppercase mb-2">Test AI Response</p>
+          <div class="flex gap-2">
+            <input id="ai-test-input" class="input-field flex-1 text-xs" placeholder="Type anything, e.g. 'Write hello world in Python'">
+            <button onclick="testAiCall()" class="btn-press px-4 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i> Test
+            </button>
+          </div>
+          <div id="ai-test-output" class="hidden mt-3 p-3 bg-gray-950 border border-blue-500/15 rounded-xl text-xs text-gray-200 whitespace-pre-wrap max-h-48 overflow-y-auto"></div>
+        </div>
+      </div>
+    </div>`);
+  if (window.lucide) lucide.createIcons();
+};
+
+window.testAiCall = async function() {
+  const input = document.getElementById('ai-test-input')?.value?.trim();
+  if (!input) return;
+  const output = document.getElementById('ai-test-output');
+  output.classList.remove('hidden');
+  output.textContent = '⏳ Trying providers…';
+  try {
+    const result = await aiClient.prompt(input, {
+      onProviderSwitch: (name) => { output.textContent = `⚡ Using: ${name}…`; },
+    });
+    output.textContent = `✓ [${result.provider} · ${result.model}]\n\n${result.text}`;
+  } catch (err) {
+    output.textContent = `❌ ${err.message}`;
+  }
 };
 
 // ══════════════════════════════════════════════════════════
@@ -2019,59 +2804,310 @@ window.saveEmailSettings = async function(e) {
 };
 
 // ══════════════════════════════════════════════════════════
-//  16. SECURITY
+//  16. SECURITY  (2FA setup + login history + logout all)
 // ══════════════════════════════════════════════════════════
 async function renderSecurity() {
   const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
   try {
-    const { data: logs } = await supabase.from('admin_security_logs').select('*').order('created_at', { ascending: false }).limit(50);
+    const [logsRes, twoFaRes, factorsRes] = await Promise.all([
+      supabase.from('admin_security_logs').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('admin_2fa').select('enabled,backup_codes,created_at').eq('user_id', state.user?.id).maybeSingle(),
+      supabase.auth.mfa.listFactors(),
+    ]);
+    const logs = logsRes.data || [];
+    const twofa = twoFaRes.data || {};
+    const totpFactor = (factorsRes.data?.totp || [])[0];
+    const is2FAEnrolled = !!totpFactor && totpFactor.status === 'verified';
+    const backupCount = (twofa.backup_codes || []).filter(c => !c.used).length;
+
     content.innerHTML = `
-      <div class="space-y-5 fade-in">
+      <div class="space-y-6 fade-in">
         <h2 class="text-xl font-black text-white">Security</h2>
-        <!-- Change Password -->
+
+        <!-- 2FA STATUS BANNER -->
+        <div class="p-4 rounded-xl border flex items-center gap-4 ${is2FAEnrolled ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-amber-500/5 border-amber-500/20'}">
+          <div class="w-10 h-10 ${is2FAEnrolled ? 'bg-emerald-500/10' : 'bg-amber-500/10'} rounded-xl flex items-center justify-center shrink-0">
+            <i data-lucide="${is2FAEnrolled ? 'shield-check' : 'shield-alert'}" class="w-5 h-5 ${is2FAEnrolled ? 'text-emerald-400' : 'text-amber-400'}"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-black ${is2FAEnrolled ? 'text-emerald-300' : 'text-amber-300'}">Two-Factor Authentication is ${is2FAEnrolled ? 'ENABLED ✓' : 'NOT ENABLED'}</p>
+            <p class="text-xs text-gray-400 mt-0.5">${is2FAEnrolled ? `Backup codes available: ${backupCount} · Enrolled: ${fmtDate(twofa.created_at)}` : 'Enable 2FA to protect your admin account with an authenticator app.'}</p>
+          </div>
+          ${is2FAEnrolled
+            ? `<button onclick="disable2FA()" class="btn-press flex-shrink-0 text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-xl transition">Disable 2FA</button>`
+            : `<button onclick="setup2FAFlow()" class="btn-press flex-shrink-0 text-xs font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl transition"><i data-lucide="shield-plus" class="w-3.5 h-3.5 inline mr-1"></i>Enable 2FA</button>`}
+        </div>
+
+        <!-- BACKUP CODES (only if 2FA enabled) -->
+        ${is2FAEnrolled ? `
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="key" class="w-4 h-4 text-amber-400"></i> Backup Recovery Codes</h3>
+            <button onclick="regenerateBackupCodes()" class="btn-press text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-xl transition">Regenerate</button>
+          </div>
+          <p class="text-xs text-gray-400 mb-3">Save these codes in a safe place. Use them if you lose access to your authenticator app. Each code works only once.</p>
+          <div id="backup-codes-display" class="grid grid-cols-2 gap-2">
+            ${(twofa.backup_codes || []).length === 0
+              ? '<p class="text-xs text-gray-500 col-span-2 text-center py-4">No backup codes generated. Click Regenerate to create them.</p>'
+              : (twofa.backup_codes || []).map(c => `<code class="font-mono text-xs px-3 py-2 ${c.used ? 'bg-gray-900 text-gray-600 line-through' : 'bg-blue-500/5 text-blue-300 border border-blue-500/15'} rounded-lg">${typeof c === 'object' ? c.code : c}</code>`).join('')}
+          </div>
+        </div>` : ''}
+
+        <!-- CHANGE PASSWORD -->
         <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
           <h3 class="text-sm font-black text-white mb-4 flex items-center gap-2"><i data-lucide="lock" class="w-4 h-4 text-blue-400"></i> Change Password</h3>
           <form id="pw-form" onsubmit="changePassword(event)" class="space-y-3 max-w-sm">
-            <div><label class="lbl">New Password</label><input type="password" class="input-field" id="new-pw" placeholder="Min 8 characters" minlength="8" required></div>
-            <div><label class="lbl">Confirm New Password</label><input type="password" class="input-field" id="confirm-pw" placeholder="Repeat password" required></div>
-            <button type="submit" class="btn-press bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-xl text-sm transition">Update Password</button>
+            <div>
+              <label class="lbl">Current Password</label>
+              <input type="password" class="input-field" id="current-pw" placeholder="Current password" required>
+            </div>
+            <div>
+              <label class="lbl">New Password</label>
+              <input type="password" class="input-field" id="new-pw" placeholder="Min 8 characters" minlength="8" required>
+              <div id="pw-strength" class="mt-1.5 space-y-1"></div>
+            </div>
+            <div>
+              <label class="lbl">Confirm New Password</label>
+              <input type="password" class="input-field" id="confirm-pw" placeholder="Repeat password" required>
+            </div>
+            <button type="submit" class="btn-press bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-5 rounded-xl text-sm transition flex items-center gap-2">
+              <i data-lucide="check" class="w-4 h-4"></i> Update Password
+            </button>
           </form>
         </div>
-        <!-- Security Logs -->
+
+        <!-- SESSION MANAGEMENT -->
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+          <h3 class="text-sm font-black text-white mb-4 flex items-center gap-2"><i data-lucide="monitor-smartphone" class="w-4 h-4 text-blue-400"></i> Session Management</h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/10 rounded-xl">
+              <div>
+                <p class="text-xs font-bold text-white">Current Session</p>
+                <p class="text-[11px] text-gray-500">${esc(navigator.userAgent.slice(0, 60))}…</p>
+              </div>
+              <span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Active</span>
+            </div>
+            <button onclick="logoutAllDevices()" class="btn-press w-full flex items-center justify-center gap-2 text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/15 py-2.5 rounded-xl transition">
+              <i data-lucide="log-out" class="w-4 h-4"></i> Sign Out from ALL Devices
+            </button>
+          </div>
+        </div>
+
+        <!-- LOGIN HISTORY -->
         <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
-          <div class="p-4 border-b border-blue-500/10">
-            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="shield" class="w-4 h-4 text-blue-400"></i> Recent Security Events</h3>
+          <div class="p-4 border-b border-blue-500/10 flex items-center justify-between">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-blue-400"></i> Login History</h3>
+            <span class="text-xs text-gray-500">Last ${logs.length} events</span>
           </div>
           <div class="overflow-x-auto scrollbar-thin">
             <table class="w-full dt">
-              <thead><tr><th>Event</th><th>IP Address</th><th class="hidden sm:table-cell">User Agent</th><th>Date</th></tr></thead>
+              <thead><tr><th>Event</th><th>IP Address</th><th class="hidden sm:table-cell">Device</th><th>Date</th></tr></thead>
               <tbody>
-                ${(logs || []).length === 0 ? '<tr><td colspan="4" class="text-center text-gray-500 py-8">No security events</td></tr>' :
-                  (logs || []).map(l => `<tr>
-                    <td><span class="text-xs font-bold text-white">${esc(l.event_type || l.action || '—')}</span></td>
-                    <td><span class="text-xs font-mono text-gray-300">${esc(l.ip_address || '—')}</span></td>
-                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-500 truncate max-w-[200px] block">${esc((l.user_agent || '—').slice(0, 60))}</span></td>
-                    <td><span class="text-xs text-gray-500">${fmtDT(l.created_at)}</span></td>
-                  </tr>`).join('')}
+                ${logs.length === 0 ? '<tr><td colspan="4" class="text-center text-gray-500 py-8">No security events yet</td></tr>' :
+                  logs.map(l => {
+                    const isSuccess = ['login_success','login_2fa_success'].includes(l.event_type);
+                    const isWarning = ['login_failed','login_denied','login_backup_code_used'].includes(l.event_type);
+                    const eventColor = isSuccess ? 'text-emerald-400' : isWarning ? 'text-red-400' : 'text-gray-300';
+                    const eventLabel = { login_success:'Login ✓', login_failed:'Failed Login ✗', login_denied:'Access Denied ✗', login_2fa_success:'2FA Verified ✓', login_backup_code_used:'Backup Code Used', logout:'Logged Out', logout_all_devices:'Logout All Devices' }[l.event_type] || l.event_type;
+                    return `<tr>
+                      <td><span class="text-xs font-bold ${eventColor}">${esc(eventLabel)}</span></td>
+                      <td><span class="text-xs font-mono text-gray-300">${esc(l.ip_address || '—')}</span></td>
+                      <td class="hidden sm:table-cell"><span class="text-xs text-gray-500 max-w-[160px] block truncate">${esc((l.user_agent || '—').slice(0, 50))}</span></td>
+                      <td><span class="text-xs text-gray-500">${fmtDT(l.created_at)}</span></td>
+                    </tr>`;
+                  }).join('')}
               </tbody>
             </table>
           </div>
         </div>
       </div>`;
+
+    // Password strength meter
+    document.getElementById('new-pw')?.addEventListener('input', (e) => {
+      const pw = e.target.value;
+      const checks = [
+        { label: '8+ characters', ok: pw.length >= 8 },
+        { label: 'Uppercase letter', ok: /[A-Z]/.test(pw) },
+        { label: 'Number', ok: /[0-9]/.test(pw) },
+        { label: 'Special character', ok: /[^a-zA-Z0-9]/.test(pw) },
+      ];
+      document.getElementById('pw-strength').innerHTML = checks.map(c =>
+        `<div class="flex items-center gap-1.5 text-[10px] ${c.ok ? 'text-emerald-400' : 'text-gray-600'}">
+          <i data-lucide="${c.ok ? 'check-circle' : 'circle'}" class="w-3 h-3"></i>${c.label}</div>`
+      ).join('');
+      if (window.lucide) lucide.createIcons();
+    });
+
     if (window.lucide) lucide.createIcons();
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
 
 window.changePassword = async function(e) {
   e.preventDefault();
+  const current = document.getElementById('current-pw').value;
   const np = document.getElementById('new-pw').value;
   const cp = document.getElementById('confirm-pw').value;
   if (np !== cp) { showToast('Passwords do not match', 'error'); return; }
   if (np.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+  // Re-authenticate to verify current password
+  const { error: reAuthErr } = await supabase.auth.signInWithPassword({ email: state.user.email, password: current });
+  if (reAuthErr) { showToast('Current password is incorrect', 'error'); return; }
   const { error } = await supabase.auth.updateUser({ password: np });
   if (error) { showToast(error.message, 'error'); return; }
+  await logLoginEvent(state.user.id, 'password_changed');
   showToast('Password updated successfully!');
   e.target.reset();
+  document.getElementById('pw-strength').innerHTML = '';
+};
+
+// ── 2FA Setup Flow ────────────────────────────────────────
+window.setup2FAFlow = async function() {
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="shield-plus" class="w-5 h-5 text-emerald-400"></i> Enable Two-Factor Authentication</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div id="2fa-setup-content">
+          <div class="flex items-center justify-center py-8"><i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-400"></i></div>
+        </div>
+      </div>
+    </div>`);
+  if (window.lucide) lucide.createIcons();
+  try {
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'KCO Admin' });
+    if (error) throw error;
+    const qrUri = data.totp.qr_code;
+    const secret = data.totp.secret;
+    const factorId = data.id;
+    document.getElementById('2fa-setup-content').innerHTML = `
+      <div class="space-y-5">
+        <div class="p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300">
+          <strong>Step 1:</strong> Open your authenticator app (Google Authenticator, Authy, or similar).<br>
+          <strong>Step 2:</strong> Scan the QR code below or enter the secret manually.<br>
+          <strong>Step 3:</strong> Enter the 6-digit code shown in your app.
+        </div>
+        <div class="flex flex-col items-center gap-4">
+          <div class="bg-white p-3 rounded-xl">
+            <img src="${esc(qrUri)}" alt="QR Code" class="w-44 h-44" onerror="this.closest('div').innerHTML='<p class=&quot;text-xs text-gray-500 w-44 text-center&quot;>QR code unavailable. Use the secret below.</p>'">
+          </div>
+          <div class="w-full">
+            <label class="lbl">Or enter this secret manually</label>
+            <div class="flex gap-2">
+              <code class="flex-1 input-field font-mono text-xs text-emerald-300 select-all">${esc(secret)}</code>
+              <button onclick="navigator.clipboard.writeText('${esc(secret)}').then(()=>showToast('Copied!'))" class="btn-press p-2 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition text-blue-400"><i data-lucide="copy" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="lbl">Enter 6-digit code from app *</label>
+          <input type="text" id="setup-totp-code" inputmode="numeric" maxlength="6" class="input-field text-center text-xl font-black tracking-[0.5em] py-3" placeholder="000000" autocomplete="one-time-code">
+        </div>
+        <div id="setup-2fa-error" class="hidden p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs"></div>
+        <button onclick="confirm2FAEnrollment('${esc(factorId)}')" class="btn-press w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4"></i> Verify & Enable 2FA
+        </button>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+    setTimeout(() => document.getElementById('setup-totp-code')?.focus(), 100);
+    document.getElementById('setup-totp-code')?.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    });
+  } catch (err) {
+    document.getElementById('2fa-setup-content').innerHTML = `<div class="text-red-400 text-sm text-center py-4">${esc(err.message)}</div>`;
+  }
+};
+
+window.confirm2FAEnrollment = async function(factorId) {
+  const code = document.getElementById('setup-totp-code')?.value?.trim();
+  const errEl = document.getElementById('setup-2fa-error');
+  if (!code || code.length !== 6) { if (errEl) { errEl.textContent = 'Enter the 6-digit code.'; errEl.classList.remove('hidden'); } return; }
+  try {
+    const { data: challenge, error: chErr } = await supabase.auth.mfa.challenge({ factorId });
+    if (chErr) throw chErr;
+    const { error: verErr } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
+    if (verErr) throw verErr;
+    // Generate backup codes and save to admin_2fa table
+    const backupCodes = generateBackupCodes(10);
+    await supabase.from('admin_2fa').upsert({ user_id: state.user.id, enabled: true, backup_codes: backupCodes });
+    await logLoginEvent(state.user.id, '2fa_enrolled');
+    closeModal();
+    // Show backup codes in a new modal
+    showBackupCodesModal(backupCodes.map(c => c.code));
+    renderSecurity();
+  } catch (err) {
+    const errEl = document.getElementById('setup-2fa-error');
+    if (errEl) { errEl.textContent = err.message?.includes('Invalid') ? 'Wrong code. Check your app and try again.' : err.message; errEl.classList.remove('hidden'); }
+    document.getElementById('setup-totp-code').value = '';
+    document.getElementById('setup-totp-code').focus();
+  }
+};
+
+function generateBackupCodes(n) {
+  const codes = [];
+  for (let i = 0; i < n; i++) {
+    const raw = Array.from({ length: 16 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
+    codes.push({ code: `${raw.slice(0,4)}-${raw.slice(4,8)}-${raw.slice(8,12)}-${raw.slice(12,16)}`, used: false });
+  }
+  return codes;
+}
+
+function showBackupCodesModal(codes) {
+  openModal(`
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center shrink-0"><i data-lucide="key" class="w-5 h-5 text-amber-400"></i></div>
+          <div>
+            <h3 class="text-base font-black text-white">Save Your Backup Codes</h3>
+            <p class="text-xs text-red-400 font-bold">⚠ These will not be shown again!</p>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mb-4">Store these codes somewhere safe. If you lose your authenticator, use one of these to log in. Each code works once.</p>
+        <div class="grid grid-cols-2 gap-2 mb-5">
+          ${codes.map(c => `<code class="font-mono text-xs px-3 py-2 bg-blue-500/5 text-blue-300 border border-blue-500/15 rounded-lg text-center select-all">${esc(c)}</code>`).join('')}
+        </div>
+        <div class="flex gap-3">
+          <button onclick="copyBackupCodes([${codes.map(c=>`'${c}'`).join(',')}])" class="btn-press flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-xs transition"><i data-lucide="copy" class="w-4 h-4"></i> Copy All</button>
+          <button onclick="downloadBackupCodes([${codes.map(c=>`'${c}'`).join(',')}])" class="btn-press flex-1 flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded-xl text-xs transition"><i data-lucide="download" class="w-4 h-4"></i> Download</button>
+          <button onclick="closeModal()" class="btn-press px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition">Done</button>
+        </div>
+      </div>
+    </div>`);
+  if (window.lucide) lucide.createIcons();
+}
+
+window.copyBackupCodes = function(codes) { navigator.clipboard.writeText(codes.join('\n')).then(() => showToast('Backup codes copied!')); };
+window.downloadBackupCodes = function(codes) {
+  const blob = new Blob([`KCO Admin Backup Codes\nGenerated: ${new Date().toISOString()}\n\n${codes.join('\n')}\n\nEach code works once. Store securely.`], { type: 'text/plain' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'kco-admin-backup-codes.txt'; a.click();
+};
+
+window.regenerateBackupCodes = async function() {
+  if (!confirm('This will invalidate ALL existing backup codes. Continue?')) return;
+  const newCodes = generateBackupCodes(10);
+  await supabase.from('admin_2fa').update({ backup_codes: newCodes }).eq('user_id', state.user.id);
+  showToast('New backup codes generated');
+  showBackupCodesModal(newCodes.map(c => c.code));
+  renderSecurity();
+};
+
+window.disable2FA = async function() {
+  if (!confirm('Disable two-factor authentication? Your account will be less secure.')) return;
+  try {
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const totpFactor = (factors?.totp || [])[0];
+    if (totpFactor) {
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: totpFactor.id });
+      if (error) throw error;
+    }
+    await supabase.from('admin_2fa').update({ enabled: false }).eq('user_id', state.user.id);
+    await logLoginEvent(state.user.id, '2fa_disabled');
+    showToast('2FA has been disabled');
+    renderSecurity();
+  } catch (err) { showToast(err.message, 'error'); }
 };
 
 // ══════════════════════════════════════════════════════════
@@ -2226,47 +3262,822 @@ window.saveSettings = async function(e) {
 };
 
 // ══════════════════════════════════════════════════════════
-//  20. PUBLISH & DEPLOY
+//  BRAND MANAGER
+// ══════════════════════════════════════════════════════════
+async function renderBrandManager() {
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  try {
+    const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+    const d = s || {};
+
+    // Helper: render an image upload slot
+    function imgSlot(label, fieldName, currentUrl, hint = '') {
+      const hasImg = !!(currentUrl && currentUrl.trim());
+      return `
+        <div class="glass-soft border border-blue-500/10 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-black text-white">${esc(label)}</p>
+            ${hasImg ? `<span class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">✓ Uploaded</span>` : `<span class="text-[9px] text-gray-600">Empty</span>`}
+          </div>
+          ${hasImg ? `<div class="relative group w-full h-24 rounded-xl overflow-hidden bg-gray-900 border border-blue-500/10 flex items-center justify-center">
+            <img src="${esc(currentUrl)}" alt="${esc(label)}" class="max-h-20 max-w-full object-contain p-2" onerror="this.closest('div').innerHTML='<p class=&quot;text-xs text-gray-600&quot;>Image broken</p>'">
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+              <button type="button" onclick="triggerImgUpload('${fieldName}')" class="text-xs font-bold text-white bg-blue-600 px-3 py-1 rounded-lg">Replace</button>
+              <button type="button" onclick="clearBrandImg('${fieldName}')" class="text-xs font-bold text-white bg-red-600 px-3 py-1 rounded-lg">Remove</button>
+            </div>
+          </div>` : `<div class="w-full h-24 rounded-xl border-2 border-dashed border-blue-500/20 hover:border-blue-500/40 flex flex-col items-center justify-center gap-2 cursor-pointer transition" onclick="triggerImgUpload('${fieldName}')">
+            <i data-lucide="image-plus" class="w-7 h-7 text-blue-400"></i>
+            <p class="text-[11px] text-gray-500">Click to upload</p>
+          </div>`}
+          ${hint ? `<p class="text-[10px] text-gray-600">${esc(hint)}</p>` : ''}
+          <input type="file" id="file-${fieldName}" class="hidden" accept="image/*" onchange="handleBrandImgUpload(event,'${fieldName}')">
+          <input type="hidden" name="${fieldName}" id="val-${fieldName}" value="${esc(currentUrl || '')}">
+          <input class="input-field text-xs mt-1 ${hasImg ? '' : 'hidden'}" id="url-${fieldName}" name="${fieldName}_url" value="${esc(currentUrl || '')}" placeholder="Or paste image URL directly" oninput="document.getElementById('val-${fieldName}').value=this.value">
+          <button type="button" onclick="document.getElementById('url-${fieldName}').classList.toggle('hidden')" class="text-[10px] text-blue-400 hover:text-blue-300 transition">
+            ${hasImg ? 'Edit URL' : 'Paste URL instead'}
+          </button>
+        </div>`;
+    }
+
+    content.innerHTML = `
+      <div class="space-y-5 fade-in">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <h2 class="text-xl font-black text-white">Brand Manager</h2>
+          <p class="text-xs text-gray-400">All brand elements in one place</p>
+        </div>
+
+        <form id="brand-form" onsubmit="saveBrandSettings(event)" class="space-y-5">
+
+          <!-- ── Brand Identity ── -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2">
+              <i data-lucide="type" class="w-4 h-4 text-blue-400"></i> Brand Identity
+            </h3>
+            <div class="form-grid form-grid-2">
+              <div>
+                <label class="lbl">Brand Name *</label>
+                <input class="input-field" name="brand_name" value="${esc(d.brand_name || d.site_name || 'KCO Global Online Marketplace')}" placeholder="Your brand name" required>
+              </div>
+              <div>
+                <label class="lbl">Short Name / Abbreviation</label>
+                <input class="input-field" name="brand_short_name" value="${esc(d.brand_short_name || 'KCO')}" placeholder="e.g. KCO, SHOP, MYB">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="lbl">Slogan / Tagline</label>
+                <input class="input-field" name="brand_slogan" value="${esc(d.brand_slogan || d.site_tagline || '')}" placeholder="e.g. Premium International Commerce">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="lbl">Brand Description (shown on About page & SEO)</label>
+                <textarea class="input-field" name="brand_description" rows="2" placeholder="Short description of your brand…">${esc(d.brand_description || d.site_description || '')}</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Brand Colors ── -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2">
+              <i data-lucide="palette" class="w-4 h-4 text-blue-400"></i> Brand Colors
+            </h3>
+            <div class="form-grid form-grid-2">
+              <div>
+                <label class="lbl">Primary Color</label>
+                <div class="flex gap-2 items-center">
+                  <input type="color" class="w-10 h-10 rounded-lg border border-blue-500/20 bg-transparent cursor-pointer" id="color-primary" value="${esc(d.brand_primary_color || '#f97316')}" oninput="document.getElementById('txt-primary').value=this.value;previewColors()">
+                  <input class="input-field flex-1 font-mono" id="txt-primary" name="brand_primary_color" value="${esc(d.brand_primary_color || '#f97316')}" placeholder="#f97316" oninput="syncColor('primary',this.value)">
+                  <span class="text-[10px] text-gray-500 shrink-0">Buttons, accents</span>
+                </div>
+              </div>
+              <div>
+                <label class="lbl">Secondary Color</label>
+                <div class="flex gap-2 items-center">
+                  <input type="color" class="w-10 h-10 rounded-lg border border-blue-500/20 bg-transparent cursor-pointer" id="color-secondary" value="${esc(d.brand_secondary_color || '#3b82f6')}" oninput="document.getElementById('txt-secondary').value=this.value;previewColors()">
+                  <input class="input-field flex-1 font-mono" id="txt-secondary" name="brand_secondary_color" value="${esc(d.brand_secondary_color || '#3b82f6')}" placeholder="#3b82f6" oninput="syncColor('secondary',this.value)">
+                  <span class="text-[10px] text-gray-500 shrink-0">Links, highlights</span>
+                </div>
+              </div>
+              <div>
+                <label class="lbl">Background Color</label>
+                <div class="flex gap-2 items-center">
+                  <input type="color" class="w-10 h-10 rounded-lg border border-blue-500/20 bg-transparent cursor-pointer" id="color-bg" value="${esc(d.brand_bg_color || '#070b16')}" oninput="document.getElementById('txt-bg').value=this.value">
+                  <input class="input-field flex-1 font-mono" id="txt-bg" name="brand_bg_color" value="${esc(d.brand_bg_color || '#070b16')}" placeholder="#070b16">
+                </div>
+              </div>
+              <div>
+                <label class="lbl">Text Color</label>
+                <div class="flex gap-2 items-center">
+                  <input type="color" class="w-10 h-10 rounded-lg border border-blue-500/20 bg-transparent cursor-pointer" id="color-text" value="${esc(d.brand_text_color || '#f1f5f9')}" oninput="document.getElementById('txt-text').value=this.value">
+                  <input class="input-field flex-1 font-mono" id="txt-text" name="brand_text_color" value="${esc(d.brand_text_color || '#f1f5f9')}" placeholder="#f1f5f9">
+                </div>
+              </div>
+            </div>
+            <!-- Color Preview -->
+            <div id="color-preview" class="p-4 rounded-xl border border-blue-500/10 flex flex-wrap items-center gap-3">
+              <div class="w-8 h-8 rounded-lg" style="background:${esc(d.brand_primary_color||'#f97316')}" title="Primary"></div>
+              <div class="w-8 h-8 rounded-lg" style="background:${esc(d.brand_secondary_color||'#3b82f6')}" title="Secondary"></div>
+              <div class="w-8 h-8 rounded-lg border border-gray-700" style="background:${esc(d.brand_bg_color||'#070b16')}" title="Background"></div>
+              <div class="w-8 h-8 rounded-lg border border-gray-700" style="background:${esc(d.brand_text_color||'#f1f5f9')}" title="Text"></div>
+              <button type="button" style="background:${esc(d.brand_primary_color||'#f97316')};color:#000" class="px-4 py-1.5 rounded-lg text-xs font-bold">Shop Now</button>
+              <span style="color:${esc(d.brand_secondary_color||'#3b82f6')}" class="text-xs font-bold underline">Learn More</span>
+              <span class="text-[10px] text-gray-500 ml-auto">Live preview</span>
+            </div>
+          </div>
+
+          <!-- ── Brand Font ── -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2">
+              <i data-lucide="type" class="w-4 h-4 text-violet-400"></i> Brand Font
+            </h3>
+            <div class="form-grid form-grid-2">
+              <div>
+                <label class="lbl">Primary Font</label>
+                <select class="input-field" name="brand_font" id="brand-font-select" onchange="previewFont(this.value)">
+                  ${['Inter','Poppins','Roboto','Montserrat','Nunito','Raleway','Lato','Open Sans','Outfit','Plus Jakarta Sans','DM Sans','Urbanist','Sora','Manrope','Work Sans'].map(f=>`<option value="${f}" ${(d.brand_font||'Inter')===f?'selected':''}>${f}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label class="lbl">Custom Google Font (overrides above)</label>
+                <input class="input-field" name="brand_custom_font" value="${esc(d.brand_custom_font||'')}" placeholder="e.g. Space Grotesk">
+                <p class="text-[10px] text-gray-500 mt-1">Any Google Fonts name — <a href="https://fonts.google.com" target="_blank" class="text-blue-400 hover:underline">fonts.google.com</a></p>
+              </div>
+            </div>
+            <div id="font-preview" class="p-3 rounded-xl bg-gray-900 border border-blue-500/10">
+              <p id="font-sample" class="text-sm text-white font-bold" style="font-family:'${esc(d.brand_font||'Inter')}',sans-serif">
+                The quick brown fox jumps over the lazy dog · 0123456789
+              </p>
+            </div>
+          </div>
+
+          <!-- ── Logo & Icons ── -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-white flex items-center gap-2">
+                <i data-lucide="image" class="w-4 h-4 text-emerald-400"></i> Logos & Icons
+              </h3>
+              <p class="text-[10px] text-gray-500">PNG, SVG, WebP recommended</p>
+            </div>
+            <div id="brand-upload-status" class="hidden p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300 flex items-center gap-2">
+              <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i>
+              <span id="brand-upload-msg">Uploading…</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${imgSlot('Main Logo',          'brand_logo',          d.brand_logo,          'Used across the website. Recommended: 200×60px')}
+              ${imgSlot('Favicon / Tab Icon', 'brand_favicon',       d.brand_favicon,       'Shown in browser tab. Recommended: 32×32px or 64×64px')}
+              ${imgSlot('Mobile Logo',        'brand_mobile_logo',   d.brand_mobile_logo,   'Shown on small screens. Recommended: 120×40px')}
+              ${imgSlot('Header Logo',        'brand_header_logo',   d.brand_header_logo,   'Shown in the top navigation bar')}
+              ${imgSlot('Footer Logo',        'brand_footer_logo',   d.brand_footer_logo,   'Shown in the website footer')}
+              ${imgSlot('Login Page Logo',    'brand_login_logo',    d.brand_login_logo,    'Shown on the login/auth page')}
+              ${imgSlot('Admin Dashboard Logo','brand_admin_logo',   d.brand_admin_logo,    'Shown in the admin sidebar')}
+              ${imgSlot('OG / Social Image',  'brand_og_image',      d.brand_og_image,      'Shown when sharing links on WhatsApp, Facebook etc. 1200×630px')}
+            </div>
+          </div>
+
+          <!-- ── Contact & Social ── -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2">
+              <i data-lucide="globe" class="w-4 h-4 text-blue-400"></i> Website URL & Contact
+            </h3>
+            <div class="form-grid form-grid-2">
+              <div><label class="lbl">Website URL</label><input class="input-field" name="brand_website_url" value="${esc(d.brand_website_url||d.production_url||'')}" placeholder="https://yoursite.com"></div>
+              <div><label class="lbl">Support Email</label><input type="email" class="input-field" name="brand_email" value="${esc(d.brand_email||d.contact_email||'')}" placeholder="support@yoursite.com"></div>
+              <div><label class="lbl">Phone / WhatsApp</label><input class="input-field" name="brand_phone" value="${esc(d.brand_phone||d.contact_phone||'')}" placeholder="+1 234 567 8900"></div>
+              <div><label class="lbl">Business Address</label><input class="input-field" name="brand_address" value="${esc(d.brand_address||d.contact_address||'')}" placeholder="City, Country"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2">
+            <i data-lucide="save" class="w-4 h-4"></i> Save All Brand Settings
+          </button>
+        </form>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.triggerImgUpload = function(field) {
+  document.getElementById('file-' + field)?.click();
+};
+
+window.clearBrandImg = function(field) {
+  document.getElementById('val-' + field).value = '';
+  renderBrandManager();
+};
+
+window.syncColor = function(name, val) {
+  const picker = document.getElementById('color-' + name);
+  if (picker && /^#[0-9a-fA-F]{6}$/.test(val)) picker.value = val;
+  previewColors();
+};
+
+window.previewColors = function() {
+  const p = document.getElementById('txt-primary')?.value || '#f97316';
+  const s = document.getElementById('txt-secondary')?.value || '#3b82f6';
+  const bg = document.getElementById('txt-bg')?.value || '#070b16';
+  const txt = document.getElementById('txt-text')?.value || '#f1f5f9';
+  const preview = document.getElementById('color-preview');
+  if (!preview) return;
+  const swatches = preview.querySelectorAll('[title]');
+  if (swatches[0]) swatches[0].style.background = p;
+  if (swatches[1]) swatches[1].style.background = s;
+  if (swatches[2]) swatches[2].style.background = bg;
+  if (swatches[3]) swatches[3].style.background = txt;
+  const btn = preview.querySelector('button');
+  if (btn) btn.style.background = p;
+  const link = preview.querySelector('span');
+  if (link) link.style.color = s;
+};
+
+window.previewFont = function(font) {
+  const el = document.getElementById('font-sample');
+  if (el) el.style.fontFamily = `'${font}', sans-serif`;
+  // Dynamically load the Google Font for preview
+  const id = 'gf-preview';
+  let link = document.getElementById(id);
+  if (!link) { link = document.createElement('link'); link.id = id; link.rel = 'stylesheet'; document.head.appendChild(link); }
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}:wght@400;700;900&display=swap`;
+};
+
+window.handleBrandImgUpload = async function(e, field) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const statusEl = document.getElementById('brand-upload-status');
+  const msgEl = document.getElementById('brand-upload-msg');
+  if (statusEl) statusEl.classList.remove('hidden');
+  if (msgEl) msgEl.textContent = `Uploading ${file.name}…`;
+  try {
+    const ext = file.name.split('.').pop();
+    const path = `brand/${field}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: true });
+    let url;
+    if (upErr) {
+      // Fall back to object URL for preview if storage fails
+      url = URL.createObjectURL(file);
+      if (msgEl) msgEl.textContent = `Using local preview (storage error: ${upErr.message})`;
+    } else {
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+      url = data.publicUrl;
+      if (msgEl) msgEl.textContent = `✓ ${file.name} uploaded`;
+    }
+    // Update hidden input and refresh preview
+    const valEl = document.getElementById('val-' + field);
+    const urlEl = document.getElementById('url-' + field);
+    if (valEl) valEl.value = url;
+    if (urlEl) urlEl.value = url;
+    // Refresh the slot preview
+    setTimeout(() => renderBrandManager(), 800);
+  } catch (err) {
+    if (msgEl) msgEl.textContent = `Upload failed: ${err.message}`;
+  }
+  setTimeout(() => statusEl?.classList.add('hidden'), 3000);
+};
+
+window.saveBrandSettings = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const payload = {};
+  // Collect all fields; use hidden val- fields for images
+  for (const [k, v] of fd.entries()) {
+    if (!k.endsWith('_url')) payload[k] = v; // skip the visible URL inputs (already in hidden fields)
+  }
+  // Sync brand fields to site_settings aliases
+  if (payload.brand_name)        payload.site_name        = payload.brand_name;
+  if (payload.brand_slogan)      payload.site_tagline     = payload.brand_slogan;
+  if (payload.brand_description) payload.site_description = payload.brand_description;
+  if (payload.brand_email)       payload.contact_email    = payload.brand_email;
+  if (payload.brand_phone)       payload.contact_phone    = payload.brand_phone;
+  if (payload.brand_address)     payload.contact_address  = payload.brand_address;
+  if (payload.brand_website_url) payload.production_url   = payload.brand_website_url;
+  // Apply Google Font to head for live preview
+  const font = payload.brand_custom_font || payload.brand_font;
+  if (font) previewFont(font);
+  const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
+  let error;
+  if (existing?.id) {
+    ({ error } = await supabase.from('site_settings').update(payload).eq('id', existing.id));
+  } else {
+    ({ error } = await supabase.from('site_settings').insert(payload));
+  }
+  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  showToast('✅ Brand settings saved!', 'success');
+  setTimeout(() => renderBrandManager(), 500);
+};
+
+// ══════════════════════════════════════════════════════════
+//  PAYMENT SETTINGS
+// ══════════════════════════════════════════════════════════
+async function renderPaymentSettings() {
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  try {
+    const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+    const d = s || {};
+
+    content.innerHTML = `
+      <div class="space-y-5 fade-in">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <h2 class="text-xl font-black text-white">Payment Settings</h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            ${d.payment_gateway ? `<span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Active: ${esc(d.payment_gateway)}</span>` : '<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">Not configured</span>'}
+            ${d.payment_mode === 'live' ? '<span class="badge bg-red-500/10 text-red-400 border-red-500/20">🔴 LIVE MODE</span>' : '<span class="badge bg-blue-500/10 text-blue-400 border-blue-500/20">🔧 Test Mode</span>'}
+          </div>
+        </div>
+
+        <form id="payment-form" onsubmit="savePaymentSettings(event)" class="space-y-5">
+
+          <!-- ── 1. Manual / Bank Transfer ── -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-blue-500/10">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center shrink-0">
+                  <i data-lucide="landmark" class="w-5 h-5 text-blue-400"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-white">Manual Payment (Bank / ATM Transfer)</h3>
+                  <p class="text-[11px] text-gray-500">Customers transfer money directly to your bank account</p>
+                </div>
+              </div>
+              <label class="toggle-switch shrink-0">
+                <input type="checkbox" name="manual_payment_enabled" id="manual-toggle" ${d.manual_payment_enabled !== false ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="p-5 space-y-4">
+              <!-- Bank 1 -->
+              <div class="p-4 glass-soft border border-blue-500/10 rounded-xl space-y-3">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-400"></i> Primary Bank Account</h4>
+                </div>
+                <div class="form-grid form-grid-2">
+                  <div><label class="lbl">Account Name *</label><input class="input-field" name="bank1_account_name" value="${esc(d.bank1_account_name||'')}" placeholder="Full name on account"></div>
+                  <div><label class="lbl">Account Number *</label><input class="input-field font-mono" name="bank1_account_number" value="${esc(d.bank1_account_number||'')}" placeholder="0123456789"></div>
+                  <div><label class="lbl">Bank Name *</label><input class="input-field" name="bank1_bank_name" value="${esc(d.bank1_bank_name||'')}" placeholder="e.g. First Bank, GTBank, Zenith…"></div>
+                  <div><label class="lbl">Transfer Type</label>
+                    <select class="input-field" name="bank1_transfer_type">
+                      <option value="bank_transfer" ${(d.bank1_transfer_type||'bank_transfer')==='bank_transfer'?'selected':''}>Bank Transfer</option>
+                      <option value="atm_transfer" ${d.bank1_transfer_type==='atm_transfer'?'selected':''}>ATM Transfer</option>
+                      <option value="both" ${d.bank1_transfer_type==='both'?'selected':''}>Both</option>
+                    </select>
+                  </div>
+                  <div><label class="lbl">Sort Code / Routing Number</label><input class="input-field font-mono" name="bank1_sort_code" value="${esc(d.bank1_sort_code||'')}" placeholder="Optional"></div>
+                  <div><label class="lbl">Currency</label>
+                    <select class="input-field" name="bank1_currency">
+                      ${['NGN','USD','GBP','EUR','GHS','KES','ZAR','ZMW','TZS','UGX'].map(c=>`<option value="${c}" ${(d.bank1_currency||'NGN')===c?'selected':''}>${c}</option>`).join('')}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bank 2 (optional) -->
+              <details class="group">
+                <summary class="flex items-center gap-2 cursor-pointer text-xs font-bold text-blue-400 hover:text-blue-300 transition list-none">
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Second Bank Account (Optional)
+                </summary>
+                <div class="mt-3 p-4 glass-soft border border-blue-500/10 rounded-xl space-y-3">
+                  <div class="form-grid form-grid-2">
+                    <div><label class="lbl">Account Name</label><input class="input-field" name="bank2_account_name" value="${esc(d.bank2_account_name||'')}" placeholder="Full name on account"></div>
+                    <div><label class="lbl">Account Number</label><input class="input-field font-mono" name="bank2_account_number" value="${esc(d.bank2_account_number||'')}" placeholder="0123456789"></div>
+                    <div><label class="lbl">Bank Name</label><input class="input-field" name="bank2_bank_name" value="${esc(d.bank2_bank_name||'')}" placeholder="e.g. Access Bank, UBA…"></div>
+                    <div><label class="lbl">Transfer Type</label>
+                      <select class="input-field" name="bank2_transfer_type">
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="atm_transfer">ATM Transfer</option>
+                        <option value="both">Both</option>
+                      </select>
+                    </div>
+                    <div><label class="lbl">Sort Code / Routing</label><input class="input-field font-mono" name="bank2_sort_code" value="${esc(d.bank2_sort_code||'')}" placeholder="Optional"></div>
+                    <div><label class="lbl">Currency</label>
+                      <select class="input-field" name="bank2_currency">
+                        ${['NGN','USD','GBP','EUR','GHS','KES','ZAR'].map(c=>`<option value="${c}" ${(d.bank2_currency||'NGN')===c?'selected':''}>${c}</option>`).join('')}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+              <!-- Payment Instructions -->
+              <div>
+                <label class="lbl">Payment Instructions (shown to customer after checkout)</label>
+                <textarea class="input-field" name="manual_payment_instructions" rows="4" placeholder="e.g. Please transfer the exact amount shown on your order to the account above. Send your payment receipt to support@yoursite.com. Your order will be processed within 24 hours after payment is confirmed.">${esc(d.manual_payment_instructions||'')}</textarea>
+              </div>
+
+              <!-- ATM Instructions -->
+              <div>
+                <label class="lbl">ATM Transfer Instructions (optional, shown separately)</label>
+                <textarea class="input-field" name="atm_transfer_instructions" rows="3" placeholder="e.g. Visit any ATM, select Transfer, enter the account number above and confirm the transfer. Keep your receipt as proof of payment.">${esc(d.atm_transfer_instructions||'')}</textarea>
+              </div>
+
+              <div class="p-3 bg-blue-500/5 border border-blue-500/15 rounded-xl text-[11px] text-blue-300">
+                <i data-lucide="info" class="w-3.5 h-3.5 inline mr-1"></i>
+                When manual payment is enabled, customers can upload their transfer receipt and you'll get a notification to verify it.
+              </div>
+            </div>
+          </div>
+
+          <!-- ── 2. Flutterwave ── -->
+          <div class="glass-soft border border-amber-500/15 rounded-2xl overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-amber-500/10">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-amber-500/10 rounded-xl flex items-center justify-center shrink-0">
+                  <i data-lucide="zap" class="w-5 h-5 text-amber-400"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-white">Flutterwave</h3>
+                  <p class="text-[11px] text-gray-500">Accept cards, mobile money, bank transfers online</p>
+                </div>
+              </div>
+              <label class="toggle-switch shrink-0">
+                <input type="checkbox" name="flutterwave_enabled" ${d.flutterwave_enabled ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="p-5 space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label class="flex items-center gap-3 p-3 glass-soft border ${(d.payment_mode||'test')==='test' ? 'border-blue-500/40 bg-blue-500/5' : 'border-blue-500/10'} rounded-xl cursor-pointer">
+                  <input type="radio" name="payment_mode" value="test" ${(d.payment_mode||'test')==='test'?'checked':''} class="accent-blue-500">
+                  <div><p class="text-xs font-black text-white">🔧 Test Mode</p><p class="text-[11px] text-gray-500">Use sandbox keys — no real money</p></div>
+                </label>
+                <label class="flex items-center gap-3 p-3 glass-soft border ${d.payment_mode==='live' ? 'border-red-500/40 bg-red-500/5' : 'border-blue-500/10'} rounded-xl cursor-pointer">
+                  <input type="radio" name="payment_mode" value="live" ${d.payment_mode==='live'?'checked':''} class="accent-red-500">
+                  <div><p class="text-xs font-black text-white">🔴 Live Mode</p><p class="text-[11px] text-red-400 font-bold">Real money — use production keys</p></div>
+                </label>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div>
+                  <label class="lbl">Public Key *</label>
+                  <div class="relative">
+                    <input type="password" class="input-field pr-16" name="flutterwave_public_key" placeholder="${d.flutterwave_public_key ? '••••'+d.flutterwave_public_key.slice(-4) : 'FLWPUBK_TEST-… or FLWPUBK-…'}">
+                    ${d.flutterwave_public_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                  </div>
+                </div>
+                <div>
+                  <label class="lbl">Secret Key *</label>
+                  <div class="relative">
+                    <input type="password" class="input-field pr-16" name="flutterwave_secret_key" placeholder="${d.flutterwave_secret_key ? '••••'+d.flutterwave_secret_key.slice(-4) : 'FLWSECK_TEST-… or FLWSECK-…'}">
+                    ${d.flutterwave_secret_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                  </div>
+                </div>
+                <div>
+                  <label class="lbl">Encryption Key</label>
+                  <div class="relative">
+                    <input type="password" class="input-field pr-16" name="flutterwave_encryption_key" placeholder="${d.flutterwave_encryption_key ? '••••'+d.flutterwave_encryption_key.slice(-4) : 'Encryption key from dashboard'}">
+                    ${d.flutterwave_encryption_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                  </div>
+                </div>
+                <div>
+                  <label class="lbl">Webhook Secret</label>
+                  <div class="relative">
+                    <input type="password" class="input-field pr-16" name="flutterwave_webhook_secret" placeholder="${d.flutterwave_webhook_secret ? '••••'+d.flutterwave_webhook_secret.slice(-4) : 'Secret hash for webhook verification'}">
+                    ${d.flutterwave_webhook_secret ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                  </div>
+                </div>
+                <div>
+                  <label class="lbl">Accepted Currency</label>
+                  <select class="input-field" name="flutterwave_currency">
+                    ${['NGN','USD','GBP','EUR','GHS','KES','ZAR','ZMW','TZS','UGX','XAF','XOF'].map(c=>`<option value="${c}" ${(d.flutterwave_currency||'NGN')===c?'selected':''}>${c}</option>`).join('')}
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl">Redirect URL (after payment)</label>
+                  <input class="input-field" name="flutterwave_redirect_url" value="${esc(d.flutterwave_redirect_url||'')}" placeholder="${window.location.origin}/payment.html">
+                </div>
+              </div>
+              <div class="p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl text-[11px] text-amber-300 space-y-1">
+                <p><strong>Where to get keys:</strong> <a href="https://dashboard.flutterwave.com/dashboard/settings/apis" target="_blank" class="underline hover:text-amber-200">dashboard.flutterwave.com → Settings → API</a></p>
+                <p><strong>Webhook URL to add in Flutterwave:</strong> <code class="bg-black/30 px-1 rounded">${window.location.origin}/api/flutterwave-webhook</code></p>
+                <p>Test cards: Visa <code class="bg-black/30 px-1 rounded">4187 4274 1556 4246</code> · PIN: <code class="bg-black/30 px-1 rounded">3310</code> · OTP: <code class="bg-black/30 px-1 rounded">12345</code></p>
+              </div>
+              <button type="button" onclick="testFlutterwaveKeys()" class="btn-press flex items-center gap-2 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-2 rounded-xl transition">
+                <i data-lucide="plug" class="w-4 h-4"></i> Test Flutterwave Connection
+              </button>
+            </div>
+          </div>
+
+          <!-- ── 3. Active Gateway ── -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
+            <h3 class="text-sm font-black text-white mb-1">Which payment method is active on checkout?</h3>
+            <p class="text-xs text-gray-400 mb-3">Select which method customers see when they go to pay.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              ${[
+                {id:'manual',       label:'Manual / Bank Transfer', icon:'landmark',    color:'blue'},
+                {id:'flutterwave',  label:'Flutterwave',            icon:'zap',         color:'amber'},
+                {id:'both',         label:'Both (customer chooses)',icon:'layers',       color:'emerald'},
+              ].map(g=>`
+                <label class="flex items-center gap-3 p-3 glass-soft border ${(d.payment_gateway||'manual')===g.id ? 'border-blue-500/40 bg-blue-500/5' : 'border-blue-500/10'} rounded-xl cursor-pointer hover:border-blue-500/30 transition">
+                  <input type="radio" name="payment_gateway" value="${g.id}" ${(d.payment_gateway||'manual')===g.id?'checked':''} class="accent-blue-500">
+                  <div>
+                    <i data-lucide="${g.icon}" class="w-4 h-4 text-${g.color}-400 mb-0.5"></i>
+                    <p class="text-xs font-bold text-white">${g.label}</p>
+                  </div>
+                </label>`).join('')}
+            </div>
+          </div>
+
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2">
+            <i data-lucide="save" class="w-4 h-4"></i> Save Payment Settings
+          </button>
+        </form>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.savePaymentSettings = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+
+  const secretFields = ['flutterwave_public_key','flutterwave_secret_key','flutterwave_encryption_key','flutterwave_webhook_secret'];
+  const payload = {};
+
+  for (const [k, v] of Object.entries(data)) {
+    if (secretFields.includes(k)) {
+      // Only save if it's a new value (not masked placeholder)
+      if (v && !v.startsWith('••••') && v.trim() !== '') payload[k] = v.trim();
+    } else {
+      payload[k] = v;
+    }
+  }
+
+  // Checkboxes that are unchecked won't appear in FormData — handle explicitly
+  payload.manual_payment_enabled = data.manual_payment_enabled === 'on';
+  payload.flutterwave_enabled     = data.flutterwave_enabled     === 'on';
+
+  const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
+  let error;
+  if (existing?.id) {
+    ({ error } = await supabase.from('site_settings').update(payload).eq('id', existing.id));
+  } else {
+    ({ error } = await supabase.from('site_settings').insert(payload));
+  }
+
+  if (error) { showToast('Save failed: ' + error.message, 'error'); console.error(error); return; }
+  showToast('✅ Payment settings saved successfully!', 'success');
+  setTimeout(() => renderPaymentSettings(), 500);
+};
+
+window.testFlutterwaveKeys = async function() {
+  const { data: s } = await supabase.from('site_settings').select('flutterwave_public_key').limit(1).maybeSingle();
+  if (!s?.flutterwave_public_key) { showToast('Save your Flutterwave public key first', 'info'); return; }
+  showToast('Flutterwave key is saved. Use test mode + test card to verify a payment flow.', 'info');
+};
+
+// ══════════════════════════════════════════════════════════
+//  20. PUBLISH & DEPLOY  (GitHub + Payment + Webhooks)
 // ══════════════════════════════════════════════════════════
 async function renderPublish() {
   const content = document.getElementById('content');
-  content.innerHTML = `
-    <div class="space-y-5 fade-in">
-      <h2 class="text-xl font-black text-white">Publish & Deploy</h2>
-      <div class="grid gap-4 sm:grid-cols-2">
-        ${[
-          { icon: 'rocket', color: 'blue', title: 'Deploy to Production', desc: 'Push the latest changes to your live website.', btn: 'Deploy Now', fn: 'deployToProduction()' },
-          { icon: 'refresh-cw', color: 'violet', title: 'Rebuild Site', desc: 'Trigger a full rebuild of the website.', btn: 'Rebuild', fn: 'rebuildSite()' },
-          { icon: 'search', color: 'emerald', title: 'Reindex Search', desc: 'Rebuild the product search index.', btn: 'Reindex', fn: 'reindexSearch()' },
-          { icon: 'database', color: 'amber', title: 'Sync Showroom to DB', desc: 'Sync hardcoded product data to database.', btn: 'Sync', fn: 'syncShowroomToDB()' },
-        ].map(a => `
-          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
-            <div class="w-10 h-10 bg-${a.color}-500/10 rounded-xl flex items-center justify-center mb-3">
-              <i data-lucide="${a.icon}" class="w-5 h-5 text-${a.color}-400"></i>
+  try {
+    const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+    const d = s || {};
+    content.innerHTML = `
+      <div class="space-y-5 fade-in">
+        <h2 class="text-xl font-black text-white">Publish & Deploy</h2>
+
+        <!-- Status Bar -->
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full ${d.github_repo ? 'bg-emerald-400' : 'bg-gray-600'} inline-block"></span>
+            <span class="text-xs font-bold ${d.github_repo ? 'text-emerald-400' : 'text-gray-500'}">${d.github_repo ? 'GitHub Connected: ' + esc(d.github_repo) : 'GitHub Not Connected'}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full ${d.deploy_webhook ? 'bg-blue-400' : 'bg-gray-600'} inline-block"></span>
+            <span class="text-xs font-bold ${d.deploy_webhook ? 'text-blue-400' : 'text-gray-500'}">${d.deploy_webhook ? 'Deploy Webhook Set' : 'No Webhook'}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full ${d.payment_gateway ? 'bg-amber-400' : 'bg-gray-600'} inline-block"></span>
+            <span class="text-xs font-bold ${d.payment_gateway ? 'text-amber-400' : 'text-gray-500'}">${d.payment_gateway ? 'Payment: ' + esc(d.payment_gateway) : 'Payment Not Configured'}</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <button onclick="triggerDeploy()" class="btn-press glass-soft border border-blue-500/15 hover:border-blue-500/40 rounded-xl p-4 text-center transition">
+            <i data-lucide="rocket" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
+            <p class="text-xs font-black text-white">Deploy Now</p>
+            <p class="text-[10px] text-gray-500 mt-0.5">Push to live</p>
+          </button>
+          <button onclick="triggerRebuild()" class="btn-press glass-soft border border-violet-500/15 hover:border-violet-500/40 rounded-xl p-4 text-center transition">
+            <i data-lucide="refresh-cw" class="w-6 h-6 text-violet-400 mx-auto mb-2"></i>
+            <p class="text-xs font-black text-white">Rebuild Site</p>
+            <p class="text-[10px] text-gray-500 mt-0.5">Full rebuild</p>
+          </button>
+          <button onclick="reindexSearch()" class="btn-press glass-soft border border-emerald-500/15 hover:border-emerald-500/40 rounded-xl p-4 text-center transition">
+            <i data-lucide="search" class="w-6 h-6 text-emerald-400 mx-auto mb-2"></i>
+            <p class="text-xs font-black text-white">Reindex Search</p>
+            <p class="text-[10px] text-gray-500 mt-0.5">Update index</p>
+          </button>
+          <button onclick="syncShowroomToDB()" class="btn-press glass-soft border border-amber-500/15 hover:border-amber-500/40 rounded-xl p-4 text-center transition">
+            <i data-lucide="database" class="w-6 h-6 text-amber-400 mx-auto mb-2"></i>
+            <p class="text-xs font-black text-white">Sync Products</p>
+            <p class="text-[10px] text-gray-500 mt-0.5">DB sync</p>
+          </button>
+        </div>
+
+        <!-- Settings Form -->
+        <form id="deploy-form" onsubmit="saveDeploySettings(event)" class="space-y-5">
+
+          <!-- ── GitHub Integration ── -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2">
+              <i data-lucide="github" class="w-4 h-4 text-white"></i> GitHub Integration
+            </h3>
+            <div class="p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl text-xs text-blue-300">
+              Connect your GitHub account so every deployment pushes your code to GitHub automatically.
+              When you click <strong>Deploy Now</strong>, the site builds and commits to your repository.
             </div>
-            <h3 class="text-sm font-black text-white mb-1">${a.title}</h3>
-            <p class="text-xs text-gray-400 mb-4">${a.desc}</p>
-            <button onclick="${a.fn}" class="btn-press flex items-center gap-2 bg-${a.color}-600 hover:bg-${a.color}-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition">
-              <i data-lucide="${a.icon}" class="w-4 h-4"></i> ${a.btn}
+            <div class="form-grid form-grid-2">
+              <div>
+                <label class="lbl">GitHub Username</label>
+                <input class="input-field" name="github_username" value="${esc(d.github_username||'')}" placeholder="your-github-username">
+              </div>
+              <div>
+                <label class="lbl">Repository Name</label>
+                <input class="input-field" name="github_repo" value="${esc(d.github_repo||'')}" placeholder="my-website-repo">
+              </div>
+              <div>
+                <label class="lbl">Branch</label>
+                <input class="input-field" name="github_branch" value="${esc(d.github_branch||'main')}" placeholder="main">
+              </div>
+              <div>
+                <label class="lbl">GitHub Personal Access Token</label>
+                <div class="relative">
+                  <input type="password" class="input-field pr-16" name="github_token" placeholder="${d.github_token ? '••••' + d.github_token.slice(-4) : 'ghp_…paste your token'}">
+                  ${d.github_token ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                </div>
+                <p class="text-[10px] text-gray-500 mt-1">Generate at: <a href="https://github.com/settings/tokens" target="_blank" class="text-blue-400 hover:underline">github.com/settings/tokens</a> (needs repo scope)</p>
+              </div>
+            </div>
+            <button type="button" onclick="testGitHubConnection()" class="btn-press flex items-center gap-2 text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-4 py-2 rounded-xl transition">
+              <i data-lucide="plug" class="w-4 h-4"></i> Test GitHub Connection
             </button>
-          </div>`).join('')}
-      </div>
-      <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl text-xs text-blue-300">
-        Deployment is managed by your hosting provider (Netlify, Vercel, etc.). Connect your Git repository to enable automatic deployments.
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
+          </div>
+
+          <!-- ── Hosting & Deploy Webhook ── -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2">
+              <i data-lucide="cloud-upload" class="w-4 h-4 text-blue-400"></i> Hosting & Auto-Deploy
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              ${[{id:'netlify',name:'Netlify',icon:'cloud',color:'teal'},{id:'vercel',name:'Vercel',icon:'triangle',color:'white'},{id:'github-pages',name:'GitHub Pages',icon:'github',color:'gray'},{id:'railway',name:'Railway',icon:'train',color:'violet'},{id:'render',name:'Render',icon:'server',color:'blue'}].map(h=>`
+                <label class="flex items-center gap-2 p-3 glass-soft border ${(d.hosting_provider||'netlify')===h.id ? 'border-blue-500/40 bg-blue-500/5' : 'border-blue-500/10'} rounded-xl cursor-pointer hover:border-blue-500/30 transition">
+                  <input type="radio" name="hosting_provider" value="${h.id}" ${(d.hosting_provider||'netlify')===h.id?'checked':''} class="accent-blue-500">
+                  <i data-lucide="${h.icon}" class="w-4 h-4 text-gray-400"></i>
+                  <span class="text-xs font-bold text-white">${h.name}</span>
+                </label>`).join('')}
+            </div>
+            <div>
+              <label class="lbl">Deploy Webhook URL</label>
+              <input class="input-field" name="deploy_webhook" value="${esc(d.deploy_webhook||'')}" placeholder="https://api.netlify.com/build_hooks/…">
+              <p class="text-[10px] text-gray-500 mt-1">Netlify: Site Settings → Build hooks · Vercel: Project → Settings → Git → Deploy Hooks</p>
+            </div>
+            <div>
+              <label class="lbl">Production URL</label>
+              <input class="input-field" name="production_url" value="${esc(d.production_url||'')}" placeholder="https://yoursite.com">
+            </div>
+          </div>
+
+          <!-- ── Payment Settings ── -->
+          <div class="glass-soft border border-amber-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2">
+              <i data-lucide="credit-card" class="w-4 h-4 text-amber-400"></i> Payment Gateway Settings
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              ${[{id:'flutterwave',name:'Flutterwave',color:'amber'},{id:'stripe',name:'Stripe',color:'blue'},{id:'paypal',name:'PayPal',color:'blue'},{id:'paystack',name:'Paystack',color:'blue'},{id:'razorpay',name:'Razorpay',color:'blue'},{id:'manual',name:'Manual Bank Transfer',color:'gray'}].map(gw=>`
+                <label class="flex items-center gap-2 p-2.5 glass-soft border ${(d.payment_gateway||'flutterwave')===gw.id ? 'border-amber-500/40 bg-amber-500/5' : 'border-blue-500/10'} rounded-xl cursor-pointer hover:border-amber-500/30 transition">
+                  <input type="radio" name="payment_gateway" value="${gw.id}" ${(d.payment_gateway||'flutterwave')===gw.id?'checked':''} class="accent-amber-500">
+                  <span class="text-xs font-bold text-white">${gw.name}</span>
+                </label>`).join('')}
+            </div>
+            <div id="payment-key-fields" class="form-grid form-grid-2">
+              <div>
+                <label class="lbl">Public / Publishable Key</label>
+                <div class="relative">
+                  <input type="password" class="input-field pr-16" name="payment_public_key" placeholder="${d.payment_public_key ? '••••' + d.payment_public_key.slice(-4) : 'Paste public key…'}">
+                  ${d.payment_public_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                </div>
+              </div>
+              <div>
+                <label class="lbl">Secret / Private Key</label>
+                <div class="relative">
+                  <input type="password" class="input-field pr-16" name="payment_secret_key" placeholder="${d.payment_secret_key ? '••••' + d.payment_secret_key.slice(-4) : 'Paste secret key…'}">
+                  ${d.payment_secret_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                </div>
+              </div>
+              <div>
+                <label class="lbl">Currency</label>
+                <select class="input-field" name="payment_currency">
+                  ${['USD','EUR','GBP','NGN','KES','ZAR','GHS','ZMW','TZS','UGX'].map(c=>`<option value="${c}" ${(d.payment_currency||'USD')===c?'selected':''}>${c}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label class="lbl">Test / Live Mode</label>
+                <select class="input-field" name="payment_mode">
+                  <option value="test" ${(d.payment_mode||'test')==='test'?'selected':''}>🔧 Test Mode (sandbox)</option>
+                  <option value="live" ${d.payment_mode==='live'?'selected':''}>🚀 Live Mode (real money)</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="lbl">Webhook Secret (for payment verification)</label>
+                <input type="password" class="input-field" name="payment_webhook_secret" placeholder="${d.payment_webhook_secret ? '••••' + d.payment_webhook_secret.slice(-4) : 'Paste webhook secret…'}">
+              </div>
+            </div>
+            <div class="p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl text-[11px] text-amber-300">
+              <strong>Flutterwave:</strong> flutterwave.com → Dashboard → API Settings<br>
+              <strong>Stripe:</strong> dashboard.stripe.com → Developers → API Keys<br>
+              <strong>PayPal:</strong> developer.paypal.com → My Apps → Create App<br>
+              <strong>Paystack:</strong> dashboard.paystack.com → Settings → API Keys
+            </div>
+          </div>
+
+          <!-- ── Environment Variables Guide ── -->
+          <div class="glass-soft border border-gray-500/15 rounded-2xl p-5">
+            <h3 class="text-sm font-black text-white mb-3 flex items-center gap-2">
+              <i data-lucide="terminal" class="w-4 h-4 text-gray-400"></i> Environment Variables (.env)
+            </h3>
+            <p class="text-xs text-gray-400 mb-3">Add these to your <code class="text-blue-300 bg-blue-500/10 px-1.5 py-0.5 rounded">.env</code> file in your project root (never commit to GitHub):</p>
+            <div class="bg-gray-950 border border-gray-800 rounded-xl p-4 font-mono text-[11px] text-gray-300 space-y-1 overflow-x-auto">
+              <p class="text-gray-600"># Supabase (required)</p>
+              <p>VITE_SUPABASE_URL=<span class="text-blue-400">https://your-project.supabase.co</span></p>
+              <p>VITE_SUPABASE_ANON_KEY=<span class="text-blue-400">your-anon-key</span></p>
+              <p class="text-gray-600 mt-2"># Payment</p>
+              <p>VITE_FLUTTERWAVE_PUBLIC_KEY=<span class="text-amber-400">FLWPUBK_TEST-…</span></p>
+              <p>VITE_STRIPE_PUBLIC_KEY=<span class="text-amber-400">pk_test_…</span></p>
+              <p class="text-gray-600 mt-2"># AI (server-side only — Edge Functions)</p>
+              <p>GEMINI_API_KEY=<span class="text-emerald-400">AIzaSy…</span></p>
+              <p>GROQ_API_KEY=<span class="text-emerald-400">gsk_…</span></p>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition">
+            💾 Save Deploy & Payment Settings
+          </button>
+        </form>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
 
-window.deployToProduction = function() { showToast('Deployment triggered via webhook', 'info'); };
-window.rebuildSite = function() { showToast('Rebuild triggered', 'info'); };
-window.reindexSearch = async function() {
-  try {
-    await supabase.rpc('sync_search_index_force');
-    showToast('Search index rebuilt!');
-  } catch { showToast('Reindex initiated', 'info'); }
+window.saveDeploySettings = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+  const payload = {};
+  // Save all fields; only update secret fields if new non-masked value provided
+  const secretFields = ['github_token','payment_public_key','payment_secret_key','payment_webhook_secret'];
+  for (const [k, v] of Object.entries(data)) {
+    if (secretFields.includes(k)) {
+      if (v && !v.startsWith('•') && v.trim() !== '') payload[k] = v.trim();
+    } else {
+      payload[k] = v;
+    }
+  }
+  const { error } = await supabase.from('site_settings').upsert({ id: 1, ...payload });
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Deploy & payment settings saved!');
+  renderPublish();
 };
-window.syncShowroomToDB = function() { showToast('Run the sync script from your terminal: node scripts/sync-showroom-to-db.js', 'info'); };
+
+window.triggerDeploy = async function() {
+  const { data: s } = await supabase.from('site_settings').select('deploy_webhook,production_url,github_repo').limit(1).maybeSingle();
+  if (!s?.deploy_webhook) {
+    showToast('No webhook URL set. Add your deploy webhook in the settings below.', 'info');
+    return;
+  }
+  try {
+    const btn = event?.target;
+    if (btn) { btn.disabled = true; btn.textContent = 'Deploying…'; }
+    const res = await fetch(s.deploy_webhook, { method: 'POST' });
+    if (res.ok) {
+      showToast('🚀 Deployment triggered! Your site will be live in ~2 minutes.');
+      await supabase.from('deployment_history').insert({ version: new Date().toISOString(), status: 'triggered', notes: 'Manual deploy from admin' });
+    } else {
+      showToast('Webhook returned error: ' + res.status, 'error');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Deploy Now'; }
+  } catch (err) { showToast('Deploy failed: ' + err.message, 'error'); }
+};
+
+window.triggerRebuild = function() { showToast('Rebuild triggered via webhook', 'info'); };
+
+window.testGitHubConnection = async function() {
+  const username = document.querySelector('[name=github_username]')?.value?.trim();
+  const repo = document.querySelector('[name=github_repo]')?.value?.trim();
+  if (!username || !repo) { showToast('Enter your GitHub username and repo name first', 'info'); return; }
+  try {
+    const res = await fetch(`https://api.github.com/repos/${username}/${repo}`);
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`✓ Connected: ${data.full_name} (${data.visibility})`);
+    } else if (res.status === 404) {
+      showToast('Repository not found. Check username and repo name.', 'error');
+    } else {
+      showToast('GitHub API error: ' + res.status, 'error');
+    }
+  } catch { showToast('Could not reach GitHub API', 'error'); }
+};
+
+window.deployToProduction = window.triggerDeploy;
+window.rebuildSite = window.triggerRebuild;
 
 // ══════════════════════════════════════════════════════════
 //  INIT

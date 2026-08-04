@@ -83,18 +83,31 @@
 
   <!-- ══════ LOGIN SCREEN ══════ -->
   <div id="login-screen">
-    <div class="login-card slide-up">
-      <div class="flex items-center gap-3 mb-7">
-        <div class="w-11 h-11 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
-          <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+    <div class="login-card slide-up" style="max-width:420px">
+
+      <!-- Header (shared) -->
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-11 h-11 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30 shrink-0">
+          <i data-lucide="shield-check" id="login-header-icon" class="w-5 h-5 text-white"></i>
         </div>
         <div>
-          <h1 class="text-lg font-black text-white">Admin Access</h1>
+          <h1 id="login-header-title" class="text-lg font-black text-white leading-tight">Admin Access</h1>
           <p class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">KCO Global Online Marketplace</p>
         </div>
       </div>
-      <div id="login-error" class="hidden mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium"></div>
-      <!-- Login form -->
+
+      <!-- Error banner -->
+      <div id="login-error" class="hidden mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-start gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+        <span id="login-error-text"></span>
+      </div>
+      <!-- Success banner -->
+      <div id="login-success" class="hidden mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium flex items-start gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+        <span id="login-success-text"></span>
+      </div>
+
+      <!-- ── STEP 1: Email + Password ── -->
       <form id="login-form" class="space-y-4" autocomplete="on">
         <div>
           <label class="lbl">Email Address</label>
@@ -104,7 +117,7 @@
           <label class="lbl">Password</label>
           <div class="relative">
             <input id="login-password" type="password" class="input-field pr-10" placeholder="••••••••" autocomplete="current-password" required>
-            <button type="button" id="toggle-pw" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition">
+            <button type="button" id="toggle-pw" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition" tabindex="-1">
               <i data-lucide="eye" class="w-4 h-4"></i>
             </button>
           </div>
@@ -112,7 +125,7 @@
         <div class="flex items-center justify-between">
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" id="remember-me" class="w-3.5 h-3.5 accent-blue-500">
-            <span class="text-xs text-gray-400">Remember me</span>
+            <span class="text-xs text-gray-400">Remember me for 30 days</span>
           </label>
           <button type="button" id="forgot-pw-btn" class="text-xs text-blue-400 hover:text-blue-300 font-medium transition">Forgot password?</button>
         </div>
@@ -120,16 +133,53 @@
           <i data-lucide="log-in" class="w-4 h-4"></i> Sign In
         </button>
       </form>
-      <!-- Forgot password form -->
+
+      <!-- ── STEP 2: 2FA Verification ── -->
+      <div id="twofa-form" class="hidden space-y-5">
+        <div class="p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl flex items-start gap-3">
+          <i data-lucide="smartphone" class="w-4 h-4 text-blue-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-blue-300">Open your authenticator app and enter the 6-digit code shown for this account.</p>
+        </div>
+        <div>
+          <label class="lbl">6-Digit Authentication Code</label>
+          <input id="totp-code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                 class="input-field text-center text-2xl font-black tracking-[0.5em] py-3"
+                 placeholder="000000" autocomplete="one-time-code">
+        </div>
+        <button id="verify-2fa-btn" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4"></i> Verify & Sign In
+        </button>
+        <div class="flex items-center justify-between">
+          <button id="use-backup-btn" class="text-xs text-gray-400 hover:text-gray-200 transition">Use backup code instead</button>
+          <button id="cancel-2fa-btn" class="text-xs text-red-400 hover:text-red-300 transition">← Cancel login</button>
+        </div>
+        <!-- Backup code input (hidden by default) -->
+        <div id="backup-code-wrap" class="hidden space-y-3">
+          <label class="lbl">Backup Recovery Code</label>
+          <input id="backup-code" type="text" class="input-field font-mono tracking-widest" placeholder="XXXX-XXXX-XXXX">
+          <button id="verify-backup-btn" class="btn-press w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-xl text-sm transition">Use Backup Code</button>
+        </div>
+      </div>
+
+      <!-- ── Forgot Password ── -->
       <div id="forgot-form" class="hidden space-y-4">
-        <p class="text-xs text-gray-400">Enter your email address and we'll send a password reset link.</p>
+        <p class="text-xs text-gray-400 leading-relaxed">Enter your admin email. We'll send a secure password reset link valid for 1 hour.</p>
         <div>
           <label class="lbl">Email Address</label>
-          <input id="reset-email" type="email" class="input-field" placeholder="admin@example.com">
+          <input id="reset-email" type="email" class="input-field" placeholder="admin@example.com" autocomplete="email">
         </div>
-        <button id="send-reset-btn" class="btn-press w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-sm transition">Send Reset Link</button>
+        <button id="send-reset-btn" class="btn-press w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+          <i data-lucide="mail" class="w-4 h-4"></i> Send Reset Link
+        </button>
         <button id="back-to-login" class="w-full text-xs text-gray-400 hover:text-gray-300 py-1 transition">← Back to login</button>
       </div>
+
+      <!-- ── Session lock indicator ── -->
+      <div id="lockout-notice" class="hidden mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+        <i data-lucide="lock" class="w-4 h-4 shrink-0"></i>
+        <span id="lockout-text">Account temporarily locked.</span>
+      </div>
+
     </div>
   </div>
 
