@@ -184,6 +184,7 @@ function render(listing) {
   const isProperty = listing.listing_type === 'property';
   const price = formatPrice(listing);
   const flag = flagEmoji(listing.country_code);
+  const idLabel = listing.listing_type === 'product' ? 'Product ID' : isProperty ? 'Property ID' : 'Listing ID';
 
   const imgs2 = safeImages(listing.images);
   const galleryThumbs = imgs2.map((img, i) =>
@@ -210,16 +211,6 @@ function render(listing) {
               <div><div class="text-gray-500 text-xs">${item.label}</div><div class="text-gray-200 font-medium">${item.value}</div></div>
             </div>
           `).join('')}
-        </div>
-        <div id="listing-map" class="mt-4 rounded-xl overflow-hidden border border-gray-800" style="height:280px"></div>
-      </div>`;
-  } else if (listing.listing_type === 'vehicle' || listing.listing_type === 'product') {
-    locationBlock = `
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Location</h3>
-        <div class="flex items-center gap-2.5 text-sm">
-          <div class="p-2 bg-gray-800 rounded-lg"><i data-lucide="map-pin" class="w-4 h-4 text-orange-500"></i></div>
-          <div><div class="text-gray-500 text-xs">Location</div><div class="text-gray-200 font-medium">${listing.city || listing.state || listing.country || '—'}${listing.country ? ', ' + listing.country : ''}</div></div>
         </div>
         <div id="listing-map" class="mt-4 rounded-xl overflow-hidden border border-gray-800" style="height:280px"></div>
       </div>`;
@@ -282,10 +273,13 @@ function render(listing) {
   } else if (listing.listing_type === 'product') {
     const specs = [
       { icon: 'factory', label: 'Brand', value: listing.brand },
+      { icon: 'tag', label: 'Subcategory', value: listing.subcategory },
       { icon: 'palette', label: 'Colour', value: listing.color },
       { icon: 'ruler', label: 'Size', value: listing.size },
       { icon: 'layers', label: 'Material', value: listing.material },
-      { icon: 'tag', label: 'Status', value: 'New' },
+      { icon: 'badge-check', label: 'Condition', value: listing.condition || 'New' },
+      { icon: 'shield-check', label: 'Warranty', value: listing.warranty },
+      { icon: 'package-check', label: 'Availability', value: listing.availability_status },
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = `
       <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
@@ -306,6 +300,14 @@ function render(listing) {
       <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Features & Amenities</h3>
       <div class="flex flex-wrap gap-2">
         ${listing.features.map(f => `<span class="text-xs bg-gray-800 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700">${escapeHtml(f)}</span>`).join('')}
+      </div>
+    </div>` : '';
+
+  const highlightsBlock = listing.highlights?.length ? `
+    <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
+      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Highlights</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        ${listing.highlights.map(item => `<div class="flex items-start gap-2 text-sm text-gray-300"><i data-lucide="sparkles" class="w-4 h-4 text-orange-500 mt-0.5"></i><span>${escapeHtml(item)}</span></div>`).join('')}
       </div>
     </div>` : '';
 
@@ -331,7 +333,7 @@ function render(listing) {
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
         <div>
           <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">Property ID: <span class="text-orange-500 font-mono font-bold">${escapeHtml(listing.property_id)}</span></p>
+          <p class="text-gray-500 text-sm mt-1">${idLabel}: <span class="text-orange-500 font-mono font-bold">${escapeHtml(listing.property_id)}</span></p>
         </div>
         <div class="text-right shrink-0">
           <div class="text-3xl font-black text-orange-500">${price}</div>
@@ -366,6 +368,7 @@ function render(listing) {
       ${locationBlock}
       ${specsBlock}
       ${featuresBlock}
+      ${highlightsBlock}
 
       <div id="reviews-section" class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
         <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Customer Reviews</h3>

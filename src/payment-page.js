@@ -1,10 +1,15 @@
-import { SHOWROOM_LISTINGS, formatPrice, flagEmoji } from './showroom-data.js';
+import { findListingById, formatPrice, flagEmoji, loadDBListings } from './showroom-data.js';
 import { getCurrentUser } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
 import { detectCurrency, getCountryByCode, SUPPORTED_CURRENCIES } from './country-data.js';
+import { buildFallbackNotice, getManualPaymentAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
 
 const FALLBACK_IMG = '/fallback.svg';
+let paymentSettings = null;
+let manualPaymentAccounts = [];
+let manualPaymentInstructions = '';
+let autoDetectedCurrency = '';
 
 /* ── Bank account details per currency ─────────────────────── */
 const BANK_ACCOUNTS = {
@@ -194,6 +199,14 @@ function showToast(msg) {
   if (window.lucide) lucide.createIcons();
 }
 
+function getResolvedPayment(countryCode, selectedCurrency) {
+  const result = resolveAccountForCountry(manualPaymentAccounts, countryCode, selectedCurrency);
+  return {
+    ...result,
+    fallbackNotice: result.isFallback ? buildFallbackNotice(result.account, countryCode, selectedCurrency, manualPaymentInstructions) : null,
+  };
+}
+
 /* ── Particles ────────────────────────────────────────────── */
 function spawnParticles() {
   const container = document.getElementById('particles');
@@ -239,7 +252,7 @@ function renderOrderSummary(listing, cover, isProperty) {
 }
 
 /* ── Render: Bank account card ─────────────────────────────── */
-function renderBankAccount(account) {
+function renderBankAccount(account, fallbackNotice, instructions) {
   const fields = [
     { label: 'Country', value: account.country },
     { label: 'Bank Name', value: account.bankName },
@@ -263,6 +276,7 @@ function renderBankAccount(account) {
 
   return `
     <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 slide-up">
+      ${fallbackNotice ? `<div class="mb-4 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl text-sm text-amber-200">${fallbackNotice.message}</div>` : ''}
       <div class="flex items-center gap-3 mb-5">
         <div class="p-2.5 bg-blue-500/10 rounded-lg"><i data-lucide="landmark" class="w-5 h-5 text-blue-400"></i></div>
         <div class="flex-1">
@@ -289,34 +303,31 @@ function renderBankAccount(account) {
       <button onclick='copyAllDetails(${JSON.stringify(copyFields).replace(/'/g, "&#39;")})' class="btn-press w-full mt-4 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold py-2.5 rounded-xl uppercase text-xs tracking-wider transition flex items-center justify-center gap-2 relative overflow-hidden">
         <i data-lucide="copy-check" class="w-4 h-4"></i> Copy All Account Details
       </button>
+      <div class="mt-4 p-3 bg-blue-950/40 border border-blue-500/10 rounded-xl text-xs text-gray-300 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
     </div>
   `;
 }
 
 /* ── Render: Unsupported currency message ─────────────────── */
-function renderUnsupportedCurrency() {
-  const usdAccount = BANK_ACCOUNTS.USD;
+function renderUnsupportedCurrency(notice) {
   return `
     <div class="glass border border-amber-500/30 rounded-2xl p-5 mb-5 slide-up">
       <div class="flex items-start gap-3 mb-4">
         <div class="p-2.5 bg-amber-500/10 rounded-lg shrink-0"><i data-lucide="info" class="w-5 h-5 text-amber-400"></i></div>
         <div class="text-sm text-gray-300 leading-relaxed">
           <p class="font-bold text-amber-400 mb-2">Hello Customer,</p>
-          <p class="mb-2">Your local currency is not currently supported by our Manual Bank Transfer system.</p>
-          <p class="mb-2">Please complete your payment using our official United States Dollar (USD) bank account.</p>
-          <p class="mb-2">Your bank will automatically convert your local currency into USD during the international transfer.</p>
-          <p class="mb-2">After completing your payment, please upload your payment receipt for verification.</p>
+          <p class="mb-2">${notice?.message || 'Your local currency is not currently supported by our Manual Bank Transfer system.'}</p>
           <p class="font-bold text-amber-400">Thank you for choosing KCO Global Online Marketplace.</p>
         </div>
       </div>
     </div>
-    ${renderBankAccount(usdAccount)}
+    ${renderBankAccount(notice.account, null, notice.instructions)}
   `;
 }
 
 /* ── Render: Currency selector ─────────────────────────────── */
 function renderCurrencySelector(selectedCurrency, countryName, countryCode) {
-  const currencies = SUPPORTED_CURRENCIES;
+  const currencies = getSupportedCurrenciesFromAccounts(manualPaymentAccounts);
   const country = countryCode ? getCountryByCode(countryCode) : null;
   return `
     <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 slide-up">
@@ -329,7 +340,7 @@ function renderCurrencySelector(selectedCurrency, countryName, countryCode) {
       </div>
       <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
         ${currencies.map(c => {
-          const acc = BANK_ACCOUNTS[c];
+          const acc = manualPaymentAccounts.find(account => account.currency === c);
           const active = c === selectedCurrency;
           return `
             <button onclick="selectCurrency('${c}')" class="btn-press flex flex-col items-center gap-1 p-3 rounded-xl border transition relative overflow-hidden ${active ? 'bg-blue-500/15 border-blue-500/50 text-blue-400 pulse-glow' : 'bg-blue-950/40 border-blue-500/10 text-gray-400 hover:border-blue-500/30 hover:text-white'}">
@@ -665,7 +676,11 @@ async function init() {
   if (!user && !isGuest) { window.location.href = '/'; return; }
 
   const id = getListingId();
-  const listing = SHOWROOM_LISTINGS.find(l => l.property_id === id);
+  let listing = findListingById(id);
+  if (!listing) {
+    await loadDBListings();
+    listing = findListingById(id);
+  }
   if (!listing) {
     root.innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>';
     return;
@@ -690,8 +705,14 @@ async function init() {
   const urlOrderNumber = new URLSearchParams(window.location.search).get('order');
   const orderNumber = urlOrderNumber || generateOrderNumber();
   const baseAmount = listing.price;
+  paymentSettings = await loadPaymentSettings();
+  manualPaymentAccounts = getManualPaymentAccounts(paymentSettings);
+  manualPaymentInstructions = getPaymentInstructions(paymentSettings);
 
-  let selectedCurrency = detectedCurrency || 'USD';
+  autoDetectedCurrency = detectedCurrency || '';
+  let selectedCurrency = autoDetectedCurrency || 'USD';
+  if (!getSupportedCurrenciesFromAccounts(manualPaymentAccounts).includes(selectedCurrency)) selectedCurrency = 'USD';
+  const resolved = getResolvedPayment(countryCode, autoDetectedCurrency || '');
 
   root.innerHTML = `
     <div class="fade-in">
@@ -710,7 +731,7 @@ async function init() {
 
       <div id="currency-selector-container">${renderCurrencySelector(selectedCurrency, countryName, countryCode)}</div>
 
-      <div id="bank-account-container">${selectedCurrency && BANK_ACCOUNTS[selectedCurrency] ? renderBankAccount(BANK_ACCOUNTS[selectedCurrency]) : renderUnsupportedCurrency()}</div>
+      <div id="bank-account-container">${resolved.isFallback ? renderUnsupportedCurrency(resolved.fallbackNotice) : renderBankAccount(resolved.account, null, manualPaymentInstructions)}</div>
 
       <div id="upload-form-container">${renderUploadForm(orderNumber, listing, baseAmount, selectedCurrency, isGuest)}</div>
 
@@ -748,11 +769,8 @@ function attachEventHandlers(listing, baseAmount, orderNumber, user, isGuest) {
 
   window.selectCurrency = (currency) => {
     const container = document.getElementById('bank-account-container');
-    if (BANK_ACCOUNTS[currency]) {
-      container.innerHTML = renderBankAccount(BANK_ACCOUNTS[currency]);
-    } else {
-      container.innerHTML = renderUnsupportedCurrency();
-    }
+    const next = getResolvedPayment(countryCode, currency);
+    container.innerHTML = next.isFallback ? renderUnsupportedCurrency(next.fallbackNotice) : renderBankAccount(next.account, null, manualPaymentInstructions);
     document.querySelectorAll('#currency-selector-container button').forEach(btn => {
       if (btn.getAttribute('onclick')?.includes(`'${currency}'`)) {
         btn.className = btn.className.replace('bg-blue-950/40 border-blue-500/10 text-gray-400 hover:border-blue-500/30 hover:text-white', 'bg-blue-500/15 border-blue-500/50 text-blue-400 pulse-glow');

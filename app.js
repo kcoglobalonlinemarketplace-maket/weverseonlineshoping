@@ -390,6 +390,116 @@ let currentSlide = 0, carouselTimer = null, currentLang = "en", currentCountry =
 let voiceRecognition = null, isListening = false;
 let liveAdSlides = [];
 let activeCarouselSlides = CAROUSEL_SLIDES;
+let aiAdOverride = null;
+let aiAdOverlayEl = null;
+let aiAdEndTimer = null;
+
+function isAiAdOverrideActive() {
+  if (!aiAdOverride || !aiAdOverride.videoUrl) return false;
+  if (!aiAdOverride.endsAt) return true;
+  return new Date(aiAdOverride.endsAt).getTime() > Date.now();
+}
+
+function clearAiAdEndTimer() {
+  if (aiAdEndTimer) {
+    clearTimeout(aiAdEndTimer);
+    aiAdEndTimer = null;
+  }
+}
+
+function scheduleAiAdEndTimer() {
+  clearAiAdEndTimer();
+  if (!aiAdOverride?.endsAt) return;
+  const remainingMs = new Date(aiAdOverride.endsAt).getTime() - Date.now();
+  if (remainingMs <= 0) {
+    clearAiAdOverridePlayback('expired');
+    return;
+  }
+  aiAdEndTimer = setTimeout(() => {
+    clearAiAdOverridePlayback('expired');
+  }, remainingMs + 50);
+}
+
+function unmountAiAdOverlay() {
+  if (aiAdOverlayEl && aiAdOverlayEl.parentNode) aiAdOverlayEl.parentNode.removeChild(aiAdOverlayEl);
+  aiAdOverlayEl = null;
+}
+
+function mountAiAdOverlay() {
+  if (!isAiAdOverrideActive()) {
+    unmountAiAdOverlay();
+    return;
+  }
+  const hero = document.getElementById('hero-carousel');
+  if (!hero) return;
+
+  if (!aiAdOverlayEl) {
+    aiAdOverlayEl = document.createElement('div');
+    aiAdOverlayEl.id = 'ai-ad-override-layer';
+    aiAdOverlayEl.className = 'absolute inset-0 z-40';
+    aiAdOverlayEl.style.background = 'rgba(0, 0, 0, 0.88)';
+    hero.appendChild(aiAdOverlayEl);
+  }
+
+  const badge = aiAdOverride.badge || 'AI Advertisement';
+  const title = aiAdOverride.title || 'AI Marketing Studio Campaign';
+  const ctaLabel = aiAdOverride.ctaLabel || 'Shop Now';
+  aiAdOverlayEl.innerHTML =
+    '<video id="ai-ad-override-video" class="w-full h-full object-cover" playsinline webkit-playsinline ' +
+      (aiAdOverride.muted !== false ? 'muted ' : '') +
+      'autoplay preload="auto">' +
+      '<source src="' + aiAdOverride.videoUrl + '" type="video/mp4">' +
+    '</video>' +
+    '<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent pointer-events-none"></div>' +
+    '<div class="absolute inset-x-0 bottom-0 z-10 p-6 sm:p-10 text-center">' +
+      '<span class="inline-block bg-violet-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2">' + badge + '</span>' +
+      '<h2 class="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-3 drop-shadow-2xl">' + title + '</h2>' +
+      '<button class="bg-orange-500 text-white font-bold px-6 py-2.5 rounded-lg text-xs tracking-wider uppercase shadow-lg shadow-orange-500/30">' + ctaLabel + '</button>' +
+    '</div>';
+
+  const video = document.getElementById('ai-ad-override-video');
+  if (!video) return;
+  video.currentTime = 0;
+  video.play().catch(() => {});
+  const clearOnEnd = () => {
+    clearAiAdOverridePlayback('finished');
+  };
+  video.addEventListener('ended', clearOnEnd, { once: true });
+  video.addEventListener('error', clearOnEnd, { once: true });
+}
+
+function clearAiAdOverridePlayback(reason) {
+  clearAiAdEndTimer();
+  aiAdOverride = null;
+  unmountAiAdOverlay();
+  playActiveVideo();
+  resetCarouselTimer();
+  if (window._ackAiAdOverrideComplete) {
+    window._ackAiAdOverrideComplete(reason || 'finished');
+  }
+}
+
+function applyAiAdOverride(payload) {
+  aiAdOverride = payload && payload.videoUrl ? payload : null;
+  if (isAiAdOverrideActive()) {
+    scheduleAiAdEndTimer();
+    clearInterval(carouselTimer);
+    carouselTimer = null;
+    document.querySelectorAll('.carousel-slide video').forEach((v) => v.pause());
+    document.querySelectorAll('.carousel-slide .ad-slideshow').forEach((s) => {
+      if (s._timer) {
+        clearInterval(s._timer);
+        s._timer = null;
+      }
+    });
+    mountAiAdOverlay();
+  } else {
+    clearAiAdEndTimer();
+    unmountAiAdOverlay();
+    playActiveVideo();
+    resetCarouselTimer();
+  }
+}
 
 function mergeLiveAds(){
   const seen=new Set();
@@ -713,6 +823,10 @@ window.addEventListener('live-ads-updated', (e) => {
   renderCarousel();
 });
 
+window.addEventListener('ai-ad-override-updated', (e) => {
+  applyAiAdOverride(e.detail || null);
+});
+
 function initLiveAds(){
   if(window._loadLiveAds){
     window._loadLiveAds().then(slides => { liveAdSlides=slides||[]; mergeLiveAds(); renderCarousel(); });
@@ -728,6 +842,7 @@ function updateBadgeLanguage(){
 }
 
 function goToSlide(idx){
+  if (isAiAdOverrideActive()) return;
   const slides=document.querySelectorAll(".carousel-slide");
   slides.forEach(s=>{s.classList.remove("active-slide");s.classList.add("hidden-slide")});
   const sl=document.getElementById("slide-"+idx);
@@ -743,6 +858,10 @@ function retriggerLiveBadge(){
 }
 
 function playActiveVideo(){
+  if (isAiAdOverrideActive()) {
+    mountAiAdOverlay();
+    return;
+  }
   // Pause hidden videos
   const others=document.querySelectorAll(".carousel-slide.hidden-slide video");
   others.forEach(v=>{v.pause()});
@@ -794,8 +913,12 @@ function preloadNextVideo(){
 function nextSlide(){goToSlide((currentSlide+1)%activeCarouselSlides.length)}
 function prevSlide(){goToSlide((currentSlide-1+activeCarouselSlides.length)%activeCarouselSlides.length)}
 
-function startCarouselTimer(){carouselTimer=setInterval(()=>nextSlide(),10000)}
+function startCarouselTimer(){
+  if (isAiAdOverrideActive()) return;
+  carouselTimer=setInterval(()=>nextSlide(),10000)
+}
 function resetCarouselTimer(){
+  if (isAiAdOverrideActive()) return;
   clearInterval(carouselTimer);
   startCarouselTimer();
 }

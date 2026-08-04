@@ -19,4 +19,4 @@ Disallow: /checkout.html
 Disallow: /payment
 Disallow: /payment.html
 
-Sitemap: https://kcoglobalonlinemarket.com/sitemap.xml
+Sitemap: https://weverseonlineshop.com/sitemap.xml

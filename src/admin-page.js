@@ -1,10 +1,18 @@
 import { supabase } from './supabase-client.js';
+import { COUNTRIES } from './country-data.js';
+import { ALL_CURRENCIES } from './localization.js';
+import { GLOBAL_PRICE_MAX, GLOBAL_PRICE_MIN, buildCatalogDraft, getDefaultCurrencyForCountry, getTemplatesForCategory } from './global-product-catalog.js';
+import { getLocalShowroomListingById, listLocalShowroomListings, patchLocalShowroomListing, upsertLocalShowroomListing } from './local-showroom-store.js';
+import { LIVE_STREAM_PLATFORM_DEFS, VIDEO_CALL_PROVIDER_DEFS, loadLiveControlAdminState, loadPublicLiveState, saveLiveControlAdminState, savePublicLiveState } from './live-control-store.js';
+import { getFlagEmojiFromCountryCode, getManualPaymentAccounts, getPaymentInstructions, loadPaymentSettingsCache, savePaymentSettingsCache } from './payment-settings.js';
 
 // ══════════════════════════════════════════════════════════
 //  KCO ADMIN DASHBOARD  —  Complete Management Console
 // ══════════════════════════════════════════════════════════
 
 const ADMIN_EMAIL = 'weverseonlineshop@gmail.com';
+const ADMIN_RESET_REDIRECT_URL = 'https://weverseonlineshop.com/admin.html';
+const AI_AD_LOCAL_FALLBACK_KEY = 'kco_ai_ad_override_fallback_v1';
 
 // ── Navigation config ──────────────────────────────────────
 const NAV = [
@@ -19,10 +27,13 @@ const NAV = [
     { id: 'coupons',     label: 'Coupons',            icon: 'ticket' },
     { id: 'ads',         label: 'Advertisements',     icon: 'megaphone' },
     { id: 'notifications', label: 'Notifications',    icon: 'bell' },
+    { id: 'live-streaming', label: 'Live Streaming',  icon: 'radio' },
+    { id: 'video-calls', label: 'Video Calls',        icon: 'video' },
   ]},
   { group: 'Configuration', items: [
     { id: 'payment-settings', label: 'Payment Settings',  icon: 'credit-card' },
     { id: 'ai-settings', label: 'AI Settings',        icon: 'bot' },
+    { id: 'ai-marketing', label: 'AI Marketing Studio', icon: 'sparkles' },
     { id: 'brand',        label: 'Brand Manager',      icon: 'palette' },
     { id: 'content',     label: 'Content Manager',    icon: 'file-text' },
     { id: 'seo',         label: 'SEO Manager',        icon: 'search' },
@@ -40,13 +51,16 @@ const PAGE_TITLES = {
   dashboard: 'Dashboard', products: 'Products Manager', properties: 'Properties Manager',
   orders: 'Orders Manager', customers: 'Customers Manager', reviews: 'Reviews Manager',
   messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement Manager',
-  notifications: 'Notifications', 'ai-settings': 'AI Settings', content: 'Content Manager',
+  notifications: 'Notifications', 'live-streaming': 'Live Streaming Manager', 'video-calls': 'Video Call Manager', 'ai-settings': 'AI Settings', content: 'Content Manager',
+  'ai-marketing': 'AI Marketing Studio',
   brand: 'Brand Manager',
   'payment-settings': 'Payment Settings',
   seo: 'SEO Manager', email: 'Email Settings', analytics: 'Analytics',
   security: 'Security', activity: 'Activity Logs', backup: 'Backup & Restore',
   settings: 'Settings', publish: 'Publish & Deploy',
 };
+
+const SORTED_CURRENCIES = [...ALL_CURRENCIES].sort();
 
 // ── State ──────────────────────────────────────────────────
 let state = { user: null, section: 'dashboard' };
@@ -151,7 +165,8 @@ window.navigate = function(section) {
     dashboard: renderDashboard, products: renderProducts, properties: renderProperties,
     orders: renderOrders, customers: renderCustomers, reviews: renderReviews,
     messages: renderMessages, coupons: renderCoupons, ads: renderAds,
-    notifications: renderNotifications, 'ai-settings': renderAiSettings,
+    notifications: renderNotifications, 'live-streaming': renderLiveStreamingManager, 'video-calls': renderVideoCallManager, 'ai-settings': renderAiSettings,
+    'ai-marketing': renderAiMarketingStudio,
     content: renderContent, seo: renderSeo, email: renderEmail,
     analytics: renderAnalytics, security: renderSecurity, activity: renderActivity,
     brand: renderBrandManager,
@@ -207,6 +222,49 @@ function loginSuccess(msg) {
 function clearLoginMessages() {
   document.getElementById('login-error')?.classList.add('hidden');
   document.getElementById('login-success')?.classList.add('hidden');
+}
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function sanitizeAdminRememberedEmail() {
+  try {
+    const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || '{}');
+    if (remembered?.email && normalizeEmail(remembered.email) !== ADMIN_EMAIL) {
+      localStorage.removeItem(REMEMBER_KEY);
+    }
+  } catch {
+    localStorage.removeItem(REMEMBER_KEY);
+  }
+}
+
+function enforceAdminEmailInputs() {
+  sanitizeAdminRememberedEmail();
+
+  const loginInput = document.getElementById('login-email');
+  if (loginInput) {
+    loginInput.value = ADMIN_EMAIL;
+    loginInput.setAttribute('readonly', 'readonly');
+  }
+
+  const resetInput = document.getElementById('reset-email');
+  if (resetInput) {
+    resetInput.value = ADMIN_EMAIL;
+    resetInput.setAttribute('readonly', 'readonly');
+  }
+}
+
+function redirectLocalAdminToCanonicalHost() {
+  const host = String(window.location.hostname || '').toLowerCase();
+  const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  if (!isLocalHost) return false;
+
+  const target = new URL(ADMIN_RESET_REDIRECT_URL);
+  target.search = window.location.search;
+  target.hash = window.location.hash;
+  window.location.replace(target.toString());
+  return true;
 }
 
 function setLoginStep(step) {
@@ -279,28 +337,13 @@ async function getClientIP() {
 // ── Admin access check — tries 3 ways, most to least reliable ─
 async function checkAdminAccess(user) {
   if (!user) return false;
-
-  // 1. Email always grants access (most reliable for single-owner shops)
-  if (user.email === ADMIN_EMAIL) return true;
-
-  // 2. Check profiles.is_admin column
-  try {
-    const { data: profile } = await supabase
-      .from('profiles').select('is_admin').eq('user_id', user.id).maybeSingle();
-    if (profile?.is_admin === true) return true;
-  } catch {}
-
-  // 3. Try the RPC as last resort
-  try {
-    const { data } = await supabase.rpc('is_current_user_admin');
-    if (data) return true;
-  } catch {}
-
-  return false;
+  return normalizeEmail(user.email) === ADMIN_EMAIL;
 }
 
 // ── Init auth (called on page load) ──────────────────────
 async function initAuth() {
+  if (redirectLocalAdminToCanonicalHost()) return;
+
   // Handle password reset callback (user clicked email link)
   const hash = window.location.hash;
   if (hash.includes('type=recovery') || hash.includes('access_token')) {
@@ -344,6 +387,7 @@ function showLoginScreenOnly() {
 function showLoginUI() {
   showLoginScreenOnly();
   setLoginStep('login');
+  enforceAdminEmailInputs();
   setupLoginFormListeners();
   setupForgotListeners();
   setup2FAVerifyListeners();
@@ -382,15 +426,30 @@ async function handleLoginSubmit(e) {
   const mins = checkLockout();
   if (mins) { loginError(`Account locked. Try again in ${mins} minute${mins > 1 ? 's' : ''}.`); return; }
 
-  const email = document.getElementById('login-email').value.trim();
+  const emailInput = document.getElementById('login-email');
+  const email = normalizeEmail(emailInput?.value);
+  if (email !== ADMIN_EMAIL) {
+    if (emailInput) emailInput.value = ADMIN_EMAIL;
+    localStorage.removeItem(REMEMBER_KEY);
+    loginError(`Only ${ADMIN_EMAIL} can access this admin dashboard.`);
+    setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
+    return;
+  }
   const password = document.getElementById('login-password').value;
   const remember = document.getElementById('remember-me')?.checked;
   setLoginBusy('login-btn', true);
   clearLoginMessages();
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password });
 
   if (error || !data.user) {
+    const raw = String(error?.message || '').toLowerCase();
+    if (raw.includes('email not confirmed')) {
+      loginError('Your admin email is not confirmed yet. Open your verification email and confirm first.');
+      setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
+      return;
+    }
+
     const s = recordFailedAttempt();
     const remaining = MAX_ATTEMPTS - s.count;
     const msg = s.lockedUntil
@@ -413,7 +472,7 @@ async function handleLoginSubmit(e) {
 
   // Save remember-me preference
   if (remember) {
-    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, ts: Date.now() }));
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email: ADMIN_EMAIL, ts: Date.now() }));
   } else {
     localStorage.removeItem(REMEMBER_KEY);
   }
@@ -529,16 +588,17 @@ function setupForgotListeners() {
 }
 
 async function handleForgotPassword() {
-  const email = document.getElementById('reset-email')?.value?.trim();
-  if (!email) { loginError('Enter your email address.'); return; }
+  const resetInput = document.getElementById('reset-email');
+  if (resetInput) resetInput.value = ADMIN_EMAIL;
+  const email = ADMIN_EMAIL;
   setLoginBusy('send-reset-btn', true);
   clearLoginMessages();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/admin.html',
+    redirectTo: ADMIN_RESET_REDIRECT_URL,
   });
   setLoginBusy('send-reset-btn', false, '<i data-lucide="mail" class="w-4 h-4 inline mr-1"></i> Send Reset Link');
   if (error) { loginError(error.message); return; }
-  loginSuccess('Reset link sent! Check your inbox (and spam folder). Link expires in 1 hour.');
+  loginSuccess('Reset link sent! Check your inbox. The link opens your production admin page.');
 }
 
 // ── Password reset flow (after clicking email link) ───────
@@ -589,12 +649,7 @@ function showAdminUI() {
   if (ls) ls.style.display = 'none';
   const emailEl = document.getElementById('admin-user-email');
   if (emailEl && state.user) emailEl.textContent = state.user.email || 'Admin';
-  // Restore remembered email for next time
-  const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || '{}');
-  if (remembered.email) {
-    const inp = document.getElementById('login-email');
-    if (inp) { inp.value = remembered.email; document.getElementById('remember-me').checked = true; }
-  }
+  enforceAdminEmailInputs();
   navigate('dashboard');
 }
 
@@ -605,6 +660,7 @@ window.adminSignOut = async function() {
   state.user = null;
   showLoginScreenOnly();
   setLoginStep('login');
+  enforceAdminEmailInputs();
   setupLoginFormListeners();
   setupForgotListeners();
 };
@@ -756,8 +812,11 @@ const PRODUCT_CATEGORIES = [
   'Sports & Fitness', 'Food & Groceries', 'Baby & Kids', 'Health & Medical',
   'Books & Education', 'Office & Stationery', 'Pet Supplies', 'Musical Instruments',
   'Cameras & Photography', 'Watches', 'Gaming', 'Software & Digital', 'Services',
+  'Cars', 'Luxury Cars', 'Motorcycles', 'Commercial Vehicles', 'Boats & Marine',
   'Social Media Accounts', 'Other',
 ];
+
+const AUTOMOTIVE_CATEGORIES = ['Cars', 'Luxury Cars', 'Motorcycles', 'Commercial Vehicles', 'Boats & Marine'];
 
 const CAT_FIELDS = {
   default: [
@@ -886,6 +945,144 @@ const CAT_FIELDS = {
   { key: 'description', label: 'Description', type: 'textarea', span: 2 },
 ]);
 
+AUTOMOTIVE_CATEGORIES.forEach(k => CAT_FIELDS[k] = [
+  { key: 'title', label: 'Vehicle Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text', required: true },
+  { key: 'model', label: 'Model', type: 'text', required: true },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'size', label: 'Body / Trim', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'], required: true },
+  { key: 'price', label: 'Price', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'warranty', label: 'Warranty', type: 'text' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+]);
+
+function renderCountryOptions(selectedCode = '') {
+  return COUNTRIES.map(country => `<option value="${country.code}" ${selectedCode === country.code ? 'selected' : ''}>${country.flag} ${country.name}</option>`).join('');
+}
+
+function renderCurrencyOptions(selectedCurrency = 'USD') {
+  return SORTED_CURRENCIES.map(currency => `<option value="${currency}" ${selectedCurrency === currency ? 'selected' : ''}>${currency}</option>`).join('');
+}
+
+function normalizeCommaList(value) {
+  return String(value || '').split(',').map(item => item.trim()).filter(Boolean);
+}
+
+function setFieldValue(name, value) {
+  const field = document.querySelector(`[name="${name}"]`);
+  if (!field || value == null) return;
+  field.value = value;
+}
+
+function configurePriceField(fieldId) {
+  const priceField = document.getElementById(fieldId);
+  if (!priceField) return;
+  priceField.min = String(GLOBAL_PRICE_MIN);
+  priceField.max = String(GLOBAL_PRICE_MAX);
+  priceField.placeholder = `Price (${GLOBAL_PRICE_MIN} - ${GLOBAL_PRICE_MAX})`;
+}
+
+function syncCountryAndCurrency(prefix) {
+  const codeField = document.getElementById(`${prefix}-country_code`);
+  const countryField = document.getElementById(`${prefix}-country`);
+  const currencyField = document.getElementById(`${prefix}-currency`);
+  if (!codeField) return;
+  const selected = COUNTRIES.find(country => country.code === codeField.value);
+  if (countryField && selected) countryField.value = selected.name;
+  if (currencyField && selected) currencyField.value = getDefaultCurrencyForCountry(selected.code);
+}
+
+function setImageRequirement(prefix, count) {
+  const note = document.getElementById(`${prefix}-image-requirement`);
+  const target = document.getElementById(`${prefix}-required_image_count`);
+  if (target) target.value = count ? String(count) : '';
+  if (!note) return;
+  if (count > 0) {
+    note.textContent = `This listing template requires at least ${count} images.`;
+    note.classList.remove('hidden');
+  } else {
+    note.textContent = '';
+    note.classList.add('hidden');
+  }
+}
+
+function validateImageRequirement(count, images, label) {
+  if (count > 0 && images.length < count) {
+    throw new Error(`${label} needs at least ${count} images before publishing.`);
+  }
+}
+
+function applyCatalogDraftToProductForm(category, mode = 'full') {
+  const templateId = document.getElementById('pf-catalog_template_id')?.value || '';
+  const currency = document.getElementById('pf-currency')?.value || 'USD';
+  const price = parseFloat(document.getElementById('pf-price')?.value) || GLOBAL_PRICE_MIN;
+  const draft = buildCatalogDraft({ templateId, listingType: 'product', category, countryCode: 'US', currency, price });
+  if (!draft) {
+    setImageRequirement('pf', AUTOMOTIVE_CATEGORIES.includes(category) ? 24 : 0);
+    return;
+  }
+  setImageRequirement('pf', draft.requiredImageCount || 0);
+  setFieldValue('currency', draft.currency);
+  setFieldValue('subcategory', draft.subcategory);
+  setFieldValue('features_text', draft.features.join(', '));
+  setFieldValue('highlights_text', draft.highlights.join(', '));
+  setFieldValue('seo_keywords_text', draft.seo_keywords.join(', '));
+  if (mode === 'full') {
+    setFieldValue('title', draft.title);
+    setFieldValue('description', draft.description);
+    setFieldValue('brand', draft.brand || '');
+    setFieldValue('model', draft.model || '');
+    setFieldValue('color', draft.color || '');
+    setFieldValue('size', draft.size || '');
+    setFieldValue('condition', draft.condition || 'New');
+  } else {
+    setFieldValue('description', draft.description);
+  }
+}
+
+function applyCatalogDraftToPropertyForm(mode = 'full') {
+  const templateId = document.getElementById('ppf-catalog_template_id')?.value || '';
+  const countryCode = document.getElementById('ppf-country_code')?.value || 'US';
+  const currency = document.getElementById('ppf-currency')?.value || 'USD';
+  const price = parseFloat(document.getElementById('ppf-price')?.value) || GLOBAL_PRICE_MIN;
+  const draft = buildCatalogDraft({ templateId, listingType: 'property', category: 'Real Estate', countryCode, currency, price });
+  if (!draft) {
+    setImageRequirement('ppf', 24);
+    return;
+  }
+  setImageRequirement('ppf', draft.requiredImageCount || 24);
+  setFieldValue('country', draft.country);
+  setFieldValue('country_code', draft.country_code);
+  setFieldValue('currency', draft.currency);
+  setFieldValue('subcategory', draft.subcategory);
+  setFieldValue('product_location', draft.product_location);
+  setFieldValue('features_text', draft.features.join(', '));
+  setFieldValue('highlights_text', draft.highlights.join(', '));
+  setFieldValue('seo_keywords_text', draft.seo_keywords.join(', '));
+  if (mode === 'full') {
+    setFieldValue('title', draft.title);
+    setFieldValue('description', draft.description);
+    setFieldValue('property_type', draft.property_type || '');
+    setFieldValue('bedrooms', draft.bedrooms ?? '');
+    setFieldValue('bathrooms', draft.bathrooms ?? '');
+    setFieldValue('building_size', draft.building_size || '');
+    setFieldValue('land_size', draft.land_size || '');
+    setFieldValue('furnished', draft.furnished || '');
+  } else {
+    setFieldValue('description', draft.description);
+  }
+}
+
+window.applyProductCatalogTemplate = function(category, mode = 'full') {
+  applyCatalogDraftToProductForm(category, mode);
+};
+
+window.applyPropertyCatalogTemplate = function(mode = 'full') {
+  applyCatalogDraftToPropertyForm(mode);
+};
+
 function getProductFields(category) {
   return CAT_FIELDS[category] || CAT_FIELDS.default;
 }
@@ -919,8 +1116,7 @@ async function renderProducts() {
   try {
     const { data: products, error } = await supabase.from('showroom_listings')
       .select('*').neq('listing_type', 'property').order('created_at', { ascending: false });
-    if (error) throw error;
-    const items = products || [];
+    const items = error ? listLocalShowroomListings().filter(item => item.listing_type !== 'property') : (products || []);
     content.innerHTML = `
       <div class="space-y-4 fade-in">
         <div class="flex flex-wrap items-center gap-3">
@@ -1073,6 +1269,8 @@ window.showAddProductStep1 = function() {
 
 window.showAddProductStep2 = function(category, existingData = {}) {
   const isEdit = !!existingData.property_id;
+  const productTemplates = getTemplatesForCategory('product', category);
+  const selectedCurrency = existingData.currency || 'USD';
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box wide">
@@ -1087,9 +1285,32 @@ window.showAddProductStep2 = function(category, existingData = {}) {
         </div>
 
         <form id="product-form" onsubmit="saveProduct(event,'${esc(category)}','${isEdit ? existingData.property_id : ''}')" class="space-y-4">
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-bold text-white uppercase tracking-wide">Global Catalog Autofill</p>
+                <p class="text-[11px] text-gray-500 mt-1">Pick a template, country, and currency to auto-build the listing title, description, and metadata.</p>
+              </div>
+              <button type="button" onclick="applyProductCatalogTemplate('${esc(category)}')" class="btn-press px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded-xl transition">Refresh Template</button>
+            </div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Catalog Template</label><select class="input-field" name="catalog_template_id" id="pf-catalog_template_id" onchange="applyProductCatalogTemplate('${esc(category)}')"><option value="">Choose a template...</option>${productTemplates.map(template => `<option value="${template.id}">${esc(template.label)} - ${esc(template.subcategory || template.category)}</option>`).join('')}</select></div>
+              <div class="sm:col-span-2"><label class="lbl">Currency</label><select class="input-field" name="currency" id="pf-currency" onchange="applyProductCatalogTemplate('${esc(category)}')">${renderCurrencyOptions(selectedCurrency)}</select></div>
+            </div>
+            <p id="pf-image-requirement" class="hidden text-[11px] text-amber-300"></p>
+            <input type="hidden" name="required_image_count" id="pf-required_image_count" value="">
+          </div>
+
           <!-- Dynamic Fields -->
           <div class="form-grid form-grid-2">
             ${renderProductFieldsForm(category, existingData)}
+          </div>
+
+          <div class="form-grid form-grid-2">
+            <div class="sm:col-span-2"><label class="lbl">Subcategory</label><input class="input-field" name="subcategory" value="${esc(existingData.subcategory || '')}" placeholder="e.g. Smartphones, SUVs, Model Houses"></div>
+            <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existingData.features || []).join(', '))}" placeholder="5G connectivity, OLED display, fast charging"></div>
+            <div class="sm:col-span-2"><label class="lbl">Highlights (comma separated)</label><input class="input-field" name="highlights_text" value="${esc((existingData.highlights || []).join(', '))}" placeholder="Retail-ready packaging, premium demand, strong presentation"></div>
+            <div class="sm:col-span-2"><label class="lbl">SEO Keywords (comma separated)</label><input class="input-field" name="seo_keywords_text" value="${esc((existingData.seo_keywords || []).join(', '))}" placeholder="smartphone, unlocked, global shipping"></div>
           </div>
 
           <!-- Tags / Badges -->
@@ -1112,11 +1333,9 @@ window.showAddProductStep2 = function(category, existingData = {}) {
                 ${['In Stock', 'Out of Stock', 'Pre-order', 'Limited Stock'].map(s => `<option value="${s}" ${existingData.availability_status === s ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
             </div>
-            <div>
-              <label class="lbl">Currency</label>
-              <select class="input-field" name="currency" id="pf-currency">
-                ${['USD', 'EUR', 'GBP', 'NGN', 'KES', 'ZAR', 'GHS'].map(c => `<option value="${c}" ${(existingData.currency || 'USD') === c ? 'selected' : ''}>${c}</option>`).join('')}
-              </select>
+            <div class="p-3 glass-soft border border-blue-500/15 rounded-xl">
+              <p class="text-xs font-bold text-white">Global Price Range</p>
+              <p class="text-[11px] text-gray-500 mt-1">Allowed price range is ${GLOBAL_PRICE_MIN} to ${GLOBAL_PRICE_MAX} in the selected currency.</p>
             </div>
           </div>
 
@@ -1156,7 +1375,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
               ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
             </div>
-            <p class="text-[10px] text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover</p>
+            <p class="text-[10px] text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover • Vehicle templates require 24 images</p>
             <div id="image-url-inputs">
               ${(existingData.images || []).map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}
             </div>
@@ -1175,6 +1394,9 @@ window.showAddProductStep2 = function(category, existingData = {}) {
     </div>`);
   setupDropZone();
   setupImageSortable();
+  configurePriceField('pf-price');
+  applyCatalogDraftToProductForm(category, 'pricing');
+  document.getElementById('pf-price')?.addEventListener('input', () => applyCatalogDraftToProductForm(category, 'pricing'));
 };
 
 function imageThumbHtml(url, i) {
@@ -1291,15 +1513,22 @@ window.saveProduct = async function(e, category, existingId) {
         data[k] = v;
       }
     }
+    const requiredImageCount = parseInt(data.required_image_count || '0', 10) || (AUTOMOTIVE_CATEGORIES.includes(category) ? 24 : 0);
+    validateImageRequirement(requiredImageCount, data.images || [], 'This listing');
     const isDraft = formData.get('action') === 'draft';
     const payload = {
       listing_type: 'product',
       category,
+      subcategory: data.subcategory || null,
       title: data.title || 'Untitled Product',
       description: data.description || '',
-      price: parseFloat(data.price) || 0,
+      price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.price) || 0)),
       currency: data.currency || 'USD',
       country: '', country_code: '', listing_status: 'sale',
+      state: '', city: '',
+      product_location: '',
+      latitude: null,
+      longitude: null,
       is_active: isDraft ? false : data.is_active === 'on',
       is_featured: data.is_featured === 'on',
       brand: data.brand || null,
@@ -1310,8 +1539,12 @@ window.saveProduct = async function(e, category, existingId) {
       availability_status: data.availability_status || 'In Stock',
       stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
       images: data.images || [],
-      features: data.tags || [],
+      features: normalizeCommaList(data.features_text).length ? normalizeCommaList(data.features_text) : (data.tags || []),
       tags: data.tags || [],
+      highlights: normalizeCommaList(data.highlights_text),
+      seo_keywords: normalizeCommaList(data.seo_keywords_text),
+      is_ai_generated: !!data.catalog_template_id,
+      ai_generated_fields: data.catalog_template_id ? ['title', 'description', 'features', 'highlights', 'seo_keywords'] : [],
       specifications: {
         model: data.model || null, storage: data.storage || null, ram: data.ram || null,
         processor: data.processor || null, display: data.display || null,
@@ -1322,12 +1555,14 @@ window.saveProduct = async function(e, category, existingId) {
     let err;
     if (existingId) {
       ({ error: err } = await supabase.from('showroom_listings').update(payload).eq('property_id', existingId));
+      if (err) upsertLocalShowroomListing({ ...payload, property_id: existingId });
     } else {
       const pid = genId();
       payload.property_id = pid;
       ({ error: err } = await supabase.from('showroom_listings').insert(payload));
+      if (err) upsertLocalShowroomListing(payload);
     }
-    if (err) throw err;
+    if (err && !/showroom_listings/i.test(err.message || '')) throw err;
     showToast(isDraft ? 'Draft saved!' : existingId ? 'Product updated!' : 'Product published!');
     closeModal();
     renderProducts();
@@ -1338,9 +1573,10 @@ window.saveProduct = async function(e, category, existingId) {
 };
 
 window.editProduct = async function(pid) {
-  const { data } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
-  if (!data) return showToast('Product not found', 'error');
-  showAddProductStep2(data.category || 'Other', data);
+  const { data, error } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
+  const resolved = error ? getLocalShowroomListingById(pid) : data;
+  if (!resolved) return showToast('Product not found', 'error');
+  showAddProductStep2(resolved.category || 'Other', resolved);
 };
 
 window.toggleProductActive = async function(pid, active) {
@@ -1375,8 +1611,8 @@ const PROP_STATUSES = ['sale', 'rent'];
 async function renderProperties() {
   const content = document.getElementById('content');
   try {
-    const { data: props } = await supabase.from('showroom_listings').select('*').eq('listing_type', 'property').order('created_at', { ascending: false });
-    const items = props || [];
+    const { data: props, error } = await supabase.from('showroom_listings').select('*').eq('listing_type', 'property').order('created_at', { ascending: false });
+    const items = error ? listLocalShowroomListings().filter(item => item.listing_type === 'property') : (props || []);
     content.innerHTML = `
       <div class="space-y-4 fade-in">
         <div class="flex flex-wrap items-center gap-3">
@@ -1423,6 +1659,9 @@ async function renderProperties() {
 
 window.showAddPropertyModal = function(existing = {}) {
   const isEdit = !!existing.property_id;
+  const propertyTemplates = getTemplatesForCategory('property', 'Real Estate');
+  const selectedCountryCode = existing.country_code || 'US';
+  const selectedCurrency = existing.currency || getDefaultCurrencyForCountry(selectedCountryCode);
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box wide">
@@ -1431,6 +1670,23 @@ window.showAddPropertyModal = function(existing = {}) {
           <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
         <form id="property-form" onsubmit="saveProperty(event,'${isEdit ? existing.property_id : ''}')" class="space-y-4">
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-bold text-white uppercase tracking-wide">Property Catalog Autofill</p>
+                <p class="text-[11px] text-gray-500 mt-1">Choose a property template and country to generate a global real-estate listing with map-ready fields.</p>
+              </div>
+              <button type="button" onclick="applyPropertyCatalogTemplate()" class="btn-press px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded-xl transition">Refresh Template</button>
+            </div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Property Template</label><select class="input-field" name="catalog_template_id" id="ppf-catalog_template_id" onchange="applyPropertyCatalogTemplate()"><option value="">Choose a property template...</option>${propertyTemplates.map(template => `<option value="${template.id}">${esc(template.label)} - ${esc(template.propertyType || template.subcategory)}</option>`).join('')}</select></div>
+              <div><label class="lbl">Country</label><select class="input-field" name="country_code" id="ppf-country_code" onchange="syncPropertyCountry(); applyPropertyCatalogTemplate()">${renderCountryOptions(selectedCountryCode)}</select></div>
+              <div><label class="lbl">Currency</label><select class="input-field" name="currency" id="ppf-currency" onchange="applyPropertyCatalogTemplate()">${renderCurrencyOptions(selectedCurrency)}</select></div>
+            </div>
+            <p id="ppf-image-requirement" class="text-[11px] text-amber-300">This property flow expects 24 images for a complete gallery.</p>
+            <input type="hidden" name="required_image_count" id="ppf-required_image_count" value="24">
+          </div>
+
           <div class="form-grid form-grid-2">
             <div class="sm:col-span-2"><label class="lbl">Property Title *</label><input class="input-field" name="title" value="${esc(existing.title || '')}" required placeholder="e.g. Cozy 3-Bedroom Family Home"></div>
             <div><label class="lbl">Property Type *</label><select class="input-field" name="property_type" required>
@@ -1440,14 +1696,14 @@ window.showAddPropertyModal = function(existing = {}) {
               <option value="sale" ${existing.listing_status !== 'rent' ? 'selected' : ''}>For Sale</option>
               <option value="rent" ${existing.listing_status === 'rent' ? 'selected' : ''}>For Rent</option>
             </select></div>
-            <div><label class="lbl">Price (USD) *</label><input type="number" class="input-field" name="price" value="${existing.price || ''}" required placeholder="0"></div>
-            <div><label class="lbl">Currency</label><select class="input-field" name="currency">
-              ${['USD','EUR','GBP','NGN','KES','ZAR'].map(c => `<option ${(existing.currency||'USD')===c?'selected':''}>${c}</option>`).join('')}
-            </select></div>
-            <div><label class="lbl">Country *</label><input class="input-field" name="country" value="${esc(existing.country || '')}" required placeholder="United States"></div>
-            <div><label class="lbl">Country Code</label><input class="input-field" name="country_code" value="${esc(existing.country_code || '')}" placeholder="US" maxlength="2"></div>
+            <div><label class="lbl">Price *</label><input type="number" class="input-field" id="ppf-price" name="price" value="${existing.price || ''}" required placeholder="0"></div>
+            <div><label class="lbl">Country Name *</label><input class="input-field" id="ppf-country" name="country" value="${esc(existing.country || '')}" required placeholder="United States"></div>
+            <div><label class="lbl">Subcategory</label><input class="input-field" name="subcategory" value="${esc(existing.subcategory || '')}" placeholder="e.g. Villas, Mansions, Hotels"></div>
             <div><label class="lbl">State / Province</label><input class="input-field" name="state" value="${esc(existing.state || '')}" placeholder="e.g. California"></div>
             <div><label class="lbl">City</label><input class="input-field" name="city" value="${esc(existing.city || '')}" placeholder="e.g. Los Angeles"></div>
+            <div><label class="lbl">Town / Local Area</label><input class="input-field" name="town" value="${esc(existing.town || '')}" placeholder="Neighborhood or district"></div>
+            <div><label class="lbl">Latitude</label><input type="number" step="any" class="input-field" name="latitude" value="${esc(existing.latitude || '')}" placeholder="40.7128"></div>
+            <div><label class="lbl">Longitude</label><input type="number" step="any" class="input-field" name="longitude" value="${esc(existing.longitude || '')}" placeholder="-74.0060"></div>
             <div><label class="lbl">Bedrooms</label><input type="number" class="input-field" name="bedrooms" value="${existing.bedrooms ?? ''}" placeholder="3"></div>
             <div><label class="lbl">Bathrooms</label><input type="number" class="input-field" name="bathrooms" value="${existing.bathrooms ?? ''}" placeholder="2"></div>
             <div><label class="lbl">Building Size</label><input class="input-field" name="building_size" value="${esc(existing.building_size || '')}" placeholder="e.g. 2,500 sqft"></div>
@@ -1460,6 +1716,9 @@ window.showAddPropertyModal = function(existing = {}) {
             </select></div>
             <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the property…">${esc(existing.description || '')}</textarea></div>
             <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Swimming Pool, Garden, Garage…"></div>
+            <div class="sm:col-span-2"><label class="lbl">Highlights (comma separated)</label><input class="input-field" name="highlights_text" value="${esc((existing.highlights || []).join(', '))}" placeholder="Prime location, map-ready post, 24-image gallery"></div>
+            <div class="sm:col-span-2"><label class="lbl">SEO Keywords (comma separated)</label><input class="input-field" name="seo_keywords_text" value="${esc((existing.seo_keywords || []).join(', '))}" placeholder="mansion, villa, property investment"></div>
+            <div class="sm:col-span-2"><label class="lbl">Property Location</label><input class="input-field" name="product_location" value="${esc(existing.product_location || '')}" placeholder="Estate, district, city, landmark"></div>
           </div>
 
           <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
@@ -1489,6 +1748,11 @@ window.showAddPropertyModal = function(existing = {}) {
       </div>
     </div>`);
   setupDropZone(); setupImageSortable();
+  configurePriceField('ppf-price');
+  window.syncPropertyCountry = function() { syncCountryAndCurrency('ppf'); };
+  syncCountryAndCurrency('ppf');
+  applyCatalogDraftToPropertyForm('pricing');
+  document.getElementById('ppf-price')?.addEventListener('input', () => applyCatalogDraftToPropertyForm('pricing'));
 };
 
 window.saveProperty = async function(e, existingId) {
@@ -1497,36 +1761,49 @@ window.saveProperty = async function(e, existingId) {
   const data = Object.fromEntries(fd.entries());
   const images = fd.getAll('images').filter(u => u && !u.startsWith('blob:'));
   const features = (data.features_text || '').split(',').map(s => s.trim()).filter(Boolean);
+  const requiredImageCount = parseInt(data.required_image_count || '24', 10) || 24;
+  validateImageRequirement(requiredImageCount, images, 'This property');
   const payload = {
     listing_type: 'property',
     category: data.property_type || 'Real Estate',
+    subcategory: data.subcategory || null,
     title: data.title, description: data.description || '',
-    price: parseFloat(data.price) || 0, currency: data.currency || 'USD',
+    price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.price) || 0)), currency: data.currency || 'USD',
     country: data.country || '', country_code: (data.country_code || '').toUpperCase(),
-    state: data.state || '', city: data.city || '',
+    state: data.state || '', city: data.city || '', town: data.town || '',
+    product_location: data.product_location || '',
+    latitude: data.latitude ? parseFloat(data.latitude) : null,
+    longitude: data.longitude ? parseFloat(data.longitude) : null,
     property_type: data.property_type || '', listing_status: data.listing_status || 'sale',
     bedrooms: data.bedrooms ? parseInt(data.bedrooms) : null,
     bathrooms: data.bathrooms ? parseInt(data.bathrooms) : null,
     building_size: data.building_size || '', land_size: data.land_size || '',
     parking_spaces: data.parking_spaces ? parseInt(data.parking_spaces) : null,
     furnished: data.furnished || '', features, images,
+    highlights: normalizeCommaList(data.highlights_text),
+    seo_keywords: normalizeCommaList(data.seo_keywords_text),
+    is_ai_generated: !!data.catalog_template_id,
+    ai_generated_fields: data.catalog_template_id ? ['title', 'description', 'features', 'highlights', 'seo_keywords', 'country', 'country_code', 'product_location'] : [],
     is_active: data.is_active === 'on',
   };
   let err;
   if (existingId) {
     ({ error: err } = await supabase.from('showroom_listings').update(payload).eq('property_id', existingId));
+    if (err) upsertLocalShowroomListing({ ...payload, property_id: existingId });
   } else {
     payload.property_id = genId();
     ({ error: err } = await supabase.from('showroom_listings').insert(payload));
+    if (err) upsertLocalShowroomListing(payload);
   }
-  if (err) { showToast(err.message, 'error'); return; }
+  if (err && !/showroom_listings/i.test(err.message || '')) { showToast(err.message, 'error'); return; }
   showToast(existingId ? 'Property updated!' : 'Property published!');
   closeModal(); renderProperties();
 };
 
 window.editProperty = async function(pid) {
-  const { data } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
-  if (data) showAddPropertyModal(data);
+  const { data, error } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
+  const resolved = error ? getLocalShowroomListingById(pid) : data;
+  if (resolved) showAddPropertyModal(resolved);
 };
 
 // ══════════════════════════════════════════════════════════
@@ -2623,6 +2900,491 @@ window.testAiCall = async function() {
 };
 
 // ══════════════════════════════════════════════════════════
+//  12. AI MARKETING STUDIO
+// ══════════════════════════════════════════════════════════
+const AI_AD_VIDEO_PROVIDERS = [
+  { id: 'flow', name: 'Flow' },
+  { id: 'veo', name: 'Veo' },
+  { id: 'luma', name: 'Luma' },
+  { id: 'runway', name: 'Runway' },
+  { id: 'pika', name: 'Pika' },
+  { id: 'kling', name: 'Kling' },
+  { id: 'hailuo', name: 'Hailuo' },
+  { id: 'pixverse', name: 'PixVerse' },
+  { id: 'hedra', name: 'Hedra' },
+  { id: 'heygen', name: 'HeyGen' },
+  { id: 'tavus', name: 'Tavus' },
+];
+
+const AI_AD_GOALS = [
+  'Product launch',
+  'Seasonal sale',
+  'Brand awareness',
+  'Lead generation',
+  'Live stream conversion',
+  'Retargeting',
+];
+
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function getAiAdProviderConfig(savedProviders = []) {
+  const byId = new Map(toArray(savedProviders).map((p) => [p.id, p]));
+  return AI_AD_VIDEO_PROVIDERS.map((provider) => {
+    const saved = byId.get(provider.id) || {};
+    return {
+      id: provider.id,
+      name: provider.name,
+      enabled: !!saved.enabled,
+      apiKey: saved.apiKey || '',
+      model: saved.model || '',
+      baseUrl: saved.baseUrl || '',
+    };
+  });
+}
+
+async function saveAiSettingsPatch(patch) {
+  const { data: existing } = await supabase.from('ai_settings').select('id').limit(1).maybeSingle();
+  let error;
+  if (existing?.id) {
+    ({ error } = await supabase.from('ai_settings').update(patch).eq('id', existing.id));
+  } else {
+    ({ error } = await supabase.from('ai_settings').insert(patch));
+  }
+  if (error) throw error;
+}
+
+async function appendAiAdHistory(entry) {
+  const { data: current } = await supabase.from('ai_settings').select('ai_ad_generation_history').limit(1).maybeSingle();
+  const history = [entry, ...toArray(current?.ai_ad_generation_history)].slice(0, 120);
+  await saveAiSettingsPatch({ ai_ad_generation_history: history });
+}
+
+async function saveSiteSettingsPatch(patch) {
+  try {
+    const { data: existing, error: loadError } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
+    if (loadError) throw loadError;
+
+    let error;
+    if (existing?.id) {
+      ({ error } = await supabase.from('site_settings').update(patch).eq('id', existing.id));
+    } else {
+      ({ error } = await supabase.from('site_settings').insert(patch));
+    }
+    if (error) throw error;
+    return;
+  } catch {}
+
+  // Fallback path for environments where site_settings has not been migrated.
+  const meta = {
+    mode: 'ai_ad',
+    startsAt: patch.ai_ad_starts_at || null,
+    endsAt: patch.ai_ad_ends_at || null,
+    ctaLabel: patch.ai_ad_cta_label || 'Shop Now',
+    muted: patch.ai_ad_muted !== false,
+  };
+  const fallbackPayload = {
+    is_live: !!patch.ai_ad_enabled,
+    badge_text: patch.ai_ad_badge || 'AI Advertisement',
+    headline: patch.ai_ad_title || '',
+    embed_url: patch.ai_ad_video_url || '',
+    description: `AI_AD_META:${JSON.stringify(meta)}`,
+    stream_status: patch.ai_ad_enabled ? 'ai_ad' : 'offline',
+    started_at: patch.ai_ad_starts_at || null,
+    updated_at: new Date().toISOString(),
+  };
+  try {
+    const { data: fallbackExisting } = await supabase.from('public_live_state').select('id').limit(1).maybeSingle();
+    let fallbackError;
+    if (fallbackExisting?.id) {
+      ({ error: fallbackError } = await supabase.from('public_live_state').update(fallbackPayload).eq('id', fallbackExisting.id));
+    } else {
+      ({ error: fallbackError } = await supabase.from('public_live_state').insert(fallbackPayload));
+    }
+    if (!fallbackError) return;
+  } catch {}
+
+  // Last-resort local fallback so activation still works if DB schema is unavailable.
+  try {
+    localStorage.setItem(AI_AD_LOCAL_FALLBACK_KEY, JSON.stringify({
+      ai_ad_enabled: !!patch.ai_ad_enabled,
+      ai_ad_video_url: patch.ai_ad_video_url || '',
+      ai_ad_badge: patch.ai_ad_badge || 'AI Advertisement',
+      ai_ad_title: patch.ai_ad_title || '',
+      ai_ad_cta_label: patch.ai_ad_cta_label || 'Shop Now',
+      ai_ad_muted: patch.ai_ad_muted !== false,
+      ai_ad_starts_at: patch.ai_ad_starts_at || null,
+      ai_ad_ends_at: patch.ai_ad_ends_at || null,
+      ai_ad_duration_seconds: patch.ai_ad_duration_seconds || 30,
+      ai_ad_updated_at: new Date().toISOString(),
+    }));
+  } catch {}
+}
+
+function readAiMetaDescription(value) {
+  if (!value || typeof value !== 'string') return null;
+  if (!value.startsWith('AI_AD_META:')) return null;
+  try {
+    return JSON.parse(value.slice('AI_AD_META:'.length));
+  } catch {
+    return null;
+  }
+}
+
+async function loadAiMarketingSiteState() {
+  try {
+    const { data, error } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+    if (!error && data) return data;
+  } catch {}
+
+  try {
+    const { data, error } = await supabase.from('public_live_state').select('*').limit(1).maybeSingle();
+    if (error || !data) throw new Error('public_live_state unavailable');
+    const meta = readAiMetaDescription(data.description);
+    const startsAt = meta?.startsAt || data.started_at || null;
+    const endsAt = meta?.endsAt || null;
+    return {
+      ai_ad_enabled: !!data.is_live && data.stream_status === 'ai_ad' && !!data.embed_url,
+      ai_ad_video_url: data.embed_url || '',
+      ai_ad_badge: data.badge_text || 'AI Advertisement',
+      ai_ad_title: data.headline || '',
+      ai_ad_cta_label: meta?.ctaLabel || 'Shop Now',
+      ai_ad_muted: meta?.muted !== false,
+      ai_ad_starts_at: startsAt,
+      ai_ad_ends_at: endsAt,
+      ai_ad_duration_seconds: endsAt && startsAt ? Math.max(5, Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 1000)) : 30,
+    };
+  } catch {
+    try {
+      const raw = localStorage.getItem(AI_AD_LOCAL_FALLBACK_KEY);
+      const localState = raw ? JSON.parse(raw) : null;
+      return localState && typeof localState === 'object' ? localState : {};
+    } catch {
+      return {};
+    }
+  }
+}
+
+async function renderAiMarketingStudio() {
+  const content = document.getElementById('content');
+  if (!content) return;
+  try {
+    const [{ data: aiSettings }, siteSettings] = await Promise.all([
+      supabase.from('ai_settings').select('*').limit(1).maybeSingle(),
+      loadAiMarketingSiteState(),
+    ]);
+
+    const ai = aiSettings || {};
+    const site = siteSettings || {};
+    const providers = getAiAdProviderConfig(ai.ai_ad_video_providers);
+    const history = toArray(ai.ai_ad_generation_history)
+      .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+      .slice(0, 12);
+    const activeNow = !!site.ai_ad_enabled && !!site.ai_ad_video_url && (!site.ai_ad_ends_at || new Date(site.ai_ad_ends_at).getTime() > Date.now());
+
+    content.innerHTML = `
+      <div class="space-y-6 fade-in">
+        <div class="flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-xl font-black text-white">AI Marketing Studio</h2>
+            <p class="text-xs text-gray-500 mt-1">AI Advertisement Generator with live ad-slot takeover and automatic restore when campaign ends.</p>
+          </div>
+          ${activeNow
+            ? `<button onclick="deactivateAiAdvertisement()" class="btn-press bg-red-600/90 hover:bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5"><i data-lucide="square" class="w-3.5 h-3.5"></i>Stop Active AI Ad</button>`
+            : '<span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">No active AI ad</span>'}
+        </div>
+
+        <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl text-xs text-blue-200">
+          <p class="font-bold mb-1">How this works in real playback</p>
+          <p>When an AI campaign is active, the homepage pauses normal carousel ads, plays the AI video, and resumes normal ads after finish or end-time. Video generation happens through your configured providers and keys.</p>
+        </div>
+
+        <form id="ai-ad-provider-form" onsubmit="saveAiAdProviders(event)" class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="key-round" class="w-4 h-4 text-blue-400"></i>API Management</h3>
+            <button type="submit" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">Save Provider Keys</button>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            ${providers.map((p) => `
+              <div class="glass-soft border border-blue-500/10 rounded-xl p-3 space-y-2">
+                <div class="flex items-center justify-between">
+                  <p class="text-xs font-bold text-white">${esc(p.name)}</p>
+                  <label class="flex items-center gap-1.5 text-[11px] text-gray-400">
+                    <input type="checkbox" name="provider_${p.id}_enabled" ${p.enabled ? 'checked' : ''}>
+                    Enabled
+                  </label>
+                </div>
+                <div>
+                  <label class="lbl">API Key</label>
+                  <input type="password" class="input-field text-xs" name="provider_${p.id}_api_key" placeholder="${p.apiKey ? 'Saved key - leave blank to keep' : 'Paste API key'}">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label class="lbl">Model</label>
+                    <input type="text" class="input-field text-xs" name="provider_${p.id}_model" value="${esc(p.model)}" placeholder="Optional model name">
+                  </div>
+                  <div>
+                    <label class="lbl">Base URL</label>
+                    <input type="url" class="input-field text-xs" name="provider_${p.id}_base_url" value="${esc(p.baseUrl)}" placeholder="Optional custom API URL">
+                  </div>
+                </div>
+              </div>`).join('')}
+          </div>
+        </form>
+
+        <form id="ai-ad-generator-form" onsubmit="activateAiAdvertisement(event)" class="glass-soft border border-violet-500/20 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="clapperboard" class="w-4 h-4 text-violet-400"></i>AI Advertisement Generator</h3>
+            <button type="button" onclick="generateAiAdScript()" class="btn-press bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">Generate Script with AI</button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div>
+              <label class="lbl">Campaign Goal</label>
+              <select id="ai-ad-goal" class="input-field text-xs" name="goal">
+                ${AI_AD_GOALS.map((goal) => `<option value="${esc(goal)}">${esc(goal)}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Provider Used for Video</label>
+              <select id="ai-ad-provider" class="input-field text-xs" name="provider_id">
+                ${providers.map((p) => `<option value="${p.id}" ${p.enabled ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="lbl">Offer / Brief</label>
+            <textarea id="ai-ad-brief" class="input-field text-xs" name="brief" rows="3" placeholder="Describe product, offer, target audience, and style."></textarea>
+          </div>
+
+          <div>
+            <label class="lbl">Generated Script</label>
+            <textarea id="ai-ad-script" class="input-field text-xs" name="script" rows="6" placeholder="Click Generate Script with AI, then edit if needed.">${esc(history[0]?.script || '')}</textarea>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div>
+              <label class="lbl">AI Video URL</label>
+              <input id="ai-ad-video-url" type="url" class="input-field text-xs" name="video_url" placeholder="https://...mp4" value="${esc(activeNow ? site.ai_ad_video_url || '' : '')}" required>
+            </div>
+            <div>
+              <label class="lbl">Playback Duration (seconds)</label>
+              <input id="ai-ad-duration" type="number" class="input-field text-xs" name="duration_seconds" min="5" max="900" value="${esc(String(site.ai_ad_duration_seconds || 30))}" required>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div>
+              <label class="lbl">Badge</label>
+              <input id="ai-ad-badge" type="text" class="input-field text-xs" name="badge" value="${esc(site.ai_ad_badge || 'AI Advertisement')}" placeholder="AI Advertisement">
+            </div>
+            <div>
+              <label class="lbl">Headline</label>
+              <input id="ai-ad-title" type="text" class="input-field text-xs" name="title" value="${esc(site.ai_ad_title || '')}" placeholder="Campaign headline">
+            </div>
+            <div>
+              <label class="lbl">CTA Label</label>
+              <input id="ai-ad-cta" type="text" class="input-field text-xs" name="cta_label" value="${esc(site.ai_ad_cta_label || 'Shop Now')}" placeholder="Shop Now">
+            </div>
+          </div>
+
+          <label class="flex items-center gap-2 text-xs text-gray-400">
+            <input type="checkbox" name="muted" ${site.ai_ad_muted !== false ? 'checked' : ''}>
+            Play AI ad muted (recommended for autoplay)
+          </label>
+
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-bold py-3 rounded-xl text-sm transition">Activate AI Advertisement</button>
+        </form>
+
+        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+          <div class="p-4 border-b border-blue-500/10 flex items-center justify-between">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-blue-400"></i>Recent AI Ad Jobs</h3>
+            <span class="text-xs text-gray-500">${history.length} entries</span>
+          </div>
+          <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full dt">
+              <thead><tr><th>Time</th><th>Goal</th><th>Provider</th><th>Status</th><th>Video</th></tr></thead>
+              <tbody>
+                ${history.length === 0
+                  ? '<tr><td colspan="5" class="text-center text-gray-500 py-8">No AI ad jobs yet.</td></tr>'
+                  : history.map((job) => `
+                    <tr>
+                      <td><span class="text-xs text-gray-400">${esc(fmtDT(job.created_at))}</span></td>
+                      <td><span class="text-xs text-white">${esc(job.goal || 'General')}</span></td>
+                      <td><span class="text-xs text-gray-300">${esc(job.provider_name || job.provider_id || 'N/A')}</span></td>
+                      <td>${badge(job.status || 'active')}</td>
+                      <td>${job.video_url ? `<a href="${job.video_url}" target="_blank" rel="noopener" class="text-xs text-blue-400 hover:underline">Open</a>` : '<span class="text-xs text-gray-600">N/A</span>'}</td>
+                    </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) {
+    content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`;
+  }
+}
+
+window.saveAiAdProviders = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+  try {
+    const { data: current } = await supabase.from('ai_settings').select('ai_ad_video_providers').limit(1).maybeSingle();
+    const existing = getAiAdProviderConfig(current?.ai_ad_video_providers);
+    const existingMap = new Map(existing.map((p) => [p.id, p]));
+    const providers = AI_AD_VIDEO_PROVIDERS.map((provider) => {
+      const id = provider.id;
+      const prev = existingMap.get(id) || {};
+      const typedKey = String(data[`provider_${id}_api_key`] || '').trim();
+      return {
+        id,
+        name: provider.name,
+        enabled: fd.get(`provider_${id}_enabled`) === 'on',
+        apiKey: typedKey || prev.apiKey || '',
+        model: String(data[`provider_${id}_model`] || '').trim(),
+        baseUrl: String(data[`provider_${id}_base_url`] || '').trim(),
+      };
+    });
+
+    await saveAiSettingsPatch({ ai_ad_video_providers: providers });
+    showToast('AI advertisement provider settings saved.', 'success');
+    renderAiMarketingStudio();
+  } catch (err) {
+    showToast('Failed to save providers: ' + err.message, 'error');
+  }
+};
+
+window.generateAiAdScript = async function() {
+  const brief = document.getElementById('ai-ad-brief')?.value?.trim();
+  const goal = document.getElementById('ai-ad-goal')?.value || 'Product launch';
+  const providerSelect = document.getElementById('ai-ad-provider');
+  const scriptEl = document.getElementById('ai-ad-script');
+
+  if (!brief) {
+    showToast('Enter campaign brief first.', 'error');
+    return;
+  }
+  if (!scriptEl) return;
+
+  scriptEl.value = 'Generating script...';
+  try {
+    const prompt = [
+      'Create a short video advertisement script for an ecommerce marketplace.',
+      `Goal: ${goal}`,
+      `Brief: ${brief}`,
+      'Return only plain text in this exact structure:',
+      'Headline:',
+      'Voiceover:',
+      'On-screen text:',
+      'CTA:',
+    ].join('\n');
+
+    const result = await aiClient.prompt(prompt, {
+      onProviderSwitch: (name) => {
+        scriptEl.value = `Generating with ${name}...`;
+      },
+    });
+
+    scriptEl.value = result.text || '';
+    await appendAiAdHistory({
+      created_at: new Date().toISOString(),
+      goal,
+      brief,
+      provider_name: result.provider,
+      provider_id: providerSelect?.value || '',
+      status: 'script_generated',
+      script: result.text || '',
+      video_url: null,
+    });
+    showToast(`Script generated with ${result.provider}.`, 'success');
+  } catch (err) {
+    scriptEl.value = '';
+    showToast('Script generation failed: ' + err.message, 'error');
+  }
+};
+
+window.activateAiAdvertisement = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const goal = String(fd.get('goal') || 'Product launch');
+  const providerId = String(fd.get('provider_id') || '');
+  const providerName = AI_AD_VIDEO_PROVIDERS.find((p) => p.id === providerId)?.name || providerId;
+  const brief = String(fd.get('brief') || '').trim();
+  const script = String(fd.get('script') || '').trim();
+  const videoUrl = String(fd.get('video_url') || '').trim();
+  const duration = Math.max(5, Math.min(900, parseInt(String(fd.get('duration_seconds') || '30'), 10) || 30));
+  const now = Date.now();
+  const startsAt = new Date(now).toISOString();
+  const endsAt = new Date(now + duration * 1000).toISOString();
+
+  if (!videoUrl) {
+    showToast('Video URL is required.', 'error');
+    return;
+  }
+
+  try {
+    const payload = {
+      ai_ad_enabled: true,
+      ai_ad_video_url: videoUrl,
+      ai_ad_badge: String(fd.get('badge') || 'AI Advertisement').trim() || 'AI Advertisement',
+      ai_ad_title: String(fd.get('title') || '').trim(),
+      ai_ad_cta_label: String(fd.get('cta_label') || 'Shop Now').trim() || 'Shop Now',
+      ai_ad_duration_seconds: duration,
+      ai_ad_muted: fd.get('muted') === 'on',
+      ai_ad_provider_id: providerId,
+      ai_ad_starts_at: startsAt,
+      ai_ad_ends_at: endsAt,
+      ai_ad_updated_at: new Date().toISOString(),
+    };
+
+    await saveSiteSettingsPatch(payload);
+
+    await appendAiAdHistory({
+      created_at: startsAt,
+      goal,
+      brief,
+      provider_name: providerName,
+      provider_id: providerId,
+      status: 'active',
+      script,
+      video_url: videoUrl,
+      ends_at: endsAt,
+    });
+
+    showToast('AI advertisement activated. Homepage will switch to AI video now.', 'success');
+    renderAiMarketingStudio();
+  } catch (err) {
+    showToast('Failed to activate AI advertisement: ' + err.message, 'error');
+  }
+};
+
+window.deactivateAiAdvertisement = async function() {
+  try {
+    await saveSiteSettingsPatch({
+      ai_ad_enabled: false,
+      ai_ad_updated_at: new Date().toISOString(),
+    });
+    await appendAiAdHistory({
+      created_at: new Date().toISOString(),
+      goal: 'Manual stop',
+      provider_name: 'Admin',
+      provider_id: 'manual',
+      status: 'inactive',
+      script: '',
+      video_url: null,
+    });
+    showToast('AI advertisement stopped.', 'success');
+    renderAiMarketingStudio();
+  } catch (err) {
+    showToast('Failed to stop AI advertisement: ' + err.message, 'error');
+  }
+};
+
+// ══════════════════════════════════════════════════════════
 //  12. CONTENT MANAGER
 // ══════════════════════════════════════════════════════════
 async function renderContent() {
@@ -3628,12 +4390,122 @@ window.saveBrandSettings = async function(e) {
 
 //  PAYMENT SETTINGS
 // ══════════════════════════════════════════════════════════
+window._manualPaymentAccounts = [];
+
+function blankManualPaymentAccount(currency = 'USD') {
+  return {
+    id: `bank-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    currency,
+    currencyName: currency,
+    flag: getFlagEmojiFromCountryCode('US'),
+    country: 'United States',
+    country_code: 'US',
+    bankName: '',
+    transferType: 'Local & International',
+    beneficiary: '',
+    accountNumber: '',
+    accountType: '',
+    iban: '',
+    swift: '',
+    routing: '',
+    sortCode: '',
+    bankCode: '',
+    branchCode: '',
+    institutionNumber: '',
+    transitNumber: '',
+    bsbCode: '',
+    address: '',
+  };
+}
+
+function syncManualPaymentAccountsField() {
+  const field = document.getElementById('manual-payment-accounts-json');
+  if (field) field.value = JSON.stringify(window._manualPaymentAccounts || []);
+}
+
+function manualPaymentAccountCard(account, index) {
+  const countryCode = account.country_code || 'US';
+  return `
+    <div class="p-4 glass-soft border border-blue-500/10 rounded-xl space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <h4 class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-400"></i> Bank Account ${index + 1}</h4>
+        <button type="button" onclick="removeManualPaymentAccount(${index})" class="text-[11px] font-bold text-red-400 hover:text-red-300 transition">Remove</button>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div><label class="lbl">Currency *</label><select class="input-field" onchange="updateManualPaymentAccount(${index}, 'currency', this.value)">${SORTED_CURRENCIES.map(currency => `<option value="${currency}" ${account.currency === currency ? 'selected' : ''}>${currency}</option>`).join('')}</select></div>
+        <div><label class="lbl">Country *</label><select class="input-field" onchange="updateManualPaymentCountry(${index}, this.value)">${renderCountryOptions(countryCode)}</select></div>
+        <div><label class="lbl">Beneficiary / Account Name *</label><input class="input-field" value="${esc(account.beneficiary || '')}" placeholder="Full name on account" oninput="updateManualPaymentAccount(${index}, 'beneficiary', this.value)"></div>
+        <div><label class="lbl">Bank Name *</label><input class="input-field" value="${esc(account.bankName || '')}" placeholder="e.g. Citibank" oninput="updateManualPaymentAccount(${index}, 'bankName', this.value)"></div>
+        <div><label class="lbl">Account Number</label><input class="input-field font-mono" value="${esc(account.accountNumber || '')}" placeholder="Account number" oninput="updateManualPaymentAccount(${index}, 'accountNumber', this.value)"></div>
+        <div><label class="lbl">Transfer Type</label><input class="input-field" value="${esc(account.transferType || '')}" placeholder="Local & International" oninput="updateManualPaymentAccount(${index}, 'transferType', this.value)"></div>
+        <div><label class="lbl">Account Type</label><input class="input-field" value="${esc(account.accountType || '')}" placeholder="Checking, Savings..." oninput="updateManualPaymentAccount(${index}, 'accountType', this.value)"></div>
+        <div><label class="lbl">IBAN</label><input class="input-field font-mono" value="${esc(account.iban || '')}" placeholder="Optional" oninput="updateManualPaymentAccount(${index}, 'iban', this.value)"></div>
+        <div><label class="lbl">SWIFT / BIC</label><input class="input-field font-mono" value="${esc(account.swift || '')}" placeholder="Optional" oninput="updateManualPaymentAccount(${index}, 'swift', this.value)"></div>
+        <div><label class="lbl">Routing / ABA</label><input class="input-field font-mono" value="${esc(account.routing || '')}" placeholder="Optional" oninput="updateManualPaymentAccount(${index}, 'routing', this.value)"></div>
+        <div><label class="lbl">Sort Code</label><input class="input-field font-mono" value="${esc(account.sortCode || '')}" placeholder="Optional" oninput="updateManualPaymentAccount(${index}, 'sortCode', this.value)"></div>
+        <div><label class="lbl">Bank Code</label><input class="input-field font-mono" value="${esc(account.bankCode || '')}" placeholder="Optional" oninput="updateManualPaymentAccount(${index}, 'bankCode', this.value)"></div>
+        <div><label class="lbl">Branch Code</label><input class="input-field font-mono" value="${esc(account.branchCode || '')}" placeholder="Optional" oninput="updateManualPaymentAccount(${index}, 'branchCode', this.value)"></div>
+        <div><label class="lbl">Institution Number</label><input class="input-field font-mono" value="${esc(account.institutionNumber || '')}" placeholder="Optional" oninput="updateManualPaymentAccount(${index}, 'institutionNumber', this.value)"></div>
+        <div><label class="lbl">Transit Number</label><input class="input-field font-mono" value="${esc(account.transitNumber || '')}" placeholder="Optional" oninput="updateManualPaymentAccount(${index}, 'transitNumber', this.value)"></div>
+        <div><label class="lbl">BSB Code</label><input class="input-field font-mono" value="${esc(account.bsbCode || '')}" placeholder="Optional" oninput="updateManualPaymentAccount(${index}, 'bsbCode', this.value)"></div>
+        <div class="sm:col-span-2"><label class="lbl">Bank Address</label><input class="input-field" value="${esc(account.address || '')}" placeholder="Branch or bank address" oninput="updateManualPaymentAccount(${index}, 'address', this.value)"></div>
+      </div>
+    </div>`;
+}
+
+window.renderManualPaymentAccountsEditor = function() {
+  const container = document.getElementById('manual-accounts-editor');
+  if (!container) return;
+  if (!window._manualPaymentAccounts?.length) window._manualPaymentAccounts = [blankManualPaymentAccount()];
+  container.innerHTML = `
+    <div class="space-y-4">
+      ${window._manualPaymentAccounts.map((account, index) => manualPaymentAccountCard(account, index)).join('')}
+      <button type="button" onclick="addManualPaymentAccount()" class="btn-press w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wide transition flex items-center justify-center gap-2">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Another Bank Account
+      </button>
+    </div>`;
+  syncManualPaymentAccountsField();
+  if (window.lucide) lucide.createIcons();
+};
+
+window.addManualPaymentAccount = function() {
+  window._manualPaymentAccounts.push(blankManualPaymentAccount());
+  renderManualPaymentAccountsEditor();
+};
+
+window.removeManualPaymentAccount = function(index) {
+  window._manualPaymentAccounts.splice(index, 1);
+  if (!window._manualPaymentAccounts.length) window._manualPaymentAccounts = [blankManualPaymentAccount()];
+  renderManualPaymentAccountsEditor();
+};
+
+window.updateManualPaymentAccount = function(index, key, value) {
+  const account = window._manualPaymentAccounts[index];
+  if (!account) return;
+  account[key] = value;
+  if (key === 'currency') account.currencyName = value;
+  syncManualPaymentAccountsField();
+};
+
+window.updateManualPaymentCountry = function(index, countryCode) {
+  const account = window._manualPaymentAccounts[index];
+  if (!account) return;
+  const selected = COUNTRIES.find(country => country.code === countryCode);
+  account.country_code = countryCode;
+  account.country = selected?.name || '';
+  account.flag = selected?.flag || getFlagEmojiFromCountryCode(countryCode);
+  syncManualPaymentAccountsField();
+  renderManualPaymentAccountsEditor();
+};
+
 async function renderPaymentSettings() {
   const content = document.getElementById('content');
   if (content) content.innerHTML = loading();
   try {
     const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
-    const d = s || {};
+    const cached = loadPaymentSettingsCache() || {};
+    const d = { ...cached, ...(s || {}) };
+    window._manualPaymentAccounts = getManualPaymentAccounts(d).map(account => ({ ...account }));
 
     content.innerHTML = `
       <div class="space-y-5 fade-in">
@@ -3646,8 +4518,6 @@ async function renderPaymentSettings() {
         </div>
 
         <form id="payment-form" onsubmit="savePaymentSettings(event)" class="space-y-5">
-
-          <!-- ── 1. Manual / Bank Transfer ── -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
             <div class="flex items-center justify-between p-4 border-b border-blue-500/10">
               <div class="flex items-center gap-3">
@@ -3656,7 +4526,7 @@ async function renderPaymentSettings() {
                 </div>
                 <div>
                   <h3 class="text-sm font-black text-white">Manual Payment (Bank / ATM Transfer)</h3>
-                  <p class="text-[11px] text-gray-500">Customers transfer money directly to your bank account</p>
+                  <p class="text-[11px] text-gray-500">Show the right receiving account based on the customer country and currency.</p>
                 </div>
               </div>
               <label class="toggle-switch shrink-0">
@@ -3665,78 +4535,23 @@ async function renderPaymentSettings() {
               </label>
             </div>
             <div class="p-5 space-y-4">
-              <!-- Bank 1 -->
-              <div class="p-4 glass-soft border border-blue-500/10 rounded-xl space-y-3">
-                <div class="flex items-center justify-between">
-                  <h4 class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-400"></i> Primary Bank Account</h4>
-                </div>
-                <div class="form-grid form-grid-2">
-                  <div><label class="lbl">Account Name *</label><input class="input-field" name="bank1_account_name" value="${esc(d.bank1_account_name||'')}" placeholder="Full name on account"></div>
-                  <div><label class="lbl">Account Number *</label><input class="input-field font-mono" name="bank1_account_number" value="${esc(d.bank1_account_number||'')}" placeholder="0123456789"></div>
-                  <div><label class="lbl">Bank Name *</label><input class="input-field" name="bank1_bank_name" value="${esc(d.bank1_bank_name||'')}" placeholder="e.g. First Bank, GTBank, Zenith…"></div>
-                  <div><label class="lbl">Transfer Type</label>
-                    <select class="input-field" name="bank1_transfer_type">
-                      <option value="bank_transfer" ${(d.bank1_transfer_type||'bank_transfer')==='bank_transfer'?'selected':''}>Bank Transfer</option>
-                      <option value="atm_transfer" ${d.bank1_transfer_type==='atm_transfer'?'selected':''}>ATM Transfer</option>
-                      <option value="both" ${d.bank1_transfer_type==='both'?'selected':''}>Both</option>
-                    </select>
-                  </div>
-                  <div><label class="lbl">Sort Code / Routing Number</label><input class="input-field font-mono" name="bank1_sort_code" value="${esc(d.bank1_sort_code||'')}" placeholder="Optional"></div>
-                  <div><label class="lbl">Currency</label>
-                    <select class="input-field" name="bank1_currency">
-                      ${['NGN','USD','GBP','EUR','GHS','KES','ZAR','ZMW','TZS','UGX'].map(c=>`<option value="${c}" ${(d.bank1_currency||'NGN')===c?'selected':''}>${c}</option>`).join('')}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Bank 2 (optional) -->
-              <details class="group">
-                <summary class="flex items-center gap-2 cursor-pointer text-xs font-bold text-blue-400 hover:text-blue-300 transition list-none">
-                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Second Bank Account (Optional)
-                </summary>
-                <div class="mt-3 p-4 glass-soft border border-blue-500/10 rounded-xl space-y-3">
-                  <div class="form-grid form-grid-2">
-                    <div><label class="lbl">Account Name</label><input class="input-field" name="bank2_account_name" value="${esc(d.bank2_account_name||'')}" placeholder="Full name on account"></div>
-                    <div><label class="lbl">Account Number</label><input class="input-field font-mono" name="bank2_account_number" value="${esc(d.bank2_account_number||'')}" placeholder="0123456789"></div>
-                    <div><label class="lbl">Bank Name</label><input class="input-field" name="bank2_bank_name" value="${esc(d.bank2_bank_name||'')}" placeholder="e.g. Access Bank, UBA…"></div>
-                    <div><label class="lbl">Transfer Type</label>
-                      <select class="input-field" name="bank2_transfer_type">
-                        <option value="bank_transfer">Bank Transfer</option>
-                        <option value="atm_transfer">ATM Transfer</option>
-                        <option value="both">Both</option>
-                      </select>
-                    </div>
-                    <div><label class="lbl">Sort Code / Routing</label><input class="input-field font-mono" name="bank2_sort_code" value="${esc(d.bank2_sort_code||'')}" placeholder="Optional"></div>
-                    <div><label class="lbl">Currency</label>
-                      <select class="input-field" name="bank2_currency">
-                        ${['NGN','USD','GBP','EUR','GHS','KES','ZAR'].map(c=>`<option value="${c}" ${(d.bank2_currency||'NGN')===c?'selected':''}>${c}</option>`).join('')}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </details>
-
-              <!-- Payment Instructions -->
+              <input type="hidden" id="manual-payment-accounts-json" name="manual_payment_accounts_json" value="">
+              <div id="manual-accounts-editor"></div>
               <div>
                 <label class="lbl">Payment Instructions (shown to customer after checkout)</label>
-                <textarea class="input-field" name="manual_payment_instructions" rows="4" placeholder="e.g. Please transfer the exact amount shown on your order to the account above. Send your payment receipt to support@yoursite.com. Your order will be processed within 24 hours after payment is confirmed.">${esc(d.manual_payment_instructions||'')}</textarea>
+                <textarea class="input-field" name="manual_payment_instructions" rows="4" placeholder="Explain how customers should pay and upload their receipt.">${esc(getPaymentInstructions(d))}</textarea>
               </div>
-
-              <!-- ATM Instructions -->
               <div>
                 <label class="lbl">ATM Transfer Instructions (optional, shown separately)</label>
-                <textarea class="input-field" name="atm_transfer_instructions" rows="3" placeholder="e.g. Visit any ATM, select Transfer, enter the account number above and confirm the transfer. Keep your receipt as proof of payment.">${esc(d.atm_transfer_instructions||'')}</textarea>
+                <textarea class="input-field" name="atm_transfer_instructions" rows="3" placeholder="Optional ATM-specific instructions.">${esc(d.atm_transfer_instructions||'')}</textarea>
               </div>
-
               <div class="p-3 bg-blue-500/5 border border-blue-500/15 rounded-xl text-[11px] text-blue-300">
                 <i data-lucide="info" class="w-3.5 h-3.5 inline mr-1"></i>
-                When manual payment is enabled, customers can upload their transfer receipt and you'll get a notification to verify it.
+                Customers will see the account that matches their detected country currency. If no match exists, they will be guided to use your USD account and upload a receipt for quick verification and shipping.
               </div>
             </div>
           </div>
 
-          <!-- ── 2. Flutterwave ── -->
           <div class="glass-soft border border-amber-500/15 rounded-2xl overflow-hidden">
             <div class="flex items-center justify-between p-4 border-b border-amber-500/10">
               <div class="flex items-center gap-3">
@@ -3765,81 +4580,34 @@ async function renderPaymentSettings() {
                 </label>
               </div>
               <div class="form-grid form-grid-2">
-                <div>
-                  <label class="lbl">Public Key *</label>
-                  <div class="relative">
-                    <input type="password" class="input-field pr-16" name="flutterwave_public_key" placeholder="${d.flutterwave_public_key ? '••••'+d.flutterwave_public_key.slice(-4) : 'FLWPUBK_TEST-… or FLWPUBK-…'}">
-                    ${d.flutterwave_public_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
-                  </div>
-                </div>
-                <div>
-                  <label class="lbl">Secret Key *</label>
-                  <div class="relative">
-                    <input type="password" class="input-field pr-16" name="flutterwave_secret_key" placeholder="${d.flutterwave_secret_key ? '••••'+d.flutterwave_secret_key.slice(-4) : 'FLWSECK_TEST-… or FLWSECK-…'}">
-                    ${d.flutterwave_secret_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
-                  </div>
-                </div>
-                <div>
-                  <label class="lbl">Encryption Key</label>
-                  <div class="relative">
-                    <input type="password" class="input-field pr-16" name="flutterwave_encryption_key" placeholder="${d.flutterwave_encryption_key ? '••••'+d.flutterwave_encryption_key.slice(-4) : 'Encryption key from dashboard'}">
-                    ${d.flutterwave_encryption_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
-                  </div>
-                </div>
-                <div>
-                  <label class="lbl">Webhook Secret</label>
-                  <div class="relative">
-                    <input type="password" class="input-field pr-16" name="flutterwave_webhook_secret" placeholder="${d.flutterwave_webhook_secret ? '••••'+d.flutterwave_webhook_secret.slice(-4) : 'Secret hash for webhook verification'}">
-                    ${d.flutterwave_webhook_secret ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
-                  </div>
-                </div>
-                <div>
-                  <label class="lbl">Accepted Currency</label>
-                  <select class="input-field" name="flutterwave_currency">
-                    ${['NGN','USD','GBP','EUR','GHS','KES','ZAR','ZMW','TZS','UGX','XAF','XOF'].map(c=>`<option value="${c}" ${(d.flutterwave_currency||'NGN')===c?'selected':''}>${c}</option>`).join('')}
-                  </select>
-                </div>
-                <div>
-                  <label class="lbl">Redirect URL (after payment)</label>
-                  <input class="input-field" name="flutterwave_redirect_url" value="${esc(d.flutterwave_redirect_url||'')}" placeholder="${window.location.origin}/payment.html">
-                </div>
+                <div><label class="lbl">Public Key *</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_public_key" placeholder="${d.flutterwave_public_key ? '••••'+d.flutterwave_public_key.slice(-4) : 'FLWPUBK_TEST-… or FLWPUBK-…'}">${d.flutterwave_public_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}</div></div>
+                <div><label class="lbl">Secret Key *</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_secret_key" placeholder="${d.flutterwave_secret_key ? '••••'+d.flutterwave_secret_key.slice(-4) : 'FLWSECK_TEST-… or FLWSECK-…'}">${d.flutterwave_secret_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}</div></div>
+                <div><label class="lbl">Encryption Key</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_encryption_key" placeholder="${d.flutterwave_encryption_key ? '••••'+d.flutterwave_encryption_key.slice(-4) : 'Encryption key from dashboard'}">${d.flutterwave_encryption_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}</div></div>
+                <div><label class="lbl">Webhook Secret</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_webhook_secret" placeholder="${d.flutterwave_webhook_secret ? '••••'+d.flutterwave_webhook_secret.slice(-4) : 'Secret hash for webhook verification'}">${d.flutterwave_webhook_secret ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}</div></div>
+                <div><label class="lbl">Accepted Currency</label><select class="input-field" name="flutterwave_currency">${['NGN','USD','GBP','EUR','GHS','KES','ZAR','ZMW','TZS','UGX','XAF','XOF'].map(c=>`<option value="${c}" ${(d.flutterwave_currency||'NGN')===c?'selected':''}>${c}</option>`).join('')}</select></div>
+                <div><label class="lbl">Redirect URL (after payment)</label><input class="input-field" name="flutterwave_redirect_url" value="${esc(d.flutterwave_redirect_url||'')}" placeholder="${window.location.origin}/payment.html"></div>
               </div>
               <div class="p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl text-[11px] text-amber-300 space-y-1">
                 <p><strong>Where to get keys:</strong> <a href="https://dashboard.flutterwave.com/dashboard/settings/apis" target="_blank" class="underline hover:text-amber-200">dashboard.flutterwave.com → Settings → API</a></p>
                 <p><strong>Webhook URL to add in Flutterwave:</strong> <code class="bg-black/30 px-1 rounded">${window.location.origin}/api/flutterwave-webhook</code></p>
                 <p>Test cards: Visa <code class="bg-black/30 px-1 rounded">4187 4274 1556 4246</code> · PIN: <code class="bg-black/30 px-1 rounded">3310</code> · OTP: <code class="bg-black/30 px-1 rounded">12345</code></p>
               </div>
-              <button type="button" onclick="testFlutterwaveKeys()" class="btn-press flex items-center gap-2 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-2 rounded-xl transition">
-                <i data-lucide="plug" class="w-4 h-4"></i> Test Flutterwave Connection
-              </button>
+              <button type="button" onclick="testFlutterwaveKeys()" class="btn-press flex items-center gap-2 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-2 rounded-xl transition"><i data-lucide="plug" class="w-4 h-4"></i> Test Flutterwave Connection</button>
             </div>
           </div>
 
-          <!-- ── 3. Active Gateway ── -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
             <h3 class="text-sm font-black text-white mb-1">Which payment method is active on checkout?</h3>
             <p class="text-xs text-gray-400 mb-3">Select which method customers see when they go to pay.</p>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              ${[
-                {id:'manual',       label:'Manual / Bank Transfer', icon:'landmark',    color:'blue'},
-                {id:'flutterwave',  label:'Flutterwave',            icon:'zap',         color:'amber'},
-                {id:'both',         label:'Both (customer chooses)',icon:'layers',       color:'emerald'},
-              ].map(g=>`
-                <label class="flex items-center gap-3 p-3 glass-soft border ${(d.payment_gateway||'manual')===g.id ? 'border-blue-500/40 bg-blue-500/5' : 'border-blue-500/10'} rounded-xl cursor-pointer hover:border-blue-500/30 transition">
-                  <input type="radio" name="payment_gateway" value="${g.id}" ${(d.payment_gateway||'manual')===g.id?'checked':''} class="accent-blue-500">
-                  <div>
-                    <i data-lucide="${g.icon}" class="w-4 h-4 text-${g.color}-400 mb-0.5"></i>
-                    <p class="text-xs font-bold text-white">${g.label}</p>
-                  </div>
-                </label>`).join('')}
+              ${[{id:'manual',label:'Manual / Bank Transfer',icon:'landmark',color:'blue'},{id:'flutterwave',label:'Flutterwave',icon:'zap',color:'amber'},{id:'both',label:'Both (customer chooses)',icon:'layers',color:'emerald'}].map(g=>`<label class="flex items-center gap-3 p-3 glass-soft border ${(d.payment_gateway||'manual')===g.id ? 'border-blue-500/40 bg-blue-500/5' : 'border-blue-500/10'} rounded-xl cursor-pointer hover:border-blue-500/30 transition"><input type="radio" name="payment_gateway" value="${g.id}" ${(d.payment_gateway||'manual')===g.id?'checked':''} class="accent-blue-500"><div><i data-lucide="${g.icon}" class="w-4 h-4 text-${g.color}-400 mb-0.5"></i><p class="text-xs font-bold text-white">${g.label}</p></div></label>`).join('')}
             </div>
           </div>
 
-          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2">
-            <i data-lucide="save" class="w-4 h-4"></i> Save Payment Settings
-          </button>
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Save Payment Settings</button>
         </form>
       </div>`;
+    renderManualPaymentAccountsEditor();
     if (window.lucide) lucide.createIcons();
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
@@ -3854,26 +4622,51 @@ window.savePaymentSettings = async function(e) {
 
   for (const [k, v] of Object.entries(data)) {
     if (secretFields.includes(k)) {
-      // Only save if it's a new value (not masked placeholder)
       if (v && !v.startsWith('••••') && v.trim() !== '') payload[k] = v.trim();
     } else {
       payload[k] = v;
     }
   }
 
-  // Checkboxes that are unchecked won't appear in FormData — handle explicitly
   payload.manual_payment_enabled = data.manual_payment_enabled === 'on';
-  payload.flutterwave_enabled     = data.flutterwave_enabled     === 'on';
+  payload.flutterwave_enabled = data.flutterwave_enabled === 'on';
+
+  let manualAccounts = [];
+  try { manualAccounts = JSON.parse(data.manual_payment_accounts_json || '[]'); } catch {}
+  payload.manual_payment_accounts = manualAccounts;
+
+  const bank1 = manualAccounts[0] || {};
+  const bank2 = manualAccounts[1] || {};
+  payload.bank1_account_name = bank1.beneficiary || '';
+  payload.bank1_account_number = bank1.accountNumber || '';
+  payload.bank1_bank_name = bank1.bankName || '';
+  payload.bank1_transfer_type = bank1.transferType || '';
+  payload.bank1_sort_code = bank1.sortCode || bank1.routing || '';
+  payload.bank1_currency = bank1.currency || 'USD';
+  payload.bank2_account_name = bank2.beneficiary || '';
+  payload.bank2_account_number = bank2.accountNumber || '';
+  payload.bank2_bank_name = bank2.bankName || '';
+  payload.bank2_transfer_type = bank2.transferType || '';
+  payload.bank2_sort_code = bank2.sortCode || bank2.routing || '';
+  payload.bank2_currency = bank2.currency || 'USD';
+
+  savePaymentSettingsCache(payload);
 
   const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
   let error;
-  if (existing?.id) {
-    ({ error } = await supabase.from('site_settings').update(payload).eq('id', existing.id));
-  } else {
-    ({ error } = await supabase.from('site_settings').insert(payload));
-  }
+  if (existing?.id) ({ error } = await supabase.from('site_settings').update(payload).eq('id', existing.id));
+  else ({ error } = await supabase.from('site_settings').insert(payload));
 
-  if (error) { showToast('Save failed: ' + error.message, 'error'); console.error(error); return; }
+  if (error) {
+    const message = String(error.message || '');
+    if (/manual_payment_accounts|column|schema cache/i.test(message)) {
+      showToast('Payment settings saved locally. Run the latest migration to persist them to Supabase.', 'info');
+      console.warn(error);
+      setTimeout(() => renderPaymentSettings(), 500);
+      return;
+    }
+    showToast('Save failed: ' + error.message, 'error'); console.error(error); return;
+  }
   showToast('✅ Payment settings saved successfully!', 'success');
   setTimeout(() => renderPaymentSettings(), 500);
 };
@@ -4141,6 +4934,497 @@ window.testGitHubConnection = async function() {
 
 window.deployToProduction = window.triggerDeploy;
 window.rebuildSite = window.triggerRebuild;
+
+// ══════════════════════════════════════════════════════════
+//  LIVE STREAMING & VIDEO CALL MANAGER
+// ══════════════════════════════════════════════════════════
+window._liveControlAdminState = null;
+window._livePublicState = null;
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+async function ensureLiveControlLoaded() {
+  if (!window._liveControlAdminState) window._liveControlAdminState = await loadLiveControlAdminState();
+  if (!window._livePublicState) window._livePublicState = await loadPublicLiveState();
+}
+
+function setDeepValue(target, path, value) {
+  const keys = path.split('.');
+  let cursor = target;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (!cursor[key] || typeof cursor[key] !== 'object') cursor[key] = {};
+    cursor = cursor[key];
+  }
+  cursor[keys[keys.length - 1]] = value;
+}
+
+function livePlatformCard(platform, definition, collectionName) {
+  const value = (path) => {
+    const keys = path.split('.');
+    let cursor = platform;
+    for (const key of keys) cursor = cursor?.[key];
+    return cursor || '';
+  };
+  return `
+    <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2 mb-1"><i data-lucide="${definition.icon}" class="w-4 h-4 text-blue-400"></i><h3 class="text-sm font-black text-white">${definition.label}</h3></div>
+          <p class="text-[11px] text-gray-500">${definition.description}</p>
+        </div>
+        <label class="toggle-switch shrink-0"><input type="checkbox" ${platform.enabled ? 'checked' : ''} onchange="toggleLivePlatformEnabled('${collectionName}','${platform.id}', this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="form-grid form-grid-2">
+        ${definition.fields.includes('apiKey') ? `<div><label class="lbl">API Key</label><input class="input-field" type="password" value="${esc(value('credentials.apiKey'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.apiKey', this.value)" placeholder="Add API key later"></div>` : ''}
+        ${definition.fields.includes('apiSecret') ? `<div><label class="lbl">API Secret</label><input class="input-field" type="password" value="${esc(value('credentials.apiSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.apiSecret', this.value)" placeholder="Add API secret later"></div>` : ''}
+        ${definition.fields.includes('clientId') ? `<div><label class="lbl">Client ID</label><input class="input-field" value="${esc(value('credentials.clientId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.clientId', this.value)" placeholder="Client ID"></div>` : ''}
+        ${definition.fields.includes('clientSecret') ? `<div><label class="lbl">Client Secret</label><input class="input-field" type="password" value="${esc(value('credentials.clientSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.clientSecret', this.value)" placeholder="Client secret"></div>` : ''}
+        ${definition.fields.includes('sdkKey') ? `<div><label class="lbl">SDK Key</label><input class="input-field" value="${esc(value('credentials.sdkKey'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.sdkKey', this.value)" placeholder="SDK key"></div>` : ''}
+        ${definition.fields.includes('sdkSecret') ? `<div><label class="lbl">SDK Secret</label><input class="input-field" type="password" value="${esc(value('credentials.sdkSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.sdkSecret', this.value)" placeholder="SDK secret"></div>` : ''}
+        ${definition.fields.includes('channelId') ? `<div><label class="lbl">Channel ID</label><input class="input-field" value="${esc(value('settings.channelId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.channelId', this.value)" placeholder="Channel or creator ID"></div>` : ''}
+        ${definition.fields.includes('pageId') ? `<div><label class="lbl">Page ID</label><input class="input-field" value="${esc(value('settings.pageId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.pageId', this.value)" placeholder="Page ID"></div>` : ''}
+        ${definition.fields.includes('meetingId') ? `<div><label class="lbl">Meeting / Room ID</label><input class="input-field" value="${esc(value('settings.meetingId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.meetingId', this.value)" placeholder="Meeting or room ID"></div>` : ''}
+        ${definition.fields.includes('tenantId') ? `<div><label class="lbl">Tenant ID</label><input class="input-field" value="${esc(value('settings.tenantId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.tenantId', this.value)" placeholder="Tenant ID"></div>` : ''}
+        ${definition.fields.includes('streamKey') ? `<div><label class="lbl">Stream Key</label><input class="input-field font-mono" value="${esc(value('settings.streamKey'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.streamKey', this.value)" placeholder="Stream key"></div>` : ''}
+        ${definition.fields.includes('rtmpUrl') ? `<div><label class="lbl">RTMP / Ingest URL</label><input class="input-field font-mono" value="${esc(value('settings.rtmpUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.rtmpUrl', this.value)" placeholder="rtmp://..."></div>` : ''}
+        ${definition.fields.includes('hostUrl') ? `<div><label class="lbl">Host / Control URL</label><input class="input-field" value="${esc(value('links.hostUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','links.hostUrl', this.value)" placeholder="Host dashboard URL"></div>` : ''}
+        ${definition.fields.includes('embedUrl') ? `<div><label class="lbl">Embed URL</label><input class="input-field" value="${esc(value('links.embedUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','links.embedUrl', this.value)" placeholder="Embeddable player URL"></div>` : ''}
+        ${definition.fields.includes('joinUrl') ? `<div><label class="lbl">Join URL</label><input class="input-field" value="${esc(value('links.joinUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','links.joinUrl', this.value)" placeholder="Call join URL"></div>` : ''}
+        ${definition.fields.includes('webhookSecret') ? `<div><label class="lbl">Webhook Secret</label><input class="input-field" type="password" value="${esc(value('settings.webhookSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.webhookSecret', this.value)" placeholder="Webhook secret"></div>` : ''}
+      </div>
+      <div class="text-[11px] text-gray-500">Keys are not hardcoded. Save your settings here and control them from the dashboard only.</div>
+    </div>`;
+}
+
+function renderLiveSessionRows(sessions) {
+  if (!sessions.length) return '<p class="text-sm text-gray-500 text-center py-8">No live sessions created yet.</p>';
+  return sessions.map(session => `
+    <div class="glass-soft border border-blue-500/10 rounded-xl p-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1"><span class="text-sm font-black text-white">${esc(session.title)}</span>${badge(session.status)}</div>
+        <p class="text-[11px] text-gray-500">Platforms: ${esc(session.selectedPlatforms.join(', ') || 'None')} ${session.scheduledAt ? `• Scheduled: ${esc(fmtDT(session.scheduledAt))}` : ''}</p>
+        ${session.headline ? `<p class="text-xs text-gray-400 mt-1">${esc(session.headline)}</p>` : ''}
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="startLiveSession('${session.id}')" class="btn-press px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-xs font-bold rounded-xl transition">Start</button>
+        <button onclick="endLiveSession('${session.id}')" class="btn-press px-3 py-2 bg-gray-700/50 hover:bg-gray-700 text-gray-200 text-xs font-bold rounded-xl transition">End</button>
+        <button onclick="removeLiveSession('${session.id}')" class="btn-press px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs font-bold rounded-xl transition">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function renderLiveStreamingManager() {
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  await ensureLiveControlLoaded();
+  const liveState = window._livePublicState || {};
+  const live = window._liveControlAdminState;
+  const enabledPlatforms = live.streamingPlatforms.filter(platform => platform.enabled).length;
+  const sessions = live.liveSessions;
+  const orderedPlatforms = [...live.streamingPlatforms].sort((a, b) => {
+    if (a.id === 'tiktok-live') return -1;
+    if (b.id === 'tiktok-live') return 1;
+    return 0;
+  });
+  content.innerHTML = `
+    <div class="space-y-5 fade-in">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex-1">
+          <h2 class="text-xl font-black text-white">Live Streaming Manager</h2>
+          <p class="text-sm text-gray-500 mt-1">Connect platforms, schedule streams, publish LIVE NOW on the homepage, and prepare multi-platform broadcasting without touching code.</p>
+        </div>
+        <button onclick="saveLiveStreamingSettings()" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Save Streaming Settings</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        ${statCard('Enabled Platforms', enabledPlatforms, 'radio', 'red', 'Live destinations configured')}
+        ${statCard('Scheduled Streams', sessions.filter(session => session.status === 'scheduled').length, 'calendar', 'blue', 'Upcoming broadcasts')}
+        ${statCard('Live Now', liveState.isLive ? 1 : 0, 'signal', 'emerald', liveState.isLive ? liveState.headline || 'Active stream' : 'Offline')}
+        ${statCard('Viewers Snapshot', liveState.viewerCount || 0, 'users', 'amber', `${liveState.commentCount || 0} comments tracked`) }
+      </div>
+
+      <div class="glass-soft border border-red-500/20 rounded-2xl p-5 space-y-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0"><i data-lucide="smartphone" class="w-5 h-5 text-red-400"></i></div>
+          <div>
+            <h3 class="text-sm font-black text-white">TikTok Real Setup</h3>
+            <p class="text-[11px] text-gray-400 mt-1">If your main goal is TikTok, the real external streaming workflow is RTMP-based. Do not rely on API key only.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
+          <div class="rounded-2xl border border-blue-500/10 bg-blue-950/40 p-4">
+            <p class="text-xs font-black uppercase tracking-wide text-blue-300 mb-2">Collect From TikTok</p>
+            <div class="space-y-2 text-gray-300">
+              <p>1. Open TikTok on your phone and confirm your account has LIVE access.</p>
+              <p>2. If your account supports external streaming, open TikTok LIVE Center or TikTok LIVE Studio.</p>
+              <p>3. Copy the RTMP server URL.</p>
+              <p>4. Copy the stream key.</p>
+              <p>5. If TikTok gives you a watch/share page, copy that into Embed URL or Host URL.</p>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-4">
+            <p class="text-xs font-black uppercase tracking-wide text-emerald-300 mb-2">Put It Here In Admin</p>
+            <div class="space-y-2 text-gray-300">
+              <p>1. Enable <strong>TikTok Live</strong>.</p>
+              <p>2. Paste the server URL into <strong>RTMP / Ingest URL</strong>.</p>
+              <p>3. Paste the stream key into <strong>Stream Key</strong>.</p>
+              <p>4. Add your TikTok page or watch link into <strong>Host / Control URL</strong>.</p>
+              <p>5. Add an embeddable player URL if you have one. If not, use the homepage LIVE badge and a watch link.</p>
+              <p>6. Save settings, then start streaming from your phone or encoder and click <strong>Start Live Now</strong> here to publish the site-wide live state.</p>
+            </div>
+          </div>
+        </div>
+        <div class="rounded-xl border border-amber-500/15 bg-amber-500/5 p-3 text-[11px] text-amber-200">
+          TikTok only becomes truly real after you collect the live RTMP details from TikTok and start the broadcast from the TikTok-supported phone/app or encoder workflow. This admin page is where you save and manage those details.
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 class="text-sm font-black text-white">Platform Connections</h3>
+            <p class="text-[11px] text-gray-500">Add your API keys, stream keys, embed URLs, and host dashboards later. Each platform can be enabled or disabled independently.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          ${orderedPlatforms.map(platform => livePlatformCard(platform, LIVE_STREAM_PLATFORM_DEFS.find(def => def.id === platform.id), 'streamingPlatforms')).join('')}
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-black text-white">Create or Schedule Live Stream</h3>
+          <p class="text-[11px] text-gray-500 mt-1">Select one or more platforms, set the homepage embed URL, and publish a synchronized live status across the website and mobile app.</p>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div><label class="lbl">Stream Title</label><input id="live-session-title" class="input-field" placeholder="e.g. Friday Product Showcase"></div>
+          <div><label class="lbl">Badge Text</label><input id="live-session-badge" class="input-field" value="${esc(live.preferences.defaultBadgeText || 'LIVE NOW')}" placeholder="LIVE NOW"></div>
+          <div class="sm:col-span-2"><label class="lbl">Homepage Headline</label><input id="live-session-headline" class="input-field" placeholder="Tell visitors what is happening live"></div>
+          <div class="sm:col-span-2"><label class="lbl">Description</label><textarea id="live-session-description" class="input-field" rows="3" placeholder="Stream summary, agenda, products, or event details"></textarea></div>
+          <div><label class="lbl">Embed URL</label><input id="live-session-embed" class="input-field" placeholder="https://... embeddable live player"></div>
+          <div><label class="lbl">Schedule Date & Time</label><input id="live-session-scheduled" type="datetime-local" class="input-field"></div>
+        </div>
+        <div>
+          <label class="lbl">Stream To Platforms</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 mt-2">
+            ${orderedPlatforms.filter(platform => platform.enabled).map(platform => `<label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input type="checkbox" class="accent-red-500" value="${platform.id}" data-live-platform-select><span>${esc(platform.label)}</span></label>`).join('') || '<p class="text-xs text-gray-500">Enable at least one streaming platform above.</p>'}
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input id="live-notify-visitors" type="checkbox" class="accent-blue-500" checked><span>Notify visitors when live</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input id="live-show-badge" type="checkbox" class="accent-blue-500" checked><span>Show LIVE NOW badge on homepage</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input id="live-show-embed" type="checkbox" class="accent-blue-500" checked><span>Embed live player on homepage</span></label>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="createLiveSession('scheduled')" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Schedule Stream</button>
+          <button onclick="createLiveSession('live')" class="btn-press bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Start Live Now</button>
+          <button onclick="clearPublicLiveState()" class="btn-press bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">End Current Live</button>
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3"><h3 class="text-sm font-black text-white">Live Stream Sessions</h3><span class="text-[11px] text-gray-500">Start, end, remove, or republish sessions instantly</span></div>
+        ${renderLiveSessionRows(sessions)}
+      </div>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderRoomRows(rooms) {
+  if (!rooms.length) return '<p class="text-sm text-gray-500 text-center py-8">No video call rooms created yet.</p>';
+  return rooms.map(room => `
+    <div class="glass-soft border border-blue-500/10 rounded-xl p-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1"><span class="text-sm font-black text-white">${esc(room.title)}</span>${badge(room.status)}</div>
+        <p class="text-[11px] text-gray-500">Provider: ${esc(room.providerId)} • Type: ${esc(room.callType)}${room.scheduledAt ? ` • Scheduled: ${esc(fmtDT(room.scheduledAt))}` : ''}</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="startVideoRoom('${room.id}')" class="btn-press px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-xl transition">Start</button>
+        <button onclick="endVideoRoom('${room.id}')" class="btn-press px-3 py-2 bg-gray-700/50 hover:bg-gray-700 text-gray-200 text-xs font-bold rounded-xl transition">End</button>
+        <button onclick="removeVideoRoom('${room.id}')" class="btn-press px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs font-bold rounded-xl transition">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function renderVideoCallManager() {
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  await ensureLiveControlLoaded();
+  const live = window._liveControlAdminState;
+  const enabledProviders = live.videoCallProviders.filter(provider => provider.enabled).length;
+  const activeRooms = live.videoCallRooms.filter(room => room.status === 'live').length;
+  content.innerHTML = `
+    <div class="space-y-5 fade-in">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex-1">
+          <h2 class="text-xl font-black text-white">Video Call Manager</h2>
+          <p class="text-sm text-gray-500 mt-1">Configure meeting providers, create one-to-one or group rooms, and manage screen sharing, recording, waiting rooms, moderation, and file sharing from the dashboard.</p>
+        </div>
+        <button onclick="saveVideoCallSettings()" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Save Video Call Settings</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        ${statCard('Enabled Call Providers', enabledProviders, 'video', 'blue', 'Provider connections ready')}
+        ${statCard('Active Calls', activeRooms, 'video', 'emerald', 'Rooms currently running')}
+        ${statCard('Scheduled Calls', live.videoCallRooms.filter(room => room.status === 'scheduled').length, 'calendar', 'amber', 'Upcoming meetings')}
+        ${statCard('Room Templates', live.videoCallRooms.length, 'layers', 'violet', 'Saved one-to-one and group rooms')}
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <h3 class="text-sm font-black text-white">Provider Connections</h3>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          ${live.videoCallProviders.map(provider => livePlatformCard(provider, VIDEO_CALL_PROVIDER_DEFS.find(def => def.id === provider.id), 'videoCallProviders')).join('')}
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-black text-white">Create Video Call Room</h3>
+          <p class="text-[11px] text-gray-500 mt-1">Prepare rooms for one-to-one calls, group calls, screen sharing, moderation, and recorded meetings.</p>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div><label class="lbl">Room Title</label><input id="video-room-title" class="input-field" placeholder="e.g. VIP Buyer Consultation"></div>
+          <div><label class="lbl">Provider</label><select id="video-room-provider" class="input-field">${live.videoCallProviders.map(provider => `<option value="${provider.id}">${esc(provider.label)}</option>`).join('')}</select></div>
+          <div><label class="lbl">Room Type</label><select id="video-room-type" class="input-field"><option value="one_to_one">One-to-one</option><option value="group">Group</option></select></div>
+          <div><label class="lbl">Schedule Date & Time</label><input id="video-room-scheduled" type="datetime-local" class="input-field"></div>
+          <div><label class="lbl">Room Code / Meeting ID</label><input id="video-room-code" class="input-field" placeholder="Meeting ID or room code"></div>
+          <div><label class="lbl">Max Participants</label><input id="video-room-max" type="number" class="input-field" value="25" min="2"></div>
+          <div><label class="lbl">Host URL</label><input id="video-room-host" class="input-field" placeholder="Host start URL"></div>
+          <div><label class="lbl">Join URL</label><input id="video-room-join" class="input-field" placeholder="Participant join URL"></div>
+          <div class="sm:col-span-2"><label class="lbl">Embed URL</label><input id="video-room-embed" class="input-field" placeholder="Embeddable call URL for web/mobile"></div>
+          <div class="sm:col-span-2"><label class="lbl">Notes</label><textarea id="video-room-notes" class="input-field" rows="3" placeholder="Call agenda, internal notes, participant instructions"></textarea></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-xs text-gray-300">
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-waiting-room" type="checkbox" checked class="accent-blue-500"><span>Waiting room</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-screen-share" type="checkbox" checked class="accent-blue-500"><span>Screen sharing</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-recording" type="checkbox" class="accent-blue-500"><span>Call recording</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-chat" type="checkbox" checked class="accent-blue-500"><span>Chat during call</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-file-share" type="checkbox" checked class="accent-blue-500"><span>File sharing</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-mute-entry" type="checkbox" class="accent-blue-500"><span>Mute on entry</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-camera-control" type="checkbox" checked class="accent-blue-500"><span>Camera controls</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-remove-participants" type="checkbox" checked class="accent-blue-500"><span>Mute / remove participants</span></label>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="createVideoRoom('scheduled')" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Schedule Call</button>
+          <button onclick="createVideoRoom('live')" class="btn-press bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Start Call</button>
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3"><h3 class="text-sm font-black text-white">Video Call Rooms</h3><span class="text-[11px] text-gray-500">Use host links, embed URLs, and moderation toggles without code changes</span></div>
+        ${renderRoomRows(live.videoCallRooms)}
+      </div>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.updateLivePlatformField = function(collectionName, platformId, path, value) {
+  const collection = window._liveControlAdminState?.[collectionName] || [];
+  const platform = collection.find(item => item.id === platformId);
+  if (!platform) return;
+  setDeepValue(platform, path, value);
+};
+
+window.toggleLivePlatformEnabled = function(collectionName, platformId, enabled) {
+  const collection = window._liveControlAdminState?.[collectionName] || [];
+  const platform = collection.find(item => item.id === platformId);
+  if (!platform) return;
+  platform.enabled = enabled;
+};
+
+async function persistLiveControl(showMessage = true) {
+  const { error } = await saveLiveControlAdminState(window._liveControlAdminState);
+  if (error) {
+    showToast('Saved locally. Run the live manager migration to persist provider settings.', 'info');
+    return false;
+  }
+  if (showMessage) showToast('Live manager settings saved');
+  return true;
+}
+
+window.saveLiveStreamingSettings = async function() { await persistLiveControl(true); };
+window.saveVideoCallSettings = async function() { await persistLiveControl(true); };
+
+window.createLiveSession = async function(mode) {
+  await ensureLiveControlLoaded();
+  const selectedPlatforms = [...document.querySelectorAll('[data-live-platform-select]:checked')].map(input => input.value);
+  const session = {
+    id: `session-${Date.now()}`,
+    title: document.getElementById('live-session-title')?.value?.trim() || 'Live Stream',
+    headline: document.getElementById('live-session-headline')?.value?.trim() || '',
+    description: document.getElementById('live-session-description')?.value?.trim() || '',
+    embedUrl: document.getElementById('live-session-embed')?.value?.trim() || '',
+    badgeText: document.getElementById('live-session-badge')?.value?.trim() || 'LIVE NOW',
+    status: mode === 'live' ? 'live' : 'scheduled',
+    scheduledAt: document.getElementById('live-session-scheduled')?.value || '',
+    startedAt: mode === 'live' ? new Date().toISOString() : '',
+    selectedPlatforms,
+    notifyVisitors: document.getElementById('live-notify-visitors')?.checked !== false,
+    showHomepageBadge: document.getElementById('live-show-badge')?.checked !== false,
+    showHomepageEmbed: !!document.getElementById('live-show-embed')?.checked,
+    viewerCount: 0,
+    commentCount: 0,
+    streamStatus: mode === 'live' ? 'live' : 'scheduled',
+  };
+  window._liveControlAdminState.liveSessions.unshift(session);
+  if (mode === 'live') {
+    window._livePublicState = {
+      isLive: true,
+      badgeText: session.badgeText,
+      headline: session.headline || session.title,
+      description: session.description,
+      platformLabels: session.selectedPlatforms.map(id => LIVE_STREAM_PLATFORM_DEFS.find(def => def.id === id)?.label || id),
+      embedUrl: session.showHomepageEmbed ? session.embedUrl : '',
+      viewerCount: session.viewerCount,
+      commentCount: session.commentCount,
+      streamStatus: 'live',
+      sessionId: session.id,
+      notifyVisitors: session.notifyVisitors,
+      startedAt: session.startedAt,
+      updatedAt: new Date().toISOString(),
+    };
+    await savePublicLiveState(window._livePublicState);
+  }
+  await persistLiveControl(false);
+  showToast(mode === 'live' ? 'Live stream started' : 'Live stream scheduled');
+  renderLiveStreamingManager();
+};
+
+window.startLiveSession = async function(sessionId) {
+  await ensureLiveControlLoaded();
+  const session = window._liveControlAdminState.liveSessions.find(item => item.id === sessionId);
+  if (!session) return;
+  session.status = 'live';
+  session.startedAt = new Date().toISOString();
+  session.streamStatus = 'live';
+  window._livePublicState = {
+    isLive: true,
+    badgeText: session.badgeText || 'LIVE NOW',
+    headline: session.headline || session.title,
+    description: session.description || '',
+    platformLabels: session.selectedPlatforms.map(id => LIVE_STREAM_PLATFORM_DEFS.find(def => def.id === id)?.label || id),
+    embedUrl: session.showHomepageEmbed ? session.embedUrl : '',
+    viewerCount: session.viewerCount || 0,
+    commentCount: session.commentCount || 0,
+    streamStatus: 'live',
+    sessionId: session.id,
+    notifyVisitors: session.notifyVisitors !== false,
+    startedAt: session.startedAt,
+    updatedAt: new Date().toISOString(),
+  };
+  await savePublicLiveState(window._livePublicState);
+  await persistLiveControl(false);
+  showToast('Live session published');
+  renderLiveStreamingManager();
+};
+
+window.endLiveSession = async function(sessionId) {
+  await ensureLiveControlLoaded();
+  const session = window._liveControlAdminState.liveSessions.find(item => item.id === sessionId);
+  if (!session) return;
+  session.status = 'ended';
+  session.streamStatus = 'ended';
+  session.endedAt = new Date().toISOString();
+  if (window._livePublicState?.sessionId === sessionId) await window.clearPublicLiveState();
+  else {
+    await persistLiveControl(false);
+    showToast('Live session ended');
+    renderLiveStreamingManager();
+  }
+};
+
+window.removeLiveSession = async function(sessionId) {
+  window._liveControlAdminState.liveSessions = window._liveControlAdminState.liveSessions.filter(item => item.id !== sessionId);
+  if (window._livePublicState?.sessionId === sessionId) await window.clearPublicLiveState();
+  await persistLiveControl(false);
+  showToast('Live session deleted');
+  renderLiveStreamingManager();
+};
+
+window.clearPublicLiveState = async function() {
+  window._livePublicState = {
+    isLive: false,
+    badgeText: 'LIVE NOW',
+    headline: '',
+    description: '',
+    platformLabels: [],
+    embedUrl: '',
+    viewerCount: 0,
+    commentCount: 0,
+    streamStatus: 'offline',
+    sessionId: '',
+    notifyVisitors: true,
+    startedAt: '',
+    updatedAt: new Date().toISOString(),
+  };
+  await savePublicLiveState(window._livePublicState);
+  await persistLiveControl(false);
+  showToast('Public live state cleared');
+  renderLiveStreamingManager();
+};
+
+window.createVideoRoom = async function(mode) {
+  await ensureLiveControlLoaded();
+  const room = {
+    id: `room-${Date.now()}`,
+    title: document.getElementById('video-room-title')?.value?.trim() || 'Video Call Room',
+    providerId: document.getElementById('video-room-provider')?.value || 'zoom',
+    callType: document.getElementById('video-room-type')?.value || 'group',
+    roomCode: document.getElementById('video-room-code')?.value?.trim() || '',
+    hostUrl: document.getElementById('video-room-host')?.value?.trim() || '',
+    joinUrl: document.getElementById('video-room-join')?.value?.trim() || '',
+    embedUrl: document.getElementById('video-room-embed')?.value?.trim() || '',
+    status: mode === 'live' ? 'live' : 'scheduled',
+    scheduledAt: document.getElementById('video-room-scheduled')?.value || '',
+    startedAt: mode === 'live' ? new Date().toISOString() : '',
+    maxParticipants: parseInt(document.getElementById('video-room-max')?.value || '25', 10) || 25,
+    waitingRoom: !!document.getElementById('video-waiting-room')?.checked,
+    screenShare: !!document.getElementById('video-screen-share')?.checked,
+    recording: !!document.getElementById('video-recording')?.checked,
+    chatEnabled: !!document.getElementById('video-chat')?.checked,
+    fileSharing: !!document.getElementById('video-file-share')?.checked,
+    muteOnEntry: !!document.getElementById('video-mute-entry')?.checked,
+    cameraControl: !!document.getElementById('video-camera-control')?.checked,
+    removeParticipants: !!document.getElementById('video-remove-participants')?.checked,
+    notes: document.getElementById('video-room-notes')?.value?.trim() || '',
+  };
+  window._liveControlAdminState.videoCallRooms.unshift(room);
+  await persistLiveControl(false);
+  if (mode === 'live' && room.hostUrl) window.open(room.hostUrl, '_blank', 'noopener');
+  showToast(mode === 'live' ? 'Video call started' : 'Video call scheduled');
+  renderVideoCallManager();
+};
+
+window.startVideoRoom = async function(roomId) {
+  const room = window._liveControlAdminState.videoCallRooms.find(item => item.id === roomId);
+  if (!room) return;
+  room.status = 'live';
+  room.startedAt = new Date().toISOString();
+  await persistLiveControl(false);
+  if (room.hostUrl) window.open(room.hostUrl, '_blank', 'noopener');
+  showToast('Video room started');
+  renderVideoCallManager();
+};
+
+window.endVideoRoom = async function(roomId) {
+  const room = window._liveControlAdminState.videoCallRooms.find(item => item.id === roomId);
+  if (!room) return;
+  room.status = 'ended';
+  room.endedAt = new Date().toISOString();
+  await persistLiveControl(false);
+  showToast('Video room ended');
+  renderVideoCallManager();
+};
+
+window.removeVideoRoom = async function(roomId) {
+  window._liveControlAdminState.videoCallRooms = window._liveControlAdminState.videoCallRooms.filter(item => item.id !== roomId);
+  await persistLiveControl(false);
+  showToast('Video room deleted');
+  renderVideoCallManager();
+};
 
 // ══════════════════════════════════════════════════════════
 //  INIT

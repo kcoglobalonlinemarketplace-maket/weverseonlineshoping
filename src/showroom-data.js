@@ -1356,16 +1356,18 @@ export function isDBLoaded() { return _dbLoaded; }
 export async function loadDBListings() {
   try {
     const { supabase } = await import('./supabase-client.js');
+    const { listLocalShowroomListings } = await import('./local-showroom-store.js');
     const { data, error } = await supabase
       .from('showroom_listings')
       .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
-    if (error) { _dbLoaded = true; return []; }
-    _dbListings = (data || []).map(row => ({
+    const source = error ? listLocalShowroomListings().filter(row => row.is_active !== false) : (data || []);
+    _dbListings = source.map(row => ({
       ...row,
       images: Array.isArray(row.images) ? row.images : [],
       features: Array.isArray(row.features) ? row.features : [],
+      highlights: Array.isArray(row.highlights) ? row.highlights : [],
       rating: Number(row.rating) || 0,
       rating_count: row.rating_count || 0,
       favorite_count: row.favorite_count || 0,

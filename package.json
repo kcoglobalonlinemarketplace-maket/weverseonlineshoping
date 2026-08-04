@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cp app.js dist/",
+    "build": "vite build && node -e \"require('fs').copyFileSync('app.js','dist/app.js')\"",
     "preview": "vite preview",
     "cap:sync": "npm run build && npx cap sync android",
     "cap:open": "npx cap open android",

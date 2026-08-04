@@ -1,8 +1,9 @@
 import { supabase } from './supabase-client.js';
 import { getCurrentUser } from './auth.js';
 import { trackEvent } from './analytics.js';
-import { SHOWROOM_LISTINGS, formatPrice, flagEmoji } from './showroom-data.js';
+import { SHOWROOM_LISTINGS, findListingById, formatPrice, flagEmoji, getAllListings, loadDBListings } from './showroom-data.js';
 import { detectCurrency, getCountryByCode, COUNTRIES, SUPPORTED_CURRENCIES } from './country-data.js';
+import { buildFallbackNotice, getManualPaymentAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -45,6 +46,11 @@ let state = {
   shippingCountry: 'US',
   orderNumber: '',
   processing: false,
+  paymentSettings: null,
+  manualPaymentAccounts: [],
+  manualPaymentInstructions: '',
+  paymentGateway: 'both',
+  autoDetectedCurrency: '',
 };
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -87,6 +93,15 @@ function copyToClipboard(text) {
   const fb = () => { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(t); };
   if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(() => fb()); else fb();
   showToast('Copied to clipboard.');
+}
+
+function getResolvedManualPayment() {
+  const requestedCurrency = state.selectedCurrency === 'USD' && !state.autoDetectedCurrency ? '' : state.selectedCurrency;
+  const result = resolveAccountForCountry(state.manualPaymentAccounts, state.countryCode, requestedCurrency);
+  return {
+    ...result,
+    fallbackNotice: result.isFallback ? buildFallbackNotice(result.account, state.countryCode, state.selectedCurrency, state.manualPaymentInstructions) : null,
+  };
 }
 
 /* ── Particles ──────────────────────────────────────────────── */
@@ -133,14 +148,20 @@ async function init() {
   // Load listing from URL param or cart
   const listingId = params.get('id');
   if (listingId) {
-    state.listing = SHOWROOM_LISTINGS.find(l => l.property_id === listingId);
+    state.listing = findListingById(listingId);
+    if (!state.listing) {
+      await loadDBListings();
+      state.listing = findListingById(listingId);
+    }
     if (!state.listing) { root.innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>'; return; }
     state.cartItems = [{ listing: state.listing, quantity: 1 }];
   } else {
     // Load from cart
     const cart = JSON.parse(localStorage.getItem('kco_cart') || '[]');
+    await loadDBListings();
+    const listings = getAllListings();
     state.cartItems = cart.map(id => {
-      const l = SHOWROOM_LISTINGS.find(x => x.property_id === id);
+      const l = listings.find(x => x.property_id === id);
       return l ? { listing: l, quantity: 1 } : null;
     }).filter(Boolean);
     if (state.cartItems.length === 0) {
@@ -157,7 +178,15 @@ async function init() {
     const { data: profile } = await supabase.from('profiles').select('country_code').eq('user_id', state.user.id).maybeSingle();
     if (profile?.country_code) state.countryCode = profile.country_code;
   }
-  state.selectedCurrency = detectCurrency(state.countryCode) || 'USD';
+  state.autoDetectedCurrency = detectCurrency(state.countryCode) || '';
+  state.selectedCurrency = state.autoDetectedCurrency || 'USD';
+  state.paymentSettings = await loadPaymentSettings();
+  state.manualPaymentAccounts = getManualPaymentAccounts(state.paymentSettings);
+  state.manualPaymentInstructions = getPaymentInstructions(state.paymentSettings);
+  state.paymentGateway = state.paymentSettings.payment_gateway || 'both';
+  if (state.paymentGateway === 'manual') state.paymentMethod = 'manual_bank_transfer';
+  if (state.paymentGateway === 'flutterwave') state.paymentMethod = 'flutterwave';
+  if (!getSupportedCurrenciesFromAccounts(state.manualPaymentAccounts).includes(state.selectedCurrency)) state.selectedCurrency = 'USD';
 
   // Load saved addresses
   if (state.user && !state.isGuest) {
@@ -397,7 +426,10 @@ function renderStep2() {
 
 /* ── Step 3: Payment ─────────────────────────────────────────── */
 function renderStep3() {
-  const bankAcc = BANK_ACCOUNTS[state.selectedCurrency] || BANK_ACCOUNTS.USD;
+  const supportedCurrencies = getSupportedCurrenciesFromAccounts(state.manualPaymentAccounts);
+  const manualPayment = getResolvedManualPayment();
+  const showFlutterwave = state.paymentGateway === 'both' || state.paymentGateway === 'flutterwave';
+  const showManual = state.paymentGateway === 'both' || state.paymentGateway === 'manual';
   return `
     <!-- Payment method selection -->
     <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
@@ -406,7 +438,7 @@ function renderStep3() {
       </h3>
       <div class="space-y-3">
         <!-- Flutterwave -->
-        <div onclick="selectPaymentMethod('flutterwave')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'flutterwave' ? 'selected' : 'bg-blue-950/30 border-blue-500/10 hover:border-blue-500/30'}">
+        ${showFlutterwave ? `<div onclick="selectPaymentMethod('flutterwave')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'flutterwave' ? 'selected' : 'bg-blue-950/30 border-blue-500/10 hover:border-blue-500/30'}">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-orange-500/15 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="w-5 h-5 text-orange-400"></i></div>
             <div class="flex-1">
@@ -417,21 +449,21 @@ function renderStep3() {
               ${state.paymentMethod === 'flutterwave' ? '<div class="w-2 h-2 bg-white rounded-full"></div>' : ''}
             </div>
           </div>
-        </div>
+        </div>` : ''}
 
         <!-- Manual Bank Transfer -->
-        <div onclick="selectPaymentMethod('manual_bank_transfer')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'manual_bank_transfer' ? 'selected' : 'bg-blue-950/30 border-blue-500/10 hover:border-blue-500/30'}">
+        ${showManual ? `<div onclick="selectPaymentMethod('manual_bank_transfer')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'manual_bank_transfer' ? 'selected' : 'bg-blue-950/30 border-blue-500/10 hover:border-blue-500/30'}">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-500/15 rounded-lg flex items-center justify-center"><i data-lucide="landmark" class="w-5 h-5 text-blue-400"></i></div>
             <div class="flex-1">
               <h4 class="text-sm font-bold text-white">Manual Bank Transfer</h4>
-              <p class="text-xs text-gray-500">Pay directly to our bank account and upload receipt</p>
+              <p class="text-xs text-gray-500">Pay to the matched country account and upload your receipt</p>
             </div>
             <div class="w-5 h-5 rounded-full border-2 ${state.paymentMethod === 'manual_bank_transfer' ? 'border-blue-500 bg-blue-500' : 'border-gray-600'} flex items-center justify-center">
               ${state.paymentMethod === 'manual_bank_transfer' ? '<div class="w-2 h-2 bg-white rounded-full"></div>' : ''}
             </div>
           </div>
-        </div>
+        </div>` : ''}
       </div>
     </div>
 
@@ -441,8 +473,8 @@ function renderStep3() {
         <i data-lucide="globe" class="w-4 h-4 text-blue-400"></i> Payment Currency
       </h3>
       <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
-        ${SUPPORTED_CURRENCIES.map(c => {
-          const acc = BANK_ACCOUNTS[c];
+        ${supportedCurrencies.map(c => {
+          const acc = state.manualPaymentAccounts.find(account => account.currency === c);
           if (!acc) return '';
           return `<button onclick="selectCurrency('${c}')" class="btn-press flex flex-col items-center gap-1 p-2.5 rounded-xl border transition relative overflow-hidden ${c === state.selectedCurrency ? 'bg-blue-500/15 border-blue-500/50 text-blue-400' : 'bg-blue-950/40 border-blue-500/10 text-gray-400 hover:border-blue-500/30'}">
             <span class="text-xl">${acc.flag}</span><span class="text-xs font-bold">${c}</span>
@@ -452,7 +484,7 @@ function renderStep3() {
     </div>
 
     <!-- Bank account details (if manual) -->
-    ${state.paymentMethod === 'manual_bank_transfer' ? renderBankDetails(bankAcc) : ''}
+    ${state.paymentMethod === 'manual_bank_transfer' ? renderBankDetails(manualPayment.account, manualPayment.fallbackNotice, state.manualPaymentInstructions) : ''}
 
     <!-- Place order button -->
     <div class="space-y-3">
@@ -476,7 +508,7 @@ function renderStep3() {
   `;
 }
 
-function renderBankDetails(acc) {
+function renderBankDetails(acc, fallbackNotice, instructions) {
   const fields = [
     { label:'Beneficiary Name', value:acc.beneficiary },
     { label:'Bank Name', value:acc.bankName },
@@ -495,6 +527,7 @@ function renderBankDetails(acc) {
 
   return `
     <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+      ${fallbackNotice ? `<div class="mb-4 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl text-sm text-amber-200">${fallbackNotice.message}</div>` : ''}
       <div class="flex items-center gap-3 mb-4">
         <div class="p-2.5 bg-blue-500/10 rounded-lg"><i data-lucide="landmark" class="w-5 h-5 text-blue-400"></i></div>
         <div class="flex-1">
@@ -511,6 +544,7 @@ function renderBankDetails(acc) {
           </div>
         `).join('')}
       </div>
+      <div class="mt-4 p-3 bg-blue-950/40 border border-blue-500/10 rounded-xl text-xs text-gray-300 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
     </div>
   `;
 }

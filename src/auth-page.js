@@ -258,6 +258,80 @@ function hideError() {
   errorBox.classList.add('hidden');
 }
 
+function getPostAuthRedirectTarget() {
+  const redirect = getRedirectAfterAuth();
+  const params = new URLSearchParams(window.location.search);
+  const redirectParam = params.get('redirect');
+  return redirect || redirectParam || '/';
+}
+
+function cleanupAuthCallbackUrl() {
+  const url = new URL(window.location.href);
+  const keysToDelete = [
+    'code',
+    'token_hash',
+    'type',
+    'error',
+    'error_code',
+    'error_description',
+  ];
+  keysToDelete.forEach((key) => url.searchParams.delete(key));
+  url.hash = '';
+  window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+}
+
+async function handleEmailAuthCallbackIfPresent() {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const searchParams = new URLSearchParams(window.location.search);
+  const callbackError =
+    hashParams.get('error_description') ||
+    searchParams.get('error_description') ||
+    hashParams.get('error') ||
+    searchParams.get('error');
+
+  if (callbackError) {
+    showError(decodeURIComponent(callbackError));
+    return false;
+  }
+
+  const code = searchParams.get('code');
+  const tokenHash = searchParams.get('token_hash');
+  const callbackType = searchParams.get('type');
+
+  // Nothing to process: this is a regular auth page view.
+  if (!code && !(tokenHash && callbackType) && !hashParams.get('access_token')) {
+    return false;
+  }
+
+  try {
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) throw error;
+    } else if (tokenHash && callbackType) {
+      const { error } = await supabase.auth.verifyOtp({
+        type: callbackType,
+        token_hash: tokenHash,
+      });
+      if (error) throw error;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      showError('Email link was received but sign-in was not completed. Please request a new link.');
+      return false;
+    }
+
+    cleanupAuthCallbackUrl();
+    const target = getPostAuthRedirectTarget();
+    clearRedirectAfterAuth();
+    window.location.href = target;
+    return true;
+  } catch (err) {
+    showError(err?.message || 'Could not complete email sign-in. Please request a fresh email link.');
+    return false;
+  }
+}
+
 function showForgotPassword() {
   const email = emailInput.value.trim();
   if (!email) { showError('Enter your email above first, then click Forgot Password.'); return; }
@@ -329,6 +403,7 @@ form.addEventListener('submit', async (e) => {
     if (result.error) {
       const msg = result.error.message || 'Authentication failed';
       if (msg.includes('Invalid login')) showError('Incorrect email or password.');
+      else if (msg.includes('Email not confirmed')) showError('Please verify your email first, then sign in.');
       else if (msg.includes('already registered')) showError('An account with this email already exists. Please sign in.');
       else if (msg.includes('Password should be')) showError('Password must be at least 6 characters.');
       else showError(msg);
@@ -408,7 +483,7 @@ form.addEventListener('submit', async (e) => {
     }
     window.location.href = target;
   } catch (err) {
-    showError('Something went wrong. Please try again.');
+    showError(err?.message || 'Something went wrong. Please try again.');
     submitBtn.disabled = false;
     submitBtn.innerHTML = mode === 'login' ? '<i data-lucide="log-in" class="w-5 h-5"></i> Sign In' : '<i data-lucide="user-plus" class="w-5 h-5"></i> Create Account';
     if (window.lucide) lucide.createIcons();
@@ -417,13 +492,14 @@ form.addEventListener('submit', async (e) => {
 
 /* ── Redirect if already logged in ─────────────────────────── */
 (async () => {
+  const handledEmailCallback = await handleEmailAuthCallbackIfPresent();
+  if (handledEmailCallback) return;
+
   const { data } = await supabase.auth.getUser();
   if (data?.user) {
-    const redirect = getRedirectAfterAuth();
+    const target = getPostAuthRedirectTarget();
     clearRedirectAfterAuth();
-    const params = new URLSearchParams(window.location.search);
-    const redirectParam = params.get('redirect');
-    window.location.href = redirect || redirectParam || '/';
+    window.location.href = target;
   }
   if (window.lucide) lucide.createIcons();
 })();
