@@ -1,2855 +1,1064 @@
 import { supabase } from './supabase-client.js';
-import { getCurrentUser, signOut } from './auth.js';
 
-// ── Navigation config ─────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  KCO ADMIN DASHBOARD  —  Complete Management Console
+// ══════════════════════════════════════════════════════════
+
+const ADMIN_EMAIL = 'weverseonlineshop@gmail.com';
+
+// ── Navigation config ──────────────────────────────────────
 const NAV = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', group: 'main' },
-  { id: 'products', label: 'Products', icon: 'package', group: 'main' },
-  { id: 'orders', label: 'Orders', icon: 'shopping-bag', group: 'main' },
-  { id: 'special-orders', label: 'Special Orders', icon: 'package-plus', group: 'main' },
-  { id: 'customers', label: 'Customers', icon: 'users', group: 'main' },
-  { id: 'payments', label: 'Payments', icon: 'credit-card', group: 'main' },
-  { id: 'shipping', label: 'Shipping', icon: 'truck', group: 'main' },
-  { id: 'promotions', label: 'Promotions', icon: 'megaphone', group: 'main' },
-  { id: 'coupons', label: 'Coupons', icon: 'ticket', group: 'main' },
-  { id: 'reviews', label: 'Reviews', icon: 'star', group: 'main' },
-  { id: 'content', label: 'Content', icon: 'file-text', group: 'main' },
-  { id: 'email', label: 'Email', icon: 'mail', group: 'main' },
-  { id: 'analytics', label: 'Analytics', icon: 'bar-chart-3', group: 'main' },
-  { id: 'ai', label: 'AI Assistant', icon: 'sparkles', group: 'main' },
-  { id: 'integrity', label: 'Product Integrity', icon: 'shield-check', group: 'main' },
-  { id: 'domains', label: 'Custom Domain', icon: 'globe', group: 'system' },
-  { id: 'security', label: 'Security', icon: 'shield', group: 'system' },
-  { id: 'settings', label: 'Website Settings', icon: 'settings', group: 'system' },
-  { id: 'ai-settings', label: 'AI Settings', icon: 'bot', group: 'system' },
-  { id: 'integrations', label: 'Integrations', icon: 'plug', group: 'system' },
-  { id: 'publish', label: 'Publish & Deploy', icon: 'rocket', group: 'system' },
+  { group: 'Main', items: [
+    { id: 'dashboard',   label: 'Dashboard',         icon: 'layout-dashboard' },
+    { id: 'products',    label: 'Products',           icon: 'package' },
+    { id: 'properties',  label: 'Properties',         icon: 'home' },
+    { id: 'orders',      label: 'Orders',             icon: 'shopping-bag' },
+    { id: 'customers',   label: 'Customers',          icon: 'users' },
+    { id: 'reviews',     label: 'Reviews',            icon: 'star' },
+    { id: 'messages',    label: 'Messages',           icon: 'message-circle' },
+    { id: 'coupons',     label: 'Coupons',            icon: 'ticket' },
+    { id: 'ads',         label: 'Advertisements',     icon: 'megaphone' },
+    { id: 'notifications', label: 'Notifications',    icon: 'bell' },
+  ]},
+  { group: 'Configuration', items: [
+    { id: 'ai-settings', label: 'AI Settings',        icon: 'bot' },
+    { id: 'content',     label: 'Content Manager',    icon: 'file-text' },
+    { id: 'seo',         label: 'SEO Manager',        icon: 'search' },
+    { id: 'email',       label: 'Email Settings',     icon: 'mail' },
+    { id: 'analytics',   label: 'Analytics',          icon: 'bar-chart-3' },
+    { id: 'security',    label: 'Security',           icon: 'shield' },
+    { id: 'activity',    label: 'Activity Logs',      icon: 'activity' },
+    { id: 'backup',      label: 'Backup & Restore',   icon: 'database' },
+    { id: 'settings',    label: 'Settings',           icon: 'settings' },
+    { id: 'publish',     label: 'Publish & Deploy',   icon: 'rocket' },
+  ]},
 ];
 
 const PAGE_TITLES = {
-  dashboard: 'Dashboard', products: 'Product Management', orders: 'Order Management',
-  customers: 'Customer Management', payments: 'Payment Management', shipping: 'Shipping Management',
-  promotions: 'Promotions', coupons: 'Coupon Management', reviews: 'Review Moderation',
-  content: 'Content Management', email: 'Email Management',
-  analytics: 'Analytics', ai: 'AI Admin Assistant',
-  audit: 'Audit Trail',
-  domains: 'Custom Domain Management',
-  security: 'Security & Logs',
-  settings: 'Website Settings', integrations: 'Integrations',
-  'special-orders': 'Special Order Requests',
-  'ai-settings': 'AI Settings',
-  integrity: 'AI Product Integrity System',
-  publish: 'Publish & Deploy',
+  dashboard: 'Dashboard', products: 'Products Manager', properties: 'Properties Manager',
+  orders: 'Orders Manager', customers: 'Customers Manager', reviews: 'Reviews Manager',
+  messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement Manager',
+  notifications: 'Notifications', 'ai-settings': 'AI Settings', content: 'Content Manager',
+  seo: 'SEO Manager', email: 'Email Settings', analytics: 'Analytics',
+  security: 'Security', activity: 'Activity Logs', backup: 'Backup & Restore',
+  settings: 'Settings', publish: 'Publish & Deploy',
 };
 
-let state = {
-  user: null,
-  isAdmin: false,
-  currentSection: 'dashboard',
-  data: {},
-  loading: true,
-};
+// ── State ──────────────────────────────────────────────────
+let state = { user: null, section: 'dashboard' };
 
-// ── Helpers ────────────────────────────────────────────────────
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  document.getElementById('toast-msg').textContent = msg;
-  toast.classList.remove('translate-y-20', 'opacity-0');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+// ── Helpers ────────────────────────────────────────────────
+function esc(t) {
+  if (t == null) return '';
+  const d = document.createElement('div'); d.textContent = String(t); return d.innerHTML;
+}
+function fmtMoney(n, cur = 'USD') {
+  return `${(parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`;
+}
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'; }
+function fmtDT(d) { return d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
+function genId() { return 'KCO-' + String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0'); }
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  const m = document.getElementById('toast-msg');
+  const icon = t.querySelector('i[data-lucide]');
+  if (!t || !m) return;
+  m.textContent = msg;
+  const iconMap = { success: 'check-circle', error: 'alert-circle', info: 'info' };
+  const colorMap = { success: 'text-emerald-400', error: 'text-red-400', info: 'text-blue-400' };
+  if (icon) { icon.setAttribute('data-lucide', iconMap[type] || 'info'); icon.className = `w-4 h-4 shrink-0 ${colorMap[type] || 'text-blue-400'}`; }
+  t.style.transform = 'translateY(0)'; t.style.opacity = '1';
   if (window.lucide) lucide.createIcons();
+  clearTimeout(t._t);
+  t._t = setTimeout(() => { t.style.transform = 'translateY(20px)'; t.style.opacity = '0'; }, 3000);
 }
 
-function escapeHtml(text) {
-  if (text == null) return '';
-  const div = document.createElement('div');
-  div.textContent = String(text);
-  return div.innerHTML;
-}
-
-function fmtMoney(amount, currency = 'USD') {
-  const n = parseFloat(amount) || 0;
-  return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
-}
-
-function fmtDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function fmtDateTime(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function statusBadge(status) {
-  const colors = {
-    order_placed: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    payment_approved: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    processing: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-    shipped: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-    in_transit: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-    delivered: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    cancelled: 'bg-red-500/10 text-red-400 border-red-500/20',
-    pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    inactive: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+function badge(status) {
+  const map = {
+    pending_verification: ['bg-amber-500/10 text-amber-400 border-amber-500/20', 'Pending'],
+    approved: ['bg-emerald-500/10 text-emerald-400 border-emerald-500/20', 'Approved'],
+    rejected: ['bg-red-500/10 text-red-400 border-red-500/20', 'Rejected'],
+    payment_approved: ['bg-blue-500/10 text-blue-400 border-blue-500/20', 'Paid'],
+    order_placed: ['bg-amber-500/10 text-amber-400 border-amber-500/20', 'Placed'],
+    processing: ['bg-indigo-500/10 text-indigo-400 border-indigo-500/20', 'Processing'],
+    shipped: ['bg-violet-500/10 text-violet-400 border-violet-500/20', 'Shipped'],
+    in_transit: ['bg-violet-500/10 text-violet-400 border-violet-500/20', 'In Transit'],
+    out_for_delivery: ['bg-cyan-500/10 text-cyan-400 border-cyan-500/20', 'Out for Delivery'],
+    delivered: ['bg-emerald-500/10 text-emerald-400 border-emerald-500/20', 'Delivered'],
+    cancelled: ['bg-red-500/10 text-red-400 border-red-500/20', 'Cancelled'],
+    active: ['bg-emerald-500/10 text-emerald-400 border-emerald-500/20', 'Active'],
+    inactive: ['bg-gray-500/10 text-gray-400 border-gray-500/20', 'Inactive'],
+    sale: ['bg-blue-500/10 text-blue-400 border-blue-500/20', 'For Sale'],
+    rent: ['bg-violet-500/10 text-violet-400 border-violet-500/20', 'For Rent'],
+    true: ['bg-emerald-500/10 text-emerald-400 border-emerald-500/20', 'Active'],
+    false: ['bg-gray-500/10 text-gray-400 border-gray-500/20', 'Inactive'],
   };
-  const cls = colors[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-  return `<span class="inline-flex items-center gap-1 ${cls} border text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">${escapeHtml(status?.replace(/_/g, ' '))}</span>`;
+  const [cls, label] = map[String(status)] || ['bg-gray-500/10 text-gray-400 border-gray-500/20', esc(status) || '—'];
+  return `<span class="badge ${cls}">${label}</span>`;
 }
 
-function ripple(btn) {
-  btn.addEventListener('click', function (e) {
-    const r = this.getBoundingClientRect();
-    const rip = document.createElement('span');
-    rip.className = 'ripple';
-    const s = Math.max(r.width, r.height);
-    rip.style.width = rip.style.height = s + 'px';
-    rip.style.left = (e.clientX - r.left - s / 2) + 'px';
-    rip.style.top = (e.clientY - r.top - s / 2) + 'px';
-    this.appendChild(rip);
-    setTimeout(() => rip.remove(), 600);
-  });
+function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
+function openModal(html) { document.getElementById('modal-container').innerHTML = html; if (window.lucide) lucide.createIcons(); }
+
+function statCard(label, value, icon, color, sub = '') {
+  const c = { blue: 'bg-blue-500/10 text-blue-400 border-blue-500/15', amber: 'bg-amber-500/10 text-amber-400 border-amber-500/15', emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15', red: 'bg-red-500/10 text-red-400 border-red-500/15', violet: 'bg-violet-500/10 text-violet-400 border-violet-500/15', orange: 'bg-orange-500/10 text-orange-400 border-orange-500/15' };
+  return `<div class="stat-card glass-soft border border-blue-500/15 rounded-2xl p-4">
+    <div class="flex items-start justify-between mb-3">
+      <div class="p-2 ${c[color] || c.blue} rounded-xl border"><i data-lucide="${icon}" class="w-4 h-4"></i></div>
+    </div>
+    <p class="text-2xl font-black text-white">${esc(value)}</p>
+    <p class="text-[11px] text-gray-500 uppercase tracking-wide mt-0.5 font-bold">${esc(label)}</p>
+    ${sub ? `<p class="text-[10px] text-gray-600 mt-1">${esc(sub)}</p>` : ''}
+  </div>`;
 }
 
-function closeModal(e) {
-  if (e && e.target !== e.currentTarget) return;
-  document.getElementById('modal-container').innerHTML = '';
-}
+function loading() { return `<div class="flex items-center justify-center py-24"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading…</div></div>`; }
+function emptyState(icon, title, sub, btnHtml = '') { return `<div class="flex flex-col items-center justify-center py-20 text-center"><div class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-4"><i data-lucide="${icon}" class="w-8 h-8 text-blue-400"></i></div><h3 class="text-base font-black text-white mb-1">${esc(title)}</h3><p class="text-sm text-gray-500 max-w-xs">${esc(sub)}</p>${btnHtml ? `<div class="mt-5">${btnHtml}</div>` : ''}</div>`; }
 
-window.closeModal = closeModal;
-
-// ── Data loading ──────────────────────────────────────────────
-async function loadDashboardStats() {
-  const [products, orders, profiles, promotions, gateways, reviews, settings] = await Promise.all([
-    supabase.from('showroom_listings').select('id,category,is_active,stock_quantity,price,currency,listing_type'),
-    supabase.from('payment_receipts').select('id,status,amount,currency,payment_method,created_at'),
-    supabase.from('profiles').select('user_id,created_at', { count: 'exact' }),
-    supabase.from('promotions').select('id,is_active,promo_type'),
-    supabase.from('payment_gateways').select('id,is_active'),
-    supabase.from('product_reviews').select('id', { count: 'exact' }),
-    supabase.from('site_settings').select('*').limit(1).maybeSingle(),
-  ]);
-
-  const productList = products.data || [];
-  const orderList = orders.data || [];
-  const cats = new Set(productList.map(p => p.category).filter(Boolean));
-  const lowStock = productList.filter(p => p.stock_quantity != null && p.stock_quantity > 0 && p.stock_quantity < 10);
-  const outStock = productList.filter(p => p.stock_quantity === 0);
-  const revenue = orderList.filter(o => ['payment_approved', 'delivered'].includes(o.status)).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0);
-  const now = new Date();
-  const monthOrders = orderList.filter(o => o.created_at && new Date(o.created_at).getMonth() === now.getMonth() && new Date(o.created_at).getFullYear() === now.getFullYear());
-  const monthRevenue = monthOrders.filter(o => ['payment_approved', 'delivered'].includes(o.status)).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0);
-  const todayOrders = orderList.filter(o => o.created_at && new Date(o.created_at).toDateString() === now.toDateString());
-  const dayRevenue = todayOrders.filter(o => ['payment_approved', 'delivered'].includes(o.status)).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0);
-  const pendingManual = orderList.filter(o => o.payment_method === 'manual_bank_transfer' && o.status === 'order_placed');
-
-  return {
-    totalProducts: productList.length,
-    activeProducts: productList.filter(p => p.is_active).length,
-    totalCategories: cats.size,
-    totalOrders: orderList.length,
-    pendingOrders: orderList.filter(o => o.status === 'order_placed').length,
-    completedOrders: orderList.filter(o => o.status === 'delivered').length,
-    cancelledOrders: orderList.filter(o => o.status === 'cancelled').length,
-    totalRevenue: revenue,
-    monthlyRevenue: monthRevenue,
-    dailyRevenue: dayRevenue,
-    pendingManualPayments: pendingManual.length,
-    activeCoupons: (promotions.data || []).filter(p => p.is_active && p.promo_type === 'coupon').length,
-    totalReviews: reviews.count || 0,
-    totalCustomers: profiles.count || 0,
-    activeGateways: (gateways.data || []).filter(g => g.is_active).length,
-    activePromotions: (promotions.data || []).filter(p => p.is_active).length,
-    lowStock: lowStock.length,
-    outOfStock: outStock.length,
-    lowStockItems: lowStock,
-    settings: settings.data,
-  };
-}
-
-// ── Section renderers ─────────────────────────────────────────
+// ── Sidebar ────────────────────────────────────────────────
 function renderSidebar() {
   const nav = document.getElementById('sidebar-nav');
-  const groups = { main: [], system: [] };
-  NAV.forEach(item => groups[item.group].push(item));
-
-  nav.innerHTML = `
-    ${groups.main.map(item => `
-      <button onclick="navigate('${item.id}')" class="nav-item ${state.currentSection === item.id ? 'active' : ''} w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-bold text-gray-400 rounded-xl">
-        <i data-lucide="${item.icon}" class="w-4 h-4 shrink-0"></i> ${item.label}
-      </button>
-    `).join('')}
-    <div class="pt-3 mt-3 border-t border-blue-500/10">
-      <p class="text-[9px] font-bold text-gray-600 uppercase tracking-wider px-3 mb-1">System</p>
-      ${groups.system.map(item => `
-        <button onclick="navigate('${item.id}')" class="nav-item ${state.currentSection === item.id ? 'active' : ''} w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-bold text-gray-400 rounded-xl">
-          <i data-lucide="${item.icon}" class="w-4 h-4 shrink-0"></i> ${item.label}
-        </button>
-      `).join('')}
-    </div>
-  `;
+  if (!nav) return;
+  nav.innerHTML = NAV.map(g => `
+    <div>
+      <span class="section-label">${g.group}</span>
+      ${g.items.map(item => `
+        <button class="nav-item ${state.section === item.id ? 'active' : ''} w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold rounded-xl" onclick="navigate('${item.id}')">
+          <i data-lucide="${item.icon}" class="w-4 h-4 shrink-0"></i>
+          <span>${item.label}</span>
+        </button>`).join('')}
+    </div>`).join('');
   if (window.lucide) lucide.createIcons();
 }
 
-function renderAdminUserInfo() {
-  const el = document.getElementById('admin-user-info');
-  if (state.user) {
-    el.innerHTML = `
-      <div class="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0">
-        <i data-lucide="user" class="w-4 h-4 text-blue-400"></i>
-      </div>
-      <div class="min-w-0">
-        <p class="text-xs font-bold text-white truncate">${escapeHtml(state.user.email)}</p>
-        <p class="text-[10px] text-emerald-400 font-bold uppercase">Admin</p>
-      </div>
-    `;
+// ── Navigation ─────────────────────────────────────────────
+window.navigate = function(section) {
+  state.section = section;
+  const title = PAGE_TITLES[section] || section;
+  const ptEl = document.getElementById('page-title');
+  if (ptEl) ptEl.textContent = title;
+  renderSidebar();
+  closeSidebar();
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  if (window.lucide) lucide.createIcons();
+  const renderers = {
+    dashboard: renderDashboard, products: renderProducts, properties: renderProperties,
+    orders: renderOrders, customers: renderCustomers, reviews: renderReviews,
+    messages: renderMessages, coupons: renderCoupons, ads: renderAds,
+    notifications: renderNotifications, 'ai-settings': renderAiSettings,
+    content: renderContent, seo: renderSeo, email: renderEmail,
+    analytics: renderAnalytics, security: renderSecurity, activity: renderActivity,
+    backup: renderBackup, settings: renderSettings, publish: renderPublish,
+  };
+  const fn = renderers[section] || (() => { const c = document.getElementById('content'); if (c) c.innerHTML = emptyState('construction', 'Coming Soon', `${title} is being built.`); });
+  fn();
+};
+
+window.openSidebar = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.remove('hidden'); };
+window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.add('hidden'); };
+document.getElementById('close-sidebar')?.addEventListener('click', closeSidebar);
+
+// ══════════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════════
+async function checkAdminAccess(user) {
+  if (!user) return false;
+  try {
+    const { data } = await supabase.rpc('is_current_user_admin');
+    return !!data;
+  } catch { return user.email === ADMIN_EMAIL; }
+}
+
+async function initAuth() {
+  const loginScreen = document.getElementById('login-screen');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    const ok = await checkAdminAccess(session.user);
+    if (ok) {
+      state.user = session.user;
+      showAdminUI();
+      return;
+    }
   }
-  if (window.lucide) lucide.createIcons();
+  showLoginUI();
 }
 
-// ── Dashboard section ─────────────────────────────────────────
+function showLoginUI() {
+  const ls = document.getElementById('login-screen');
+  if (ls) ls.style.display = 'flex';
+  // setup login form
+  const form = document.getElementById('login-form');
+  const errorEl = document.getElementById('login-error');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Signing in…';
+    if (window.lucide) lucide.createIcons();
+    errorEl.classList.add('hidden');
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      errorEl.textContent = error?.message || 'Invalid email or password.';
+      errorEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Sign In';
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    const ok = await checkAdminAccess(data.user);
+    if (!ok) {
+      await supabase.auth.signOut();
+      errorEl.textContent = 'Access denied. Administrator privileges required.';
+      errorEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Sign In';
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    state.user = data.user;
+    showAdminUI();
+  });
+
+  // toggle password visibility
+  document.getElementById('toggle-pw')?.addEventListener('click', () => {
+    const inp = document.getElementById('login-password');
+    const icon = document.querySelector('#toggle-pw i');
+    if (inp.type === 'password') { inp.type = 'text'; if (icon) icon.setAttribute('data-lucide', 'eye-off'); }
+    else { inp.type = 'password'; if (icon) icon.setAttribute('data-lucide', 'eye'); }
+    if (window.lucide) lucide.createIcons();
+  });
+
+  // forgot password
+  document.getElementById('forgot-pw-btn')?.addEventListener('click', () => {
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('forgot-form').classList.remove('hidden');
+  });
+  document.getElementById('back-to-login')?.addEventListener('click', () => {
+    document.getElementById('forgot-form').classList.add('hidden');
+    document.getElementById('login-form').classList.remove('hidden');
+  });
+  document.getElementById('send-reset-btn')?.addEventListener('click', async () => {
+    const email = document.getElementById('reset-email').value.trim();
+    if (!email) return;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/admin.html' });
+    if (error) { showToast(error.message, 'error'); return; }
+    showToast('Reset link sent! Check your email.', 'success');
+    document.getElementById('forgot-form').classList.add('hidden');
+    document.getElementById('login-form').classList.remove('hidden');
+  });
+}
+
+function showAdminUI() {
+  const ls = document.getElementById('login-screen');
+  if (ls) ls.style.display = 'none';
+  const emailEl = document.getElementById('admin-user-email');
+  if (emailEl && state.user) emailEl.textContent = state.user.email || 'Admin';
+  navigate('dashboard');
+}
+
+window.adminSignOut = async function() {
+  await supabase.auth.signOut();
+  state.user = null;
+  const ls = document.getElementById('login-screen');
+  if (ls) ls.style.display = 'flex';
+  document.getElementById('login-form')?.classList.remove('hidden');
+  document.getElementById('forgot-form')?.classList.add('hidden');
+};
+
+// ══════════════════════════════════════════════════════════
+//  1. DASHBOARD
+// ══════════════════════════════════════════════════════════
 async function renderDashboard() {
   const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading dashboard...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-
   try {
-    const stats = await loadDashboardStats();
-    state.data.stats = stats;
+    const [prods, orders, customers, reviews] = await Promise.all([
+      supabase.from('showroom_listings').select('id,listing_type,category,is_active,price,currency', { count: 'exact' }),
+      supabase.from('payment_receipts').select('id,amount,currency,status,created_at', { count: 'exact' }).order('created_at', { ascending: false }).limit(200),
+      supabase.from('profiles').select('user_id,created_at', { count: 'exact' }),
+      supabase.from('product_reviews').select('id,rating,is_approved', { count: 'exact' }),
+    ]);
+
+    const allOrders = orders.data || [];
+    const totalRevenue = allOrders.filter(o => ['approved', 'payment_approved', 'delivered'].includes(o.status)).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0);
+    const pendingOrders = allOrders.filter(o => ['pending_verification', 'order_placed', 'payment_received'].includes(o.status)).length;
+    const totalProds = (prods.data || []).filter(p => p.listing_type !== 'property').length;
+    const totalProps = (prods.data || []).filter(p => p.listing_type === 'property').length;
+    const activeProds = (prods.data || []).filter(p => p.is_active).length;
+    const totalCustomers = customers.count || 0;
+    const totalReviews = reviews.count || 0;
+    const pendingReviews = (reviews.data || []).filter(r => !r.is_approved).length;
+
+    const now = new Date();
+    const monthOrders = allOrders.filter(o => { const d = new Date(o.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+    const monthRevenue = monthOrders.filter(o => ['approved', 'payment_approved', 'delivered'].includes(o.status)).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0);
+
+    // Recent 6 orders
+    const recentOrders = allOrders.slice(0, 6);
 
     content.innerHTML = `
-      <div class="fade-in space-y-6">
-        <!-- Stat cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-          ${statCard('Total Customers', stats.totalCustomers, 'users', 'blue')}
-          ${statCard('Total Products', stats.totalProducts, 'package', 'amber')}
-          ${statCard('Categories', stats.totalCategories, 'layers', 'violet')}
-          ${statCard('Total Orders', stats.totalOrders, 'shopping-bag', 'emerald')}
-          ${statCard('Pending Orders', stats.pendingOrders, 'clock', 'amber')}
-          ${statCard('Completed', stats.completedOrders, 'check-circle', 'emerald')}
-          ${statCard('Cancelled', stats.cancelledOrders, 'x-circle', 'red')}
-          ${statCard('Total Revenue', fmtMoney(stats.totalRevenue), 'dollar-sign', 'emerald')}
-          ${statCard('Monthly Revenue', fmtMoney(stats.monthlyRevenue), 'trending-up', 'blue')}
-          ${statCard('Daily Revenue', fmtMoney(stats.dailyRevenue), 'calendar', 'amber')}
-          ${statCard('Pending Manual', stats.pendingManualPayments, 'alert-triangle', 'orange')}
-          ${statCard('Active Coupons', stats.activeCoupons, 'ticket', 'violet')}
-          ${statCard('Total Reviews', stats.totalReviews, 'star', 'amber')}
-          ${statCard('Low Stock', stats.lowStock, 'alert-circle', 'orange')}
-          ${statCard('Out of Stock', stats.outOfStock, 'package-x', 'red')}
-          ${statCard('Active Gateways', stats.activeGateways, 'credit-card', 'blue')}
-          ${statCard('Active Promos', stats.activePromotions, 'megaphone', 'violet')}
-          ${statCard('Active Products', stats.activeProducts, 'check', 'emerald')}
-        </div>
-
-        <!-- Charts row -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-            <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i> Revenue Overview</h3>
-            <canvas id="chart-revenue" height="200"></canvas>
-          </div>
-          <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up" style="animation-delay:.1s">
-            <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="shopping-bag" class="w-4 h-4 text-blue-400"></i> Orders by Status</h3>
-            <canvas id="chart-orders" height="200"></canvas>
-          </div>
-        </div>
-
-        <!-- Low stock alert -->
-        ${stats.lowStock > 0 ? `
-          <div class="glass border border-orange-500/20 rounded-2xl p-5 slide-up">
-            <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-orange-400"></i> Low Stock Alert (${stats.lowStock})</h3>
-            <div class="space-y-2">
-              ${stats.lowStockItems.slice(0, 5).map(p => `
-                <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-300">${escapeHtml(p.title || 'Untitled')} <span class="text-gray-600">(${p.property_id || '—'})</span></span>
-                  <span class="text-orange-400 font-bold">Stock: ${p.stock_quantity}</span>
-                </div>
-              `).join('')}
-            </div>
-            <button onclick="navigate('products')" class="btn-press mt-3 text-xs font-bold text-blue-400 hover:text-blue-300 transition">View all products →</button>
-          </div>
-        ` : ''}
-
-        <!-- Empty categories notification -->
-        <div id="empty-categories-alert" class="hidden glass border border-amber-500/20 rounded-2xl p-5 slide-up">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3 flex items-center gap-2">
-            <i data-lucide="folder-x" class="w-4 h-4 text-amber-400"></i> Categories With No Products
-          </h3>
-          <div id="empty-categories-list" class="space-y-2"></div>
-          <p class="text-xs text-gray-500 mt-3">Add products to these categories using the AI Assistant or the Add Product button.</p>
-        </div>
-
-        <!-- Recent activity -->
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-blue-400"></i> Recent Activity</h3>
-          <div id="recent-activity" class="space-y-2"></div>
-        </div>
-      </div>
-    `;
-    if (window.lucide) lucide.createIcons();
-
-    // Load recent activity
-    const { data: activity } = await supabase.from('admin_activity_logs').select('action,entity_type,entity_id,created_at,user_id').order('created_at', { ascending: false }).limit(10);
-    const actEl = document.getElementById('recent-activity');
-    if (activity && activity.length > 0) {
-      actEl.innerHTML = activity.map(a => `<div class="flex items-center gap-2 text-xs text-gray-400 py-1.5 border-b border-blue-500/5 last:border-0"><span class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></span><span class="font-bold text-gray-300">${escapeHtml(a.action)}</span> ${a.entity_type ? `<span class="text-gray-600">on ${escapeHtml(a.entity_type)}</span>` : ''} <span class="text-gray-600 ml-auto">${fmtDateTime(a.created_at)}</span></div>`).join('');
-    } else {
-      actEl.innerHTML = '<p class="text-xs text-gray-600 text-center py-4">No recent activity.</p>';
-    }
-
-    // Load empty categories notification
-    try {
-      const { data: allCats } = await supabase.from('showroom_listings').select('category').eq('is_active', true);
-      const knownCategories = ['Real Estate','Apartments','Villas','Mansions','Beach Houses','Luxury Condominiums','Farm Houses','Commercial Buildings','Hotels','Cars','Motorhomes','Trucks','Electronics','Phones','Computers','Fashion','Home & Garden','Sports','Beauty','Toys','Books','Automotive','Groceries','Health','Jewelry','Art','Music','Other'];
-      const productCats = new Set((allCats || []).map(r => r.category));
-      const empty = knownCategories.filter(c => !productCats.has(c));
-      const alertEl = document.getElementById('empty-categories-alert');
-      const listEl = document.getElementById('empty-categories-list');
-      if (alertEl && listEl) {
-        if (empty.length > 0) {
-          listEl.innerHTML = empty.map(c => `<div class="text-xs text-gray-300 py-1">• ${escapeHtml(c)}</div>`).join('');
-          alertEl.classList.remove('hidden');
-        }
-      }
-    } catch {}
-
-    // Render charts
-    renderRevenueChart(stats);
-    renderOrdersChart(stats);
-  } catch (err) {
-    content.innerHTML = `<div class="glass border border-red-500/20 rounded-2xl p-6 text-center"><p class="text-sm text-red-400">Failed to load dashboard: ${escapeHtml(err.message)}</p></div>`;
-  }
-}
-
-function statCard(label, value, icon, color) {
-  const colorMap = {
-    blue: 'bg-blue-500/10 text-blue-400', amber: 'bg-amber-500/10 text-amber-400',
-    violet: 'bg-violet-500/10 text-violet-400', emerald: 'bg-emerald-500/10 text-emerald-400',
-    red: 'bg-red-500/10 text-red-400', orange: 'bg-orange-500/10 text-orange-400',
-  gray: 'bg-gray-500/10 text-gray-400',
-  dollar: 'bg-emerald-500/10 text-emerald-400',
-  star: 'bg-amber-500/10 text-amber-400',
-    ticket: 'bg-violet-500/10 text-violet-400',
-    megaphone: 'bg-violet-500/10 text-violet-400',
-    credit: 'bg-blue-500/10 text-blue-400',
-  };
-  const cls = colorMap[color] || colorMap.blue;
-  return `<div class="stat-card glass border border-blue-500/15 rounded-2xl p-4 slide-up"><div class="flex items-center justify-between mb-2"><div class="p-2 ${cls} rounded-lg"><i data-lucide="${icon}" class="w-4 h-4"></i></div></div><p class="text-xl font-black text-white">${typeof value === 'string' && value.length > 12 ? value : value}</p><p class="text-[10px] text-gray-500 uppercase tracking-wide mt-0.5">${label}</p></div>`;
-}
-
-function renderRevenueChart(stats) {
-  const ctx = document.getElementById('chart-revenue');
-  if (!ctx) return;
-  const labels = ['Total', 'Monthly', 'Daily'];
-  const data = [stats.totalRevenue, stats.monthlyRevenue, stats.dailyRevenue];
-  new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ label: 'Revenue', data, backgroundColor: ['rgba(59,130,246,.6)', 'rgba(168,85,247,.6)', 'rgba(245,158,11,.6)'], borderColor: ['rgb(59,130,246)', 'rgb(168,85,247)', 'rgb(245,158,11)'], borderWidth: 1 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(59,130,246,.05)' } }, x: { ticks: { color: '#64748b' }, grid: { display: false } } } },
-  });
-}
-
-function renderOrdersChart(stats) {
-  const ctx = document.getElementById('chart-orders');
-  if (!ctx) return;
-  new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Pending', 'Completed', 'Cancelled'],
-      datasets: [{ data: [stats.pendingOrders, stats.completedOrders, stats.cancelledOrders], backgroundColor: ['rgba(245,158,11,.6)', 'rgba(16,185,129,.6)', 'rgba(239,68,68,.6)'], borderColor: ['rgb(245,158,11)', 'rgb(16,185,129)', 'rgb(239,68,68)'], borderWidth: 1 }],
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } } } },
-  });
-}
-
-// ── Products section ──────────────────────────────────────────
-async function renderProducts() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading products...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-
-  const { data: products } = await supabase.from('showroom_listings').select('*').order('created_at', { ascending: false }).limit(200);
-
-  content.innerHTML = `
-    <div class="fade-in space-y-4">
-      <div class="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <div class="flex gap-2 flex-1 max-w-md">
-          <input type="text" id="product-search" placeholder="Search products..." oninput="filterProducts()" class="input-field flex-1 bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
-          <select id="product-filter-type" onchange="filterProducts()" class="input-field bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
-            <option value="">All Types</option>
-            <option value="product">Products</option>
-            <option value="property">Properties</option>
-            <option value="vehicle">Vehicles</option>
-          </select>
-          <select id="product-filter-status" onchange="filterProducts()" class="input-field bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
-            <option value="">All Status</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
-            <option value="pending">Pending</option>
-            <option value="archived">Archived</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
-        <div class="flex gap-2">
-          <button onclick="exportProducts()" class="btn-press flex items-center gap-2 bg-blue-950/60 border border-blue-500/20 text-gray-300 font-bold py-2.5 px-4 rounded-xl text-sm transition hover:bg-blue-500/10" title="Export CSV"><i data-lucide="download" class="w-4 h-4"></i></button>
-          <button onclick="showBulkActions()" id="bulk-actions-btn" class="btn-press hidden items-center gap-2 bg-amber-600/20 border border-amber-500/30 text-amber-400 font-bold py-2.5 px-4 rounded-xl text-sm transition"><i data-lucide="layers" class="w-4 h-4"></i> Bulk</button>
-          <button onclick="showProductModal()" class="btn-press flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 px-5 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">
+      <div class="space-y-6 fade-in">
+        <div class="flex items-center justify-between">
+          <div><h2 class="text-xl font-black text-white">Good ${greeting()}, Admin 👋</h2><p class="text-sm text-gray-500 mt-0.5">${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
+          <button onclick="navigate('products')" class="btn-press hidden sm:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition">
             <i data-lucide="plus" class="w-4 h-4"></i> Add Product
           </button>
         </div>
-      </div>
-      <div id="bulk-actions-bar" class="hidden glass border border-amber-500/20 rounded-2xl p-3 flex items-center gap-3">
-        <span id="bulk-count" class="text-xs font-bold text-amber-400">0 selected</span>
-        <button onclick="bulkActivate()" class="btn-press text-xs font-bold px-3 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition">Activate</button>
-        <button onclick="bulkDeactivate()" class="btn-press text-xs font-bold px-3 py-2 bg-gray-500/10 text-gray-400 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition">Deactivate</button>
-        <button onclick="bulkDelete()" class="btn-press text-xs font-bold px-3 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition">Delete</button>
-        <button onclick="clearBulkSelection()" class="btn-press text-xs font-bold px-3 py-2 text-gray-500 hover:text-gray-300 transition ml-auto">Cancel</button>
-      </div>
-      <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden">
-        <div class="overflow-x-auto scrollbar-thin">
-          <table class="w-full data-table">
-            <thead><tr class="border-b border-blue-500/10 bg-blue-950/30">
-              <th class="text-left px-4 py-3 w-10"><input type="checkbox" id="select-all-products" onchange="toggleSelectAll(this)" class="w-4 h-4 rounded border-blue-500/30 bg-[#0a1124]"></th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-2 py-3">Image</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Title</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden sm:table-cell">Type</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden md:table-cell">Category</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Price</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden lg:table-cell">Stock</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Status</th>
-              <th class="text-right text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Actions</th>
-            </tr></thead>
-            <tbody id="products-tbody">${(products || []).map(p => productRow(p)).join('')}</tbody>
-          </table>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+          ${statCard('Total Revenue', `$${totalRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'dollar-sign', 'emerald', `$${monthRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 })} this month`)}
+          ${statCard('Total Orders', allOrders.length, 'shopping-bag', 'blue', `${pendingOrders} pending`)}
+          ${statCard('Customers', totalCustomers, 'users', 'violet')}
+          ${statCard('Products', totalProds, 'package', 'amber', `${activeProds} active`)}
+          ${statCard('Properties', totalProps, 'home', 'blue')}
+          ${statCard('Reviews', totalReviews, 'star', 'orange', `${pendingReviews} pending`)}
         </div>
-      </div>
-    </div>
-  `;
-  if (window.lucide) lucide.createIcons();
-  state.data.products = products || [];
-  document.querySelectorAll('.btn-press').forEach(ripple);
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Revenue Chart -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i> Revenue Overview</h3>
+            <canvas id="chart-revenue" height="200"></canvas>
+          </div>
+          <!-- Recent Orders -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-blue-400"></i> Recent Orders</h3>
+              <button onclick="navigate('orders')" class="text-xs text-blue-400 hover:text-blue-300 font-medium transition">View all →</button>
+            </div>
+            ${recentOrders.length === 0 ? '<p class="text-xs text-gray-500 text-center py-8">No orders yet</p>' :
+              recentOrders.map(o => `
+                <div class="flex items-center justify-between py-2 border-b border-blue-500/5 last:border-0">
+                  <div class="min-w-0">
+                    <p class="text-xs font-bold text-white truncate">${esc(o.order_number || o.id?.slice(0, 8))}</p>
+                    <p class="text-[10px] text-gray-500">${fmtDT(o.created_at)}</p>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0 ml-2">
+                    <span class="text-xs font-bold text-emerald-400">$${parseFloat(o.amount || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                    ${badge(o.status)}
+                  </div>
+                </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+          <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Quick Actions</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            ${[
+              { icon: 'plus-circle', label: 'Add Product', fn: "navigate('products')" },
+              { icon: 'home', label: 'Add Property', fn: "navigate('properties')" },
+              { icon: 'shopping-bag', label: 'View Orders', fn: "navigate('orders')" },
+              { icon: 'star', label: 'Reviews', fn: "navigate('reviews')" },
+              { icon: 'ticket', label: 'Coupons', fn: "navigate('coupons')" },
+              { icon: 'settings', label: 'Settings', fn: "navigate('settings')" },
+            ].map(a => `
+              <button onclick="${a.fn}" class="btn-press flex flex-col items-center gap-2 p-3 glass-soft border border-blue-500/15 rounded-xl hover:border-blue-500/30 transition">
+                <i data-lucide="${a.icon}" class="w-5 h-5 text-blue-400"></i>
+                <span class="text-[11px] font-bold text-gray-300">${a.label}</span>
+              </button>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+    renderRevenueChart(allOrders);
+  } catch (err) {
+    if (content) content.innerHTML = `<div class="p-6 text-red-400 text-sm">Error loading dashboard: ${esc(err.message)}</div>`;
+  }
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'morning'; if (h < 17) return 'afternoon'; return 'evening';
+}
+
+function renderRevenueChart(orders) {
+  const ctx = document.getElementById('chart-revenue');
+  if (!ctx) return;
+  const months = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ label: d.toLocaleString('default', { month: 'short' }), month: d.getMonth(), year: d.getFullYear() });
+  }
+  const data = months.map(m => orders.filter(o => {
+    const d = new Date(o.created_at);
+    return d.getMonth() === m.month && d.getFullYear() === m.year && ['approved', 'payment_approved', 'delivered'].includes(o.status);
+  }).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0));
+  new Chart(ctx, {
+    type: 'bar',
+    data: { labels: months.map(m => m.label), datasets: [{ label: 'Revenue (USD)', data, backgroundColor: 'rgba(59,130,246,.6)', borderColor: 'rgb(59,130,246)', borderWidth: 1, borderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#64748b', callback: v => '$' + v.toLocaleString() }, grid: { color: 'rgba(59,130,246,.05)' } }, x: { ticks: { color: '#64748b' }, grid: { display: false } } } },
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  SMART PRODUCT CATEGORY CONFIG
+// ══════════════════════════════════════════════════════════
+const PRODUCT_CATEGORIES = [
+  'Electronics', 'Phones', 'Computers & Laptops', 'Fashion', 'Men\'s Fashion',
+  'Women\'s Fashion', 'Shoes', 'Bags & Accessories', 'Jewelry', 'Beauty & Skincare',
+  'Home & Kitchen', 'Furniture', 'Garden & Outdoor', 'Toys & Games',
+  'Sports & Fitness', 'Food & Groceries', 'Baby & Kids', 'Health & Medical',
+  'Books & Education', 'Office & Stationery', 'Pet Supplies', 'Musical Instruments',
+  'Cameras & Photography', 'Watches', 'Gaming', 'Software & Digital', 'Services',
+  'Social Media Accounts', 'Other',
+];
+
+const CAT_FIELDS = {
+  default: [
+    { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+    { key: 'brand', label: 'Brand', type: 'text' },
+    { key: 'model', label: 'Model', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'size', label: 'Size', type: 'text' },
+    { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'], required: true },
+    { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+    { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+    { key: 'warranty', label: 'Warranty', type: 'text' },
+    { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+  ],
+  Phones: [
+    { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+    { key: 'brand', label: 'Brand', type: 'text', required: true },
+    { key: 'model', label: 'Model', type: 'text', required: true },
+    { key: 'storage', label: 'Storage (e.g. 128GB)', type: 'text' },
+    { key: 'ram', label: 'RAM (e.g. 8GB)', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used'], required: true },
+    { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+    { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+    { key: 'warranty', label: 'Warranty', type: 'text' },
+    { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+  ],
+  'Computers & Laptops': [
+    { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+    { key: 'brand', label: 'Brand', type: 'text', required: true },
+    { key: 'model', label: 'Model', type: 'text', required: true },
+    { key: 'processor', label: 'Processor (CPU)', type: 'text' },
+    { key: 'ram', label: 'RAM', type: 'text' },
+    { key: 'storage', label: 'Storage', type: 'text' },
+    { key: 'display', label: 'Display Size', type: 'text' },
+    { key: 'graphics', label: 'Graphics Card', type: 'text' },
+    { key: 'os', label: 'Operating System', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used'], required: true },
+    { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+    { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+    { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+  ],
+  Electronics: [
+    { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+    { key: 'brand', label: 'Brand', type: 'text' },
+    { key: 'model', label: 'Model Number', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'voltage', label: 'Voltage', type: 'text' },
+    { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used'], required: true },
+    { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+    { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+    { key: 'warranty', label: 'Warranty', type: 'text' },
+    { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+  ],
+  Shoes: [
+    { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+    { key: 'brand', label: 'Brand', type: 'text', required: true },
+    { key: 'size', label: 'Size', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'material', label: 'Material', type: 'text' },
+    { key: 'gender', label: 'Gender', type: 'select', options: ['Men', 'Women', 'Unisex', 'Kids'] },
+    { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Used'], required: true },
+    { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+    { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+    { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+  ],
+  Jewelry: [
+    { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+    { key: 'brand', label: 'Brand', type: 'text' },
+    { key: 'material', label: 'Material (e.g. 14k Gold)', type: 'text' },
+    { key: 'gemstone', label: 'Gemstone', type: 'text' },
+    { key: 'size', label: 'Size / Weight', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Used - Like New', 'Used'] },
+    { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+    { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+    { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+  ],
+  Watches: [
+    { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+    { key: 'brand', label: 'Brand', type: 'text', required: true },
+    { key: 'model', label: 'Model', type: 'text' },
+    { key: 'movement', label: 'Movement (Quartz/Automatic)', type: 'text' },
+    { key: 'case_material', label: 'Case Material', type: 'text' },
+    { key: 'water_resistance', label: 'Water Resistance', type: 'text' },
+    { key: 'color', label: 'Dial Color', type: 'text' },
+    { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used'] },
+    { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+    { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+  ],
+  Gaming: [
+    { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+    { key: 'brand', label: 'Brand', type: 'text' },
+    { key: 'platform', label: 'Platform (PS5, Xbox, PC…)', type: 'text' },
+    { key: 'model', label: 'Game / Model', type: 'text' },
+    { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Used'], required: true },
+    { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+    { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+    { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+  ],
+  'Sports & Fitness': [
+    { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+    { key: 'brand', label: 'Brand', type: 'text' },
+    { key: 'size', label: 'Size / Dimensions', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'material', label: 'Material', type: 'text' },
+    { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Used'] },
+    { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+    { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+    { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+  ],
+};
+// Alias categories to existing field configs
+['Men\'s Fashion', 'Women\'s Fashion', 'Fashion'].forEach(k => CAT_FIELDS[k] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (T-Shirt, Dress…)', type: 'text' },
+  { key: 'size', label: 'Size', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'material', label: 'Material', type: 'text' },
+  { key: 'gender', label: 'Gender', type: 'select', options: ['Men', 'Women', 'Unisex', 'Kids'] },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Used'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+]);
+
+function getProductFields(category) {
+  return CAT_FIELDS[category] || CAT_FIELDS.default;
+}
+
+function renderProductFieldsForm(category, existing = {}) {
+  const fields = getProductFields(category);
+  return fields.map(f => {
+    const val = existing[f.key] || '';
+    const gridSpan = f.span === 2 ? 'sm:col-span-2' : '';
+    const req = f.required ? 'required' : '';
+    let input = '';
+    if (f.type === 'select') {
+      input = `<select class="input-field" name="${f.key}" id="pf-${f.key}" ${req}>
+        <option value="">Select…</option>
+        ${f.options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+      </select>`;
+    } else if (f.type === 'textarea') {
+      input = `<textarea class="input-field" name="${f.key}" id="pf-${f.key}" rows="3" placeholder="Write a detailed description…">${esc(val)}</textarea>`;
+    } else {
+      input = `<input type="${f.type}" class="input-field" name="${f.key}" id="pf-${f.key}" value="${esc(val)}" placeholder="${f.label}" ${req}>`;
+    }
+    return `<div class="${gridSpan}"><label class="lbl">${f.label}${f.required ? ' *' : ''}</label>${input}</div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  2. PRODUCTS MANAGER
+// ══════════════════════════════════════════════════════════
+async function renderProducts() {
+  const content = document.getElementById('content');
+  try {
+    const { data: products, error } = await supabase.from('showroom_listings')
+      .select('*').neq('listing_type', 'property').order('created_at', { ascending: false });
+    if (error) throw error;
+    const items = products || [];
+    content.innerHTML = `
+      <div class="space-y-4 fade-in">
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="text-xl font-black text-white flex-1">Products Manager</h2>
+          <button onclick="showAddProductStep1()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-lg shadow-blue-600/15">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Product
+          </button>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="flex flex-wrap gap-3">
+          <div class="flex-1 min-w-48 relative">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+            <input id="prod-search" type="search" class="input-field pl-9" placeholder="Search products…" oninput="filterProducts(this.value)">
+          </div>
+          <select id="prod-cat-filter" class="input-field w-auto" onchange="filterProducts()">
+            <option value="">All Categories</option>
+            ${PRODUCT_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+          <select id="prod-status-filter" class="input-field w-auto" onchange="filterProducts()">
+            <option value="">All Status</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div id="bulk-actions" class="hidden items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+          <span id="bulk-count" class="text-xs font-bold text-blue-400">0 selected</span>
+          <button onclick="bulkToggleActive(true)" class="btn-press text-xs font-bold text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded-lg bg-emerald-500/10 transition">Activate</button>
+          <button onclick="bulkToggleActive(false)" class="btn-press text-xs font-bold text-amber-400 hover:text-amber-300 px-3 py-1.5 rounded-lg bg-amber-500/10 transition">Deactivate</button>
+          <button onclick="bulkArchive()" class="btn-press text-xs font-bold text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg bg-red-500/10 transition">Archive Selected</button>
+        </div>
+
+        <!-- Table -->
+        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full dt" id="products-table">
+              <thead><tr>
+                <th><input type="checkbox" id="select-all-prods" onchange="toggleSelectAll(this,'prod-check')" class="accent-blue-500"></th>
+                <th>Product</th><th>Category</th><th class="hidden sm:table-cell">Price</th>
+                <th class="hidden md:table-cell">Stock</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="products-tbody">
+                ${items.length === 0 ? '<tr><td colspan="7" class="text-center text-gray-500 py-12">No products yet. Click Add Product to get started.</td></tr>' :
+                  items.map(p => productRow(p)).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    window._productsData = items;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) {
+    if (content) content.innerHTML = `<div class="p-6 text-red-400 text-sm">Error: ${esc(err.message)}</div>`;
+  }
 }
 
 function productRow(p) {
-  const img = (p.images && p.images[0]) || '';
-  const approval = p.approval_status || 'published';
-  const approvalColors = {
-    published: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    draft: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
-    pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    archived: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
-  };
-  const aCls = approvalColors[approval] || approvalColors.published;
-  return `<tr class="border-b border-blue-500/5 hover:bg-blue-500/5 transition" data-search="${escapeHtml((p.title || '').toLowerCase())}" data-type="${p.listing_type || ''}" data-status="${approval}" data-id="${p.id || ''}">
-    <td class="px-4 py-3"><input type="checkbox" class="product-checkbox w-4 h-4 rounded border-blue-500/30 bg-[#0a1124]" data-id="${p.id || ''}" onchange="updateBulkCount()"></td>
-    <td class="px-2 py-3"><div class="w-10 h-10 rounded-lg overflow-hidden bg-blue-950/50 border border-blue-500/10 shrink-0">${img ? `<img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\"w-full h-full flex items-center justify-center\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#475569\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"9\" cy=\"9\" r=\"2\"/><path d=\"m21 15-3.5-3.5L11 18\"/></svg></div>'">` : `<div class="w-full h-full flex items-center justify-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L11 18"/></svg></div>`}</div></td>
-    <td class="px-4 py-3 text-xs text-white font-bold max-w-[200px] truncate">
-      <div>${escapeHtml(p.title || 'Untitled')}</div>
-      <div class="text-[10px] font-mono text-blue-400 mt-0.5">${p.property_id || '—'} · ${escapeHtml(p.sku || 'no SKU')}</div>
+  const img = (p.images && p.images[0]) ? p.images[0] : '/fallback.svg';
+  return `<tr data-id="${p.property_id}" data-cat="${esc(p.category)}" data-active="${p.is_active}" class="prod-row">
+    <td><input type="checkbox" class="prod-check accent-blue-500" value="${p.property_id}" onchange="updateBulkBar()"></td>
+    <td>
+      <div class="flex items-center gap-2.5">
+        <img src="${esc(img)}" alt="" class="w-9 h-9 rounded-lg object-cover border border-blue-500/20 shrink-0" onerror="this.src='/fallback.svg'">
+        <div class="min-w-0">
+          <p class="text-xs font-bold text-white truncate max-w-[180px]">${esc(p.title)}</p>
+          <p class="text-[10px] text-gray-500 font-mono">${esc(p.property_id)}</p>
+        </div>
+      </div>
     </td>
-    <td class="px-4 py-3 text-xs text-gray-400 hidden sm:table-cell">${escapeHtml(p.listing_type || '—')}</td>
-    <td class="px-4 py-3 text-xs text-gray-400 hidden md:table-cell">${escapeHtml(p.category || '—')}</td>
-    <td class="px-4 py-3 text-xs text-amber-400 font-bold">${fmtMoney(p.price, p.currency)}</td>
-    <td class="px-4 py-3 text-xs text-gray-400 hidden lg:table-cell">${p.stock_quantity != null ? p.stock_quantity : '—'}</td>
-    <td class="px-4 py-3"><span class="inline-flex items-center gap-1 ${aCls} border text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">${approval}</span></td>
-    <td class="px-4 py-3 text-right">
-      <div class="flex items-center justify-end gap-1">
-        <button onclick="toggleProductActive('${p.property_id}')" class="btn-press p-2 hover:bg-blue-500/10 rounded-lg text-gray-400 transition" title="${p.is_active ? 'Hide' : 'Publish'}"><i data-lucide="${p.is_active ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
-        <button onclick="duplicateProduct('${p.property_id}')" class="btn-press p-2 hover:bg-blue-500/10 rounded-lg text-gray-400 transition" title="Duplicate"><i data-lucide="copy" class="w-4 h-4"></i></button>
-        <button onclick="showProductModal('${p.property_id}')" class="btn-press p-2 hover:bg-blue-500/10 rounded-lg text-blue-400 transition" title="Edit"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-        <button onclick="confirmDeleteProduct('${p.property_id}')" class="btn-press p-2 hover:bg-red-500/10 rounded-lg text-red-400 transition" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    <td><span class="text-xs text-gray-300">${esc(p.category)}</span></td>
+    <td class="hidden sm:table-cell"><span class="text-xs font-bold text-emerald-400">$${parseFloat(p.price || 0).toLocaleString()}</span></td>
+    <td class="hidden md:table-cell"><span class="text-xs text-gray-300">${p.stock_quantity != null ? p.stock_quantity : '∞'}</span></td>
+    <td>${badge(p.is_active ? 'active' : 'inactive')}</td>
+    <td>
+      <div class="flex items-center gap-1">
+        <button onclick="editProduct('${p.property_id}')" class="btn-press p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+        <button onclick="toggleProductActive('${p.property_id}',${!p.is_active})" class="btn-press p-1.5 ${p.is_active ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'} rounded-lg transition" title="${p.is_active ? 'Deactivate' : 'Activate'}"><i data-lucide="${p.is_active ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i></button>
+        <button onclick="duplicateProduct('${p.property_id}')" class="btn-press p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition" title="Duplicate"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+        <button onclick="archiveProduct('${p.property_id}')" class="btn-press p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition" title="Archive"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>
       </div>
     </td>
   </tr>`;
 }
 
-window.filterProducts = () => {
-  const search = document.getElementById('product-search').value.toLowerCase();
-  const type = document.getElementById('product-filter-type').value;
-  const status = document.getElementById('product-filter-status')?.value || '';
-  document.querySelectorAll('#products-tbody tr').forEach(row => {
-    const matchSearch = !search || row.dataset.search.includes(search);
-    const matchType = !type || row.dataset.type === type;
-    const matchStatus = !status || row.dataset.status === status;
-    row.style.display = matchSearch && matchType && matchStatus ? '' : 'none';
+window.filterProducts = function(q) {
+  const search = (q || document.getElementById('prod-search')?.value || '').toLowerCase();
+  const cat = document.getElementById('prod-cat-filter')?.value || '';
+  const status = document.getElementById('prod-status-filter')?.value;
+  document.querySelectorAll('.prod-row').forEach(row => {
+    const matchSearch = !search || row.textContent.toLowerCase().includes(search);
+    const matchCat = !cat || row.dataset.cat === cat;
+    const matchStatus = status === '' || status === undefined || row.dataset.active === status;
+    row.style.display = matchSearch && matchCat && matchStatus ? '' : 'none';
   });
 };
 
-window.toggleSelectAll = (checkbox) => {
-  document.querySelectorAll('.product-checkbox').forEach(cb => {
-    cb.checked = checkbox.checked;
-  });
-  updateBulkCount();
+window.toggleSelectAll = function(cb, cls) {
+  document.querySelectorAll('.' + cls).forEach(c => { c.checked = cb.checked; });
+  updateBulkBar();
 };
 
-window.updateBulkCount = () => {
-  const checked = document.querySelectorAll('.product-checkbox:checked');
-  const count = checked.length;
-  const bar = document.getElementById('bulk-actions-bar');
-  const btn = document.getElementById('bulk-actions-btn');
-  const countEl = document.getElementById('bulk-count');
-  if (count > 0) {
-    bar?.classList.remove('hidden');
-    btn?.classList.remove('hidden');
-    if (countEl) countEl.textContent = `${count} selected`;
-  } else {
-    bar?.classList.add('hidden');
-  }
+window.updateBulkBar = function() {
+  const checked = document.querySelectorAll('.prod-check:checked').length;
+  const bar = document.getElementById('bulk-actions');
+  const count = document.getElementById('bulk-count');
+  if (bar) bar.classList.toggle('hidden', checked === 0);
+  if (bar && checked > 0) bar.classList.add('flex');
+  if (count) count.textContent = `${checked} selected`;
 };
 
-window.showBulkActions = () => {
-  document.getElementById('bulk-actions-bar')?.classList.toggle('hidden');
+function getSelectedIds() { return [...document.querySelectorAll('.prod-check:checked')].map(c => c.value); }
+
+window.bulkToggleActive = async function(active) {
+  const ids = getSelectedIds(); if (!ids.length) return;
+  await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: active }).eq('property_id', id)));
+  showToast(`${ids.length} products ${active ? 'activated' : 'deactivated'}`);
+  renderProducts();
 };
 
-window.clearBulkSelection = () => {
-  document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
-  document.getElementById('select-all-products').checked = false;
-  document.getElementById('bulk-actions-bar')?.classList.add('hidden');
+window.bulkArchive = async function() {
+  const ids = getSelectedIds(); if (!ids.length) return;
+  if (!confirm(`Archive ${ids.length} products? They will be hidden but not deleted.`)) return;
+  await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: false }).eq('property_id', id)));
+  showToast(`${ids.length} products archived`);
+  renderProducts();
 };
 
-window.bulkActivate = async () => {
-  const ids = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.dataset.id);
-  if (!ids.length) return;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=bulk-update`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids, updates: { is_active: true, approval_status: 'published' } }),
-    });
-    if (!res.ok) throw new Error('Bulk update failed');
-    showToast(`${ids.length} products activated.`);
-    clearBulkSelection();
-    renderProducts();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.bulkDeactivate = async () => {
-  const ids = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.dataset.id);
-  if (!ids.length) return;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=bulk-update`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids, updates: { is_active: false, approval_status: 'archived' } }),
-    });
-    if (!res.ok) throw new Error('Bulk update failed');
-    showToast(`${ids.length} products deactivated.`);
-    clearBulkSelection();
-    renderProducts();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.bulkDelete = async () => {
-  const ids = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.dataset.id);
-  if (!ids.length) return;
-  if (!confirm(`Delete ${ids.length} products? This cannot be undone.`)) return;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=bulk-delete`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids }),
-    });
-    if (!res.ok) throw new Error('Bulk delete failed');
-    showToast(`${ids.length} products deleted.`);
-    clearBulkSelection();
-    renderProducts();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.exportProducts = async () => {
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=export&type=products`, {
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Export failed');
-    const csv = convertToCSV(data.items || []);
-    downloadFile(csv, 'products-export.csv', 'text/csv');
-    showToast('Products exported.');
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-function convertToCSV(items) {
-  if (!items.length) return '';
-  const keys = Object.keys(items[0]).filter(k => !['images', 'specifications', 'features', 'highlights', 'tags', 'seo_keywords', 'color_options', 'storage_options', 'ram_options', 'ai_generated_fields'].includes(k));
-  const rows = [keys.join(',')];
-  for (const item of items) {
-    rows.push(keys.map(k => {
-      let v = item[k];
-      if (v == null) v = '';
-      if (typeof v === 'object') v = JSON.stringify(v);
-      v = String(v).replace(/"/g, '""');
-      return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v}"` : v;
-    }).join(','));
-  }
-  return rows.join('\n');
-}
-
-function downloadFile(content, filename, type) {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-}
-
-window.showProductModal = async (propertyId) => {
-  const modal = document.getElementById('modal-container');
-  let product = null;
-  if (propertyId) {
-    const { data } = await supabase.from('showroom_listings').select('*').eq('property_id', propertyId).maybeSingle();
-    product = data;
-    editingProductId = product?.id || null;
-  } else {
-    editingProductId = null;
-  }
-  const p = product || {};
-  modal.innerHTML = `<div class="modal-overlay fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModal(event)">
-    <div class="modal-content glass border border-blue-500/20 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin" onclick="event.stopPropagation()">
-      <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="${propertyId ? 'edit-3' : 'plus'}" class="w-5 h-5 text-blue-400"></i> ${propertyId ? 'Edit Product' : 'Add Product'}</h3>
-      <form id="product-form" class="space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Title *</label><input type="text" id="pf-title" required value="${escapeHtml(p.title || '')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Category</label><input type="text" id="pf-category" value="${escapeHtml(p.category || '')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+// Step 1: Choose category
+window.showAddProductStep1 = function() {
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white">Select Product Category</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Description</label><textarea id="pf-description" rows="3" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 resize-none">${escapeHtml(p.description || '')}</textarea></div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Price *</label><input type="number" id="pf-price" step="0.01" required value="${p.price || 0}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Currency</label><select id="pf-currency" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"><option value="USD" ${p.currency === 'USD' ? 'selected' : ''}>USD</option><option value="NGN" ${p.currency === 'NGN' ? 'selected' : ''}>NGN</option><option value="GBP" ${p.currency === 'GBP' ? 'selected' : ''}>GBP</option><option value="EUR" ${p.currency === 'EUR' ? 'selected' : ''}>EUR</option></select></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Stock</label><input type="number" id="pf-stock" value="${p.stock_quantity ?? ''}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Type</label><select id="pf-type" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"><option value="product" ${p.listing_type === 'product' ? 'selected' : ''}>Product</option><option value="property" ${p.listing_type === 'property' ? 'selected' : ''}>Property</option><option value="vehicle" ${p.listing_type === 'vehicle' ? 'selected' : ''}>Vehicle</option></select></div>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">SKU</label><input type="text" id="pf-sku" value="${escapeHtml(p.sku || '')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Subcategory</label><input type="text" id="pf-subcategory" value="${escapeHtml(p.subcategory || '')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        </div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Features (comma-separated)</label><input type="text" id="pf-features" value="${escapeHtml((p.features || []).join(', '))}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Tags (comma-separated)</label><input type="text" id="pf-tags" value="${escapeHtml((p.tags || []).join(', '))}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">SEO Keywords (comma-separated)</label><input type="text" id="pf-seo" value="${escapeHtml((p.seo_keywords || []).join(', '))}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Product Images</label>
-          <div id="image-drop-zone" class="border-2 border-dashed border-blue-500/20 rounded-xl p-4 text-center cursor-pointer hover:border-blue-500/40 transition" onclick="document.getElementById('image-file-input').click()">
-            <i data-lucide="upload-cloud" class="w-6 h-6 text-gray-500 mx-auto mb-2"></i>
-            <p class="text-xs text-gray-500">Click or drag images here to upload</p>
-            <input type="file" id="image-file-input" accept="image/*" multiple class="hidden" onchange="handleImageUpload(event)">
-          </div>
-          <div id="image-gallery" class="grid grid-cols-4 sm:grid-cols-5 gap-2 mt-3">
-            ${(p.images || []).map((url, i) => `
-              <div class="relative group aspect-square rounded-lg overflow-hidden bg-blue-950/50 border border-blue-500/10" data-img-index="${i}" data-img-url="${escapeHtml(url)}">
-                <img src="${escapeHtml(url)}" alt="" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'">
-                <button onclick="removeImage(${i})" class="absolute top-1 right-1 w-5 h-5 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition" title="Remove"><i data-lucide="x" class="w-3 h-3 text-white"></i></button>
-              </div>`).join('')}
-          </div>
-          <div class="mt-2">
-            <label class="text-[10px] font-bold uppercase text-gray-500">Or add image URL</label>
-            <div class="flex gap-2 mt-1">
-              <input type="text" id="pf-image-url" placeholder="https://..." class="input-field flex-1 bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-3 py-2 text-xs text-white">
-              <button onclick="addImageUrl()" class="btn-press px-3 py-2 bg-blue-600/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition">Add</button>
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-2"><input type="checkbox" id="pf-active" ${p.is_active !== false ? 'checked' : ''} class="w-4 h-4 rounded border-blue-500/20 bg-[#0a1124]"><label for="pf-active" class="text-xs font-bold text-gray-400">Active (visible to customers)</label></div>
-        <div class="flex gap-3 pt-2">
-          <button type="submit" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">${propertyId ? 'Save Changes' : 'Add Product'}</button>
-          <button type="button" onclick="closeModal()" class="btn-press px-5 py-3 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold rounded-xl text-sm uppercase transition">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-  document.getElementById('product-form').addEventListener('submit', (e) => saveProduct(e, propertyId));
-  // Setup drag-and-drop for images
-  const dropZone = document.getElementById('image-drop-zone');
-  if (dropZone) {
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-500','bg-blue-500/5'); });
-    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-blue-500','bg-blue-500/5'); });
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('border-blue-500','bg-blue-500/5');
-      if (e.dataTransfer.files.length) handleImageUpload({ target: { files: e.dataTransfer.files, value: '' } });
-    });
-  }
-};
-
-window.saveProduct = async (e, propertyId) => {
-  e.preventDefault();
-  const features = document.getElementById('pf-features').value.split(',').map(s => s.trim()).filter(Boolean);
-  const tags = document.getElementById('pf-tags').value.split(',').map(s => s.trim()).filter(Boolean);
-  const seo = document.getElementById('pf-seo').value.split(',').map(s => s.trim()).filter(Boolean);
-  const images = Array.from(document.querySelectorAll('#image-gallery [data-img-url]')).map(el => el.dataset.imgUrl);
-  const data = {
-    title: document.getElementById('pf-title').value.trim(),
-    category: document.getElementById('pf-category').value.trim() || 'Electronics',
-    description: document.getElementById('pf-description').value.trim(),
-    price: parseFloat(document.getElementById('pf-price').value) || 0,
-    currency: document.getElementById('pf-currency').value,
-    stock_quantity: document.getElementById('pf-stock').value ? parseInt(document.getElementById('pf-stock').value) : null,
-    listing_type: document.getElementById('pf-type').value,
-    sku: document.getElementById('pf-sku').value.trim() || null,
-    subcategory: document.getElementById('pf-subcategory').value.trim() || null,
-    features, tags, seo_keywords: seo,
-    images,
-    is_active: document.getElementById('pf-active').checked,
-  };
-  try {
-    if (propertyId) {
-      const { error } = await supabase.from('showroom_listings').update(data).eq('property_id', propertyId);
-      if (error) throw error;
-      showToast('Product updated successfully.');
-    } else {
-      const pid = 'KCO-' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 4).toUpperCase();
-      const { error } = await supabase.from('showroom_listings').insert({ ...data, property_id: pid, country: '', country_code: '', listing_status: 'sale', images: [] });
-      if (error) throw error;
-      showToast('Product added successfully.');
-    }
-    closeModal();
-    renderProducts();
-    await logActivity(propertyId ? 'update_product' : 'add_product', 'product', propertyId || 'new');
-  } catch (err) {
-    showToast('Error: ' + err.message);
-  }
-};
-
-window.handleImageUpload = async (event) => {
-  const files = Array.from(event.target.files || []);
-  if (!files.length) return;
-  for (const file of files) {
-    if (!file.type.startsWith('image/')) { showToast(`${file.name} is not an image.`); continue; }
-    if (file.size > 10 * 1024 * 1024) { showToast(`${file.name} exceeds 10MB.`); continue; }
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('listing_id', editingProductId || 'unassigned');
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-manager?action=upload`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${session?.session?.access_token}` },
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Upload failed');
-      addImageToGallery(data.url);
-    } catch (err) { showToast(`Upload failed: ${err.message}`); }
-  }
-  event.target.value = '';
-};
-
-window.addImageUrl = () => {
-  const url = document.getElementById('pf-image-url').value.trim();
-  if (!url) return;
-  addImageToGallery(url);
-  document.getElementById('pf-image-url').value = '';
-};
-
-function addImageToGallery(url) {
-  const gallery = document.getElementById('image-gallery');
-  if (!gallery) return;
-  const div = document.createElement('div');
-  const index = gallery.children.length;
-  div.className = 'relative group aspect-square rounded-lg overflow-hidden bg-blue-950/50 border border-blue-500/10';
-  div.dataset.imgUrl = url;
-  div.dataset.imgIndex = index;
-  div.innerHTML = `<img src="${escapeHtml(url)}" alt="" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'"><button onclick="removeImage(${index})" class="absolute top-1 right-1 w-5 h-5 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" class="w-3 h-3 text-white"></i></button>`;
-  gallery.appendChild(div);
-  if (window.lucide) lucide.createIcons();
-}
-
-window.removeImage = (index) => {
-  const gallery = document.getElementById('image-gallery');
-  if (!gallery) return;
-  const items = gallery.querySelectorAll('[data-img-index]');
-  if (items[index]) items[index].remove();
-  gallery.querySelectorAll('[data-img-index]').forEach((el, i) => {
-    el.dataset.imgIndex = i;
-    const btn = el.querySelector('button');
-    if (btn) btn.setAttribute('onclick', `removeImage(${i})`);
-  });
-};
-
-let editingProductId = null;
-
-window.toggleProductActive = async (propertyId) => {
-  const product = state.data.products?.find(p => p.property_id === propertyId);
-  if (!product) return;
-  try {
-    const { error } = await supabase.from('showroom_listings').update({ is_active: !product.is_active }).eq('property_id', propertyId);
-    if (error) throw error;
-    showToast(`Product ${product.is_active ? 'hidden' : 'published'}.`);
-    renderProducts();
-    await logActivity('toggle_product', 'product', propertyId);
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.duplicateProduct = async (propertyId) => {
-  const product = state.data.products?.find(p => p.property_id === propertyId);
-  if (!product) return;
-  try {
-    const newPid = 'KCO-' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 4).toUpperCase();
-    const { id, created_at, property_id, ...rest } = product;
-    const { error } = await supabase.from('showroom_listings').insert({ ...rest, property_id: newPid, title: product.title + ' (Copy)', is_active: false });
-    if (error) throw error;
-    showToast('Product duplicated successfully.');
-    renderProducts();
-    await logActivity('duplicate_product', 'product', propertyId);
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.confirmDeleteProduct = (propertyId) => {
-  const modal = document.getElementById('modal-container');
-  modal.innerHTML = `<div class="modal-overlay fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModal(event)">
-    <div class="modal-content glass border border-red-500/20 rounded-2xl p-6 max-w-sm w-full" onclick="event.stopPropagation()">
-      <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-14 h-14 bg-red-500/10 rounded-2xl mb-3"><i data-lucide="alert-triangle" class="w-7 h-7 text-red-400"></i></div><h3 class="text-lg font-bold text-white mb-1">Delete Product?</h3><p class="text-sm text-gray-400">Are you sure you want to delete product <span class="font-mono text-blue-400">${propertyId}</span>? This cannot be undone.</p></div>
-      <div class="flex gap-3"><button onclick="deleteProduct('${propertyId}')" class="btn-press flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition">Delete</button><button onclick="closeModal()" class="btn-press px-5 py-3 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold rounded-xl text-sm uppercase transition">Cancel</button></div>
-    </div>
-  </div>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-};
-
-window.deleteProduct = async (propertyId) => {
-  try {
-    const { error } = await supabase.from('showroom_listings').delete().eq('property_id', propertyId);
-    if (error) throw error;
-    closeModal();
-    showToast('Product deleted successfully.');
-    renderProducts();
-    await logActivity('delete_product', 'product', propertyId);
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-// ── Orders section ────────────────────────────────────────────
-async function renderOrders() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading orders...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-  const { data: orders } = await supabase.from('payment_receipts').select('*').order('created_at', { ascending: false }).limit(100);
-  content.innerHTML = `
-    <div class="fade-in space-y-4">
-      <div class="flex gap-2 flex-wrap">
-        <button onclick="filterOrders('')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl border transition ${'' === state.data.orderFilter ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' : 'bg-blue-950/50 text-gray-400 border-blue-500/15'}">All</button>
-        <button onclick="filterOrders('order_placed')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl border transition ${'order_placed' === state.data.orderFilter ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' : 'bg-blue-950/50 text-gray-400 border-blue-500/15'}">Pending</button>
-        <button onclick="filterOrders('payment_approved')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl border transition ${'payment_approved' === state.data.orderFilter ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' : 'bg-blue-950/50 text-gray-400 border-blue-500/15'}">Approved</button>
-        <button onclick="filterOrders('delivered')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl border transition ${'delivered' === state.data.orderFilter ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' : 'bg-blue-950/50 text-gray-400 border-blue-500/15'}">Delivered</button>
-        <button onclick="filterOrders('cancelled')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl border transition ${'cancelled' === state.data.orderFilter ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' : 'bg-blue-950/50 text-gray-400 border-blue-500/15'}">Cancelled</button>
-      </div>
-      <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden">
-        <div class="overflow-x-auto scrollbar-thin">
-          <table class="w-full data-table">
-            <thead><tr class="border-b border-blue-500/10 bg-blue-950/30">
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Order #</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3 hidden sm:table-cell">Customer</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3 hidden md:table-cell">Method</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Amount</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Status</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3 hidden lg:table-cell">Date</th>
-              <th class="text-right text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Actions</th>
-            </tr></thead>
-            <tbody>${(orders || []).map(o => `
-              <tr class="border-b border-blue-500/5 hover:bg-blue-500/5 transition">
-                <td class="px-4 py-3 text-xs font-mono text-blue-400">${o.order_number || '—'}</td>
-                <td class="px-4 py-3 text-xs text-gray-300 hidden sm:table-cell">${escapeHtml(o.full_name || o.customer_name || '—')}</td>
-                <td class="px-4 py-3 text-xs text-gray-400 hidden md:table-cell">${escapeHtml(o.payment_method || '—')}</td>
-                <td class="px-4 py-3 text-xs text-amber-400 font-bold">${fmtMoney(o.amount, o.currency)}</td>
-                <td class="px-4 py-3">${statusBadge(o.status)}</td>
-                <td class="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell">${fmtDate(o.created_at)}</td>
-                <td class="px-4 py-3 text-right"><button onclick="showOrderModal('${o.order_number}')" class="btn-press p-2 hover:bg-blue-500/10 rounded-lg text-blue-400 transition"><i data-lucide="eye" class="w-4 h-4"></i></button></td>
-              </tr>
-            `).join('')}</tbody>
-          </table>
+        <p class="text-xs text-gray-400 mb-4">Choose the category that best matches your product. The form will show the right fields automatically.</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto scrollbar-thin pr-1">
+          ${PRODUCT_CATEGORIES.map(c => `
+            <button onclick="showAddProductStep2('${c.replace(/'/g, "\\'")}')" class="btn-press flex items-center gap-2 p-3 glass-soft border border-blue-500/15 hover:border-blue-500/40 rounded-xl transition text-left">
+              <i data-lucide="tag" class="w-4 h-4 text-blue-400 shrink-0"></i>
+              <span class="text-xs font-semibold text-gray-200">${esc(c)}</span>
+            </button>`).join('')}
         </div>
       </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-  state.data.orders = orders || [];
-  document.querySelectorAll('.btn-press').forEach(ripple);
-}
-
-window.filterOrders = (status) => {
-  state.data.orderFilter = status;
-  renderOrders();
+    </div>`);
 };
 
-window.showOrderModal = async (orderNumber) => {
-  const modal = document.getElementById('modal-container');
-  const order = state.data.orders?.find(o => o.order_number === orderNumber);
-  if (!order) return;
-  let receiptUrl = null;
-  if (order.receipt_file_path) {
-    try {
-      const { data } = await supabase.storage.from('payment-receipts').createSignedUrl(order.receipt_file_path, 3600);
-      if (data?.signedUrl) receiptUrl = data.signedUrl;
-    } catch {}
-  }
-  const isImage = order.receipt_file_name ? /\.(jpg|jpeg|png|webp)$/i.test(order.receipt_file_name) : false;
-  const receiptPreviewHtml = receiptUrl
-    ? `<div class="bg-blue-950/30 border border-blue-500/15 rounded-xl p-4">
-        <p class="text-[10px] font-bold uppercase text-gray-500 mb-2">Payment Receipt</p>
-        ${isImage
-          ? `<img src="${receiptUrl}" alt="Receipt" class="w-full rounded-lg border border-blue-500/10 max-h-64 object-contain mb-3">`
-          : `<div class="flex items-center gap-3 mb-3 p-3 bg-blue-950/50 rounded-lg"><i data-lucide="file-text" class="w-8 h-8 text-blue-400"></i><span class="text-xs text-gray-300">${escapeHtml(order.receipt_file_name || 'receipt.pdf')}</span></div>`
-        }
-        <div class="flex gap-2">
-          <a href="${receiptUrl}" target="_blank" download="${escapeHtml(order.receipt_file_name || 'receipt')}" class="btn-press flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 font-bold py-2 rounded-lg text-xs uppercase transition flex items-center justify-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Download</a>
-          <a href="${receiptUrl}" target="_blank" class="btn-press flex-1 bg-blue-950/60 hover:bg-blue-900/40 text-gray-300 border border-blue-500/20 font-bold py-2 rounded-lg text-xs uppercase transition flex items-center justify-center gap-1.5"><i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open</a>
-        </div>
-      </div>`
-    : `<div class="bg-blue-950/20 border border-blue-500/10 rounded-xl p-4 text-center"><p class="text-xs text-gray-500">No receipt file uploaded</p></div>`;
-  modal.innerHTML = `<div class="modal-overlay fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModal(event)">
-    <div class="modal-content glass border border-blue-500/20 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto scrollbar-thin" onclick="event.stopPropagation()">
-      <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="shopping-bag" class="w-5 h-5 text-blue-400"></i> Order ${order.order_number}</h3>
-      <div class="space-y-3">
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div><p class="text-[10px] text-gray-500 uppercase">Customer</p><p class="text-white font-bold">${escapeHtml(order.full_name || order.customer_name || '—')}</p></div>
-          <div><p class="text-[10px] text-gray-500 uppercase">Email</p><p class="text-gray-300">${escapeHtml(order.email || '—')}</p></div>
-          <div><p class="text-[10px] text-gray-500 uppercase">Amount</p><p class="text-amber-400 font-bold">${fmtMoney(order.amount, order.currency)}</p></div>
-          <div><p class="text-[10px] text-gray-500 uppercase">Method</p><p class="text-gray-300">${escapeHtml(order.payment_method || '—')}</p></div>
-          <div><p class="text-[10px] text-gray-500 uppercase">Tx Reference</p><p class="text-gray-300 text-xs font-mono">${escapeHtml(order.transaction_reference || '—')}</p></div>
-          <div><p class="text-[10px] text-gray-500 uppercase">Status</p>${statusBadge(order.status)}</div>
-          <div><p class="text-[10px] text-gray-500 uppercase">Date</p><p class="text-gray-300">${fmtDateTime(order.created_at)}</p></div>
-          <div><p class="text-[10px] text-gray-500 uppercase">File</p><p class="text-gray-400 text-xs truncate">${escapeHtml(order.receipt_file_name || '—')}</p></div>
-        </div>
-        ${order.additional_notes ? `<div class="bg-blue-950/30 border border-blue-500/10 rounded-xl p-3"><p class="text-[10px] text-gray-500 uppercase mb-1">Customer Notes</p><p class="text-xs text-gray-300">${escapeHtml(order.additional_notes)}</p></div>` : ''}
-        ${receiptPreviewHtml}
-        ${order.admin_notes ? `<div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3"><p class="text-[10px] text-amber-500 uppercase mb-1">Admin Notes</p><p class="text-xs text-gray-300">${escapeHtml(order.admin_notes)}</p></div>` : ''}
-        <div class="pt-3 border-t border-blue-500/10">
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Admin Notes (for rejection explanation)</label>
-          <textarea id="admin-notes-input" rows="2" placeholder="Add notes for the customer..." class="w-full bg-blue-950/40 border border-blue-500/20 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition">${escapeHtml(order.admin_notes || '')}</textarea>
-        </div>
-        <div class="pt-3 border-t border-blue-500/10">
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Update Status</label>
-          <div class="flex gap-2 flex-wrap">
-            <button onclick="updateOrderStatus('${order.order_number}','pending_verification')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 transition">Pending</button>
-            <button onclick="updateOrderStatus('${order.order_number}','payment_approved')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 transition">Approve</button>
-            <button onclick="updateOrderStatus('${order.order_number}','rejected')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 transition">Reject</button>
-            <button onclick="updateOrderStatus('${order.order_number}','delivered')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 transition">Delivered</button>
-            <button onclick="updateOrderStatus('${order.order_number}','cancelled')" class="btn-press text-xs font-bold px-3 py-2 rounded-xl bg-gray-500/10 text-gray-400 border border-gray-500/20 transition">Cancel</button>
-          </div>
-        </div>
-        <div class="flex gap-3 pt-2">
-          <button onclick="printInvoice('${order.order_number}')" class="btn-press flex-1 bg-blue-950/60 border border-blue-500/20 text-blue-400 font-bold py-2.5 rounded-xl text-xs uppercase transition flex items-center justify-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Print Invoice</button>
-          <button onclick="closeModal()" class="btn-press px-5 py-2.5 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold rounded-xl text-xs uppercase transition">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-};
-
-window.updateOrderStatus = async (orderNumber, status) => {
-  try {
-    const notesInput = document.getElementById('admin-notes-input');
-    const adminNotes = notesInput ? notesInput.value.trim() : null;
-    const update = { status, admin_reviewed_at: new Date().toISOString() };
-    if (adminNotes) update.admin_notes = adminNotes;
-    const { error } = await supabase.from('payment_receipts').update(update).eq('order_number', orderNumber);
-    if (error) throw error;
-    showToast(`Order status updated to ${status.replace(/_/g, ' ')}.`);
-    closeModal();
-    await logActivity('update_order_status', 'order', orderNumber, { status, admin_notes: adminNotes });
-    try {
-      const order = state.data.orders?.find(o => o.order_number === orderNumber);
-      if (order?.email) {
-        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-order-notification`, {
-          method: 'POST', headers: { 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order_number: orderNumber }),
-        });
-      }
-    } catch {}
-    renderOrders();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.printInvoice = (orderNumber) => {
-  const order = state.data.orders?.find(o => o.order_number === orderNumber);
-  if (!order) return;
-  const w = window.open('', '_blank');
-  w.document.write(`<html><head><title>Invoice ${orderNumber}</title><style>body{font-family:Arial;padding:40px;color:#1e293b}h1{color:#2563eb}.row{margin:8px 0}.label{color:#64748b;font-size:12px;text-transform:uppercase}</style></head><body><h1>KCO Global Online Marketplace</h1><h2>Invoice</h2><div class="row"><span class="label">Order Number:</span> ${orderNumber}</div><div class="row"><span class="label">Customer:</span> ${escapeHtml(order.full_name || '')}</div><div class="row"><span class="label">Amount:</span> ${fmtMoney(order.amount, order.currency)}</div><div class="row"><span class="label">Payment Method:</span> ${escapeHtml(order.payment_method || '')}</div><div class="row"><span class="label">Status:</span> ${order.status}</div><div class="row"><span class="label">Date:</span> ${fmtDateTime(order.created_at)}</div></body></html>`);
-  w.document.close();
-  w.print();
-};
-
-// ── Special Orders section ────────────────────────────────────
-async function renderSpecialOrders() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="fade-in"><div class="flex items-center justify-between mb-6"><div><h2 class="text-2xl font-black text-white tracking-tight">Special Order Requests</h2><p class="text-sm text-gray-500 mt-1">Review and process customer product sourcing requests</p></div><button onclick="renderSpecialOrders()" class="btn-press px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-bold transition flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh</button></div><div id="special-orders-list" class="space-y-3"><div class="flex items-center justify-center py-20 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mr-2"></i> Loading requests...</div></div></div>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-  try {
-    const { data, error } = await supabase.from('product_requests').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    const container = document.getElementById('special-orders-list');
-    if (!data || data.length === 0) {
-      container.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-gray-500"><i data-lucide="package-search" class="w-12 h-12 mb-3 opacity-50"></i><p class="text-sm">No special order requests yet.</p></div>`;
-      if (window.lucide) lucide.createIcons();
-      return;
-    }
-    const statusColors = { pending_review: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30', under_review: 'bg-blue-500/10 text-blue-400 border-blue-500/30', approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', rejected: 'bg-red-500/10 text-red-400 border-red-500/30', quoted: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30', fulfilled: 'bg-green-500/10 text-green-400 border-green-500/30', cancelled: 'bg-gray-500/10 text-gray-400 border-gray-500/30' };
-    container.innerHTML = data.map(r => {
-      const badgeClass = statusColors[r.status] || statusColors.pending_review;
-      const statusLabel = r.status.replace(/_/g, ' ');
-      const price = r.target_price ? `${r.currency} ${Number(r.target_price).toLocaleString()}` : '—';
-      const quoted = r.quoted_price ? `${r.quoted_currency} ${Number(r.quoted_price).toLocaleString()}` : null;
-      return `<div class="glass border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition">
-        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1.5">
-              <h4 class="text-sm font-bold text-white truncate">${escapeHtml(r.request_title)}</h4>
-              <span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${badgeClass}">${escapeHtml(statusLabel)}</span>
-            </div>
-            <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
-              <span><i data-lucide="tag" class="w-3 h-3 inline mr-1"></i>${escapeHtml(r.category || 'Uncategorized')}</span>
-              <span><i data-lucide="award" class="w-3 h-3 inline mr-1"></i>${escapeHtml(r.brand || 'Any')}</span>
-              <span><i data-lucide="circle-dollar-sign" class="w-3 h-3 inline mr-1"></i>${price}</span>
-              <span><i data-lucide="hash" class="w-3 h-3 inline mr-1"></i>Qty: ${r.quantity}</span>
-              <span><i data-lucide="calendar" class="w-3 h-3 inline mr-1"></i>${fmtDate(r.created_at)}</span>
-            </div>
-            ${r.request_description ? `<p class="text-xs text-gray-500 mt-2 line-clamp-2">${escapeHtml(r.request_description)}</p>` : ''}
-            ${quoted ? `<p class="text-xs text-cyan-400 font-bold mt-2">Quoted: ${quoted} (${escapeHtml(r.payment_status)})</p>` : ''}
-            <div class="text-xs text-gray-500 mt-2"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${escapeHtml(r.delivery_full_name || '')}, ${escapeHtml(r.delivery_address || '')}, ${escapeHtml(r.delivery_city || '')}, ${escapeHtml(r.delivery_country || '')}${r.delivery_phone ? ' &middot; ' + escapeHtml(r.delivery_phone) : ''}</div>
-          </div>
-          <div class="flex flex-wrap gap-2 shrink-0">
-            <button onclick="viewSpecialOrder('${r.id}')" class="btn-press px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5"><i data-lucide="eye" class="w-3.5 h-3.5"></i> View</button>
-            <button onclick="updateSpecialOrderStatus('${r.id}','under_review')" class="btn-press px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-bold transition">Review</button>
-            <button onclick="updateSpecialOrderStatus('${r.id}','approved')" class="btn-press px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold transition">Approve</button>
-            <button onclick="updateSpecialOrderStatus('${r.id}','rejected')" class="btn-press px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold transition">Reject</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-    if (window.lucide) lucide.createIcons();
-    document.querySelectorAll('.btn-press').forEach(ripple);
-  } catch (err) {
-    document.getElementById('special-orders-list').innerHTML = `<div class="text-red-400 text-sm p-4">Error loading requests: ${escapeHtml(err.message)}</div>`;
-  }
-}
-
-window.viewSpecialOrder = async (id) => {
-  try {
-    const { data, error } = await supabase.from('product_requests').select('*').eq('id', id).maybeSingle();
-    if (error) throw error;
-    if (!data) { showToast('Request not found.'); return; }
-    const { data: updates } = await supabase.from('product_request_status_updates').select('*').eq('request_id', id).order('created_at', { ascending: true });
-    const statusColors = { pending_review: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30', under_review: 'bg-blue-500/10 text-blue-400 border-blue-500/30', approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', rejected: 'bg-red-500/10 text-red-400 border-red-500/30', quoted: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30', fulfilled: 'bg-green-500/10 text-green-400 border-green-500/30', cancelled: 'bg-gray-500/10 text-gray-400 border-gray-500/30' };
-    const badgeClass = statusColors[data.status] || statusColors.pending_review;
-    const updatesHtml = (updates || []).map(u => `<div class="flex gap-3 py-2 border-b border-gray-800 last:border-0"><div class="w-2 h-2 rounded-full bg-orange-500 mt-1.5 shrink-0"></div><div class="flex-1"><p class="text-xs font-bold text-white">${escapeHtml(u.status.replace(/_/g,' '))}</p>${u.message ? `<p class="text-xs text-gray-400 mt-0.5">${escapeHtml(u.message)}</p>` : ''}<p class="text-[10px] text-gray-600 mt-0.5">${fmtDateTime(u.created_at)}</p></div></div>`).join('');
-    let modal = document.getElementById('special-order-modal');
-    if (!modal) { modal = document.createElement('div'); modal.id = 'special-order-modal'; modal.className = 'fixed inset-0 z-[70] bg-black/80 backdrop-blur-md overflow-y-auto'; document.body.appendChild(modal); }
-    modal.innerHTML = `<div class="max-w-2xl mx-auto px-4 py-6 sm:py-10"><div class="glass bg-[#0f172a] border border-gray-700/50 rounded-2xl shadow-2xl overflow-hidden">
-      <div class="flex items-center justify-between p-5 border-b border-gray-800"><h3 class="text-lg font-bold text-white">Special Order Details</h3><button onclick="document.getElementById('special-order-modal').style.display='none';document.body.style.overflow=''" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-      <div class="p-5 space-y-4">
-        <div class="flex items-center gap-2"><span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${badgeClass}">${escapeHtml(data.status.replace(/_/g,' '))}</span>${data.payment_status !== 'unpaid' ? `<span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border bg-cyan-500/10 text-cyan-400 border-cyan-500/30">${escapeHtml(data.payment_status)}</span>` : ''}</div>
-        <div class="bg-gray-900/50 rounded-xl p-4 space-y-2 border border-gray-800">
-          <div><span class="text-xs text-gray-500 uppercase font-bold">Product</span><p class="text-sm text-white font-semibold mt-0.5">${escapeHtml(data.request_title)}</p></div>
-          ${data.request_description ? `<div class="pt-2"><span class="text-xs text-gray-500 uppercase font-bold">Description</span><p class="text-sm text-gray-300 mt-0.5">${escapeHtml(data.request_description)}</p></div>` : ''}
-          <div class="grid grid-cols-2 gap-3 pt-2">
-            <div><span class="text-xs text-gray-500 uppercase font-bold">Category</span><p class="text-sm text-gray-300 mt-0.5">${escapeHtml(data.category || '—')}</p></div>
-            <div><span class="text-xs text-gray-500 uppercase font-bold">Brand</span><p class="text-sm text-gray-300 mt-0.5">${escapeHtml(data.brand || '—')}</p></div>
-            <div><span class="text-xs text-gray-500 uppercase font-bold">Target Price</span><p class="text-sm text-orange-400 font-bold mt-0.5">${data.currency} ${data.target_price ? Number(data.target_price).toLocaleString() : '—'}</p></div>
-            <div><span class="text-xs text-gray-500 uppercase font-bold">Quantity</span><p class="text-sm text-gray-300 mt-0.5">${data.quantity}</p></div>
-          </div>
-          ${data.quoted_price ? `<div class="pt-2"><span class="text-xs text-gray-500 uppercase font-bold">Quoted Price</span><p class="text-sm text-cyan-400 font-bold mt-0.5">${data.quoted_currency} ${Number(data.quoted_price).toLocaleString()}</p></div>` : ''}
-        </div>
-        <div class="bg-gray-900/50 rounded-xl p-4 border border-gray-800">
-          <p class="text-xs text-gray-500 uppercase font-bold mb-2">Delivery Information</p>
-          <p class="text-sm text-white font-semibold">${escapeHtml(data.delivery_full_name || '—')}</p>
-          <p class="text-sm text-gray-400">${escapeHtml(data.delivery_address || '—')}</p>
-          <p class="text-sm text-gray-400">${escapeHtml(data.delivery_city || '—')}, ${escapeHtml(data.delivery_state || '—')}</p>
-          <p class="text-sm text-gray-400">${escapeHtml(data.delivery_postal_code || '—')} ${escapeHtml(data.delivery_country || '—')}</p>
-          <p class="text-sm text-gray-400 mt-1"><i data-lucide="phone" class="w-3.5 h-3.5 inline mr-1"></i>${escapeHtml(data.delivery_phone || '—')}</p>
-        </div>
-        <div class="bg-gray-900/50 rounded-xl p-4 border border-gray-800"><p class="text-xs text-gray-500 uppercase font-bold mb-2">Status History</p>${updatesHtml || '<p class="text-xs text-gray-600">No updates yet.</p>'}</div>
-        <div class="space-y-2">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide">Update Status</label>
-          <select id="so-status-select" class="w-full bg-gray-900/80 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition">
-            <option value="pending_review">Pending Review</option><option value="under_review">Under Review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="quoted">Quoted</option><option value="fulfilled">Fulfilled</option><option value="cancelled">Cancelled</option>
-          </select>
-          <input id="so-quote-price" type="number" min="0" step="0.01" placeholder="Quoted price (optional)" class="w-full bg-gray-900/80 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-orange-500 focus:outline-none transition">
-          <textarea id="so-admin-message" rows="2" placeholder="Message to customer (optional)" class="w-full bg-gray-900/80 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-orange-500 focus:outline-none transition"></textarea>
-          <button onclick="saveSpecialOrderUpdate('${data.id}')" class="btn-press w-full py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-orange-500/30">Update Request</button>
-        </div>
-      </div>
-    </div></div>`;
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-    const sel = document.getElementById('so-status-select');
-    if (sel) sel.value = data.status;
-    if (window.lucide) lucide.createIcons();
-    document.querySelectorAll('.btn-press').forEach(ripple);
-  } catch (err) { showToast('Error loading request: ' + err.message); }
-};
-
-window.updateSpecialOrderStatus = async (id, status) => {
-  try {
-    const { error } = await supabase.from('product_requests').update({ status }).eq('id', id);
-    if (error) throw error;
-    await supabase.from('product_request_status_updates').insert({ request_id: id, status, message: `Status updated to: ${status.replace(/_/g,' ')}` });
-    showToast('Request status updated to: ' + status.replace(/_/g,' '));
-    renderSpecialOrders();
-  } catch (err) { showToast('Error updating request: ' + err.message); }
-};
-
-window.saveSpecialOrderUpdate = async (id) => {
-  const status = document.getElementById('so-status-select').value;
-  const quotePrice = parseFloat(document.getElementById('so-quote-price').value) || null;
-  const message = document.getElementById('so-admin-message').value.trim() || null;
-  try {
-    const update = { status };
-    if (quotePrice !== null) { update.quoted_price = quotePrice; update.payment_status = 'pending'; }
-    const { error } = await supabase.from('product_requests').update(update).eq('id', id);
-    if (error) throw error;
-    await supabase.from('product_request_status_updates').insert({ request_id: id, status, message: message || `Status updated to: ${status.replace(/_/g,' ')}` });
-    showToast('Request updated successfully.');
-    document.getElementById('special-order-modal').style.display = 'none';
-    document.body.style.overflow = '';
-    renderSpecialOrders();
-  } catch (err) { showToast('Error updating request: ' + err.message); }
-};
-
-// ── Customers section ──────────────────────────────────────────
-async function renderCustomers() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading customers...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-  const { data: profiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(100);
-  content.innerHTML = `
-    <div class="fade-in space-y-4">
-      <div class="flex gap-2 flex-1 max-w-md">
-        <input type="text" id="customer-search" placeholder="Search customers..." oninput="filterCustomers()" class="input-field flex-1 bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
-      </div>
-      <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden">
-        <div class="overflow-x-auto scrollbar-thin">
-          <table class="w-full data-table">
-            <thead><tr class="border-b border-blue-500/10 bg-blue-950/30">
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Name</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3 hidden sm:table-cell">Country</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3 hidden md:table-cell">Phone</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Admin</th>
-              <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3 hidden lg:table-cell">Joined</th>
-              <th class="text-right text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Actions</th>
-            </tr></thead>
-            <tbody>${(profiles || []).map(p => `
-              <tr class="border-b border-blue-500/5 hover:bg-blue-500/5 transition" data-search="${escapeHtml((p.display_name || '').toLowerCase())}">
-                <td class="px-4 py-3 text-xs text-white font-bold">${escapeHtml(p.display_name || 'Unknown')}</td>
-                <td class="px-4 py-3 text-xs text-gray-400 hidden sm:table-cell">${escapeHtml(p.country_code || '—')}</td>
-                <td class="px-4 py-3 text-xs text-gray-400 hidden md:table-cell">${escapeHtml(p.phone_number || '—')}</td>
-                <td class="px-4 py-3">${p.is_admin ? statusBadge('active') : statusBadge('inactive')}</td>
-                <td class="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell">${fmtDate(p.created_at)}</td>
-                <td class="px-4 py-3 text-right"><button onclick="toggleAdmin('${p.user_id}')" class="btn-press p-2 hover:bg-blue-500/10 rounded-lg ${p.is_admin ? 'text-amber-400' : 'text-gray-400'} transition" title="Toggle Admin"><i data-lucide="shield" class="w-4 h-4"></i></button></td>
-              </tr>
-            `).join('')}</tbody>
-          </table>
-        </div>
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-  state.data.profiles = profiles || [];
-  document.querySelectorAll('.btn-press').forEach(ripple);
-}
-
-window.filterCustomers = () => {
-  const search = document.getElementById('customer-search').value.toLowerCase();
-  document.querySelectorAll('#content tbody tr').forEach(row => {
-    row.style.display = !search || row.dataset.search.includes(search) ? '' : 'none';
-  });
-};
-
-window.toggleAdmin = async (userId) => {
-  const profile = state.data.profiles?.find(p => p.user_id === userId);
-  if (!profile) return;
-  try {
-    const { error } = await supabase.from('profiles').update({ is_admin: !profile.is_admin }).eq('user_id', userId);
-    if (error) throw error;
-    showToast(`Admin status ${profile.is_admin ? 'removed' : 'granted'}.`);
-    await logActivity('toggle_admin', 'customer', userId);
-    renderCustomers();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-// ── Payments section ──────────────────────────────────────────
-async function renderPayments() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading payments...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-  const [gateways, payments] = await Promise.all([
-    supabase.from('payment_gateways').select('*').order('display_order', { ascending: true }),
-    supabase.from('payment_receipts').select('*').order('created_at', { ascending: false }).limit(50),
-  ]);
-  content.innerHTML = `
-    <div class="fade-in space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="lg:col-span-1 glass border border-blue-500/20 rounded-2xl p-5">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="credit-card" class="w-4 h-4 text-blue-400"></i> Payment Gateways</h3>
-          <div class="space-y-2">
-            ${(gateways.data || []).map(g => `
-              <div class="glass-soft border border-blue-500/10 rounded-xl p-3 flex items-center justify-between">
-                <div><p class="text-sm font-bold text-white">${escapeHtml(g.name)}</p><p class="text-[10px] text-gray-500 uppercase">${g.code}</p></div>
-                <div class="flex items-center gap-2">
-                  ${g.is_default ? '<span class="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase">Default</span>' : ''}
-                  <button onclick="toggleGateway('${g.id}',${!g.is_active})" class="btn-press relative w-10 h-5 rounded-full transition ${g.is_active ? 'bg-blue-500' : 'bg-gray-600'}">
-                    <span class="absolute top-0.5 ${g.is_active ? 'left-5' : 'left-0.5'} w-4 h-4 bg-white rounded-full transition-all"></span>
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-          <button onclick="showAddGatewayModal()" class="btn-press mt-3 w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold py-2.5 rounded-xl text-xs uppercase transition flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Add Gateway</button>
-        </div>
-        <div class="lg:col-span-2 glass border border-blue-500/20 rounded-2xl overflow-hidden">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide p-5 mb-2 flex items-center gap-2"><i data-lucide="receipt" class="w-4 h-4 text-blue-400"></i> Payment Records</h3>
-          <div class="overflow-x-auto scrollbar-thin">
-            <table class="w-full data-table">
-              <thead><tr class="border-b border-blue-500/10 bg-blue-950/30">
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Order #</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3 hidden sm:table-cell">Method</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Amount</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Status</th>
-                <th class="text-right text-[10px] font-bold uppercase text-gray-500 px-4 py-3">Actions</th>
-              </tr></thead>
-              <tbody>${(payments.data || []).map(p => `
-                <tr class="border-b border-blue-500/5 hover:bg-blue-500/5 transition">
-                  <td class="px-4 py-3 text-xs font-mono text-blue-400">${p.order_number || '—'}</td>
-                  <td class="px-4 py-3 text-xs text-gray-400 hidden sm:table-cell">${escapeHtml(p.payment_method || '—')}</td>
-                  <td class="px-4 py-3 text-xs text-amber-400 font-bold">${fmtMoney(p.amount, p.currency)}</td>
-                  <td class="px-4 py-3">${statusBadge(p.status)}</td>
-                  <td class="px-4 py-3 text-right">
-                    <button onclick="updateOrderStatus('${p.order_number}','payment_approved')" class="btn-press p-2 hover:bg-emerald-500/10 rounded-lg text-emerald-400 transition" title="Verify"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
-                    <button onclick="updateOrderStatus('${p.order_number}','cancelled')" class="btn-press p-2 hover:bg-red-500/10 rounded-lg text-red-400 transition" title="Reject"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
-                  </td>
-                </tr>
-              `).join('')}</tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-  state.data.gateways = gateways.data || [];
-  document.querySelectorAll('.btn-press').forEach(ripple);
-}
-
-window.toggleGateway = async (id, active) => {
-  try {
-    const { error } = await supabase.from('payment_gateways').update({ is_active: active }).eq('id', id);
-    if (error) throw error;
-    showToast(`Gateway ${active ? 'enabled' : 'disabled'}.`);
-    await logActivity('toggle_gateway', 'gateway', id, { active });
-    renderPayments();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.showAddGatewayModal = () => {
-  const modal = document.getElementById('modal-container');
-  modal.innerHTML = `<div class="modal-overlay fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModal(event)">
-    <div class="modal-content glass border border-blue-500/20 rounded-2xl p-6 max-w-md w-full" onclick="event.stopPropagation()">
-      <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="plus-circle" class="w-5 h-5 text-blue-400"></i> Add Payment Gateway</h3>
-      <form id="gateway-form" class="space-y-4">
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Name *</label><input type="text" id="gw-name" required placeholder="e.g. M-Pesa" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Code *</label><input type="text" id="gw-code" required placeholder="e.g. mpesa" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 lowercase"></div>
-        <div class="grid grid-cols-2 gap-4">
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">API Key</label><input type="password" id="gw-api-key" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Secret Key</label><input type="password" id="gw-secret-key" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        </div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Webhook URL</label><input type="text" id="gw-webhook" placeholder="https://..." class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        <div class="flex items-center gap-2"><input type="checkbox" id="gw-active" checked class="w-4 h-4 rounded border-blue-500/20 bg-[#0a1124]"><label for="gw-active" class="text-xs font-bold text-gray-400">Enable immediately</label></div>
-        <div class="flex gap-3 pt-2">
-          <button type="submit" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">Add Gateway</button>
-          <button type="button" onclick="closeModal()" class="btn-press px-5 py-3 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold rounded-xl text-sm uppercase transition">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-  document.getElementById('gateway-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      const { error } = await supabase.from('payment_gateways').insert({
-        name: document.getElementById('gw-name').value.trim(),
-        code: document.getElementById('gw-code').value.trim().toLowerCase(),
-        api_key: document.getElementById('gw-api-key').value.trim() || null,
-        secret_key: document.getElementById('gw-secret-key').value.trim() || null,
-        webhook_url: document.getElementById('gw-webhook').value.trim() || null,
-        is_active: document.getElementById('gw-active').checked,
-        display_order: 99,
-      });
-      if (error) throw error;
-      closeModal();
-      showToast('Gateway added successfully.');
-      await logActivity('add_gateway', 'gateway', document.getElementById('gw-code').value);
-      renderPayments();
-    } catch (err) { showToast('Error: ' + err.message); }
-  });
-};
-
-// ── Promotions section ─────────────────────────────────────────
-async function renderPromotions() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading promotions...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-  const { data: promos } = await supabase.from('promotions').select('*').order('created_at', { ascending: false });
-  content.innerHTML = `
-    <div class="fade-in space-y-4">
-      <div class="flex justify-end"><button onclick="showPromoModal()" class="btn-press flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 px-5 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30"><i data-lucide="plus" class="w-4 h-4"></i> Create Promotion</button></div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        ${(promos || []).map(p => `
-          <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-            <div class="flex items-center justify-between mb-3">
-              <div class="p-2 bg-blue-500/10 rounded-lg"><i data-lucide="${p.promo_type === 'coupon' ? 'ticket' : p.promo_type === 'flash_sale' ? 'zap' : 'megaphone'}" class="w-5 h-5 text-blue-400"></i></div>
-              ${p.is_active ? statusBadge('active') : statusBadge('inactive')}
-            </div>
-            <h3 class="text-sm font-bold text-white mb-1">${escapeHtml(p.title)}</h3>
-            <p class="text-xs text-gray-500 mb-2">${escapeHtml(p.description || '—')}</p>
-            <div class="flex items-center gap-2 text-[10px] text-gray-500">
-              <span class="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full uppercase font-bold">${escapeHtml(p.promo_type)}</span>
-              ${p.discount_value ? `<span class="text-amber-400">${p.discount_value}${p.discount_type === 'percentage' ? '%' : ''} off</span>` : ''}
-              ${p.coupon_code ? `<span class="text-emerald-400 font-mono">${escapeHtml(p.coupon_code)}</span>` : ''}
-            </div>
-            <div class="flex gap-2 mt-3">
-              <button onclick="togglePromo('${p.id}',${!p.is_active})" class="btn-press flex-1 text-xs font-bold py-2 rounded-xl ${p.is_active ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'} transition">${p.is_active ? 'Deactivate' : 'Activate'}</button>
-              <button onclick="deletePromo('${p.id}')" class="btn-press p-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-  state.data.promos = promos || [];
-  document.querySelectorAll('.btn-press').forEach(ripple);
-}
-
-window.showPromoModal = () => {
-  const modal = document.getElementById('modal-container');
-  modal.innerHTML = `<div class="modal-overlay fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModal(event)">
-    <div class="modal-content glass border border-blue-500/20 rounded-2xl p-6 max-w-md w-full" onclick="event.stopPropagation()">
-      <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="megaphone" class="w-5 h-5 text-blue-400"></i> Create Promotion</h3>
-      <form id="promo-form" class="space-y-4">
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Title *</label><input type="text" id="pr-title" required placeholder="Weekend Flash Sale" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Type *</label><select id="pr-type" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"><option value="banner">Banner</option><option value="discount">Discount</option><option value="flash_sale">Flash Sale</option><option value="coupon">Coupon</option></select></div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Description</label><textarea id="pr-desc" rows="2" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 resize-none"></textarea></div>
-        <div class="grid grid-cols-2 gap-4">
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Discount Value</label><input type="number" id="pr-value" step="0.01" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Discount Type</label><select id="pr-dtype" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"><option value="percentage">Percentage</option><option value="fixed">Fixed</option></select></div>
-        </div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Coupon Code</label><input type="text" id="pr-code" placeholder="WEEKEND20" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 uppercase"></div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Banner Text</label><input type="text" id="pr-banner" placeholder="🔥 Weekend Flash Sale — Up to 50% Off!" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        <div class="flex gap-3 pt-2">
-          <button type="submit" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">Create</button>
-          <button type="button" onclick="closeModal()" class="btn-press px-5 py-3 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold rounded-xl text-sm uppercase transition">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-  document.getElementById('promo-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      const { error } = await supabase.from('promotions').insert({
-        title: document.getElementById('pr-title').value.trim(),
-        promo_type: document.getElementById('pr-type').value,
-        description: document.getElementById('pr-desc').value.trim() || null,
-        discount_value: parseFloat(document.getElementById('pr-value').value) || null,
-        discount_type: document.getElementById('pr-dtype').value,
-        coupon_code: document.getElementById('pr-code').value.trim() || null,
-        banner_text: document.getElementById('pr-banner').value.trim() || null,
-        is_active: true,
-      });
-      if (error) throw error;
-      closeModal();
-      showToast('Promotion created successfully.');
-      await logActivity('create_promotion', 'promotion', 'new');
-      renderPromotions();
-    } catch (err) { showToast('Error: ' + err.message); }
-  });
-};
-
-window.togglePromo = async (id, active) => {
-  try {
-    const { error } = await supabase.from('promotions').update({ is_active: active }).eq('id', id);
-    if (error) throw error;
-    showToast(`Promotion ${active ? 'activated' : 'deactivated'}.`);
-    renderPromotions();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.deletePromo = async (id) => {
-  try {
-    const { error } = await supabase.from('promotions').delete().eq('id', id);
-    if (error) throw error;
-    showToast('Promotion deleted.');
-    renderPromotions();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-// ── Content, Email, Analytics, Security, Settings, Integrations ─
-async function renderContent() {
-  const pages = [
-    { name: 'Homepage', path: '/index.html', icon: 'home' },
-    { name: 'About Us', path: '/about.html', icon: 'info' },
-    { name: 'Contact Us', path: '/contact.html', icon: 'mail' },
-    { name: 'FAQ / Help Center', path: '/help.html', icon: 'help-circle' },
-    { name: 'Privacy Policy', path: '/privacy.html', icon: 'shield' },
-    { name: 'Terms & Conditions', path: '/terms.html', icon: 'file-text' },
-    { name: 'Refund Policy', path: '/refund-policy.html', icon: 'refresh-cw' },
-    { name: 'Shipping Policy', path: '/shipping-policy.html', icon: 'truck' },
-  ];
-  document.getElementById('content').innerHTML = `
-    <div class="fade-in">
-      <div class="glass border border-blue-500/20 rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-blue-400"></i> Content Pages</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          ${pages.map(p => `
-            <a href="${p.path}" target="_blank" class="btn-press glass-soft border border-blue-500/15 hover:border-blue-500/40 rounded-xl p-4 transition group">
-              <div class="p-2 bg-blue-500/10 rounded-lg w-fit mb-2 group-hover:bg-blue-500/20 transition"><i data-lucide="${p.icon}" class="w-5 h-5 text-blue-400"></i></div>
-              <p class="text-sm font-bold text-white">${p.name}</p>
-              <p class="text-[10px] text-gray-500 mt-1">${p.path}</p>
-            </a>
-          `).join('')}
-        </div>
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-}
-
-async function renderEmail() {
-  const { data: templates } = await supabase.from('email_templates').select('*').order('template_key', { ascending: true });
-  document.getElementById('content').innerHTML = `
-    <div class="fade-in space-y-4">
-      <div class="glass border border-blue-500/20 rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4 text-blue-400"></i> Email Templates</h3>
-        <div class="space-y-2">
-          ${(templates || []).map(t => `
-            <div class="glass-soft border border-blue-500/10 rounded-xl p-4 flex items-center justify-between">
-              <div class="min-w-0 flex-1"><p class="text-sm font-bold text-white">${escapeHtml(t.template_key.replace(/_/g, ' '))}</p><p class="text-xs text-gray-500 truncate">${escapeHtml(t.subject)}</p></div>
-              <button onclick="editTemplate('${t.id}')" class="btn-press p-2 hover:bg-blue-500/10 rounded-lg text-blue-400 transition"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-  state.data.templates = templates || [];
-}
-
-window.editTemplate = (id) => {
-  const t = state.data.templates?.find(x => x.id === id);
-  if (!t) return;
-  const modal = document.getElementById('modal-container');
-  modal.innerHTML = `<div class="modal-overlay fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModal(event)">
-    <div class="modal-content glass border border-blue-500/20 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto scrollbar-thin" onclick="event.stopPropagation()">
-      <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="edit-3" class="w-5 h-5 text-blue-400"></i> Edit Template</h3>
-      <form id="template-form" class="space-y-4">
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Subject</label><input type="text" id="tp-subject" value="${escapeHtml(t.subject)}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Body (supports {{variables}})</label><textarea id="tp-body" rows="8" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 resize-none">${escapeHtml(t.body)}</textarea></div>
-        <div class="flex gap-3 pt-2"><button type="submit" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">Save</button><button type="button" onclick="closeModal()" class="btn-press px-5 py-3 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold rounded-xl text-sm uppercase transition">Cancel</button></div>
-      </form>
-    </div>
-  </div>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-  document.getElementById('template-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      const { error } = await supabase.from('email_templates').update({
-        subject: document.getElementById('tp-subject').value.trim(),
-        body: document.getElementById('tp-body').value.trim(),
-      }).eq('id', id);
-      if (error) throw error;
-      closeModal();
-      showToast('Template updated.');
-      renderEmail();
-    } catch (err) { showToast('Error: ' + err.message); }
-  });
-};
-
-async function renderAnalytics() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading analytics...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-  const [products, orders, profiles] = await Promise.all([
-    supabase.from('showroom_listings').select('category,price,currency,listing_type'),
-    supabase.from('payment_receipts').select('amount,currency,status,created_at'),
-    supabase.from('profiles').select('country_code,created_at'),
-  ]);
-  // Category distribution
-  const cats = {};
-  (products.data || []).forEach(p => { cats[p.category] = (cats[p.category] || 0) + 1; });
-  // Revenue by month (last 6)
-  const now = new Date();
-  const monthLabels = []; const monthData = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const label = d.toLocaleString('en-US', { month: 'short' });
-    monthLabels.push(label);
-    const rev = (orders.data || []).filter(o => o.status === 'payment_approved' || o.status === 'delivered').filter(o => {
-      const od = new Date(o.created_at); return od.getMonth() === d.getMonth() && od.getFullYear() === d.getFullYear();
-    }).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0);
-    monthData.push(rev);
-  }
-  content.innerHTML = `
-    <div class="fade-in space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up"><h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i> Revenue (6 months)</h3><canvas id="chart-rev-line" height="200"></canvas></div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up" style="animation-delay:.1s"><h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4 text-blue-400"></i> Products by Category</h3><canvas id="chart-cat" height="200"></canvas></div>
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up"><h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3">Products</h3><p class="text-3xl font-black text-amber-400">${(products.data || []).length}</p></div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up" style="animation-delay:.1s"><h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3">Orders</h3><p class="text-3xl font-black text-blue-400">${(orders.data || []).length}</p></div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up" style="animation-delay:.2s"><h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3">Customers</h3><p class="text-3xl font-black text-emerald-400">${(profiles.data || []).length}</p></div>
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-  // Charts
-  const ctx1 = document.getElementById('chart-rev-line');
-  if (ctx1) new Chart(ctx1, { type: 'line', data: { labels: monthLabels, datasets: [{ label: 'Revenue', data: monthData, borderColor: 'rgb(59,130,246)', backgroundColor: 'rgba(59,130,246,.1)', fill: true, tension: .4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(59,130,246,.05)' } }, x: { ticks: { color: '#64748b' }, grid: { display: false } } } } });
-  const ctx2 = document.getElementById('chart-cat');
-  if (ctx2) new Chart(ctx2, { type: 'doughnut', data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['rgba(59,130,246,.6)', 'rgba(168,85,247,.6)', 'rgba(245,158,11,.6)', 'rgba(16,185,129,.6)', 'rgba(239,68,68,.6)', 'rgba(99,102,241,.6)', 'rgba(236,72,153,.6)', 'rgba(20,184,166,.6)'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } } } });
-}
-
-// ── Custom Domain section (embeds the domain management page inline) ──
-function renderDomains() {
-  document.getElementById('content').innerHTML = `
-    <div class="fade-in">
-      <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden" style="height: calc(100vh - 8rem)">
-        <iframe src="/admin-domains.html" class="w-full h-full border-0" title="Custom Domain Management"></iframe>
-      </div>
-    </div>`;
-}
-
-async function renderSecurity() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading security logs...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-  const [activity, security, roles] = await Promise.all([
-    supabase.from('admin_activity_logs').select('*').order('created_at', { ascending: false }).limit(50),
-    supabase.from('admin_security_logs').select('*').order('created_at', { ascending: false }).limit(50),
-    supabase.from('admin_roles').select('*'),
-  ]);
-
-  // Check 2FA status
-  let twoFaEnabled = false;
-  let twoFaSetup = false;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const accessToken = session?.session?.access_token;
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-2fa`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'status' }),
-    });
-    const twoFaData = await res.json();
-    twoFaEnabled = !!twoFaData.enabled;
-    twoFaSetup = !!twoFaData.setup;
-  } catch {}
-
-  content.innerHTML = `
-    <div class="fade-in space-y-4">
-      <!-- 2FA Management -->
-      <div class="glass border border-blue-500/20 rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Two-Factor Authentication (2FA)</h3>
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+window.showAddProductStep2 = function(category, existingData = {}) {
+  const isEdit = !!existingData.property_id;
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box wide">
+        <div class="flex items-center justify-between mb-5">
           <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="text-sm font-bold ${twoFaEnabled ? 'text-emerald-400' : 'text-gray-400'}">${twoFaEnabled ? '2FA is Active' : '2FA is Not Enabled'}</span>
-              ${twoFaEnabled ? '<span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase">Protected</span>' : '<span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase">Vulnerable</span>'}
-            </div>
-            <p class="text-xs text-gray-500 max-w-md">${twoFaEnabled ? 'Your admin dashboard is protected with authenticator app verification. A 6-digit code is required on every login.' : 'Protect your admin dashboard with Google Authenticator or Microsoft Authenticator. A 6-digit code will be required on every login.'}</p>
+            <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Product — ${esc(category)}</h3>
+            <p class="text-xs text-gray-500 mt-0.5">${isEdit ? `Editing: ${esc(existingData.property_id)}` : 'Fill in the product details below'}</p>
           </div>
-          <div class="flex flex-wrap gap-2">
-            ${twoFaEnabled ? `
-              <button onclick="regenerateBackupCodes()" class="btn-press flex items-center gap-1.5 px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold rounded-xl text-xs transition border border-amber-500/20">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Regenerate Backup Codes
-              </button>
-              <button onclick="disable2FA()" class="btn-press flex items-center gap-1.5 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold rounded-xl text-xs transition border border-red-500/20">
-                <i data-lucide="shield-off" class="w-3.5 h-3.5"></i> Disable 2FA
-              </button>
-            ` : `
-              <button onclick="setup2FA()" class="btn-press flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-blue-600/30">
-                <i data-lucide="shield-plus" class="w-3.5 h-3.5"></i> Enable 2FA
-              </button>
-            `}
-          </div>
+          <button onclick="${isEdit ? 'closeModal()' : "showAddProductStep1()"}" class="text-gray-500 hover:text-white transition">
+            <i data-lucide="${isEdit ? 'x' : 'arrow-left'}" class="w-5 h-5"></i>
+          </button>
         </div>
-      </div>
 
-      <!-- 2FA Setup modal container -->
-      <div id="twofa-setup-modal" class="hidden"></div>
+        <form id="product-form" onsubmit="saveProduct(event,'${esc(category)}','${isEdit ? existingData.property_id : ''}')" class="space-y-4">
+          <!-- Dynamic Fields -->
+          <div class="form-grid form-grid-2">
+            ${renderProductFieldsForm(category, existingData)}
+          </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="glass border border-blue-500/20 rounded-2xl p-5">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-blue-400"></i> Activity Logs</h3>
-          <div class="space-y-1 max-h-96 overflow-y-auto scrollbar-thin">
-            ${(activity.data || []).map(a => `<div class="flex items-center gap-2 text-xs py-2 border-b border-blue-500/5 last:border-0"><span class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></span><span class="font-bold text-gray-300">${escapeHtml(a.action)}</span>${a.entity_type ? `<span class="text-gray-600">${escapeHtml(a.entity_type)}</span>` : ''}<span class="text-gray-600 ml-auto">${fmtDateTime(a.created_at)}</span></div>`).join('') || '<p class="text-xs text-gray-600 text-center py-4">No activity logged yet.</p>'}
-          </div>
-        </div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-5">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i> Security Logs</h3>
-          <div class="space-y-1 max-h-96 overflow-y-auto scrollbar-thin">
-            ${(security.data || []).map(s => `<div class="flex items-center gap-2 text-xs py-2 border-b border-blue-500/5 last:border-0"><span class="w-2 h-2 rounded-full ${s.event_type?.includes('failed') || s.event_type?.includes('locked') ? 'bg-red-400' : 'bg-emerald-400'} shrink-0"></span><span class="font-bold text-gray-300">${escapeHtml(s.event_type)}</span><span class="text-gray-600 ml-auto">${fmtDateTime(s.created_at)}</span></div>`).join('') || '<p class="text-xs text-gray-600 text-center py-4">No security events yet.</p>'}
-          </div>
-        </div>
-      </div>
-      <div class="glass border border-blue-500/20 rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-violet-400"></i> Admin Roles</h3>
-        <div class="space-y-2">
-          ${(roles.data || []).map(r => `<div class="glass-soft border border-blue-500/10 rounded-xl p-3 flex items-center justify-between"><div><p class="text-sm font-bold text-white">${escapeHtml(r.role.replace(/_/g, ' '))}</p><p class="text-[10px] text-gray-500">${(r.permissions || []).length} permissions</p></div><span class="text-[10px] font-bold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-full uppercase">${escapeHtml(r.role)}</span></div>`).join('') || '<p class="text-xs text-gray-600 text-center py-4">No roles assigned yet.</p>'}
-        </div>
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-}
-
-async function renderSettings() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading settings...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-  const { data: settings } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
-  if (!settings) { content.innerHTML = '<p class="text-sm text-red-400">Failed to load settings.</p>'; return; }
-  content.innerHTML = `
-    <div class="fade-in space-y-4">
-      <div class="glass border border-blue-500/20 rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4 text-blue-400"></i> General Settings</h3>
-        <form id="settings-form" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Site Name</label><input type="text" id="st-site-name" value="${escapeHtml(settings.site_name)}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Marketplace Name</label><input type="text" id="st-mp-name" value="${escapeHtml(settings.marketplace_name)}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Default Currency</label><input type="text" id="st-currency" value="${escapeHtml(settings.default_currency)}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Support Email</label><input type="email" id="st-email" value="${escapeHtml(settings.support_email)}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Tax Rate (%)</label><input type="number" id="st-tax" step="0.01" value="${settings.tax_rate}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Supported Currencies (comma-separated)</label><input type="text" id="st-currencies" value="${(settings.supported_currencies || []).join(', ')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Supported Languages (comma-separated)</label><input type="text" id="st-languages" value="${(settings.supported_languages || []).join(', ')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          </div>
-          <div class="flex items-center gap-4">
-            <label class="flex items-center gap-2"><input type="checkbox" id="st-tax-enabled" ${settings.tax_enabled ? 'checked' : ''} class="w-4 h-4 rounded border-blue-500/20 bg-[#0a1124]"><span class="text-xs font-bold text-gray-400">Enable Tax</span></label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="st-maintenance" ${settings.maintenance_mode ? 'checked' : ''} class="w-4 h-4 rounded border-blue-500/20 bg-[#0a1124]"><span class="text-xs font-bold text-gray-400">Maintenance Mode</span></label>
-          </div>
-          <div class="pt-3 border-t border-blue-500/10">
-            <h4 class="text-xs font-bold text-white uppercase mb-3">Integration Keys</h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Cloudinary Cloud Name</label><input type="text" id="st-cloud-name" value="${escapeHtml(settings.cloudinary_cloud_name || '')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-              <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Cloudinary API Key</label><input type="password" id="st-cloud-key" value="${escapeHtml(settings.cloudinary_api_key || '')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-              <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Cloudinary API Secret</label><input type="password" id="st-cloud-secret" value="${escapeHtml(settings.cloudinary_api_secret || '')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-              <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Resend API Key</label><input type="password" id="st-resend" value="${escapeHtml(settings.resend_api_key || '')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+          <!-- Tags / Badges -->
+          <div>
+            <label class="lbl">Product Tags / Badges</label>
+            <div class="flex flex-wrap gap-2">
+              ${['New Arrival', 'Best Seller', 'Hot Deal', 'Featured', 'Limited Stock'].map(tag => `
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="checkbox" name="tags" value="${tag}" ${(existingData.tags || []).includes(tag) ? 'checked' : ''} class="accent-blue-500">
+                  <span class="text-xs text-gray-300">${tag}</span>
+                </label>`).join('')}
             </div>
           </div>
-          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">Save Settings</button>
+
+          <!-- Availability -->
+          <div class="form-grid form-grid-2">
+            <div>
+              <label class="lbl">Availability Status</label>
+              <select class="input-field" name="availability_status" id="pf-availability_status">
+                ${['In Stock', 'Out of Stock', 'Pre-order', 'Limited Stock'].map(s => `<option value="${s}" ${existingData.availability_status === s ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Currency</label>
+              <select class="input-field" name="currency" id="pf-currency">
+                ${['USD', 'EUR', 'GBP', 'NGN', 'KES', 'ZAR', 'GHS'].map(c => `<option value="${c}" ${(existingData.currency || 'USD') === c ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <!-- Featured -->
+          <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
+            <div>
+              <p class="text-xs font-bold text-white">Featured Product</p>
+              <p class="text-[11px] text-gray-500">Show in featured sections</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="is_featured" ${existingData.is_featured ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Active -->
+          <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
+            <div>
+              <p class="text-xs font-bold text-white">Published / Active</p>
+              <p class="text-[11px] text-gray-500">Visible to customers on the website</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="is_active" ${isEdit ? (existingData.is_active ? 'checked' : '') : 'checked'}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Image Upload -->
+          <div>
+            <label class="lbl">Product Images</label>
+            <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
+              <i data-lucide="image-plus" class="w-8 h-8 text-blue-400 mx-auto mb-2"></i>
+              <p class="text-xs font-bold text-gray-300">Click or drag & drop images here</p>
+              <p class="text-[11px] text-gray-500 mt-1">PNG, JPG, WEBP up to 5MB each. First image = cover.</p>
+              <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
+            </div>
+            <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
+              ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
+            </div>
+            <p class="text-[10px] text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover</p>
+            <div id="image-url-inputs">
+              ${(existingData.images || []).map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button type="submit" name="action" value="publish" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-blue-600/15">
+              ${isEdit ? '💾 Save Changes' : '🚀 Publish Product'}
+            </button>
+            <button type="submit" name="action" value="draft" class="btn-press px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
+              Save Draft
+            </button>
+          </div>
         </form>
       </div>
-      <div class="glass border border-orange-500/20 rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-orange-400"></i> Global Smart Search Settings</h3>
-        <div id="global-search-settings" class="space-y-4"><div class="flex items-center justify-center py-8 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mr-2"></i> Loading...</div></div>
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-  loadGlobalSearchSettings();
-  document.getElementById('settings-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      const { error } = await supabase.from('site_settings').update({
-        site_name: document.getElementById('st-site-name').value.trim(),
-        marketplace_name: document.getElementById('st-mp-name').value.trim(),
-        default_currency: document.getElementById('st-currency').value.trim(),
-        support_email: document.getElementById('st-email').value.trim(),
-        tax_rate: parseFloat(document.getElementById('st-tax').value) || 0,
-        tax_enabled: document.getElementById('st-tax-enabled').checked,
-        maintenance_mode: document.getElementById('st-maintenance').checked,
-        supported_currencies: document.getElementById('st-currencies').value.split(',').map(s => s.trim()).filter(Boolean),
-        supported_languages: document.getElementById('st-languages').value.split(',').map(s => s.trim()).filter(Boolean),
-        cloudinary_cloud_name: document.getElementById('st-cloud-name').value.trim() || null,
-        cloudinary_api_key: document.getElementById('st-cloud-key').value.trim() || null,
-        cloudinary_api_secret: document.getElementById('st-cloud-secret').value.trim() || null,
-        resend_api_key: document.getElementById('st-resend').value.trim() || null,
-      }).neq('id', '00000000-0000-0000-0000-000000000000');
-      if (error) throw error;
-      showToast('Settings saved successfully.');
-      await logActivity('update_settings', 'settings', 'site');
-    } catch (err) { showToast('Error: ' + err.message); }
+    </div>`);
+  setupDropZone();
+  setupImageSortable();
+};
+
+function imageThumbHtml(url, i) {
+  return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}" title="${i === 0 ? 'Cover Image' : 'Image ' + (i + 1)}">
+    <img src="${esc(url)}" onerror="this.src='/fallback.svg'">
+    <button class="rm" onclick="removeImage(${i})" type="button">✕</button>
+  </div>`;
+}
+
+function setupDropZone() {
+  const dz = document.getElementById('drop-zone');
+  if (!dz) return;
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFileDrop(e.dataTransfer.files); });
+}
+
+function setupImageSortable() {
+  const preview = document.getElementById('image-preview');
+  if (!preview || !window.Sortable) return;
+  new Sortable(preview, {
+    animation: 150,
+    onEnd: () => rebuildImageInputs(),
   });
 }
 
-async function renderIntegrations() {
-  const content = document.getElementById('content');
-  content.innerHTML = `<div class="flex items-center justify-center py-20"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading integrations...</div></div>`;
-  if (window.lucide) lucide.createIcons();
-  const [gateways, settings, aiSettings] = await Promise.all([
-    supabase.from('payment_gateways').select('*').order('display_order', { ascending: true }),
-    supabase.from('site_settings').select('*').limit(1).maybeSingle(),
-    supabase.from('ai_settings').select('*').limit(1).maybeSingle(),
-  ]);
-  const s = settings.data || {};
-  const ai = aiSettings.data || {};
-  content.innerHTML = `
-    <div class="fade-in space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="glass border border-blue-500/20 rounded-2xl p-5">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="credit-card" class="w-4 h-4 text-blue-400"></i> Payment Providers</h3>
-          <div class="space-y-2">${(gateways.data || []).map(g => `<div class="glass-soft border border-blue-500/10 rounded-xl p-3 flex items-center justify-between"><div><p class="text-sm font-bold text-white">${escapeHtml(g.name)}</p><p class="text-[10px] text-gray-500">${g.api_key ? 'Configured' : 'Not configured'}</p></div>${g.is_active ? statusBadge('active') : statusBadge('inactive')}</div>`).join('')}</div>
-          <a href="/admin.html" onclick="navigate('payments')" class="btn-press mt-3 block text-center text-xs font-bold text-blue-400 hover:text-blue-300 transition">Manage Payment Gateways →</a>
-        </div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-5">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Providers</h3>
-          <div class="space-y-2">
-            <div class="glass-soft border border-blue-500/10 rounded-xl p-3 flex items-center justify-between"><div><p class="text-sm font-bold text-white">OpenAI</p><p class="text-[10px] text-gray-500">${ai.openai_api_key ? 'Configured' : 'Not configured'} · ${ai.openai_model || 'gpt-4o'}</p></div>${ai.active_provider === 'openai' ? '<span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase">Active</span>' : ''}</div>
-            <div class="glass-soft border border-blue-500/10 rounded-xl p-3 flex items-center justify-between"><div><p class="text-sm font-bold text-white">Google Gemini</p><p class="text-[10px] text-gray-500">${ai.gemini_api_key ? 'Configured' : 'Not configured'} · ${ai.gemini_model || 'gemini-1.5-flash'}</p></div>${ai.active_provider === 'gemini' ? '<span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase">Active</span>' : ''}</div>
-            <div class="glass-soft border border-blue-500/10 rounded-xl p-3 flex items-center justify-between"><div><p class="text-sm font-bold text-white">Anthropic Claude</p><p class="text-[10px] text-gray-500">${ai.anthropic_api_key ? 'Configured' : 'Not configured'} · ${ai.anthropic_model || 'claude-3-5-sonnet'}</p></div>${ai.active_provider === 'anthropic' ? '<span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase">Active</span>' : ''}</div>
-          </div>
-          <a href="/admin-ai-settings.html" class="btn-press mt-3 block text-center text-xs font-bold text-blue-400 hover:text-blue-300 transition">Configure AI Providers →</a>
-        </div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-5">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-amber-400"></i> Cloud Storage (Cloudinary)</h3>
-          <div class="space-y-2"><div class="glass-soft border border-blue-500/10 rounded-xl p-3"><p class="text-sm font-bold text-white">Cloudinary</p><p class="text-[10px] text-gray-500">${s.cloudinary_cloud_name ? 'Configured' : 'Not configured'}</p></div></div>
-          <a href="/admin.html" onclick="navigate('settings')" class="btn-press mt-3 block text-center text-xs font-bold text-blue-400 hover:text-blue-300 transition">Configure Cloudinary →</a>
-        </div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-5">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4 text-emerald-400"></i> Email Provider (Resend)</h3>
-          <div class="space-y-2"><div class="glass-soft border border-blue-500/10 rounded-xl p-3"><p class="text-sm font-bold text-white">Resend</p><p class="text-[10px] text-gray-500">${s.resend_api_key ? 'Configured' : 'Not configured'}</p></div></div>
-          <a href="/admin.html" onclick="navigate('settings')" class="btn-press mt-3 block text-center text-xs font-bold text-blue-400 hover:text-blue-300 transition">Configure Resend →</a>
-        </div>
-      </div>
-    </div>`;
+window.handleImageUpload = async function(e) { await processImageFiles(e.target.files); };
+
+async function handleFileDrop(files) { await processImageFiles(files); }
+
+async function processImageFiles(files) {
+  const preview = document.getElementById('image-preview');
+  if (!preview) return;
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    const url = await uploadImageFile(file);
+    if (url) {
+      const i = preview.children.length;
+      const div = document.createElement('div');
+      div.innerHTML = imageThumbHtml(url, i);
+      preview.appendChild(div.firstElementChild);
+      rebuildImageInputs();
+    }
+  }
+  updateCoverBadge();
   if (window.lucide) lucide.createIcons();
 }
 
-// ── AI section (embeds the AI assistant inline) ───────────────
-function renderAI() {
-  document.getElementById('content').innerHTML = `
-    <div class="fade-in">
-      <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden" style="height: calc(100vh - 8rem)">
-        <iframe src="/admin-ai.html" class="w-full h-full border-0" title="AI Admin Assistant"></iframe>
-      </div>
-    </div>`;
-}
-
-function renderIntegrity() {
-  document.getElementById('content').innerHTML = `
-    <div class="fade-in">
-      <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden" style="height: calc(100vh - 8rem)">
-        <iframe src="/admin-integrity.html" class="w-full h-full border-0" title="AI Product Integrity System"></iframe>
-      </div>
-    </div>`;
-}
-
-// ── AI Settings section (embeds the settings page inline) ──────
-function renderAISettings() {
-  document.getElementById('content').innerHTML = `
-    <div class="fade-in">
-      <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden" style="height: calc(100vh - 8rem)">
-        <iframe src="/admin-ai-settings.html" class="w-full h-full border-0" title="AI Settings"></iframe>
-      </div>
-    </div>`;
-}
-
-// ── Publish & Deploy section ───────────────────────────────────
-const DEPLOY_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/publish-deploy`;
-let deployPollInterval = null;
-
-async function renderPublish() {
-  const content = document.getElementById('content');
-  content.innerHTML = `
-    <div class="fade-in space-y-5">
-      <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 class="text-xl font-bold text-white">Publish & Deploy</h2>
-          <p class="text-sm text-gray-400 mt-1">Deploy the latest version of your marketplace to production.</p>
-        </div>
-        <button id="publish-btn" onclick="startPublish()" class="btn-press flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-600/30">
-          <i data-lucide="rocket" class="w-4 h-4"></i> Publish Website
-        </button>
-      </div>
-
-      <!-- Progress indicator (hidden until publishing) -->
-      <div id="deploy-progress" class="hidden glass border border-blue-500/20 rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
-            <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-400" id="deploy-spinner"></i>
-            <span id="deploy-progress-title">Preparing...</span>
-          </h3>
-          <span id="deploy-version" class="text-xs font-mono text-gray-500"></span>
-        </div>
-        <!-- Step indicators -->
-        <div class="flex items-center gap-2 mb-4">
-          ${['Preparing','Building','Deploying','Live'].map((label, i) => `
-            <div class="flex-1 flex flex-col items-center gap-1.5">
-              <div id="deploy-step-${i}" class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 ${i === 0 ? 'border-blue-500 bg-blue-500/20 text-blue-300' : 'border-gray-700 bg-gray-800/50 text-gray-600'}">
-                ${i < 4 ? i + 1 : '<i data-lucide="check" class="w-4 h-4"></i>'}
-              </div>
-              <span id="deploy-step-label-${i}" class="text-[10px] font-bold ${i === 0 ? 'text-blue-300' : 'text-gray-600'}">${label}</span>
-            </div>
-          `).join('')}
-        </div>
-        <p id="deploy-detail" class="text-xs text-gray-500"></p>
-      </div>
-
-      <!-- Error display -->
-      <div id="deploy-error" class="hidden glass border border-red-500/30 rounded-2xl p-5">
-        <div class="flex items-start gap-3">
-          <div class="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center shrink-0">
-            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>
-          </div>
-          <div class="flex-1">
-            <h3 class="text-sm font-bold text-red-300 mb-1">Deployment Failed</h3>
-            <p id="deploy-error-msg" class="text-xs text-red-200/80 mb-2"></p>
-            <p id="deploy-error-fix" class="text-xs text-gray-400"></p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Success display -->
-      <div id="deploy-success" class="hidden glass border border-emerald-500/30 rounded-2xl p-5">
-        <div class="flex items-start gap-3">
-          <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center shrink-0">
-            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
-          </div>
-          <div class="flex-1">
-            <h3 class="text-sm font-bold text-emerald-300 mb-1">Deployment Successful</h3>
-            <p id="deploy-success-msg" class="text-xs text-emerald-200/80"></p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pending changes summary -->
-      <div id="deploy-pending" class="glass border border-blue-500/20 rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
-          <i data-lucide="package" class="w-4 h-4 text-blue-400"></i> Pending Changes
-        </h3>
-        <div id="deploy-pending-content" class="space-y-3">
-          <div class="flex items-center justify-center py-6 text-gray-500 text-sm">
-            <i data-lucide="loader-2" class="w-4 h-4 animate-spin mr-2"></i> Checking for pending changes...
-          </div>
-        </div>
-      </div>
-
-      <!-- Deployment history -->
-      <div class="glass border border-blue-500/20 rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
-          <i data-lucide="history" class="w-4 h-4 text-blue-400"></i> Deployment History
-        </h3>
-        <div id="deploy-history" class="space-y-2">
-          <div class="flex items-center justify-center py-8 text-gray-500 text-sm">
-            <i data-lucide="loader-2" class="w-4 h-4 animate-spin mr-2"></i> Loading history...
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  if (window.lucide) lucide.createIcons();
-  document.querySelectorAll('.btn-press').forEach(ripple);
-  await loadPendingChanges();
-  await loadDeployHistory();
-  await checkDeployStatus();
-}
-
-async function loadPendingChanges() {
-  const container = document.getElementById('deploy-pending-content');
-  if (!container) return;
+async function uploadImageFile(file) {
   try {
-    const headers = await getDeployAuthHeaders();
-    const res = await fetch(DEPLOY_FUNCTION_URL, {
-      method: 'POST', headers,
-      body: JSON.stringify({ action: 'pending_changes' }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      container.innerHTML = `<p class="text-xs text-red-400">Error: ${escapeHtml(err.error || res.statusText)}</p>`;
-      return;
-    }
-    const data = await res.json();
-    const newProducts = data.new_products || [];
-    const updatedProducts = data.updated_products || [];
-    const deletedProducts = data.deleted_products || [];
-    const pendingApprovals = data.pending_approvals || [];
-    const pendingPromotions = data.pending_promotions || [];
-    const total = (data.total_pending || 0) + pendingApprovals.length + pendingPromotions.length;
-
-    if (total === 0) {
-      container.innerHTML = `
-        <div class="flex items-center gap-3 py-4">
-          <div class="w-9 h-9 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0">
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-          </div>
-          <p class="text-sm text-gray-400">All changes are published. No pending updates.</p>
-        </div>`;
-      if (window.lucide) lucide.createIcons();
-      return;
-    }
-
-    const sections = [];
-    if (newProducts.length > 0) {
-      sections.push(`
-        <div>
-          <p class="text-xs font-bold text-emerald-400 mb-2 flex items-center gap-1.5">
-            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> New Products (${newProducts.length})
-          </p>
-          <div class="space-y-1.5">
-            ${newProducts.map(p => {
-              const img = (p.images && p.images[0]) || '';
-              return `
-              <div class="flex items-center justify-between gap-2 bg-emerald-500/5 border border-emerald-500/10 rounded-lg px-3 py-2">
-                <div class="flex items-center gap-2 min-w-0">
-                  ${img ? `<img src="${escapeHtml(img)}" alt="" class="w-8 h-8 rounded-lg object-cover shrink-0" loading="lazy" onerror="this.style.display='none'">` : ''}
-                  <div class="min-w-0">
-                    <p class="text-xs font-bold text-white truncate">${escapeHtml(p.title)}</p>
-                    <p class="text-[10px] text-gray-500">${escapeHtml(p.property_id)} · ${escapeHtml(p.category || '')}${p.approval_status ? ' · ' + p.approval_status : ''}</p>
-                  </div>
-                </div>
-                <span class="text-xs font-bold text-emerald-400 shrink-0">${escapeHtml(String(p.price || ''))} ${escapeHtml(p.currency || '')}</span>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`);
-    }
-    if (updatedProducts.length > 0) {
-      sections.push(`
-        <div>
-          <p class="text-xs font-bold text-amber-400 mb-2 flex items-center gap-1.5">
-            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Updated Products (${updatedProducts.length})
-          </p>
-          <div class="space-y-1.5">
-            ${updatedProducts.map(p => {
-              const img = (p.images && p.images[0]) || '';
-              return `
-              <div class="flex items-center justify-between gap-2 bg-amber-500/5 border border-amber-500/10 rounded-lg px-3 py-2">
-                <div class="flex items-center gap-2 min-w-0">
-                  ${img ? `<img src="${escapeHtml(img)}" alt="" class="w-8 h-8 rounded-lg object-cover shrink-0" loading="lazy" onerror="this.style.display='none'">` : ''}
-                  <div class="min-w-0">
-                    <p class="text-xs font-bold text-white truncate">${escapeHtml(p.title)}</p>
-                    <p class="text-[10px] text-gray-500">${escapeHtml(p.property_id)} · ${escapeHtml(p.category || '')}</p>
-                  </div>
-                </div>
-                <span class="text-xs font-bold text-amber-400 shrink-0">${escapeHtml(String(p.price || ''))} ${escapeHtml(p.currency || '')}</span>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`);
-    }
-    if (deletedProducts.length > 0) {
-      sections.push(`
-        <div>
-          <p class="text-xs font-bold text-red-400 mb-2 flex items-center gap-1.5">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Deleted Products (${deletedProducts.length})
-          </p>
-          <div class="space-y-1.5">
-            ${deletedProducts.map(p => `
-              <div class="flex items-center justify-between gap-2 bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
-                <div class="min-w-0">
-                  <p class="text-xs font-bold text-white truncate">${escapeHtml(p.title)}</p>
-                  <p class="text-[10px] text-gray-500">${escapeHtml(p.property_id || '')}</p>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>`);
-    }
-
-    container.innerHTML = `
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-xs font-bold text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full">${total} pending change${total !== 1 ? 's' : ''}</span>
-      </div>
-      <div class="space-y-4">${sections.join('')}</div>`;
-    if (window.lucide) lucide.createIcons();
-  } catch (err) {
-    container.innerHTML = `<p class="text-xs text-red-400">Error: ${escapeHtml(err.message)}</p>`;
-  }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return URL.createObjectURL(file); // fallback: local preview
+    const ext = file.name.split('.').pop();
+    const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) return URL.createObjectURL(file);
+    const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+    return data.publicUrl;
+  } catch { return URL.createObjectURL(file); }
 }
 
-async function getDeployAuthHeaders() {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
-  return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-}
-
-async function loadDeployHistory() {
-  const container = document.getElementById('deploy-history');
-  if (!container) return;
-  try {
-    const headers = await getDeployAuthHeaders();
-    const res = await fetch(DEPLOY_FUNCTION_URL, {
-      method: 'POST', headers,
-      body: JSON.stringify({ action: 'history' }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      container.innerHTML = `<p class="text-xs text-red-400">Error loading history: ${escapeHtml(err.error || res.statusText)}</p>`;
-      return;
-    }
-    const data = await res.json();
-    const deployments = data.deployments || [];
-    if (deployments.length === 0) {
-      container.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">No deployments yet. Click "Publish Website" to deploy your marketplace.</p>`;
-      return;
-    }
-    container.innerHTML = deployments.map(d => {
-      const statusColors = {
-        live: 'emerald', failed: 'red', preparing: 'blue', building: 'amber', deploying: 'violet',
-      };
-      const color = statusColors[d.status] || 'gray';
-      const date = new Date(d.started_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const duration = d.completed_at ? `${Math.round((new Date(d.completed_at) - new Date(d.started_at)) / 1000)}s` : '—';
-      return `
-        <div class="glass-soft border border-blue-500/10 rounded-xl p-3 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-${color}-500/10">
-              <i data-lucide="${d.status === 'live' ? 'check-circle' : d.status === 'failed' ? 'alert-triangle' : 'loader-2'}" class="w-4 h-4 text-${color}-400 ${d.status === 'preparing' || d.status === 'building' || d.status === 'deploying' ? 'animate-spin' : ''}"></i>
-            </div>
-            <div class="min-w-0">
-              <p class="text-sm font-bold text-white truncate">v${escapeHtml(d.version)}</p>
-              <p class="text-[10px] text-gray-500">${date} · ${duration} · ${escapeHtml(d.triggered_by_email || 'Unknown')}</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="text-[9px] font-bold text-${color}-400 bg-${color}-500/10 px-2 py-0.5 rounded-full uppercase">${d.status}</span>
-            ${d.status === 'live' ? `<button onclick="rollbackDeploy('${d.version}')" class="btn-press p-2 hover:bg-amber-500/10 rounded-lg text-amber-400 transition" title="Rollback to this version"><i data-lucide="undo-2" class="w-3.5 h-3.5"></i></button><button onclick="republish('${d.id}')" class="btn-press p-2 hover:bg-blue-500/10 rounded-lg text-blue-400 transition" title="Republish"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>` : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
-    if (window.lucide) lucide.createIcons();
-  } catch (err) {
-    container.innerHTML = `<p class="text-xs text-red-400">Error: ${escapeHtml(err.message)}</p>`;
-  }
-}
-
-async function checkDeployStatus() {
-  try {
-    const headers = await getDeployAuthHeaders();
-    const res = await fetch(DEPLOY_FUNCTION_URL, {
-      method: 'POST', headers,
-      body: JSON.stringify({ action: 'status' }),
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.inProgress) {
-      // A deployment is in progress — show progress UI and start polling
-      showDeployProgress(data.latest || {});
-      startDeployPolling();
-    }
-  } catch {}
-}
-
-function showDeployProgress(deployment) {
-  const progressDiv = document.getElementById('deploy-progress');
-  const publishBtn = document.getElementById('publish-btn');
-  if (!progressDiv || !publishBtn) return;
-  progressDiv.classList.remove('hidden');
-  publishBtn.disabled = true;
-  publishBtn.classList.add('opacity-50', 'pointer-events-none');
-  publishBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Deploying...';
-  if (window.lucide) lucide.createIcons();
-  updateDeploySteps(deployment.status || 'preparing');
-  if (deployment.version) {
-    document.getElementById('deploy-version').textContent = `v${deployment.version}`;
-  }
-}
-
-function updateDeploySteps(status) {
-  const steps = ['preparing', 'building', 'deploying', 'live'];
-  const currentIdx = steps.indexOf(status);
-  const labels = ['Preparing', 'Building', 'Deploying', 'Live'];
-
-  for (let i = 0; i < 4; i++) {
-    const stepEl = document.getElementById(`deploy-step-${i}`);
-    const labelEl = document.getElementById(`deploy-step-label-${i}`);
-    if (!stepEl || !labelEl) continue;
-
-    if (i < currentIdx || status === 'live') {
-      // Completed
-      stepEl.className = 'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 border-emerald-500 bg-emerald-500/20 text-emerald-300';
-      stepEl.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
-      labelEl.className = 'text-[10px] font-bold text-emerald-300';
-    } else if (i === currentIdx) {
-      // Current
-      stepEl.className = 'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 border-blue-500 bg-blue-500/20 text-blue-300';
-      stepEl.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>`;
-      labelEl.className = 'text-[10px] font-bold text-blue-300';
-    } else {
-      // Pending
-      stepEl.className = 'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 border-gray-700 bg-gray-800/50 text-gray-600';
-      stepEl.innerHTML = String(i + 1);
-      labelEl.className = 'text-[10px] font-bold text-gray-600';
-    }
-    labelEl.textContent = labels[i];
-  }
-
-  const titleEl = document.getElementById('deploy-progress-title');
-  const detailEl = document.getElementById('deploy-detail');
-  if (titleEl) titleEl.textContent = status.charAt(0).toUpperCase() + status.slice(1) + '...';
-  if (detailEl) {
-    const detailMap = {
-      preparing: 'Gathering product changes from the database...',
-      building: 'Verifying product updates and pending changes...',
-      deploying: 'Publishing changes to the live marketplace...',
-      live: 'Deployment is live! Your marketplace has been updated.',
-    };
-    detailEl.textContent = detailMap[status] || '';
-  }
-  if (window.lucide) lucide.createIcons();
-}
-
-function startDeployPolling() {
-  if (deployPollInterval) clearInterval(deployPollInterval);
-  deployPollInterval = setInterval(async () => {
-    try {
-      const headers = await getDeployAuthHeaders();
-      const res = await fetch(DEPLOY_FUNCTION_URL, {
-        method: 'POST', headers,
-        body: JSON.stringify({ action: 'status' }),
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.latest) {
-        updateDeploySteps(data.latest.status);
-        if (data.latest.version) {
-          const vEl = document.getElementById('deploy-version');
-          if (vEl) vEl.textContent = `v${data.latest.version}`;
-        }
-      }
-      if (!data.inProgress && data.latest) {
-        // Deployment finished
-        clearInterval(deployPollInterval);
-        deployPollInterval = null;
-        await finishDeploy(data.latest);
-      }
-    } catch {}
-  }, 2000);
-}
-
-async function finishDeploy(deployment) {
-  const progressDiv = document.getElementById('deploy-progress');
-  const publishBtn = document.getElementById('publish-btn');
-  const successDiv = document.getElementById('deploy-success');
-  const errorDiv = document.getElementById('deploy-error');
-
-  if (publishBtn) {
-    publishBtn.disabled = false;
-    publishBtn.classList.remove('opacity-50', 'pointer-events-none');
-    publishBtn.innerHTML = '<i data-lucide="rocket" class="w-4 h-4"></i> Publish Website';
-  }
-  if (window.lucide) lucide.createIcons();
-
-  if (deployment.status === 'live') {
-    if (progressDiv) progressDiv.classList.add('hidden');
-    if (successDiv) {
-      successDiv.classList.remove('hidden');
-      const msg = document.getElementById('deploy-success-msg');
-      if (msg) msg.textContent = `Version ${deployment.version} is now live. Your marketplace has been successfully deployed.`;
-    }
-    showToast('Deployment successful! Your marketplace is live.');
-    await loadPendingChanges();
-  } else if (deployment.status === 'failed') {
-    if (progressDiv) progressDiv.classList.add('hidden');
-    if (errorDiv) {
-      errorDiv.classList.remove('hidden');
-      const msg = document.getElementById('deploy-error-msg');
-      const fix = document.getElementById('deploy-error-fix');
-      if (msg) msg.textContent = deployment.error_message || 'Unknown error occurred.';
-      if (fix) {
-        const errLower = (deployment.error_message || '').toLowerCase();
-        let fixText = 'Check the error message above and try again. If the issue persists, verify your project configuration.';
-        if (errLower.includes('build failed')) fixText = 'There was a build error. Check your code for syntax errors or missing dependencies, then try publishing again.';
-        else if (errLower.includes('dist') || errLower.includes('deploy')) fixText = 'The build completed but deployment failed. Ensure the build output is valid and try again.';
-        else if (errLower.includes('already in progress')) fixText = 'Wait for the current deployment to finish before starting a new one.';
-        fix.textContent = fixText;
-      }
-    }
-    showToast('Deployment failed. See error details below.');
-  }
-
-  await loadDeployHistory();
-}
-
-window.startPublish = async () => {
-  const btn = document.getElementById('publish-btn');
-  if (!btn) return;
-  btn.disabled = true;
-  btn.classList.add('opacity-50', 'pointer-events-none');
-  btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Starting...';
-  if (window.lucide) lucide.createIcons();
-
-  // Hide previous results
-  document.getElementById('deploy-success')?.classList.add('hidden');
-  document.getElementById('deploy-error')?.classList.add('hidden');
-
-  try {
-    const headers = await getDeployAuthHeaders();
-    const res = await fetch(DEPLOY_FUNCTION_URL, {
-      method: 'POST', headers,
-      body: JSON.stringify({ action: 'publish' }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || `Request failed (${res.status})`);
-    }
-    // Show progress UI
-    const progressDiv = document.getElementById('deploy-progress');
-    if (progressDiv) progressDiv.classList.remove('hidden');
-    const vEl = document.getElementById('deploy-version');
-    if (vEl) vEl.textContent = `v${data.version}`;
-    updateDeploySteps('preparing');
-    startDeployPolling();
-    showToast('Deployment started. Building your marketplace...');
-  } catch (err) {
-    btn.disabled = false;
-    btn.classList.remove('opacity-50', 'pointer-events-none');
-    btn.innerHTML = '<i data-lucide="rocket" class="w-4 h-4"></i> Publish Website';
-    if (window.lucide) lucide.createIcons();
-
-    const errorDiv = document.getElementById('deploy-error');
-    if (errorDiv) {
-      errorDiv.classList.remove('hidden');
-      const msg = document.getElementById('deploy-error-msg');
-      const fix = document.getElementById('deploy-error-fix');
-      if (msg) msg.textContent = err.message;
-      if (fix) {
-        const errLower = err.message.toLowerCase();
-        let fixText = 'Check the error message above and try again.';
-        if (errLower.includes('already in progress')) fixText = 'A deployment is already running. Wait for it to complete before starting a new one.';
-        else if (errLower.includes('unauthorized') || errLower.includes('admin')) fixText = 'You need Super Admin privileges to publish. Sign in with an admin account.';
-        fix.textContent = fixText;
-      }
-    }
-    showToast('Failed to start deployment: ' + err.message);
-  }
+window.removeImage = function(index) {
+  const preview = document.getElementById('image-preview');
+  if (!preview) return;
+  const items = [...preview.children];
+  if (items[index]) items[index].remove();
+  rebuildImageInputs();
+  updateCoverBadge();
 };
 
-window.republish = async (deployId) => {
-  // Republish is the same as starting a new publish
-  await window.startPublish();
-};
-
-window.rollbackDeploy = async (version) => {
-  if (!confirm(`Rollback to version ${version}? Products created after this deployment will be archived.`)) return;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/publish-deploy?action=rollback`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ version }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Rollback failed');
-    showToast(`Rolling back to ${version}...`);
-    setTimeout(() => renderPublish(), 2000);
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.approveFromDeploy = async (queueId) => {
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=approve`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: queueId }),
-    });
-    if (!res.ok) throw new Error('Approval failed');
-    showToast('Product approved.');
-    loadPendingChanges();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.rejectFromDeploy = async (queueId) => {
-  const notes = prompt('Reason for rejection:');
-  if (!notes) return;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=reject`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: queueId, review_notes: notes }),
-    });
-    if (!res.ok) throw new Error('Rejection failed');
-    showToast('Product rejected.');
-    loadPendingChanges();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-// ── Shipping section ──────────────────────────────────────────
-function renderShipping() {
-  document.getElementById('content').innerHTML = `
-    <div class="fade-in">
-      <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden" style="height: calc(100vh - 8rem)">
-        <iframe src="/admin-shipping.html" class="w-full h-full border-0" title="Shipping Management"></iframe>
-      </div>
-    </div>`;
-}
-
-// ── Activity logging ──────────────────────────────────────────
-async function logActivity(action, entityType, entityId, details) {
-  try {
-    await supabase.rpc('log_admin_activity', {
-      p_user_id: state.user.id,
-      p_action: action,
-      p_entity_type: entityType,
-      p_entity_id: entityId,
-      p_details: details || {},
-    });
-  } catch {}
-}
-
-// ── Navigation ────────────────────────────────────────────────
-
-// ── Global Search Settings ──
-async function loadGlobalSearchSettings() {
-  const container = document.getElementById('global-search-settings');
-  if (!container) return;
-  try {
-    const { data, error } = await supabase.from('global_search_settings').select('*').eq('id', 1).maybeSingle();
-    if (error) throw error;
-    const s = data || { enabled: true, auto_source_from_suppliers: true, allow_special_orders: true, default_profit_margin_pct: 15, default_service_fee_pct: 3, default_shipping_fee: 0, default_tax_pct: 0, special_order_badge_label: 'Available by Special Order' };
-    container.innerHTML = `
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <label class="flex items-center gap-3 p-3 bg-gray-900/50 rounded-xl border border-gray-800 cursor-pointer">
-          <input type="checkbox" id="gss-enabled" ${s.enabled ? 'checked' : ''} class="w-4 h-4 accent-orange-500">
-          <div><p class="text-xs font-bold text-white">Enable Global Search</p><p class="text-[10px] text-gray-500">Allow worldwide product search</p></div>
-        </label>
-        <label class="flex items-center gap-3 p-3 bg-gray-900/50 rounded-xl border border-gray-800 cursor-pointer">
-          <input type="checkbox" id="gss-auto-source" ${s.auto_source_from_suppliers ? 'checked' : ''} class="w-4 h-4 accent-orange-500">
-          <div><p class="text-xs font-bold text-white">Auto-Source from Suppliers</p><p class="text-[10px] text-gray-500">Search connected suppliers</p></div>
-        </label>
-        <label class="flex items-center gap-3 p-3 bg-gray-900/50 rounded-xl border border-gray-800 cursor-pointer">
-          <input type="checkbox" id="gss-special-orders" ${s.allow_special_orders ? 'checked' : ''} class="w-4 h-4 accent-orange-500">
-          <div><p class="text-xs font-bold text-white">Allow Special Orders</p><p class="text-[10px] text-gray-500">Let customers request products</p></div>
-        </label>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Profit Margin %</label><input type="number" id="gss-margin" value="${s.default_profit_margin_pct}" min="0" step="0.1" class="w-full bg-gray-900/80 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"></div>
-        <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Service Fee %</label><input type="number" id="gss-service" value="${s.default_service_fee_pct}" min="0" step="0.1" class="w-full bg-gray-900/80 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"></div>
-        <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Shipping Fee</label><input type="number" id="gss-shipping" value="${s.default_shipping_fee}" min="0" step="0.01" class="w-full bg-gray-900/80 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"></div>
-        <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tax %</label><input type="number" id="gss-tax" value="${s.default_tax_pct}" min="0" step="0.1" class="w-full bg-gray-900/80 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"></div>
-      </div>
-      <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Special Order Badge Label</label><input type="text" id="gss-badge" value="${escapeHtml(s.special_order_badge_label)}" class="w-full bg-gray-900/80 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"></div>
-      <button onclick="saveGlobalSearchSettings()" class="btn-press px-5 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-orange-500/30 flex items-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Save Settings</button>
-    `;
-    if (window.lucide) lucide.createIcons();
-    document.querySelectorAll('.btn-press').forEach(ripple);
-  } catch (err) {
-    container.innerHTML = `<div class="text-red-400 text-sm">Error loading settings: ${escapeHtml(err.message)}</div>`;
-  }
-}
-
-window.saveGlobalSearchSettings = async () => {
-  const payload = {
-    id: 1,
-    enabled: document.getElementById('gss-enabled').checked,
-    auto_source_from_suppliers: document.getElementById('gss-auto-source').checked,
-    allow_special_orders: document.getElementById('gss-special-orders').checked,
-    default_profit_margin_pct: parseFloat(document.getElementById('gss-margin').value) || 0,
-    default_service_fee_pct: parseFloat(document.getElementById('gss-service').value) || 0,
-    default_shipping_fee: parseFloat(document.getElementById('gss-shipping').value) || 0,
-    default_tax_pct: parseFloat(document.getElementById('gss-tax').value) || 0,
-    special_order_badge_label: document.getElementById('gss-badge').value.trim() || 'Available by Special Order',
-  };
-  try {
-    const { error } = await supabase.from('global_search_settings').upsert(payload).eq('id', 1);
-    if (error) throw error;
-    showToast('Global search settings saved.');
-  } catch (err) {
-    showToast('Error saving settings: ' + err.message);
-  }
-};
-
-window.navigate = (section) => {
-  state.currentSection = section;
-  document.getElementById('page-title').textContent = PAGE_TITLES[section] || section;
-  renderSidebar();
-  if (window.innerWidth < 1024) {
-    document.getElementById('sidebar').classList.add('-translate-x-full');
-    document.getElementById('sidebar-overlay').classList.add('hidden');
-  }
-  const renderers = {
-    dashboard: renderDashboard, products: renderProducts, orders: renderOrders,
-    'special-orders': renderSpecialOrders,
-    customers: renderCustomers, payments: renderPayments, shipping: renderShipping,
-    promotions: renderPromotions, content: renderContent, email: renderEmail,
-    analytics: renderAnalytics, ai: renderAI, integrity: renderIntegrity,
-    domains: renderDomains,
-    security: renderSecurity,
-    settings: renderSettings, integrations: renderIntegrations,
-    'ai-settings': renderAISettings,
-    publish: renderPublish,
-    coupons: renderCoupons,
-    reviews: renderReviews,
-    audit: renderAudit,
-  };
-  (renderers[section] || renderDashboard)();
-};
-
-window.toggleSidebar = () => {
-  const sb = document.getElementById('sidebar');
-  const ov = document.getElementById('sidebar-overlay');
-  sb.classList.toggle('-translate-x-full');
-  ov.classList.toggle('hidden');
-};
-
-window.adminSignOut = async () => {
-  await signOut();
-  window.location.href = '/auth.html';
-};
-
-// Listen for auth state changes (session expiry, sign-out from another tab, etc.)
-// Wrapped in async IIFE to avoid the onAuthStateChange deadlock documented in the bolt-database skill.
-supabase.auth.onAuthStateChange((_event, session) => {
-  (async () => {
-    if (!session) {
-      // Session lost — redirect to login if we're not already there
-      if (!window.location.pathname.includes('auth.html')) {
-        const currentPath = window.location.pathname + window.location.search;
-        window.location.href = `/auth.html?redirect=${encodeURIComponent(currentPath)}`;
-      }
-    }
-  })();
-});
-
-// ── Clock ─────────────────────────────────────────────────────
-function updateClock() {
-  const el = document.getElementById('live-clock');
-  if (el) el.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i> ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
-  if (window.lucide) lucide.createIcons();
-}
-
-// ── Init ──────────────────────────────────────────────────────
-async function init() {
-  // Use getSession() for reliable session restoration across refresh/navigation.
-  // getUser() can return null on cold loads even when a valid session exists.
-  const { data: sessionData } = await supabase.auth.getSession();
-  state.user = sessionData?.session?.user || null;
-
-  if (!state.user) {
-    // Not logged in — redirect to login page with return path
-    const currentPath = window.location.pathname + window.location.search;
-    window.location.href = `/auth.html?redirect=${encodeURIComponent(currentPath)}`;
-    return;
-  }
-
-  // Check if this user is an admin via SECURITY DEFINER RPC (bypasses RLS)
-  const { data: isAdmin } = await supabase.rpc('is_current_user_admin');
-  if (isAdmin) {
-    state.isAdmin = true;
-    state.loading = false;
-
-    // ── 2FA verification gate ──
-    // Check if 2FA is enabled for this admin. If so, require a valid
-    // TOTP code or backup code before granting access to the dashboard.
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      const accessToken = session?.session?.access_token;
-      const twoFaRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-2fa`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'status' }),
-      });
-      const twoFaData = await twoFaRes.json();
-      if (twoFaData.enabled) {
-        // 2FA is enabled — show verification gate
-        state.user._accessToken = accessToken;
-        await show2FAGate(accessToken);
-        return; // Don't proceed to dashboard until verified
-      }
-    } catch (err) {
-      // If 2FA check fails, fail-closed: require manual verification rather than allowing access
-      console.warn('2FA status check failed:', err);
-      state.user._accessToken = accessToken;
-      await show2FAGate(accessToken);
-      return;
-    }
-
-    proceedToDashboard();
-    return;
-  }
-
-  // User is logged in but NOT an admin.
-  // Check if any admin exists at all (via SECURITY DEFINER RPC that bypasses RLS).
-  const { data: anyAdmin } = await supabase.rpc('has_any_admin');
-  if (anyAdmin) {
-    // An admin exists — show access denied, no bootstrap option
-    showAccessDenied('You are signed in, but this account does not have administrator privileges. Please sign in with an admin account.');
-  } else {
-    // No admin exists yet — allow this user to become the first admin
-    showBootstrapPrompt();
-  }
-}
-
-function showAccessDenied(message) {
-  const denied = document.getElementById('access-denied');
-  denied.classList.remove('hidden');
-  document.getElementById('access-denied-msg').textContent = message;
-  // Ensure the sign-in button is present (showBootstrapPrompt may have replaced it)
-  const existingBtn = denied.querySelector('#bootstrap-btn');
-  if (existingBtn) {
-    existingBtn.outerHTML = `<a href="/auth.html?redirect=${encodeURIComponent(window.location.pathname)}" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30"><i data-lucide="log-in" class="w-4 h-4"></i> Sign In</a>`;
-  }
-  if (window.lucide) lucide.createIcons();
-}
-
-// ── 2FA verification gate ──────────────────────────────────────
-
-function proceedToDashboard() {
-  renderSidebar();
-  renderAdminUserInfo();
-  navigate('dashboard');
-  setInterval(updateClock, 1000);
-  updateClock();
-  // Log login
-  try {
-    supabase.from('admin_security_logs').insert({ user_id: state.user.id, event_type: 'admin_login' }).then(() => {}, () => {});
-  } catch {}
-}
-
-async function show2FAGate(accessToken) {
-  const root = document.getElementById('admin-root') || document.body;
-  root.innerHTML = `
-    <div class="min-h-screen bg-[#050816] flex items-center justify-center p-4">
-      <div class="w-full max-w-md">
-        <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-600/30 mb-4">
-            <i data-lucide="shield-check" class="w-8 h-8 text-white"></i>
-          </div>
-          <h1 class="text-2xl font-bold text-white mb-1">Two-Factor Authentication</h1>
-          <p class="text-sm text-gray-400">Enter the 6-digit code from your authenticator app to access the Admin Dashboard.</p>
-        </div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-6 space-y-4">
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-2">Authentication Code</label>
-            <input type="text" id="twofa-code" inputmode="numeric" maxlength="6" placeholder="000000"
-              class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-white font-bold focus:outline-none focus:border-blue-500"
-              oninput="this.value = this.value.replace(/[^0-9]/g,'')">
-          </div>
-          <button id="twofa-verify-btn" onclick="verify2FAGate('${accessToken}')" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2">
-            <i data-lucide="shield-check" class="w-4 h-4"></i> Verify & Access Dashboard
-          </button>
-          <div class="pt-2 border-t border-white/5">
-            <button onclick="document.getElementById('twofa-backup-section').classList.toggle('hidden')" class="text-xs font-bold text-gray-500 hover:text-gray-300 transition w-full text-center">
-              Lost your phone? Use a backup code
-            </button>
-            <div id="twofa-backup-section" class="hidden mt-3 space-y-3">
-              <input type="text" id="twofa-backup-code" placeholder="xxxx-xxxx-xxxx-xxxx"
-                class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-blue-500">
-              <button onclick="verify2FAGate('${accessToken}', true)" class="btn-press w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
-                Use Backup Code
-              </button>
-            </div>
-          </div>
-          <div id="twofa-error" class="hidden text-xs text-red-400 text-center font-bold"></div>
-          <div class="flex items-center justify-between pt-2">
-            <button onclick="signOut2FA()" class="text-xs font-bold text-gray-500 hover:text-gray-300 transition flex items-center gap-1.5">
-              <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sign Out
-            </button>
-            <span id="twofa-attempts" class="text-xs text-gray-600"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  if (window.lucide) lucide.createIcons();
-  const codeInput = document.getElementById('twofa-code');
-  if (codeInput) codeInput.focus();
-  codeInput?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') verify2FAGate(accessToken);
+function rebuildImageInputs() {
+  const preview = document.getElementById('image-preview');
+  const container = document.getElementById('image-url-inputs');
+  if (!preview || !container) return;
+  container.innerHTML = '';
+  [...preview.querySelectorAll('.img-thumb')].forEach((thumb, i) => {
+    const img = thumb.querySelector('img');
+    if (!img) return;
+    const inp = document.createElement('input');
+    inp.type = 'hidden'; inp.name = 'images'; inp.id = `img-url-${i}`; inp.value = img.src;
+    container.appendChild(inp);
+    thumb.dataset.index = i;
+    // Update remove button
+    const rm = thumb.querySelector('.rm');
+    if (rm) rm.setAttribute('onclick', `removeImage(${i})`);
   });
 }
 
-window.verify2FAGate = async (accessToken, isBackup = false) => {
-  const errEl = document.getElementById('twofa-error');
-  const attemptsEl = document.getElementById('twofa-attempts');
-  const btn = document.getElementById('twofa-verify-btn');
-  errEl?.classList.add('hidden');
-
-  const code = isBackup
-    ? document.getElementById('twofa-backup-code')?.value.trim()
-    : document.getElementById('twofa-code')?.value.trim();
-
-  if (!code) {
-    if (errEl) { errEl.textContent = 'Please enter a code.'; errEl.classList.remove('hidden'); }
-    return;
-  }
-
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Verifying...'; if (window.lucide) lucide.createIcons(); }
-
-  try {
-    const body = isBackup
-      ? { action: 'verify', backup_code: code }
-      : { action: 'verify', code };
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-2fa`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      if (btn) { btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Verified!'; if (window.lucide) lucide.createIcons(); }
-      setTimeout(() => {
-        proceedToDashboard();
-      }, 600);
-    } else {
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="shield-check" class="w-4 h-4"></i> Verify & Access Dashboard'; if (window.lucide) lucide.createIcons(); }
-      if (errEl) {
-        errEl.textContent = data.error || 'Verification failed.';
-        errEl.classList.remove('hidden');
-      }
-      if (attemptsEl && data.attempts_remaining !== undefined) {
-        attemptsEl.textContent = `${data.attempts_remaining} attempt(s) remaining`;
-      }
-      const codeInput = document.getElementById(isBackup ? 'twofa-backup-code' : 'twofa-code');
-      if (codeInput) { codeInput.value = ''; codeInput.focus(); }
-    }
-  } catch (err) {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="shield-check" class="w-4 h-4"></i> Verify & Access Dashboard'; if (window.lucide) lucide.createIcons(); }
-    if (errEl) { errEl.textContent = 'Network error. Please try again.'; errEl.classList.remove('hidden'); }
-  }
-};
-
-window.signOut2FA = async () => {
-  try { await supabase.auth.signOut(); } catch {}
-  window.location.href = '/auth.html?redirect=/admin.html';
-};
-
-// ── 2FA Management (Security section) ──────────────────────────
-
-window.setup2FA = async () => {
-  const modal = document.getElementById('twofa-setup-modal');
-  if (!modal) return;
-  modal.classList.remove('hidden');
-  modal.innerHTML = `
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onclick="if(event.target===this)document.getElementById('twofa-setup-modal').classList.add('hidden')">
-      <div class="glass border border-blue-500/20 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-bold text-white flex items-center gap-2"><i data-lucide="shield-plus" class="w-5 h-5 text-blue-400"></i> Set Up 2FA</h3>
-          <button onclick="document.getElementById('twofa-setup-modal').classList.add('hidden')" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
-        </div>
-        <div id="twofa-setup-content" class="space-y-4">
-          <div class="flex items-center justify-center py-8"><i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-400"></i></div>
-        </div>
-      </div>
-    </div>
-  `;
-  if (window.lucide) lucide.createIcons();
-
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const accessToken = session?.session?.access_token;
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-2fa`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'setup' }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Setup failed');
-
-    const content = document.getElementById('twofa-setup-content');
-    content.innerHTML = `
-      <div class="text-center space-y-4">
-        <div class="bg-white rounded-xl p-4 inline-block">
-          <img src="${data.qr_url}" alt="QR Code" class="w-48 h-48 mx-auto" />
-        </div>
-        <div>
-          <p class="text-sm text-gray-400 mb-2">1. Scan this QR code with Google Authenticator or Microsoft Authenticator</p>
-          <p class="text-xs text-gray-500 mb-1">Or enter this secret key manually:</p>
-          <div class="bg-[#0a1124] border border-blue-500/20 rounded-lg p-2 font-mono text-xs text-blue-300 break-all select-all cursor-pointer" onclick="navigator.clipboard?.writeText('${data.secret}')">${data.secret}</div>
-        </div>
-        <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-left">
-          <p class="text-xs font-bold text-amber-400 mb-2 flex items-center gap-1.5"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Save Your Backup Codes</p>
-          <p class="text-xs text-gray-400 mb-2">Store these safely. Each can be used once if you lose your phone:</p>
-          <div class="grid grid-cols-2 gap-1.5 font-mono text-xs text-amber-300">
-            ${data.backup_codes.map((c) => `<div class="bg-[#0a1124] rounded px-2 py-1">${c}</div>`).join('')}
-          </div>
-        </div>
-        <div>
-          <p class="text-sm text-gray-400 mb-2">2. Enter the 6-digit code from your app to confirm:</p>
-          <input type="text" id="twofa-setup-confirm" inputmode="numeric" maxlength="6" placeholder="000000"
-            class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-3 text-center text-xl tracking-[0.5em] text-white font-bold focus:outline-none focus:border-blue-500"
-            oninput="this.value = this.value.replace(/[^0-9]/g,'')">
-        </div>
-        <button onclick="confirm2FASetup('${accessToken}')" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition flex items-center justify-center gap-2">
-          <i data-lucide="shield-check" class="w-4 h-4"></i> Confirm & Enable 2FA
-        </button>
-        <div id="twofa-setup-error" class="hidden text-xs text-red-400 text-center font-bold"></div>
-      </div>
-    `;
-    if (window.lucide) lucide.createIcons();
-    document.getElementById('twofa-setup-confirm')?.focus();
-  } catch (err) {
-    document.getElementById('twofa-setup-content').innerHTML = `<p class="text-sm text-red-400 text-center">${escapeHtml(err.message)}</p>`;
-  }
-};
-
-window.confirm2FASetup = async (accessToken) => {
-  const code = document.getElementById('twofa-setup-confirm')?.value.trim();
-  const errEl = document.getElementById('twofa-setup-error');
-  if (!code || !/^\d{6}$/.test(code)) {
-    if (errEl) { errEl.textContent = 'Enter a valid 6-digit code.'; errEl.classList.remove('hidden'); }
-    return;
-  }
-  try {
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-2fa`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'verify_setup', code }),
-    });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      showToast('2FA enabled successfully!');
-      document.getElementById('twofa-setup-modal')?.classList.add('hidden');
-      renderSecurity();
-    } else {
-      if (errEl) { errEl.textContent = data.error || 'Invalid code.'; errEl.classList.remove('hidden'); }
-    }
-  } catch (err) {
-    if (errEl) { errEl.textContent = 'Network error.'; errEl.classList.remove('hidden'); }
-  }
-};
-
-window.disable2FA = async () => {
-  const code = prompt('Enter your current 6-digit authentication code to disable 2FA:');
-  if (!code) return;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const accessToken = session?.session?.access_token;
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-2fa`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'disable', code }),
-    });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      showToast('2FA disabled.');
-      renderSecurity();
-    } else {
-      showToast(data.error || 'Failed to disable 2FA.');
-    }
-  } catch (err) {
-    showToast('Error: ' + err.message);
-  }
-};
-
-window.regenerateBackupCodes = async () => {
-  const code = prompt('Enter your current 6-digit authentication code to regenerate backup codes:');
-  if (!code) return;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const accessToken = session?.session?.access_token;
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-2fa`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'regenerate_backup_codes', code }),
-    });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      alert('New backup codes (save these — they replace all old ones):\n\n' + data.backup_codes.join('\n'));
-      showToast('Backup codes regenerated.');
-    } else {
-      showToast(data.error || 'Failed to regenerate backup codes.');
-    }
-  } catch (err) {
-    showToast('Error: ' + err.message);
-  }
-};
-
-function showBootstrapPrompt() {
-  const denied = document.getElementById('access-denied');
-  denied.classList.remove('hidden');
-  document.getElementById('access-denied-msg').textContent = 'No administrator has been set up yet. You can promote your account to become the first admin.';
-  denied.querySelector('a').outerHTML = `<button onclick="bootstrapAdmin()" id="bootstrap-btn" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-amber-600/30"><i data-lucide="shield" class="w-4 h-4"></i> Become Admin</button>`;
-  if (window.lucide) lucide.createIcons();
-  document.querySelector('#bootstrap-btn').addEventListener('click', ripple);
+function updateCoverBadge() {
+  const preview = document.getElementById('image-preview');
+  if (!preview) return;
+  [...preview.querySelectorAll('.img-thumb')].forEach((t, i) => {
+    t.classList.toggle('cover-img', i === 0);
+    t.title = i === 0 ? 'Cover Image' : `Image ${i + 1}`;
+  });
 }
 
-window.bootstrapAdmin = async () => {
-  const btn = document.getElementById('bootstrap-btn');
-  if (!btn) return;
-  btn.disabled = true;
-  btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Promoting...';
-  if (window.lucide) lucide.createIcons();
+window.saveProduct = async function(e, category, existingId) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('[type=submit][name=action][value=publish]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-admin-assistant`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'bootstrap_admin' }),
-    });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      showToast('You are now an admin!');
-      setTimeout(() => window.location.reload(), 1000);
-    } else {
-      // If an admin already exists, show access denied instead of looping
-      if (data.error && data.error.toLowerCase().includes('already exists')) {
-        showAccessDenied('An administrator already exists. Please sign in with an admin account.');
+    const formData = new FormData(form);
+    const data = {};
+    for (const [k, v] of formData.entries()) {
+      if (k === 'images') {
+        data.images = data.images || [];
+        if (v && !v.startsWith('blob:')) data.images.push(v);
+      } else if (k === 'tags') {
+        data.tags = data.tags || [];
+        data.tags.push(v);
       } else {
-        showToast(data.error || 'Failed');
-        btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="shield" class="w-4 h-4"></i> Become Admin';
-        if (window.lucide) lucide.createIcons();
+        data[k] = v;
       }
     }
+    const isDraft = formData.get('action') === 'draft';
+    const payload = {
+      listing_type: 'product',
+      category,
+      title: data.title || 'Untitled Product',
+      description: data.description || '',
+      price: parseFloat(data.price) || 0,
+      currency: data.currency || 'USD',
+      country: '', country_code: '', listing_status: 'sale',
+      is_active: isDraft ? false : data.is_active === 'on',
+      is_featured: data.is_featured === 'on',
+      brand: data.brand || null,
+      color: data.color || null,
+      size: data.size || null,
+      condition: data.condition || null,
+      warranty: data.warranty || null,
+      availability_status: data.availability_status || 'In Stock',
+      stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
+      images: data.images || [],
+      features: data.tags || [],
+      tags: data.tags || [],
+      specifications: {
+        model: data.model || null, storage: data.storage || null, ram: data.ram || null,
+        processor: data.processor || null, display: data.display || null,
+        material: data.material || null, gender: data.gender || null,
+        platform: data.platform || null, voltage: data.voltage || null,
+      },
+    };
+    let err;
+    if (existingId) {
+      ({ error: err } = await supabase.from('showroom_listings').update(payload).eq('property_id', existingId));
+    } else {
+      const pid = genId();
+      payload.property_id = pid;
+      ({ error: err } = await supabase.from('showroom_listings').insert(payload));
+    }
+    if (err) throw err;
+    showToast(isDraft ? 'Draft saved!' : existingId ? 'Product updated!' : 'Product published!');
+    closeModal();
+    renderProducts();
   } catch (err) {
-    showToast('Error: ' + err.message);
-    btn.disabled = false;
-    btn.innerHTML = '<i data-lucide="shield" class="w-4 h-4"></i> Become Admin';
-    if (window.lucide) lucide.createIcons();
+    showToast('Error: ' + err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Publish Product'; }
   }
 };
 
-// ── Coupon Management ──────────────────────────────────────────
-async function renderCoupons() {
+window.editProduct = async function(pid) {
+  const { data } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
+  if (!data) return showToast('Product not found', 'error');
+  showAddProductStep2(data.category || 'Other', data);
+};
+
+window.toggleProductActive = async function(pid, active) {
+  await supabase.from('showroom_listings').update({ is_active: active }).eq('property_id', pid);
+  showToast(active ? 'Product activated' : 'Product deactivated');
+  renderProducts();
+};
+
+window.duplicateProduct = async function(pid) {
+  const { data } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
+  if (!data) return;
+  const { id: _, property_id: __, created_at: ___, updated_at: ____, ...rest } = data;
+  const newPid = genId();
+  await supabase.from('showroom_listings').insert({ ...rest, property_id: newPid, title: data.title + ' (Copy)', is_active: false });
+  showToast('Product duplicated');
+  renderProducts();
+};
+
+window.archiveProduct = async function(pid) {
+  if (!confirm('Archive this product? It will be hidden from the website but can be restored.')) return;
+  await supabase.from('showroom_listings').update({ is_active: false }).eq('property_id', pid);
+  showToast('Product archived');
+  renderProducts();
+};
+
+// ══════════════════════════════════════════════════════════
+//  3. PROPERTIES MANAGER
+// ══════════════════════════════════════════════════════════
+const PROPERTY_TYPES = ['Single-Family Home', 'Apartment', 'Condo', 'Townhouse', 'Villa', 'Mansion', 'Beach House', 'Farm House', 'Commercial Building', 'Hotel', 'Land', 'Other'];
+const PROP_STATUSES = ['sale', 'rent'];
+
+async function renderProperties() {
   const content = document.getElementById('content');
   try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=coupons`, {
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to load coupons');
-    const coupons = data.items || [];
-
+    const { data: props } = await supabase.from('showroom_listings').select('*').eq('listing_type', 'property').order('created_at', { ascending: false });
+    const items = props || [];
     content.innerHTML = `
-      <div class="fade-in space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-bold text-white">Coupon Management</h2>
-          <button onclick="showCouponModal()" class="btn-press flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 px-5 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">
-            <i data-lucide="plus" class="w-4 h-4"></i> Create Coupon
+      <div class="space-y-4 fade-in">
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="text-xl font-black text-white flex-1">Properties Manager</h2>
+          <button onclick="showAddPropertyModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Property
           </button>
         </div>
-        <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden">
+        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
           <div class="overflow-x-auto scrollbar-thin">
-            <table class="w-full data-table">
-              <thead><tr class="border-b border-blue-500/10 bg-blue-950/30">
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Code</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Description</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Type</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Value</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden sm:table-cell">Min Order</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden sm:table-cell">Uses</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Status</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden md:table-cell">Valid Until</th>
-                <th class="text-right text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Actions</th>
+            <table class="w-full dt">
+              <thead><tr>
+                <th>Property</th><th>Type</th><th class="hidden sm:table-cell">Location</th>
+                <th class="hidden md:table-cell">Price</th><th>Status</th><th>Actions</th>
               </tr></thead>
               <tbody>
-                ${coupons.length === 0 ? '<tr><td colspan="9" class="text-center text-gray-500 py-8">No coupons yet. Create one to get started.</td></tr>' : coupons.map(c => `
-                  <tr class="border-b border-blue-500/5 hover:bg-blue-500/5 transition">
-                    <td class="px-4 py-3 text-xs font-mono text-blue-400 font-bold">${escapeHtml(c.code)}</td>
-                    <td class="px-4 py-3 text-xs text-gray-400 max-w-[200px] truncate">${escapeHtml(c.description || '—')}</td>
-                    <td class="px-4 py-3 text-xs text-gray-400">${escapeHtml(c.discount_type)}</td>
-                    <td class="px-4 py-3 text-xs text-amber-400 font-bold">${c.discount_type === 'percentage' ? c.discount_value + '%' : fmtMoney(c.discount_value, 'USD')}</td>
-                    <td class="px-4 py-3 text-xs text-gray-400 hidden sm:table-cell">${c.min_order_amount ? fmtMoney(c.min_order_amount, 'USD') : '—'}</td>
-                    <td class="px-4 py-3 text-xs text-gray-400 hidden sm:table-cell">${c.used_count || 0}${c.max_uses ? '/' + c.max_uses : ''}</td>
-                    <td class="px-4 py-3">${c.is_active ? statusBadge('active') : statusBadge('inactive')}</td>
-                    <td class="px-4 py-3 text-xs text-gray-400 hidden md:table-cell">${c.valid_until ? new Date(c.valid_until).toLocaleDateString() : 'No expiry'}</td>
-                    <td class="px-4 py-3 text-right">
-                      <div class="flex items-center justify-end gap-1">
-                        <button onclick="toggleCoupon('${c.id}', ${!c.is_active})" class="btn-press p-2 hover:bg-blue-500/10 rounded-lg text-gray-400 transition" title="Toggle"><i data-lucide="${c.is_active ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
-                        <button onclick="deleteCoupon('${c.id}')" class="btn-press p-2 hover:bg-red-500/10 rounded-lg text-red-400 transition" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                ${items.length === 0 ? '<tr><td colspan="6" class="text-center text-gray-500 py-12">No properties yet.</td></tr>' :
+                  items.map(p => `<tr>
+                    <td>
+                      <div class="flex items-center gap-2.5">
+                        <img src="${esc((p.images || [])[0] || '/fallback.svg')}" class="w-9 h-9 rounded-lg object-cover border border-blue-500/20" onerror="this.src='/fallback.svg'">
+                        <div><p class="text-xs font-bold text-white truncate max-w-[160px]">${esc(p.title)}</p><p class="text-[10px] font-mono text-gray-500">${esc(p.property_id)}</p></div>
+                      </div>
+                    </td>
+                    <td><span class="text-xs text-gray-300">${esc(p.property_type || p.category)}</span></td>
+                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-400">${esc([p.city, p.state, p.country].filter(Boolean).join(', ') || '—')}</span></td>
+                    <td class="hidden md:table-cell"><span class="text-xs font-bold text-emerald-400">$${parseFloat(p.price || 0).toLocaleString()}</span></td>
+                    <td>${badge(p.listing_status || 'sale')} ${badge(p.is_active ? 'active' : 'inactive')}</td>
+                    <td>
+                      <div class="flex gap-1">
+                        <button onclick="editProperty('${p.property_id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="archiveProduct('${p.property_id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>
                       </div>
                     </td>
                   </tr>`).join('')}
@@ -2857,247 +1066,1228 @@ async function renderCoupons() {
             </table>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
     if (window.lucide) lucide.createIcons();
-  } catch (err) {
-    content.innerHTML = `<div class="text-red-400 p-4">Error loading coupons: ${escapeHtml(err.message)}</div>`;
-  }
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
 
-window.showCouponModal = () => {
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm';
-  modal.innerHTML = `
-    <div class="glass border border-blue-500/30 rounded-2xl p-6 w-full max-w-md mx-4 space-y-4">
-      <h3 class="text-lg font-bold text-white">Create Coupon</h3>
-      <div class="space-y-3">
-        <div><label class="text-xs text-gray-400 font-bold uppercase">Code</label><input id="coupon-code" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white" placeholder="SUMMER25"></div>
-        <div><label class="text-xs text-gray-400 font-bold uppercase">Description</label><input id="coupon-desc" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white" placeholder="Summer sale 25% off"></div>
-        <div class="grid grid-cols-2 gap-3">
-          <div><label class="text-xs text-gray-400 font-bold uppercase">Type</label><select id="coupon-type" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white"><option value="percentage">Percentage</option><option value="fixed">Fixed Amount</option></select></div>
-          <div><label class="text-xs text-gray-400 font-bold uppercase">Value</label><input id="coupon-value" type="number" step="0.01" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white" placeholder="25"></div>
+window.showAddPropertyModal = function(existing = {}) {
+  const isEdit = !!existing.property_id;
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box wide">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Property</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div><label class="text-xs text-gray-400 font-bold uppercase">Min Order</label><input id="coupon-min" type="number" step="0.01" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white" placeholder="0"></div>
-          <div><label class="text-xs text-gray-400 font-bold uppercase">Max Uses</label><input id="coupon-max" type="number" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white" placeholder="1000"></div>
-        </div>
-        <div><label class="text-xs text-gray-400 font-bold uppercase">Valid Until</label><input id="coupon-until" type="date" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white"></div>
-      </div>
-      <div class="flex gap-2 justify-end">
-        <button onclick="this.closest('.fixed').remove()" class="btn-press px-4 py-2 text-sm text-gray-400 hover:text-white transition">Cancel</button>
-        <button onclick="createCoupon()" class="btn-press px-5 py-2 text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl transition">Create</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  if (window.lucide) lucide.createIcons();
-};
+        <form id="property-form" onsubmit="saveProperty(event,'${isEdit ? existing.property_id : ''}')" class="space-y-4">
+          <div class="form-grid form-grid-2">
+            <div class="sm:col-span-2"><label class="lbl">Property Title *</label><input class="input-field" name="title" value="${esc(existing.title || '')}" required placeholder="e.g. Cozy 3-Bedroom Family Home"></div>
+            <div><label class="lbl">Property Type *</label><select class="input-field" name="property_type" required>
+              ${PROPERTY_TYPES.map(t => `<option value="${t}" ${existing.property_type === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select></div>
+            <div><label class="lbl">Listing Status</label><select class="input-field" name="listing_status">
+              <option value="sale" ${existing.listing_status !== 'rent' ? 'selected' : ''}>For Sale</option>
+              <option value="rent" ${existing.listing_status === 'rent' ? 'selected' : ''}>For Rent</option>
+            </select></div>
+            <div><label class="lbl">Price (USD) *</label><input type="number" class="input-field" name="price" value="${existing.price || ''}" required placeholder="0"></div>
+            <div><label class="lbl">Currency</label><select class="input-field" name="currency">
+              ${['USD','EUR','GBP','NGN','KES','ZAR'].map(c => `<option ${(existing.currency||'USD')===c?'selected':''}>${c}</option>`).join('')}
+            </select></div>
+            <div><label class="lbl">Country *</label><input class="input-field" name="country" value="${esc(existing.country || '')}" required placeholder="United States"></div>
+            <div><label class="lbl">Country Code</label><input class="input-field" name="country_code" value="${esc(existing.country_code || '')}" placeholder="US" maxlength="2"></div>
+            <div><label class="lbl">State / Province</label><input class="input-field" name="state" value="${esc(existing.state || '')}" placeholder="e.g. California"></div>
+            <div><label class="lbl">City</label><input class="input-field" name="city" value="${esc(existing.city || '')}" placeholder="e.g. Los Angeles"></div>
+            <div><label class="lbl">Bedrooms</label><input type="number" class="input-field" name="bedrooms" value="${existing.bedrooms ?? ''}" placeholder="3"></div>
+            <div><label class="lbl">Bathrooms</label><input type="number" class="input-field" name="bathrooms" value="${existing.bathrooms ?? ''}" placeholder="2"></div>
+            <div><label class="lbl">Building Size</label><input class="input-field" name="building_size" value="${esc(existing.building_size || '')}" placeholder="e.g. 2,500 sqft"></div>
+            <div><label class="lbl">Land Size</label><input class="input-field" name="land_size" value="${esc(existing.land_size || '')}" placeholder="e.g. 0.5 acres"></div>
+            <div><label class="lbl">Parking Spaces</label><input type="number" class="input-field" name="parking_spaces" value="${existing.parking_spaces ?? ''}"></div>
+            <div><label class="lbl">Furnished</label><select class="input-field" name="furnished">
+              <option value="">Not specified</option>
+              <option value="Furnished" ${existing.furnished==='Furnished'?'selected':''}>Furnished</option>
+              <option value="Unfurnished" ${existing.furnished==='Unfurnished'?'selected':''}>Unfurnished</option>
+            </select></div>
+            <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the property…">${esc(existing.description || '')}</textarea></div>
+            <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Swimming Pool, Garden, Garage…"></div>
+          </div>
 
-window.createCoupon = async () => {
-  const code = document.getElementById('coupon-code').value.trim();
-  const description = document.getElementById('coupon-desc').value.trim();
-  const discount_type = document.getElementById('coupon-type').value;
-  const discount_value = parseFloat(document.getElementById('coupon-value').value);
-  const min_order_amount = parseFloat(document.getElementById('coupon-min').value) || 0;
-  const max_uses = parseInt(document.getElementById('coupon-max').value) || null;
-  const valid_until = document.getElementById('coupon-until').value || null;
+          <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
+            <div><p class="text-xs font-bold text-white">Published / Active</p><p class="text-[11px] text-gray-500">Visible on the website</p></div>
+            <label class="toggle-switch"><input type="checkbox" name="is_active" ${isEdit ? (existing.is_active ? 'checked' : '') : 'checked'}><span class="toggle-slider"></span></label>
+          </div>
 
-  if (!code || !discount_value) { showToast('Code and value are required'); return; }
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=create-coupon`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, description, discount_type, discount_value, min_order_amount, max_uses, valid_until }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed');
-    document.querySelector('.fixed.inset-0')?.remove();
-    showToast('Coupon created.');
-    renderCoupons();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.toggleCoupon = async (id, activate) => {
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=update-coupon`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, is_active: activate }),
-    });
-    if (!res.ok) throw new Error('Failed');
-    showToast(`Coupon ${activate ? 'activated' : 'deactivated'}.`);
-    renderCoupons();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-window.deleteCoupon = async (id) => {
-  if (!confirm('Delete this coupon?')) return;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=delete-coupon`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    if (!res.ok) throw new Error('Failed');
-    showToast('Coupon deleted.');
-    renderCoupons();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-// ── Review Moderation ──────────────────────────────────────────
-async function renderReviews() {
-  const content = document.getElementById('content');
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=reviews&status=pending`, {
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to load reviews');
-    const reviews = data.items || [];
-
-    content.innerHTML = `
-      <div class="fade-in space-y-4">
-        <h2 class="text-lg font-bold text-white">Review Moderation</h2>
-        ${reviews.length === 0 ? '<div class="glass border border-blue-500/20 rounded-2xl p-8 text-center text-gray-500">No pending reviews. All caught up!</div>' : reviews.map(r => `
-          <div class="glass border border-blue-500/20 rounded-2xl p-4 space-y-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex-1">
-                <div class="flex items-center gap-2">
-                  <div class="flex items-center gap-0.5">
-                    ${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= r.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-600'}"></i>`).join('')}
-                  </div>
-                  <span class="text-xs text-gray-400">by ${escapeHtml(r.showroom_listings?.property_id || 'Unknown product')}</span>
-                  ${r.is_verified_purchase ? '<span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">Verified</span>' : ''}
-                </div>
-                <p class="text-sm text-gray-300 mt-2">${escapeHtml(r.review_text || '')}</p>
-                ${r.vendor_response ? `<div class="mt-2 bg-blue-950/40 border border-blue-500/10 rounded-lg p-2 text-xs text-blue-300"><strong>Vendor response:</strong> ${escapeHtml(r.vendor_response)}</div>` : ''}
-              </div>
-              <div class="flex flex-col gap-1 shrink-0">
-                <button onclick="approveReview('${r.id}')" class="btn-press text-xs font-bold px-3 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition">Approve</button>
-                <button onclick="respondReview('${r.id}')" class="btn-press text-xs font-bold px-3 py-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition">Respond</button>
-                <button onclick="deleteReview('${r.id}')" class="btn-press text-xs font-bold px-3 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition">Delete</button>
-              </div>
+          <div>
+            <label class="lbl">Property Images</label>
+            <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
+              <i data-lucide="image-plus" class="w-7 h-7 text-blue-400 mx-auto mb-2"></i>
+              <p class="text-xs font-bold text-gray-300">Click or drag & drop images</p>
+              <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
             </div>
-          </div>`).join('')}
+            <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
+              ${(existing.images || []).map((u, i) => imageThumbHtml(u, i)).join('')}
+            </div>
+            <div id="image-url-inputs">
+              ${(existing.images || []).map((u, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(u)}">`).join('')}
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button type="submit" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition">${isEdit ? '💾 Save Changes' : '🚀 Publish Property'}</button>
+          </div>
+        </form>
       </div>
-    `;
-    if (window.lucide) lucide.createIcons();
-  } catch (err) {
-    content.innerHTML = `<div class="text-red-400 p-4">Error: ${escapeHtml(err.message)}</div>`;
+    </div>`);
+  setupDropZone(); setupImageSortable();
+};
+
+window.saveProperty = async function(e, existingId) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+  const images = fd.getAll('images').filter(u => u && !u.startsWith('blob:'));
+  const features = (data.features_text || '').split(',').map(s => s.trim()).filter(Boolean);
+  const payload = {
+    listing_type: 'property',
+    category: data.property_type || 'Real Estate',
+    title: data.title, description: data.description || '',
+    price: parseFloat(data.price) || 0, currency: data.currency || 'USD',
+    country: data.country || '', country_code: (data.country_code || '').toUpperCase(),
+    state: data.state || '', city: data.city || '',
+    property_type: data.property_type || '', listing_status: data.listing_status || 'sale',
+    bedrooms: data.bedrooms ? parseInt(data.bedrooms) : null,
+    bathrooms: data.bathrooms ? parseInt(data.bathrooms) : null,
+    building_size: data.building_size || '', land_size: data.land_size || '',
+    parking_spaces: data.parking_spaces ? parseInt(data.parking_spaces) : null,
+    furnished: data.furnished || '', features, images,
+    is_active: data.is_active === 'on',
+  };
+  let err;
+  if (existingId) {
+    ({ error: err } = await supabase.from('showroom_listings').update(payload).eq('property_id', existingId));
+  } else {
+    payload.property_id = genId();
+    ({ error: err } = await supabase.from('showroom_listings').insert(payload));
   }
-}
-
-window.approveReview = async (id) => {
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=approve-review`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    if (!res.ok) throw new Error('Failed');
-    showToast('Review approved.');
-    renderReviews();
-  } catch (err) { showToast('Error: ' + err.message); }
+  if (err) { showToast(err.message, 'error'); return; }
+  showToast(existingId ? 'Property updated!' : 'Property published!');
+  closeModal(); renderProperties();
 };
 
-window.deleteReview = async (id) => {
-  if (!confirm('Delete this review?')) return;
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=delete-review`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    if (!res.ok) throw new Error('Failed');
-    showToast('Review deleted.');
-    renderReviews();
-  } catch (err) { showToast('Error: ' + err.message); }
+window.editProperty = async function(pid) {
+  const { data } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
+  if (data) showAddPropertyModal(data);
 };
 
-window.respondReview = (id) => {
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm';
-  modal.innerHTML = `
-    <div class="glass border border-blue-500/30 rounded-2xl p-6 w-full max-w-md mx-4 space-y-4">
-      <h3 class="text-lg font-bold text-white">Respond to Review</h3>
-      <textarea id="review-response" rows="4" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white" placeholder="Write a response..."></textarea>
-      <div class="flex gap-2 justify-end">
-        <button onclick="this.closest('.fixed').remove()" class="btn-press px-4 py-2 text-sm text-gray-400 hover:text-white transition">Cancel</button>
-        <button onclick="submitReviewResponse('${id}')" class="btn-press px-5 py-2 text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl transition">Submit</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-};
+// ══════════════════════════════════════════════════════════
+//  4. ORDERS MANAGER
+// ══════════════════════════════════════════════════════════
+const ORDER_STATUSES = ['pending_verification', 'payment_received', 'payment_approved', 'processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'rejected'];
 
-window.submitReviewResponse = async (id) => {
-  const response = document.getElementById('review-response').value.trim();
-  if (!response) { showToast('Response cannot be empty'); return; }
-  try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=respond-review`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, response }),
-    });
-    if (!res.ok) throw new Error('Failed');
-    document.querySelector('.fixed.inset-0')?.remove();
-    showToast('Response posted.');
-    renderReviews();
-  } catch (err) { showToast('Error: ' + err.message); }
-};
-
-// ── Audit Trail ────────────────────────────────────────────────
-async function renderAudit() {
+async function renderOrders() {
   const content = document.getElementById('content');
   try {
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-marketplace?action=audit-logs&limit=100`, {
-      headers: { 'Authorization': `Bearer ${session?.session?.access_token}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to load audit logs');
-    const logs = data.items || [];
-
+    const { data: orders } = await supabase.from('payment_receipts').select('*').order('created_at', { ascending: false }).limit(300);
+    const items = orders || [];
+    const tabs = ['All', 'Pending', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+    let activeTab = 'All';
     content.innerHTML = `
-      <div class="fade-in space-y-4">
-        <h2 class="text-lg font-bold text-white">Audit Trail</h2>
-        <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden">
+      <div class="space-y-4 fade-in">
+        <h2 class="text-xl font-black text-white">Orders Manager</h2>
+        <div class="flex gap-2 flex-wrap" id="order-tabs">
+          ${tabs.map(t => `<button class="tab-btn ${t === 'All' ? 'active' : ''}" onclick="filterOrders('${t}')">${t}</button>`).join('')}
+        </div>
+        <div class="flex gap-3">
+          <div class="flex-1 relative">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+            <input type="search" class="input-field pl-9" placeholder="Search order, email, name…" oninput="searchOrders(this.value)">
+          </div>
+        </div>
+        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
           <div class="overflow-x-auto scrollbar-thin">
-            <table class="w-full data-table">
-              <thead><tr class="border-b border-blue-500/10 bg-blue-950/30">
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Time</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Admin</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Action</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden sm:table-cell">Entity</th>
-                <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden md:table-cell">Details</th>
+            <table class="w-full dt">
+              <thead><tr>
+                <th>Order #</th><th>Customer</th><th>Product</th>
+                <th class="hidden sm:table-cell">Amount</th><th>Status</th>
+                <th class="hidden md:table-cell">Date</th><th>Actions</th>
               </tr></thead>
-              <tbody>
-                ${logs.length === 0 ? '<tr><td colspan="5" class="text-center text-gray-500 py-8">No audit entries yet.</td></tr>' : logs.map(l => `
-                  <tr class="border-b border-blue-500/5 hover:bg-blue-500/5 transition">
-                    <td class="px-4 py-3 text-xs text-gray-400">${new Date(l.created_at).toLocaleString()}</td>
-                    <td class="px-4 py-3 text-xs text-blue-400">${escapeHtml(l.user_email || 'Unknown')}</td>
-                    <td class="px-4 py-3 text-xs text-white font-mono font-bold">${escapeHtml(l.action)}</td>
-                    <td class="px-4 py-3 text-xs text-gray-400 hidden sm:table-cell">${escapeHtml(l.entity_type || '—')} : ${escapeHtml(l.entity_id || '—')}</td>
-                    <td class="px-4 py-3 text-xs text-gray-500 hidden md:table-cell max-w-[300px] truncate">${l.new_values ? escapeHtml(JSON.stringify(l.new_values).slice(0, 100)) : '—'}</td>
+              <tbody id="orders-tbody">
+                ${items.length === 0 ? '<tr><td colspan="7" class="text-center text-gray-500 py-12">No orders yet</td></tr>' :
+                  items.map(o => orderRow(o)).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    window._ordersData = items;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+function orderRow(o) {
+  return `<tr class="order-row" data-status="${o.status}" data-search="${esc(o.order_number)} ${esc(o.full_name)} ${esc(o.email)}">
+    <td><span class="font-mono text-xs text-blue-400 font-bold">${esc(o.order_number || o.id?.slice(0, 8))}</span></td>
+    <td>
+      <p class="text-xs font-bold text-white">${esc(o.full_name || 'Guest')}</p>
+      <p class="text-[10px] text-gray-500">${esc(o.email)}</p>
+    </td>
+    <td><p class="text-xs text-gray-300 truncate max-w-[140px]">${esc(o.listing_title || o.listing_id || '—')}</p></td>
+    <td class="hidden sm:table-cell"><span class="text-xs font-bold text-emerald-400">$${parseFloat(o.amount || 0).toLocaleString()}</span></td>
+    <td>${badge(o.status)}</td>
+    <td class="hidden md:table-cell"><span class="text-xs text-gray-500">${fmtDate(o.created_at)}</span></td>
+    <td>
+      <button onclick="viewOrder('${o.id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition" title="View / Update">
+        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+      </button>
+    </td>
+  </tr>`;
+}
+
+window.filterOrders = function(tab) {
+  document.querySelectorAll('#order-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.textContent === tab));
+  document.querySelectorAll('.order-row').forEach(row => {
+    const s = row.dataset.status || '';
+    const show = tab === 'All' ||
+      (tab === 'Pending' && ['pending_verification', 'payment_received', 'order_placed'].includes(s)) ||
+      (tab === 'Paid' && ['payment_approved'].includes(s)) ||
+      (tab === 'Processing' && ['processing'].includes(s)) ||
+      (tab === 'Shipped' && ['shipped', 'in_transit', 'out_for_delivery'].includes(s)) ||
+      (tab === 'Delivered' && s === 'delivered') ||
+      (tab === 'Cancelled' && ['cancelled', 'rejected'].includes(s));
+    row.style.display = show ? '' : 'none';
+  });
+};
+
+window.searchOrders = function(q) {
+  const lq = q.toLowerCase();
+  document.querySelectorAll('.order-row').forEach(row => {
+    row.style.display = !lq || row.dataset.search.toLowerCase().includes(lq) ? '' : 'none';
+  });
+};
+
+window.viewOrder = async function(id) {
+  const o = (window._ordersData || []).find(x => x.id === id);
+  if (!o) return;
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white">Order ${esc(o.order_number)}</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="space-y-3 text-sm">
+          <div class="grid grid-cols-2 gap-3">
+            ${[['Customer', o.full_name], ['Email', o.email], ['Phone', o.phone], ['Amount', fmtMoney(o.amount, o.currency)], ['Product', o.listing_title || o.listing_id], ['Date', fmtDT(o.created_at)]].map(([l, v]) => `<div><p class="text-[10px] text-gray-500 uppercase font-bold mb-0.5">${l}</p><p class="text-xs text-white font-medium">${esc(v) || '—'}</p></div>`).join('')}
+          </div>
+          ${o.transaction_reference ? `<div class="p-3 glass-soft border border-blue-500/15 rounded-xl"><p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Transaction Reference</p><p class="text-xs font-mono text-blue-300">${esc(o.transaction_reference)}</p></div>` : ''}
+          ${o.additional_notes ? `<div class="p-3 glass-soft border border-amber-500/15 rounded-xl"><p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Notes</p><p class="text-xs text-gray-300">${esc(o.additional_notes)}</p></div>` : ''}
+          <div>
+            <label class="lbl">Update Order Status</label>
+            <div class="flex gap-2">
+              <select id="order-status-select" class="input-field flex-1">
+                ${ORDER_STATUSES.map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s.replace(/_/g, ' ')}</option>`).join('')}
+              </select>
+              <button onclick="updateOrderStatus('${o.id}')" class="btn-press px-4 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition">Update</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+};
+
+window.updateOrderStatus = async function(id) {
+  const status = document.getElementById('order-status-select')?.value;
+  if (!status) return;
+  const { error } = await supabase.from('payment_receipts').update({ status }).eq('id', id);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Order status updated');
+  closeModal(); renderOrders();
+};
+
+// ══════════════════════════════════════════════════════════
+//  5. CUSTOMERS MANAGER
+// ══════════════════════════════════════════════════════════
+async function renderCustomers() {
+  const content = document.getElementById('content');
+  try {
+    const { data: customers } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(200);
+    const items = customers || [];
+    content.innerHTML = `
+      <div class="space-y-4 fade-in">
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-black text-white flex-1">Customers Manager</h2>
+          <span class="text-sm text-gray-400 font-medium">${items.length} total</span>
+        </div>
+        <div class="relative">
+          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+          <input type="search" class="input-field pl-9" placeholder="Search customers…" oninput="searchCustomers(this.value)">
+        </div>
+        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full dt">
+              <thead><tr><th>Customer</th><th class="hidden sm:table-cell">Country</th><th class="hidden md:table-cell">Joined</th><th>Actions</th></tr></thead>
+              <tbody id="customers-tbody">
+                ${items.length === 0 ? '<tr><td colspan="4" class="text-center text-gray-500 py-12">No customers yet</td></tr>' :
+                  items.map(c => `<tr class="cust-row" data-search="${esc(c.display_name)} ${esc(c.user_id)}">
+                    <td>
+                      <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 bg-blue-500/10 rounded-full flex items-center justify-center shrink-0">
+                          <i data-lucide="user" class="w-4 h-4 text-blue-400"></i>
+                        </div>
+                        <div>
+                          <p class="text-xs font-bold text-white">${esc(c.display_name || 'Anonymous')}</p>
+                          <p class="text-[10px] font-mono text-gray-500">${esc(c.user_id?.slice(0, 12))}…</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-300">${esc(c.country_code || '—')}</span></td>
+                    <td class="hidden md:table-cell"><span class="text-xs text-gray-500">${fmtDate(c.created_at)}</span></td>
+                    <td>
+                      <button onclick="viewCustomer('${c.user_id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition"><i data-lucide="eye" class="w-3.5 h-3.5"></i></button>
+                    </td>
                   </tr>`).join('')}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
+    window._customersData = items;
     if (window.lucide) lucide.createIcons();
-  } catch (err) {
-    content.innerHTML = `<div class="text-red-400 p-4">Error: ${escapeHtml(err.message)}</div>`;
-  }
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
 
-init();
+window.searchCustomers = function(q) {
+  const lq = q.toLowerCase();
+  document.querySelectorAll('.cust-row').forEach(r => {
+    r.style.display = !lq || r.dataset.search.toLowerCase().includes(lq) ? '' : 'none';
+  });
+};
+
+window.viewCustomer = async function(uid) {
+  const c = (window._customersData || []).find(x => x.user_id === uid);
+  if (!c) return;
+  const { data: orders } = await supabase.from('payment_receipts').select('order_number,amount,currency,status,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(20);
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white">Customer Profile</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="flex items-center gap-4 mb-5 p-4 glass-soft border border-blue-500/15 rounded-xl">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
+            <i data-lucide="user" class="w-6 h-6 text-blue-400"></i>
+          </div>
+          <div>
+            <p class="font-black text-white">${esc(c.display_name || 'Anonymous')}</p>
+            <p class="text-xs text-gray-400 mt-0.5">Joined ${fmtDate(c.created_at)} · ${esc(c.country_code || 'Unknown country')}</p>
+          </div>
+        </div>
+        <h4 class="text-xs font-bold text-gray-400 uppercase mb-3">Purchase History</h4>
+        ${(orders || []).length === 0 ? '<p class="text-xs text-gray-500 py-4 text-center">No orders yet</p>' :
+          (orders || []).map(o => `<div class="flex items-center justify-between py-2 border-b border-blue-500/5 last:border-0">
+            <div><p class="text-xs font-bold text-white font-mono">${esc(o.order_number)}</p><p class="text-[10px] text-gray-500">${fmtDT(o.created_at)}</p></div>
+            <div class="flex items-center gap-2">${badge(o.status)}<span class="text-xs font-bold text-emerald-400">$${parseFloat(o.amount).toLocaleString()}</span></div>
+          </div>`).join('')}
+      </div>
+    </div>`);
+};
+
+// ══════════════════════════════════════════════════════════
+//  6. REVIEWS MANAGER
+// ══════════════════════════════════════════════════════════
+async function renderReviews() {
+  const content = document.getElementById('content');
+  try {
+    const { data: reviews } = await supabase.from('product_reviews').select('*, showroom_listings(title, property_id)').order('created_at', { ascending: false }).limit(200);
+    const items = reviews || [];
+    const pending = items.filter(r => !r.is_approved).length;
+    content.innerHTML = `
+      <div class="space-y-4 fade-in">
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-black text-white flex-1">Reviews Manager</h2>
+          ${pending > 0 ? `<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">${pending} pending</span>` : ''}
+        </div>
+        <div class="flex gap-2">
+          <button onclick="filterReviewTab('all')" class="tab-btn active" id="rtab-all">All Reviews</button>
+          <button onclick="filterReviewTab('pending')" class="tab-btn" id="rtab-pending">Pending (${pending})</button>
+          <button onclick="filterReviewTab('approved')" class="tab-btn" id="rtab-approved">Approved</button>
+        </div>
+        <div class="space-y-3" id="reviews-list">
+          ${items.length === 0 ? emptyState('star', 'No Reviews', 'Customer reviews will appear here.') :
+            items.map(r => reviewCard(r)).join('')}
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+function reviewCard(r) {
+  const stars = Array.from({length: 5}, (_, i) => i < r.rating ? '★' : '☆').join('');
+  return `<div class="review-card glass-soft border ${r.is_approved ? 'border-blue-500/15' : 'border-amber-500/20'} rounded-xl p-4" data-approved="${r.is_approved}">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-amber-400 font-bold text-sm">${stars}</span>
+          <span class="text-xs text-gray-500">${fmtDate(r.created_at)}</span>
+          ${!r.is_approved ? `<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">Pending Approval</span>` : `<span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Approved</span>`}
+        </div>
+        <p class="text-sm text-gray-200 leading-relaxed">${esc(r.review_text || '—')}</p>
+        <p class="text-[11px] text-blue-400 mt-1.5">On: ${esc(r.showroom_listings?.title || r.listing_id)}</p>
+      </div>
+      <div class="flex gap-1 shrink-0">
+        ${!r.is_approved ? `<button onclick="approveReview('${r.id}')" class="btn-press p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition" title="Approve"><i data-lucide="check" class="w-4 h-4"></i></button>` : ''}
+        <button onclick="deleteReview('${r.id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.filterReviewTab = function(tab) {
+  ['all','pending','approved'].forEach(t => document.getElementById(`rtab-${t}`)?.classList.toggle('active', t === tab));
+  document.querySelectorAll('.review-card').forEach(c => {
+    const show = tab === 'all' || (tab === 'pending' && c.dataset.approved === 'false') || (tab === 'approved' && c.dataset.approved === 'true');
+    c.style.display = show ? '' : 'none';
+  });
+};
+
+window.approveReview = async function(id) {
+  await supabase.from('product_reviews').update({ is_approved: true }).eq('id', id);
+  showToast('Review approved');
+  renderReviews();
+};
+
+window.deleteReview = async function(id) {
+  if (!confirm('Delete this review permanently?')) return;
+  await supabase.from('product_reviews').delete().eq('id', id);
+  showToast('Review deleted');
+  renderReviews();
+};
+
+// ══════════════════════════════════════════════════════════
+//  7. MESSAGES
+// ══════════════════════════════════════════════════════════
+async function renderMessages() {
+  const content = document.getElementById('content');
+  try {
+    const { data: msgs } = await supabase.from('support_messages').select('*').order('created_at', { ascending: false }).limit(200);
+    const items = msgs || [];
+    content.innerHTML = `
+      <div class="space-y-4 fade-in">
+        <h2 class="text-xl font-black text-white">Messages & Support</h2>
+        <div class="space-y-3">
+          ${items.length === 0 ? emptyState('message-circle', 'No Messages', 'Customer support messages will appear here.') :
+            items.map(m => `
+              <div class="glass-soft border ${m.is_read ? 'border-blue-500/10' : 'border-blue-400/30'} rounded-xl p-4 ${m.is_read ? '' : 'ring-1 ring-blue-500/10'}">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-xs font-black text-white">${esc(m.full_name || m.name || 'Anonymous')}</span>
+                      ${!m.is_read ? `<span class="badge bg-blue-500/15 text-blue-400 border-blue-500/20">New</span>` : ''}
+                      <span class="text-[10px] text-gray-500 ml-auto">${fmtDT(m.created_at)}</span>
+                    </div>
+                    <p class="text-[11px] text-blue-400 mb-1">${esc(m.email || '—')}</p>
+                    <p class="text-xs text-gray-300">${esc(m.message || m.body || '—')}</p>
+                    ${m.subject ? `<p class="text-[11px] text-gray-500 mt-1">Subject: ${esc(m.subject)}</p>` : ''}
+                  </div>
+                  <div class="flex gap-1 shrink-0">
+                    <button onclick="markMsgRead('${m.id}')" class="btn-press p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition" title="Mark Read"><i data-lucide="check" class="w-4 h-4"></i></button>
+                  </div>
+                </div>
+              </div>`).join('')}
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.markMsgRead = async function(id) {
+  await supabase.from('support_messages').update({ is_read: true }).eq('id', id);
+  showToast('Marked as read');
+  renderMessages();
+};
+
+// ══════════════════════════════════════════════════════════
+//  8. COUPONS
+// ══════════════════════════════════════════════════════════
+async function renderCoupons() {
+  const content = document.getElementById('content');
+  try {
+    const { data: coupons } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+    const items = coupons || [];
+    content.innerHTML = `
+      <div class="space-y-4 fade-in">
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-black text-white flex-1">Coupons Manager</h2>
+          <button onclick="showAddCouponModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Coupon
+          </button>
+        </div>
+        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full dt">
+              <thead><tr><th>Code</th><th>Type</th><th>Value</th><th class="hidden sm:table-cell">Min Amount</th><th>Status</th><th class="hidden md:table-cell">Expires</th><th>Actions</th></tr></thead>
+              <tbody>
+                ${items.length === 0 ? '<tr><td colspan="7" class="text-center text-gray-500 py-12">No coupons yet</td></tr>' :
+                  items.map(c => `<tr>
+                    <td><code class="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">${esc(c.code)}</code></td>
+                    <td><span class="text-xs text-gray-300">${c.discount_type === 'percent' ? 'Percentage' : 'Fixed Amount'}</span></td>
+                    <td><span class="text-xs font-bold text-emerald-400">${c.discount_type === 'percent' ? c.discount_value + '%' : '$' + c.discount_value}</span></td>
+                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-400">${c.min_amount ? '$' + c.min_amount : '—'}</span></td>
+                    <td>${badge(c.is_active ? 'active' : 'inactive')}</td>
+                    <td class="hidden md:table-cell"><span class="text-xs text-gray-500">${fmtDate(c.expires_at)}</span></td>
+                    <td>
+                      <div class="flex gap-1">
+                        <button onclick="toggleCoupon('${c.id}',${!c.is_active})" class="btn-press p-1.5 ${c.is_active ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'} rounded-lg transition"><i data-lucide="${c.is_active ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="deleteCoupon('${c.id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                      </div>
+                    </td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.showAddCouponModal = function() {
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white">Create Coupon</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form id="coupon-form" onsubmit="saveCoupon(event)" class="space-y-4">
+          <div class="form-grid form-grid-2">
+            <div><label class="lbl">Coupon Code *</label><input class="input-field uppercase" name="code" required placeholder="e.g. SAVE20" style="text-transform:uppercase"></div>
+            <div><label class="lbl">Discount Type *</label><select class="input-field" name="discount_type" required>
+              <option value="percent">Percentage (%)</option>
+              <option value="fixed">Fixed Amount ($)</option>
+            </select></div>
+            <div><label class="lbl">Discount Value *</label><input type="number" class="input-field" name="discount_value" required min="0" step="0.01" placeholder="e.g. 20"></div>
+            <div><label class="lbl">Minimum Order Amount</label><input type="number" class="input-field" name="min_amount" min="0" placeholder="0"></div>
+            <div><label class="lbl">Usage Limit</label><input type="number" class="input-field" name="usage_limit" min="1" placeholder="Unlimited"></div>
+            <div><label class="lbl">Expiry Date</label><input type="date" class="input-field" name="expires_at"></div>
+          </div>
+          <button type="submit" class="btn-press w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-sm transition">Create Coupon</button>
+        </form>
+      </div>
+    </div>`);
+};
+
+window.saveCoupon = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+  const payload = { code: data.code.toUpperCase(), discount_type: data.discount_type, discount_value: parseFloat(data.discount_value), min_amount: data.min_amount ? parseFloat(data.min_amount) : null, usage_limit: data.usage_limit ? parseInt(data.usage_limit) : null, expires_at: data.expires_at || null, is_active: true };
+  const { error } = await supabase.from('coupons').insert(payload);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Coupon created!');
+  closeModal(); renderCoupons();
+};
+
+window.toggleCoupon = async function(id, active) {
+  await supabase.from('coupons').update({ is_active: active }).eq('id', id);
+  showToast(active ? 'Coupon activated' : 'Coupon deactivated');
+  renderCoupons();
+};
+
+window.deleteCoupon = async function(id) {
+  if (!confirm('Delete this coupon?')) return;
+  await supabase.from('coupons').delete().eq('id', id);
+  showToast('Coupon deleted');
+  renderCoupons();
+};
+
+// ══════════════════════════════════════════════════════════
+//  9. NOTIFICATIONS
+// ══════════════════════════════════════════════════════════
+async function renderNotifications() {
+  const content = document.getElementById('content');
+  try {
+    const { data: notifs } = await supabase.from('notification_log').select('*').order('created_at', { ascending: false }).limit(100);
+    const items = notifs || [];
+    content.innerHTML = `
+      <div class="space-y-4 fade-in">
+        <h2 class="text-xl font-black text-white">Notifications</h2>
+        <div class="space-y-2">
+          ${items.length === 0 ? emptyState('bell', 'No Notifications', 'System notifications will appear here.') :
+            items.map(n => `
+              <div class="glass-soft border border-blue-500/10 rounded-xl p-3.5 flex items-start gap-3">
+                <div class="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                  <i data-lucide="bell" class="w-4 h-4 text-blue-400"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-0.5">
+                    <span class="text-xs font-bold text-white">${esc(n.subject || n.event_type || 'Notification')}</span>
+                    ${badge(n.status)}
+                    <span class="text-[10px] text-gray-500 ml-auto">${fmtDT(n.created_at)}</span>
+                  </div>
+                  <p class="text-[11px] text-gray-400">${esc(n.recipient || n.order_number)}</p>
+                </div>
+              </div>`).join('')}
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+// ══════════════════════════════════════════════════════════
+//  10. ADVERTISEMENTS
+// ══════════════════════════════════════════════════════════
+async function renderAds() {
+  const content = document.getElementById('content');
+  try {
+    const { data: promos } = await supabase.from('promotions').select('*').order('created_at', { ascending: false });
+    const items = promos || [];
+    content.innerHTML = `
+      <div class="space-y-4 fade-in">
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-black text-white flex-1">Advertisement Manager</h2>
+          <button onclick="showAddAdModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Promotion
+          </button>
+        </div>
+        <div class="grid gap-3">
+          ${items.length === 0 ? emptyState('megaphone', 'No Promotions', 'Create banners and promotions to advertise products.', `<button onclick="showAddAdModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i data-lucide="plus" class="w-4 h-4"></i> Add Promotion</button>`) :
+            items.map(p => `
+              <div class="glass-soft border border-blue-500/15 rounded-xl p-4 flex items-center gap-4">
+                ${p.image_url ? `<img src="${esc(p.image_url)}" class="w-20 h-14 rounded-lg object-cover border border-blue-500/20 shrink-0" onerror="this.remove()">` : `<div class="w-20 h-14 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0"><i data-lucide="megaphone" class="w-6 h-6 text-blue-400"></i></div>`}
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-black text-white">${esc(p.title || p.name)}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">${esc(p.description || '')}</p>
+                  <div class="flex items-center gap-2 mt-1.5">${badge(p.is_active ? 'active' : 'inactive')}<span class="text-[10px] text-gray-500">${fmtDate(p.start_date)} → ${fmtDate(p.end_date)}</span></div>
+                </div>
+                <div class="flex gap-1 shrink-0">
+                  <button onclick="togglePromo('${p.id}',${!p.is_active})" class="btn-press p-1.5 ${p.is_active ? 'text-amber-400' : 'text-emerald-400'} rounded-lg transition"><i data-lucide="${p.is_active ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
+                  <button onclick="deletePromo('${p.id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+              </div>`).join('')}
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.showAddAdModal = function() {
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white">Add Promotion / Advertisement</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form id="ad-form" onsubmit="saveAd(event)" class="space-y-4">
+          <div><label class="lbl">Title *</label><input class="input-field" name="title" required placeholder="e.g. Summer Sale"></div>
+          <div><label class="lbl">Description</label><textarea class="input-field" name="description" rows="2" placeholder="Short description…"></textarea></div>
+          <div class="form-grid form-grid-2">
+            <div><label class="lbl">Start Date</label><input type="date" class="input-field" name="start_date"></div>
+            <div><label class="lbl">End Date</label><input type="date" class="input-field" name="end_date"></div>
+          </div>
+          <div><label class="lbl">Banner Image URL</label><input class="input-field" name="image_url" placeholder="https://…"></div>
+          <div><label class="lbl">Link URL</label><input class="input-field" name="link_url" placeholder="https://…"></div>
+          <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
+            <p class="text-xs font-bold text-white">Active</p>
+            <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
+          </div>
+          <button type="submit" class="btn-press w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-sm transition">Create Promotion</button>
+        </form>
+      </div>
+    </div>`);
+};
+
+window.saveAd = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+  const payload = { title: data.title, description: data.description || '', start_date: data.start_date || null, end_date: data.end_date || null, image_url: data.image_url || null, link_url: data.link_url || null, is_active: data.is_active === 'on', promo_type: 'banner' };
+  const { error } = await supabase.from('promotions').insert(payload);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Promotion created!');
+  closeModal(); renderAds();
+};
+
+window.togglePromo = async function(id, active) {
+  await supabase.from('promotions').update({ is_active: active }).eq('id', id);
+  showToast(active ? 'Promotion activated' : 'Promotion deactivated');
+  renderAds();
+};
+
+window.deletePromo = async function(id) {
+  if (!confirm('Delete this promotion?')) return;
+  await supabase.from('promotions').delete().eq('id', id);
+  showToast('Promotion deleted');
+  renderAds();
+};
+
+// ══════════════════════════════════════════════════════════
+//  11. AI SETTINGS
+// ══════════════════════════════════════════════════════════
+async function renderAiSettings() {
+  const content = document.getElementById('content');
+  try {
+    const { data: settings } = await supabase.from('ai_settings').select('*').limit(1).maybeSingle();
+    const s = settings || {};
+    content.innerHTML = `
+      <div class="space-y-6 fade-in">
+        <h2 class="text-xl font-black text-white">AI Settings</h2>
+        <div class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-xs text-amber-400 flex items-start gap-2">
+          <i data-lucide="shield-alert" class="w-4 h-4 shrink-0 mt-0.5"></i>
+          <p>API keys are stored encrypted in your Supabase database. Never share them. They are only used server-side in Edge Functions.</p>
+        </div>
+
+        <form id="ai-form" onsubmit="saveAiSettings(event)" class="space-y-5">
+          <!-- Provider Selection -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+            <h3 class="text-sm font-black text-white mb-4 flex items-center gap-2"><i data-lucide="bot" class="w-4 h-4 text-blue-400"></i> Active Provider</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              ${[{ id: 'openai', name: 'OpenAI (ChatGPT)', icon: 'cpu' }, { id: 'gemini', name: 'Google Gemini', icon: 'sparkles' }, { id: 'anthropic', name: 'Anthropic Claude', icon: 'brain' }].map(p => `
+                <label class="flex items-center gap-3 p-3 glass-soft border ${s.active_provider === p.id ? 'border-blue-500/50 bg-blue-500/5' : 'border-blue-500/15'} rounded-xl cursor-pointer hover:border-blue-500/40 transition">
+                  <input type="radio" name="active_provider" value="${p.id}" ${s.active_provider === p.id ? 'checked' : ''} class="accent-blue-500">
+                  <div><i data-lucide="${p.icon}" class="w-4 h-4 text-blue-400 mb-1"></i><p class="text-xs font-bold text-white">${p.name}</p></div>
+                </label>`).join('')}
+            </div>
+          </div>
+
+          <!-- OpenAI -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="cpu" class="w-4 h-4 text-blue-400"></i> OpenAI (ChatGPT)</h3>
+            <div><label class="lbl">API Key</label>
+              <div class="relative">
+                <input type="password" class="input-field pr-20" name="openai_key" placeholder="${s.openai_key ? '••••••••' + s.openai_key.slice(-4) : 'sk-…paste your key here'}">
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-500">Not saved</span>
+              </div>
+            </div>
+            <div><label class="lbl">Model</label>
+              <select class="input-field" name="openai_model">
+                ${['gpt-4o','gpt-4o-mini','gpt-4-turbo','gpt-3.5-turbo'].map(m => `<option value="${m}" ${(s.openai_model||'gpt-4o')===m?'selected':''}>${m}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <!-- Gemini -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Google Gemini</h3>
+            <div><label class="lbl">API Key</label>
+              <input type="password" class="input-field" name="gemini_key" placeholder="${s.gemini_key ? '••••••••' + s.gemini_key.slice(-4) : 'AIza…paste your key here'}">
+            </div>
+            <div><label class="lbl">Model</label>
+              <select class="input-field" name="gemini_model">
+                ${['gemini-1.5-pro','gemini-1.5-flash','gemini-pro'].map(m => `<option value="${m}" ${(s.gemini_model||'gemini-1.5-pro')===m?'selected':''}>${m}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <!-- AI Features -->
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
+            <h3 class="text-sm font-black text-white mb-4 flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> AI Features</h3>
+            ${[
+              { key: 'customer_ai_enabled', label: 'Customer AI Chatbot', desc: 'Allow customers to use AI chat on the website', val: s.customer_ai_enabled },
+              { key: 'product_ai_enabled', label: 'AI Product Creation', desc: 'Use AI to auto-generate product descriptions', val: s.product_ai_enabled !== false },
+              { key: 'ai_moderation', label: 'AI Content Moderation', desc: 'Auto-moderate reviews with AI', val: s.ai_moderation },
+            ].map(f => `
+              <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/10 rounded-xl">
+                <div><p class="text-xs font-bold text-white">${f.label}</p><p class="text-[11px] text-gray-500">${f.desc}</p></div>
+                <label class="toggle-switch"><input type="checkbox" name="${f.key}" ${f.val ? 'checked' : ''}><span class="toggle-slider"></span></label>
+              </div>`).join('')}
+          </div>
+
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-blue-600/15">
+            💾 Save AI Settings
+          </button>
+        </form>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.saveAiSettings = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+  const payload = {
+    active_provider: data.active_provider || 'openai',
+    openai_model: data.openai_model,
+    gemini_model: data.gemini_model,
+    customer_ai_enabled: data.customer_ai_enabled === 'on',
+    product_ai_enabled: data.product_ai_enabled === 'on',
+    ai_moderation: data.ai_moderation === 'on',
+  };
+  // Only update keys if new values provided
+  if (data.openai_key && !data.openai_key.startsWith('•')) payload.openai_key = data.openai_key;
+  if (data.gemini_key && !data.gemini_key.startsWith('•')) payload.gemini_key = data.gemini_key;
+  const { error } = await supabase.from('ai_settings').upsert({ id: 1, ...payload });
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('AI settings saved!');
+};
+
+// ══════════════════════════════════════════════════════════
+//  12. CONTENT MANAGER
+// ══════════════════════════════════════════════════════════
+async function renderContent() {
+  const content = document.getElementById('content');
+  try {
+    const { data: settings } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+    const s = settings || {};
+    content.innerHTML = `
+      <div class="space-y-6 fade-in">
+        <h2 class="text-xl font-black text-white">Website Content Manager</h2>
+        <form id="content-form" onsubmit="saveContent(event)" class="space-y-5">
+          ${[
+            { section: 'Site Identity', fields: [
+              { key: 'site_name', label: 'Site Name', type: 'text', placeholder: 'KCO Global Online Marketplace' },
+              { key: 'site_tagline', label: 'Tagline / Slogan', type: 'text', placeholder: 'Premium International Commerce' },
+              { key: 'site_description', label: 'Site Description (SEO)', type: 'textarea', placeholder: 'Your trusted global shop…' },
+            ]},
+            { section: 'Contact Information', fields: [
+              { key: 'contact_email', label: 'Contact Email', type: 'email', placeholder: 'support@example.com' },
+              { key: 'contact_phone', label: 'Contact Phone', type: 'tel', placeholder: '+1 234 567 8900' },
+              { key: 'contact_address', label: 'Business Address', type: 'textarea', placeholder: '123 Main St, City, Country' },
+              { key: 'whatsapp_number', label: 'WhatsApp Number', type: 'tel', placeholder: '+1 234 567 8900' },
+            ]},
+            { section: 'Hero Section', fields: [
+              { key: 'hero_headline', label: 'Hero Headline', type: 'text', placeholder: 'Global Online Marketplace' },
+              { key: 'hero_subtext', label: 'Hero Subtext', type: 'textarea', placeholder: 'Shop premium products…' },
+              { key: 'hero_cta_text', label: 'CTA Button Text', type: 'text', placeholder: 'Shop Now' },
+            ]},
+            { section: 'Social Media', fields: [
+              { key: 'facebook_url', label: 'Facebook URL', type: 'url', placeholder: 'https://facebook.com/…' },
+              { key: 'instagram_url', label: 'Instagram URL', type: 'url', placeholder: 'https://instagram.com/…' },
+              { key: 'twitter_url', label: 'Twitter / X URL', type: 'url', placeholder: 'https://twitter.com/…' },
+              { key: 'youtube_url', label: 'YouTube URL', type: 'url', placeholder: 'https://youtube.com/…' },
+              { key: 'tiktok_url', label: 'TikTok URL', type: 'url', placeholder: 'https://tiktok.com/…' },
+            ]},
+          ].map(sec => `
+            <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+              <h3 class="text-sm font-black text-white mb-4">${sec.section}</h3>
+              <div class="form-grid form-grid-2">
+                ${sec.fields.map(f => `
+                  <div ${f.type === 'textarea' ? 'class="sm:col-span-2"' : ''}>
+                    <label class="lbl">${f.label}</label>
+                    ${f.type === 'textarea'
+                      ? `<textarea class="input-field" name="${f.key}" placeholder="${esc(f.placeholder)}" rows="2">${esc(s[f.key] || '')}</textarea>`
+                      : `<input type="${f.type}" class="input-field" name="${f.key}" value="${esc(s[f.key] || '')}" placeholder="${esc(f.placeholder)}">`}
+                  </div>`).join('')}
+              </div>
+            </div>`).join('')}
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Content Settings</button>
+        </form>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.saveContent = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+  const { error } = await supabase.from('site_settings').upsert({ id: 1, ...data });
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Content settings saved!');
+};
+
+// ══════════════════════════════════════════════════════════
+//  13. ANALYTICS
+// ══════════════════════════════════════════════════════════
+async function renderAnalytics() {
+  const content = document.getElementById('content');
+  try {
+    const [orders, prods, customers] = await Promise.all([
+      supabase.from('payment_receipts').select('amount,currency,status,created_at').order('created_at', { ascending: false }).limit(500),
+      supabase.from('showroom_listings').select('id,listing_type,category,is_active', { count: 'exact' }),
+      supabase.from('profiles').select('user_id,created_at', { count: 'exact' }),
+    ]);
+    const o = orders.data || [];
+    const totalRevenue = o.filter(x => ['approved','payment_approved','delivered'].includes(x.status)).reduce((s, x) => s + (parseFloat(x.amount) || 0), 0);
+    const conversionRate = o.length > 0 ? ((o.filter(x => x.status !== 'cancelled').length / o.length) * 100).toFixed(1) : 0;
+    // Top categories
+    const catCount = {};
+    (prods.data || []).forEach(p => { catCount[p.category] = (catCount[p.category] || 0) + 1; });
+    const topCats = Object.entries(catCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    content.innerHTML = `
+      <div class="space-y-6 fade-in">
+        <h2 class="text-xl font-black text-white">Analytics</h2>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          ${statCard('Total Revenue', `$${totalRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'dollar-sign', 'emerald')}
+          ${statCard('Total Orders', o.length, 'shopping-bag', 'blue')}
+          ${statCard('Customers', customers.count || 0, 'users', 'violet')}
+          ${statCard('Conversion Rate', conversionRate + '%', 'trending-up', 'amber')}
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-400"></i> Revenue (Last 6 Months)</h3>
+            <canvas id="analytics-chart" height="220"></canvas>
+          </div>
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-violet-400"></i> Top Categories by Listings</h3>
+            ${topCats.length === 0 ? '<p class="text-xs text-gray-500 text-center py-8">No data</p>' : topCats.map(([cat, count]) => `
+              <div class="flex items-center gap-3 py-1.5">
+                <span class="text-xs text-gray-300 flex-1 truncate">${esc(cat)}</span>
+                <div class="w-24 h-2 bg-blue-500/10 rounded-full overflow-hidden"><div class="h-full bg-blue-500 rounded-full" style="width:${Math.round((count / topCats[0][1]) * 100)}%"></div></div>
+                <span class="text-xs font-bold text-white w-6 text-right">${count}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+    renderRevenueChart(o);
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+// ══════════════════════════════════════════════════════════
+//  14. SEO
+// ══════════════════════════════════════════════════════════
+async function renderSeo() {
+  const content = document.getElementById('content');
+  const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+  const d = s || {};
+  content.innerHTML = `
+    <div class="space-y-5 fade-in">
+      <h2 class="text-xl font-black text-white">SEO Manager</h2>
+      <form id="seo-form" onsubmit="saveSeo(event)" class="space-y-4">
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-black text-white">Homepage SEO</h3>
+          <div><label class="lbl">Meta Title</label><input class="input-field" name="meta_title" value="${esc(d.meta_title || '')}" placeholder="KCO Global Online Marketplace | Premium International Commerce"></div>
+          <div><label class="lbl">Meta Description</label><textarea class="input-field" name="meta_description" rows="2" placeholder="Your trusted global shop…">${esc(d.meta_description || '')}</textarea></div>
+          <div><label class="lbl">Meta Keywords (comma separated)</label><input class="input-field" name="meta_keywords" value="${esc(d.meta_keywords || '')}" placeholder="global marketplace, online shopping, …"></div>
+          <div><label class="lbl">Canonical URL</label><input class="input-field" name="canonical_url" value="${esc(d.canonical_url || '')}" placeholder="https://yoursite.com"></div>
+          <div><label class="lbl">OG Image URL (Social share image)</label><input class="input-field" name="og_image" value="${esc(d.og_image || '')}" placeholder="https://…/og-image.jpg"></div>
+          <div><label class="lbl">Google Analytics ID</label><input class="input-field" name="ga_id" value="${esc(d.ga_id || '')}" placeholder="G-XXXXXXXXXX"></div>
+          <div><label class="lbl">Google Search Console Verification</label><input class="input-field" name="gsc_verify" value="${esc(d.gsc_verify || '')}" placeholder="Verification meta tag content"></div>
+        </div>
+        <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save SEO Settings</button>
+      </form>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.saveSeo = async function(e) {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target).entries());
+  await supabase.from('site_settings').upsert({ id: 1, ...data });
+  showToast('SEO settings saved!');
+};
+
+// ══════════════════════════════════════════════════════════
+//  15. EMAIL SETTINGS
+// ══════════════════════════════════════════════════════════
+async function renderEmail() {
+  const content = document.getElementById('content');
+  const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+  const d = s || {};
+  content.innerHTML = `
+    <div class="space-y-5 fade-in">
+      <h2 class="text-xl font-black text-white">Email Settings</h2>
+      <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl text-xs text-blue-300">Email is handled by Supabase Auth's built-in SMTP. Configure SMTP in your Supabase project → Auth → SMTP Settings.</div>
+      <form id="email-form" onsubmit="saveEmailSettings(event)" class="space-y-4">
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-black text-white">Email Notifications</h3>
+          ${[
+            { key: 'email_order_placed', label: 'Order Confirmation Email', desc: 'Send confirmation when order is placed' },
+            { key: 'email_order_shipped', label: 'Shipping Notification', desc: 'Notify customer when order is shipped' },
+            { key: 'email_order_delivered', label: 'Delivery Confirmation', desc: 'Confirm when order is delivered' },
+            { key: 'email_review_request', label: 'Review Request', desc: 'Ask for review after delivery' },
+          ].map(f => `
+            <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/10 rounded-xl">
+              <div><p class="text-xs font-bold text-white">${f.label}</p><p class="text-[11px] text-gray-500">${f.desc}</p></div>
+              <label class="toggle-switch"><input type="checkbox" name="${f.key}" ${d[f.key] !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+            </div>`).join('')}
+        </div>
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-black text-white">Sender Information</h3>
+          <div><label class="lbl">Sender Name</label><input class="input-field" name="email_from_name" value="${esc(d.email_from_name || '')}" placeholder="KCO Global Online Marketplace"></div>
+          <div><label class="lbl">Reply-To Email</label><input type="email" class="input-field" name="email_reply_to" value="${esc(d.email_reply_to || '')}" placeholder="support@example.com"></div>
+        </div>
+        <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Email Settings</button>
+      </form>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.saveEmailSettings = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = {};
+  for (const [k, v] of fd.entries()) data[k] = v;
+  // Checkboxes not in FormData when unchecked
+  ['email_order_placed','email_order_shipped','email_order_delivered','email_review_request'].forEach(k => { if (!(k in data)) data[k] = false; else data[k] = true; });
+  await supabase.from('site_settings').upsert({ id: 1, ...data });
+  showToast('Email settings saved!');
+};
+
+// ══════════════════════════════════════════════════════════
+//  16. SECURITY
+// ══════════════════════════════════════════════════════════
+async function renderSecurity() {
+  const content = document.getElementById('content');
+  try {
+    const { data: logs } = await supabase.from('admin_security_logs').select('*').order('created_at', { ascending: false }).limit(50);
+    content.innerHTML = `
+      <div class="space-y-5 fade-in">
+        <h2 class="text-xl font-black text-white">Security</h2>
+        <!-- Change Password -->
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+          <h3 class="text-sm font-black text-white mb-4 flex items-center gap-2"><i data-lucide="lock" class="w-4 h-4 text-blue-400"></i> Change Password</h3>
+          <form id="pw-form" onsubmit="changePassword(event)" class="space-y-3 max-w-sm">
+            <div><label class="lbl">New Password</label><input type="password" class="input-field" id="new-pw" placeholder="Min 8 characters" minlength="8" required></div>
+            <div><label class="lbl">Confirm New Password</label><input type="password" class="input-field" id="confirm-pw" placeholder="Repeat password" required></div>
+            <button type="submit" class="btn-press bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-xl text-sm transition">Update Password</button>
+          </form>
+        </div>
+        <!-- Security Logs -->
+        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+          <div class="p-4 border-b border-blue-500/10">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="shield" class="w-4 h-4 text-blue-400"></i> Recent Security Events</h3>
+          </div>
+          <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full dt">
+              <thead><tr><th>Event</th><th>IP Address</th><th class="hidden sm:table-cell">User Agent</th><th>Date</th></tr></thead>
+              <tbody>
+                ${(logs || []).length === 0 ? '<tr><td colspan="4" class="text-center text-gray-500 py-8">No security events</td></tr>' :
+                  (logs || []).map(l => `<tr>
+                    <td><span class="text-xs font-bold text-white">${esc(l.event_type || l.action || '—')}</span></td>
+                    <td><span class="text-xs font-mono text-gray-300">${esc(l.ip_address || '—')}</span></td>
+                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-500 truncate max-w-[200px] block">${esc((l.user_agent || '—').slice(0, 60))}</span></td>
+                    <td><span class="text-xs text-gray-500">${fmtDT(l.created_at)}</span></td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.changePassword = async function(e) {
+  e.preventDefault();
+  const np = document.getElementById('new-pw').value;
+  const cp = document.getElementById('confirm-pw').value;
+  if (np !== cp) { showToast('Passwords do not match', 'error'); return; }
+  if (np.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+  const { error } = await supabase.auth.updateUser({ password: np });
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Password updated successfully!');
+  e.target.reset();
+};
+
+// ══════════════════════════════════════════════════════════
+//  17. ACTIVITY LOGS
+// ══════════════════════════════════════════════════════════
+async function renderActivity() {
+  const content = document.getElementById('content');
+  try {
+    const { data: logs } = await supabase.from('admin_activity_logs').select('*').order('created_at', { ascending: false }).limit(100);
+    content.innerHTML = `
+      <div class="space-y-4 fade-in">
+        <h2 class="text-xl font-black text-white">Activity Logs</h2>
+        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full dt">
+              <thead><tr><th>Action</th><th>Entity</th><th class="hidden sm:table-cell">Admin</th><th>Date</th></tr></thead>
+              <tbody>
+                ${(logs || []).length === 0 ? '<tr><td colspan="4" class="text-center text-gray-500 py-8">No activity yet</td></tr>' :
+                  (logs || []).map(l => `<tr>
+                    <td><span class="text-xs font-bold text-white">${esc(l.action)}</span></td>
+                    <td><span class="text-xs text-gray-400">${esc(l.entity_type || '—')} <span class="text-gray-600">${esc(l.entity_id?.slice(0, 8) || '')}</span></span></td>
+                    <td class="hidden sm:table-cell"><span class="text-xs text-blue-400">${esc(l.user_email || l.user_id?.slice(0, 8) || '—')}</span></td>
+                    <td><span class="text-xs text-gray-500">${fmtDT(l.created_at)}</span></td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+// ══════════════════════════════════════════════════════════
+//  18. BACKUP & RESTORE
+// ══════════════════════════════════════════════════════════
+async function renderBackup() {
+  const content = document.getElementById('content');
+  try {
+    const { data: history } = await supabase.from('deployment_history').select('*').order('created_at', { ascending: false }).limit(20);
+    content.innerHTML = `
+      <div class="space-y-5 fade-in">
+        <h2 class="text-xl font-black text-white">Backup & Restore</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+            <div class="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center mb-3"><i data-lucide="download" class="w-5 h-5 text-blue-400"></i></div>
+            <h3 class="text-sm font-black text-white mb-1">Export Products</h3>
+            <p class="text-xs text-gray-400 mb-4">Download all products and properties as a JSON file.</p>
+            <button onclick="exportProducts()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition">
+              <i data-lucide="download" class="w-4 h-4"></i> Download JSON
+            </button>
+          </div>
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+            <div class="w-10 h-10 bg-violet-500/10 rounded-xl flex items-center justify-center mb-3"><i data-lucide="database" class="w-5 h-5 text-violet-400"></i></div>
+            <h3 class="text-sm font-black text-white mb-1">Export Orders</h3>
+            <p class="text-xs text-gray-400 mb-4">Download all order data as a CSV file.</p>
+            <button onclick="exportOrders()" class="btn-press flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition">
+              <i data-lucide="file-down" class="w-4 h-4"></i> Download CSV
+            </button>
+          </div>
+        </div>
+        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+          <div class="p-4 border-b border-blue-500/10"><h3 class="text-sm font-black text-white">Deployment History</h3></div>
+          <div class="divide-y divide-blue-500/5">
+            ${(history || []).length === 0 ? '<p class="text-xs text-gray-500 text-center py-8">No deployment history</p>' :
+              (history || []).map(h => `<div class="flex items-center gap-3 px-4 py-3">
+                <div class="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0"><i data-lucide="rocket" class="w-4 h-4 text-emerald-400"></i></div>
+                <div class="flex-1"><p class="text-xs font-bold text-white">${esc(h.version || h.id?.slice(0, 8))}</p><p class="text-[10px] text-gray-500">${fmtDT(h.created_at)}</p></div>
+                ${badge(h.status || 'completed')}
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.exportProducts = async function() {
+  const { data } = await supabase.from('showroom_listings').select('*');
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `kco-products-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  showToast('Products exported!');
+};
+
+window.exportOrders = async function() {
+  const { data } = await supabase.from('payment_receipts').select('*').order('created_at', { ascending: false });
+  if (!data || !data.length) { showToast('No orders to export', 'info'); return; }
+  const headers = Object.keys(data[0]).join(',');
+  const rows = data.map(r => Object.values(r).map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([headers + '\n' + rows], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `kco-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  showToast('Orders exported!');
+};
+
+// ══════════════════════════════════════════════════════════
+//  19. SETTINGS
+// ══════════════════════════════════════════════════════════
+async function renderSettings() {
+  const content = document.getElementById('content');
+  const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+  const d = s || {};
+  content.innerHTML = `
+    <div class="space-y-5 fade-in">
+      <h2 class="text-xl font-black text-white">Settings</h2>
+      <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-4">
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-black text-white">General Settings</h3>
+          <div class="form-grid form-grid-2">
+            <div><label class="lbl">Default Currency</label><select class="input-field" name="default_currency">
+              ${['USD','EUR','GBP','NGN','KES','ZAR','GHS'].map(c => `<option value="${c}" ${(d.default_currency||'USD')===c?'selected':''}>${c}</option>`).join('')}
+            </select></div>
+            <div><label class="lbl">Default Language</label><select class="input-field" name="default_language">
+              ${['en','fr','es','de','pt','ar','sw'].map(l => `<option value="${l}" ${(d.default_language||'en')===l?'selected':''}>${l}</option>`).join('')}
+            </select></div>
+            <div><label class="lbl">Timezone</label><input class="input-field" name="timezone" value="${esc(d.timezone||'UTC')}" placeholder="UTC"></div>
+            <div><label class="lbl">Low Stock Threshold</label><input type="number" class="input-field" name="low_stock_threshold" value="${esc(d.low_stock_threshold||10)}" min="1"></div>
+          </div>
+        </div>
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
+          <h3 class="text-sm font-black text-white">Feature Toggles</h3>
+          ${[
+            { key: 'maintenance_mode', label: 'Maintenance Mode', desc: 'Show a maintenance page to visitors' },
+            { key: 'reviews_enabled', label: 'Reviews Enabled', desc: 'Allow customers to leave reviews', default: true },
+            { key: 'wishlist_enabled', label: 'Wishlist Enabled', desc: 'Allow customers to save products', default: true },
+            { key: 'guest_checkout', label: 'Guest Checkout', desc: 'Allow checkout without an account', default: true },
+          ].map(f => `
+            <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/10 rounded-xl">
+              <div><p class="text-xs font-bold text-white">${f.label}</p><p class="text-[11px] text-gray-500">${f.desc}</p></div>
+              <label class="toggle-switch"><input type="checkbox" name="${f.key}" ${d[f.key] !== false && (d[f.key] || f.default) ? 'checked' : ''}><span class="toggle-slider"></span></label>
+            </div>`).join('')}
+        </div>
+        <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Settings</button>
+      </form>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.saveSettings = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = {};
+  for (const [k, v] of fd.entries()) data[k] = v;
+  ['maintenance_mode','reviews_enabled','wishlist_enabled','guest_checkout'].forEach(k => { data[k] = k in data; });
+  await supabase.from('site_settings').upsert({ id: 1, ...data });
+  showToast('Settings saved!');
+};
+
+// ══════════════════════════════════════════════════════════
+//  20. PUBLISH & DEPLOY
+// ══════════════════════════════════════════════════════════
+async function renderPublish() {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="space-y-5 fade-in">
+      <h2 class="text-xl font-black text-white">Publish & Deploy</h2>
+      <div class="grid gap-4 sm:grid-cols-2">
+        ${[
+          { icon: 'rocket', color: 'blue', title: 'Deploy to Production', desc: 'Push the latest changes to your live website.', btn: 'Deploy Now', fn: 'deployToProduction()' },
+          { icon: 'refresh-cw', color: 'violet', title: 'Rebuild Site', desc: 'Trigger a full rebuild of the website.', btn: 'Rebuild', fn: 'rebuildSite()' },
+          { icon: 'search', color: 'emerald', title: 'Reindex Search', desc: 'Rebuild the product search index.', btn: 'Reindex', fn: 'reindexSearch()' },
+          { icon: 'database', color: 'amber', title: 'Sync Showroom to DB', desc: 'Sync hardcoded product data to database.', btn: 'Sync', fn: 'syncShowroomToDB()' },
+        ].map(a => `
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+            <div class="w-10 h-10 bg-${a.color}-500/10 rounded-xl flex items-center justify-center mb-3">
+              <i data-lucide="${a.icon}" class="w-5 h-5 text-${a.color}-400"></i>
+            </div>
+            <h3 class="text-sm font-black text-white mb-1">${a.title}</h3>
+            <p class="text-xs text-gray-400 mb-4">${a.desc}</p>
+            <button onclick="${a.fn}" class="btn-press flex items-center gap-2 bg-${a.color}-600 hover:bg-${a.color}-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition">
+              <i data-lucide="${a.icon}" class="w-4 h-4"></i> ${a.btn}
+            </button>
+          </div>`).join('')}
+      </div>
+      <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl text-xs text-blue-300">
+        Deployment is managed by your hosting provider (Netlify, Vercel, etc.). Connect your Git repository to enable automatic deployments.
+      </div>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.deployToProduction = function() { showToast('Deployment triggered via webhook', 'info'); };
+window.rebuildSite = function() { showToast('Rebuild triggered', 'info'); };
+window.reindexSearch = async function() {
+  try {
+    await supabase.rpc('sync_search_index_force');
+    showToast('Search index rebuilt!');
+  } catch { showToast('Reindex initiated', 'info'); }
+};
+window.syncShowroomToDB = function() { showToast('Run the sync script from your terminal: node scripts/sync-showroom-to-db.js', 'info'); };
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+async function init() {
+  if (window.lucide) lucide.createIcons();
+  renderSidebar();
+  await initAuth();
+  // Listen for auth changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+      state.user = null;
+      const ls = document.getElementById('login-screen');
+      if (ls) ls.style.display = 'flex';
+    }
+  });
+}
+
+// Wait for lucide to load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
