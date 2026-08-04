@@ -1,0 +1,196 @@
+// brand.js — Auto-applies brand settings (name, logo, slogan, badge)
+// to every page without touching HTML. Loads from Supabase, caches locally.
+
+import { supabase } from './supabase-client.js';
+
+// Single source of truth for the verified badge — change here to update everywhere
+export const DEFAULT_BADGE = '/verified-badge.svg';
+
+const CACHE_KEY = 'weverse_brand_v1';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// ── Load brand from DB (with localStorage cache) ──────────
+async function loadBrand() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+    if (cached.ts && Date.now() - cached.ts < CACHE_TTL && cached.data) {
+      return cached.data;
+    }
+  } catch {}
+  try {
+    const { data } = await supabase.from('site_settings').select(
+      'brand_name,brand_slogan,brand_logo,brand_badge,brand_favicon,' +
+      'brand_mobile_logo,brand_header_logo,brand_footer_logo,' +
+      'brand_primary_color,brand_secondary_color,brand_font,brand_custom_font,' +
+      'brand_website_url,brand_email,site_name,site_tagline'
+    ).limit(1).maybeSingle();
+    const brand = data || {};
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: brand }));
+    return brand;
+  } catch {
+    return {};
+  }
+}
+
+// ── Apply brand to the current page ───────────────────────
+function applyBrand(b) {
+  if (!b) return;
+
+  const name    = b.brand_name    || b.site_name    || 'Weverse Online Shop';
+  const slogan  = b.brand_slogan  || b.site_tagline || 'Shop Globally, Delivered Worldwide';
+  const logo    = b.brand_logo    || b.brand_header_logo || '';
+  const badge   = b.brand_badge   || DEFAULT_BADGE;   // always show badge — custom or default
+  const favicon = b.brand_favicon || '';
+  const font    = b.brand_custom_font || b.brand_font || '';
+  const primary = b.brand_primary_color || '';
+  const secondary = b.brand_secondary_color || '';
+
+  // ── 1. Page title (prepend brand name) ──────────────────
+  if (name && document.title && !document.title.startsWith(name)) {
+    document.title = document.title.replace(/^[^|]+\|/, name + ' |').replace(/^[^–]+–/, name + ' – ');
+  }
+
+  // ── 2. Favicon ───────────────────────────────────────────
+  if (favicon) {
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.href = favicon;
+  }
+
+  // ── 3. CSS Variables (colors + font) ────────────────────
+  if (primary || secondary || font) {
+    const fontName = font ? `'${font}'` : null;
+    const style = document.getElementById('brand-css-vars') || (() => {
+      const s = document.createElement('style'); s.id = 'brand-css-vars'; document.head.appendChild(s); return s;
+    })();
+    style.textContent = `:root {
+      ${primary   ? `--brand-primary: ${primary};` : ''}
+      ${secondary ? `--brand-secondary: ${secondary};` : ''}
+      ${fontName  ? `--brand-font: ${fontName}, system-ui, sans-serif;` : ''}
+    }`;
+    if (font) {
+      const gfId = 'brand-gf-link';
+      if (!document.getElementById(gfId)) {
+        const l = document.createElement('link');
+        l.id = gfId; l.rel = 'stylesheet';
+        l.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}:wght@400;600;700;900&display=swap`;
+        document.head.appendChild(l);
+      }
+    }
+  }
+
+  // ── 4. Explicit data-brand attributes ────────────────────
+  document.querySelectorAll('[data-brand]').forEach(el => {
+    const role = el.dataset.brand;
+    if (role === 'name')    { el.textContent = name; }
+    if (role === 'slogan')  { el.textContent = slogan; }
+    if (role === 'logo')    { if (logo) { el.src = logo; el.alt = name; el.style.display = ''; } else { el.style.display = 'none'; } }
+    if (role === 'badge')   { if (badge) { el.src = badge; el.alt = 'Verified'; el.style.display = ''; } else if (el.tagName === 'IMG') { el.style.display = 'none'; } }
+    if (role === 'tagline') { el.textContent = slogan; }
+    if (role === 'footer-logo') { if (b.brand_footer_logo) { el.src = b.brand_footer_logo; el.alt = name; } else if (logo) { el.src = logo; el.alt = name; } }
+    if (role === 'mobile-logo') { if (b.brand_mobile_logo) { el.src = b.brand_mobile_logo; el.alt = name; } else if (logo) { el.src = logo; el.alt = name; } }
+  });
+
+  // ── 5. Smart header injection (works on ALL pages) ───────
+  injectHeaderBrand(name, slogan, logo, badge, primary);
+
+  // ── 6. Footer brand ──────────────────────────────────────
+  injectFooterBrand(name, slogan, logo);
+}
+
+function injectHeaderBrand(name, slogan, logo, badge, primary) {
+  // Find the brand name spans in headers (existing markup)
+  // Try common patterns: the hardcoded text nodes or spans holding the brand name
+  const headerLinks = document.querySelectorAll('header a[href="/"], header a[href="./"], header a[href="index.html"], .brand-link, #brand-link');
+  headerLinks.forEach(link => {
+    // Update any text node that has the old brand name
+    updateTextNodes(link, name, slogan);
+    // If link has a brand logo img, update it
+    link.querySelectorAll('img.brand-logo, img[data-brand="logo"]').forEach(img => {
+      if (logo) { img.src = logo; img.alt = name; }
+    });
+  });
+
+  // Update specific span patterns we know exist in our HTML
+  // Brand name span (large text in header)
+  document.querySelectorAll('header span').forEach(span => {
+    const t = span.textContent.trim();
+    if (t === 'Weverse Online Shop' || t === 'KCO Global Online Marketplace' || span.classList.contains('brand-name')) {
+      span.textContent = name;
+    }
+    if (t === 'Your Trusted Global Shop' || t.includes('Globally') || t.includes('Worldwide') || span.classList.contains('brand-slogan')) {
+      span.textContent = slogan;
+    }
+  });
+
+  // Handle the verified badge area — add real badge image if set
+  if (badge) {
+    document.querySelectorAll('[data-brand="badge"], .brand-badge, #brand-badge').forEach(el => {
+      if (el.tagName === 'IMG') { el.src = badge; el.alt = 'Verified'; el.style.display = ''; }
+    });
+    // Also find existing "Verified" badge spans and optionally add the image next to them
+    document.querySelectorAll('span').forEach(span => {
+      if (span.textContent.includes('Verified') && !span.querySelector('img.brand-badge-img')) {
+        const img = document.createElement('img');
+        img.src = badge; img.alt = 'Verified'; img.className = 'brand-badge-img w-4 h-4 inline-block ml-1';
+        img.onerror = () => img.remove();
+        span.appendChild(img);
+      }
+    });
+  }
+
+  // Replace the orange gradient icon block with logo image if logo is set
+  if (logo) {
+    document.querySelectorAll('header a[href="/"] .relative.shrink-0, header a .relative.w-7').forEach(iconWrap => {
+      if (!iconWrap.querySelector('img.injected-logo')) {
+        const img = document.createElement('img');
+        img.src = logo; img.alt = name;
+        img.className = 'injected-logo w-8 h-8 sm:w-9 sm:h-9 object-contain rounded-lg';
+        img.onerror = () => img.style.display = 'none';
+        iconWrap.style.display = 'flex';
+        iconWrap.style.alignItems = 'center';
+        iconWrap.innerHTML = '';
+        iconWrap.appendChild(img);
+      }
+    });
+  }
+}
+
+function injectFooterBrand(name, slogan, logo) {
+  document.querySelectorAll('footer').forEach(footer => {
+    // Replace brand name text nodes in footer
+    updateTextNodes(footer, name, slogan);
+    // Update footer logo images
+    footer.querySelectorAll('img.brand-logo, img[data-brand], .footer-logo img').forEach(img => {
+      if (logo) { img.src = logo; img.alt = name; }
+    });
+  });
+}
+
+function updateTextNodes(root, name, slogan) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodesToUpdate = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    const t = node.textContent.trim();
+    if (t === 'Weverse Online Shop' || t === 'KCO Global Online Marketplace') nodesToUpdate.push({ node, value: name });
+    if (t === 'Your Trusted Global Shop' || t === 'Shop Globally, Delivered Worldwide') nodesToUpdate.push({ node, value: slogan });
+  }
+  nodesToUpdate.forEach(({ node: n, value: v }) => { n.textContent = n.textContent.replace(n.textContent.trim(), v); });
+}
+
+// ── Public API: force reload from DB (called by admin after save) ──
+export function clearBrandCache() {
+  localStorage.removeItem(CACHE_KEY);
+}
+
+export function refreshBrand() {
+  localStorage.removeItem(CACHE_KEY);
+  return loadBrand().then(applyBrand);
+}
+
+// ── Auto-run ────────────────────────────────────────────────
+loadBrand().then(applyBrand);
+
+// Re-apply after dynamic content loads (for SPAs)
+window.addEventListener('load', () => loadBrand().then(applyBrand));

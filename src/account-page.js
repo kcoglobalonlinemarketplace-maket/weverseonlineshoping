@@ -1341,7 +1341,7 @@ function renderSupport() {
       <div class="space-y-4">
         <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
           <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-3"><i data-lucide="mail" class="w-4 h-4 text-blue-400"></i> Email Us</h3>
-          <a href="mailto:support@kcoglobalonlinemarket.com" class="text-sm text-blue-400 hover:text-blue-300 transition">support@kcoglobalonlinemarket.com</a>
+          <a href="mailto:support@weverseonlineshop.com" class="text-sm text-blue-400 hover:text-blue-300 transition">support@weverseonlineshop.com</a>
         </div>
         <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
           <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-3"><i data-lucide="clock" class="w-4 h-4 text-amber-400"></i> Support Hours</h3>
@@ -1371,7 +1371,7 @@ function renderHelp() {
     { q: 'How do I download my receipt?', a: 'Go to Download Receipts in your dashboard. Click the Download button next to any order with a receipt on file.' },
     { q: 'How do I update my email preferences?', a: 'Go to Email Preferences in your dashboard to toggle which notification emails you receive.' },
     { q: 'Is my account secure?', a: 'Yes. Your account is protected with SSL encryption and secure authentication. We never share your personal information.' },
-    { q: 'How do I contact support?', a: 'Use the Customer Support section in your dashboard to send a message, or email us at support@kcoglobalonlinemarket.com.' },
+    { q: 'How do I contact support?', a: 'Use the Customer Support section in your dashboard to send a message, or email us at support@weverseonlineshop.com.' },
   ];
   return `
     ${pageTitle('Help Center', 'Frequently asked questions and guides.')}
@@ -1692,7 +1692,7 @@ window.copyToClipboard = copyToClipboard;
 window.contactSupport = (orderNumber) => {
   const subject = encodeURIComponent(`Order ${orderNumber} — Support Request`);
   const body = encodeURIComponent(`Hello KCO Global Online Marketplace Support,\n\nI need assistance with my order ${orderNumber}.\n\nThank you.`);
-  window.location.href = `mailto:support@kcoglobalonlinemarket.com?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:support@weverseonlineshop.com?subject=${subject}&body=${body}`;
 };
 
 init();

@@ -276,14 +276,27 @@ async function getClientIP() {
   } catch { return 'unknown'; }
 }
 
-// ── Admin access check ────────────────────────────────────
+// ── Admin access check — tries 3 ways, most to least reliable ─
 async function checkAdminAccess(user) {
   if (!user) return false;
+
+  // 1. Email always grants access (most reliable for single-owner shops)
+  if (user.email === ADMIN_EMAIL) return true;
+
+  // 2. Check profiles.is_admin column
+  try {
+    const { data: profile } = await supabase
+      .from('profiles').select('is_admin').eq('user_id', user.id).maybeSingle();
+    if (profile?.is_admin === true) return true;
+  } catch {}
+
+  // 3. Try the RPC as last resort
   try {
     const { data } = await supabase.rpc('is_current_user_admin');
     if (data) return true;
   } catch {}
-  return user.email === ADMIN_EMAIL;
+
+  return false;
 }
 
 // ── Init auth (called on page load) ──────────────────────
@@ -392,7 +405,7 @@ async function handleLoginSubmit(e) {
   const ok = await checkAdminAccess(data.user);
   if (!ok) {
     await supabase.auth.signOut();
-    loginError('Access denied. Administrator privileges required.');
+    loginError(`Access denied for ${data.user.email}. Run this SQL in Supabase → SQL Editor:\n\nINSERT INTO profiles (user_id, is_admin, country_code)\nVALUES ('${data.user.id}', true, 'US')\nON CONFLICT (user_id) DO UPDATE SET is_admin = true;`);
     setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
     await logLoginEvent(data.user.id, 'login_denied', { metadata: { reason: 'not_admin' } });
     return;
@@ -3262,7 +3275,7 @@ window.saveSettings = async function(e) {
 };
 
 // ══════════════════════════════════════════════════════════
-//  BRAND MANAGER
+//  BRAND MANAGER  (name · slogan · logo · verified badge · live preview)
 // ══════════════════════════════════════════════════════════
 async function renderBrandManager() {
   const content = document.getElementById('content');
@@ -3271,188 +3284,254 @@ async function renderBrandManager() {
     const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
     const d = s || {};
 
-    // Helper: render an image upload slot
-    function imgSlot(label, fieldName, currentUrl, hint = '') {
+    function imgSlot(label, fieldName, currentUrl, hint = '', accent = 'blue') {
       const hasImg = !!(currentUrl && currentUrl.trim());
       return `
-        <div class="glass-soft border border-blue-500/10 rounded-xl p-4 space-y-3">
+        <div class="glass-soft border border-${accent}-500/15 rounded-xl p-4 space-y-3">
           <div class="flex items-center justify-between">
             <p class="text-xs font-black text-white">${esc(label)}</p>
             ${hasImg ? `<span class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">✓ Uploaded</span>` : `<span class="text-[9px] text-gray-600">Empty</span>`}
           </div>
-          ${hasImg ? `<div class="relative group w-full h-24 rounded-xl overflow-hidden bg-gray-900 border border-blue-500/10 flex items-center justify-center">
-            <img src="${esc(currentUrl)}" alt="${esc(label)}" class="max-h-20 max-w-full object-contain p-2" onerror="this.closest('div').innerHTML='<p class=&quot;text-xs text-gray-600&quot;>Image broken</p>'">
-            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-              <button type="button" onclick="triggerImgUpload('${fieldName}')" class="text-xs font-bold text-white bg-blue-600 px-3 py-1 rounded-lg">Replace</button>
-              <button type="button" onclick="clearBrandImg('${fieldName}')" class="text-xs font-bold text-white bg-red-600 px-3 py-1 rounded-lg">Remove</button>
-            </div>
-          </div>` : `<div class="w-full h-24 rounded-xl border-2 border-dashed border-blue-500/20 hover:border-blue-500/40 flex flex-col items-center justify-center gap-2 cursor-pointer transition" onclick="triggerImgUpload('${fieldName}')">
-            <i data-lucide="image-plus" class="w-7 h-7 text-blue-400"></i>
-            <p class="text-[11px] text-gray-500">Click to upload</p>
-          </div>`}
-          ${hint ? `<p class="text-[10px] text-gray-600">${esc(hint)}</p>` : ''}
+          ${hasImg
+            ? `<div class="relative group w-full h-24 rounded-xl overflow-hidden bg-gray-900 border border-blue-500/10 flex items-center justify-center">
+                <img src="${esc(currentUrl)}" alt="${esc(label)}" class="max-h-20 max-w-full object-contain p-2" onerror="this.closest('div').innerHTML='<p class=&quot;text-xs text-gray-600 text-center&quot;>Image broken</p>'">
+                <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                  <button type="button" onclick="triggerImgUpload('${fieldName}')" class="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg">Replace</button>
+                  <button type="button" onclick="clearBrandImg('${fieldName}')" class="text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg">Remove</button>
+                </div>
+               </div>`
+            : `<div class="w-full h-24 rounded-xl border-2 border-dashed border-${accent}-500/25 hover:border-${accent}-500/50 flex flex-col items-center justify-center gap-2 cursor-pointer transition" onclick="triggerImgUpload('${fieldName}')">
+                <i data-lucide="image-plus" class="w-7 h-7 text-${accent}-400"></i>
+                <p class="text-[11px] text-gray-500">Click to upload</p>
+               </div>`}
+          ${hint ? `<p class="text-[10px] text-gray-500">${esc(hint)}</p>` : ''}
           <input type="file" id="file-${fieldName}" class="hidden" accept="image/*" onchange="handleBrandImgUpload(event,'${fieldName}')">
           <input type="hidden" name="${fieldName}" id="val-${fieldName}" value="${esc(currentUrl || '')}">
-          <input class="input-field text-xs mt-1 ${hasImg ? '' : 'hidden'}" id="url-${fieldName}" name="${fieldName}_url" value="${esc(currentUrl || '')}" placeholder="Or paste image URL directly" oninput="document.getElementById('val-${fieldName}').value=this.value">
-          <button type="button" onclick="document.getElementById('url-${fieldName}').classList.toggle('hidden')" class="text-[10px] text-blue-400 hover:text-blue-300 transition">
-            ${hasImg ? 'Edit URL' : 'Paste URL instead'}
-          </button>
+          <div class="flex gap-2">
+            <input class="input-field text-xs flex-1 ${hasImg ? '' : 'hidden'}" id="url-${fieldName}" value="${esc(currentUrl || '')}" placeholder="Or paste image URL" oninput="document.getElementById('val-${fieldName}').value=this.value;updateLivePreview()">
+            <button type="button" onclick="document.getElementById('url-${fieldName}').classList.toggle('hidden')" class="text-[10px] text-${accent}-400 hover:text-${accent}-300 transition shrink-0">${hasImg ? 'Edit URL' : 'Paste URL'}</button>
+          </div>
         </div>`;
     }
 
     content.innerHTML = `
       <div class="space-y-5 fade-in">
         <div class="flex items-center justify-between flex-wrap gap-3">
-          <h2 class="text-xl font-black text-white">Brand Manager</h2>
-          <p class="text-xs text-gray-400">All brand elements in one place</p>
+          <h2 class="text-xl font-black text-white flex items-center gap-2"><i data-lucide="palette" class="w-5 h-5 text-blue-400"></i> Brand Manager</h2>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="toggleLivePreview()" class="btn-press flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i> Live Preview
+            </button>
+          </div>
+        </div>
+
+        <!-- ── LIVE PREVIEW PANEL ── -->
+        <div id="live-preview-panel" class="hidden glass-soft border border-violet-500/20 rounded-2xl p-5 space-y-3">
+          <h3 class="text-xs font-black text-violet-300 uppercase tracking-wider flex items-center gap-2"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Live Preview — updates as you type</h3>
+          <!-- Header preview -->
+          <div class="rounded-xl overflow-hidden border border-blue-500/10">
+            <div id="preview-header" class="flex items-center gap-3 px-4 py-3" style="background:#0f172a">
+              <div id="preview-logo-wrap" class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style="background:var(--preview-primary,#f97316)">
+                <i data-lucide="globe" class="w-4 h-4 text-white"></i>
+              </div>
+              <div>
+                <p id="preview-name" class="text-sm font-black text-white leading-none">${esc(d.brand_name||'Weverse Online Shop')}</p>
+                <p id="preview-slogan" class="text-[10px] text-orange-400 font-semibold mt-0.5">${esc(d.brand_slogan||'Shop Globally, Delivered Worldwide')}</p>
+              </div>
+              <div id="preview-badge-wrap" class="ml-auto ${d.brand_badge ? '' : 'hidden'}">
+                <img id="preview-badge" src="${esc(d.brand_badge||'')}" alt="Verified" class="w-6 h-6 object-contain">
+              </div>
+            </div>
+            <div class="px-4 py-2 border-t border-gray-800 text-[11px] text-gray-500" style="background:#070b16">
+              <span id="preview-btn" style="background:${esc(d.brand_primary_color||'#f97316')};color:#000;padding:4px 12px;border-radius:8px;font-weight:700;font-size:11px">Shop Now</span>
+              <span class="ml-3" style="color:${esc(d.brand_secondary_color||'#3b82f6')}">All Products →</span>
+            </div>
+          </div>
+          <!-- Footer preview -->
+          <div id="preview-footer" class="rounded-xl px-4 py-3 border border-gray-800 flex items-center gap-3" style="background:#0f172a">
+            <div id="preview-footer-logo-wrap" class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style="background:var(--preview-primary,#f97316)">
+              <i data-lucide="globe" class="w-4 h-4 text-white"></i>
+            </div>
+            <div>
+              <p id="preview-footer-name" class="text-xs font-black text-white">${esc(d.brand_name||'Weverse Online Shop')}</p>
+              <p id="preview-footer-slogan" class="text-[10px] text-gray-500">${esc(d.brand_slogan||'Shop Globally, Delivered Worldwide')}</p>
+            </div>
+            <p class="ml-auto text-[10px] text-gray-600">© 2026 <span id="preview-copy-name">${esc(d.brand_name||'Weverse Online Shop')}</span></p>
+          </div>
+          <p class="text-[10px] text-gray-500">This is how your brand will appear on every page. Click Save to apply everywhere.</p>
         </div>
 
         <form id="brand-form" onsubmit="saveBrandSettings(event)" class="space-y-5">
 
           <!-- ── Brand Identity ── -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
-            <h3 class="text-sm font-black text-white flex items-center gap-2">
-              <i data-lucide="type" class="w-4 h-4 text-blue-400"></i> Brand Identity
-            </h3>
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="type" class="w-4 h-4 text-blue-400"></i> Brand Identity</h3>
             <div class="form-grid form-grid-2">
               <div>
                 <label class="lbl">Brand Name *</label>
-                <input class="input-field" name="brand_name" value="${esc(d.brand_name || d.site_name || 'KCO Global Online Marketplace')}" placeholder="Your brand name" required>
+                <input class="input-field" name="brand_name" id="inp-brand-name" value="${esc(d.brand_name||d.site_name||'Weverse Online Shop')}" placeholder="Your brand name" required oninput="updateLivePreview()">
               </div>
               <div>
-                <label class="lbl">Short Name / Abbreviation</label>
-                <input class="input-field" name="brand_short_name" value="${esc(d.brand_short_name || 'KCO')}" placeholder="e.g. KCO, SHOP, MYB">
+                <label class="lbl">Short Name</label>
+                <input class="input-field" name="brand_short_name" value="${esc(d.brand_short_name||'')}" placeholder="e.g. Weverse">
               </div>
               <div class="sm:col-span-2">
-                <label class="lbl">Slogan / Tagline</label>
-                <input class="input-field" name="brand_slogan" value="${esc(d.brand_slogan || d.site_tagline || '')}" placeholder="e.g. Premium International Commerce">
+                <label class="lbl">Slogan / Tagline *</label>
+                <input class="input-field" name="brand_slogan" id="inp-brand-slogan" value="${esc(d.brand_slogan||d.site_tagline||'Shop Globally, Delivered Worldwide')}" placeholder="e.g. Shop Globally, Delivered Worldwide" oninput="updateLivePreview()">
               </div>
               <div class="sm:col-span-2">
-                <label class="lbl">Brand Description (shown on About page & SEO)</label>
-                <textarea class="input-field" name="brand_description" rows="2" placeholder="Short description of your brand…">${esc(d.brand_description || d.site_description || '')}</textarea>
+                <label class="lbl">Brand Description</label>
+                <textarea class="input-field" name="brand_description" rows="2" placeholder="Short description…">${esc(d.brand_description||'')}</textarea>
               </div>
             </div>
           </div>
 
           <!-- ── Brand Colors ── -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
-            <h3 class="text-sm font-black text-white flex items-center gap-2">
-              <i data-lucide="palette" class="w-4 h-4 text-blue-400"></i> Brand Colors
-            </h3>
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="palette" class="w-4 h-4 text-violet-400"></i> Brand Colors</h3>
             <div class="form-grid form-grid-2">
               <div>
-                <label class="lbl">Primary Color</label>
+                <label class="lbl">Primary Color (buttons, accents)</label>
                 <div class="flex gap-2 items-center">
-                  <input type="color" class="w-10 h-10 rounded-lg border border-blue-500/20 bg-transparent cursor-pointer" id="color-primary" value="${esc(d.brand_primary_color || '#f97316')}" oninput="document.getElementById('txt-primary').value=this.value;previewColors()">
-                  <input class="input-field flex-1 font-mono" id="txt-primary" name="brand_primary_color" value="${esc(d.brand_primary_color || '#f97316')}" placeholder="#f97316" oninput="syncColor('primary',this.value)">
-                  <span class="text-[10px] text-gray-500 shrink-0">Buttons, accents</span>
+                  <input type="color" class="w-10 h-10 rounded-xl border border-blue-500/20 bg-transparent cursor-pointer shrink-0" id="cp-primary" value="${esc(d.brand_primary_color||'#f97316')}" oninput="document.getElementById('ct-primary').value=this.value;updateLivePreview()">
+                  <input class="input-field flex-1 font-mono" id="ct-primary" name="brand_primary_color" value="${esc(d.brand_primary_color||'#f97316')}" placeholder="#f97316" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('cp-primary').value=this.value;updateLivePreview()">
                 </div>
               </div>
               <div>
-                <label class="lbl">Secondary Color</label>
+                <label class="lbl">Secondary Color (links, highlights)</label>
                 <div class="flex gap-2 items-center">
-                  <input type="color" class="w-10 h-10 rounded-lg border border-blue-500/20 bg-transparent cursor-pointer" id="color-secondary" value="${esc(d.brand_secondary_color || '#3b82f6')}" oninput="document.getElementById('txt-secondary').value=this.value;previewColors()">
-                  <input class="input-field flex-1 font-mono" id="txt-secondary" name="brand_secondary_color" value="${esc(d.brand_secondary_color || '#3b82f6')}" placeholder="#3b82f6" oninput="syncColor('secondary',this.value)">
-                  <span class="text-[10px] text-gray-500 shrink-0">Links, highlights</span>
+                  <input type="color" class="w-10 h-10 rounded-xl border border-blue-500/20 bg-transparent cursor-pointer shrink-0" id="cp-secondary" value="${esc(d.brand_secondary_color||'#3b82f6')}" oninput="document.getElementById('ct-secondary').value=this.value;updateLivePreview()">
+                  <input class="input-field flex-1 font-mono" id="ct-secondary" name="brand_secondary_color" value="${esc(d.brand_secondary_color||'#3b82f6')}" placeholder="#3b82f6" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('cp-secondary').value=this.value;updateLivePreview()">
                 </div>
               </div>
-              <div>
-                <label class="lbl">Background Color</label>
-                <div class="flex gap-2 items-center">
-                  <input type="color" class="w-10 h-10 rounded-lg border border-blue-500/20 bg-transparent cursor-pointer" id="color-bg" value="${esc(d.brand_bg_color || '#070b16')}" oninput="document.getElementById('txt-bg').value=this.value">
-                  <input class="input-field flex-1 font-mono" id="txt-bg" name="brand_bg_color" value="${esc(d.brand_bg_color || '#070b16')}" placeholder="#070b16">
-                </div>
-              </div>
-              <div>
-                <label class="lbl">Text Color</label>
-                <div class="flex gap-2 items-center">
-                  <input type="color" class="w-10 h-10 rounded-lg border border-blue-500/20 bg-transparent cursor-pointer" id="color-text" value="${esc(d.brand_text_color || '#f1f5f9')}" oninput="document.getElementById('txt-text').value=this.value">
-                  <input class="input-field flex-1 font-mono" id="txt-text" name="brand_text_color" value="${esc(d.brand_text_color || '#f1f5f9')}" placeholder="#f1f5f9">
-                </div>
-              </div>
-            </div>
-            <!-- Color Preview -->
-            <div id="color-preview" class="p-4 rounded-xl border border-blue-500/10 flex flex-wrap items-center gap-3">
-              <div class="w-8 h-8 rounded-lg" style="background:${esc(d.brand_primary_color||'#f97316')}" title="Primary"></div>
-              <div class="w-8 h-8 rounded-lg" style="background:${esc(d.brand_secondary_color||'#3b82f6')}" title="Secondary"></div>
-              <div class="w-8 h-8 rounded-lg border border-gray-700" style="background:${esc(d.brand_bg_color||'#070b16')}" title="Background"></div>
-              <div class="w-8 h-8 rounded-lg border border-gray-700" style="background:${esc(d.brand_text_color||'#f1f5f9')}" title="Text"></div>
-              <button type="button" style="background:${esc(d.brand_primary_color||'#f97316')};color:#000" class="px-4 py-1.5 rounded-lg text-xs font-bold">Shop Now</button>
-              <span style="color:${esc(d.brand_secondary_color||'#3b82f6')}" class="text-xs font-bold underline">Learn More</span>
-              <span class="text-[10px] text-gray-500 ml-auto">Live preview</span>
             </div>
           </div>
 
           <!-- ── Brand Font ── -->
-          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
-            <h3 class="text-sm font-black text-white flex items-center gap-2">
-              <i data-lucide="type" class="w-4 h-4 text-violet-400"></i> Brand Font
-            </h3>
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="type" class="w-4 h-4 text-amber-400"></i> Brand Font</h3>
             <div class="form-grid form-grid-2">
               <div>
-                <label class="lbl">Primary Font</label>
+                <label class="lbl">Font Family</label>
                 <select class="input-field" name="brand_font" id="brand-font-select" onchange="previewFont(this.value)">
-                  ${['Inter','Poppins','Roboto','Montserrat','Nunito','Raleway','Lato','Open Sans','Outfit','Plus Jakarta Sans','DM Sans','Urbanist','Sora','Manrope','Work Sans'].map(f=>`<option value="${f}" ${(d.brand_font||'Inter')===f?'selected':''}>${f}</option>`).join('')}
+                  ${['Inter','Poppins','Roboto','Montserrat','Nunito','Raleway','Lato','Open Sans','Outfit','Plus Jakarta Sans','DM Sans','Urbanist','Sora','Manrope','Work Sans','Space Grotesk'].map(f=>`<option value="${f}" ${(d.brand_font||'Inter')===f?'selected':''}>${f}</option>`).join('')}
                 </select>
               </div>
               <div>
                 <label class="lbl">Custom Google Font (overrides above)</label>
                 <input class="input-field" name="brand_custom_font" value="${esc(d.brand_custom_font||'')}" placeholder="e.g. Space Grotesk">
-                <p class="text-[10px] text-gray-500 mt-1">Any Google Fonts name — <a href="https://fonts.google.com" target="_blank" class="text-blue-400 hover:underline">fonts.google.com</a></p>
               </div>
             </div>
             <div id="font-preview" class="p-3 rounded-xl bg-gray-900 border border-blue-500/10">
-              <p id="font-sample" class="text-sm text-white font-bold" style="font-family:'${esc(d.brand_font||'Inter')}',sans-serif">
-                The quick brown fox jumps over the lazy dog · 0123456789
-              </p>
+              <p id="font-sample" class="text-sm text-white font-bold" style="font-family:'${esc(d.brand_font||'Inter')}',sans-serif">The quick brown fox jumps — 0123456789 · Weverse Online Shop</p>
             </div>
           </div>
 
-          <!-- ── Logo & Icons ── -->
+          <!-- ── Logo & Verified Badge ── -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-black text-white flex items-center gap-2">
-                <i data-lucide="image" class="w-4 h-4 text-emerald-400"></i> Logos & Icons
-              </h3>
-              <p class="text-[10px] text-gray-500">PNG, SVG, WebP recommended</p>
+              <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-emerald-400"></i> Logos & Verified Badge</h3>
+              <p class="text-[10px] text-gray-500">PNG, SVG, WebP</p>
             </div>
             <div id="brand-upload-status" class="hidden p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300 flex items-center gap-2">
               <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i>
               <span id="brand-upload-msg">Uploading…</span>
             </div>
+
+            <!-- Verified Badge — highlighted at top -->
+            <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl space-y-3">
+              <div class="flex items-center gap-2 mb-1">
+                <i data-lucide="badge-check" class="w-4 h-4 text-blue-400"></i>
+                <p class="text-xs font-black text-white">Verified Badge</p>
+                <span class="text-[9px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full font-bold">Shows next to your brand name</span>
+              </div>
+              ${imgSlot('Verification Badge Image', 'brand_badge', d.brand_badge, 'Upload your blue checkmark or any verification badge. Recommended: 64×64px PNG with transparent background.', 'blue')}
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              ${imgSlot('Main Logo',          'brand_logo',          d.brand_logo,          'Used across the website. Recommended: 200×60px')}
-              ${imgSlot('Favicon / Tab Icon', 'brand_favicon',       d.brand_favicon,       'Shown in browser tab. Recommended: 32×32px or 64×64px')}
-              ${imgSlot('Mobile Logo',        'brand_mobile_logo',   d.brand_mobile_logo,   'Shown on small screens. Recommended: 120×40px')}
-              ${imgSlot('Header Logo',        'brand_header_logo',   d.brand_header_logo,   'Shown in the top navigation bar')}
-              ${imgSlot('Footer Logo',        'brand_footer_logo',   d.brand_footer_logo,   'Shown in the website footer')}
-              ${imgSlot('Login Page Logo',    'brand_login_logo',    d.brand_login_logo,    'Shown on the login/auth page')}
-              ${imgSlot('Admin Dashboard Logo','brand_admin_logo',   d.brand_admin_logo,    'Shown in the admin sidebar')}
-              ${imgSlot('OG / Social Image',  'brand_og_image',      d.brand_og_image,      'Shown when sharing links on WhatsApp, Facebook etc. 1200×630px')}
+              ${imgSlot('Main Logo',            'brand_logo',        d.brand_logo,        'Main logo shown across the website. 200×60px recommended.')}
+              ${imgSlot('Favicon / Tab Icon',   'brand_favicon',     d.brand_favicon,     'Browser tab icon. 32×32 or 64×64px.')}
+              ${imgSlot('Mobile Logo',          'brand_mobile_logo', d.brand_mobile_logo, 'Smaller logo for phones. 120×40px.')}
+              ${imgSlot('Header Logo',          'brand_header_logo', d.brand_header_logo, 'Top navigation bar.')}
+              ${imgSlot('Footer Logo',          'brand_footer_logo', d.brand_footer_logo, 'Website footer.')}
+              ${imgSlot('Login Page Logo',      'brand_login_logo',  d.brand_login_logo,  'Shown on auth/login page.')}
+              ${imgSlot('Admin Dashboard Logo', 'brand_admin_logo',  d.brand_admin_logo,  'Admin sidebar header.')}
+              ${imgSlot('OG / Social Image',    'brand_og_image',    d.brand_og_image,    '1200×630px — shown when sharing links.')}
             </div>
           </div>
 
-          <!-- ── Contact & Social ── -->
+          <!-- ── Contact ── -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
-            <h3 class="text-sm font-black text-white flex items-center gap-2">
-              <i data-lucide="globe" class="w-4 h-4 text-blue-400"></i> Website URL & Contact
-            </h3>
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-blue-400"></i> Website & Contact</h3>
             <div class="form-grid form-grid-2">
-              <div><label class="lbl">Website URL</label><input class="input-field" name="brand_website_url" value="${esc(d.brand_website_url||d.production_url||'')}" placeholder="https://yoursite.com"></div>
-              <div><label class="lbl">Support Email</label><input type="email" class="input-field" name="brand_email" value="${esc(d.brand_email||d.contact_email||'')}" placeholder="support@yoursite.com"></div>
-              <div><label class="lbl">Phone / WhatsApp</label><input class="input-field" name="brand_phone" value="${esc(d.brand_phone||d.contact_phone||'')}" placeholder="+1 234 567 8900"></div>
+              <div><label class="lbl">Website URL</label><input class="input-field" name="brand_website_url" value="${esc(d.brand_website_url||d.production_url||'https://weverseonlineshop.com')}" placeholder="https://…"></div>
+              <div><label class="lbl">Support Email</label><input type="email" class="input-field" name="brand_email" value="${esc(d.brand_email||d.contact_email||'')}" placeholder="support@…"></div>
+              <div><label class="lbl">Phone / WhatsApp</label><input class="input-field" name="brand_phone" value="${esc(d.brand_phone||d.contact_phone||'')}" placeholder="+1 234…"></div>
               <div><label class="lbl">Business Address</label><input class="input-field" name="brand_address" value="${esc(d.brand_address||d.contact_address||'')}" placeholder="City, Country"></div>
             </div>
           </div>
 
+          <div class="p-4 bg-blue-500/5 border border-blue-500/15 rounded-xl text-xs text-blue-300 flex items-start gap-3">
+            <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5 text-blue-400"></i>
+            <p>After saving, your brand name, logo, slogan, and verified badge will automatically appear on <strong>every page</strong> — Header, Footer, Login, Checkout, Contact, Admin, and all future pages. No code changes needed.</p>
+          </div>
+
           <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2">
-            <i data-lucide="save" class="w-4 h-4"></i> Save All Brand Settings
+            <i data-lucide="save" class="w-4 h-4"></i> Save Brand & Apply to All Pages
           </button>
         </form>
       </div>`;
     if (window.lucide) lucide.createIcons();
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
+
+window.toggleLivePreview = function() {
+  const panel = document.getElementById('live-preview-panel');
+  panel?.classList.toggle('hidden');
+  updateLivePreview();
+};
+
+window.updateLivePreview = function() {
+  const panel = document.getElementById('live-preview-panel');
+  if (!panel || panel.classList.contains('hidden')) return;
+  const name   = document.getElementById('inp-brand-name')?.value   || 'Weverse Online Shop';
+  const slogan = document.getElementById('inp-brand-slogan')?.value || 'Shop Globally, Delivered Worldwide';
+  const primary   = document.getElementById('ct-primary')?.value   || '#f97316';
+  const secondary = document.getElementById('ct-secondary')?.value || '#3b82f6';
+  const logo  = document.getElementById('val-brand_logo')?.value   || '';
+  const badge = document.getElementById('val-brand_badge')?.value  || '';
+
+  // Update preview elements
+  ['preview-name','preview-footer-name','preview-copy-name'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = name; });
+  ['preview-slogan','preview-footer-slogan'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = slogan; });
+
+  const btn = document.getElementById('preview-btn');
+  if (btn) { btn.style.background = primary; }
+  const link = panel.querySelector('[style*="color:"]');
+  if (link) link.style.color = secondary;
+
+  // Logo preview
+  ['preview-logo-wrap','preview-footer-logo-wrap'].forEach(id => {
+    const wrap = document.getElementById(id);
+    if (!wrap) return;
+    if (logo) {
+      wrap.innerHTML = `<img src="${logo}" alt="${name}" class="w-full h-full object-contain p-1">`;
+      wrap.style.background = 'transparent';
+    } else {
+      wrap.innerHTML = '<i data-lucide="globe" class="w-4 h-4 text-white"></i>';
+      wrap.style.background = primary;
+      if (window.lucide) lucide.createIcons();
+    }
+  });
+
+  // Badge preview
+  const badgeWrap = document.getElementById('preview-badge-wrap');
+  const badgeImg  = document.getElementById('preview-badge');
+  if (badgeWrap && badgeImg) {
+    if (badge) { badgeImg.src = badge; badgeWrap.classList.remove('hidden'); }
+    else badgeWrap.classList.add('hidden');
+  }
+};
 
 window.triggerImgUpload = function(field) {
   document.getElementById('file-' + field)?.click();
@@ -3466,33 +3545,12 @@ window.clearBrandImg = function(field) {
 window.syncColor = function(name, val) {
   const picker = document.getElementById('color-' + name);
   if (picker && /^#[0-9a-fA-F]{6}$/.test(val)) picker.value = val;
-  previewColors();
-};
-
-window.previewColors = function() {
-  const p = document.getElementById('txt-primary')?.value || '#f97316';
-  const s = document.getElementById('txt-secondary')?.value || '#3b82f6';
-  const bg = document.getElementById('txt-bg')?.value || '#070b16';
-  const txt = document.getElementById('txt-text')?.value || '#f1f5f9';
-  const preview = document.getElementById('color-preview');
-  if (!preview) return;
-  const swatches = preview.querySelectorAll('[title]');
-  if (swatches[0]) swatches[0].style.background = p;
-  if (swatches[1]) swatches[1].style.background = s;
-  if (swatches[2]) swatches[2].style.background = bg;
-  if (swatches[3]) swatches[3].style.background = txt;
-  const btn = preview.querySelector('button');
-  if (btn) btn.style.background = p;
-  const link = preview.querySelector('span');
-  if (link) link.style.color = s;
 };
 
 window.previewFont = function(font) {
   const el = document.getElementById('font-sample');
   if (el) el.style.fontFamily = `'${font}', sans-serif`;
-  // Dynamically load the Google Font for preview
-  const id = 'gf-preview';
-  let link = document.getElementById(id);
+  const id = 'gf-preview'; let link = document.getElementById(id);
   if (!link) { link = document.createElement('link'); link.id = id; link.rel = 'stylesheet'; document.head.appendChild(link); }
   link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}:wght@400;700;900&display=swap`;
 };
@@ -3501,45 +3559,42 @@ window.handleBrandImgUpload = async function(e, field) {
   const file = e.target.files?.[0];
   if (!file) return;
   const statusEl = document.getElementById('brand-upload-status');
-  const msgEl = document.getElementById('brand-upload-msg');
+  const msgEl    = document.getElementById('brand-upload-msg');
   if (statusEl) statusEl.classList.remove('hidden');
-  if (msgEl) msgEl.textContent = `Uploading ${file.name}…`;
+  if (msgEl)    msgEl.textContent = `Uploading ${file.name}…`;
   try {
-    const ext = file.name.split('.').pop();
+    const ext  = file.name.split('.').pop();
     const path = `brand/${field}-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: true });
     let url;
     if (upErr) {
-      // Fall back to object URL for preview if storage fails
       url = URL.createObjectURL(file);
-      if (msgEl) msgEl.textContent = `Using local preview (storage error: ${upErr.message})`;
+      if (msgEl) msgEl.textContent = `Preview only (storage: ${upErr.message})`;
     } else {
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
       url = data.publicUrl;
       if (msgEl) msgEl.textContent = `✓ ${file.name} uploaded`;
     }
-    // Update hidden input and refresh preview
     const valEl = document.getElementById('val-' + field);
     const urlEl = document.getElementById('url-' + field);
     if (valEl) valEl.value = url;
-    if (urlEl) urlEl.value = url;
-    // Refresh the slot preview
-    setTimeout(() => renderBrandManager(), 800);
+    if (urlEl) { urlEl.value = url; urlEl.classList.remove('hidden'); }
+    updateLivePreview();
+    setTimeout(() => renderBrandManager(), 1000);
   } catch (err) {
     if (msgEl) msgEl.textContent = `Upload failed: ${err.message}`;
   }
-  setTimeout(() => statusEl?.classList.add('hidden'), 3000);
+  setTimeout(() => statusEl?.classList.add('hidden'), 4000);
 };
 
 window.saveBrandSettings = async function(e) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const payload = {};
-  // Collect all fields; use hidden val- fields for images
   for (const [k, v] of fd.entries()) {
-    if (!k.endsWith('_url')) payload[k] = v; // skip the visible URL inputs (already in hidden fields)
+    if (!k.endsWith('_url')) payload[k] = v;
   }
-  // Sync brand fields to site_settings aliases
+  // Sync aliases
   if (payload.brand_name)        payload.site_name        = payload.brand_name;
   if (payload.brand_slogan)      payload.site_tagline     = payload.brand_slogan;
   if (payload.brand_description) payload.site_description = payload.brand_description;
@@ -3547,22 +3602,30 @@ window.saveBrandSettings = async function(e) {
   if (payload.brand_phone)       payload.contact_phone    = payload.brand_phone;
   if (payload.brand_address)     payload.contact_address  = payload.brand_address;
   if (payload.brand_website_url) payload.production_url   = payload.brand_website_url;
-  // Apply Google Font to head for live preview
   const font = payload.brand_custom_font || payload.brand_font;
   if (font) previewFont(font);
+
+  const btn = e.target.querySelector('[type=submit]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Saving…'; if (window.lucide) lucide.createIcons(); }
+
   const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
   let error;
-  if (existing?.id) {
-    ({ error } = await supabase.from('site_settings').update(payload).eq('id', existing.id));
-  } else {
-    ({ error } = await supabase.from('site_settings').insert(payload));
+  if (existing?.id) { ({ error } = await supabase.from('site_settings').update(payload).eq('id', existing.id)); }
+  else              { ({ error } = await supabase.from('site_settings').insert(payload)); }
+
+  if (error) {
+    showToast('Save failed: ' + error.message, 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 inline mr-2"></i>Save Brand & Apply to All Pages'; if (window.lucide) lucide.createIcons(); }
+    return;
   }
-  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
-  showToast('✅ Brand settings saved!', 'success');
+
+  // Clear brand cache so all pages reload the new settings immediately
+  try { localStorage.removeItem('weverse_brand_v1'); } catch {}
+
+  showToast('✅ Brand saved! All pages will now show your updated brand.', 'success');
   setTimeout(() => renderBrandManager(), 500);
 };
 
-// ══════════════════════════════════════════════════════════
 //  PAYMENT SETTINGS
 // ══════════════════════════════════════════════════════════
 async function renderPaymentSettings() {

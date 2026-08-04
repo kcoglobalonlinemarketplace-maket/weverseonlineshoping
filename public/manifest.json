@@ -1,7 +1,7 @@
 {
-  "name": "KCO Global Online Marketplace",
-  "short_name": "KCO Global",
-  "description": "Your trusted global shop for premium products, secure payments, and reliable worldwide shipping.",
+  "name": "Weverse Online Shop",
+  "short_name": "Weverse",
+  "description": "Your trusted online shop for premium products, secure payments, and reliable worldwide shipping.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
