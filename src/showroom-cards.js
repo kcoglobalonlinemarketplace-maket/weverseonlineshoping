@@ -692,6 +692,10 @@ export async function initAllShowrooms() {
   grids.forEach(g => renderGrid(g.dataset.showroomGrid));
 }
 
+// Expose filter functions to window so app.js category buttons can call them
+window._filterShowroomByCategory = filterShowroomByCategory;
+window._clearShowroomFilter = clearShowroomFilter;
+
 if (document.querySelector('[data-showroom-grid]')) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => initAllShowrooms());
