@@ -2,9 +2,10 @@ import { supabase } from './supabase-client.js';
 import { getCurrentUser } from './auth.js';
 
 const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
+const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
 const AI_FUNCTION_URL = LOCAL_DEV_HOSTS.has(window.location.hostname)
   ? '/_supabase/functions/v1/ai-admin-assistant'
-  : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-admin-assistant`;
+  : `${SUPABASE_BASE_URL}/functions/v1/ai-admin-assistant`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const AUTO_EXECUTE_DEVELOPER_ACTIONS = true;
 const PRODUCT_IMAGE_BUCKET = 'product-images';
@@ -12,6 +13,7 @@ const MAX_PENDING_UPLOADS = 24;
 const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
 const BRAND_IMAGE_CACHE_KEY = 'kco_pending_brand_image_v1';
 const BRAND_OVERRIDE_KEY = 'weverse_brand_override_v1';
+const PRODUCT_FALLBACK_IMAGE = 'https://images.pexels.com/photos/1275229/pexels-photo-1275229.jpeg?auto=compress&cs=tinysrgb&w=1200';
 
 let state = {
   user: null,
@@ -20,6 +22,14 @@ let state = {
   sending: false,
   developerMode: true,
   pendingUploads: [],
+  previewTarget: {
+    url: '/',
+    label: 'Storefront Home',
+    itemLabel: 'No AI-created item yet.',
+    status: 'Waiting for the next AI action.',
+    note: 'The preview refreshes automatically after the AI creates a product, listing, property, or brand update.',
+  },
+  lastPreviewItem: null,
 };
 
 function formatBytes(bytes) {
@@ -32,6 +42,96 @@ function formatBytes(bytes) {
 
 function isHouseRelatedText(text) {
   return /(house|property|villa|apartment|estate|real\s*estate)/i.test(String(text || ''));
+}
+
+function normalizeText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function isLikelyProductRequest(text) {
+  const message = normalizeText(text).toLowerCase();
+  if (!message) return false;
+  if (/(house|property|villa|apartment|estate|real estate|brand|logo|image|banner|showroom)/i.test(message)) return false;
+  return /^(add|create)\s+/i.test(message) || /\b(add|create)\b.*\b(iphone|phone|samsung|macbook|laptop|watch|airpods|headphones|tablet|product)\b/i.test(message);
+}
+
+function updatePreviewMeta(meta = {}) {
+  state.previewTarget = { ...state.previewTarget, ...meta };
+  const targetEl = document.getElementById('live-preview-target');
+  const statusEl = document.getElementById('live-preview-status');
+  const itemEl = document.getElementById('live-preview-item');
+  const noteEl = document.getElementById('live-preview-note');
+  const urlEl = document.getElementById('live-preview-url');
+  if (targetEl) targetEl.textContent = state.previewTarget.label || 'Live Preview';
+  if (statusEl) statusEl.textContent = state.previewTarget.status || 'Waiting for the next AI action.';
+  if (itemEl) itemEl.textContent = state.previewTarget.itemLabel || 'No AI-created item yet.';
+  if (noteEl) noteEl.textContent = state.previewTarget.note || '';
+  if (urlEl) urlEl.textContent = state.previewTarget.url || '/';
+}
+
+function setPreviewFrameUrl(url, options = {}) {
+  const frame = document.getElementById('live-preview-frame');
+  const finalUrl = url || '/';
+  updatePreviewMeta({ url: finalUrl, ...options });
+  if (frame) frame.src = finalUrl;
+}
+
+function refreshPreviewFrame() {
+  const frame = document.getElementById('live-preview-frame');
+  if (frame?.contentWindow) frame.contentWindow.location.reload();
+  else if (frame) frame.src = state.previewTarget?.url || '/';
+}
+
+function setPreviewForHome(note = 'Showing the live storefront homepage.') {
+  setPreviewFrameUrl('/', {
+    label: 'Storefront Home',
+    itemLabel: state.lastPreviewItem?.title || 'No AI-created item yet.',
+    status: 'Previewing the live storefront homepage.',
+    note,
+  });
+}
+
+function setPreviewForListing(item, note) {
+  if (!item?.propertyId) return;
+  state.lastPreviewItem = item;
+  setPreviewFrameUrl(`/details.html?id=${encodeURIComponent(item.propertyId)}`, {
+    label: 'Latest AI Item Preview',
+    itemLabel: `${item.title || 'Untitled item'} (${item.propertyId})`,
+    status: 'Previewing the item the AI just created.',
+    note: note || 'The AI created this item. The preview is showing its live details page.',
+  });
+}
+
+function parseCreatedTitleFromContent(content) {
+  const text = normalizeText(content);
+  const match = text.match(/\*\*([^*]+)\*\*\s*\((KCO-[^)]+)\)/i)
+    || text.match(/created\s+\*\*([^*]+)\*\*\s+as\s+\*\*(KCO-[^*]+)\*\*/i)
+    || text.match(/created\s+\*\*([^*]+)\*\*/i);
+  return match?.[1] ? normalizeText(match[1]) : '';
+}
+
+function extractPreviewItemFromToolResults(toolResults = [], fallbackContent = '') {
+  for (const toolResult of toolResults || []) {
+    const result = toolResult?.result || {};
+    if (result?.success && result?.property_id) {
+      return {
+        propertyId: result.property_id,
+        title: result.title || parseCreatedTitleFromContent(fallbackContent),
+      };
+    }
+  }
+  return null;
+}
+
+function syncPreviewFromAssistantMessage(message) {
+  const previewItem = extractPreviewItemFromToolResults(message?.tool_results, message?.content);
+  if (previewItem?.propertyId) {
+    setPreviewForListing(previewItem, 'Verified from the AI action result. You can see the live product page here.');
+    return;
+  }
+  if (/brand/i.test(String(message?.content || '')) && /logo|login|header/i.test(String(message?.content || ''))) {
+    setPreviewForHome('Previewing the storefront after the AI brand update.');
+  }
 }
 
 function shouldUseImageListingAutomation(text) {
@@ -549,6 +649,7 @@ function renderMessage(msg, animate = true) {
   container.appendChild(wrapper);
   if (window.lucide) lucide.createIcons();
   scrollToBottom();
+  if (msg?.role === 'assistant') syncPreviewFromAssistantMessage(msg);
 }
 
 function renderTypingIndicator() {
@@ -589,11 +690,12 @@ function generateProductId() {
 }
 
 function parseProductDeployRequest(text) {
-  if (!/(add|create)\s+(a\s+)?(new\s+)?product/i.test(text || '')) return null;
+  if (!/(add|create)\s+(a\s+)?(new\s+)?product/i.test(text || '') && !isLikelyProductRequest(text)) return null;
   const message = String(text || '').trim();
   const namedMatch = message.match(/named\s+["']([^"']+)["']/i) || message.match(/named\s+([^,\.]+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i);
   const nameMatch = message.match(/name\s+["']([^"']+)["']/i) || message.match(/name\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i);
-  const title = (namedMatch?.[1] || nameMatch?.[1] || 'AI Product').trim();
+  const looseAddMatch = message.match(/^(?:add|create)\s+(?:a\s+|an\s+|new\s+)?(.+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i);
+  const title = (namedMatch?.[1] || nameMatch?.[1] || looseAddMatch?.[1] || 'AI Product').trim();
 
   const priceMatch = message.match(/price\s*[:=]?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
   const stockMatch = message.match(/stock\s*[:=]?\s*([0-9]+)/i);
@@ -868,7 +970,7 @@ async function runLocalProductAndDeployAutomation(text) {
     category: intent.category,
     subcategory: null,
     title: intent.title,
-    description: `Auto-created by Admin AI on ${new Date().toISOString()}.`,
+    description: `${intent.title} was created by Admin AI on ${new Date().toISOString()} with a storefront-ready layout and purchase flow.`,
     price: Number.isFinite(intent.price) ? intent.price : 0,
     currency: intent.currency,
     country: '',
@@ -888,11 +990,11 @@ async function runLocalProductAndDeployAutomation(text) {
     warranty: null,
     availability_status: 'In Stock',
     stock_quantity: intent.stock,
-    images: [],
-    features: [],
-    tags: [],
-    highlights: [],
-    seo_keywords: [],
+    images: [PRODUCT_FALLBACK_IMAGE],
+    features: ['AI-managed storefront listing', 'Fast checkout ready', 'Premium presentation'],
+    tags: ['New Arrival'],
+    highlights: ['Auto-created by Admin AI', 'Visible in storefront preview', 'Ready for live publishing'],
+    seo_keywords: [intent.title, intent.category, 'ai product listing'],
     is_ai_generated: true,
     ai_generated_fields: ['title', 'description'],
     specifications: {},
@@ -1161,6 +1263,31 @@ window.quickAction = (text) => {
   sendMessage();
 };
 
+window.previewStorefrontHome = () => {
+  setPreviewForHome('Showing the live storefront homepage. Use Latest Item after the AI creates something.');
+};
+
+window.previewLatestItem = () => {
+  if (state.lastPreviewItem?.propertyId) {
+    setPreviewForListing(state.lastPreviewItem, 'Showing the latest AI-created item from this session.');
+    return;
+  }
+  setPreviewForHome('No AI-created item has been captured yet, so the preview is showing the homepage.');
+};
+
+window.refreshLivePreview = () => {
+  updatePreviewMeta({
+    status: state.previewTarget?.url === '/'
+      ? 'Refreshing the storefront homepage preview.'
+      : 'Refreshing the latest AI-created item preview.',
+  });
+  refreshPreviewFrame();
+};
+
+window.openLivePreview = () => {
+  window.open(state.previewTarget?.url || '/', '_blank', 'noopener');
+};
+
 window.triggerAiImagePicker = () => {
   document.getElementById('ai-image-upload')?.click();
 };
@@ -1389,6 +1516,7 @@ async function init() {
     input.style.height = Math.min(input.scrollHeight, 128) + 'px';
   });
   renderPendingUploads();
+  setPreviewForHome();
   input.focus();
 }
 

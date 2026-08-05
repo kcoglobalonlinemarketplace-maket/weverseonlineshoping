@@ -4,8 +4,12 @@
 import { supabase } from './supabase-client.js';
 import { getLanguage, selectBestVoice, getVoiceForLanguage } from './localization.js';
 
-const AI_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-customer-assistant`;
+const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
+const AI_FUNCTION_URL = `${SUPABASE_BASE_URL}/functions/v1/ai-customer-assistant`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SHOULD_DISABLE_WIDGET =
+  window.self !== window.top ||
+  /\/admin(\-ai)?\.html$/i.test(window.location.pathname);
 
 let state = {
   open: false,
@@ -446,7 +450,9 @@ function setupProactiveGuidance() {
 
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
-  if (window.location.pathname.includes('admin')) return;
+  if (SHOULD_DISABLE_WIDGET) {
+    return;
+  }
 
   buildWidget();
 
