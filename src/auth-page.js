@@ -117,8 +117,22 @@ function setMode(m) {
 
 tabLogin.addEventListener('click', () => setMode('login'));
 tabRegister.addEventListener('click', () => setMode('register'));
+
+function applyModeFromQuery() {
+  const modeParam = new URLSearchParams(window.location.search).get('mode');
+  if (modeParam === 'register') {
+    setMode('register');
+    return;
+  }
+  if (modeParam === 'login') {
+    setMode('login');
+  }
+}
+
+applyModeFromQuery();
+
 window.addEventListener('resize', () => moveIndicator(mode === 'login' ? tabLogin : tabRegister));
-window.addEventListener('load', () => moveIndicator(tabLogin));
+window.addEventListener('load', () => moveIndicator(mode === 'login' ? tabLogin : tabRegister));
 document.getElementById('link-create')?.addEventListener('click', (e) => { e.preventDefault(); setMode('register'); });
 document.getElementById('link-signin')?.addEventListener('click', (e) => { e.preventDefault(); setMode('login'); });
 
