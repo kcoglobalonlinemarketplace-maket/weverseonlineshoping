@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
-import { signUp, signIn, getRedirectAfterAuth, clearRedirectAfterAuth, resetPassword, sendAuthEmail } from './auth.js';
+import { signUp, signIn, getRedirectAfterAuth, clearRedirectAfterAuth, resetPassword, sendAuthEmail, updateUserPassword } from './auth.js';
+import { isSupabaseConfigured } from './supabase-client.js';
 import { trackEvent } from './analytics.js';
 import { COUNTRIES, searchCountries, getCountryByCode, detectCurrency } from './country-data.js';
 
@@ -272,6 +273,32 @@ function hideError() {
   errorBox.classList.add('hidden');
 }
 
+function formatAuthError(err, fallback = 'Authentication failed.') {
+  const raw = String(err?.message || err || fallback);
+  const lower = raw.toLowerCase();
+
+  if (lower.includes('missing supabase credentials') || lower.includes('authentication service is unavailable')) {
+    return 'Authentication is temporarily unavailable due to configuration. Please contact support.';
+  }
+  if (lower.includes('failed to fetch') || lower.includes('networkerror') || lower.includes('network request failed')) {
+    return 'Network error. Check your internet connection and try again.';
+  }
+  if (lower.includes('invalid login credentials') || lower.includes('invalid login')) {
+    return 'Incorrect email or password.';
+  }
+  if (lower.includes('email not confirmed')) {
+    return 'Please verify your email first, then sign in.';
+  }
+  if (lower.includes('already registered')) {
+    return 'An account with this email already exists. Please sign in.';
+  }
+  if (lower.includes('password should be')) {
+    return 'Password must be at least 6 characters.';
+  }
+
+  return raw;
+}
+
 function getPostAuthRedirectTarget() {
   const redirect = getRedirectAfterAuth();
   const params = new URLSearchParams(window.location.search);
@@ -335,15 +362,83 @@ async function handleEmailAuthCallbackIfPresent() {
       return false;
     }
 
+    const isRecovery =
+      callbackType === 'recovery' ||
+      searchParams.get('type') === 'recovery' ||
+      hashParams.get('type') === 'recovery';
+
+    if (isRecovery) {
+      cleanupAuthCallbackUrl();
+      showRecoveryPasswordPrompt();
+      return true;
+    }
+
     cleanupAuthCallbackUrl();
     const target = getPostAuthRedirectTarget();
     clearRedirectAfterAuth();
     window.location.href = target;
     return true;
   } catch (err) {
-    showError(err?.message || 'Could not complete email sign-in. Please request a fresh email link.');
+    showError(formatAuthError(err, 'Could not complete email sign-in. Please request a fresh email link.'));
     return false;
   }
+}
+
+function showRecoveryPasswordPrompt() {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4';
+  overlay.innerHTML = `
+    <div class="glass border border-blue-500/20 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(15,23,42,.95)">
+      <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5 text-blue-400"></i> Set New Password</h3>
+      <p class="text-sm text-gray-400 mb-4">Your reset link is verified. Enter a new password below.</p>
+      <div class="space-y-3">
+        <input id="rp-new" type="password" minlength="8" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-3 text-sm text-white" placeholder="New password (min 8 chars)">
+        <input id="rp-confirm" type="password" minlength="8" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-3 text-sm text-white" placeholder="Confirm new password">
+        <button id="rp-save" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm uppercase tracking-wide">Update Password</button>
+      </div>
+      <p id="rp-error" class="hidden text-xs text-red-400 mt-3"></p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  if (window.lucide) lucide.createIcons();
+
+  overlay.querySelector('#rp-save').addEventListener('click', async () => {
+    const saveBtn = overlay.querySelector('#rp-save');
+    const errEl = overlay.querySelector('#rp-error');
+    const np = overlay.querySelector('#rp-new').value.trim();
+    const cp = overlay.querySelector('#rp-confirm').value.trim();
+
+    errEl.classList.add('hidden');
+    errEl.textContent = '';
+
+    if (np.length < 8) {
+      errEl.textContent = 'Password must be at least 8 characters.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    if (np !== cp) {
+      errEl.textContent = 'Passwords do not match.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i> Updating...';
+    if (window.lucide) lucide.createIcons();
+
+    const { error } = await updateUserPassword(np);
+    if (error) {
+      errEl.textContent = formatAuthError(error, 'Could not update password.');
+      errEl.classList.remove('hidden');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Update Password';
+      return;
+    }
+
+    overlay.remove();
+    showToast('Password updated successfully. Please sign in with your new password.');
+    setMode('login');
+  });
 }
 
 function showForgotPassword() {
@@ -394,6 +489,11 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   hideError();
 
+  if (!isSupabaseConfigured) {
+    showError('Authentication is not available right now. Missing Supabase configuration.');
+    return;
+  }
+
   if (mode === 'register' && !selectedCountry) {
     showError('Please select your country before creating an account.');
     return;
@@ -415,12 +515,7 @@ form.addEventListener('submit', async (e) => {
     }
 
     if (result.error) {
-      const msg = result.error.message || 'Authentication failed';
-      if (msg.includes('Invalid login')) showError('Incorrect email or password.');
-      else if (msg.includes('Email not confirmed')) showError('Please verify your email first, then sign in.');
-      else if (msg.includes('already registered')) showError('An account with this email already exists. Please sign in.');
-      else if (msg.includes('Password should be')) showError('Password must be at least 6 characters.');
-      else showError(msg);
+      showError(formatAuthError(result.error, 'Authentication failed.'));
       submitBtn.disabled = false;
       submitBtn.innerHTML = mode === 'login' ? '<i data-lucide="log-in" class="w-5 h-5"></i> Sign In' : '<i data-lucide="user-plus" class="w-5 h-5"></i> Create Account';
       if (window.lucide) lucide.createIcons();
@@ -445,13 +540,19 @@ form.addEventListener('submit', async (e) => {
       const redirectParam = params.get('redirect');
       const targetRedirect = redirect || redirectParam || '/';
 
-      await sendAuthEmail('verify_email', {
+      const verifyMail = await sendAuthEmail('verify_email', {
         email,
         name: usernameInput.value,
         redirect_url: targetRedirect,
       });
-      await sendAuthEmail('welcome', { email, name: usernameInput.value });
+      const welcomeMail = await sendAuthEmail('welcome', { email, name: usernameInput.value });
       showToast('Account created! Check your email for verification link.');
+      if (!verifyMail.ok) {
+        showToast('Verification email helper endpoint is unavailable. Supabase default verification is still active.');
+      }
+      if (!welcomeMail.ok) {
+        console.warn('Welcome email endpoint failed:', welcomeMail.error);
+      }
 
       clearRedirectAfterAuth();
       window.location.href = targetRedirect;
@@ -460,7 +561,10 @@ form.addEventListener('submit', async (e) => {
 
     // Send login notification (login mode)
     if (mode === 'login') {
-      await sendAuthEmail('login_notification', { email });
+      const loginNotice = await sendAuthEmail('login_notification', { email });
+      if (!loginNotice.ok) {
+        console.warn('Login notification endpoint failed:', loginNotice.error);
+      }
     }
 
     // Remember me
@@ -497,7 +601,7 @@ form.addEventListener('submit', async (e) => {
     }
     window.location.href = target;
   } catch (err) {
-    showError(err?.message || 'Something went wrong. Please try again.');
+    showError(formatAuthError(err, 'Something went wrong. Please try again.'));
     submitBtn.disabled = false;
     submitBtn.innerHTML = mode === 'login' ? '<i data-lucide="log-in" class="w-5 h-5"></i> Sign In' : '<i data-lucide="user-plus" class="w-5 h-5"></i> Create Account';
     if (window.lucide) lucide.createIcons();

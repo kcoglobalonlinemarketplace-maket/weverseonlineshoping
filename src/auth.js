@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+import { ANON_KEY, SUPABASE_URL, isSupabaseConfigured, supabase } from './supabase-client.js';
 
 export async function getCurrentUser() {
   // Use getSession() for reliable session restoration across refresh/navigation.
@@ -15,7 +15,14 @@ export async function isAdmin() {
 }
 
 export async function signUp(email, password) {
-  return supabase.auth.signUp({ email, password });
+  const redirectUrl = `${window.location.origin}/auth.html`;
+  return supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: redirectUrl,
+    },
+  });
 }
 
 export async function signIn(email, password) {
@@ -59,11 +66,15 @@ export function clearRedirectAfterAuth() {
 }
 
 export async function sendAuthEmail(type, payload) {
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-auth-email`;
+  if (!isSupabaseConfigured) {
+    return { ok: false, error: 'Supabase credentials are missing.' };
+  }
+
+  const url = `${SUPABASE_URL}/functions/v1/send-auth-email`;
   try {
     // Get the user's actual session token for authenticated email types
     const { data: { session } } = await supabase.auth.getSession();
-    const accessToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const accessToken = session?.access_token || ANON_KEY;
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -72,7 +83,14 @@ export async function sendAuthEmail(type, payload) {
       },
       body: JSON.stringify({ type, ...payload }),
     });
-    const data = await res.json();
+
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+
     return { ok: res.ok && !data.error, error: data.error };
   } catch (e) {
     return { ok: false, error: String(e) };

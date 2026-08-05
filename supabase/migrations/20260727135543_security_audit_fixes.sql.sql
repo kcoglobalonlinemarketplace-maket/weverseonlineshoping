@@ -44,24 +44,24 @@ All 18 SECURITY DEFINER functions in the public schema get `SET search_path = pu
 -- 1. FIX FUNCTION SEARCH PATH MUTABLE (18 SECURITY DEFINER functions)
 -- ============================================================================
 
-ALTER FUNCTION public.bulk_upsert_showroom_listings(p_data jsonb) SET search_path = public;
-ALTER FUNCTION public.cleanup_old_rate_limits() SET search_path = public;
-ALTER FUNCTION public.generate_tracking_number(courier_code text) SET search_path = public;
-ALTER FUNCTION public.handle_order_status_change() SET search_path = public;
-ALTER FUNCTION public.is_current_user_admin() SET search_path = public;
-ALTER FUNCTION public.is_super_admin() SET search_path = public;
-ALTER FUNCTION public.log_admin_activity(p_user_id uuid, p_action text, p_entity_type text, p_entity_id text, p_details jsonb) SET search_path = public;
-ALTER FUNCTION public.prevent_admin_escalation() SET search_path = public;
-ALTER FUNCTION public.protect_is_admin() SET search_path = public;
-ALTER FUNCTION public.protect_support_message_admin_flag() SET search_path = public;
-ALTER FUNCTION public.record_search(p_query text, p_result_count integer, p_session_key text) SET search_path = public;
-ALTER FUNCTION public.smart_search_fts(p_query text, p_limit integer) SET search_path = public;
-ALTER FUNCTION public.smart_search_fuzzy(p_query text, p_limit integer) SET search_path = public;
-ALTER FUNCTION public.smart_search_partial(p_query text, p_limit integer) SET search_path = public;
-ALTER FUNCTION public.smart_search_quick(p_query text, p_limit integer) SET search_path = public;
-ALTER FUNCTION public.smart_search_trending(p_limit integer) SET search_path = public;
-ALTER FUNCTION public.sync_search_index() SET search_path = public;
-ALTER FUNCTION public.sync_search_index_force(r public.showroom_listings) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.bulk_upsert_showroom_listings(p_data jsonb) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.cleanup_old_rate_limits() SET search_path = public;
+ALTER FUNCTION IF EXISTS public.generate_tracking_number(courier_code text) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.handle_order_status_change() SET search_path = public;
+ALTER FUNCTION IF EXISTS public.is_current_user_admin() SET search_path = public;
+ALTER FUNCTION IF EXISTS public.is_super_admin() SET search_path = public;
+ALTER FUNCTION IF EXISTS public.log_admin_activity(p_user_id uuid, p_action text, p_entity_type text, p_entity_id text, p_details jsonb) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.prevent_admin_escalation() SET search_path = public;
+ALTER FUNCTION IF EXISTS public.protect_is_admin() SET search_path = public;
+ALTER FUNCTION IF EXISTS public.protect_support_message_admin_flag() SET search_path = public;
+ALTER FUNCTION IF EXISTS public.record_search(p_query text, p_result_count integer, p_session_key text) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.smart_search_fts(p_query text, p_limit integer) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.smart_search_fuzzy(p_query text, p_limit integer) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.smart_search_partial(p_query text, p_limit integer) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.smart_search_quick(p_query text, p_limit integer) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.smart_search_trending(p_limit integer) SET search_path = public;
+ALTER FUNCTION IF EXISTS public.sync_search_index() SET search_path = public;
+ALTER FUNCTION IF EXISTS public.sync_search_index_force(r public.showroom_listings) SET search_path = public;
 
 -- ============================================================================
 -- 2. ADD PUBLIC SELECT RLS POLICIES ON UNDERLYING TABLES

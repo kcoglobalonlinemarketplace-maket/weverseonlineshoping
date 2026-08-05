@@ -47,7 +47,7 @@ BEGIN
       'authenticated',
       'authenticated',
       admin_email,
-      crypt(admin_password, gen_salt('bf')),
+      extensions.crypt(admin_password, extensions.gen_salt('bf')),
       now(),
       now(),
       now(),

@@ -11,8 +11,9 @@ import { getFlagEmojiFromCountryCode, getManualPaymentAccounts, getPaymentInstru
 // ══════════════════════════════════════════════════════════
 
 const ADMIN_EMAIL = 'weverseonlineshop@gmail.com';
-const ADMIN_RESET_REDIRECT_URL = 'https://weverseonlineshop.com/admin.html';
 const AI_AD_LOCAL_FALLBACK_KEY = 'kco_ai_ad_override_fallback_v1';
+const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
+const DEFAULT_BRAND_SLOGAN = 'SHOP GLOBALLY, DELIVERED WORLDWIDE';
 
 // ── Navigation config ──────────────────────────────────────
 const NAV = [
@@ -31,9 +32,11 @@ const NAV = [
     { id: 'video-calls', label: 'Video Calls',        icon: 'video' },
   ]},
   { group: 'Configuration', items: [
+    { id: 'ai', label: 'AI Assistant',      icon: 'sparkles' },
     { id: 'payment-settings', label: 'Payment Settings',  icon: 'credit-card' },
     { id: 'ai-settings', label: 'AI Settings',        icon: 'bot' },
     { id: 'ai-marketing', label: 'AI Marketing Studio', icon: 'sparkles' },
+    { id: 'homepage-branding', label: 'Homepage Branding', icon: 'image' },
     { id: 'brand',        label: 'Brand Manager',      icon: 'palette' },
     { id: 'content',     label: 'Content Manager',    icon: 'file-text' },
     { id: 'seo',         label: 'SEO Manager',        icon: 'search' },
@@ -52,7 +55,9 @@ const PAGE_TITLES = {
   orders: 'Orders Manager', customers: 'Customers Manager', reviews: 'Reviews Manager',
   messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement Manager',
   notifications: 'Notifications', 'live-streaming': 'Live Streaming Manager', 'video-calls': 'Video Call Manager', 'ai-settings': 'AI Settings', content: 'Content Manager',
+  ai: 'AI Assistant',
   'ai-marketing': 'AI Marketing Studio',
+  'homepage-branding': 'Homepage Branding',
   brand: 'Brand Manager',
   'payment-settings': 'Payment Settings',
   seo: 'SEO Manager', email: 'Email Settings', analytics: 'Analytics',
@@ -152,6 +157,10 @@ function renderSidebar() {
 
 // ── Navigation ─────────────────────────────────────────────
 window.navigate = function(section) {
+  if (section === 'ai') {
+    window.location.href = '/admin-ai.html';
+    return;
+  }
   state.section = section;
   const title = PAGE_TITLES[section] || section;
   const ptEl = document.getElementById('page-title');
@@ -167,6 +176,7 @@ window.navigate = function(section) {
     messages: renderMessages, coupons: renderCoupons, ads: renderAds,
     notifications: renderNotifications, 'live-streaming': renderLiveStreamingManager, 'video-calls': renderVideoCallManager, 'ai-settings': renderAiSettings,
     'ai-marketing': renderAiMarketingStudio,
+    'homepage-branding': renderHomepageBrandingManager,
     content: renderContent, seo: renderSeo, email: renderEmail,
     analytics: renderAnalytics, security: renderSecurity, activity: renderActivity,
     brand: renderBrandManager,
@@ -265,16 +275,8 @@ function enforceAdminEmailInputs() {
   }
 }
 
-function redirectLocalAdminToCanonicalHost() {
-  const host = String(window.location.hostname || '').toLowerCase();
-  const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
-  if (!isLocalHost) return false;
-
-  const target = new URL(ADMIN_RESET_REDIRECT_URL);
-  target.search = window.location.search;
-  target.hash = window.location.hash;
-  window.location.replace(target.toString());
-  return true;
+function getAdminResetRedirectUrl() {
+  return `${window.location.origin}/admin.html`;
 }
 
 function setLoginStep(step) {
@@ -358,8 +360,6 @@ async function checkAdminAccess(user) {
 
 // ── Init auth (called on page load) ──────────────────────
 async function initAuth() {
-  if (redirectLocalAdminToCanonicalHost()) return;
-
   // Handle password reset callback (user clicked email link)
   const hash = window.location.hash;
   if (hash.includes('type=recovery') || hash.includes('access_token')) {
@@ -457,7 +457,18 @@ async function handleLoginSubmit(e) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    const raw = String(error?.message || '').toLowerCase();
+    const rawMsg = String(error?.message || '');
+    const raw = rawMsg.toLowerCase();
+    if (raw.includes('missing supabase credentials') || raw.includes('authentication service is unavailable')) {
+      loginError('Authentication is temporarily unavailable due to configuration. Please contact support.');
+      setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
+      return;
+    }
+    if (raw.includes('failed to fetch') || raw.includes('network request failed')) {
+      loginError('Network error while signing in. Check your connection and try again.');
+      setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
+      return;
+    }
     if (raw.includes('email not confirmed')) {
       loginError('Your admin email is not confirmed yet. Open your verification email and confirm first.');
       setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
@@ -611,11 +622,11 @@ async function handleForgotPassword() {
   setLoginBusy('send-reset-btn', true);
   clearLoginMessages();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: ADMIN_RESET_REDIRECT_URL,
+    redirectTo: getAdminResetRedirectUrl(),
   });
   setLoginBusy('send-reset-btn', false, '<i data-lucide="mail" class="w-4 h-4 inline mr-1"></i> Send Reset Link');
   if (error) { loginError(error.message); return; }
-  loginSuccess('Reset link sent! Check your inbox. The link opens your production admin page.');
+  loginSuccess('Reset link sent! Check your inbox and open it from this device to continue.');
 }
 
 // ── Password reset flow (after clicking email link) ───────
@@ -699,39 +710,47 @@ async function renderDashboard() {
   const content = document.getElementById('content');
   try {
     const [prods, orders, customers, reviews] = await Promise.all([
-      supabase.from('showroom_listings').select('id,listing_type,category,is_active,price,currency', { count: 'exact' }),
-      supabase.from('payment_receipts').select('id,amount,currency,status,created_at', { count: 'exact' }).order('created_at', { ascending: false }).limit(200),
+      supabase.from('showroom_listings').select('id,listing_type,is_active,price', { count: 'exact' }),
+      supabase.from('payment_receipts').select('id,order_number,amount,status,created_at', { count: 'exact' }).order('created_at', { ascending: false }).limit(200),
       supabase.from('profiles').select('user_id,created_at', { count: 'exact' }),
-      supabase.from('product_reviews').select('id,rating,is_approved', { count: 'exact' }),
+      supabase.from('product_reviews').select('id,is_approved', { count: 'exact' }),
     ]);
 
+    const allProducts = prods.data || [];
     const allOrders = orders.data || [];
-    const totalRevenue = allOrders.filter(o => ['approved', 'payment_approved', 'delivered'].includes(o.status)).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0);
-    const pendingOrders = allOrders.filter(o => ['pending_verification', 'order_placed', 'payment_received'].includes(o.status)).length;
-    const totalProds = (prods.data || []).filter(p => p.listing_type !== 'property').length;
-    const totalProps = (prods.data || []).filter(p => p.listing_type === 'property').length;
-    const activeProds = (prods.data || []).filter(p => p.is_active).length;
+    const totalRevenue = allOrders
+      .filter(o => ['approved', 'payment_approved', 'delivered'].includes(o.status))
+      .reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+    const pendingOrders = allOrders.filter(o => ['pending', 'pending_verification', 'processing'].includes(o.status)).length;
+    const totalProds = allProducts.filter(p => p.listing_type !== 'property').length;
+    const totalProps = allProducts.filter(p => p.listing_type === 'property').length;
+    const activeProds = allProducts.filter(p => p.listing_type !== 'property' && p.is_active).length;
     const totalCustomers = customers.count || 0;
     const totalReviews = reviews.count || 0;
     const pendingReviews = (reviews.data || []).filter(r => !r.is_approved).length;
 
     const now = new Date();
-    const monthOrders = allOrders.filter(o => { const d = new Date(o.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
-    const monthRevenue = monthOrders.filter(o => ['approved', 'payment_approved', 'delivered'].includes(o.status)).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0);
+    const monthOrders = allOrders.filter(o => {
+      const d = new Date(o.created_at);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const monthRevenue = monthOrders
+      .filter(o => ['approved', 'payment_approved', 'delivered'].includes(o.status))
+      .reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
 
-    // Recent 6 orders
     const recentOrders = allOrders.slice(0, 6);
-
     content.innerHTML = `
       <div class="space-y-6 fade-in">
         <div class="flex items-center justify-between">
-          <div><h2 class="text-xl font-black text-white">Good ${greeting()}, Admin 👋</h2><p class="text-sm text-gray-500 mt-0.5">${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
+          <div>
+            <h2 class="text-xl font-black text-white">Good ${greeting()}, Admin</h2>
+            <p class="text-sm text-gray-500 mt-0.5">${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          </div>
           <button onclick="navigate('products')" class="btn-press hidden sm:flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition">
             <i data-lucide="plus" class="w-4 h-4"></i> Add Product
           </button>
         </div>
 
-        <!-- Stats Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
           ${statCard('Total Revenue', `$${totalRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'dollar-sign', 'emerald', `$${monthRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 })} this month`)}
           ${statCard('Total Orders', allOrders.length, 'shopping-bag', 'blue', `${pendingOrders} pending`)}
@@ -742,16 +761,14 @@ async function renderDashboard() {
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <!-- Revenue Chart -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
             <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i> Revenue Overview</h3>
             <canvas id="chart-revenue" height="200"></canvas>
           </div>
-          <!-- Recent Orders -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-blue-400"></i> Recent Orders</h3>
-              <button onclick="navigate('orders')" class="text-xs text-blue-400 hover:text-blue-300 font-medium transition">View all →</button>
+              <button onclick="navigate('orders')" class="text-xs text-blue-400 hover:text-blue-300 font-medium transition">View all</button>
             </div>
             ${recentOrders.length === 0 ? '<p class="text-xs text-gray-500 text-center py-8">No orders yet</p>' :
               recentOrders.map(o => `
@@ -768,7 +785,6 @@ async function renderDashboard() {
           </div>
         </div>
 
-        <!-- Quick Actions -->
         <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
           <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Quick Actions</h3>
           <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -787,12 +803,484 @@ async function renderDashboard() {
           </div>
         </div>
       </div>`;
+
     if (window.lucide) lucide.createIcons();
     renderRevenueChart(allOrders);
   } catch (err) {
-    if (content) content.innerHTML = `<div class="p-6 text-red-400 text-sm">Error loading dashboard: ${esc(err.message)}</div>`;
+    if (content) content.innerHTML = `<div class="p-6 text-red-400 text-sm">Error: ${esc(err.message)}</div>`;
   }
 }
+
+// ══════════════════════════════════════════════════════════
+//  2. PRODUCTS MANAGER
+// ══════════════════════════════════════════════════════════
+async function renderProducts() {
+  const content = document.getElementById('content');
+  try {
+    const { data: products, error } = await supabase.from('showroom_listings')
+      .select('*').neq('listing_type', 'property').order('created_at', { ascending: false });
+    const items = error ? listLocalShowroomListings().filter(item => item.listing_type !== 'property') : (products || []);
+    const categories = [...new Set(items.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const tags = [...new Set(items.flatMap(p => Array.isArray(p.tags) ? p.tags : []).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+    if (!window._productFilters) {
+      window._productFilters = { search: '', category: '', tag: '', status: '', featured: '', sort: 'newest' };
+    }
+    if (!window._productSelection) window._productSelection = new Set();
+
+    content.innerHTML = `
+      <div class="space-y-5 fade-in">
+        <div class="glass-soft border border-blue-500/20 rounded-2xl p-4 sm:p-5">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-300/80">Product Showroom</p>
+              <h2 class="text-2xl font-black text-white mt-1">Professional Product Showroom</h2>
+              <p class="text-xs text-gray-400 mt-1">Unlimited products, smooth infinite scrolling layout, and clean auto-aligned cards.</p>
+            </div>
+            <button onclick="showAddProductStep1()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-black px-6 py-3.5 rounded-2xl transition shadow-xl shadow-blue-700/25">
+              <i data-lucide="plus" class="w-5 h-5"></i> Add Product
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-3">
+          ${statCard('Total Products', items.length, 'package', 'blue')}
+          ${statCard('Published', items.filter(p => !!p.is_active).length, 'badge-check', 'emerald')}
+          ${statCard('Draft / Hidden', items.filter(p => !p.is_active).length, 'file-clock', 'amber')}
+          ${statCard('Featured', items.filter(p => !!p.is_featured).length, 'sparkles', 'violet')}
+          ${statCard('Inventory Units', items.reduce((n, p) => n + (parseInt(p.stock_quantity, 10) || 0), 0), 'boxes', 'orange')}
+          ${statCard('Avg Price', `$${Math.round(items.reduce((n, p) => n + (parseFloat(p.price) || 0), 0) / Math.max(items.length, 1)).toLocaleString()}`, 'dollar-sign', 'blue')}
+        </div>
+
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-3 sm:p-4 space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2.5">
+            <div class="xl:col-span-2 relative">
+              <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+              <input id="prod-search" type="search" class="input-field pl-9" placeholder="Search by name, SKU, brand, category..." value="${esc(window._productFilters.search || '')}" oninput="filterProducts()">
+            </div>
+            <select id="prod-cat-filter" class="input-field" onchange="filterProducts()">
+              <option value="">All Categories</option>
+              ${(categories.length ? categories : PRODUCT_CATEGORIES).map(c => `<option value="${esc(c)}" ${(window._productFilters.category || '') === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+            </select>
+            <select id="prod-tag-filter" class="input-field" onchange="filterProducts()">
+              <option value="">All Tags</option>
+              ${tags.map(tag => `<option value="${esc(tag)}" ${(window._productFilters.tag || '') === tag ? 'selected' : ''}>${esc(tag)}</option>`).join('')}
+            </select>
+            <select id="prod-status-filter" class="input-field" onchange="filterProducts()">
+              <option value="">All Status</option>
+              <option value="active" ${(window._productFilters.status || '') === 'active' ? 'selected' : ''}>Published</option>
+              <option value="inactive" ${(window._productFilters.status || '') === 'inactive' ? 'selected' : ''}>Unpublished</option>
+              <option value="archived" ${(window._productFilters.status || '') === 'archived' ? 'selected' : ''}>Archived</option>
+            </select>
+            <select id="prod-featured-filter" class="input-field" onchange="filterProducts()">
+              <option value="">All Visibility</option>
+              <option value="featured" ${(window._productFilters.featured || '') === 'featured' ? 'selected' : ''}>Featured</option>
+              <option value="standard" ${(window._productFilters.featured || '') === 'standard' ? 'selected' : ''}>Standard</option>
+            </select>
+            <select id="prod-sort" class="input-field" onchange="filterProducts()">
+              <option value="newest" ${(window._productFilters.sort || '') === 'newest' ? 'selected' : ''}>Newest</option>
+              <option value="oldest" ${(window._productFilters.sort || '') === 'oldest' ? 'selected' : ''}>Oldest</option>
+              <option value="price-high" ${(window._productFilters.sort || '') === 'price-high' ? 'selected' : ''}>Price: High to Low</option>
+              <option value="price-low" ${(window._productFilters.sort || '') === 'price-low' ? 'selected' : ''}>Price: Low to High</option>
+              <option value="sales-high" ${(window._productFilters.sort || '') === 'sales-high' ? 'selected' : ''}>Sales: High to Low</option>
+              <option value="views-high" ${(window._productFilters.sort || '') === 'views-high' ? 'selected' : ''}>Views: High to Low</option>
+            </select>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="toggleSelectAllProducts(true)" class="btn-press px-3 py-1.5 text-xs font-bold rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-300 hover:bg-blue-500/15 transition">Select Visible</button>
+            <button onclick="toggleSelectAllProducts(false)" class="btn-press px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-500/20 bg-gray-500/10 text-gray-300 hover:bg-gray-500/15 transition">Clear Selection</button>
+            <button onclick="resetProductFilters()" class="btn-press px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-500/20 bg-transparent text-gray-300 hover:bg-white/5 transition">Reset Filters</button>
+            <div class="ml-auto text-[11px] text-gray-400"><span id="products-result-count">0</span> products shown</div>
+          </div>
+        </div>
+
+        <div id="bulk-actions" class="hidden items-center gap-2.5 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+          <span id="bulk-count" class="text-xs font-bold text-blue-300">0 selected</span>
+          <button onclick="bulkToggleActive(true)" class="btn-press text-xs font-bold text-emerald-300 hover:text-emerald-200 px-3 py-1.5 rounded-lg bg-emerald-500/15 transition">Publish</button>
+          <button onclick="bulkToggleActive(false)" class="btn-press text-xs font-bold text-amber-300 hover:text-amber-200 px-3 py-1.5 rounded-lg bg-amber-500/15 transition">Unpublish</button>
+          <button onclick="bulkDuplicateProducts()" class="btn-press text-xs font-bold text-gray-200 hover:text-white px-3 py-1.5 rounded-lg bg-white/10 transition">Duplicate</button>
+          <button onclick="bulkArchive()" class="btn-press text-xs font-bold text-red-300 hover:text-red-200 px-3 py-1.5 rounded-lg bg-red-500/15 transition">Archive</button>
+          <button onclick="bulkDeleteProducts()" class="btn-press text-xs font-bold text-red-200 hover:text-white px-3 py-1.5 rounded-lg bg-red-600/20 transition">Delete</button>
+        </div>
+
+        <div class="space-y-4">
+          <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 items-stretch"></div>
+          <div id="products-empty" class="hidden">${emptyState('package-search', 'No matching products', 'Try different filters or add a new product.', '<button onclick="showAddProductStep1()" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl">Add Product</button>')}</div>
+          <div class="text-center text-[11px] text-gray-500 py-2">Scroll to explore all products. Layout auto-rearranges as products are added, edited, moved, or removed.</div>
+        </div>
+      </div>`;
+
+    window._productsData = items;
+    renderProductsShowroomGrid(items);
+    filterProducts();
+    updateBulkBar();
+    if (window.lucide) lucide.createIcons();
+  } catch (err) {
+    if (content) content.innerHTML = `<div class="p-6 text-red-400 text-sm">Error: ${esc(err.message)}</div>`;
+  }
+}
+
+function parseProductPrice(value) {
+  const n = parseFloat(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeProductTags(product) {
+  return Array.isArray(product.tags) ? product.tags.filter(Boolean) : [];
+}
+
+function productDiscountText(product) {
+  const pct = parseFloat(product.discount_percent ?? product.discount ?? 0);
+  if (Number.isFinite(pct) && pct > 0) return `${Math.round(pct)}% OFF`;
+  return 'No discount';
+}
+
+function productStatusText(product) {
+  if (product.is_archived || product.availability_status === 'Archived') return 'archived';
+  return product.is_active ? 'active' : 'inactive';
+}
+
+function productViews(product) {
+  return parseInt(product.views ?? product.view_count ?? 0, 10) || 0;
+}
+
+function productSales(product) {
+  return parseInt(product.sales ?? product.sales_count ?? 0, 10) || 0;
+}
+
+function productSku(product) {
+  return product.sku || product.property_id || 'N/A';
+}
+
+function productCard(product) {
+  const img = (product.images && product.images[0]) ? product.images[0] : '/fallback.svg';
+  const tags = normalizeProductTags(product);
+  const status = productStatusText(product);
+  const selected = window._productSelection?.has(product.property_id);
+  const statusBadge = status === 'archived' ? badge('inactive') : badge(status === 'active' ? 'active' : 'inactive');
+  const dateAdded = fmtDate(product.created_at);
+  const isFeatured = !!product.is_featured;
+  const publishFn = product.is_active ? `unpublishProduct('${product.property_id}')` : `publishProduct('${product.property_id}')`;
+  const publishLabel = product.is_active ? 'Unpublish' : 'Publish';
+  const publishClass = product.is_active
+    ? 'bg-amber-500/15 text-amber-200 hover:bg-amber-500/25'
+    : 'bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25';
+
+  return `<article data-id="${product.property_id}" data-cat="${esc(product.category || '')}" data-status="${status}" data-featured="${isFeatured ? 'featured' : 'standard'}" class="prod-card glass-soft border ${selected ? 'border-blue-400/60' : 'border-blue-500/15'} rounded-2xl p-3.5 flex flex-col gap-3 transition hover:border-blue-400/35">
+    <div class="flex items-start gap-3">
+      <input type="checkbox" class="prod-check accent-blue-500 mt-1" value="${product.property_id}" ${selected ? 'checked' : ''} onchange="toggleProductSelection('${product.property_id}', this.checked)">
+      <div class="relative w-20 h-20 rounded-xl overflow-hidden border border-blue-500/20 shrink-0 bg-[#0b1124]">
+        <img src="${esc(img)}" alt="${esc(product.title || 'Product')}" class="w-full h-full object-cover" onerror="this.src='/fallback.svg'">
+        ${isFeatured ? '<span class="absolute top-1 left-1 text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-400 text-[#111827]">Featured</span>' : ''}
+      </div>
+      <div class="min-w-0 flex-1">
+        <h3 class="text-sm font-black text-white leading-snug line-clamp-2">${esc(product.title || 'Untitled Product')}</h3>
+        <p class="text-[10px] text-gray-500 font-mono mt-0.5">SKU: ${esc(productSku(product))}</p>
+        <div class="mt-1.5 flex items-center gap-1.5 flex-wrap">
+          ${statusBadge}
+          <span class="badge bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/20">${esc(product.category || 'Uncategorized')}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 text-[11px]">
+      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Price</span><p class="text-emerald-300 font-black">$${parseProductPrice(product.price).toLocaleString()}</p></div>
+      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Discount</span><p class="text-amber-300 font-bold">${esc(productDiscountText(product))}</p></div>
+      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Stock</span><p class="text-gray-200 font-bold">${product.stock_quantity != null ? esc(product.stock_quantity) : 'Unlimited'}</p></div>
+      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Brand</span><p class="text-gray-200 font-bold truncate">${esc(product.brand || 'N/A')}</p></div>
+      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Views</span><p class="text-blue-300 font-bold">${productViews(product).toLocaleString()}</p></div>
+      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Sales</span><p class="text-cyan-300 font-bold">${productSales(product).toLocaleString()}</p></div>
+    </div>
+
+    <div class="flex items-center justify-between text-[10px] text-gray-500 border-t border-blue-500/10 pt-2.5">
+      <span>Date Added: ${esc(dateAdded)}</span>
+      <span>${(product.images || []).length} images</span>
+    </div>
+
+    <div class="flex flex-wrap gap-1.5 mt-auto">
+      <button onclick="editProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-blue-500/15 text-blue-200 hover:bg-blue-500/25 transition">Edit</button>
+      <button onclick="quickEditProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 transition">Quick Edit</button>
+      <button onclick="previewProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-sky-500/15 text-sky-200 hover:bg-sky-500/25 transition">Preview</button>
+      <button onclick="duplicateProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white/10 text-gray-200 hover:bg-white/20 transition">Duplicate</button>
+      <button onclick="${publishFn}" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold ${publishClass} transition">${publishLabel}</button>
+      <button onclick="archiveProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-red-500/15 text-red-200 hover:bg-red-500/25 transition">Archive</button>
+      <button onclick="shareProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-violet-500/15 text-violet-200 hover:bg-violet-500/25 transition">Share</button>
+      <button onclick="deleteProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-rose-600/15 text-rose-200 hover:bg-rose-600/25 transition">Delete</button>
+      <button onclick="openProductMoreActions('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-gray-600/20 text-gray-200 hover:bg-gray-600/35 transition">More Actions</button>
+    </div>
+
+    ${tags.length ? `<div class="flex flex-wrap gap-1">${tags.slice(0, 6).map(tag => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-200">${esc(tag)}</span>`).join('')}</div>` : '<div class="text-[10px] text-gray-500">No tags</div>'}
+  </article>`;
+}
+
+function sortProductItems(items, sortBy) {
+  const rows = [...items];
+  const getTime = (d) => new Date(d || 0).getTime() || 0;
+  if (sortBy === 'oldest') rows.sort((a, b) => getTime(a.created_at) - getTime(b.created_at));
+  else if (sortBy === 'price-high') rows.sort((a, b) => parseProductPrice(b.price) - parseProductPrice(a.price));
+  else if (sortBy === 'price-low') rows.sort((a, b) => parseProductPrice(a.price) - parseProductPrice(b.price));
+  else if (sortBy === 'sales-high') rows.sort((a, b) => productSales(b) - productSales(a));
+  else if (sortBy === 'views-high') rows.sort((a, b) => productViews(b) - productViews(a));
+  else rows.sort((a, b) => getTime(b.created_at) - getTime(a.created_at));
+  return rows;
+}
+
+function renderProductsShowroomGrid(items) {
+  const grid = document.getElementById('products-grid');
+  const empty = document.getElementById('products-empty');
+  const count = document.getElementById('products-result-count');
+  if (!grid) return;
+  grid.innerHTML = items.map(productCard).join('');
+  if (count) count.textContent = String(items.length);
+  if (empty) empty.classList.toggle('hidden', items.length > 0);
+  updateBulkBar();
+  if (window.lucide) lucide.createIcons();
+}
+
+window.filterProducts = function() {
+  const f = window._productFilters || {};
+  f.search = (document.getElementById('prod-search')?.value || '').trim().toLowerCase();
+  f.category = document.getElementById('prod-cat-filter')?.value || '';
+  f.tag = document.getElementById('prod-tag-filter')?.value || '';
+  f.status = document.getElementById('prod-status-filter')?.value || '';
+  f.featured = document.getElementById('prod-featured-filter')?.value || '';
+  f.sort = document.getElementById('prod-sort')?.value || 'newest';
+  window._productFilters = f;
+
+  const filtered = (window._productsData || []).filter((p) => {
+    const haystack = [p.title, p.brand, p.category, productSku(p), normalizeProductTags(p).join(' '), p.description].join(' ').toLowerCase();
+    if (f.search && !haystack.includes(f.search)) return false;
+    if (f.category && (p.category || '') !== f.category) return false;
+    if (f.tag && !normalizeProductTags(p).includes(f.tag)) return false;
+    if (f.status && productStatusText(p) !== f.status) return false;
+    if (f.featured && (f.featured === 'featured') !== !!p.is_featured) return false;
+    return true;
+  });
+
+  const sorted = sortProductItems(filtered, f.sort);
+  renderProductsShowroomGrid(sorted);
+};
+
+window.resetProductFilters = function() {
+  window._productFilters = { search: '', category: '', tag: '', status: '', featured: '', sort: 'newest' };
+  const ids = ['prod-search', 'prod-cat-filter', 'prod-tag-filter', 'prod-status-filter', 'prod-featured-filter', 'prod-sort'];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (id === 'prod-sort') el.value = 'newest';
+    else el.value = '';
+  });
+  filterProducts();
+};
+
+window.toggleProductSelection = function(pid, selected) {
+  if (!window._productSelection) window._productSelection = new Set();
+  if (selected) window._productSelection.add(pid);
+  else window._productSelection.delete(pid);
+  updateBulkBar();
+};
+
+window.toggleSelectAll = function(cb, cls) {
+  document.querySelectorAll('.' + cls).forEach(c => {
+    c.checked = cb.checked;
+    const pid = c.value;
+    if (!window._productSelection) window._productSelection = new Set();
+    if (cb.checked) window._productSelection.add(pid);
+    else window._productSelection.delete(pid);
+  });
+  updateBulkBar();
+};
+
+window.toggleSelectAllProducts = function(selectAll) {
+  document.querySelectorAll('.prod-check').forEach((cb) => {
+    cb.checked = !!selectAll;
+    if (!window._productSelection) window._productSelection = new Set();
+    if (selectAll) window._productSelection.add(cb.value);
+    else window._productSelection.delete(cb.value);
+  });
+  updateBulkBar();
+};
+
+window.updateBulkBar = function() {
+  const checked = window._productSelection ? window._productSelection.size : 0;
+  const bar = document.getElementById('bulk-actions');
+  const count = document.getElementById('bulk-count');
+  if (bar) {
+    bar.classList.toggle('hidden', checked === 0);
+    if (checked > 0) bar.classList.add('flex');
+  }
+  if (count) count.textContent = `${checked} selected`;
+};
+
+function getSelectedIds() {
+  return window._productSelection ? [...window._productSelection] : [];
+}
+
+window.bulkToggleActive = async function(active) {
+  const ids = getSelectedIds();
+  if (!ids.length) return;
+  await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: active }).eq('property_id', id)));
+  showToast(`${ids.length} products ${active ? 'published' : 'unpublished'}`);
+  window._productSelection = new Set();
+  renderProducts();
+};
+
+window.bulkDuplicateProducts = async function() {
+  const ids = getSelectedIds();
+  if (!ids.length) return;
+  for (const id of ids) {
+    await duplicateProduct(id, true);
+  }
+  showToast(`${ids.length} products duplicated`);
+  window._productSelection = new Set();
+  renderProducts();
+};
+
+window.bulkArchive = async function() {
+  const ids = getSelectedIds();
+  if (!ids.length) return;
+  if (!confirm(`Archive ${ids.length} products? They will be hidden but not deleted.`)) return;
+  await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: false, availability_status: 'Archived' }).eq('property_id', id)));
+  showToast(`${ids.length} products archived`);
+  window._productSelection = new Set();
+  renderProducts();
+};
+
+window.bulkDeleteProducts = async function() {
+  const ids = getSelectedIds();
+  if (!ids.length) return;
+  if (!confirm(`Delete ${ids.length} products permanently? This action cannot be undone.`)) return;
+  await Promise.all(ids.map(id => supabase.from('showroom_listings').delete().eq('property_id', id)));
+  showToast(`${ids.length} products deleted`);
+  window._productSelection = new Set();
+  renderProducts();
+};
+
+window.previewProduct = async function(pid) {
+  const result = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
+  const data = (window._productsData || []).find(item => item.property_id === pid) || result.data;
+  if (!data) return showToast('Product not found', 'error');
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box wide">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-black text-white">Product Live Preview</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <img src="${esc((data.images || [])[0] || '/fallback.svg')}" class="w-full h-64 object-cover rounded-xl border border-blue-500/20" onerror="this.src='/fallback.svg'">
+            <div class="flex flex-wrap gap-2">${(data.images || []).slice(0, 8).map(url => `<img src="${esc(url)}" class="w-12 h-12 rounded-lg object-cover border border-blue-500/20" onerror="this.src='/fallback.svg'">`).join('')}</div>
+          </div>
+          <div class="space-y-2">
+            <h4 class="text-lg font-black text-white">${esc(data.title || 'Untitled Product')}</h4>
+            <div class="flex items-center gap-2">${badge(data.is_active ? 'active' : 'inactive')}${data.is_featured ? '<span class="badge bg-amber-500/15 text-amber-200 border-amber-500/30">Featured</span>' : ''}</div>
+            <p class="text-xs text-gray-400">${esc(data.description || 'No description')}</p>
+            <div class="grid grid-cols-2 gap-2 text-xs mt-2">
+              <div class="glass-soft border border-blue-500/15 rounded-lg p-2"><span class="text-gray-500">Price</span><p class="text-emerald-300 font-black">$${parseProductPrice(data.price).toLocaleString()}</p></div>
+              <div class="glass-soft border border-blue-500/15 rounded-lg p-2"><span class="text-gray-500">Stock</span><p class="text-gray-200 font-bold">${data.stock_quantity != null ? esc(data.stock_quantity) : 'Unlimited'}</p></div>
+              <div class="glass-soft border border-blue-500/15 rounded-lg p-2"><span class="text-gray-500">Brand</span><p class="text-gray-200 font-bold">${esc(data.brand || 'N/A')}</p></div>
+              <div class="glass-soft border border-blue-500/15 rounded-lg p-2"><span class="text-gray-500">Category</span><p class="text-gray-200 font-bold">${esc(data.category || 'N/A')}</p></div>
+            </div>
+            <div class="pt-2 flex gap-2">
+              <button onclick="editProduct('${data.property_id}');closeModal();" class="btn-press px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl">Edit</button>
+              <button onclick="shareProduct('${data.property_id}')" class="btn-press px-3 py-2 bg-violet-600/70 hover:bg-violet-500 text-white text-xs font-bold rounded-xl">Share</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+};
+
+window.quickEditProduct = async function(pid) {
+  const result = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
+  const data = (window._productsData || []).find(item => item.property_id === pid) || result.data;
+  if (!data) return showToast('Product not found', 'error');
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-black text-white">Quick Edit Product</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form onsubmit="saveQuickEditProduct(event,'${data.property_id}')" class="space-y-3">
+          <div><label class="lbl">Title</label><input name="title" class="input-field" value="${esc(data.title || '')}"></div>
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="lbl">Price</label><input type="number" step="0.01" name="price" class="input-field" value="${esc(data.price || 0)}"></div>
+            <div><label class="lbl">Stock</label><input type="number" name="stock_quantity" class="input-field" value="${esc(data.stock_quantity ?? '')}" placeholder="Unlimited"></div>
+          </div>
+          <div><label class="lbl">Availability</label><select name="availability_status" class="input-field">${['In Stock', 'Out of Stock', 'Pre-order', 'Limited Stock', 'Archived'].map(v => `<option value="${v}" ${data.availability_status === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+          <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10"><span class="text-xs text-gray-300">Featured</span><input type="checkbox" name="is_featured" ${data.is_featured ? 'checked' : ''} class="accent-blue-500"></div>
+          <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10"><span class="text-xs text-gray-300">Published</span><input type="checkbox" name="is_active" ${data.is_active ? 'checked' : ''} class="accent-blue-500"></div>
+          <button type="submit" class="btn-press w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold">Save Quick Edit</button>
+        </form>
+      </div>
+    </div>`);
+};
+
+window.saveQuickEditProduct = async function(e, pid) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const patch = {
+    title: fd.get('title') || 'Untitled Product',
+    price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(fd.get('price')) || 0)),
+    stock_quantity: fd.get('stock_quantity') === '' ? null : parseInt(fd.get('stock_quantity'), 10),
+    availability_status: fd.get('availability_status') || 'In Stock',
+    is_featured: fd.get('is_featured') === 'on',
+    is_active: fd.get('is_active') === 'on',
+  };
+  const { error } = await supabase.from('showroom_listings').update(patch).eq('property_id', pid);
+  if (error) {
+    patchLocalShowroomListing(pid, patch);
+    showToast('Quick edit saved locally', 'info');
+  } else {
+    showToast('Quick edit saved');
+  }
+  closeModal();
+  renderProducts();
+};
+
+window.publishProduct = function(pid) { return toggleProductActive(pid, true); };
+window.unpublishProduct = function(pid) { return toggleProductActive(pid, false); };
+
+window.shareProduct = async function(pid) {
+  const url = `${window.location.origin}/details.html?id=${encodeURIComponent(pid)}`;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+      showToast('Product link copied to clipboard');
+      return;
+    }
+  } catch {}
+  window.prompt('Copy product link:', url);
+};
+
+window.deleteProduct = async function(pid) {
+  if (!confirm('Delete this product permanently? This action cannot be undone.')) return;
+  const { error } = await supabase.from('showroom_listings').delete().eq('property_id', pid);
+  if (error) return showToast('Delete failed: ' + error.message, 'error');
+  showToast('Product deleted');
+  renderProducts();
+};
+
+window.openProductMoreActions = function(pid) {
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-black text-white">More Actions</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="grid grid-cols-1 gap-2">
+          <button onclick="previewProduct('${pid}');closeModal();" class="btn-press text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-semibold text-gray-200">Live Preview</button>
+          <button onclick="quickEditProduct('${pid}');closeModal();" class="btn-press text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-semibold text-gray-200">Quick Edit</button>
+          <button onclick="duplicateProduct('${pid}');closeModal();" class="btn-press text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-semibold text-gray-200">Duplicate</button>
+          <button onclick="archiveProduct('${pid}');closeModal();" class="btn-press text-left px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-sm font-semibold text-red-200">Archive</button>
+        </div>
+      </div>
+    </div>`);
+};
 
 function greeting() {
   const h = new Date().getHours();
@@ -1119,149 +1607,22 @@ function renderProductFieldsForm(category, existing = {}) {
     } else if (f.type === 'textarea') {
       input = `<textarea class="input-field" name="${f.key}" id="pf-${f.key}" rows="3" placeholder="Write a detailed description…">${esc(val)}</textarea>`;
     } else {
-      input = `<input type="${f.type}" class="input-field" name="${f.key}" id="pf-${f.key}" value="${esc(val)}" placeholder="${f.label}" ${req}>`;
+      const searchableKeys = ['brand', 'model', 'color', 'size', 'material', 'platform'];
+      const listId = searchableKeys.includes(f.key) ? `pf-list-${f.key}` : '';
+      const suggestions = {
+        brand: ['Apple', 'Samsung', 'Sony', 'LG', 'HP', 'Dell', 'Lenovo', 'Asus', 'Nike', 'Adidas', 'Puma', 'Gucci', 'Rolex', 'Toyota', 'Mercedes', 'BMW', 'Tesla'],
+        model: ['Pro', 'Ultra', 'Max', 'SE', 'Standard', 'Plus', 'Series 1', 'Series 2'],
+        color: ['Black', 'White', 'Silver', 'Blue', 'Red', 'Green', 'Gold', 'Gray', 'Pink', 'Brown'],
+        size: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '32', '34', '36', '38', '40', '42'],
+        material: ['Cotton', 'Leather', 'Stainless Steel', 'Aluminum', 'Wood', 'Glass', 'Plastic'],
+        platform: ['PS5', 'Xbox Series X', 'Nintendo Switch', 'PC', 'Android', 'iOS'],
+      };
+      const options = (suggestions[f.key] || []).map(item => `<option value="${esc(item)}"></option>`).join('');
+      input = `<input type="${f.type}" class="input-field" name="${f.key}" id="pf-${f.key}" value="${esc(val)}" placeholder="${f.label}" ${listId ? `list="${listId}"` : ''} ${req}>${listId ? `<datalist id="${listId}">${options}</datalist>` : ''}`;
     }
     return `<div class="${gridSpan}"><label class="lbl">${f.label}${f.required ? ' *' : ''}</label>${input}</div>`;
   }).join('');
 }
-
-// ══════════════════════════════════════════════════════════
-//  2. PRODUCTS MANAGER
-// ══════════════════════════════════════════════════════════
-async function renderProducts() {
-  const content = document.getElementById('content');
-  try {
-    const { data: products, error } = await supabase.from('showroom_listings')
-      .select('*').neq('listing_type', 'property').order('created_at', { ascending: false });
-    const items = error ? listLocalShowroomListings().filter(item => item.listing_type !== 'property') : (products || []);
-    content.innerHTML = `
-      <div class="space-y-4 fade-in">
-        <div class="flex flex-wrap items-center gap-3">
-          <h2 class="text-xl font-black text-white flex-1">Products Manager</h2>
-          <button onclick="showAddProductStep1()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-lg shadow-blue-600/15">
-            <i data-lucide="plus" class="w-4 h-4"></i> Add Product
-          </button>
-        </div>
-
-        <!-- Filters & Search -->
-        <div class="flex flex-wrap gap-3">
-          <div class="flex-1 min-w-48 relative">
-            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
-            <input id="prod-search" type="search" class="input-field pl-9" placeholder="Search products…" oninput="filterProducts(this.value)">
-          </div>
-          <select id="prod-cat-filter" class="input-field w-auto" onchange="filterProducts()">
-            <option value="">All Categories</option>
-            ${PRODUCT_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
-          </select>
-          <select id="prod-status-filter" class="input-field w-auto" onchange="filterProducts()">
-            <option value="">All Status</option>
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-          </select>
-        </div>
-
-        <!-- Bulk Actions -->
-        <div id="bulk-actions" class="hidden items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-          <span id="bulk-count" class="text-xs font-bold text-blue-400">0 selected</span>
-          <button onclick="bulkToggleActive(true)" class="btn-press text-xs font-bold text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded-lg bg-emerald-500/10 transition">Activate</button>
-          <button onclick="bulkToggleActive(false)" class="btn-press text-xs font-bold text-amber-400 hover:text-amber-300 px-3 py-1.5 rounded-lg bg-amber-500/10 transition">Deactivate</button>
-          <button onclick="bulkArchive()" class="btn-press text-xs font-bold text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg bg-red-500/10 transition">Archive Selected</button>
-        </div>
-
-        <!-- Table -->
-        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
-          <div class="overflow-x-auto scrollbar-thin">
-            <table class="w-full dt" id="products-table">
-              <thead><tr>
-                <th><input type="checkbox" id="select-all-prods" onchange="toggleSelectAll(this,'prod-check')" class="accent-blue-500"></th>
-                <th>Product</th><th>Category</th><th class="hidden sm:table-cell">Price</th>
-                <th class="hidden md:table-cell">Stock</th><th>Status</th><th>Actions</th>
-              </tr></thead>
-              <tbody id="products-tbody">
-                ${items.length === 0 ? '<tr><td colspan="7" class="text-center text-gray-500 py-12">No products yet. Click Add Product to get started.</td></tr>' :
-                  items.map(p => productRow(p)).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>`;
-    window._productsData = items;
-    if (window.lucide) lucide.createIcons();
-  } catch (err) {
-    if (content) content.innerHTML = `<div class="p-6 text-red-400 text-sm">Error: ${esc(err.message)}</div>`;
-  }
-}
-
-function productRow(p) {
-  const img = (p.images && p.images[0]) ? p.images[0] : '/fallback.svg';
-  return `<tr data-id="${p.property_id}" data-cat="${esc(p.category)}" data-active="${p.is_active}" class="prod-row">
-    <td><input type="checkbox" class="prod-check accent-blue-500" value="${p.property_id}" onchange="updateBulkBar()"></td>
-    <td>
-      <div class="flex items-center gap-2.5">
-        <img src="${esc(img)}" alt="" class="w-9 h-9 rounded-lg object-cover border border-blue-500/20 shrink-0" onerror="this.src='/fallback.svg'">
-        <div class="min-w-0">
-          <p class="text-xs font-bold text-white truncate max-w-[180px]">${esc(p.title)}</p>
-          <p class="text-[10px] text-gray-500 font-mono">${esc(p.property_id)}</p>
-        </div>
-      </div>
-    </td>
-    <td><span class="text-xs text-gray-300">${esc(p.category)}</span></td>
-    <td class="hidden sm:table-cell"><span class="text-xs font-bold text-emerald-400">$${parseFloat(p.price || 0).toLocaleString()}</span></td>
-    <td class="hidden md:table-cell"><span class="text-xs text-gray-300">${p.stock_quantity != null ? p.stock_quantity : '∞'}</span></td>
-    <td>${badge(p.is_active ? 'active' : 'inactive')}</td>
-    <td>
-      <div class="flex items-center gap-1">
-        <button onclick="editProduct('${p.property_id}')" class="btn-press p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-        <button onclick="toggleProductActive('${p.property_id}',${!p.is_active})" class="btn-press p-1.5 ${p.is_active ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'} rounded-lg transition" title="${p.is_active ? 'Deactivate' : 'Activate'}"><i data-lucide="${p.is_active ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i></button>
-        <button onclick="duplicateProduct('${p.property_id}')" class="btn-press p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition" title="Duplicate"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
-        <button onclick="archiveProduct('${p.property_id}')" class="btn-press p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition" title="Archive"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>
-      </div>
-    </td>
-  </tr>`;
-}
-
-window.filterProducts = function(q) {
-  const search = (q || document.getElementById('prod-search')?.value || '').toLowerCase();
-  const cat = document.getElementById('prod-cat-filter')?.value || '';
-  const status = document.getElementById('prod-status-filter')?.value;
-  document.querySelectorAll('.prod-row').forEach(row => {
-    const matchSearch = !search || row.textContent.toLowerCase().includes(search);
-    const matchCat = !cat || row.dataset.cat === cat;
-    const matchStatus = status === '' || status === undefined || row.dataset.active === status;
-    row.style.display = matchSearch && matchCat && matchStatus ? '' : 'none';
-  });
-};
-
-window.toggleSelectAll = function(cb, cls) {
-  document.querySelectorAll('.' + cls).forEach(c => { c.checked = cb.checked; });
-  updateBulkBar();
-};
-
-window.updateBulkBar = function() {
-  const checked = document.querySelectorAll('.prod-check:checked').length;
-  const bar = document.getElementById('bulk-actions');
-  const count = document.getElementById('bulk-count');
-  if (bar) bar.classList.toggle('hidden', checked === 0);
-  if (bar && checked > 0) bar.classList.add('flex');
-  if (count) count.textContent = `${checked} selected`;
-};
-
-function getSelectedIds() { return [...document.querySelectorAll('.prod-check:checked')].map(c => c.value); }
-
-window.bulkToggleActive = async function(active) {
-  const ids = getSelectedIds(); if (!ids.length) return;
-  await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: active }).eq('property_id', id)));
-  showToast(`${ids.length} products ${active ? 'activated' : 'deactivated'}`);
-  renderProducts();
-};
-
-window.bulkArchive = async function() {
-  const ids = getSelectedIds(); if (!ids.length) return;
-  if (!confirm(`Archive ${ids.length} products? They will be hidden but not deleted.`)) return;
-  await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: false }).eq('property_id', id)));
-  showToast(`${ids.length} products archived`);
-  renderProducts();
-};
 
 // Step 1: Choose category
 window.showAddProductStep1 = function() {
@@ -1272,16 +1633,28 @@ window.showAddProductStep1 = function() {
           <h3 class="text-base font-black text-white">Select Product Category</h3>
           <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
-        <p class="text-xs text-gray-400 mb-4">Choose the category that best matches your product. The form will show the right fields automatically.</p>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto scrollbar-thin pr-1">
+        <p class="text-xs text-gray-400 mb-3">Choose the category that best matches your product. The form will show smart fields automatically.</p>
+        <div class="relative mb-3">
+          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+          <input id="product-category-search" type="search" class="input-field pl-9" placeholder="Search category..." oninput="filterProductCategoryChoices(this.value)">
+        </div>
+        <div id="product-category-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto scrollbar-thin pr-1">
           ${PRODUCT_CATEGORIES.map(c => `
-            <button onclick="showAddProductStep2('${c.replace(/'/g, "\\'")}')" class="btn-press flex items-center gap-2 p-3 glass-soft border border-blue-500/15 hover:border-blue-500/40 rounded-xl transition text-left">
+            <button data-category="${esc(c).toLowerCase()}" onclick="showAddProductStep2('${c.replace(/'/g, "\\'")}')" class="btn-press flex items-center gap-2 p-3 glass-soft border border-blue-500/15 hover:border-blue-500/40 rounded-xl transition text-left">
               <i data-lucide="tag" class="w-4 h-4 text-blue-400 shrink-0"></i>
               <span class="text-xs font-semibold text-gray-200">${esc(c)}</span>
             </button>`).join('')}
         </div>
       </div>
     </div>`);
+};
+
+window.filterProductCategoryChoices = function(query) {
+  const q = String(query || '').trim().toLowerCase();
+  document.querySelectorAll('#product-category-grid [data-category]').forEach((btn) => {
+    const show = !q || btn.dataset.category.includes(q);
+    btn.classList.toggle('hidden', !show);
+  });
 };
 
 window.showAddProductStep2 = function(category, existingData = {}) {
@@ -1318,7 +1691,31 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             <input type="hidden" name="required_image_count" id="pf-required_image_count" value="">
           </div>
 
-          <!-- Dynamic Fields -->
+          <div id="product-autosave-note" class="hidden p-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-[11px] text-emerald-200"></div>
+
+          <!-- Step 1: Image Upload -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="lbl !mb-0">Step 1: Upload Product Images</label>
+              <span class="text-[10px] text-gray-500">Upload one or multiple images before publishing</span>
+            </div>
+            <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
+              <i data-lucide="image-plus" class="w-8 h-8 text-blue-400 mx-auto mb-2"></i>
+              <p class="text-xs font-bold text-gray-300">Click or drag & drop images here</p>
+              <p class="text-[11px] text-gray-500 mt-1">PNG, JPG, WEBP up to 5MB each. First image = cover.</p>
+              <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
+            </div>
+            <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
+              ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
+            </div>
+            <p class="text-[10px] text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover • Vehicle templates require 24 images</p>
+            <div id="image-url-inputs">
+              ${(existingData.images || []).map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}
+            </div>
+          </div>
+
+          <!-- Step 2: Product Details -->
+          <div class="text-[11px] text-blue-200 font-bold uppercase tracking-wide">Step 2: Product Details</div>
           <div class="form-grid form-grid-2">
             ${renderProductFieldsForm(category, existingData)}
           </div>
@@ -1380,27 +1777,17 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             </label>
           </div>
 
-          <!-- Image Upload -->
-          <div>
-            <label class="lbl">Product Images</label>
-            <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
-              <i data-lucide="image-plus" class="w-8 h-8 text-blue-400 mx-auto mb-2"></i>
-              <p class="text-xs font-bold text-gray-300">Click or drag & drop images here</p>
-              <p class="text-[11px] text-gray-500 mt-1">PNG, JPG, WEBP up to 5MB each. First image = cover.</p>
-              <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
-            </div>
-            <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
-              ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
-            </div>
-            <p class="text-[10px] text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover • Vehicle templates require 24 images</p>
-            <div id="image-url-inputs">
-              ${(existingData.images || []).map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}
-            </div>
+          <div class="glass-soft border border-blue-500/15 rounded-xl p-3" id="product-review-panel">
+            <p class="text-xs font-bold text-white">Quick Review Before Publish</p>
+            <div class="text-[11px] text-gray-400 mt-1" id="product-review-content">Fill in product details to preview your publish summary.</div>
           </div>
 
           <div class="flex gap-3 pt-2">
+            <button type="button" onclick="previewProductDraft()" class="btn-press px-4 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 rounded-xl text-sm transition">
+              Live Preview
+            </button>
             <button type="submit" name="action" value="publish" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-blue-600/15">
-              ${isEdit ? '💾 Save Changes' : '🚀 Publish Product'}
+              ${isEdit ? 'One-Click Publish Changes' : 'One-Click Publish Product'}
             </button>
             <button type="submit" name="action" value="draft" class="btn-press px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
               Save Draft
@@ -1414,6 +1801,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
   configurePriceField('pf-price');
   applyCatalogDraftToProductForm(category, 'pricing');
   document.getElementById('pf-price')?.addEventListener('input', () => applyCatalogDraftToProductForm(category, 'pricing'));
+  setupProductFormExperience(category, existingData.property_id || '');
 };
 
 function imageThumbHtml(url, i) {
@@ -1511,6 +1899,162 @@ function updateCoverBadge() {
   });
 }
 
+function productAutoSaveKey(category, existingId) {
+  return `kco_product_form_autosave_${category}_${existingId || 'new'}`;
+}
+
+function serializeProductForm(form) {
+  const fd = new FormData(form);
+  const out = { images: [], tags: [], fields: {} };
+  for (const [k, v] of fd.entries()) {
+    if (k === 'images') {
+      if (v && !String(v).startsWith('blob:')) out.images.push(String(v));
+    } else if (k === 'tags') {
+      out.tags.push(String(v));
+    } else {
+      out.fields[k] = String(v);
+    }
+  }
+  out.fields.is_featured = form.querySelector('[name="is_featured"]')?.checked ? 'on' : '';
+  out.fields.is_active = form.querySelector('[name="is_active"]')?.checked ? 'on' : '';
+  return out;
+}
+
+function restoreProductFormSnapshot(form, snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return false;
+  const fields = snapshot.fields || {};
+  Object.entries(fields).forEach(([name, value]) => {
+    const target = form.querySelector(`[name="${name}"]`);
+    if (!target) return;
+    if (target.type === 'checkbox') {
+      target.checked = value === 'on' || value === true;
+    } else {
+      target.value = value == null ? '' : String(value);
+    }
+  });
+
+  const tags = Array.isArray(snapshot.tags) ? snapshot.tags : [];
+  form.querySelectorAll('input[name="tags"]').forEach((cb) => {
+    cb.checked = tags.includes(cb.value);
+  });
+
+  if (Array.isArray(snapshot.images)) {
+    const preview = document.getElementById('image-preview');
+    if (preview) {
+      preview.innerHTML = snapshot.images.map((url, i) => imageThumbHtml(url, i)).join('');
+      rebuildImageInputs();
+      updateCoverBadge();
+    }
+  }
+  return true;
+}
+
+function updateProductReviewPanel() {
+  const panel = document.getElementById('product-review-content');
+  const form = document.getElementById('product-form');
+  if (!panel || !form) return;
+  const title = form.querySelector('[name="title"]')?.value || 'Untitled Product';
+  const brand = form.querySelector('[name="brand"]')?.value || 'N/A';
+  const price = parseFloat(form.querySelector('[name="price"]')?.value || '0') || 0;
+  const stockRaw = form.querySelector('[name="stock_quantity"]')?.value;
+  const stock = stockRaw === '' || stockRaw == null ? 'Unlimited' : stockRaw;
+  const category = state.section === 'products' ? (document.querySelector('#product-form')?.dataset?.category || '') : '';
+  const tags = [...form.querySelectorAll('input[name="tags"]:checked')].map(cb => cb.value);
+  const imageCount = document.querySelectorAll('#image-preview .img-thumb').length;
+  const isActive = form.querySelector('[name="is_active"]')?.checked;
+  panel.innerHTML = `
+    <div class="grid grid-cols-2 gap-2">
+      <div><span class="text-gray-500">Title</span><p class="text-white font-semibold">${esc(title)}</p></div>
+      <div><span class="text-gray-500">Brand</span><p class="text-white font-semibold">${esc(brand)}</p></div>
+      <div><span class="text-gray-500">Price</span><p class="text-emerald-300 font-semibold">$${price.toLocaleString()}</p></div>
+      <div><span class="text-gray-500">Stock</span><p class="text-white font-semibold">${esc(stock)}</p></div>
+      <div><span class="text-gray-500">Images</span><p class="text-white font-semibold">${imageCount}</p></div>
+      <div><span class="text-gray-500">Status</span><p class="${isActive ? 'text-emerald-300' : 'text-amber-300'} font-semibold">${isActive ? 'Published' : 'Draft / Hidden'}</p></div>
+    </div>
+    <div class="mt-2 text-gray-400">Tags: ${tags.length ? esc(tags.join(', ')) : 'No tags selected'}</div>
+    ${category ? `<div class="text-gray-500 mt-1">Category: ${esc(category)}</div>` : ''}
+  `;
+}
+
+window.previewProductDraft = function() {
+  const form = document.getElementById('product-form');
+  if (!form) return;
+  const image = document.querySelector('#image-preview img')?.src || '/fallback.svg';
+  const title = form.querySelector('[name="title"]')?.value || 'Untitled Product';
+  const desc = form.querySelector('[name="description"]')?.value || 'No description yet.';
+  const brand = form.querySelector('[name="brand"]')?.value || 'N/A';
+  const price = parseFloat(form.querySelector('[name="price"]')?.value || '0') || 0;
+  const category = form.dataset.category || 'Product';
+  const stock = form.querySelector('[name="stock_quantity"]')?.value || 'Unlimited';
+  const isActive = form.querySelector('[name="is_active"]')?.checked;
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box wide">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-black text-white">Live Draft Preview</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <img src="${esc(image)}" class="w-full h-64 object-cover rounded-xl border border-blue-500/20" onerror="this.src='/fallback.svg'">
+          <div class="space-y-2">
+            <h4 class="text-xl font-black text-white">${esc(title)}</h4>
+            <div class="flex items-center gap-2">${badge(isActive ? 'active' : 'inactive')}<span class="badge bg-blue-500/10 text-blue-300 border-blue-500/20">${esc(category)}</span></div>
+            <p class="text-sm text-gray-400">${esc(desc)}</p>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="glass-soft border border-blue-500/15 rounded-lg p-2"><span class="text-gray-500">Price</span><p class="text-emerald-300 font-black">$${price.toLocaleString()}</p></div>
+              <div class="glass-soft border border-blue-500/15 rounded-lg p-2"><span class="text-gray-500">Stock</span><p class="text-gray-200 font-bold">${esc(stock)}</p></div>
+              <div class="glass-soft border border-blue-500/15 rounded-lg p-2 col-span-2"><span class="text-gray-500">Brand</span><p class="text-gray-200 font-bold">${esc(brand)}</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+};
+
+function setupProductFormExperience(category, existingId) {
+  const form = document.getElementById('product-form');
+  if (!form) return;
+  form.dataset.category = category;
+  const autoSaveKey = productAutoSaveKey(category, existingId);
+  const note = document.getElementById('product-autosave-note');
+
+  try {
+    const raw = localStorage.getItem(autoSaveKey);
+    if (raw) {
+      const snapshot = JSON.parse(raw);
+      const restored = restoreProductFormSnapshot(form, snapshot);
+      if (restored && note) {
+        note.textContent = 'Autosave restored from your last session.';
+        note.classList.remove('hidden');
+      }
+    }
+  } catch {}
+
+  const autosave = () => {
+    try {
+      localStorage.setItem(autoSaveKey, JSON.stringify(serializeProductForm(form)));
+      if (note) {
+        note.textContent = `Auto saved at ${new Date().toLocaleTimeString()}`;
+        note.classList.remove('hidden');
+      }
+    } catch {}
+    updateProductReviewPanel();
+  };
+
+  let timer;
+  const schedule = () => {
+    clearTimeout(timer);
+    timer = setTimeout(autosave, 500);
+  };
+
+  form.querySelectorAll('input, textarea, select').forEach((el) => {
+    el.addEventListener('input', schedule);
+    el.addEventListener('change', schedule);
+  });
+
+  updateProductReviewPanel();
+}
+
 window.saveProduct = async function(e, category, existingId) {
   e.preventDefault();
   const form = e.target;
@@ -1581,11 +2125,12 @@ window.saveProduct = async function(e, category, existingId) {
     }
     if (err && !/showroom_listings/i.test(err.message || '')) throw err;
     showToast(isDraft ? 'Draft saved!' : existingId ? 'Product updated!' : 'Product published!');
+    try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
     closeModal();
     renderProducts();
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '🚀 Publish Product'; }
+    if (btn) { btn.disabled = false; btn.textContent = existingId ? 'One-Click Publish Changes' : 'One-Click Publish Product'; }
   }
 };
 
@@ -1597,24 +2142,26 @@ window.editProduct = async function(pid) {
 };
 
 window.toggleProductActive = async function(pid, active) {
-  await supabase.from('showroom_listings').update({ is_active: active }).eq('property_id', pid);
-  showToast(active ? 'Product activated' : 'Product deactivated');
+  await supabase.from('showroom_listings').update({ is_active: active, availability_status: active ? 'In Stock' : 'Out of Stock' }).eq('property_id', pid);
+  showToast(active ? 'Product published' : 'Product unpublished');
   renderProducts();
 };
 
-window.duplicateProduct = async function(pid) {
+window.duplicateProduct = async function(pid, silent = false) {
   const { data } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
   if (!data) return;
   const { id: _, property_id: __, created_at: ___, updated_at: ____, ...rest } = data;
   const newPid = genId();
   await supabase.from('showroom_listings').insert({ ...rest, property_id: newPid, title: data.title + ' (Copy)', is_active: false });
-  showToast('Product duplicated');
-  renderProducts();
+  if (!silent) {
+    showToast('Product duplicated');
+    renderProducts();
+  }
 };
 
 window.archiveProduct = async function(pid) {
   if (!confirm('Archive this product? It will be hidden from the website but can be restored.')) return;
-  await supabase.from('showroom_listings').update({ is_active: false }).eq('property_id', pid);
+  await supabase.from('showroom_listings').update({ is_active: false, availability_status: 'Archived' }).eq('property_id', pid);
   showToast('Product archived');
   renderProducts();
 };
@@ -4054,6 +4601,115 @@ window.saveSettings = async function(e) {
 };
 
 // ══════════════════════════════════════════════════════════
+//  HOMEPAGE BRANDING  (banner image for the homepage header)
+// ══════════════════════════════════════════════════════════
+async function renderHomepageBrandingManager() {
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  try {
+    const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+    const d = s || {};
+    const bannerUrl = d.homepage_banner_image || '';
+    const bannerAlt = d.homepage_banner_alt || 'Homepage header banner';
+    const bannerCaption = bannerUrl ? 'Uploaded banner will appear at the top of the homepage only.' : 'No homepage banner is set yet.';
+
+    content.innerHTML = `
+      <div class="space-y-5 fade-in">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-xl font-black text-white flex items-center gap-2"><i data-lucide="image" class="w-5 h-5 text-blue-400"></i> Homepage Branding</h2>
+            <p class="text-xs text-gray-500 mt-1">Upload a header banner for the homepage. This does not change your logo, text, colors, or verification badge.</p>
+          </div>
+          <button type="button" onclick="toggleHomepageBannerPreview()" class="btn-press flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
+            <i data-lucide="eye" class="w-3.5 h-3.5"></i> Live Preview
+          </button>
+        </div>
+
+        <div id="homepage-banner-preview-panel" class="glass-soft border border-violet-500/20 rounded-2xl p-5 space-y-3 hidden">
+          <h3 class="text-xs font-black text-violet-300 uppercase tracking-wider flex items-center gap-2"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Live Preview</h3>
+          <div class="rounded-2xl overflow-hidden border border-blue-500/10 bg-[#0f172a]">
+            <div class="px-4 py-3 border-b border-white/5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">
+              <i data-lucide="layout-panel-top" class="w-3.5 h-3.5 text-blue-400"></i>
+              Homepage header banner
+            </div>
+            <div class="bg-[#070b16] p-3 sm:p-4">
+              <div class="overflow-hidden rounded-xl border border-white/10 bg-[#111827] shadow-2xl shadow-black/20" style="aspect-ratio: 1600 / 320;">
+                ${bannerUrl ? `<img id="homepage-banner-preview-img" src="${esc(bannerUrl)}" alt="${esc(bannerAlt)}" class="h-full w-full object-cover">` : '<div class="flex h-full w-full items-center justify-center bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900"><div class="text-center"><i data-lucide="image-off" class="mx-auto w-8 h-8 text-gray-500"></i><p class="mt-2 text-xs font-semibold text-gray-500">No banner selected</p></div></div>'}
+              </div>
+            </div>
+            <div class="px-4 py-3 border-t border-white/5 bg-[#0b1020] flex items-center gap-2 text-[11px] text-gray-400">
+              <i data-lucide="crop" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>Crop / resize is previewed in a fixed banner frame. Wide images work best.</span>
+            </div>
+          </div>
+          <p id="homepage-banner-preview-note" class="text-[10px] text-gray-500">${esc(bannerCaption)}</p>
+        </div>
+
+        <form id="homepage-branding-form" onsubmit="saveHomepageBranding(event)" class="space-y-5">
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="image-plus" class="w-4 h-4 text-blue-400"></i> Header Banner Image</h3>
+                <p class="text-[11px] text-gray-500 mt-1">PNG, JPG, WEBP. The banner is stored permanently and published instantly after saving.</p>
+              </div>
+              <span class="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-1 rounded-full font-bold">Homepage only</span>
+            </div>
+
+            <div id="homepage-banner-status" class="hidden p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300 flex items-center gap-2">
+              <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i>
+              <span id="homepage-banner-msg">Uploading…</span>
+            </div>
+
+            <div class="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
+              <div class="space-y-3">
+                <div class="group relative overflow-hidden rounded-2xl border border-dashed border-blue-500/25 bg-[#0b1020] transition hover:border-blue-500/50">
+                  <div class="p-3 sm:p-4">
+                    <div class="overflow-hidden rounded-xl border border-white/10 bg-[#111827]" style="aspect-ratio: 1600 / 320;">
+                      ${bannerUrl ? `<img id="homepage-banner-image" src="${esc(bannerUrl)}" alt="${esc(bannerAlt)}" class="h-full w-full object-cover">` : '<div class="flex h-full w-full items-center justify-center bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900"><div class="text-center"><i data-lucide="image-plus" class="mx-auto w-8 h-8 text-blue-400"></i><p class="mt-2 text-xs font-semibold text-gray-400">Upload a homepage banner</p></div></div>'}
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <button type="button" onclick="triggerImgUpload('homepage_banner_image')" class="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg">${bannerUrl ? 'Replace Image' : 'Upload Image'}</button>
+                      <button type="button" onclick="clearHomepageBannerImg()" class="text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg">Remove Image</button>
+                      <button type="button" onclick="restoreHomepageBannerDefault()" class="text-xs font-bold text-white bg-slate-700 px-3 py-1.5 rounded-lg">Restore Default</button>
+                    </div>
+                  </div>
+                </div>
+                <input type="file" id="file-homepage_banner_image" class="hidden" accept="image/*" onchange="handleBrandImgUpload(event,'homepage_banner_image')">
+                <input type="hidden" name="homepage_banner_image" id="val-homepage_banner_image" value="${esc(bannerUrl)}">
+                <input type="text" id="url-homepage_banner_image" value="${esc(bannerUrl)}" placeholder="Or paste image URL" oninput="document.getElementById('val-homepage_banner_image').value=this.value;updateHomepageBannerPreview()" class="input-field text-xs">
+                <p class="text-[10px] text-gray-500">Use a wide image for the cleanest banner. The homepage frame will crop/resize it automatically.</p>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="lbl">Banner Alt Text</label>
+                  <textarea class="input-field" id="homepage_banner_alt" name="homepage_banner_alt" rows="4" placeholder="Accessible description for the banner image">${esc(bannerAlt)}</textarea>
+                </div>
+                <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-2">
+                  <p class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Publish Controls</p>
+                  <p class="text-[11px] text-gray-500">Click Publish Changes to save the banner permanently. Remove Image clears it from the homepage.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 bg-blue-500/5 border border-blue-500/15 rounded-xl text-xs text-blue-300 flex items-start gap-3">
+            <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5 text-blue-400"></i>
+            <p>The homepage banner is separate from your brand logo and brand text. It only affects the top homepage header area.</p>
+          </div>
+
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2">
+            <i data-lucide="upload" class="w-4 h-4"></i> Publish Changes
+          </button>
+        </form>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) {
+    if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
 //  BRAND MANAGER  (name · slogan · logo · verified badge · live preview)
 // ══════════════════════════════════════════════════════════
 async function renderBrandManager() {
@@ -4062,6 +4718,9 @@ async function renderBrandManager() {
   try {
     const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
     const d = s || {};
+    const fallbackBrandName = d.brand_name || d.site_name || DEFAULT_BRAND_NAME;
+    const fallbackBrandSlogan = d.brand_slogan || d.site_tagline || DEFAULT_BRAND_SLOGAN;
+    const fallbackBrandLogo = d.brand_logo || d.brand_header_logo || '';
 
     function imgSlot(label, fieldName, currentUrl, hint = '', accent = 'blue') {
       const hasImg = !!(currentUrl && currentUrl.trim());
@@ -4111,11 +4770,11 @@ async function renderBrandManager() {
           <div class="rounded-xl overflow-hidden border border-blue-500/10">
             <div id="preview-header" class="flex items-center gap-3 px-4 py-3" style="background:#0f172a">
               <div id="preview-logo-wrap" class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style="background:var(--preview-primary,#f97316)">
-                <i data-lucide="globe" class="w-4 h-4 text-white"></i>
+                ${fallbackBrandLogo ? `<img src="${esc(fallbackBrandLogo)}" alt="${esc(fallbackBrandName)}" class="w-full h-full object-contain p-1">` : '<i data-lucide="globe" class="w-4 h-4 text-white"></i>'}
               </div>
               <div>
-                <p id="preview-name" class="text-sm font-black text-white leading-none">${esc(d.brand_name||'Weverse Online Shop')}</p>
-                <p id="preview-slogan" class="text-[10px] text-orange-400 font-semibold mt-0.5">${esc(d.brand_slogan||'Shop Globally, Delivered Worldwide')}</p>
+                <p id="preview-name" class="text-sm font-black text-white leading-none">${esc(fallbackBrandName)}</p>
+                <p id="preview-slogan" class="text-[10px] text-orange-400 font-semibold mt-0.5">${esc(fallbackBrandSlogan)}</p>
               </div>
               <div id="preview-badge-wrap" class="ml-auto ${d.brand_badge ? '' : 'hidden'}">
                 <img id="preview-badge" src="${esc(d.brand_badge||'')}" alt="Verified" class="w-6 h-6 object-contain">
@@ -4129,13 +4788,13 @@ async function renderBrandManager() {
           <!-- Footer preview -->
           <div id="preview-footer" class="rounded-xl px-4 py-3 border border-gray-800 flex items-center gap-3" style="background:#0f172a">
             <div id="preview-footer-logo-wrap" class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style="background:var(--preview-primary,#f97316)">
-              <i data-lucide="globe" class="w-4 h-4 text-white"></i>
+              ${fallbackBrandLogo ? `<img src="${esc(fallbackBrandLogo)}" alt="${esc(fallbackBrandName)}" class="w-full h-full object-contain p-1">` : '<i data-lucide="globe" class="w-4 h-4 text-white"></i>'}
             </div>
             <div>
-              <p id="preview-footer-name" class="text-xs font-black text-white">${esc(d.brand_name||'Weverse Online Shop')}</p>
-              <p id="preview-footer-slogan" class="text-[10px] text-gray-500">${esc(d.brand_slogan||'Shop Globally, Delivered Worldwide')}</p>
+              <p id="preview-footer-name" class="text-xs font-black text-white">${esc(fallbackBrandName)}</p>
+              <p id="preview-footer-slogan" class="text-[10px] text-gray-500">${esc(fallbackBrandSlogan)}</p>
             </div>
-            <p class="ml-auto text-[10px] text-gray-600">© 2026 <span id="preview-copy-name">${esc(d.brand_name||'Weverse Online Shop')}</span></p>
+            <p class="ml-auto text-[10px] text-gray-600">© 2026 <span id="preview-copy-name">${esc(fallbackBrandName)}</span></p>
           </div>
           <p class="text-[10px] text-gray-500">This is how your brand will appear on every page. Click Save to apply everywhere.</p>
         </div>
@@ -4148,7 +4807,7 @@ async function renderBrandManager() {
             <div class="form-grid form-grid-2">
               <div>
                 <label class="lbl">Brand Name *</label>
-                <input class="input-field" name="brand_name" id="inp-brand-name" value="${esc(d.brand_name||d.site_name||'Weverse Online Shop')}" placeholder="Your brand name" required oninput="updateLivePreview()">
+                <input class="input-field" name="brand_name" id="inp-brand-name" value="${esc(fallbackBrandName)}" placeholder="Your brand name" required oninput="updateLivePreview()">
               </div>
               <div>
                 <label class="lbl">Short Name</label>
@@ -4156,7 +4815,7 @@ async function renderBrandManager() {
               </div>
               <div class="sm:col-span-2">
                 <label class="lbl">Slogan / Tagline *</label>
-                <input class="input-field" name="brand_slogan" id="inp-brand-slogan" value="${esc(d.brand_slogan||d.site_tagline||'Shop Globally, Delivered Worldwide')}" placeholder="e.g. Shop Globally, Delivered Worldwide" oninput="updateLivePreview()">
+                <input class="input-field" name="brand_slogan" id="inp-brand-slogan" value="${esc(fallbackBrandSlogan)}" placeholder="e.g. Shop Globally, Delivered Worldwide" oninput="updateLivePreview()">
               </div>
               <div class="sm:col-span-2">
                 <label class="lbl">Brand Description</label>
@@ -4228,7 +4887,7 @@ async function renderBrandManager() {
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              ${imgSlot('Main Logo',            'brand_logo',        d.brand_logo,        'Main logo shown across the website. 200×60px recommended.')}
+              ${imgSlot('Brand Logo / Banner Image', 'brand_logo',        fallbackBrandLogo,   'Upload your image here. This changes only the logo/banner image and keeps the other brand fields as they are.')}
               ${imgSlot('Favicon / Tab Icon',   'brand_favicon',     d.brand_favicon,     'Browser tab icon. 32×32 or 64×64px.')}
               ${imgSlot('Mobile Logo',          'brand_mobile_logo', d.brand_mobile_logo, 'Smaller logo for phones. 120×40px.')}
               ${imgSlot('Header Logo',          'brand_header_logo', d.brand_header_logo, 'Top navigation bar.')}
@@ -4252,7 +4911,7 @@ async function renderBrandManager() {
 
           <div class="p-4 bg-blue-500/5 border border-blue-500/15 rounded-xl text-xs text-blue-300 flex items-start gap-3">
             <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5 text-blue-400"></i>
-            <p>After saving, your brand name, logo, slogan, and verified badge will automatically appear on <strong>every page</strong> — Header, Footer, Login, Checkout, Contact, Admin, and all future pages. No code changes needed.</p>
+            <p>After saving, your brand name, logo image, slogan, and verified badge will automatically appear on <strong>every page</strong> — Header, Footer, Login, Checkout, Contact, Admin, and all future pages. Uploading the image does not change your other brand settings.</p>
           </div>
 
           <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2">
@@ -4273,11 +4932,11 @@ window.toggleLivePreview = function() {
 window.updateLivePreview = function() {
   const panel = document.getElementById('live-preview-panel');
   if (!panel || panel.classList.contains('hidden')) return;
-  const name   = document.getElementById('inp-brand-name')?.value   || 'Weverse Online Shop';
-  const slogan = document.getElementById('inp-brand-slogan')?.value || 'Shop Globally, Delivered Worldwide';
+  const name   = document.getElementById('inp-brand-name')?.value   || DEFAULT_BRAND_NAME;
+  const slogan = document.getElementById('inp-brand-slogan')?.value || DEFAULT_BRAND_SLOGAN;
   const primary   = document.getElementById('ct-primary')?.value   || '#f97316';
   const secondary = document.getElementById('ct-secondary')?.value || '#3b82f6';
-  const logo  = document.getElementById('val-brand_logo')?.value   || '';
+  const logo  = document.getElementById('val-brand_logo')?.value   || DEFAULT_BRAND_LOGO;
   const badge = document.getElementById('val-brand_badge')?.value  || '';
 
   // Update preview elements
@@ -4318,7 +4977,24 @@ window.triggerImgUpload = function(field) {
 
 window.clearBrandImg = function(field) {
   document.getElementById('val-' + field).value = '';
-  renderBrandManager();
+  const urlEl = document.getElementById('url-' + field);
+  if (urlEl) urlEl.value = '';
+  const refresh = field && field.startsWith('homepage_') ? renderHomepageBrandingManager : renderBrandManager;
+  refresh();
+};
+
+window.clearHomepageBannerImg = function() {
+  const val = document.getElementById('val-homepage_banner_image');
+  const url = document.getElementById('url-homepage_banner_image');
+  const alt = document.getElementById('homepage_banner_alt');
+  if (val) val.value = '';
+  if (url) url.value = '';
+  if (alt) alt.value = '';
+  renderHomepageBrandingManager();
+};
+
+window.restoreHomepageBannerDefault = function() {
+  window.clearHomepageBannerImg();
 };
 
 window.syncColor = function(name, val) {
@@ -4337,8 +5013,9 @@ window.previewFont = function(font) {
 window.handleBrandImgUpload = async function(e, field) {
   const file = e.target.files?.[0];
   if (!file) return;
-  const statusEl = document.getElementById('brand-upload-status');
-  const msgEl    = document.getElementById('brand-upload-msg');
+  const isHomepageBanner = field && field.startsWith('homepage_');
+  const statusEl = document.getElementById(isHomepageBanner ? 'homepage-banner-status' : 'brand-upload-status');
+  const msgEl    = document.getElementById(isHomepageBanner ? 'homepage-banner-msg' : 'brand-upload-msg');
   if (statusEl) statusEl.classList.remove('hidden');
   if (msgEl)    msgEl.textContent = `Uploading ${file.name}…`;
   try {
@@ -4358,8 +5035,12 @@ window.handleBrandImgUpload = async function(e, field) {
     const urlEl = document.getElementById('url-' + field);
     if (valEl) valEl.value = url;
     if (urlEl) { urlEl.value = url; urlEl.classList.remove('hidden'); }
-    updateLivePreview();
-    setTimeout(() => renderBrandManager(), 1000);
+    if (isHomepageBanner) {
+      updateHomepageBannerPreview();
+    } else {
+      updateLivePreview();
+      setTimeout(() => renderBrandManager(), 1000);
+    }
   } catch (err) {
     if (msgEl) msgEl.textContent = `Upload failed: ${err.message}`;
   }
@@ -4403,6 +5084,70 @@ window.saveBrandSettings = async function(e) {
 
   showToast('✅ Brand saved! All pages will now show your updated brand.', 'success');
   setTimeout(() => renderBrandManager(), 500);
+};
+
+window.toggleHomepageBannerPreview = function() {
+  const panel = document.getElementById('homepage-banner-preview-panel');
+  panel?.classList.toggle('hidden');
+  updateHomepageBannerPreview();
+};
+
+window.updateHomepageBannerPreview = function() {
+  const panel = document.getElementById('homepage-banner-preview-panel');
+  if (!panel || panel.classList.contains('hidden')) return;
+  const banner = document.getElementById('val-homepage_banner_image')?.value || '';
+  const alt = document.getElementById('homepage_banner_alt')?.value || 'Homepage header banner';
+  const formImage = document.getElementById('homepage-banner-image');
+  const previewImage = document.getElementById('homepage-banner-preview-img');
+  [formImage, previewImage].forEach(img => {
+    if (!img) return;
+    if (banner) {
+      img.src = banner;
+      img.alt = alt;
+      img.classList.remove('hidden');
+    } else {
+      img.classList.add('hidden');
+    }
+  });
+  const note = document.getElementById('homepage-banner-preview-note');
+  if (note) note.textContent = banner ? 'Uploaded banner will appear at the top of the homepage only.' : 'No homepage banner is set yet.';
+};
+
+window.saveHomepageBranding = async function(e) {
+  e.preventDefault();
+  const payload = {
+    homepage_banner_image: document.getElementById('url-homepage_banner_image')?.value || '',
+    homepage_banner_alt: document.getElementById('homepage_banner_alt')?.value || 'Homepage header banner',
+  };
+  const btn = e.target.querySelector('[type=submit]');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Publishing…';
+    if (window.lucide) lucide.createIcons();
+  }
+
+  const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
+  let error;
+  if (existing?.id) {
+    ({ error } = await supabase.from('site_settings').update(payload).eq('id', existing.id));
+  } else {
+    ({ error } = await supabase.from('site_settings').insert(payload));
+  }
+
+  if (error) {
+    showToast('Save failed: ' + error.message, 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="upload" class="w-4 h-4"></i> Publish Changes';
+      if (window.lucide) lucide.createIcons();
+    }
+    return;
+  }
+
+  try { localStorage.removeItem('weverse_brand_v1'); } catch {}
+
+  showToast('Homepage banner published.', 'success');
+  setTimeout(() => renderHomepageBrandingManager(), 500);
 };
 
 //  PAYMENT SETTINGS

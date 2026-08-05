@@ -5,6 +5,8 @@ import { supabase } from './supabase-client.js';
 
 // Single source of truth for the verified badge — change here to update everywhere
 export const DEFAULT_BADGE = '/verified-badge.svg';
+export const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
+export const DEFAULT_BRAND_SLOGAN = 'SHOP GLOBALLY, DELIVERED WORLDWIDE';
 
 const CACHE_KEY = 'weverse_brand_v1';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -22,7 +24,8 @@ async function loadBrand() {
       'brand_name,brand_slogan,brand_logo,brand_badge,brand_favicon,' +
       'brand_mobile_logo,brand_header_logo,brand_footer_logo,' +
       'brand_primary_color,brand_secondary_color,brand_font,brand_custom_font,' +
-      'brand_website_url,brand_email,site_name,site_tagline'
+      'brand_website_url,brand_email,site_name,site_tagline,' +
+      'homepage_banner_image,homepage_banner_alt'
     ).limit(1).maybeSingle();
     const brand = data || {};
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: brand }));
@@ -36,14 +39,16 @@ async function loadBrand() {
 function applyBrand(b) {
   if (!b) return;
 
-  const name    = b.brand_name    || b.site_name    || 'Weverse Online Shop';
-  const slogan  = b.brand_slogan  || b.site_tagline || 'Shop Globally, Delivered Worldwide';
+  const name    = b.brand_name    || b.site_name    || DEFAULT_BRAND_NAME;
+  const slogan  = b.brand_slogan  || b.site_tagline || DEFAULT_BRAND_SLOGAN;
   const logo    = b.brand_logo    || b.brand_header_logo || '';
   const badge   = b.brand_badge   || DEFAULT_BADGE;   // always show badge — custom or default
   const favicon = b.brand_favicon || '';
   const font    = b.brand_custom_font || b.brand_font || '';
   const primary = b.brand_primary_color || '';
   const secondary = b.brand_secondary_color || '';
+
+  injectHomepageBanner(b.homepage_banner_image || '', b.homepage_banner_alt || 'Homepage header banner');
 
   // ── 1. Page title (prepend brand name) ──────────────────
   if (name && document.title && !document.title.startsWith(name)) {
@@ -96,6 +101,42 @@ function applyBrand(b) {
 
   // ── 6. Footer brand ──────────────────────────────────────
   injectFooterBrand(name, slogan, logo);
+
+  syncHomepageLayout();
+}
+
+function injectHomepageBanner(imageUrl, altText) {
+  const bannerShell = document.getElementById('homepage-banner-shell');
+  const bannerImage = document.getElementById('homepage-banner-image');
+  if (!bannerShell || !bannerImage) return;
+
+  if (!imageUrl) {
+    bannerImage.removeAttribute('src');
+    bannerImage.alt = altText || 'Homepage header banner';
+    bannerShell.classList.add('hidden');
+    return;
+  }
+
+  bannerImage.alt = altText || 'Homepage header banner';
+  bannerImage.onload = () => syncHomepageLayout();
+  bannerImage.onerror = () => {
+    bannerShell.classList.add('hidden');
+    syncHomepageLayout();
+  };
+  if (bannerImage.src !== imageUrl) bannerImage.src = imageUrl;
+  bannerShell.classList.remove('hidden');
+}
+
+function syncHomepageLayout() {
+  const header = document.getElementById('site-header');
+  const categories = document.getElementById('site-categories-nav');
+  const main = document.querySelector('main');
+  if (!header || !categories || !main) return;
+
+  const headerHeight = Math.ceil(header.getBoundingClientRect().height || header.offsetHeight || 0);
+  const categoriesHeight = Math.ceil(categories.getBoundingClientRect().height || categories.offsetHeight || 0);
+  categories.style.top = `${headerHeight}px`;
+  main.style.paddingTop = `${headerHeight + categoriesHeight + 12}px`;
 }
 
 function injectHeaderBrand(name, slogan, logo, badge, primary) {
@@ -194,3 +235,7 @@ loadBrand().then(applyBrand);
 
 // Re-apply after dynamic content loads (for SPAs)
 window.addEventListener('load', () => loadBrand().then(applyBrand));
+window.addEventListener('resize', () => syncHomepageLayout());
+window.addEventListener('storage', (event) => {
+  if (event.key === CACHE_KEY) loadBrand().then(applyBrand);
+});

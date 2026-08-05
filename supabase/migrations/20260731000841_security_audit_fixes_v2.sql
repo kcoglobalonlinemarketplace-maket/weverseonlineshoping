@@ -20,71 +20,59 @@ Fixes critical RLS policy issues found during production audit:
 3. No data is modified — only policy definitions change
 */
 
--- ── ai_rate_limits: admin-only access ────────────────────────
-DROP POLICY IF EXISTS "admin_select_ai_rate_limits" ON ai_rate_limits;
-CREATE POLICY "admin_select_ai_rate_limits"
-  ON ai_rate_limits FOR SELECT TO authenticated
-  USING (is_current_user_admin());
+DO $$
+DECLARE
+  has_admin_fn boolean := to_regprocedure('is_current_user_admin()') IS NOT NULL;
+BEGIN
+  -- ── ai_rate_limits: admin-only access ────────────────────────
+  IF has_admin_fn AND to_regclass('public.ai_rate_limits') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "admin_select_ai_rate_limits" ON public.ai_rate_limits';
+    EXECUTE 'CREATE POLICY "admin_select_ai_rate_limits" ON public.ai_rate_limits FOR SELECT TO authenticated USING (is_current_user_admin())';
 
-DROP POLICY IF EXISTS "admin_insert_ai_rate_limits" ON ai_rate_limits;
-CREATE POLICY "admin_insert_ai_rate_limits"
-  ON ai_rate_limits FOR INSERT TO authenticated
-  WITH CHECK (is_current_user_admin());
+    EXECUTE 'DROP POLICY IF EXISTS "admin_insert_ai_rate_limits" ON public.ai_rate_limits';
+    EXECUTE 'CREATE POLICY "admin_insert_ai_rate_limits" ON public.ai_rate_limits FOR INSERT TO authenticated WITH CHECK (is_current_user_admin())';
 
-DROP POLICY IF EXISTS "admin_update_ai_rate_limits" ON ai_rate_limits;
-CREATE POLICY "admin_update_ai_rate_limits"
-  ON ai_rate_limits FOR UPDATE TO authenticated
-  USING (is_current_user_admin()) WITH CHECK (is_current_user_admin());
+    EXECUTE 'DROP POLICY IF EXISTS "admin_update_ai_rate_limits" ON public.ai_rate_limits';
+    EXECUTE 'CREATE POLICY "admin_update_ai_rate_limits" ON public.ai_rate_limits FOR UPDATE TO authenticated USING (is_current_user_admin()) WITH CHECK (is_current_user_admin())';
+  END IF;
 
--- ── custom_domains: admin-only CRUD ──────────────────────────
-DROP POLICY IF EXISTS "select_domains_admin" ON custom_domains;
-CREATE POLICY "select_domains_admin"
-  ON custom_domains FOR SELECT TO authenticated
-  USING (is_current_user_admin());
+  -- ── custom_domains: admin-only CRUD ──────────────────────────
+  IF has_admin_fn AND to_regclass('public.custom_domains') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "select_domains_admin" ON public.custom_domains';
+    EXECUTE 'CREATE POLICY "select_domains_admin" ON public.custom_domains FOR SELECT TO authenticated USING (is_current_user_admin())';
 
-DROP POLICY IF EXISTS "insert_domains_admin" ON custom_domains;
-CREATE POLICY "insert_domains_admin"
-  ON custom_domains FOR INSERT TO authenticated
-  WITH CHECK (is_current_user_admin());
+    EXECUTE 'DROP POLICY IF EXISTS "insert_domains_admin" ON public.custom_domains';
+    EXECUTE 'CREATE POLICY "insert_domains_admin" ON public.custom_domains FOR INSERT TO authenticated WITH CHECK (is_current_user_admin())';
 
-DROP POLICY IF EXISTS "update_domains_admin" ON custom_domains;
-CREATE POLICY "update_domains_admin"
-  ON custom_domains FOR UPDATE TO authenticated
-  USING (is_current_user_admin()) WITH CHECK (is_current_user_admin());
+    EXECUTE 'DROP POLICY IF EXISTS "update_domains_admin" ON public.custom_domains';
+    EXECUTE 'CREATE POLICY "update_domains_admin" ON public.custom_domains FOR UPDATE TO authenticated USING (is_current_user_admin()) WITH CHECK (is_current_user_admin())';
 
-DROP POLICY IF EXISTS "delete_domains_admin" ON custom_domains;
-CREATE POLICY "delete_domains_admin"
-  ON custom_domains FOR DELETE TO authenticated
-  USING (is_current_user_admin());
+    EXECUTE 'DROP POLICY IF EXISTS "delete_domains_admin" ON public.custom_domains';
+    EXECUTE 'CREATE POLICY "delete_domains_admin" ON public.custom_domains FOR DELETE TO authenticated USING (is_current_user_admin())';
+  END IF;
 
--- ── deployment_history: admin-only CRUD ──────────────────────
-DROP POLICY IF EXISTS "select_deployment_history" ON deployment_history;
-CREATE POLICY "select_deployment_history"
-  ON deployment_history FOR SELECT TO authenticated
-  USING (is_current_user_admin());
+  -- ── deployment_history: admin-only CRUD ──────────────────────
+  IF has_admin_fn AND to_regclass('public.deployment_history') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "select_deployment_history" ON public.deployment_history';
+    EXECUTE 'CREATE POLICY "select_deployment_history" ON public.deployment_history FOR SELECT TO authenticated USING (is_current_user_admin())';
 
-DROP POLICY IF EXISTS "insert_deployment_history" ON deployment_history;
-CREATE POLICY "insert_deployment_history"
-  ON deployment_history FOR INSERT TO authenticated
-  WITH CHECK (is_current_user_admin());
+    EXECUTE 'DROP POLICY IF EXISTS "insert_deployment_history" ON public.deployment_history';
+    EXECUTE 'CREATE POLICY "insert_deployment_history" ON public.deployment_history FOR INSERT TO authenticated WITH CHECK (is_current_user_admin())';
 
-DROP POLICY IF EXISTS "update_deployment_history" ON deployment_history;
-CREATE POLICY "update_deployment_history"
-  ON deployment_history FOR UPDATE TO authenticated
-  USING (is_current_user_admin()) WITH CHECK (is_current_user_admin());
+    EXECUTE 'DROP POLICY IF EXISTS "update_deployment_history" ON public.deployment_history';
+    EXECUTE 'CREATE POLICY "update_deployment_history" ON public.deployment_history FOR UPDATE TO authenticated USING (is_current_user_admin()) WITH CHECK (is_current_user_admin())';
+  END IF;
 
--- ── shipments: remove anon-wide-open, keep owner + admin ─────
-DROP POLICY IF EXISTS "anon_read_shipments_by_order" ON shipments;
-
-DROP POLICY IF EXISTS "select_own_shipments" ON shipments;
-CREATE POLICY "select_own_shipments"
-  ON shipments FOR SELECT TO authenticated
-  USING (
-    user_id = auth.uid()
-    OR is_current_user_admin()
-    OR EXISTS (
-      SELECT 1 FROM payment_receipts pr
-      WHERE pr.order_number = shipments.order_number
-      AND pr.user_id = auth.uid()
-    )
-  );
+  -- ── shipments: remove anon-wide-open, keep owner + admin ─────
+  IF has_admin_fn AND to_regclass('public.shipments') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "anon_read_shipments_by_order" ON public.shipments';
+    EXECUTE 'DROP POLICY IF EXISTS "select_own_shipments" ON public.shipments';
+    EXECUTE ''
+      || 'CREATE POLICY "select_own_shipments" ON public.shipments FOR SELECT TO authenticated USING ('
+      || 'user_id = auth.uid() OR is_current_user_admin() OR EXISTS ('
+      || 'SELECT 1 FROM public.payment_receipts pr '
+      || 'WHERE pr.order_number = shipments.order_number AND pr.user_id = auth.uid()'
+      || '))';
+  END IF;
+END
+$$;
