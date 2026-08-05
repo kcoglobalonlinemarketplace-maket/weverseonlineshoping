@@ -157,10 +157,6 @@ function renderSidebar() {
 
 // ── Navigation ─────────────────────────────────────────────
 window.navigate = function(section) {
-  if (section === 'ai') {
-    window.location.href = '/admin-ai.html';
-    return;
-  }
   state.section = section;
   const title = PAGE_TITLES[section] || section;
   const ptEl = document.getElementById('page-title');
@@ -174,7 +170,8 @@ window.navigate = function(section) {
     dashboard: renderDashboard, products: renderProducts, properties: renderProperties,
     orders: renderOrders, customers: renderCustomers, reviews: renderReviews,
     messages: renderMessages, coupons: renderCoupons, ads: renderAds,
-    notifications: renderNotifications, 'live-streaming': renderLiveStreamingManager, 'video-calls': renderVideoCallManager, 'ai-settings': renderAiSettings,
+    notifications: renderNotifications, 'live-streaming': renderLiveStreamingManager, 'video-calls': renderVideoCallManager, ai: renderAiAssistant,
+    'ai-settings': renderAiSettings,
     'ai-marketing': renderAiMarketingStudio,
     'homepage-branding': renderHomepageBrandingManager,
     content: renderContent, seo: renderSeo, email: renderEmail,
@@ -186,6 +183,29 @@ window.navigate = function(section) {
   const fn = renderers[section] || (() => { const c = document.getElementById('content'); if (c) c.innerHTML = emptyState('construction', 'Coming Soon', `${title} is being built.`); });
   fn();
 };
+
+async function renderAiAssistant() {
+  const content = document.getElementById('content');
+  if (!content) return;
+  content.innerHTML = `
+    <div class="space-y-4 fade-in">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 class="text-xl font-black text-white">AI Assistant</h2>
+          <p class="text-xs text-gray-500 mt-1">Use AI to manage products, including adding products after configuring your provider keys.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="navigate('ai-settings')" class="btn-press px-3 py-2 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition">AI Settings</button>
+          <a href="/admin-ai.html" target="_blank" rel="noopener" class="btn-press px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition">Open Fullscreen</a>
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+        <iframe src="/admin-ai.html" title="AI Assistant" class="w-full" style="height: calc(100vh - 230px); min-height: 680px; border: 0;"></iframe>
+      </div>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
 
 window.openSidebar = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.remove('hidden'); };
 window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.add('hidden'); };
@@ -5468,13 +5488,18 @@ async function renderPublish() {
         </div>
 
         <!-- Action Buttons -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <button onclick="triggerDeploy()" class="btn-press glass-soft border border-blue-500/15 hover:border-blue-500/40 rounded-xl p-4 text-center transition">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <button onclick="publishAndDeploy(event)" class="btn-press glass-soft border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl p-4 text-center transition" data-publish-easy-btn>
+            <i data-lucide="wand-sparkles" class="w-6 h-6 text-emerald-400 mx-auto mb-2"></i>
+            <p class="text-xs font-black text-white">One-Click Publish</p>
+            <p class="text-[10px] text-gray-500 mt-0.5">Save + Deploy</p>
+          </button>
+          <button onclick="triggerDeploy(event)" class="btn-press glass-soft border border-blue-500/15 hover:border-blue-500/40 rounded-xl p-4 text-center transition" data-deploy-btn>
             <i data-lucide="rocket" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
             <p class="text-xs font-black text-white">Deploy Now</p>
             <p class="text-[10px] text-gray-500 mt-0.5">Push to live</p>
           </button>
-          <button onclick="triggerRebuild()" class="btn-press glass-soft border border-violet-500/15 hover:border-violet-500/40 rounded-xl p-4 text-center transition">
+          <button onclick="triggerRebuild(event)" class="btn-press glass-soft border border-violet-500/15 hover:border-violet-500/40 rounded-xl p-4 text-center transition" data-rebuild-btn>
             <i data-lucide="refresh-cw" class="w-6 h-6 text-violet-400 mx-auto mb-2"></i>
             <p class="text-xs font-black text-white">Rebuild Site</p>
             <p class="text-[10px] text-gray-500 mt-0.5">Full rebuild</p>
@@ -5637,6 +5662,11 @@ async function renderPublish() {
 
 window.saveDeploySettings = async function(e) {
   e.preventDefault();
+  const submitBtn = e.target?.querySelector('[type=submit]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Saving…';
+  }
   const fd = new FormData(e.target);
   const data = Object.fromEntries(fd.entries());
   const payload = {};
@@ -5650,32 +5680,183 @@ window.saveDeploySettings = async function(e) {
     }
   }
   const { error } = await supabase.from('site_settings').upsert({ id: 1, ...payload });
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '💾 Save Deploy & Payment Settings';
+  }
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Deploy & payment settings saved!');
   renderPublish();
 };
 
-window.triggerDeploy = async function() {
+async function runWebhookDeploy(mode = 'deploy') {
   const { data: s } = await supabase.from('site_settings').select('deploy_webhook,production_url,github_repo').limit(1).maybeSingle();
   if (!s?.deploy_webhook) {
     showToast('No webhook URL set. Add your deploy webhook in the settings below.', 'info');
-    return;
+    return { ok: false, reason: 'missing_webhook' };
   }
+
+  let hookUrl = s.deploy_webhook;
   try {
-    const btn = event?.target;
-    if (btn) { btn.disabled = true; btn.textContent = 'Deploying…'; }
-    const res = await fetch(s.deploy_webhook, { method: 'POST' });
+    const url = new URL(hookUrl);
+    if (mode === 'rebuild') url.searchParams.set('rebuild', '1');
+    hookUrl = url.toString();
+  } catch {
+    if (mode === 'rebuild') {
+      hookUrl += (hookUrl.includes('?') ? '&' : '?') + 'rebuild=1';
+    }
+  }
+
+  return { ok: true, settings: s, hookUrl };
+}
+
+async function insertDeploymentHistory(status, payload = {}) {
+  const version = payload.version || new Date().toISOString();
+  const metadata = {
+    source: 'admin-dashboard',
+    mode: payload.mode || 'deploy',
+    production_url: payload.productionUrl || null,
+    github_repo: payload.githubRepo || null,
+    webhook: payload.webhook || null,
+    message: payload.message || null,
+  };
+  const { data, error } = await supabase
+    .from('deployment_history')
+    .insert({
+      version,
+      status,
+      triggered_by_email: state.user?.email || null,
+      metadata,
+      error_message: payload.errorMessage || null,
+    })
+    .select('id')
+    .limit(1)
+    .maybeSingle();
+  return { data, error };
+}
+
+function setActionButtonBusy(btn, busy, busyLabel, idleLabel) {
+  if (!btn) return;
+  btn.disabled = busy;
+  const labelNode = btn.querySelector('p.text-xs.font-black');
+  if (labelNode) labelNode.textContent = busy ? busyLabel : idleLabel;
+}
+
+window.triggerDeploy = async function(ev) {
+  const btn = ev?.currentTarget || document.querySelector('[data-deploy-btn]');
+  setActionButtonBusy(btn, true, 'Deploying…', 'Deploy Now');
+  try {
+    const prep = await runWebhookDeploy('deploy');
+    if (!prep.ok) return;
+    const { settings: s, hookUrl } = prep;
+    await insertDeploymentHistory('preparing', {
+      mode: 'deploy',
+      productionUrl: s.production_url,
+      githubRepo: s.github_repo,
+      webhook: hookUrl,
+      message: 'Deployment queued from admin UI',
+    });
+
+    const res = await fetch(hookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trigger: 'deploy', source: 'admin-dashboard', at: new Date().toISOString() }),
+    });
+
     if (res.ok) {
       showToast('🚀 Deployment triggered! Your site will be live in ~2 minutes.');
-      await supabase.from('deployment_history').insert({ version: new Date().toISOString(), status: 'triggered', notes: 'Manual deploy from admin' });
+      await insertDeploymentHistory('deploying', {
+        mode: 'deploy',
+        productionUrl: s.production_url,
+        githubRepo: s.github_repo,
+        webhook: hookUrl,
+        message: 'Webhook accepted deployment request',
+      });
+      setTimeout(() => renderPublish(), 400);
     } else {
-      showToast('Webhook returned error: ' + res.status, 'error');
+      const errorMsg = `Webhook returned error: ${res.status}`;
+      showToast(errorMsg, 'error');
+      await insertDeploymentHistory('failed', {
+        mode: 'deploy',
+        productionUrl: s.production_url,
+        githubRepo: s.github_repo,
+        webhook: hookUrl,
+        errorMessage: errorMsg,
+      });
     }
-    if (btn) { btn.disabled = false; btn.textContent = '🚀 Deploy Now'; }
-  } catch (err) { showToast('Deploy failed: ' + err.message, 'error'); }
+  } catch (err) {
+    showToast('Deploy failed: ' + err.message, 'error');
+    await insertDeploymentHistory('failed', { mode: 'deploy', errorMessage: err.message });
+  } finally {
+    setActionButtonBusy(btn, false, 'Deploying…', 'Deploy Now');
+  }
 };
 
-window.triggerRebuild = function() { showToast('Rebuild triggered via webhook', 'info'); };
+window.triggerRebuild = async function(ev) {
+  const btn = ev?.currentTarget || document.querySelector('[data-rebuild-btn]');
+  setActionButtonBusy(btn, true, 'Rebuilding…', 'Rebuild Site');
+  try {
+    const prep = await runWebhookDeploy('rebuild');
+    if (!prep.ok) return;
+    const { settings: s, hookUrl } = prep;
+    await insertDeploymentHistory('building', {
+      mode: 'rebuild',
+      productionUrl: s.production_url,
+      githubRepo: s.github_repo,
+      webhook: hookUrl,
+      message: 'Rebuild requested from admin UI',
+    });
+    const res = await fetch(hookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trigger: 'rebuild', source: 'admin-dashboard', at: new Date().toISOString() }),
+    });
+    if (res.ok) {
+      showToast('🔄 Rebuild triggered successfully.');
+      await insertDeploymentHistory('deploying', {
+        mode: 'rebuild',
+        productionUrl: s.production_url,
+        githubRepo: s.github_repo,
+        webhook: hookUrl,
+        message: 'Webhook accepted rebuild request',
+      });
+      setTimeout(() => renderPublish(), 400);
+    } else {
+      const errorMsg = `Rebuild webhook error: ${res.status}`;
+      showToast(errorMsg, 'error');
+      await insertDeploymentHistory('failed', {
+        mode: 'rebuild',
+        productionUrl: s.production_url,
+        githubRepo: s.github_repo,
+        webhook: hookUrl,
+        errorMessage: errorMsg,
+      });
+    }
+  } catch (err) {
+    showToast('Rebuild failed: ' + err.message, 'error');
+    await insertDeploymentHistory('failed', { mode: 'rebuild', errorMessage: err.message });
+  } finally {
+    setActionButtonBusy(btn, false, 'Rebuilding…', 'Rebuild Site');
+  }
+};
+
+window.publishAndDeploy = async function(ev) {
+  const btn = ev?.currentTarget || document.querySelector('[data-publish-easy-btn]');
+  setActionButtonBusy(btn, true, 'Publishing…', 'One-Click Publish');
+  try {
+    const form = document.getElementById('deploy-form');
+    if (!form) {
+      showToast('Deploy form is not available. Reload and try again.', 'error');
+      return;
+    }
+    await window.saveDeploySettings({ preventDefault() {}, target: form });
+    await window.triggerDeploy();
+  } catch (err) {
+    showToast('Publish failed: ' + err.message, 'error');
+  } finally {
+    setActionButtonBusy(btn, false, 'Publishing…', 'One-Click Publish');
+  }
+};
 
 window.testGitHubConnection = async function() {
   const username = document.querySelector('[name=github_username]')?.value?.trim();

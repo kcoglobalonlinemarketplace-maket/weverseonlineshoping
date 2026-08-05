@@ -3,13 +3,14 @@ import { getCurrentUser } from './auth.js';
 
 const AI_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-admin-assistant`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const AUTO_EXECUTE_DEVELOPER_ACTIONS = true;
 
 let state = {
   user: null,
   isAdmin: false,
   history: [],
   sending: false,
-  developerMode: false,
+  developerMode: true,
 };
 
 function showToast(msg) {
@@ -140,6 +141,64 @@ async function getAuthHeaders() {
   };
 }
 
+function applyDeveloperModeUI() {
+  const indicator = document.getElementById('dev-mode-indicator');
+  const toggle = document.getElementById('dev-mode-toggle');
+  if (!indicator || !toggle) return;
+  if (state.developerMode) {
+    indicator.classList.remove('bg-gray-600');
+    indicator.classList.add('bg-emerald-400');
+    toggle.classList.add('ring-2', 'ring-emerald-500/50');
+  } else {
+    indicator.classList.add('bg-gray-600');
+    indicator.classList.remove('bg-emerald-400');
+    toggle.classList.remove('ring-2', 'ring-emerald-500/50');
+  }
+}
+
+async function executeDeveloperApproval(approvalId) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(AI_FUNCTION_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ action: 'approve_dev_action', approval_id: approvalId }),
+  });
+  return await res.json();
+}
+
+async function autoExecutePendingApprovals(approvalIds, source = 'request') {
+  if (!approvalIds.length) return;
+  let successCount = 0;
+  let failedCount = 0;
+  for (const approvalId of approvalIds) {
+    try {
+      const data = await executeDeveloperApproval(approvalId);
+      if (data.success) {
+        successCount += 1;
+        const msg = { role: 'assistant', content: `✅ **Developer action executed automatically:** ${data.result.message || data.result.error || 'Done.'}` };
+        state.history.push(msg);
+        renderMessage(msg);
+      } else {
+        failedCount += 1;
+        const msg = { role: 'assistant', content: `❌ **Auto-execution failed:** ${data.result?.error || data.error || 'Unknown error'}` };
+        state.history.push(msg);
+        renderMessage(msg);
+      }
+    } catch (err) {
+      failedCount += 1;
+      const msg = { role: 'assistant', content: `❌ **Auto-execution error:** ${err.message}` };
+      state.history.push(msg);
+      renderMessage(msg);
+    }
+  }
+  if (successCount > 0) {
+    showToast(`Auto-executed ${successCount} developer action(s) from ${source}.`);
+  }
+  if (failedCount > 0) {
+    showToast(`${failedCount} developer action(s) failed during auto-execution.`);
+  }
+}
+
 window.sendMessage = async () => {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
@@ -181,11 +240,18 @@ window.sendMessage = async () => {
       state.history.push(aiMsg);
       renderMessage(aiMsg);
 
-      // If in developer mode and there are pending approvals, show approval UI
+      // If in developer mode and there are pending approvals, auto-execute them.
       if (state.developerMode && data.tool_results) {
         const pendingApprovals = data.tool_results.filter(r => r.result && r.result.pending_approval);
         if (pendingApprovals.length > 0) {
-          renderApprovalPrompt(pendingApprovals);
+          const ids = pendingApprovals
+            .map(r => r.result?.approval_id)
+            .filter(Boolean);
+          if (AUTO_EXECUTE_DEVELOPER_ACTIONS && ids.length > 0) {
+            await autoExecutePendingApprovals(ids, 'chat response');
+          } else {
+            renderApprovalPrompt(pendingApprovals);
+          }
         }
       }
 
@@ -234,8 +300,8 @@ function renderWelcome() {
   const welcome = {
     role: 'assistant',
     content: state.developerMode
-      ? `Hello! I'm your **Developer Agent** — a full software engineering assistant for the KCO Global project.\n\nI can do everything the Marketplace AI does, PLUS:\n\n- **Read any file** — "Show me the code in src/auth.js"\n- **Search the codebase** — "Find where checkout is handled"\n- **Find bugs** — "Why is the payment page throwing an error?"\n- **Explain the architecture** — "How does the Flutter app connect to the backend?"\n- **Edit code** — "Fix the bug in the checkout flow" (I'll ask your approval first)\n- **Run commands** — "Run flutter pub get" (I'll ask your approval first)\n- **Create files** — "Create a new component for the product gallery" (with approval)\n\nI still have all marketplace tools too — products, orders, analytics, inventory, etc.\n\nWhat would you like to work on?`
-      : `Hello! I'm your Admin & Developer AI, powered by Google Gemini.\n\nI can help you manage your marketplace and develop your project:\n\n**Marketplace Management:**\n- Add, edit, and delete products\n- View and manage orders\n- Check analytics and revenue\n- Manage customers\n- View and resolve customer escalations\n- Update AI settings\n- Trigger deployments\n\n**Developer Mode (toggle above):**\n- Read and analyze your entire codebase\n- Create, edit, and delete files (with your approval)\n- Run commands like npm build or flutter pub get (with your approval)\n- Check git status and diffs\n- Install packages\n- Debug and fix bugs\n- Build new features\n\nWhat would you like to do?`,
+      ? `Hello! I'm your **Developer Agent** — a full software engineering assistant for the KCO Global project.\n\nI can do everything the Marketplace AI does, PLUS:\n\n- **Read any file** — "Show me the code in src/auth.js"\n- **Search the codebase** — "Find where checkout is handled"\n- **Find bugs** — "Why is the payment page throwing an error?"\n- **Explain the architecture** — "How does the app connect to the backend?"\n- **Edit code** — "Fix the bug in the checkout flow"\n- **Run commands** — "Run npm run build"\n- **Create files** — "Create a new component for the product gallery"\n\nDeveloper actions are configured to execute automatically for your admin account.\n\nWhat would you like to build?`
+      : `Hello! I'm your Admin & Developer AI, powered by Google Gemini.\n\nI can help you manage your marketplace and develop your project:\n\n**Marketplace Management:**\n- Add, edit, and delete products\n- View and manage orders\n- Check analytics and revenue\n- Manage customers\n- View and resolve customer escalations\n- Update AI settings\n- Trigger deployments\n\n**Developer Mode (toggle above):**\n- Read and analyze your entire codebase\n- Create, edit, and delete files\n- Run commands like npm build\n- Check git status and diffs\n- Install packages\n- Debug and fix bugs\n- Build new features\n\nWhat would you like to do?`,
   };
   renderMessage(welcome);
 }
@@ -313,6 +379,7 @@ async function init() {
   }
 
   state.isAdmin = true;
+  applyDeveloperModeUI();
 
   // Load provider info — always Gemini for admin
   const badge = document.getElementById('provider-badge');
@@ -356,10 +423,14 @@ async function init() {
     });
     const data = await res.json();
     if (data.approvals && data.approvals.length > 0) {
-      const msg = { role: 'assistant', content: `You have ${data.approvals.length} pending developer action(s) awaiting approval. Check the approval cards above.` };
-      renderMessage(msg);
-      for (const a of data.approvals) {
-        renderPendingApprovalFromDB(a);
+      if (state.developerMode && AUTO_EXECUTE_DEVELOPER_ACTIONS) {
+        await autoExecutePendingApprovals(data.approvals.map(a => a.id).filter(Boolean), 'pending queue');
+      } else {
+        const msg = { role: 'assistant', content: `You have ${data.approvals.length} pending developer action(s) awaiting approval. Check the approval cards above.` };
+        renderMessage(msg);
+        for (const a of data.approvals) {
+          renderPendingApprovalFromDB(a);
+        }
       }
     }
   } catch { /* best-effort */ }
@@ -385,17 +456,10 @@ async function init() {
 // ── Developer Mode toggle ─────────────────────────────────────
 window.toggleDevMode = () => {
   state.developerMode = !state.developerMode;
-  const indicator = document.getElementById('dev-mode-indicator');
-  const toggle = document.getElementById('dev-mode-toggle');
+  applyDeveloperModeUI();
   if (state.developerMode) {
-    indicator.classList.remove('bg-gray-600');
-    indicator.classList.add('bg-emerald-400');
-    toggle.classList.add('ring-2', 'ring-emerald-500/50');
-    showToast('Developer Mode enabled — AI can now read and modify code, run commands, and act as a software engineering assistant.');
+    showToast('Developer Mode enabled — AI can read and modify code, run commands, and execute actions automatically.');
   } else {
-    indicator.classList.add('bg-gray-600');
-    indicator.classList.remove('bg-emerald-400');
-    toggle.classList.remove('ring-2', 'ring-emerald-500/50');
     showToast('Developer Mode disabled — AI is back to marketplace-only mode.');
   }
 };
@@ -452,13 +516,7 @@ function renderApprovalPrompt(approvals) {
 
 window.approveDevAction = async (approvalId) => {
   try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(AI_FUNCTION_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ action: 'approve_dev_action', approval_id: approvalId }),
-    });
-    const data = await res.json();
+    const data = await executeDeveloperApproval(approvalId);
     if (data.success) {
       showToast('Action approved and executed successfully.');
       const msg = { role: 'assistant', content: `✅ **Action executed:** ${data.result.message || data.result.error || 'Done.'}` };
