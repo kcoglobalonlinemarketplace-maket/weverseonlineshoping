@@ -31,8 +31,9 @@ const NAV = [
     { id: 'live-streaming', label: 'Live Streaming',  icon: 'radio' },
     { id: 'video-calls', label: 'Video Calls',        icon: 'video' },
   ]},
-  { group: 'Configuration', items: [
+{ group: 'Configuration', items: [
     { id: 'ai', label: 'AI Assistant',      icon: 'sparkles' },
+    { id: 'n8n', label: 'n8n Automation',    icon: 'workflow' },
     { id: 'payment-settings', label: 'Payment Settings',  icon: 'credit-card' },
     { id: 'ai-settings', label: 'AI Settings',        icon: 'bot' },
     { id: 'ai-marketing', label: 'AI Marketing Studio', icon: 'sparkles' },
@@ -53,8 +54,9 @@ const NAV = [
 const PAGE_TITLES = {
   dashboard: 'Dashboard', products: 'Products Manager', properties: 'Properties Manager',
   orders: 'Orders Manager', customers: 'Customers Manager', reviews: 'Reviews Manager',
-  messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement Manager',
-  notifications: 'Notifications', 'live-streaming': 'Live Streaming Manager', 'video-calls': 'Video Call Manager', 'ai-settings': 'AI Settings', content: 'Content Manager',
+messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement Manager',
+  'ai-settings': 'AI Settings', content: 'Content Manager',
+  n8n: 'n8n Automation',
   ai: 'AI Assistant',
   'ai-marketing': 'AI Marketing Studio',
   'homepage-branding': 'Homepage Branding',
@@ -171,6 +173,7 @@ window.navigate = function(section) {
     orders: renderOrders, customers: renderCustomers, reviews: renderReviews,
     messages: renderMessages, coupons: renderCoupons, ads: renderAds,
     notifications: renderNotifications, 'live-streaming': renderLiveStreamingManager, 'video-calls': renderVideoCallManager, ai: renderAiAssistant,
+    n8n: renderN8n,
     'ai-settings': renderAiSettings,
     'ai-marketing': renderAiMarketingStudio,
     'homepage-branding': renderHomepageBrandingManager,
@@ -200,8 +203,30 @@ async function renderAiAssistant() {
         </div>
       </div>
 
-      <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+<div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
         <iframe src="/admin-ai.html" title="AI Assistant" class="w-full" style="height: calc(100vh - 230px); min-height: 680px; border: 0;"></iframe>
+      </div>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+async function renderN8n() {
+  const content = document.getElementById('content');
+  if (!content) return;
+  content.innerHTML = `
+    <div class="space-y-4 fade-in">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 class="text-xl font-black text-white">n8n Automation</h2>
+          <p class="text-xs text-gray-500 mt-1">Configure webhooks, automation center, and AI assistant triggers.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="/admin-n8n.html" target="_blank" rel="noopener" class="btn-press px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition">Open Fullscreen</a>
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
+        <iframe src="/admin-n8n.html" title="n8n Automation" class="w-full" style="height: calc(100vh - 230px); min-height: 680px; border: 0;"></iframe>
       </div>
     </div>`;
   if (window.lucide) lucide.createIcons();

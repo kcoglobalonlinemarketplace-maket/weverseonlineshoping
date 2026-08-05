@@ -3,19 +3,6 @@ import { getCurrentUser } from './auth.js';
 
 const PROVIDERS = [
   {
-    id: 'openai',
-    name: 'OpenAI (ChatGPT)',
-    description: 'Powers the Customer Support AI',
-    role: 'Customer Support AI',
-    icon: 'bot',
-    color: 'emerald',
-    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4-turbo', 'gpt-3.5-turbo', 'o1-mini', 'o1-preview'],
-    keyField: 'openai_api_key',
-    modelField: 'openai_model',
-    keyPlaceholder: 'sk-...',
-    signupUrl: 'https://platform.openai.com/api-keys',
-  },
-  {
     id: 'gemini',
     name: 'Google Gemini',
     description: 'Powers the Admin & Developer AI',
@@ -66,39 +53,7 @@ const PROVIDERS = [
     modelField: 'hf_model',
     keyPlaceholder: 'hf_...',
     signupUrl: 'https://huggingface.co/settings/tokens',
-  },
-  {
-    id: 'flowise',
-    name: 'Flowise AI',
-    description: 'Connect your Flowise endpoint for automated workflows',
-    role: 'Admin & Developer AI',
-    icon: 'workflow',
-    color: 'amber',
-    models: [],
-    keyField: 'flowise_api_url',
-    modelField: 'flowise_api_key',
-    keyPlaceholder: 'https://your-flowise-host/api/v1/prediction/your-flow-id',
-    modelPlaceholder: 'Optional Flowise API key',
-    keyLabel: 'Flowise Endpoint URL',
-    modelLabel: 'Flowise API Key (optional)',
-    signupUrl: 'https://flowiseai.com/',
-  },
-  {
-    id: 'n8n',
-    name: 'n8n AI Workflow',
-    description: 'Use n8n webhook automation for website fixes/build steps',
-    role: 'Admin & Developer AI',
-    icon: 'git-branch-plus',
-    color: 'amber',
-    models: [],
-    keyField: 'n8n_webhook_url',
-    modelField: 'n8n_webhook_token',
-    keyPlaceholder: 'https://your-n8n-host/webhook/admin-ai',
-    modelPlaceholder: 'Optional n8n token/header secret',
-    keyLabel: 'n8n Webhook URL',
-    modelLabel: 'n8n Token (optional)',
-    signupUrl: 'https://n8n.io/',
-  },
+},
 ];
 
 const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
@@ -107,41 +62,6 @@ const AI_FUNCTION_URL = LOCAL_DEV_HOSTS.has(window.location.hostname)
   ? '/_supabase/functions/v1/ai-admin-assistant'
   : `${SUPABASE_BASE_URL}/functions/v1/ai-admin-assistant`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const N8N_ASSISTANTS = [
-  { id: 'product_ai', label: 'Product AI', note: 'Create and structure product data.' },
-  { id: 'writer_ai', label: 'Writer AI', note: 'Generate marketing copy and descriptions.' },
-  { id: 'image_ai', label: 'Image AI', note: 'Image prompts, tags, and media instructions.' },
-  { id: 'showroom_ai', label: 'Showroom AI', note: 'Publish items and align listing details.' },
-  { id: 'seo_ai', label: 'SEO AI', note: 'Optimize metadata and search targeting.' },
-  { id: 'customer_support_ai', label: 'Customer Support AI', note: 'Prepare customer-facing answers and FAQs.' },
-  { id: 'website_builder_ai', label: 'Website Builder AI', note: 'Apply layout/build workflow steps.' },
-  { id: 'ai_repair_assistant', label: 'AI Repair Assistant', note: 'Run verification and repair checks.' },
-];
-
-function defaultAssistantToggles() {
-  const row = {};
-  for (const assistant of N8N_ASSISTANTS) row[assistant.id] = true;
-  return row;
-}
-
-function normalizeAssistantToggles(raw) {
-  const base = defaultAssistantToggles();
-  if (!raw || typeof raw !== 'object') return base;
-  for (const assistant of N8N_ASSISTANTS) {
-    if (typeof raw[assistant.id] === 'boolean') base[assistant.id] = raw[assistant.id];
-  }
-  return base;
-}
-
-function normalizeAssistantWebhooks(raw) {
-  const base = {};
-  if (!raw || typeof raw !== 'object') return base;
-  for (const assistant of N8N_ASSISTANTS) {
-    const value = raw[assistant.id];
-    if (typeof value === 'string' && value.trim()) base[assistant.id] = value.trim();
-  }
-  return base;
-}
 
 async function showBootstrapPrompt() {
   const denied = document.getElementById('access-denied');
@@ -220,14 +140,12 @@ function colorClasses(color) {
 function render() {
   const root = document.getElementById('settings-root');
   const s = state.settings;
-  s.n8n_assistant_enabled = normalizeAssistantToggles(s.n8n_assistant_enabled);
-  s.n8n_assistant_webhooks = normalizeAssistantWebhooks(s.n8n_assistant_webhooks);
 
   root.innerHTML = `
     <div class="fade-in">
       <div class="mb-6">
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-1">AI Architecture Settings</h1>
-        <p class="text-sm text-gray-500">Configure AI providers for customer and admin/developer assistants. You can connect free providers and workflow engines.</p>
+<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-1">AI Architecture Settings — 100% Free</h1>
+        <p class="text-sm text-gray-500">All providers are completely free. The AI scans, understands, fixes, and builds the whole website autonomously — no n8n or paid services required.</p>
       </div>
 
       <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up mb-4">
@@ -240,36 +158,22 @@ function render() {
         </select>
       </div>
 
-      <!-- Architecture diagram -->
+<!-- Architecture diagram -->
       <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up mb-4">
         <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
-          <i data-lucide="network" class="w-4 h-4 text-blue-400"></i> AI Architecture
+          <i data-lucide="network" class="w-4 h-4 text-blue-400"></i> AI Architecture — 100% Free
         </h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="glass-soft border border-emerald-500/20 rounded-xl p-4">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
-                <i data-lucide="bot" class="w-4 h-4 text-emerald-400"></i>
-              </div>
-              <div>
-                <p class="text-sm font-bold text-white">OpenAI = Customer Support AI</p>
-                <p class="text-[10px] text-gray-500">Answers customer questions only</p>
-              </div>
+        <div class="glass-soft border border-emerald-500/20 rounded-xl p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+              <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i>
             </div>
-            <div class="text-[10px] text-gray-600 mt-2">No admin access, no file editing, no system settings</div>
-          </div>
-          <div class="glass-soft border border-amber-500/20 rounded-xl p-4">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
-                <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
-              </div>
-              <div>
-                <p class="text-sm font-bold text-white">Google Gemini = Admin & Developer AI</p>
-                <p class="text-[10px] text-gray-500">Full marketplace management + code</p>
-              </div>
+            <div>
+              <p class="text-sm font-bold text-white">Free Autonomous Developer AI (no n8n dependency)</p>
+              <p class="text-[10px] text-gray-500">Google Gemini · Groq · OpenRouter · Hugging Face</p>
             </div>
-            <div class="text-[10px] text-gray-600 mt-2">Products, orders, analytics, file editing, deployments</div>
           </div>
+          <div class="text-[10px] text-gray-600 mt-2">Scans the whole website, understands the codebase, fixes errors, and builds autonomously — 100% free, works without n8n.</div>
         </div>
       </div>
 
@@ -385,83 +289,7 @@ function render() {
         </div>
       </div>
 
-      <div class="glass border border-amber-500/20 rounded-2xl p-5 slide-up">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
-              <i data-lucide="workflow" class="w-4 h-4 text-amber-400"></i> AI Automation Center (n8n)
-            </h3>
-            <p class="text-xs text-gray-500 mt-1">Central orchestration for all assistant modules. Each module can be toggled and mapped to its own webhook.</p>
-          </div>
-          <button onclick="toggleAutomationCenterEnabled()" class="relative inline-flex h-8 w-14 items-center rounded-full transition ${s.automation_center_enabled === true ? 'bg-emerald-500' : 'bg-gray-600'}">
-            <span class="inline-block h-6 w-6 transform rounded-full bg-white transition ${s.automation_center_enabled === true ? 'translate-x-7' : 'translate-x-1'}"></span>
-          </button>
-        </div>
-        <div class="mt-3 text-xs font-bold ${s.automation_center_enabled === true ? 'text-emerald-400' : 'text-gray-500'}">${s.automation_center_enabled === true ? 'Automation Center is ON' : 'Automation Center is OFF'}</div>
-        <div class="mt-4 grid grid-cols-1 gap-3">
-          ${N8N_ASSISTANTS.map((assistant) => {
-            const enabled = s.n8n_assistant_enabled?.[assistant.id] !== false;
-            const value = s.n8n_assistant_webhooks?.[assistant.id] || '';
-            return `
-            <div class="glass-soft border border-amber-500/15 rounded-xl p-3">
-              <div class="flex items-center justify-between gap-2 mb-2">
-                <div>
-                  <p class="text-sm font-bold text-white">${assistant.label}</p>
-                  <p class="text-[11px] text-gray-500">${assistant.note}</p>
-                </div>
-                <button onclick="toggleAssistantEnabled('${assistant.id}')" class="relative inline-flex h-7 w-12 items-center rounded-full transition ${enabled ? 'bg-emerald-500' : 'bg-gray-600'}">
-                  <span class="inline-block h-5 w-5 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}"></span>
-                </button>
-              </div>
-              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Webhook override (optional)</label>
-              <input type="text" id="hook_${assistant.id}" value="${value}" placeholder="Use global n8n webhook when empty" class="input-field w-full bg-[#0a1124]/80 border border-amber-500/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-            </div>`;
-          }).join('')}
-        </div>
-
-        <div class="mt-4 glass-soft border border-emerald-500/15 rounded-xl p-3">
-          <h4 class="text-xs font-bold text-emerald-300 uppercase tracking-wide flex items-center gap-2 mb-2">
-            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> AI Repair Assistant (Priority #1)
-          </h4>
-          <p class="text-[11px] text-gray-500 mb-3">This assistant runs first in the automation pipeline and starts working after you set a repair API key.</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Repair provider</label>
-              <select id="repair_ai_provider" class="input-field w-full bg-[#0a1124]/80 border border-emerald-500/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
-                <option value="openrouter" ${String(s.repair_ai_provider || 'openrouter') === 'openrouter' ? 'selected' : ''}>OpenRouter (free)</option>
-                <option value="huggingface" ${String(s.repair_ai_provider || '') === 'huggingface' ? 'selected' : ''}>Hugging Face</option>
-                <option value="groq" ${String(s.repair_ai_provider || '') === 'groq' ? 'selected' : ''}>Groq</option>
-                <option value="gemini" ${String(s.repair_ai_provider || '') === 'gemini' ? 'selected' : ''}>Gemini</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Repair model</label>
-              <input type="text" id="repair_ai_model" value="${s.repair_ai_model || 'google/gemini-2.0-flash-exp:free'}" placeholder="google/gemini-2.0-flash-exp:free" class="input-field w-full bg-[#0a1124]/80 border border-emerald-500/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
-            </div>
-            <div class="sm:col-span-2">
-              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Repair API key</label>
-              <div class="relative">
-                <input type="password" id="repair_ai_api_key" value="${s.repair_ai_api_key || ''}" placeholder="OpenRouter key preferred for free model" class="input-field w-full bg-[#0a1124]/80 border border-emerald-500/20 rounded-xl pl-3 pr-10 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
-                <button onclick="togglePassword('repair_ai_api_key')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition">
-                  <i data-lucide="eye" class="w-4 h-4" id="repair_ai_api_key-eye"></i>
-                </button>
-              </div>
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Scan interval (minutes)</label>
-              <input type="number" id="repair_scan_interval_minutes" min="1" max="1440" value="${Number.isFinite(Number(s.repair_scan_interval_minutes)) ? Number(s.repair_scan_interval_minutes) : 15}" class="input-field w-full bg-[#0a1124]/80 border border-emerald-500/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
-            </div>
-            <div class="flex items-end">
-              <label class="inline-flex items-center gap-2 text-xs text-gray-300 font-semibold">
-                <input type="checkbox" id="repair_auto_apply_safe_fixes" class="accent-emerald-500" ${s.repair_auto_apply_safe_fixes !== false ? 'checked' : ''}>
-                Auto-apply safe fixes only
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Test connection + Save buttons -->
+<!-- Test connection + Save buttons -->
       <div class="flex gap-3 slide-up">
         <button onclick="saveSettings()" id="save-btn" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 disabled:opacity-40 disabled:cursor-not-allowed">
           <i data-lucide="save" class="w-4 h-4 inline mr-2"></i> Save Settings
@@ -477,12 +305,12 @@ function render() {
       <!-- Info box -->
       <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 slide-up">
         <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4 text-blue-400"></i> How it works</h3>
-        <ul class="space-y-1.5 text-xs text-gray-400">
-          <li class="flex gap-2"><span class="text-blue-400 shrink-0">1.</span> <strong>OpenAI</strong> powers the Customer Support AI — it answers customer questions, helps find products, and tracks orders.</li>
-          <li class="flex gap-2"><span class="text-blue-400 shrink-0">2.</span> <strong>Google Gemini</strong> powers the Admin & Developer AI — it manages products, orders, analytics, and can edit code.</li>
-          <li class="flex gap-2"><span class="text-blue-400 shrink-0">3.</span> The architecture is locked: OpenAI always serves customers, Gemini always serves admin. This cannot be changed.</li>
+<ul class="space-y-1.5 text-xs text-gray-400">
+          <li class="flex gap-2"><span class="text-blue-400 shrink-0">1.</span> <strong>All providers are 100% free</strong> — Google Gemini, Groq, OpenRouter, and Hugging Face. No payment needed.</li>
+          <li class="flex gap-2"><span class="text-blue-400 shrink-0">2.</span> The free AI scans the whole website, understands the codebase, fixes errors, and builds autonomously — no n8n required.</li>
+          <li class="flex gap-2"><span class="text-blue-400 shrink-0">3.</span> If one free provider is rate-limited, the AI automatically switches to the next free provider.</li>
           <li class="flex gap-2"><span class="text-blue-400 shrink-0">4.</span> API keys are stored securely in your database and never exposed to customers.</li>
-          <li class="flex gap-2"><span class="text-blue-400 shrink-0">5.</span> Use "Test Connection" to verify your API key works before saving.</li>
+          <li class="flex gap-2"><span class="text-blue-400 shrink-0">5.</span> Use "Test Connection" to verify your free API key works before saving.</li>
           <li class="flex gap-2"><span class="text-blue-400 shrink-0">6.</span> Toggle each AI mode on/off independently using the toggles above.</li>
         </ul>
       </div>
@@ -601,27 +429,9 @@ window.saveSettings = async () => {
   if (dmo) updates.developer_model_override = dmo.value.trim() || null;
   // Rate limit
   updates.rate_limit_daily = state.settings.rate_limit_daily || 100;
-  // Mode toggles
+// Mode toggles
   updates.customer_enabled = state.settings.customer_enabled !== false;
   updates.developer_enabled = state.settings.developer_enabled !== false;
-  updates.automation_center_enabled = state.settings.automation_center_enabled === true;
-  updates.n8n_assistant_enabled = normalizeAssistantToggles(state.settings.n8n_assistant_enabled);
-
-  const webhookMap = {};
-  for (const assistant of N8N_ASSISTANTS) {
-    const hookEl = document.getElementById(`hook_${assistant.id}`);
-    const hookVal = hookEl ? hookEl.value.trim() : '';
-    if (hookVal) webhookMap[assistant.id] = hookVal;
-  }
-  updates.n8n_assistant_webhooks = webhookMap;
-  updates.repair_ai_provider = (document.getElementById('repair_ai_provider')?.value || 'openrouter').trim();
-  updates.repair_ai_model = (document.getElementById('repair_ai_model')?.value || 'google/gemini-2.0-flash-exp:free').trim();
-  updates.repair_ai_api_key = document.getElementById('repair_ai_api_key')?.value.trim() || null;
-  updates.repair_auto_apply_safe_fixes = document.getElementById('repair_auto_apply_safe_fixes')?.checked !== false;
-  const scanMinutesRaw = Number(document.getElementById('repair_scan_interval_minutes')?.value || 15);
-  updates.repair_scan_interval_minutes = Number.isFinite(scanMinutesRaw)
-    ? Math.max(1, Math.min(1440, Math.round(scanMinutesRaw)))
-    : 15;
 
   try {
     const { error } = await supabase.from('ai_settings').update(updates).eq('id', state.settings.id);
@@ -681,18 +491,6 @@ window.toggleCustomerEnabled = () => {
 
 window.toggleDeveloperEnabled = () => {
   state.settings.developer_enabled = !state.settings.developer_enabled;
-  saveSettings();
-};
-
-window.toggleAutomationCenterEnabled = () => {
-  state.settings.automation_center_enabled = state.settings.automation_center_enabled !== true;
-  saveSettings();
-};
-
-window.toggleAssistantEnabled = (assistantId) => {
-  const toggles = normalizeAssistantToggles(state.settings.n8n_assistant_enabled);
-  toggles[assistantId] = toggles[assistantId] !== true;
-  state.settings.n8n_assistant_enabled = toggles;
   saveSettings();
 };
 

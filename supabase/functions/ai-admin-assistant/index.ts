@@ -313,36 +313,6 @@ async function callOpenAICompatible(params: {
   return text;
 }
 
-async function callFlowise(params: {
-  endpoint: string;
-  apiKey?: string;
-  message: string;
-  history: Array<{ role: string; content: string }>;
-}) {
-  const { endpoint, apiKey, message, history } = params;
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-    },
-    body: JSON.stringify({
-      question: message,
-      history,
-    }),
-  });
-
-  const raw = await res.text();
-  const data = raw ? JSON.parse(raw) : {};
-  if (!res.ok) {
-    throw new Error(data?.error || `Flowise request failed (${res.status})`);
-  }
-
-  const text = pickTextFromUnknownResponse(data);
-  if (!text) throw new Error('Flowise returned an empty response.');
-  return text;
-}
-
 async function callN8nWebhook(params: {
   endpoint: string;
   token?: string;
@@ -765,15 +735,7 @@ Deno.serve(async (req) => {
       return { response, provider: 'huggingface', model };
     }
 
-    if (selectedProvider === 'flowise') {
-      const endpoint = String(settings.flowise_api_url || '').trim();
-      const apiKey = String(settings.flowise_api_key || '').trim();
-      if (!endpoint) throw new Error('Flowise endpoint URL is not set in AI Settings.');
-      const response = await callFlowise({ endpoint, apiKey, message, history });
-      return { response, provider: 'flowise', model: 'flowise-endpoint' };
-    }
-
-    if (selectedProvider === 'n8n') {
+if (selectedProvider === 'n8n') {
       const result = await callN8nAssistant({
         settings: settings as Record<string, unknown>,
         assistant: 'ai_repair_assistant',

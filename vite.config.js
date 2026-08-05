@@ -54,6 +54,7 @@ export default defineConfig(({ mode }) => {
           help: resolve(__dirname, 'help.html'),
           adminAi: resolve(__dirname, 'admin-ai.html'),
           adminAiSettings: resolve(__dirname, 'admin-ai-settings.html'),
+          adminN8n: resolve(__dirname, 'admin-n8n.html'),
           admin: resolve(__dirname, 'admin.html'),
           adminDomains: resolve(__dirname, 'admin-domains.html'),
         },
