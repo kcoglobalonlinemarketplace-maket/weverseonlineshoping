@@ -231,7 +231,7 @@ function normalizeEmail(value) {
 function sanitizeAdminRememberedEmail() {
   try {
     const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || '{}');
-    if (remembered?.email && normalizeEmail(remembered.email) !== ADMIN_EMAIL) {
+    if (remembered?.email && !normalizeEmail(remembered.email)) {
       localStorage.removeItem(REMEMBER_KEY);
     }
   } catch {
@@ -239,19 +239,29 @@ function sanitizeAdminRememberedEmail() {
   }
 }
 
+function getRememberedAdminEmail() {
+  try {
+    const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || '{}');
+    return normalizeEmail(remembered?.email);
+  } catch {
+    return '';
+  }
+}
+
 function enforceAdminEmailInputs() {
   sanitizeAdminRememberedEmail();
+  const rememberedEmail = getRememberedAdminEmail();
 
   const loginInput = document.getElementById('login-email');
   if (loginInput) {
-    loginInput.value = ADMIN_EMAIL;
-    loginInput.setAttribute('readonly', 'readonly');
+    loginInput.value = rememberedEmail || loginInput.value || ADMIN_EMAIL;
+    loginInput.removeAttribute('readonly');
   }
 
   const resetInput = document.getElementById('reset-email');
   if (resetInput) {
-    resetInput.value = ADMIN_EMAIL;
-    resetInput.setAttribute('readonly', 'readonly');
+    resetInput.value = rememberedEmail || resetInput.value || '';
+    resetInput.removeAttribute('readonly');
   }
 }
 
@@ -337,6 +347,12 @@ async function getClientIP() {
 // ── Admin access check — tries 3 ways, most to least reliable ─
 async function checkAdminAccess(user) {
   if (!user) return false;
+  try {
+    const { data: isAdmin } = await supabase.rpc('is_current_user_admin');
+    if (isAdmin) return true;
+  } catch {
+    // Fallback below keeps access for the legacy owner email if RPC is unavailable.
+  }
   return normalizeEmail(user.email) === ADMIN_EMAIL;
 }
 
@@ -428,10 +444,8 @@ async function handleLoginSubmit(e) {
 
   const emailInput = document.getElementById('login-email');
   const email = normalizeEmail(emailInput?.value);
-  if (email !== ADMIN_EMAIL) {
-    if (emailInput) emailInput.value = ADMIN_EMAIL;
-    localStorage.removeItem(REMEMBER_KEY);
-    loginError(`Only ${ADMIN_EMAIL} can access this admin dashboard.`);
+  if (!email) {
+    loginError('Enter your admin email address.');
     setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
     return;
   }
@@ -440,7 +454,7 @@ async function handleLoginSubmit(e) {
   setLoginBusy('login-btn', true);
   clearLoginMessages();
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
     const raw = String(error?.message || '').toLowerCase();
@@ -464,7 +478,7 @@ async function handleLoginSubmit(e) {
   const ok = await checkAdminAccess(data.user);
   if (!ok) {
     await supabase.auth.signOut();
-    loginError(`Access denied for ${data.user.email}. Run this SQL in Supabase → SQL Editor:\n\nINSERT INTO profiles (user_id, is_admin, country_code)\nVALUES ('${data.user.id}', true, 'US')\nON CONFLICT (user_id) DO UPDATE SET is_admin = true;`);
+    loginError(`Access denied for ${data.user.email}. This account is signed in but does not have administrator privileges.`);
     setLoginBusy('login-btn', false, '<i data-lucide="log-in" class="w-4 h-4 inline mr-1"></i> Sign In');
     await logLoginEvent(data.user.id, 'login_denied', { metadata: { reason: 'not_admin' } });
     return;
@@ -472,7 +486,7 @@ async function handleLoginSubmit(e) {
 
   // Save remember-me preference
   if (remember) {
-    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email: ADMIN_EMAIL, ts: Date.now() }));
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, ts: Date.now() }));
   } else {
     localStorage.removeItem(REMEMBER_KEY);
   }
@@ -589,8 +603,11 @@ function setupForgotListeners() {
 
 async function handleForgotPassword() {
   const resetInput = document.getElementById('reset-email');
-  if (resetInput) resetInput.value = ADMIN_EMAIL;
-  const email = ADMIN_EMAIL;
+  const email = normalizeEmail(resetInput?.value);
+  if (!email) {
+    loginError('Enter your admin email address to receive a reset link.');
+    return;
+  }
   setLoginBusy('send-reset-btn', true);
   clearLoginMessages();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
