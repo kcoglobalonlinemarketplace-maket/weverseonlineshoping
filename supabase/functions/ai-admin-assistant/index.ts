@@ -13,6 +13,26 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+function pickTextFromUnknownResponse(data: any): string {
+  if (!data) return '';
+  if (typeof data === 'string') return data.trim();
+  const candidates = [
+    data.response,
+    data.text,
+    data.answer,
+    data.output,
+    data.message,
+    data.result,
+    data.data?.text,
+    data.data?.response,
+    data.outputs?.[0]?.outputs?.[0]?.results?.message?.text,
+  ];
+  for (const value of candidates) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
 function normalizeModel(settings: Record<string, unknown>, developerMode = false) {
   const override = developerMode
     ? (settings.developer_model_override as string | null)
@@ -249,6 +269,395 @@ async function callGeminiWithFallback(params: {
   throw lastError || new Error('Gemini call failed.');
 }
 
+async function callOpenAICompatible(params: {
+  endpoint: string;
+  apiKey: string;
+  model: string;
+  message: string;
+  history: Array<{ role: string; content: string }>;
+  extraHeaders?: Record<string, string>;
+}) {
+  const { endpoint, apiKey, model, message, history, extraHeaders } = params;
+  const messages = [
+    ...(history || []).map((item) => ({
+      role: item?.role === 'assistant' ? 'assistant' : 'user',
+      content: String(item?.content || ''),
+    })).filter((item) => item.content.trim()),
+    { role: 'user', content: message },
+  ];
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      ...(extraHeaders || {}),
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.3,
+      max_tokens: 1200,
+    }),
+  });
+
+  const raw = await res.text();
+  const data = raw ? JSON.parse(raw) : {};
+  if (!res.ok) {
+    const err = data?.error?.message || raw || `Provider request failed (${res.status})`;
+    throw new Error(err);
+  }
+
+  const text = String(data?.choices?.[0]?.message?.content || '').trim();
+  if (!text) throw new Error('Provider returned an empty response.');
+  return text;
+}
+
+async function callFlowise(params: {
+  endpoint: string;
+  apiKey?: string;
+  message: string;
+  history: Array<{ role: string; content: string }>;
+}) {
+  const { endpoint, apiKey, message, history } = params;
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      question: message,
+      history,
+    }),
+  });
+
+  const raw = await res.text();
+  const data = raw ? JSON.parse(raw) : {};
+  if (!res.ok) {
+    throw new Error(data?.error || `Flowise request failed (${res.status})`);
+  }
+
+  const text = pickTextFromUnknownResponse(data);
+  if (!text) throw new Error('Flowise returned an empty response.');
+  return text;
+}
+
+async function callN8nWebhook(params: {
+  endpoint: string;
+  token?: string;
+  message: string;
+  history: Array<{ role: string; content: string }>;
+  userId: string;
+  mode: 'admin' | 'developer';
+}) {
+  const { endpoint, token, message, history, userId, mode } = params;
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'X-Webhook-Token': token } : {}),
+    },
+    body: JSON.stringify({ message, history, user_id: userId, mode }),
+  });
+
+  const raw = await res.text();
+  const data = raw ? JSON.parse(raw) : {};
+  if (!res.ok) {
+    throw new Error(data?.error || `n8n webhook failed (${res.status})`);
+  }
+
+  const text = pickTextFromUnknownResponse(data);
+  if (!text) throw new Error('n8n webhook returned an empty response.');
+  return text;
+}
+
+const AUTOMATION_ASSISTANTS = [
+  'ai_repair_assistant',
+  'product_ai',
+  'writer_ai',
+  'image_ai',
+  'showroom_ai',
+  'seo_ai',
+  'customer_support_ai',
+  'website_builder_ai',
+] as const;
+
+type AutomationAssistant = (typeof AUTOMATION_ASSISTANTS)[number];
+
+const DEFAULT_REPAIR_PROVIDER = 'openrouter';
+const DEFAULT_REPAIR_MODEL = 'google/gemini-2.0-flash-exp:free';
+
+function getRepairAssistantConfig(settings: Record<string, unknown>) {
+  const provider = String(settings.repair_ai_provider || DEFAULT_REPAIR_PROVIDER).trim().toLowerCase();
+  const model = String(settings.repair_ai_model || DEFAULT_REPAIR_MODEL).trim() || DEFAULT_REPAIR_MODEL;
+  const apiKey = String(settings.repair_ai_api_key || settings.openrouter_key || '').trim();
+  const autoApplySafeFixes = settings.repair_auto_apply_safe_fixes === true;
+  const scanIntervalMinutesRaw = Number(settings.repair_scan_interval_minutes || 15);
+  const scanIntervalMinutes = Number.isFinite(scanIntervalMinutesRaw)
+    ? Math.max(1, Math.min(1440, Math.round(scanIntervalMinutesRaw)))
+    : 15;
+  return {
+    provider,
+    model,
+    apiKey,
+    autoApplySafeFixes,
+    scanIntervalMinutes,
+  };
+}
+
+function getRepairChecklist() {
+  return {
+    website_runtime: [
+      'broken_pages',
+      'broken_buttons',
+      'broken_links',
+      'broken_images',
+      'broken_forms',
+      'frontend_js_errors',
+      'ts_build_errors',
+      'react_runtime_errors',
+      'next_node_runtime_errors',
+      'css_html_regressions',
+    ],
+    backend_and_data: [
+      'api_health_checks',
+      'database_connectivity',
+      'database_schema_mismatches',
+      'showroom_integrity',
+      'product_integrity',
+      'category_integrity',
+      'price_integrity',
+      'inventory_integrity',
+    ],
+    pre_release_quality: [
+      'smoke_test_new_feature',
+      'critical_flow_regression',
+      'safe_autofix_candidate_detection',
+    ],
+  };
+}
+
+function parseAssistantToggles(settings: Record<string, unknown>) {
+  const raw = settings.n8n_assistant_enabled;
+  const defaults = Object.fromEntries(AUTOMATION_ASSISTANTS.map((name) => [name, true])) as Record<AutomationAssistant, boolean>;
+  if (!raw || typeof raw !== 'object') return defaults;
+  for (const key of AUTOMATION_ASSISTANTS) {
+    const value = (raw as Record<string, unknown>)[key];
+    if (typeof value === 'boolean') defaults[key] = value;
+  }
+  return defaults;
+}
+
+function parseAssistantHooks(settings: Record<string, unknown>) {
+  const raw = settings.n8n_assistant_webhooks;
+  const hooks: Record<string, string> = {};
+  if (!raw || typeof raw !== 'object') return hooks;
+  for (const key of AUTOMATION_ASSISTANTS) {
+    const value = (raw as Record<string, unknown>)[key];
+    if (typeof value === 'string' && value.trim()) hooks[key] = value.trim();
+  }
+  return hooks;
+}
+
+async function callN8nAssistant(params: {
+  settings: Record<string, unknown>;
+  assistant: AutomationAssistant;
+  message: string;
+  history: Array<{ role: string; content: string }>;
+  userId: string;
+  mode: 'admin' | 'developer';
+  metadata?: Record<string, unknown>;
+}) {
+  const { settings, assistant, message, history, userId, mode, metadata } = params;
+  const baseWebhook = String(settings.n8n_webhook_url || '').trim();
+  const token = String(settings.n8n_webhook_token || '').trim();
+  const repairConfig = getRepairAssistantConfig(settings);
+
+  if (assistant === 'ai_repair_assistant' && !repairConfig.apiKey) {
+    throw new Error('AI Repair Assistant API key is missing. Add repair_ai_api_key (or OpenRouter key) in AI settings.');
+  }
+
+  const toggles = parseAssistantToggles(settings);
+  if (!toggles[assistant]) {
+    throw new Error(`${assistant} is disabled in Automation Center settings.`);
+  }
+
+  const hookMap = parseAssistantHooks(settings);
+  const endpoint = hookMap[assistant] || baseWebhook;
+  if (!endpoint) {
+    throw new Error('n8n webhook URL is not configured for Automation Center.');
+  }
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'X-Webhook-Token': token } : {}),
+    },
+    body: JSON.stringify({
+      source: 'ai-admin-assistant',
+      assistant,
+      message,
+      history,
+      user_id: userId,
+      mode,
+      metadata: {
+        ...(metadata || {}),
+        ...(assistant === 'ai_repair_assistant'
+          ? {
+              repair_config: {
+                provider: repairConfig.provider,
+                model: repairConfig.model,
+                api_key: repairConfig.apiKey,
+                endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+                auto_apply_safe_fixes: repairConfig.autoApplySafeFixes,
+                scan_interval_minutes: repairConfig.scanIntervalMinutes,
+              },
+              repair_checklist: getRepairChecklist(),
+            }
+          : {}),
+      },
+      at: new Date().toISOString(),
+    }),
+  });
+
+  const raw = await res.text();
+  const data = raw ? JSON.parse(raw) : {};
+  if (!res.ok) {
+    throw new Error(data?.error || `n8n assistant ${assistant} failed (${res.status})`);
+  }
+  return {
+    response: pickTextFromUnknownResponse(data) || `${assistant} completed successfully.`,
+    raw: data,
+  };
+}
+
+async function runAutomationPipeline(params: {
+  settings: Record<string, unknown>;
+  message: string;
+  history: Array<{ role: string; content: string }>;
+  userId: string;
+  mode: 'admin' | 'developer';
+}) {
+  const steps: Array<{ assistant: AutomationAssistant; ok: boolean; detail: string }> = [];
+  const order: AutomationAssistant[] = [
+    'ai_repair_assistant',
+    'product_ai',
+    'writer_ai',
+    'image_ai',
+    'showroom_ai',
+    'seo_ai',
+    'customer_support_ai',
+    'website_builder_ai',
+  ];
+
+  for (const assistant of order) {
+    try {
+      const result = await callN8nAssistant({
+        settings: params.settings,
+        assistant,
+        message: params.message,
+        history: params.history,
+        userId: params.userId,
+        mode: params.mode,
+        metadata: { pipeline: true },
+      });
+      steps.push({ assistant, ok: true, detail: result.response });
+    } catch (err) {
+      steps.push({ assistant, ok: false, detail: String(err?.message || err) });
+      return {
+        success: false,
+        steps,
+        response: `Pipeline stopped at ${assistant}: ${String(err?.message || err)}`,
+      };
+    }
+  }
+
+  return {
+    success: true,
+    steps,
+    response: 'Automation pipeline completed: repair scan, product, content, image, showroom, SEO, support, and builder all ran successfully.',
+  };
+}
+
+function summarizeRepairResult(data: Record<string, unknown>) {
+  const report = (data.report && typeof data.report === 'object')
+    ? (data.report as Record<string, unknown>)
+    : null;
+  const autoFixes = Array.isArray(data.auto_fixes_applied)
+    ? data.auto_fixes_applied
+    : (Array.isArray(report?.auto_fixes_applied) ? report?.auto_fixes_applied : []);
+  const unresolvedIssues = Array.isArray(data.unresolved_issues)
+    ? data.unresolved_issues
+    : (Array.isArray(report?.unresolved_issues) ? report?.unresolved_issues : []);
+  const recommendations = Array.isArray(data.recommendations)
+    ? data.recommendations
+    : (Array.isArray(report?.recommendations) ? report?.recommendations : []);
+  const notificationRequired = unresolvedIssues.length > 0 || data.needs_manual_action === true || report?.needs_manual_action === true;
+
+  return {
+    report,
+    autoFixes,
+    unresolvedIssues,
+    recommendations,
+    notificationRequired,
+  };
+}
+
+async function logAutomationRun(params: {
+  serviceClient: ReturnType<typeof createClient>;
+  userId: string;
+  action: string;
+  assistant?: string | null;
+  requestPayload?: Record<string, unknown>;
+  responsePayload?: Record<string, unknown>;
+  status?: 'started' | 'success' | 'failed';
+  errorMessage?: string | null;
+}) {
+  try {
+    await params.serviceClient.from('ai_automation_runs').insert({
+      user_id: params.userId,
+      action: params.action,
+      assistant: params.assistant || null,
+      request_payload: params.requestPayload || {},
+      response_payload: params.responsePayload || {},
+      status: params.status || 'started',
+      error_message: params.errorMessage || null,
+      completed_at: params.status === 'success' || params.status === 'failed' ? new Date().toISOString() : null,
+    });
+  } catch {
+    // Intentionally ignored to keep chat/automation paths resilient if migration is not yet applied.
+  }
+}
+
+async function logRepairReport(params: {
+  serviceClient: ReturnType<typeof createClient>;
+  userId: string;
+  targetUrl: string;
+  releaseTag: string | null;
+  reportData: Record<string, unknown>;
+  autoFixesApplied: unknown[];
+  unresolvedIssues: unknown[];
+  recommendations: unknown[];
+  notificationRequired: boolean;
+}) {
+  try {
+    await params.serviceClient.from('ai_repair_reports').insert({
+      user_id: params.userId,
+      target_url: params.targetUrl,
+      release_tag: params.releaseTag,
+      report_data: params.reportData,
+      auto_fixes_applied: params.autoFixesApplied,
+      unresolved_issues: params.unresolvedIssues,
+      recommendations: params.recommendations,
+      notification_required: params.notificationRequired,
+    });
+  } catch {
+    // Keep runtime resilient while migration catches up.
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
@@ -310,8 +719,77 @@ Deno.serve(async (req) => {
   if (settingsErr) return jsonResponse({ error: settingsErr.message }, 400);
   if (!settings) return jsonResponse({ error: 'AI settings not found. Configure AI Settings first.' }, 400);
 
+  const selectedProvider = String(payload.provider_override || settings.active_provider || 'gemini').trim().toLowerCase();
+  const automationEnabled = settings.automation_center_enabled === true;
+
+  async function runProviderChat(message: string, history: Array<{ role: string; content: string }>) {
+    if (selectedProvider === 'gemini') {
+      const model = normalizeModel(settings as Record<string, unknown>, payload.developer_mode === true);
+      const apiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
+      if (!apiKey) throw new Error('Gemini API key is not set in AI Settings.');
+      const { response, modelUsed } = await callGeminiWithFallback({ apiKey, model, message, history });
+      return { response, provider: 'gemini', model: modelUsed };
+    }
+
+    if (selectedProvider === 'groq') {
+      const apiKey = String(settings.groq_key || '').trim();
+      const model = String(settings.groq_model || 'llama-3.3-70b-versatile').trim();
+      if (!apiKey) throw new Error('Groq API key is not set in AI Settings.');
+      const response = await callOpenAICompatible({ endpoint: 'https://api.groq.com/openai/v1/chat/completions', apiKey, model, message, history });
+      return { response, provider: 'groq', model };
+    }
+
+    if (selectedProvider === 'openrouter') {
+      const apiKey = String(settings.openrouter_key || '').trim();
+      const model = String(settings.openrouter_model || 'google/gemini-2.0-flash-exp:free').trim();
+      if (!apiKey) throw new Error('OpenRouter API key is not set in AI Settings.');
+      const response = await callOpenAICompatible({
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        apiKey,
+        model,
+        message,
+        history,
+        extraHeaders: {
+          'HTTP-Referer': 'https://weverseonlineshop.com',
+          'X-Title': 'Weverse Admin AI',
+        },
+      });
+      return { response, provider: 'openrouter', model };
+    }
+
+    if (selectedProvider === 'huggingface') {
+      const apiKey = String(settings.hf_key || '').trim();
+      const model = String(settings.hf_model || 'Qwen/Qwen2.5-Coder-32B-Instruct').trim();
+      if (!apiKey) throw new Error('Hugging Face API key is not set in AI Settings.');
+      const response = await callOpenAICompatible({ endpoint: 'https://router.huggingface.co/v1/chat/completions', apiKey, model, message, history });
+      return { response, provider: 'huggingface', model };
+    }
+
+    if (selectedProvider === 'flowise') {
+      const endpoint = String(settings.flowise_api_url || '').trim();
+      const apiKey = String(settings.flowise_api_key || '').trim();
+      if (!endpoint) throw new Error('Flowise endpoint URL is not set in AI Settings.');
+      const response = await callFlowise({ endpoint, apiKey, message, history });
+      return { response, provider: 'flowise', model: 'flowise-endpoint' };
+    }
+
+    if (selectedProvider === 'n8n') {
+      const result = await callN8nAssistant({
+        settings: settings as Record<string, unknown>,
+        assistant: 'ai_repair_assistant',
+        message,
+        history,
+        userId: user.id,
+        mode: payload.developer_mode ? 'developer' : 'admin',
+      });
+      return { response: result.response, provider: 'n8n', model: 'n8n-automation-center' };
+    }
+
+    throw new Error(`Unsupported provider: ${selectedProvider}`);
+  }
+
   const isEnabled = settings.is_enabled !== false;
-  if (!isEnabled && action !== 'test_connection') {
+  if (!isEnabled && !['test_connection', 'test_automation_center', 'run_ai_assistant_task', 'run_automation_pipeline', 'run_repair_scan'].includes(action)) {
     return jsonResponse({ error: 'AI assistant is disabled in settings.' }, 400);
   }
 
@@ -395,28 +873,257 @@ Deno.serve(async (req) => {
     });
   }
 
-  const model = normalizeModel(settings as Record<string, unknown>, payload.developer_mode === true);
-  const apiKey = String(settings.gemini_api_key || '').trim();
-
   if (action === 'test_connection') {
-    if (!apiKey) return jsonResponse({ success: false, error: 'Gemini API key is not set in AI Settings.' }, 400);
     try {
-      const { response, modelUsed } = await callGeminiWithFallback({
-        apiKey,
-        model,
-        message: 'Reply with exactly: OK',
-        history: [],
+      const probe = await runProviderChat('Reply with exactly: OK', []);
+      return jsonResponse({
+        success: true,
+        provider: probe.provider,
+        provider_label: String(probe.provider || '').toUpperCase(),
+        model: probe.model,
+        response_preview: probe.response.slice(0, 80),
       });
-      return jsonResponse({ success: true, provider: 'gemini', provider_label: 'Google Gemini', model: modelUsed, response_preview: response.slice(0, 80) });
     } catch (err) {
-      return jsonResponse({ success: false, error: String(err?.message || err), provider: 'gemini', model }, 400);
+      return jsonResponse({ success: false, error: String(err?.message || err), provider: selectedProvider }, 400);
     }
+  }
+
+  if (action === 'test_automation_center') {
+    if (!automationEnabled) {
+      return jsonResponse({ success: false, error: 'Automation Center is disabled. Enable it in AI settings first.' }, 400);
+    }
+    const checks: Array<{ assistant: string; ok: boolean; detail: string }> = [];
+    const toggles = parseAssistantToggles(settings as Record<string, unknown>);
+    for (const assistant of AUTOMATION_ASSISTANTS) {
+      if (!toggles[assistant]) {
+        checks.push({ assistant, ok: true, detail: 'Skipped (disabled).' });
+        continue;
+      }
+      try {
+        const result = await callN8nAssistant({
+          settings: settings as Record<string, unknown>,
+          assistant,
+          message: 'health_check',
+          history: [],
+          userId: user.id,
+          mode: payload.developer_mode ? 'developer' : 'admin',
+          metadata: { health_check: true },
+        });
+        checks.push({ assistant, ok: true, detail: result.response.slice(0, 120) || 'OK' });
+      } catch (err) {
+        checks.push({ assistant, ok: false, detail: String(err?.message || err) });
+      }
+    }
+    const ok = checks.every((item) => item.ok);
+    await logAutomationRun({
+      serviceClient,
+      userId: user.id,
+      action,
+      requestPayload: { check: 'all_assistants' },
+      responsePayload: { checks },
+      status: ok ? 'success' : 'failed',
+      errorMessage: ok ? null : 'One or more assistant health checks failed.',
+    });
+    return jsonResponse({ success: ok, checks });
+  }
+
+  if (action === 'run_repair_scan') {
+    if (!automationEnabled) return jsonResponse({ error: 'Automation Center is disabled.' }, 400);
+    const targetUrl = String(payload.target_url || 'https://weverseonlineshop.com').trim();
+    const releaseTag = String(payload.release_tag || '').trim() || null;
+    const includeAutoFix = payload.include_auto_fix !== false;
+    const repairConfig = getRepairAssistantConfig(settings as Record<string, unknown>);
+
+    await logAutomationRun({
+      serviceClient,
+      userId: user.id,
+      action,
+      assistant: 'ai_repair_assistant',
+      requestPayload: {
+        target_url: targetUrl,
+        release_tag: releaseTag,
+        include_auto_fix: includeAutoFix,
+      },
+      status: 'started',
+    });
+
+    try {
+      const result = await callN8nAssistant({
+        settings: settings as Record<string, unknown>,
+        assistant: 'ai_repair_assistant',
+        message: `run_repair_scan target=${targetUrl}`,
+        history: [],
+        userId: user.id,
+        mode: payload.developer_mode ? 'developer' : 'admin',
+        metadata: {
+          repair_scan: true,
+          target_url: targetUrl,
+          release_tag: releaseTag,
+          include_auto_fix: includeAutoFix,
+          continuous_monitoring: true,
+          free_model: {
+            provider: repairConfig.provider,
+            model: repairConfig.model,
+          },
+          notification_policy: {
+            notify_if_not_auto_fixable: true,
+          },
+        },
+      });
+
+      const summary = summarizeRepairResult((result.raw || {}) as Record<string, unknown>);
+      await logRepairReport({
+        serviceClient,
+        userId: user.id,
+        targetUrl,
+        releaseTag,
+        reportData: (result.raw || {}) as Record<string, unknown>,
+        autoFixesApplied: summary.autoFixes,
+        unresolvedIssues: summary.unresolvedIssues,
+        recommendations: summary.recommendations,
+        notificationRequired: summary.notificationRequired,
+      });
+
+      await logAutomationRun({
+        serviceClient,
+        userId: user.id,
+        action,
+        assistant: 'ai_repair_assistant',
+        requestPayload: {
+          target_url: targetUrl,
+          release_tag: releaseTag,
+          include_auto_fix: includeAutoFix,
+        },
+        responsePayload: {
+          response: result.response,
+          unresolved_issues_count: summary.unresolvedIssues.length,
+          auto_fixes_count: summary.autoFixes.length,
+          notification_required: summary.notificationRequired,
+        },
+        status: 'success',
+      });
+
+      return jsonResponse({
+        success: true,
+        assistant: 'ai_repair_assistant',
+        response: result.response,
+        report: summary.report,
+        auto_fixes_applied: summary.autoFixes,
+        unresolved_issues: summary.unresolvedIssues,
+        recommendations: summary.recommendations,
+        notification_required: summary.notificationRequired,
+        message: summary.notificationRequired
+          ? 'Repair scan completed with issues that require manual action. Notification required.'
+          : 'Repair scan completed. Safe fixes were applied where possible.',
+      });
+    } catch (err) {
+      await logAutomationRun({
+        serviceClient,
+        userId: user.id,
+        action,
+        assistant: 'ai_repair_assistant',
+        requestPayload: {
+          target_url: targetUrl,
+          release_tag: releaseTag,
+          include_auto_fix: includeAutoFix,
+        },
+        responsePayload: {},
+        status: 'failed',
+        errorMessage: String(err?.message || err),
+      });
+      return jsonResponse({ success: false, assistant: 'ai_repair_assistant', error: String(err?.message || err), notification_required: true }, 400);
+    }
+  }
+
+  if (action === 'run_ai_assistant_task') {
+    if (!automationEnabled) return jsonResponse({ error: 'Automation Center is disabled.' }, 400);
+    const assistant = String(payload.assistant || '').trim() as AutomationAssistant;
+    if (!AUTOMATION_ASSISTANTS.includes(assistant)) {
+      return jsonResponse({ error: 'Invalid assistant. Use one of the configured assistant IDs.' }, 400);
+    }
+    const message = String(payload.message || '').trim();
+    if (!message) return jsonResponse({ error: 'message is required' }, 400);
+    const history = Array.isArray(payload.history)
+      ? (payload.history as Array<{ role: string; content: string }>)
+      : [];
+    await logAutomationRun({
+      serviceClient,
+      userId: user.id,
+      action,
+      assistant,
+      requestPayload: { message, history_count: history.length },
+      status: 'started',
+    });
+    try {
+      const result = await callN8nAssistant({
+        settings: settings as Record<string, unknown>,
+        assistant,
+        message,
+        history,
+        userId: user.id,
+        mode: payload.developer_mode ? 'developer' : 'admin',
+        metadata: { manual_task: true },
+      });
+      await logAutomationRun({
+        serviceClient,
+        userId: user.id,
+        action,
+        assistant,
+        requestPayload: { message, history_count: history.length },
+        responsePayload: { response: result.response, raw: result.raw },
+        status: 'success',
+      });
+      return jsonResponse({ success: true, assistant, response: result.response, raw: result.raw });
+    } catch (err) {
+      await logAutomationRun({
+        serviceClient,
+        userId: user.id,
+        action,
+        assistant,
+        requestPayload: { message, history_count: history.length },
+        responsePayload: {},
+        status: 'failed',
+        errorMessage: String(err?.message || err),
+      });
+      return jsonResponse({ success: false, assistant, error: String(err?.message || err) }, 400);
+    }
+  }
+
+  if (action === 'run_automation_pipeline') {
+    if (!automationEnabled) return jsonResponse({ error: 'Automation Center is disabled.' }, 400);
+    const message = String(payload.message || '').trim() || 'new_product_pipeline';
+    const history = Array.isArray(payload.history)
+      ? (payload.history as Array<{ role: string; content: string }>)
+      : [];
+    await logAutomationRun({
+      serviceClient,
+      userId: user.id,
+      action,
+      requestPayload: { message, history_count: history.length },
+      status: 'started',
+    });
+    const pipeline = await runAutomationPipeline({
+      settings: settings as Record<string, unknown>,
+      message,
+      history,
+      userId: user.id,
+      mode: payload.developer_mode ? 'developer' : 'admin',
+    });
+    await logAutomationRun({
+      serviceClient,
+      userId: user.id,
+      action,
+      requestPayload: { message, history_count: history.length },
+      responsePayload: { steps: pipeline.steps || [], response: pipeline.response },
+      status: pipeline.success ? 'success' : 'failed',
+      errorMessage: pipeline.success ? null : String(pipeline.response || 'Pipeline failed'),
+    });
+    return jsonResponse(pipeline, pipeline.success ? 200 : 400);
   }
 
   if (action === 'chat') {
     const message = String(payload.message || '').trim();
     if (!message) return jsonResponse({ error: 'message is required' }, 400);
-    if (!apiKey) return jsonResponse({ error: 'Gemini API key is not set in AI Settings.', provider: 'gemini' }, 400);
 
     const autoAction = await tryCreateProductAndDeploy({
       message,
@@ -444,7 +1151,7 @@ Deno.serve(async (req) => {
         },
       ]);
 
-      return jsonResponse({ response: autoAction.response, tool_results: autoAction.toolResults, provider: 'gemini', model: model, auto_action: true });
+      return jsonResponse({ response: autoAction.response, tool_results: autoAction.toolResults, provider: 'local', model: 'local-auto-action', auto_action: true });
     }
 
     const history = Array.isArray(payload.history)
@@ -452,30 +1159,30 @@ Deno.serve(async (req) => {
       : [];
 
     try {
-      const { response, modelUsed } = await callGeminiWithFallback({ apiKey, model, message, history });
+      const providerResult = await runProviderChat(message, history);
 
       await serviceClient.from('ai_chat_history').insert([
         {
           user_id: user.id,
           role: 'user',
           content: message,
-          provider: 'gemini',
+          provider: providerResult.provider,
           mode: payload.developer_mode ? 'developer' : 'admin',
-          metadata: { requested_model: model, model_used: modelUsed },
+          metadata: { requested_provider: selectedProvider, model_used: providerResult.model },
         },
         {
           user_id: user.id,
           role: 'assistant',
-          content: response,
-          provider: 'gemini',
+          content: providerResult.response,
+          provider: providerResult.provider,
           mode: payload.developer_mode ? 'developer' : 'admin',
-          metadata: { tool_results: [], model_used: modelUsed },
+          metadata: { tool_results: [], model_used: providerResult.model },
         },
       ]);
 
-      return jsonResponse({ response, tool_results: [], provider: 'gemini', model: modelUsed });
+      return jsonResponse({ response: providerResult.response, tool_results: [], provider: providerResult.provider, model: providerResult.model });
     } catch (err) {
-      return jsonResponse({ error: String(err?.message || err), provider: 'gemini', model }, 400);
+      return jsonResponse({ error: String(err?.message || err), provider: selectedProvider }, 400);
     }
   }
 

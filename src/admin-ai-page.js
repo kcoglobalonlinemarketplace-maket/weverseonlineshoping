@@ -30,6 +30,10 @@ let state = {
     note: 'The preview refreshes automatically after the AI creates a product, listing, property, or brand update.',
   },
   lastPreviewItem: null,
+  automationCenterEnabled: false,
+  repairRunning: false,
+  automationTesting: false,
+  automationRunning: false,
 };
 
 function formatBytes(bytes) {
@@ -40,12 +44,51 @@ function formatBytes(bytes) {
   return `${value.toFixed(value >= 10 || exp === 0 ? 0 : 1)} ${units[exp]}`;
 }
 
+function setAutomationButtonsState() {
+  const repairBtn = document.getElementById('automation-repair-btn');
+  const testBtn = document.getElementById('automation-test-btn');
+  const runBtn = document.getElementById('automation-run-btn');
+  const enabled = state.automationCenterEnabled === true;
+  if (repairBtn) {
+    repairBtn.disabled = !enabled || state.repairRunning;
+    repairBtn.classList.toggle('opacity-40', !enabled || state.repairRunning);
+    repairBtn.classList.toggle('cursor-not-allowed', !enabled || state.repairRunning);
+  }
+  if (testBtn) {
+    testBtn.disabled = !enabled || state.automationTesting;
+    testBtn.classList.toggle('opacity-40', !enabled || state.automationTesting);
+    testBtn.classList.toggle('cursor-not-allowed', !enabled || state.automationTesting);
+  }
+  if (runBtn) {
+    runBtn.disabled = !enabled || state.automationRunning;
+    runBtn.classList.toggle('opacity-40', !enabled || state.automationRunning);
+    runBtn.classList.toggle('cursor-not-allowed', !enabled || state.automationRunning);
+  }
+}
+
+function renderAutomationCenterMeta() {
+  const badge = document.getElementById('automation-center-badge');
+  const status = document.getElementById('automation-center-status');
+  if (badge) badge.classList.toggle('hidden', state.automationCenterEnabled !== true);
+  if (status) {
+    status.textContent = state.automationCenterEnabled
+      ? 'Automation Center: ON (n8n)'
+      : 'Automation Center: OFF (enable in AI Settings)';
+  }
+  setAutomationButtonsState();
+}
+
 function isHouseRelatedText(text) {
   return /(house|property|villa|apartment|estate|real\s*estate)/i.test(String(text || ''));
 }
 
 function normalizeText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function isSimpleGreeting(text) {
+  const normalized = normalizeText(text).toLowerCase();
+  return ['hi', 'hello', 'hey', 'yo', 'good morning', 'good afternoon', 'good evening'].includes(normalized);
 }
 
 function isLikelyProductRequest(text) {
@@ -56,6 +99,8 @@ function isLikelyProductRequest(text) {
 }
 
 function updatePreviewMeta(meta = {}) {
+  const previewShell = document.getElementById('live-preview-shell');
+  if (!previewShell || previewShell.classList.contains('hidden')) return;
   state.previewTarget = { ...state.previewTarget, ...meta };
   const targetEl = document.getElementById('live-preview-target');
   const statusEl = document.getElementById('live-preview-status');
@@ -70,6 +115,8 @@ function updatePreviewMeta(meta = {}) {
 }
 
 function setPreviewFrameUrl(url, options = {}) {
+  const previewShell = document.getElementById('live-preview-shell');
+  if (!previewShell || previewShell.classList.contains('hidden')) return;
   const frame = document.getElementById('live-preview-frame');
   const finalUrl = url || '/';
   updatePreviewMeta({ url: finalUrl, ...options });
@@ -77,6 +124,8 @@ function setPreviewFrameUrl(url, options = {}) {
 }
 
 function refreshPreviewFrame() {
+  const previewShell = document.getElementById('live-preview-shell');
+  if (!previewShell || previewShell.classList.contains('hidden')) return;
   const frame = document.getElementById('live-preview-frame');
   if (frame?.contentWindow) frame.contentWindow.location.reload();
   else if (frame) frame.src = state.previewTarget?.url || '/';
@@ -1076,6 +1125,21 @@ async function getAuthHeaders() {
   };
 }
 
+async function loadAutomationCenterState() {
+  try {
+    const { data, error } = await supabase
+      .from('ai_settings')
+      .select('automation_center_enabled')
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    state.automationCenterEnabled = data?.automation_center_enabled === true;
+  } catch {
+    state.automationCenterEnabled = false;
+  }
+  renderAutomationCenterMeta();
+}
+
 function applyDeveloperModeUI() {
   const indicator = document.getElementById('dev-mode-indicator');
   const toggle = document.getElementById('dev-mode-toggle');
@@ -1136,11 +1200,12 @@ async function autoExecutePendingApprovals(approvalIds, source = 'request') {
 
 window.sendMessage = async () => {
   const input = document.getElementById('chat-input');
+  const MIN_INPUT_HEIGHT = 112;
   const text = input.value.trim();
   if (!text || state.sending) return;
 
   input.value = '';
-  input.style.height = 'auto';
+  input.style.height = `${MIN_INPUT_HEIGHT}px`;
 
   state.sending = true;
   document.getElementById('send-btn').disabled = true;
@@ -1150,6 +1215,20 @@ window.sendMessage = async () => {
   renderMessage(userMsg);
 
   renderTypingIndicator();
+
+  if (isSimpleGreeting(text)) {
+    removeTypingIndicator();
+    const aiMsg = {
+      role: 'assistant',
+      content: 'Hello! I am working and ready. Tell me what you want to add, fix, or preview in your store.',
+    };
+    state.history.push(aiMsg);
+    renderMessage(aiMsg);
+    state.sending = false;
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('chat-input').focus();
+    return;
+  }
 
   try {
     const brandRun = await runLocalBrandImageAutomation(text);
@@ -1261,6 +1340,152 @@ window.sendMessage = async () => {
 window.quickAction = (text) => {
   document.getElementById('chat-input').value = text;
   sendMessage();
+};
+
+window.testAutomationCenter = async () => {
+  if (state.automationTesting) return;
+  state.automationTesting = true;
+  setAutomationButtonsState();
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(AI_FUNCTION_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action: 'test_automation_center', developer_mode: state.developerMode }),
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || data.success === false) {
+      const detail = Array.isArray(data?.checks)
+        ? data.checks.map((c) => `${c.assistant}: ${c.ok ? 'OK' : `FAIL (${c.detail})`}`).join('\n')
+        : (data.error || `HTTP ${res.status}`);
+      const msg = { role: 'assistant', content: `⚠️ **Automation Center test failed**\n\n${detail}` };
+      state.history.push(msg);
+      renderMessage(msg);
+      showToast('Automation test failed.');
+      return;
+    }
+
+    const checks = Array.isArray(data.checks) ? data.checks : [];
+    const summary = checks.map((c) => `- ${c.assistant}: ${c.ok ? 'OK' : `FAIL (${c.detail})`}`).join('\n');
+    const msg = { role: 'assistant', content: `✅ **Automation Center test complete**\n\n${summary || 'All assistant checks passed.'}` };
+    state.history.push(msg);
+    renderMessage(msg);
+    showToast('Automation Center is healthy.');
+  } catch (err) {
+    const msg = { role: 'assistant', content: `⚠️ **Automation Center test error:** ${err.message}` };
+    state.history.push(msg);
+    renderMessage(msg);
+    showToast('Automation test error.');
+  } finally {
+    state.automationTesting = false;
+    setAutomationButtonsState();
+  }
+};
+
+window.runAutomationPipeline = async () => {
+  if (state.automationRunning) return;
+  const input = document.getElementById('chat-input');
+  const message = String(input?.value || '').trim() || 'new_product_pipeline';
+  state.automationRunning = true;
+  setAutomationButtonsState();
+  renderTypingIndicator();
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(AI_FUNCTION_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        action: 'run_automation_pipeline',
+        message,
+        developer_mode: state.developerMode,
+        history: state.history.slice(-20).map((h) => ({ role: h.role, content: h.content })),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    removeTypingIndicator();
+
+    if (!res.ok || data.success === false) {
+      const detail = Array.isArray(data?.steps)
+        ? data.steps.map((s) => `${s.assistant}: ${s.ok ? 'OK' : `FAIL (${s.detail})`}`).join('\n')
+        : (data.error || `HTTP ${res.status}`);
+      const msg = { role: 'assistant', content: `⚠️ **Automation pipeline failed**\n\n${detail}` };
+      state.history.push(msg);
+      renderMessage(msg);
+      showToast('Pipeline failed.');
+      return;
+    }
+
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const summary = steps.map((s) => `- ${s.assistant}: ${s.ok ? 'OK' : `FAIL (${s.detail})`}`).join('\n');
+    const msg = { role: 'assistant', content: `✅ **Automation pipeline completed**\n\n${data.response || ''}\n\n${summary}`.trim() };
+    state.history.push(msg);
+    renderMessage(msg);
+    showToast('Pipeline completed.');
+  } catch (err) {
+    removeTypingIndicator();
+    const msg = { role: 'assistant', content: `⚠️ **Automation pipeline error:** ${err.message}` };
+    state.history.push(msg);
+    renderMessage(msg);
+    showToast('Pipeline error.');
+  } finally {
+    state.automationRunning = false;
+    setAutomationButtonsState();
+  }
+};
+
+window.runRepairScan = async () => {
+  if (state.repairRunning) return;
+  state.repairRunning = true;
+  setAutomationButtonsState();
+  renderTypingIndicator();
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(AI_FUNCTION_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        action: 'run_repair_scan',
+        target_url: window.location.origin || 'https://weverseonlineshop.com',
+        include_auto_fix: true,
+        developer_mode: state.developerMode,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    removeTypingIndicator();
+
+    if (!res.ok || data.success === false) {
+      const msg = {
+        role: 'assistant',
+        content: `⚠️ **AI Repair scan failed**\n\n${data.error || `HTTP ${res.status}`}`,
+        tool_results: data.tool_results || [],
+      };
+      state.history.push(msg);
+      renderMessage(msg);
+      showToast('Repair scan failed.');
+      return;
+    }
+
+    const unresolved = Array.isArray(data.unresolved_issues) ? data.unresolved_issues.length : 0;
+    const fixed = Array.isArray(data.auto_fixes_applied) ? data.auto_fixes_applied.length : 0;
+    const header = data.notification_required
+      ? '⚠️ **AI Repair scan completed with escalations**'
+      : '✅ **AI Repair scan completed successfully**';
+    const content = `${header}\n\n${data.response || ''}\n\n- Safe fixes applied: ${fixed}\n- Unresolved issues: ${unresolved}\n- Manual notification required: ${data.notification_required ? 'Yes' : 'No'}`;
+    const msg = { role: 'assistant', content, tool_results: data.tool_results || [] };
+    state.history.push(msg);
+    renderMessage(msg);
+    showToast(data.notification_required ? 'Repair scan done with escalations.' : 'Repair scan done.');
+  } catch (err) {
+    removeTypingIndicator();
+    const msg = { role: 'assistant', content: `⚠️ **AI Repair scan error:** ${err.message}` };
+    state.history.push(msg);
+    renderMessage(msg);
+    showToast('Repair scan error.');
+  } finally {
+    state.repairRunning = false;
+    setAutomationButtonsState();
+  }
 };
 
 window.previewStorefrontHome = () => {
@@ -1496,6 +1721,7 @@ async function init() {
 
   // Load usage stats
   loadUsageStats();
+  loadAutomationCenterState();
 
   // Input handling
   const input = document.getElementById('chat-input');
@@ -1513,10 +1739,12 @@ async function init() {
   });
   input.addEventListener('input', () => {
     input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 128) + 'px';
+    input.style.height = Math.max(112, Math.min(input.scrollHeight, 224)) + 'px';
   });
+  input.style.height = '112px';
   renderPendingUploads();
   setPreviewForHome();
+  renderAutomationCenterMeta();
   input.focus();
 }
 

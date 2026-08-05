@@ -28,13 +28,120 @@ const PROVIDERS = [
     keyPlaceholder: 'AIza...',
     signupUrl: 'https://aistudio.google.com/app/apikey',
   },
+  {
+    id: 'groq',
+    name: 'Groq (Free Tier)',
+    description: 'Fast free-tier model API for admin tasks',
+    role: 'Admin & Developer AI',
+    icon: 'zap',
+    color: 'violet',
+    models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+    keyField: 'groq_key',
+    modelField: 'groq_model',
+    keyPlaceholder: 'gsk_...',
+    signupUrl: 'https://console.groq.com/keys',
+  },
+  {
+    id: 'openrouter',
+    name: 'OpenRouter (Free Models)',
+    description: 'Use free community models through OpenRouter',
+    role: 'Admin & Developer AI',
+    icon: 'route',
+    color: 'violet',
+    models: ['google/gemini-2.0-flash-exp:free', 'meta-llama/llama-3.1-8b-instruct:free'],
+    keyField: 'openrouter_key',
+    modelField: 'openrouter_model',
+    keyPlaceholder: 'sk-or-v1-...',
+    signupUrl: 'https://openrouter.ai/keys',
+  },
+  {
+    id: 'huggingface',
+    name: 'Hugging Face (Free Tier)',
+    description: 'Use free-tier inference router for assistant tasks',
+    role: 'Admin & Developer AI',
+    icon: 'cpu',
+    color: 'violet',
+    models: ['Qwen/Qwen2.5-Coder-32B-Instruct', 'mistralai/Mistral-7B-Instruct-v0.3'],
+    keyField: 'hf_key',
+    modelField: 'hf_model',
+    keyPlaceholder: 'hf_...',
+    signupUrl: 'https://huggingface.co/settings/tokens',
+  },
+  {
+    id: 'flowise',
+    name: 'Flowise AI',
+    description: 'Connect your Flowise endpoint for automated workflows',
+    role: 'Admin & Developer AI',
+    icon: 'workflow',
+    color: 'amber',
+    models: [],
+    keyField: 'flowise_api_url',
+    modelField: 'flowise_api_key',
+    keyPlaceholder: 'https://your-flowise-host/api/v1/prediction/your-flow-id',
+    modelPlaceholder: 'Optional Flowise API key',
+    keyLabel: 'Flowise Endpoint URL',
+    modelLabel: 'Flowise API Key (optional)',
+    signupUrl: 'https://flowiseai.com/',
+  },
+  {
+    id: 'n8n',
+    name: 'n8n AI Workflow',
+    description: 'Use n8n webhook automation for website fixes/build steps',
+    role: 'Admin & Developer AI',
+    icon: 'git-branch-plus',
+    color: 'amber',
+    models: [],
+    keyField: 'n8n_webhook_url',
+    modelField: 'n8n_webhook_token',
+    keyPlaceholder: 'https://your-n8n-host/webhook/admin-ai',
+    modelPlaceholder: 'Optional n8n token/header secret',
+    keyLabel: 'n8n Webhook URL',
+    modelLabel: 'n8n Token (optional)',
+    signupUrl: 'https://n8n.io/',
+  },
 ];
 
 const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
+const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
 const AI_FUNCTION_URL = LOCAL_DEV_HOSTS.has(window.location.hostname)
   ? '/_supabase/functions/v1/ai-admin-assistant'
-  : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-admin-assistant`;
+  : `${SUPABASE_BASE_URL}/functions/v1/ai-admin-assistant`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const N8N_ASSISTANTS = [
+  { id: 'product_ai', label: 'Product AI', note: 'Create and structure product data.' },
+  { id: 'writer_ai', label: 'Writer AI', note: 'Generate marketing copy and descriptions.' },
+  { id: 'image_ai', label: 'Image AI', note: 'Image prompts, tags, and media instructions.' },
+  { id: 'showroom_ai', label: 'Showroom AI', note: 'Publish items and align listing details.' },
+  { id: 'seo_ai', label: 'SEO AI', note: 'Optimize metadata and search targeting.' },
+  { id: 'customer_support_ai', label: 'Customer Support AI', note: 'Prepare customer-facing answers and FAQs.' },
+  { id: 'website_builder_ai', label: 'Website Builder AI', note: 'Apply layout/build workflow steps.' },
+  { id: 'ai_repair_assistant', label: 'AI Repair Assistant', note: 'Run verification and repair checks.' },
+];
+
+function defaultAssistantToggles() {
+  const row = {};
+  for (const assistant of N8N_ASSISTANTS) row[assistant.id] = true;
+  return row;
+}
+
+function normalizeAssistantToggles(raw) {
+  const base = defaultAssistantToggles();
+  if (!raw || typeof raw !== 'object') return base;
+  for (const assistant of N8N_ASSISTANTS) {
+    if (typeof raw[assistant.id] === 'boolean') base[assistant.id] = raw[assistant.id];
+  }
+  return base;
+}
+
+function normalizeAssistantWebhooks(raw) {
+  const base = {};
+  if (!raw || typeof raw !== 'object') return base;
+  for (const assistant of N8N_ASSISTANTS) {
+    const value = raw[assistant.id];
+    if (typeof value === 'string' && value.trim()) base[assistant.id] = value.trim();
+  }
+  return base;
+}
 
 async function showBootstrapPrompt() {
   const denied = document.getElementById('access-denied');
@@ -113,18 +220,30 @@ function colorClasses(color) {
 function render() {
   const root = document.getElementById('settings-root');
   const s = state.settings;
+  s.n8n_assistant_enabled = normalizeAssistantToggles(s.n8n_assistant_enabled);
+  s.n8n_assistant_webhooks = normalizeAssistantWebhooks(s.n8n_assistant_webhooks);
 
   root.innerHTML = `
     <div class="fade-in">
       <div class="mb-6">
         <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-1">AI Architecture Settings</h1>
-        <p class="text-sm text-gray-500">Each AI has a dedicated provider. OpenAI serves customers; Google Gemini serves admin and development. This architecture is locked for security.</p>
+        <p class="text-sm text-gray-500">Configure AI providers for customer and admin/developer assistants. You can connect free providers and workflow engines.</p>
+      </div>
+
+      <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up mb-4">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3 flex items-center gap-2">
+          <i data-lucide="sliders-horizontal" class="w-4 h-4 text-blue-400"></i> Admin & Developer Provider
+        </h3>
+        <p class="text-xs text-gray-500 mb-3">Select which provider powers your Admin & Developer AI for building/fixing tasks.</p>
+        <select id="active_provider" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          ${PROVIDERS.filter((p) => p.id !== 'openai').map((p) => `<option value="${p.id}" ${s.active_provider === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+        </select>
       </div>
 
       <!-- Architecture diagram -->
       <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up mb-4">
         <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
-          <i data-lucide="network" class="w-4 h-4 text-blue-400"></i> AI Architecture (Locked)
+          <i data-lucide="network" class="w-4 h-4 text-blue-400"></i> AI Architecture
         </h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="glass-soft border border-emerald-500/20 rounded-xl p-4">
@@ -176,6 +295,11 @@ function render() {
       ${PROVIDERS.map(p => {
         const c = colorClasses(p.color);
         const hasKey = s[p.keyField] && s[p.keyField].length > 0;
+        const keyLabel = p.keyLabel || 'API Key';
+        const modelLabel = p.modelLabel || 'Model';
+        const modelControl = Array.isArray(p.models) && p.models.length > 0
+          ? `<select id="${p.modelField}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">${p.models.map(m => `<option value="${m}" ${s[p.modelField] === m ? 'selected' : ''}>${m}</option>`).join('')}</select>`
+          : `<input type="text" id="${p.modelField}" placeholder="${p.modelPlaceholder || 'Optional value'}" value="${s[p.modelField] || ''}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">`;
         return `
           <div class="glass border ${c.border} rounded-2xl p-5 slide-up" style="animation-delay: .1s">
             <div class="flex items-center justify-between mb-4">
@@ -195,7 +319,7 @@ function render() {
             </div>
             <div class="space-y-3">
               <div>
-                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">API Key</label>
+                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">${keyLabel}</label>
                 <div class="relative">
                   <input type="password" id="${p.keyField}" placeholder="${p.keyPlaceholder}" value="${s[p.keyField] || ''}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
                   <button onclick="togglePassword('${p.keyField}')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition">
@@ -204,10 +328,8 @@ function render() {
                 </div>
               </div>
               <div>
-                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Model</label>
-                <select id="${p.modelField}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
-                  ${p.models.map(m => `<option value="${m}" ${s[p.modelField] === m ? 'selected' : ''}>${m}</option>`).join('')}
-                </select>
+                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">${modelLabel}</label>
+                ${modelControl}
               </div>
             </div>
           </div>
@@ -263,6 +385,82 @@ function render() {
         </div>
       </div>
 
+      <div class="glass border border-amber-500/20 rounded-2xl p-5 slide-up">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+              <i data-lucide="workflow" class="w-4 h-4 text-amber-400"></i> AI Automation Center (n8n)
+            </h3>
+            <p class="text-xs text-gray-500 mt-1">Central orchestration for all assistant modules. Each module can be toggled and mapped to its own webhook.</p>
+          </div>
+          <button onclick="toggleAutomationCenterEnabled()" class="relative inline-flex h-8 w-14 items-center rounded-full transition ${s.automation_center_enabled === true ? 'bg-emerald-500' : 'bg-gray-600'}">
+            <span class="inline-block h-6 w-6 transform rounded-full bg-white transition ${s.automation_center_enabled === true ? 'translate-x-7' : 'translate-x-1'}"></span>
+          </button>
+        </div>
+        <div class="mt-3 text-xs font-bold ${s.automation_center_enabled === true ? 'text-emerald-400' : 'text-gray-500'}">${s.automation_center_enabled === true ? 'Automation Center is ON' : 'Automation Center is OFF'}</div>
+        <div class="mt-4 grid grid-cols-1 gap-3">
+          ${N8N_ASSISTANTS.map((assistant) => {
+            const enabled = s.n8n_assistant_enabled?.[assistant.id] !== false;
+            const value = s.n8n_assistant_webhooks?.[assistant.id] || '';
+            return `
+            <div class="glass-soft border border-amber-500/15 rounded-xl p-3">
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <div>
+                  <p class="text-sm font-bold text-white">${assistant.label}</p>
+                  <p class="text-[11px] text-gray-500">${assistant.note}</p>
+                </div>
+                <button onclick="toggleAssistantEnabled('${assistant.id}')" class="relative inline-flex h-7 w-12 items-center rounded-full transition ${enabled ? 'bg-emerald-500' : 'bg-gray-600'}">
+                  <span class="inline-block h-5 w-5 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}"></span>
+                </button>
+              </div>
+              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Webhook override (optional)</label>
+              <input type="text" id="hook_${assistant.id}" value="${value}" placeholder="Use global n8n webhook when empty" class="input-field w-full bg-[#0a1124]/80 border border-amber-500/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+            </div>`;
+          }).join('')}
+        </div>
+
+        <div class="mt-4 glass-soft border border-emerald-500/15 rounded-xl p-3">
+          <h4 class="text-xs font-bold text-emerald-300 uppercase tracking-wide flex items-center gap-2 mb-2">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> AI Repair Assistant (Priority #1)
+          </h4>
+          <p class="text-[11px] text-gray-500 mb-3">This assistant runs first in the automation pipeline and starts working after you set a repair API key.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Repair provider</label>
+              <select id="repair_ai_provider" class="input-field w-full bg-[#0a1124]/80 border border-emerald-500/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                <option value="openrouter" ${String(s.repair_ai_provider || 'openrouter') === 'openrouter' ? 'selected' : ''}>OpenRouter (free)</option>
+                <option value="huggingface" ${String(s.repair_ai_provider || '') === 'huggingface' ? 'selected' : ''}>Hugging Face</option>
+                <option value="groq" ${String(s.repair_ai_provider || '') === 'groq' ? 'selected' : ''}>Groq</option>
+                <option value="gemini" ${String(s.repair_ai_provider || '') === 'gemini' ? 'selected' : ''}>Gemini</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Repair model</label>
+              <input type="text" id="repair_ai_model" value="${s.repair_ai_model || 'google/gemini-2.0-flash-exp:free'}" placeholder="google/gemini-2.0-flash-exp:free" class="input-field w-full bg-[#0a1124]/80 border border-emerald-500/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Repair API key</label>
+              <div class="relative">
+                <input type="password" id="repair_ai_api_key" value="${s.repair_ai_api_key || ''}" placeholder="OpenRouter key preferred for free model" class="input-field w-full bg-[#0a1124]/80 border border-emerald-500/20 rounded-xl pl-3 pr-10 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                <button onclick="togglePassword('repair_ai_api_key')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition">
+                  <i data-lucide="eye" class="w-4 h-4" id="repair_ai_api_key-eye"></i>
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Scan interval (minutes)</label>
+              <input type="number" id="repair_scan_interval_minutes" min="1" max="1440" value="${Number.isFinite(Number(s.repair_scan_interval_minutes)) ? Number(s.repair_scan_interval_minutes) : 15}" class="input-field w-full bg-[#0a1124]/80 border border-emerald-500/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div class="flex items-end">
+              <label class="inline-flex items-center gap-2 text-xs text-gray-300 font-semibold">
+                <input type="checkbox" id="repair_auto_apply_safe_fixes" class="accent-emerald-500" ${s.repair_auto_apply_safe_fixes !== false ? 'checked' : ''}>
+                Auto-apply safe fixes only
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Test connection + Save buttons -->
       <div class="flex gap-3 slide-up">
         <button onclick="saveSettings()" id="save-btn" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 disabled:opacity-40 disabled:cursor-not-allowed">
@@ -313,8 +511,9 @@ function render() {
 }
 
 window.selectProvider = (id) => {
-  // Architecture is locked — provider selection is disabled
-  showToast('Architecture is locked. OpenAI serves customers, Gemini serves admin.');
+  state.settings.active_provider = id;
+  render();
+  showToast(`Selected ${id} for Admin & Developer AI.`);
 };
 
 window.togglePassword = (fieldId) => {
@@ -353,10 +552,11 @@ window.testConnection = async () => {
   if (window.lucide) lucide.createIcons();
   try {
     const { data: { session } } = await supabase.auth.getSession();
+    const selectedProvider = document.getElementById('active_provider')?.value || state.settings.active_provider || 'gemini';
     const res = await fetch(AI_FUNCTION_URL, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${session?.access_token || ANON_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'test_connection' }),
+      body: JSON.stringify({ action: 'test_connection', provider_override: selectedProvider }),
     });
     const data = await res.json();
     if (data.success) {
@@ -382,11 +582,13 @@ window.saveSettings = async () => {
   if (window.lucide) lucide.createIcons();
 
   const updates = {
-    active_provider: 'gemini',
+    active_provider: document.getElementById('active_provider')?.value || state.settings.active_provider || 'gemini',
   };
   for (const p of PROVIDERS) {
-    const keyVal = document.getElementById(p.keyField).value.trim();
-    const modelVal = document.getElementById(p.modelField).value;
+    const keyEl = document.getElementById(p.keyField);
+    const modelEl = document.getElementById(p.modelField);
+    const keyVal = keyEl ? keyEl.value.trim() : '';
+    const modelVal = modelEl ? modelEl.value.trim() : '';
     updates[p.keyField] = keyVal || null;
     updates[p.modelField] = modelVal;
   }
@@ -402,6 +604,24 @@ window.saveSettings = async () => {
   // Mode toggles
   updates.customer_enabled = state.settings.customer_enabled !== false;
   updates.developer_enabled = state.settings.developer_enabled !== false;
+  updates.automation_center_enabled = state.settings.automation_center_enabled === true;
+  updates.n8n_assistant_enabled = normalizeAssistantToggles(state.settings.n8n_assistant_enabled);
+
+  const webhookMap = {};
+  for (const assistant of N8N_ASSISTANTS) {
+    const hookEl = document.getElementById(`hook_${assistant.id}`);
+    const hookVal = hookEl ? hookEl.value.trim() : '';
+    if (hookVal) webhookMap[assistant.id] = hookVal;
+  }
+  updates.n8n_assistant_webhooks = webhookMap;
+  updates.repair_ai_provider = (document.getElementById('repair_ai_provider')?.value || 'openrouter').trim();
+  updates.repair_ai_model = (document.getElementById('repair_ai_model')?.value || 'google/gemini-2.0-flash-exp:free').trim();
+  updates.repair_ai_api_key = document.getElementById('repair_ai_api_key')?.value.trim() || null;
+  updates.repair_auto_apply_safe_fixes = document.getElementById('repair_auto_apply_safe_fixes')?.checked !== false;
+  const scanMinutesRaw = Number(document.getElementById('repair_scan_interval_minutes')?.value || 15);
+  updates.repair_scan_interval_minutes = Number.isFinite(scanMinutesRaw)
+    ? Math.max(1, Math.min(1440, Math.round(scanMinutesRaw)))
+    : 15;
 
   try {
     const { error } = await supabase.from('ai_settings').update(updates).eq('id', state.settings.id);
@@ -461,6 +681,18 @@ window.toggleCustomerEnabled = () => {
 
 window.toggleDeveloperEnabled = () => {
   state.settings.developer_enabled = !state.settings.developer_enabled;
+  saveSettings();
+};
+
+window.toggleAutomationCenterEnabled = () => {
+  state.settings.automation_center_enabled = state.settings.automation_center_enabled !== true;
+  saveSettings();
+};
+
+window.toggleAssistantEnabled = (assistantId) => {
+  const toggles = normalizeAssistantToggles(state.settings.n8n_assistant_enabled);
+  toggles[assistantId] = toggles[assistantId] !== true;
+  state.settings.n8n_assistant_enabled = toggles;
   saveSettings();
 };
 
