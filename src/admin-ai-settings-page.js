@@ -30,7 +30,10 @@ const PROVIDERS = [
   },
 ];
 
-const AI_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-admin-assistant`;
+const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
+const AI_FUNCTION_URL = LOCAL_DEV_HOSTS.has(window.location.hostname)
+  ? '/_supabase/functions/v1/ai-admin-assistant'
+  : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-admin-assistant`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 async function showBootstrapPrompt() {

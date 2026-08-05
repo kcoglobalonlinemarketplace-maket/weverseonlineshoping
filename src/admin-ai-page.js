@@ -1,9 +1,17 @@
 import { supabase } from './supabase-client.js';
 import { getCurrentUser } from './auth.js';
 
-const AI_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-admin-assistant`;
+const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
+const AI_FUNCTION_URL = LOCAL_DEV_HOSTS.has(window.location.hostname)
+  ? '/_supabase/functions/v1/ai-admin-assistant'
+  : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-admin-assistant`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const AUTO_EXECUTE_DEVELOPER_ACTIONS = true;
+const PRODUCT_IMAGE_BUCKET = 'product-images';
+const MAX_PENDING_UPLOADS = 24;
+const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
+const BRAND_IMAGE_CACHE_KEY = 'kco_pending_brand_image_v1';
+const BRAND_OVERRIDE_KEY = 'weverse_brand_override_v1';
 
 let state = {
   user: null,
@@ -11,7 +19,449 @@ let state = {
   history: [],
   sending: false,
   developerMode: true,
+  pendingUploads: [],
 };
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const exp = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / (1024 ** exp);
+  return `${value.toFixed(value >= 10 || exp === 0 ? 0 : 1)} ${units[exp]}`;
+}
+
+function isHouseRelatedText(text) {
+  return /(house|property|villa|apartment|estate|real\s*estate)/i.test(String(text || ''));
+}
+
+function shouldUseImageListingAutomation(text) {
+  if (!state.pendingUploads.length) return false;
+  return /(image|images|showroom|listing|upload|add|create|put|product|house|property)/i.test(String(text || ''));
+}
+
+function shouldUseBrandImageAutomation(text) {
+  if (!state.pendingUploads.length && !getCachedBrandImage()) return false;
+  return /(this is my brand|use this as brand|set as brand|brand logo|brand image|replace brand|update brand|logo)/i.test(String(text || ''));
+}
+
+function shouldAskForClarification(text) {
+  const message = String(text || '').trim();
+  if (!message) return false;
+  return /(fix|move|position|align|layout|spacing|not position well|bad layout|make it better|clean it up|adjust it)/i.test(message)
+    && !/(header|footer|login|auth|admin|product|house|showroom|brand|logo|image|button|banner)/i.test(message);
+}
+
+function buildClarifyingReply(text) {
+  const message = String(text || '').trim();
+  if (/(brand|logo|image)/i.test(message) && !state.pendingUploads.length && !getCachedBrandImage()) {
+    return 'I can do that, but I need the image first. Upload the logo or brand image here, then tell me whether it should replace the login logo, header logo, footer logo, or all three.';
+  }
+  if (/(fix|move|position|align|layout|spacing|not position well|bad layout|make it better|clean it up|adjust it)/i.test(message)) {
+    return 'I can help fix that, but I need one more detail: which page or section should I adjust, and what should move? If you want, upload a screenshot and I will tell you the exact change to make.';
+  }
+  return 'I need one more detail before I can act. Tell me the page, section, or image to change, and I will turn it into the right update.';
+}
+
+function renderPendingUploads() {
+  const preview = document.getElementById('ai-uploaded-images-preview');
+  const hint = document.getElementById('ai-upload-hint');
+  const clearBtn = document.getElementById('ai-clear-uploads-btn');
+  if (!preview || !hint || !clearBtn) return;
+
+  if (!state.pendingUploads.length) {
+    preview.innerHTML = '';
+    hint.textContent = 'No images selected. Upload images, then tell AI to create a showroom listing from them.';
+    clearBtn.classList.add('opacity-50');
+    clearBtn.disabled = true;
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  clearBtn.classList.remove('opacity-50');
+  clearBtn.disabled = false;
+  hint.textContent = `${state.pendingUploads.length} image(s) ready. Say: "Use these images and add to showroom".`;
+
+  preview.innerHTML = state.pendingUploads.map((item) => `
+    <div class="group relative w-20 h-20 rounded-lg overflow-hidden border border-blue-500/25 bg-blue-950/40">
+      <img src="${item.previewUrl}" alt="${escapeHtml(item.name)}" class="w-full h-full object-cover">
+      <button class="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-[10px] leading-none opacity-0 group-hover:opacity-100 transition" data-remove-upload-id="${item.id}" title="Remove image">×</button>
+      <div class="absolute bottom-0 inset-x-0 bg-black/65 text-[9px] text-gray-200 px-1 py-0.5 truncate">${escapeHtml(item.name)}</div>
+    </div>
+  `).join('');
+
+  preview.querySelectorAll('[data-remove-upload-id]').forEach((btn) => {
+    btn.addEventListener('click', () => removePendingUpload(btn.getAttribute('data-remove-upload-id')));
+  });
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function removePendingUpload(id) {
+  const idx = state.pendingUploads.findIndex((row) => row.id === id);
+  if (idx === -1) return;
+  const [removed] = state.pendingUploads.splice(idx, 1);
+  if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+  renderPendingUploads();
+}
+
+function clearPendingUploadsLocal() {
+  state.pendingUploads.forEach((item) => {
+    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+  });
+  state.pendingUploads = [];
+  const picker = document.getElementById('ai-image-upload');
+  if (picker) picker.value = '';
+  renderPendingUploads();
+}
+
+async function fileToDataUrl(file) {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Could not read uploaded image file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function getCachedBrandImage() {
+  try {
+    const raw = sessionStorage.getItem(BRAND_IMAGE_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.dataUrl) return null;
+    return { url: String(parsed.dataUrl), fallback: true, name: String(parsed.name || 'brand-image.png') };
+  } catch {
+    return null;
+  }
+}
+
+async function cacheBrandImageFromUploads() {
+  const first = state.pendingUploads[0];
+  if (!first?.file) return;
+  try {
+    const dataUrl = await fileToDataUrl(first.file);
+    if (dataUrl) {
+      sessionStorage.setItem(BRAND_IMAGE_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        name: first.name || 'brand-image.png',
+        dataUrl,
+      }));
+    }
+  } catch {}
+}
+
+async function uploadPendingImages(propertyId) {
+  const uploads = state.pendingUploads.slice(0, MAX_PENDING_UPLOADS);
+  const urls = [];
+  let storageFailures = 0;
+
+  for (let i = 0; i < uploads.length; i += 1) {
+    const item = uploads[i];
+    const extRaw = String(item.name || '').split('.').pop() || 'jpg';
+    const ext = extRaw.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const objectPath = `ai-uploads/${new Date().toISOString().slice(0, 10)}/${propertyId}-${String(i + 1).padStart(2, '0')}.${ext}`;
+
+    try {
+      const { error: uploadErr } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).upload(objectPath, item.file, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: item.file.type || 'image/jpeg',
+      });
+
+      if (!uploadErr) {
+        const { data: pub } = supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(objectPath);
+        if (pub?.publicUrl) {
+          urls.push(pub.publicUrl);
+          continue;
+        }
+      }
+
+      storageFailures += 1;
+      const dataUrl = await fileToDataUrl(item.file);
+      if (dataUrl) urls.push(dataUrl);
+    } catch {
+      storageFailures += 1;
+      const dataUrl = await fileToDataUrl(item.file);
+      if (dataUrl) urls.push(dataUrl);
+    }
+  }
+
+  return {
+    urls,
+    total: uploads.length,
+    storageFailures,
+  };
+}
+
+async function uploadBrandImage(propertyId) {
+  const first = state.pendingUploads[0];
+  const cached = getCachedBrandImage();
+  if (!first && cached) return cached;
+  if (!first) return null;
+
+  const extRaw = String(first.name || '').split('.').pop() || 'png';
+  const ext = extRaw.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+  const objectPath = `brand-assets/${new Date().toISOString().slice(0, 10)}/${propertyId}.${ext}`;
+
+  try {
+    const { error: uploadErr } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).upload(objectPath, first.file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: first.file.type || 'image/png',
+    });
+    if (!uploadErr) {
+      const { data: pub } = supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(objectPath);
+      if (pub?.publicUrl) return { url: pub.publicUrl, fallback: false };
+    }
+  } catch {}
+
+  const dataUrl = await fileToDataUrl(first.file);
+  return dataUrl ? { url: dataUrl, fallback: true } : null;
+}
+
+function clearBrandImageQueue() {
+  clearPendingUploadsLocal();
+}
+
+function parseImageShowroomRequest(text) {
+  const message = String(text || '').trim();
+  if (!message) return null;
+  const hasIntent = /(image|images|showroom|listing|upload|add|create|put|product|house|property)/i.test(message);
+  if (!hasIntent) return null;
+
+  const isHouse = isHouseRelatedText(message);
+  const namedMatch = message.match(/named\s+["']([^"']+)["']/i) || message.match(/named\s+([^,\.]+?)(?:,|\sprice\s|\scategory\s|\sin\s|\sthen\s|$)/i);
+  const nameMatch = message.match(/name\s*[:=]\s*([\w\s'"\-&,]+?)(?:,|\sprice\s|\scategory\s|\sin\s|\sthen\s|$)/i);
+  const titleMatch = message.match(/title\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\scategory\s|\sin\s|\sthen\s|$)/i);
+  const priceMatch = message.match(/price\s*[:=]?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
+  const stockMatch = message.match(/stock\s*[:=]?\s*([0-9]+)/i);
+  const categoryMatch = message.match(/category\s*[:=]?\s*([a-zA-Z0-9\-\s&]+)/i);
+  const currencyMatch = message.match(/\b(USD|EUR|GBP|NGN|KES|ZAR|GHS|CAD|AUD)\b/i);
+  const bedsMatch = message.match(/(bedrooms?|beds?)\s*[:=]?\s*([0-9]+)/i);
+  const bathsMatch = message.match(/(bathrooms?|baths?)\s*[:=]?\s*([0-9]+)/i);
+  const countryCodeMatch = message.match(/country\s*code\s*[:=]?\s*([a-z]{2})\b/i);
+  const countryMatch = message.match(/country\s*[:=]?\s*([a-zA-Z\s]+?)(?:,|\sstate\s|\scity\s|\sthen\s|$)/i);
+  const stateMatch = message.match(/state\s*[:=]?\s*([a-zA-Z\s]+?)(?:,|\scity\s|\stown\s|\sthen\s|$)/i);
+  const cityMatch = message.match(/city\s*[:=]?\s*([a-zA-Z\s]+?)(?:,|\stown\s|\sthen\s|$)/i);
+  const townMatch = message.match(/town\s*[:=]?\s*([a-zA-Z\s]+?)(?:,|\sthen\s|$)/i);
+  const locationMatch = message.match(/(location|area|address)\s*[:=]?\s*([a-zA-Z0-9\-,\s]+?)(?:\sthen\s|$)/i);
+  const latMatch = message.match(/lat(?:itude)?\s*[:=]?\s*(-?[0-9]+(?:\.[0-9]+)?)/i);
+  const lngMatch = message.match(/(?:lng|lon|long|longitude)\s*[:=]?\s*(-?[0-9]+(?:\.[0-9]+)?)/i);
+
+  const parsedCategory = (categoryMatch?.[1] || '').trim();
+  const listingType = isHouse ? 'property' : 'product';
+  const category = parsedCategory || (isHouse ? 'Real Estate' : 'General');
+  const title = (namedMatch?.[1] || nameMatch?.[1] || titleMatch?.[1] || (isHouse ? 'AI Curated House Listing' : 'AI Curated Product Listing')).trim();
+
+  return {
+    listingType,
+    title,
+    category,
+    price: priceMatch ? Number(priceMatch[1]) : null,
+    stock: stockMatch ? Number(stockMatch[1]) : null,
+    currency: (currencyMatch?.[1] || 'USD').toUpperCase(),
+    bedrooms: bedsMatch ? Number(bedsMatch[2]) : null,
+    bathrooms: bathsMatch ? Number(bathsMatch[2]) : null,
+    countryCode: (countryCodeMatch?.[1] || '').toUpperCase(),
+    country: (countryMatch?.[1] || '').trim(),
+    state: (stateMatch?.[1] || '').trim(),
+    city: (cityMatch?.[1] || '').trim(),
+    town: (townMatch?.[1] || '').trim(),
+    productLocation: (locationMatch?.[2] || '').trim(),
+    latitude: latMatch ? Number(latMatch[1]) : null,
+    longitude: lngMatch ? Number(lngMatch[1]) : null,
+    shouldDeploy: /\bdeploy\b|\bpublish\b.*\bsite\b/i.test(message),
+    prompt: message,
+  };
+}
+
+function buildProfessionalDescription(intent, imageCount) {
+  if (intent.listingType === 'property') {
+    const location = [intent.city, intent.state, intent.country].filter(Boolean).join(', ');
+    const beds = intent.bedrooms ? `${intent.bedrooms} bedrooms` : 'well-proportioned bedrooms';
+    const baths = intent.bathrooms ? `${intent.bathrooms} bathrooms` : 'modern bathrooms';
+    return `A professionally curated property listing prepared from uploaded visuals. This home offers ${beds}, ${baths}, and a presentation-ready gallery for high-conversion showroom display.${location ? ` Located in ${location}, it is positioned for serious buyers seeking quality and confidence.` : ''} The listing includes ${imageCount} arranged images to create a complete visual journey.`;
+  }
+  return `A professionally arranged showroom product listing built from your uploaded images. The gallery is optimized for discovery, trust, and conversion with consistent visual ordering. Every detail is structured for a premium marketplace presentation so customers can quickly understand quality, value, and fit.`;
+}
+
+async function runLocalImageShowroomAutomation(text) {
+  if (!shouldUseImageListingAutomation(text)) return null;
+  const intent = parseImageShowroomRequest(text);
+  if (!intent) return null;
+  if (!state.pendingUploads.length) {
+    return {
+      ok: false,
+      content: '❌ I need uploaded images first. Click Upload Images, select your files, then send your instruction again.',
+      tool_results: [{ tool: 'upload_images', result: { error: 'No pending uploads found.' } }],
+    };
+  }
+
+  const propertyId = generateProductId();
+  const uploadResult = await uploadPendingImages(propertyId);
+  if (!uploadResult.urls.length) {
+    return {
+      ok: false,
+      content: '❌ I could not process your uploaded images. Try smaller files (under 8MB each) and retry.',
+      tool_results: [{ tool: 'upload_images', result: { error: 'Image upload failed.' } }],
+    };
+  }
+
+  const listingType = intent.listingType;
+  const targetImageCount = listingType === 'property' ? 24 : uploadResult.urls.length;
+  const arrangedImages = ensureImageCount(uploadResult.urls, targetImageCount);
+  const payload = {
+    property_id: propertyId,
+    listing_type: listingType,
+    category: intent.category,
+    subcategory: listingType === 'property' ? 'House' : null,
+    title: intent.title,
+    description: buildProfessionalDescription(intent, arrangedImages.length),
+    price: Number.isFinite(intent.price) ? intent.price : 0,
+    currency: intent.currency || 'USD',
+    country: intent.country || '',
+    country_code: intent.countryCode || '',
+    listing_status: 'sale',
+    state: intent.state || '',
+    city: intent.city || '',
+    town: intent.town || '',
+    product_location: intent.productLocation || '',
+    latitude: intent.latitude ?? null,
+    longitude: intent.longitude ?? null,
+    is_active: true,
+    stock_quantity: listingType === 'product' ? intent.stock : null,
+    bedrooms: listingType === 'property' ? intent.bedrooms : null,
+    bathrooms: listingType === 'property' ? intent.bathrooms : null,
+    property_type: listingType === 'property' ? 'House' : null,
+    furnished: listingType === 'property' ? 'Unfurnished' : null,
+    features: listingType === 'property'
+      ? ['Professional Photo Gallery', 'Map-ready Listing', 'Structured Details', 'Premium Presentation']
+      : ['Professional Photo Set', 'Structured Product Details', 'Premium Showroom Presentation', 'AI Optimized Listing'],
+    highlights: listingType === 'property'
+      ? ['Image-led narrative flow', 'Consistent showroom styling', 'Conversion-ready visuals']
+      : ['Organized image sequence', 'Trust-focused listing structure', 'Conversion-oriented copy'],
+    tags: listingType === 'property' ? ['Featured Property'] : ['New Arrival', 'Image Verified'],
+    seo_keywords: listingType === 'property'
+      ? ['house listing', 'real estate', 'showroom property']
+      : ['product listing', 'showroom', 'professional product photos'],
+    images: arrangedImages,
+    is_ai_generated: true,
+    ai_generated_fields: ['title', 'description', 'images', 'features', 'highlights', 'seo_keywords'],
+    specifications: {},
+  };
+
+  const candidate = { ...payload };
+  let insertErr = null;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const { error } = await supabase.from('showroom_listings').insert(candidate);
+    if (!error) {
+      insertErr = null;
+      break;
+    }
+    const msg = String(error.message || '');
+    const missingColMatch = msg.match(/Could not find the '([^']+)' column/i);
+    if (missingColMatch?.[1]) {
+      delete candidate[missingColMatch[1]];
+      continue;
+    }
+    insertErr = error;
+    break;
+  }
+
+  if (insertErr) {
+    return {
+      ok: false,
+      content: `❌ Listing creation failed: ${insertErr.message}`,
+      tool_results: [{ tool: 'create_listing', result: { error: insertErr.message } }],
+    };
+  }
+
+  let deployResult = { skipped: true };
+  let deployMessage = 'No deploy requested.';
+  if (intent.shouldDeploy) {
+    const { data: settings } = await supabase
+      .from('site_settings')
+      .select('deploy_webhook')
+      .limit(1)
+      .maybeSingle();
+    const webhook = String(settings?.deploy_webhook || '').trim();
+    if (!webhook) {
+      deployResult = { skipped: true, reason: 'missing_webhook' };
+      deployMessage = 'Listing saved, but deploy webhook is not configured in Publish & Deploy.';
+    } else {
+      const webhookRes = await fetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trigger: 'deploy', source: 'admin-ai-page', at: new Date().toISOString() }),
+      });
+      if (webhookRes.ok) {
+        deployResult = { ok: true, status: webhookRes.status };
+        deployMessage = 'Deploy webhook accepted. Deployment started.';
+      } else {
+        deployResult = { ok: false, status: webhookRes.status };
+        deployMessage = `Listing saved, but deploy failed (webhook status ${webhookRes.status}).`;
+      }
+    }
+  }
+
+  clearPendingUploadsLocal();
+
+  return {
+    ok: true,
+    content: `✅ Done. I uploaded and arranged **${arrangedImages.length} image(s)**, then created a professional ${listingType === 'property' ? 'house/property' : 'product'} listing **${intent.title}** as **${propertyId}** in your showroom.${uploadResult.storageFailures > 0 ? ' Some images used safe fallback format because storage upload was unavailable.' : ''} ${deployMessage}`,
+    tool_results: [
+      { tool: 'upload_images', result: { success: true, total: uploadResult.total, saved: arrangedImages.length, storage_fallbacks: uploadResult.storageFailures } },
+      { tool: 'create_listing', result: { success: true, property_id: propertyId, listing_type: listingType, image_count: arrangedImages.length } },
+      { tool: 'deploy_site', result: deployResult },
+    ],
+  };
+}
+
+async function runLocalBrandImageAutomation(text) {
+  if (!shouldUseBrandImageAutomation(text)) return null;
+  if (!state.pendingUploads.length && !getCachedBrandImage()) {
+    return {
+      ok: false,
+      content: buildClarifyingReply(text),
+      tool_results: [{ tool: 'set_brand', result: { error: 'No uploaded brand image found.' } }],
+    };
+  }
+
+  const propertyId = generateProductId();
+  const uploaded = await uploadBrandImage(propertyId);
+  if (!uploaded?.url) {
+    return {
+      ok: false,
+      content: '❌ I could not read that brand image. Try a smaller PNG or JPG.',
+      tool_results: [{ tool: 'set_brand', result: { error: 'Brand image upload failed.' } }],
+    };
+  }
+
+  const brandTitle = 'Weverse Online Shop';
+  const brandSlogan = 'SHOP GLOBALLY, DELIVERED WORLDWIDE';
+  const brandPayload = {
+    brand_name: brandTitle,
+    brand_slogan: brandSlogan,
+    brand_logo: uploaded.url,
+    site_name: brandTitle,
+    site_tagline: brandSlogan,
+  };
+  localStorage.setItem(BRAND_OVERRIDE_KEY, JSON.stringify(brandPayload));
+  localStorage.setItem('weverse_brand_v1', JSON.stringify({ ts: Date.now(), data: brandPayload }));
+  window.dispatchEvent(new StorageEvent('storage', { key: BRAND_OVERRIDE_KEY }));
+  window.dispatchEvent(new StorageEvent('storage', { key: 'weverse_brand_v1' }));
+  window.dispatchEvent(new CustomEvent('brand-updated', { detail: brandPayload }));
+  clearBrandImageQueue();
+
+  return {
+    ok: true,
+    content: `✅ Done. I set your uploaded image as the active brand and applied it to the site header and login branding without changing the image itself. The old text brand is now visually covered by the logo image.`,
+    tool_results: [
+      { tool: 'set_brand', result: { success: true, brand_name: brandTitle, brand_logo: uploaded.url, storage_fallback: uploaded.fallback } },
+      { tool: 'refresh_brand', result: { success: true } },
+    ],
+  };
+}
 
 function showToast(msg) {
   const toast = document.getElementById('toast');
@@ -132,6 +582,389 @@ function scrollToBottom() {
   chat.scrollTop = chat.scrollHeight;
 }
 
+function generateProductId() {
+  const tail = String(Date.now()).slice(-6);
+  const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `KCO-${tail}${rand}`;
+}
+
+function parseProductDeployRequest(text) {
+  if (!/(add|create)\s+(a\s+)?(new\s+)?product/i.test(text || '')) return null;
+  const message = String(text || '').trim();
+  const namedMatch = message.match(/named\s+["']([^"']+)["']/i) || message.match(/named\s+([^,\.]+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i);
+  const nameMatch = message.match(/name\s+["']([^"']+)["']/i) || message.match(/name\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i);
+  const title = (namedMatch?.[1] || nameMatch?.[1] || 'AI Product').trim();
+
+  const priceMatch = message.match(/price\s*[:=]?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
+  const stockMatch = message.match(/stock\s*[:=]?\s*([0-9]+)/i);
+  const categoryMatch = message.match(/category\s*[:=]?\s*([a-zA-Z0-9\-\s&]+)/i);
+  const currencyMatch = message.match(/\b(USD|EUR|GBP|NGN|KES|ZAR|GHS|CAD|AUD)\b/i);
+
+  const categoryRaw = (categoryMatch?.[1] || 'General').trim();
+  const category = categoryRaw.split(/\s+then\s+/i)[0].trim();
+
+  return {
+    title,
+    price: priceMatch ? parseFloat(priceMatch[1]) : 0,
+    stock: stockMatch ? parseInt(stockMatch[1], 10) : null,
+    category,
+    currency: (currencyMatch?.[1] || 'USD').toUpperCase(),
+    shouldDeploy: /\bdeploy\b|\bpublish\b.*\bsite\b/i.test(message),
+  };
+}
+
+function parseHouseRequest(text) {
+  const message = String(text || '').trim();
+  if (!/(add|create)\s+(a\s+)?(new\s+)?(house|property|villa|apartment|estate|real\s*estate)/i.test(message)) return null;
+
+  const namedMatch = message.match(/named\s+["']([^"']+)["']/i) || message.match(/named\s+([^,\.]+?)(?:,|\sprice\s|\sin\s|\slocation\s|\smap\s|\sthen\s|$)/i);
+  const titleMatch = message.match(/title\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\sin\s|\sthen\s|$)/i);
+  const title = (namedMatch?.[1] || titleMatch?.[1] || 'AI House Listing').trim();
+
+  const priceMatch = message.match(/price\s*[:=]?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
+  const bedsMatch = message.match(/(bedrooms?|beds?)\s*[:=]?\s*([0-9]+)/i);
+  const bathsMatch = message.match(/(bathrooms?|baths?)\s*[:=]?\s*([0-9]+)/i);
+  const categoryMatch = message.match(/(type|category)\s*[:=]?\s*([a-zA-Z0-9\-\s&]+)/i);
+  const currencyMatch = message.match(/\b(USD|EUR|GBP|NGN|KES|ZAR|GHS|CAD|AUD)\b/i);
+
+  const countryCodeMatch = message.match(/country\s*code\s*[:=]?\s*([a-z]{2})\b/i);
+  const countryMatch = message.match(/country\s*[:=]?\s*([a-zA-Z\s]+?)(?:,|\sstate\s|\scity\s|\sthen\s|$)/i);
+  const stateMatch = message.match(/state\s*[:=]?\s*([a-zA-Z\s]+?)(?:,|\scity\s|\stown\s|\sthen\s|$)/i);
+  const cityMatch = message.match(/city\s*[:=]?\s*([a-zA-Z\s]+?)(?:,|\stown\s|\sthen\s|$)/i);
+  const townMatch = message.match(/town\s*[:=]?\s*([a-zA-Z\s]+?)(?:,|\sthen\s|$)/i);
+  const locationMatch = message.match(/(location|area|address)\s*[:=]?\s*([a-zA-Z0-9\-,\s]+?)(?:\sthen\s|$)/i);
+  const latMatch = message.match(/lat(?:itude)?\s*[:=]?\s*(-?[0-9]+(?:\.[0-9]+)?)/i);
+  const lngMatch = message.match(/(?:lng|lon|long|longitude)\s*[:=]?\s*(-?[0-9]+(?:\.[0-9]+)?)/i);
+
+  const imageCountMatch = message.match(/(\d{1,2})\s+images?/i);
+  const requestedImages = imageCountMatch ? parseInt(imageCountMatch[1], 10) : 24;
+
+  return {
+    title,
+    price: priceMatch ? parseFloat(priceMatch[1]) : null,
+    bedrooms: bedsMatch ? parseInt(bedsMatch[2], 10) : null,
+    bathrooms: bathsMatch ? parseInt(bathsMatch[2], 10) : null,
+    propertyType: (categoryMatch?.[2] || 'House').trim(),
+    currency: (currencyMatch?.[1] || '').toUpperCase(),
+    countryCode: (countryCodeMatch?.[1] || '').toUpperCase(),
+    country: (countryMatch?.[1] || '').trim(),
+    state: (stateMatch?.[1] || '').trim(),
+    city: (cityMatch?.[1] || '').trim(),
+    town: (townMatch?.[1] || '').trim(),
+    productLocation: (locationMatch?.[2] || '').trim(),
+    latitude: latMatch ? parseFloat(latMatch[1]) : null,
+    longitude: lngMatch ? parseFloat(lngMatch[1]) : null,
+    requestedImages: Number.isFinite(requestedImages) ? Math.max(24, requestedImages) : 24,
+    shouldDeploy: /\bdeploy\b|\bpublish\b.*\bsite\b/i.test(message),
+  };
+}
+
+function ensureImageCount(images, targetCount = 24) {
+  const clean = Array.isArray(images) ? images.filter(Boolean) : [];
+  if (!clean.length) return [];
+  if (clean.length >= targetCount) return clean.slice(0, targetCount);
+  const out = [...clean];
+  let cursor = 0;
+  while (out.length < targetCount) {
+    out.push(clean[cursor % clean.length]);
+    cursor += 1;
+  }
+  return out;
+}
+
+function buildPlaceholderHouseImages(count = 24) {
+  const out = [];
+  for (let i = 1; i <= count; i += 1) {
+    out.push(`https://picsum.photos/seed/kco-house-${i}/1600/900`);
+  }
+  return out;
+}
+
+async function runLocalHouseAndDeployAutomation(text) {
+  const intent = parseHouseRequest(text);
+  if (!intent) return null;
+
+  const { data: references, error: refErr } = await supabase
+    .from('showroom_listings')
+    .select('*')
+    .eq('listing_type', 'property')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (refErr) {
+    return {
+      ok: false,
+      content: `❌ I couldn't read existing showroom houses: ${refErr.message}`,
+      tool_results: [{ tool: 'reference_houses', result: { error: refErr.message } }],
+    };
+  }
+
+  let pool = references || [];
+  let usedFallbackReference = false;
+  if (!pool.length) {
+    const { data: generalListings, error: generalErr } = await supabase
+      .from('showroom_listings')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (generalErr) {
+      return {
+        ok: false,
+        content: `❌ I could not read showroom listings for reference: ${generalErr.message}`,
+        tool_results: [{ tool: 'reference_houses', result: { error: generalErr.message } }],
+      };
+    }
+    pool = (generalListings || []).filter((item) => Array.isArray(item.images) && item.images.length > 0);
+    usedFallbackReference = pool.length > 0;
+  }
+
+  if (!pool.length) {
+    pool = [{
+      property_id: 'TEMPLATE-HOUSE-001',
+      listing_type: 'property',
+      category: 'Real Estate',
+      subcategory: 'House',
+      title: 'Template House',
+      description: 'Template property generated by AI fallback.',
+      price: 0,
+      currency: 'USD',
+      country: intent.country || '',
+      country_code: intent.countryCode || 'US',
+      state: intent.state || '',
+      city: intent.city || '',
+      town: intent.town || '',
+      product_location: intent.productLocation || '',
+      latitude: intent.latitude ?? 25.7617,
+      longitude: intent.longitude ?? -80.1918,
+      property_type: intent.propertyType || 'House',
+      listing_status: 'sale',
+      bedrooms: intent.bedrooms ?? 4,
+      bathrooms: intent.bathrooms ?? 3,
+      building_size: '3,200 sqft',
+      land_size: '0.4 acres',
+      parking_spaces: 2,
+      furnished: 'Furnished',
+      features: ['Swimming Pool', 'Garage', 'Garden'],
+      highlights: ['Premium location', 'Map-ready', '24-image gallery'],
+      seo_keywords: ['house', 'real estate', 'villa'],
+      images: buildPlaceholderHouseImages(24),
+      is_active: true,
+    }];
+    usedFallbackReference = true;
+  }
+
+  const reference = pool.find((item) => Array.isArray(item.images) && item.images.length >= 24)
+    || pool.find((item) => Array.isArray(item.images) && item.images.length > 0)
+    || pool[0];
+
+  const propertyId = generateProductId();
+  const cloned = { ...reference };
+  delete cloned.id;
+  delete cloned.created_at;
+  delete cloned.updated_at;
+
+  const mergedImages = ensureImageCount(reference.images, intent.requestedImages);
+  const payload = {
+    ...cloned,
+    property_id: propertyId,
+    listing_type: 'property',
+    title: intent.title,
+    description: intent.title === cloned.title
+      ? cloned.description
+      : `${cloned.description || ''}\n\nCurated by Admin AI to match your showroom property style.`.trim(),
+    category: reference.category || intent.propertyType || 'Real Estate',
+    subcategory: reference.subcategory || intent.propertyType || 'House',
+    property_type: intent.propertyType || reference.property_type || 'House',
+    price: intent.price ?? reference.price ?? 0,
+    currency: intent.currency || reference.currency || 'USD',
+    country_code: intent.countryCode || reference.country_code || 'US',
+    country: intent.country || reference.country || '',
+    state: intent.state || reference.state || '',
+    city: intent.city || reference.city || '',
+    town: intent.town || reference.town || '',
+    product_location: intent.productLocation || reference.product_location || '',
+    latitude: intent.latitude ?? reference.latitude ?? null,
+    longitude: intent.longitude ?? reference.longitude ?? null,
+    bedrooms: intent.bedrooms ?? reference.bedrooms ?? null,
+    bathrooms: intent.bathrooms ?? reference.bathrooms ?? null,
+    images: mergedImages,
+    is_active: true,
+    is_ai_generated: true,
+    ai_generated_fields: ['title', 'description', 'country', 'country_code', 'product_location', 'images', 'latitude', 'longitude'],
+  };
+
+  async function insertWithFallback(basePayload) {
+    const candidate = { ...basePayload };
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const { error } = await supabase.from('showroom_listings').insert(candidate);
+      if (!error) return { error: null };
+      const msg = String(error.message || '');
+      const missingColMatch = msg.match(/Could not find the '([^']+)' column/i);
+      if (missingColMatch?.[1]) {
+        delete candidate[missingColMatch[1]];
+        continue;
+      }
+      return { error };
+    }
+    return { error: { message: 'Insert failed after schema fallback retries.' } };
+  }
+
+  const { error: propertyErr } = await insertWithFallback(payload);
+  if (propertyErr) {
+    return {
+      ok: false,
+      content: `❌ House creation failed: ${propertyErr.message}`,
+      tool_results: [{ tool: 'create_house', result: { error: propertyErr.message } }],
+    };
+  }
+
+  let deployResult = { skipped: true };
+  let deployMessage = 'No deploy requested.';
+  if (intent.shouldDeploy) {
+    const { data: settings } = await supabase
+      .from('site_settings')
+      .select('deploy_webhook')
+      .limit(1)
+      .maybeSingle();
+    const webhook = String(settings?.deploy_webhook || '').trim();
+    if (!webhook) {
+      deployMessage = 'House created, but no deploy webhook is configured in Publish & Deploy settings.';
+      deployResult = { skipped: true, reason: 'missing_webhook' };
+    } else {
+      const webhookRes = await fetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trigger: 'deploy', source: 'admin-ai-page', at: new Date().toISOString() }),
+      });
+      if (webhookRes.ok) {
+        deployMessage = 'Deploy webhook accepted. Deployment started.';
+        deployResult = { ok: true, status: webhookRes.status };
+      } else {
+        deployMessage = `House created, but deploy failed (webhook status ${webhookRes.status}).`;
+        deployResult = { ok: false, status: webhookRes.status };
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    content: `✅ Done. I added house **${intent.title}** as **${propertyId}** by learning from ${usedFallbackReference ? 'existing showroom listings' : 'an existing showroom house'} **${reference.property_id || 'template'}**. I copied the same listing style, map/location fields, and created a **${mergedImages.length}-image** gallery.${deployMessage ? ` ${deployMessage}` : ''}`,
+    tool_results: [
+      { tool: 'reference_house', result: { success: true, property_id: reference.property_id || null, title: reference.title || null } },
+      { tool: 'create_house', result: { success: true, property_id: propertyId, image_count: mergedImages.length } },
+      { tool: 'deploy_site', result: deployResult },
+    ],
+  };
+}
+
+async function runLocalProductAndDeployAutomation(text) {
+  const intent = parseProductDeployRequest(text);
+  if (!intent) return null;
+
+  const propertyId = generateProductId();
+  const productPayload = {
+    property_id: propertyId,
+    listing_type: 'product',
+    category: intent.category,
+    subcategory: null,
+    title: intent.title,
+    description: `Auto-created by Admin AI on ${new Date().toISOString()}.`,
+    price: Number.isFinite(intent.price) ? intent.price : 0,
+    currency: intent.currency,
+    country: '',
+    country_code: '',
+    listing_status: 'sale',
+    state: '',
+    city: '',
+    product_location: '',
+    latitude: null,
+    longitude: null,
+    is_active: true,
+    is_featured: false,
+    brand: null,
+    color: null,
+    size: null,
+    condition: null,
+    warranty: null,
+    availability_status: 'In Stock',
+    stock_quantity: intent.stock,
+    images: [],
+    features: [],
+    tags: [],
+    highlights: [],
+    seo_keywords: [],
+    is_ai_generated: true,
+    ai_generated_fields: ['title', 'description'],
+    specifications: {},
+  };
+
+  async function insertWithFallback(basePayload) {
+    const candidate = { ...basePayload };
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const { error } = await supabase.from('showroom_listings').insert(candidate);
+      if (!error) return { error: null };
+      const msg = String(error.message || '');
+      const missingColMatch = msg.match(/Could not find the '([^']+)' column/i);
+      if (missingColMatch?.[1]) {
+        const badCol = missingColMatch[1];
+        delete candidate[badCol];
+        continue;
+      }
+      return { error };
+    }
+    return { error: { message: 'Insert failed after schema fallback retries.' } };
+  }
+
+  const { error: productErr } = await insertWithFallback(productPayload);
+  if (productErr) {
+    return {
+      ok: false,
+      content: `❌ Product creation failed: ${productErr.message}`,
+      tool_results: [{ tool: 'create_product', result: { error: productErr.message } }],
+    };
+  }
+
+  let deployResult = { skipped: true };
+  let deployMessage = 'No deploy requested.';
+
+  if (intent.shouldDeploy) {
+    const { data: settings } = await supabase
+      .from('site_settings')
+      .select('deploy_webhook,production_url,github_repo')
+      .limit(1)
+      .maybeSingle();
+
+    const webhook = String(settings?.deploy_webhook || '').trim();
+    if (!webhook) {
+      deployMessage = 'Product created, but no deploy webhook is configured in Publish & Deploy settings.';
+      deployResult = { skipped: true, reason: 'missing_webhook' };
+    } else {
+      const webhookRes = await fetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trigger: 'deploy', source: 'admin-ai-page', at: new Date().toISOString() }),
+      });
+
+      if (webhookRes.ok) {
+        deployMessage = 'Deploy webhook accepted. Deployment started.';
+        deployResult = { ok: true, status: webhookRes.status };
+      } else {
+        deployMessage = `Product created, but deploy failed (webhook status ${webhookRes.status}).`;
+        deployResult = { ok: false, status: webhookRes.status };
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    content: `✅ Done. I created **${intent.title}** (${propertyId}) with **${intent.price} ${intent.currency}** and stock **${intent.stock ?? 'N/A'}** in **${intent.category}**. ${deployMessage}`,
+    tool_results: [
+      { tool: 'create_product', result: { success: true, property_id: propertyId, title: intent.title } },
+      { tool: 'deploy_site', result: deployResult },
+    ],
+  };
+}
+
 async function getAuthHeaders() {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token || ANON_KEY;
@@ -217,6 +1050,42 @@ window.sendMessage = async () => {
   renderTypingIndicator();
 
   try {
+    const brandRun = await runLocalBrandImageAutomation(text);
+    if (brandRun) {
+      removeTypingIndicator();
+      const aiMsg = { role: 'assistant', content: brandRun.content, tool_results: brandRun.tool_results };
+      state.history.push(aiMsg);
+      renderMessage(aiMsg);
+      return;
+    }
+
+    const imageDrivenRun = await runLocalImageShowroomAutomation(text);
+    if (imageDrivenRun) {
+      removeTypingIndicator();
+      const aiMsg = { role: 'assistant', content: imageDrivenRun.content, tool_results: imageDrivenRun.tool_results };
+      state.history.push(aiMsg);
+      renderMessage(aiMsg);
+      return;
+    }
+
+    const autoHouseRun = await runLocalHouseAndDeployAutomation(text);
+    if (autoHouseRun) {
+      removeTypingIndicator();
+      const aiMsg = { role: 'assistant', content: autoHouseRun.content, tool_results: autoHouseRun.tool_results };
+      state.history.push(aiMsg);
+      renderMessage(aiMsg);
+      return;
+    }
+
+    const autoRun = await runLocalProductAndDeployAutomation(text);
+    if (autoRun) {
+      removeTypingIndicator();
+      const aiMsg = { role: 'assistant', content: autoRun.content, tool_results: autoRun.tool_results };
+      state.history.push(aiMsg);
+      renderMessage(aiMsg);
+      return;
+    }
+
     const headers = await getAuthHeaders();
     const res = await fetch(AI_FUNCTION_URL, {
       method: 'POST',
@@ -228,15 +1097,28 @@ window.sendMessage = async () => {
         history: state.history.slice(-20, -1).map(h => ({ role: h.role, content: h.content })),
       }),
     });
-    const data = await res.json();
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
     removeTypingIndicator();
 
     if (!res.ok || data.error) {
-      const errMsg = { role: 'assistant', content: `⚠️ **Error:** ${data.error || 'Request failed'}${data.provider ? `\n\n*Provider: ${data.provider}*` : ''}` };
+      const base = data.error || data.message || data.code || `HTTP ${res.status}`;
+      const hint = String(data.code || '').toUpperCase() === 'NOT_FOUND'
+        ? '\n\nThe AI backend function is missing. Deploy `ai-admin-assistant` to Supabase Functions.'
+        : '';
+      const errMsg = { role: 'assistant', content: `⚠️ **Error:** ${base}${hint}${data.provider ? `\n\n*Provider: ${data.provider}*` : ''}` };
       state.history.push(errMsg);
       renderMessage(errMsg);
     } else {
-      const aiMsg = { role: 'assistant', content: data.response, tool_results: data.tool_results };
+      const responseText = String(data.response || '').trim();
+      const clarifiedResponse = shouldAskForClarification(text) || /i (do not have|don't have|cannot|can't|need more details|please upload|what platform|what page)/i.test(responseText)
+        ? buildClarifyingReply(text)
+        : responseText;
+      const aiMsg = { role: 'assistant', content: clarifiedResponse, tool_results: data.tool_results };
       state.history.push(aiMsg);
       renderMessage(aiMsg);
 
@@ -277,6 +1159,56 @@ window.sendMessage = async () => {
 window.quickAction = (text) => {
   document.getElementById('chat-input').value = text;
   sendMessage();
+};
+
+window.triggerAiImagePicker = () => {
+  document.getElementById('ai-image-upload')?.click();
+};
+
+window.clearPendingUploads = () => {
+  clearPendingUploadsLocal();
+  showToast('Image queue cleared.');
+};
+
+window.handleAiImageUpload = async (event) => {
+  const files = Array.from(event?.target?.files || []);
+  if (!files.length) return;
+
+  let added = 0;
+  let rejected = 0;
+  for (const file of files) {
+    if (!file.type?.startsWith('image/')) {
+      rejected += 1;
+      continue;
+    }
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      rejected += 1;
+      continue;
+    }
+    if (state.pendingUploads.length >= MAX_PENDING_UPLOADS) {
+      rejected += 1;
+      continue;
+    }
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    state.pendingUploads.push({
+      id,
+      name: file.name || `image-${state.pendingUploads.length + 1}.jpg`,
+      size: file.size || 0,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    });
+    added += 1;
+  }
+
+  renderPendingUploads();
+  await cacheBrandImageFromUploads();
+  if (added > 0) {
+    const totalBytes = state.pendingUploads.reduce((sum, item) => sum + (item.size || 0), 0);
+    showToast(`${added} image(s) queued (${formatBytes(totalBytes)} total).`);
+  }
+  if (rejected > 0) {
+    showToast(`${rejected} file(s) skipped. Use images under 8MB each.`);
+  }
 };
 
 window.clearHistory = async () => {
@@ -440,6 +1372,12 @@ async function init() {
 
   // Input handling
   const input = document.getElementById('chat-input');
+  const uploadInput = document.getElementById('ai-image-upload');
+  if (uploadInput) {
+    uploadInput.addEventListener('change', (event) => {
+      window.handleAiImageUpload(event);
+    });
+  }
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -450,6 +1388,7 @@ async function init() {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 128) + 'px';
   });
+  renderPendingUploads();
   input.focus();
 }
 

@@ -9,10 +9,17 @@ export const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
 export const DEFAULT_BRAND_SLOGAN = 'SHOP GLOBALLY, DELIVERED WORLDWIDE';
 
 const CACHE_KEY = 'weverse_brand_v1';
+const OVERRIDE_KEY = 'weverse_brand_override_v1';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // ── Load brand from DB (with localStorage cache) ──────────
 async function loadBrand() {
+  try {
+    const override = JSON.parse(localStorage.getItem(OVERRIDE_KEY) || 'null');
+    if (override && typeof override === 'object') {
+      return override;
+    }
+  } catch {}
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
     if (cached.ts && Date.now() - cached.ts < CACHE_TTL && cached.data) {
@@ -95,6 +102,14 @@ function applyBrand(b) {
     if (role === 'footer-logo') { if (b.brand_footer_logo) { el.src = b.brand_footer_logo; el.alt = name; } else if (logo) { el.src = logo; el.alt = name; } }
     if (role === 'mobile-logo') { if (b.brand_mobile_logo) { el.src = b.brand_mobile_logo; el.alt = name; } else if (logo) { el.src = logo; el.alt = name; } }
   });
+
+  if (logo) {
+    document.querySelectorAll('img[data-brand="logo"]').forEach(img => {
+      const wrapper = img.closest('.text-center');
+      const title = wrapper?.querySelector('h1[data-brand="name"]');
+      if (title) title.style.display = 'none';
+    });
+  }
 
   // ── 5. Smart header injection (works on ALL pages) ───────
   injectHeaderBrand(name, slogan, logo, badge, primary);
@@ -223,6 +238,11 @@ function updateTextNodes(root, name, slogan) {
 // ── Public API: force reload from DB (called by admin after save) ──
 export function clearBrandCache() {
   localStorage.removeItem(CACHE_KEY);
+}
+
+export function clearBrandOverride() {
+  localStorage.removeItem(OVERRIDE_KEY);
+  window.dispatchEvent(new StorageEvent('storage', { key: OVERRIDE_KEY }));
 }
 
 export function refreshBrand() {

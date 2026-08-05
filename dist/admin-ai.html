@@ -50,12 +50,12 @@
     .msg-content pre { background: rgba(10,17,36,.8); padding: .75rem; border-radius: .5rem; overflow-x: auto; margin-bottom: .5rem; }
     .msg-content strong { font-weight: 700; color: #fff; }
   </style>
-  <script type="module" crossorigin src="/assets/adminAi-CpDN7s4Q.js"></script>
+  <script type="module" crossorigin src="/assets/adminAi-DR7JS7WQ.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/supabase-client-7_ZWSEp6.js">
-  <link rel="modulepreload" crossorigin href="/assets/localization-DZas-9Er.js">
-  <link rel="modulepreload" crossorigin href="/assets/live-stream-mode-DdCoL3xA.js">
-  <link rel="modulepreload" crossorigin href="/assets/brand-BSNwarjw.js">
-  <link rel="stylesheet" crossorigin href="/assets/localization-Cggz_jI4.css">
+  <link rel="modulepreload" crossorigin href="/assets/localization-11-DywLV.js">
+  <link rel="modulepreload" crossorigin href="/assets/live-stream-mode-ganbCFgx.js">
+  <link rel="modulepreload" crossorigin href="/assets/brand-BE-xoT4U.js">
+  <link rel="stylesheet" crossorigin href="/assets/localization-W_MZCiwj.css">
 </head>
 <body class="bg-[#070b16] text-gray-100 min-h-screen overflow-hidden">
   <div class="fixed inset-0 pointer-events-none">
@@ -138,6 +138,23 @@
 
     <!-- Input area -->
     <div class="max-w-3xl mx-auto w-full px-4 sm:px-6 pb-4">
+      <div class="glass-soft border border-blue-500/15 rounded-2xl px-3 py-2 mb-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <button id="ai-upload-btn" onclick="triggerAiImagePicker()" class="btn-press inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-200 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 px-2.5 py-1.5 rounded-lg transition">
+              <i data-lucide="image-plus" class="w-3.5 h-3.5"></i>
+              Upload Images
+            </button>
+            <button id="ai-clear-uploads-btn" onclick="clearPendingUploads()" class="btn-press inline-flex items-center gap-1.5 text-[11px] font-bold text-gray-400 hover:text-white bg-blue-950/40 border border-blue-500/20 px-2.5 py-1.5 rounded-lg transition">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              Clear
+            </button>
+            <input id="ai-image-upload" type="file" accept="image/*" multiple class="hidden">
+          </div>
+          <p id="ai-upload-hint" class="text-[10px] text-gray-500">No images selected. Upload images, then tell AI to create a showroom listing from them.</p>
+        </div>
+        <div id="ai-uploaded-images-preview" class="mt-2 flex flex-wrap gap-2"></div>
+      </div>
       <div class="glass border border-blue-500/20 rounded-2xl p-2 flex items-end gap-2">
         <textarea id="chat-input" rows="1" placeholder="Ask the AI assistant to manage your marketplace..." class="flex-1 bg-transparent text-sm text-white placeholder-gray-600 resize-none outline-none px-3 py-2.5 max-h-32 scrollbar-thin"></textarea>
         <button id="send-btn" onclick="sendMessage()" class="btn-press w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white rounded-xl flex items-center justify-center transition shadow-lg shadow-blue-600/30 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed">

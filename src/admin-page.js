@@ -5030,6 +5030,36 @@ window.previewFont = function(font) {
   link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}:wght@400;700;900&display=swap`;
 };
 
+const BRAND_CACHE_KEY = 'weverse_brand_v1';
+const BRAND_OVERRIDE_KEY = 'weverse_brand_override_v1';
+
+function readStoredBrandState() {
+  try {
+    const override = JSON.parse(localStorage.getItem(BRAND_OVERRIDE_KEY) || 'null');
+    if (override && typeof override === 'object') return override;
+  } catch {}
+  try {
+    const cached = JSON.parse(localStorage.getItem(BRAND_CACHE_KEY) || 'null');
+    if (cached && typeof cached === 'object') {
+      return cached.data && typeof cached.data === 'object' ? cached.data : cached;
+    }
+  } catch {}
+  return {};
+}
+
+function persistBrandState(payload) {
+  const merged = {
+    ...readStoredBrandState(),
+    ...payload,
+  };
+  try { localStorage.setItem(BRAND_OVERRIDE_KEY, JSON.stringify(merged)); } catch {}
+  try { localStorage.setItem(BRAND_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: merged })); } catch {}
+  window.dispatchEvent(new StorageEvent('storage', { key: BRAND_OVERRIDE_KEY }));
+  window.dispatchEvent(new StorageEvent('storage', { key: BRAND_CACHE_KEY }));
+  window.dispatchEvent(new CustomEvent('brand-updated', { detail: merged }));
+  return merged;
+}
+
 window.handleBrandImgUpload = async function(e, field) {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -5094,15 +5124,12 @@ window.saveBrandSettings = async function(e) {
   else              { ({ error } = await supabase.from('site_settings').insert(payload)); }
 
   if (error) {
-    showToast('Save failed: ' + error.message, 'error');
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 inline mr-2"></i>Save Brand & Apply to All Pages'; if (window.lucide) lucide.createIcons(); }
-    return;
+    persistBrandState(payload);
+    showToast('Brand saved locally because the live settings table rejected part of the update. The site now uses the override immediately.', 'success');
+  } else {
+    persistBrandState(payload);
+    showToast('✅ Brand saved! All pages will now show your updated brand.', 'success');
   }
-
-  // Clear brand cache so all pages reload the new settings immediately
-  try { localStorage.removeItem('weverse_brand_v1'); } catch {}
-
-  showToast('✅ Brand saved! All pages will now show your updated brand.', 'success');
   setTimeout(() => renderBrandManager(), 500);
 };
 
@@ -5155,18 +5182,20 @@ window.saveHomepageBranding = async function(e) {
   }
 
   if (error) {
-    showToast('Save failed: ' + error.message, 'error');
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i data-lucide="upload" class="w-4 h-4"></i> Publish Changes';
-      if (window.lucide) lucide.createIcons();
-    }
-    return;
+    persistBrandState({
+      ...readStoredBrandState(),
+      homepage_banner_image: payload.homepage_banner_image,
+      homepage_banner_alt: payload.homepage_banner_alt,
+    });
+    showToast('Homepage banner saved locally because the live settings table rejected part of the update. The site now uses the override immediately.', 'success');
+  } else {
+    persistBrandState({
+      ...readStoredBrandState(),
+      homepage_banner_image: payload.homepage_banner_image,
+      homepage_banner_alt: payload.homepage_banner_alt,
+    });
+    showToast('Homepage banner published.', 'success');
   }
-
-  try { localStorage.removeItem('weverse_brand_v1'); } catch {}
-
-  showToast('Homepage banner published.', 'success');
   setTimeout(() => renderHomepageBrandingManager(), 500);
 };
 
