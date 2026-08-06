@@ -1,0 +1,85 @@
+{
+  "name": "Local Ollama Chat",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "8bce333a-1b5a-4c5c-91f9-8c62ef7d5bd2",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "You are a local offline assistant running inside self-hosted n8n through Ollama. Answer the user's message directly and concisely."
+        }
+      },
+      "id": "ef983eab-f350-48e9-8a4a-a38d6fc5172c",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        540,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama3.1:latest",
+        "baseUrl": "http://localhost:11434",
+        "options": {}
+      },
+      "id": "e53b2296-4f80-4905-ba12-f7208fcdcb9c",
+      "name": "Ollama Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        540,
+        520
+      ]
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "active": false,
+  "versionId": "f2d0875d-d304-4d99-a5c8-9914392c9cf0",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

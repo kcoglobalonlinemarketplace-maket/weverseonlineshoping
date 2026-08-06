@@ -204,12 +204,9 @@ function shouldAskForClarification(text) {
 function buildClarifyingReply(text) {
   const message = String(text || '').trim();
   if (/(brand|logo|image)/i.test(message) && !state.pendingUploads.length && !getCachedBrandImage()) {
-    return 'I can do that, but I need the image first. Upload the logo or brand image here, then tell me whether it should replace the login logo, header logo, footer logo, or all three.';
+    return 'I can do that autonomously, but I need the image first. Upload the logo or brand image here, and I will apply it automatically across the site without further questions.';
   }
-  if (/(fix|move|position|align|layout|spacing|not position well|bad layout|make it better|clean it up|adjust it)/i.test(message)) {
-    return 'I can help fix that, but I need one more detail: which page or section should I adjust, and what should move? If you want, upload a screenshot and I will tell you the exact change to make.';
-  }
-  return 'I need one more detail before I can act. Tell me the page, section, or image to change, and I will turn it into the right update.';
+  return 'I am in **fully autonomous mode** — I will scan the site and apply the fix myself right now, without asking for more details, and with no n8n dependency.';
 }
 
 function renderPendingUploads() {
@@ -1122,7 +1119,13 @@ const NATIVE_SCAN_PAGES = ['index.html', 'details.html', 'auth.html', 'payment.h
 
 function isRepairRequest(text) {
   const message = normalizeText(text).toLowerCase();
-  return /(scan\s*(and|&)?\s*(fix|repair|build)|fix\s*(and|&)?\s*(the\s*)?site|repair\s*(and|&)?\s*(the\s*)?site|scan\s*the\s*site|check\s*(the\s*)?site\s*(for|and)?\s*(issues|errors|broken))/i.test(message);
+  if (!message) return false;
+  // Explicit scan/check/inspect/audit request.
+  if (/(scan|check|inspect|audit)\b.*\b(site|website|store|page|everything|issues|errors|broken|problems)\b/i.test(message)) return true;
+  // Any fix/repair/rebuild intent aimed at the site/store/pages/everything.
+  if (/\b(fix|repair|rebuild|correct|resolve|patch|solve|fixing|repairing|refactor|remodel)\b/i.test(message)
+      && /\b(everything|site|website|store|shop|page|pages|app|all|layout|broken|issue|error|problem|move|position|design|homepage|front)\b/i.test(message)) return true;
+  return false;
 }
 
 function detectBrokenResources(htmlSource) {
