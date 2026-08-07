@@ -5,6 +5,7 @@ import { GLOBAL_PRICE_MAX, GLOBAL_PRICE_MIN, buildCatalogDraft, getDefaultCurren
 import { getLocalShowroomListingById, listLocalShowroomListings, patchLocalShowroomListing, upsertLocalShowroomListing } from './local-showroom-store.js';
 import { LIVE_STREAM_PLATFORM_DEFS, VIDEO_CALL_PROVIDER_DEFS, loadLiveControlAdminState, loadPublicLiveState, saveLiveControlAdminState, savePublicLiveState } from './live-control-store.js';
 import { getFlagEmojiFromCountryCode, getManualPaymentAccounts, getPaymentInstructions, loadPaymentSettingsCache, savePaymentSettingsCache } from './payment-settings.js';
+import { SHOWROOM_LISTINGS } from './showroom-data.js';
 
 // ══════════════════════════════════════════════════════════
 //  KCO ADMIN DASHBOARD  —  Complete Management Console
