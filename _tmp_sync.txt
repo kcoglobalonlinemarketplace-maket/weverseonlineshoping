@@ -1,0 +1,220 @@
+﻿  }
+};
+
+window.testGitHubConnection = async function() {
+  const username = document.querySelector('[name=github_username]')?.value?.trim();
+  const repo = document.querySelector('[name=github_repo]')?.value?.trim();
+  if (!username || !repo) { showToast('Enter your GitHub username and repo name first', 'info'); return; }
+  try {
+    const res = await fetch(`https://api.github.com/repos/${username}/${repo}`);
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`âœ“ Connected: ${data.full_name} (${data.visibility})`);
+    } else if (res.status === 404) {
+      showToast('Repository not found. Check username and repo name.', 'error');
+    } else {
+      showToast('GitHub API error: ' + res.status, 'error');
+    }
+  } catch { showToast('Could not reach GitHub API', 'error'); }
+};
+
+window.deployToProduction = window.triggerDeploy;
+window.rebuildSite = window.triggerRebuild;
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  LIVE STREAMING & VIDEO CALL MANAGER
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+window._liveControlAdminState = null;
+window._livePublicState = null;
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+async function ensureLiveControlLoaded() {
+  if (!window._liveControlAdminState) window._liveControlAdminState = await loadLiveControlAdminState();
+  if (!window._livePublicState) window._livePublicState = await loadPublicLiveState();
+}
+
+function setDeepValue(target, path, value) {
+  const keys = path.split('.');
+  let cursor = target;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (!cursor[key] || typeof cursor[key] !== 'object') cursor[key] = {};
+    cursor = cursor[key];
+  }
+  cursor[keys[keys.length - 1]] = value;
+}
+
+function livePlatformCard(platform, definition, collectionName) {
+  const value = (path) => {
+    const keys = path.split('.');
+    let cursor = platform;
+    for (const key of keys) cursor = cursor?.[key];
+    return cursor || '';
+  };
+  return `
+    <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2 mb-1"><i data-lucide="${definition.icon}" class="w-4 h-4 text-blue-400"></i><h3 class="text-sm font-black text-white">${definition.label}</h3></div>
+          <p class="text-[11px] text-gray-500">${definition.description}</p>
+        </div>
+        <label class="toggle-switch shrink-0"><input type="checkbox" ${platform.enabled ? 'checked' : ''} onchange="toggleLivePlatformEnabled('${collectionName}','${platform.id}', this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="form-grid form-grid-2">
+        ${definition.fields.includes('apiKey') ? `<div><label class="lbl">API Key</label><input class="input-field" type="password" value="${esc(value('credentials.apiKey'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.apiKey', this.value)" placeholder="Add API key later"></div>` : ''}
+        ${definition.fields.includes('apiSecret') ? `<div><label class="lbl">API Secret</label><input class="input-field" type="password" value="${esc(value('credentials.apiSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.apiSecret', this.value)" placeholder="Add API secret later"></div>` : ''}
+        ${definition.fields.includes('clientId') ? `<div><label class="lbl">Client ID</label><input class="input-field" value="${esc(value('credentials.clientId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.clientId', this.value)" placeholder="Client ID"></div>` : ''}
+        ${definition.fields.includes('clientSecret') ? `<div><label class="lbl">Client Secret</label><input class="input-field" type="password" value="${esc(value('credentials.clientSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.clientSecret', this.value)" placeholder="Client secret"></div>` : ''}
+        ${definition.fields.includes('sdkKey') ? `<div><label class="lbl">SDK Key</label><input class="input-field" value="${esc(value('credentials.sdkKey'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.sdkKey', this.value)" placeholder="SDK key"></div>` : ''}
+        ${definition.fields.includes('sdkSecret') ? `<div><label class="lbl">SDK Secret</label><input class="input-field" type="password" value="${esc(value('credentials.sdkSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.sdkSecret', this.value)" placeholder="SDK secret"></div>` : ''}
+        ${definition.fields.includes('channelId') ? `<div><label class="lbl">Channel ID</label><input class="input-field" value="${esc(value('settings.channelId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.channelId', this.value)" placeholder="Channel or creator ID"></div>` : ''}
+        ${definition.fields.includes('pageId') ? `<div><label class="lbl">Page ID</label><input class="input-field" value="${esc(value('settings.pageId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.pageId', this.value)" placeholder="Page ID"></div>` : ''}
+        ${definition.fields.includes('meetingId') ? `<div><label class="lbl">Meeting / Room ID</label><input class="input-field" value="${esc(value('settings.meetingId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.meetingId', this.value)" placeholder="Meeting or room ID"></div>` : ''}
+        ${definition.fields.includes('tenantId') ? `<div><label class="lbl">Tenant ID</label><input class="input-field" value="${esc(value('settings.tenantId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.tenantId', this.value)" placeholder="Tenant ID"></div>` : ''}
+        ${definition.fields.includes('streamKey') ? `<div><label class="lbl">Stream Key</label><input class="input-field font-mono" value="${esc(value('settings.streamKey'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.streamKey', this.value)" placeholder="Stream key"></div>` : ''}
+        ${definition.fields.includes('rtmpUrl') ? `<div><label class="lbl">RTMP / Ingest URL</label><input class="input-field font-mono" value="${esc(value('settings.rtmpUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.rtmpUrl', this.value)" placeholder="rtmp://..."></div>` : ''}
+        ${definition.fields.includes('hostUrl') ? `<div><label class="lbl">Host / Control URL</label><input class="input-field" value="${esc(value('links.hostUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','links.hostUrl', this.value)" placeholder="Host dashboard URL"></div>` : ''}
+        ${definition.fields.includes('embedUrl') ? `<div><label class="lbl">Embed URL</label><input class="input-field" value="${esc(value('links.embedUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','links.embedUrl', this.value)" placeholder="Embeddable player URL"></div>` : ''}
+        ${definition.fields.includes('joinUrl') ? `<div><label class="lbl">Join URL</label><input class="input-field" value="${esc(value('links.joinUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','links.joinUrl', this.value)" placeholder="Call join URL"></div>` : ''}
+        ${definition.fields.includes('webhookSecret') ? `<div><label class="lbl">Webhook Secret</label><input class="input-field" type="password" value="${esc(value('settings.webhookSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.webhookSecret', this.value)" placeholder="Webhook secret"></div>` : ''}
+      </div>
+      <div class="text-[11px] text-gray-500">Keys are not hardcoded. Save your settings here and control them from the dashboard only.</div>
+    </div>`;
+}
+
+function renderLiveSessionRows(sessions) {
+  if (!sessions.length) return '<p class="text-sm text-gray-500 text-center py-8">No live sessions created yet.</p>';
+  return sessions.map(session => `
+    <div class="glass-soft border border-blue-500/10 rounded-xl p-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1"><span class="text-sm font-black text-white">${esc(session.title)}</span>${badge(session.status)}</div>
+        <p class="text-[11px] text-gray-500">Platforms: ${esc(session.selectedPlatforms.join(', ') || 'None')} ${session.scheduledAt ? `â€¢ Scheduled: ${esc(fmtDT(session.scheduledAt))}` : ''}</p>
+        ${session.headline ? `<p class="text-xs text-gray-400 mt-1">${esc(session.headline)}</p>` : ''}
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="startLiveSession('${session.id}')" class="btn-press px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-xs font-bold rounded-xl transition">Start</button>
+        <button onclick="endLiveSession('${session.id}')" class="btn-press px-3 py-2 bg-gray-700/50 hover:bg-gray-700 text-gray-200 text-xs font-bold rounded-xl transition">End</button>
+        <button onclick="removeLiveSession('${session.id}')" class="btn-press px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs font-bold rounded-xl transition">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function renderLiveStreamingManager() {
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  await ensureLiveControlLoaded();
+  const liveState = window._livePublicState || {};
+  const live = window._liveControlAdminState;
+  const enabledPlatforms = live.streamingPlatforms.filter(platform => platform.enabled).length;
+  const sessions = live.liveSessions;
+  const orderedPlatforms = [...live.streamingPlatforms].sort((a, b) => {
+    if (a.id === 'tiktok-live') return -1;
+    if (b.id === 'tiktok-live') return 1;
+    return 0;
+  });
+  content.innerHTML = `
+    <div class="space-y-5 fade-in">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex-1">
+          <h2 class="text-xl font-black text-white">Live Streaming Manager</h2>
+          <p class="text-sm text-gray-500 mt-1">Connect platforms, schedule streams, publish LIVE NOW on the homepage, and prepare multi-platform broadcasting without touching code.</p>
+        </div>
+        <button onclick="saveLiveStreamingSettings()" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Save Streaming Settings</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        ${statCard('Enabled Platforms', enabledPlatforms, 'radio', 'red', 'Live destinations configured')}
+        ${statCard('Scheduled Streams', sessions.filter(session => session.status === 'scheduled').length, 'calendar', 'blue', 'Upcoming broadcasts')}
+        ${statCard('Live Now', liveState.isLive ? 1 : 0, 'signal', 'emerald', liveState.isLive ? liveState.headline || 'Active stream' : 'Offline')}
+        ${statCard('Viewers Snapshot', liveState.viewerCount || 0, 'users', 'amber', `${liveState.commentCount || 0} comments tracked`) }
+      </div>
+
+      <div class="glass-soft border border-red-500/20 rounded-2xl p-5 space-y-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0"><i data-lucide="smartphone" class="w-5 h-5 text-red-400"></i></div>
+          <div>
+            <h3 class="text-sm font-black text-white">TikTok Real Setup</h3>
+            <p class="text-[11px] text-gray-400 mt-1">If your main goal is TikTok, the real external streaming workflow is RTMP-based. Do not rely on API key only.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
+          <div class="rounded-2xl border border-blue-500/10 bg-blue-950/40 p-4">
+            <p class="text-xs font-black uppercase tracking-wide text-blue-300 mb-2">Collect From TikTok</p>
+            <div class="space-y-2 text-gray-300">
+              <p>1. Open TikTok on your phone and confirm your account has LIVE access.</p>
+              <p>2. If your account supports external streaming, open TikTok LIVE Center or TikTok LIVE Studio.</p>
+              <p>3. Copy the RTMP server URL.</p>
+              <p>4. Copy the stream key.</p>
+              <p>5. If TikTok gives you a watch/share page, copy that into Embed URL or Host URL.</p>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-4">
+            <p class="text-xs font-black uppercase tracking-wide text-emerald-300 mb-2">Put It Here In Admin</p>
+            <div class="space-y-2 text-gray-300">
+              <p>1. Enable <strong>TikTok Live</strong>.</p>
+              <p>2. Paste the server URL into <strong>RTMP / Ingest URL</strong>.</p>
+              <p>3. Paste the stream key into <strong>Stream Key</strong>.</p>
+              <p>4. Add your TikTok page or watch link into <strong>Host / Control URL</strong>.</p>
+              <p>5. Add an embeddable player URL if you have one. If not, use the homepage LIVE badge and a watch link.</p>
+              <p>6. Save settings, then start streaming from your phone or encoder and click <strong>Start Live Now</strong> here to publish the site-wide live state.</p>
+            </div>
+          </div>
+        </div>
+        <div class="rounded-xl border border-amber-500/15 bg-amber-500/5 p-3 text-[11px] text-amber-200">
+          TikTok only becomes truly real after you collect the live RTMP details from TikTok and start the broadcast from the TikTok-supported phone/app or encoder workflow. This admin page is where you save and manage those details.
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 class="text-sm font-black text-white">Platform Connections</h3>
+            <p class="text-[11px] text-gray-500">Add your API keys, stream keys, embed URLs, and host dashboards later. Each platform can be enabled or disabled independently.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          ${orderedPlatforms.map(platform => livePlatformCard(platform, LIVE_STREAM_PLATFORM_DEFS.find(def => def.id === platform.id), 'streamingPlatforms')).join('')}
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-black text-white">Create or Schedule Live Stream</h3>
+          <p class="text-[11px] text-gray-500 mt-1">Select one or more platforms, set the homepage embed URL, and publish a synchronized live status across the website and mobile app.</p>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div><label class="lbl">Stream Title</label><input id="live-session-title" class="input-field" placeholder="e.g. Friday Product Showcase"></div>
+          <div><label class="lbl">Badge Text</label><input id="live-session-badge" class="input-field" value="${esc(live.preferences.defaultBadgeText || 'LIVE NOW')}" placeholder="LIVE NOW"></div>
+          <div class="sm:col-span-2"><label class="lbl">Homepage Headline</label><input id="live-session-headline" class="input-field" placeholder="Tell visitors what is happening live"></div>
+          <div class="sm:col-span-2"><label class="lbl">Description</label><textarea id="live-session-description" class="input-field" rows="3" placeholder="Stream summary, agenda, products, or event details"></textarea></div>
+          <div><label class="lbl">Embed URL</label><input id="live-session-embed" class="input-field" placeholder="https://... embeddable live player"></div>
+          <div><label class="lbl">Schedule Date & Time</label><input id="live-session-scheduled" type="datetime-local" class="input-field"></div>
+        </div>
+        <div>
+          <label class="lbl">Stream To Platforms</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 mt-2">
+            ${orderedPlatforms.filter(platform => platform.enabled).map(platform => `<label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input type="checkbox" class="accent-red-500" value="${platform.id}" data-live-platform-select><span>${esc(platform.label)}</span></label>`).join('') || '<p class="text-xs text-gray-500">Enable at least one streaming platform above.</p>'}
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input id="live-notify-visitors" type="checkbox" class="accent-blue-500" checked><span>Notify visitors when live</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input id="live-show-badge" type="checkbox" class="accent-blue-500" checked><span>Show LIVE NOW badge on homepage</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input id="live-show-embed" type="checkbox" class="accent-blue-500" checked><span>Embed live player on homepage</span></label>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="createLiveSession('scheduled')" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Schedule Stream</button>
+          <button onclick="createLiveSession('live')" class="btn-press bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Start Live Now</button>
+          <button onclick="clearPublicLiveState()" class="btn-press bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">End Current Live</button>
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3"><h3 class="text-sm font-black text-white">Live Stream Sessions</h3><span class="text-[11px] text-gray-500">Start, end, remove, or republish sessions instantly</span></div>
+        ${renderLiveSessionRows(sessions)}
+      </div>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}

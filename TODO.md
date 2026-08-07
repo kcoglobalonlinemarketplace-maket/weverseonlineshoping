@@ -1,16 +1,32 @@
-# Task: Fix Edit, Save, Price Update, and Publish (admin permissions)
+# TODO: Admin Dashboard — Full Showroom Mirror (Edit Everything in Admin)
 
-## Root Cause
-`supabase db push` is blocked by migration `20260728131310_grant_admin_to_owner_account.sql`
-which inserts into `admin_roles` using a hardcoded UUID for a user that does not exist in
-`auth.users`, violating the NOT NULL FK `admin_roles_user_id_fkey`. This blocks all subsequent
-migrations — including `20260806003000_grant_admin_and_showroom_write_rls.sql` which is the
-actual fix that grants `profiles.is_admin=true` and creates the admin-write RLS policies on
-`showroom_listings` and `site_settings`.
+## Goal
+Every listing shown on the public showroom (static seed `SHOWROOM_LISTINGS` + DB rows)
+must appear in the admin dashboard and be fully editable: title, price, description,
+location, category, stock, images (replace/remove/reorder/upload), publish/unpublish,
+delete. Every change must be saved to Supabase and automatically reflected on the
+public showroom. "Coming Soon" categories get an "Add Product" button that opens the
+form pre-filled with that category. Categories must stay strictly separated.
 
 ## Steps
-- [x] 1. Fix `20260728131310_grant_admin_to_owner_account.sql` to look up admin by email and guard the FK (idempotent).
-- [x] 2. Push all pending migrations to the linked Supabase project (`wttnvwpoqmbxryivcerf`).
-- [ ] 3. Verify `is_current_user_admin()` returns true for the admin account.
-- [ ] 4. Test the Product Manager — ensure it loads all showroom products from Supabase.
-- [ ] 5. Fix any errors automatically before finishing.
+- [ ] 1. Create migration `supabase/migrations/20260807000000_admin_showroom_full_mirror.sql`
+       - SECURITY DEFINER RPC `publish_showroom_upsert(p_data jsonb)` admin-gated by
+         `is_current_user_admin()` that upserts showroom listings by `property_id`
+         (insert on conflict update), preserving all fields incl. specifications,
+         subcategory, images.
+- [ ] 2. `src/admin-page.js` — merge static `SHOWROOM_LISTINGS` into admin Products &
+       Properties views (dedupe by property_id) so every showroom card is editable.
+       Add a "seed" badge for static-only items.
+- [ ] 3. `src/admin-page.js` — add "Showroom categories" section listing every
+       marketplace/real-estate category (incl. "Coming Soon" ones with no listings)
+       with an "Add Product"/"Add Property" button that opens the editor pre-filled
+       with that category.
+- [ ] 4. `src/admin-page.js` — add "Sync & Publish All" button (Products header +
+       Publish page) that upserts ALL showroom items (DB + local + static) into the
+       DB and marks them active so edits appear live immediately.
+- [ ] 5. Ensure image management works for seed listings: replace/remove/reorder/
+       upload already exist in the editor — verify they work when editing a seed item
+       and that the changes are saved to Supabase.
+- [ ] 6. Run `node --check src/admin-page.js` to verify syntax.
+- [ ] 7. Apply the migration (provide SQL / `supabase db push`).
+

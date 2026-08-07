@@ -1,0 +1,100 @@
+﻿      if ((cooldowns[provider.id] || 0) > now) {
+        const remaining = Math.ceil(((cooldowns[provider.id] || 0) - now) / 1000);
+        console.log(`[AI] Skipping ${provider.name} â€” rate limited for ${remaining}s more`);
+        continue;
+      }
+
+      const req = this._buildRequest(provider, cfg, messages, maxTokens);
+      if (!req) continue;
+
+      try {
+        if (onProviderSwitch) onProviderSwitch(provider.name);
+
+        const res = await fetch(req.url, {
+          method: req.method,
+          headers: req.headers,
+          body: JSON.stringify(req.body),
+          signal: AbortSignal.timeout(30000),
+        });
+
+        if (res.status === 429 || res.status === 503) {
+          // Rate limited â€” put this provider in cooldown and try next
+          this._setCooldown(provider.id);
+          console.warn(`[AI] ${provider.name} rate limited (${res.status}), switching to next providerâ€¦`);
+          lastError = new Error(`${provider.name} rate limited`);
+          continue;
+        }
+
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => '');
+          lastError = new Error(`${provider.name} error ${res.status}: ${errBody.slice(0, 100)}`);
+          console.warn(`[AI] ${provider.name} failed:`, lastError.message);
+          continue;
+        }
+
+        const data = await res.json();
+        const text = req.parse(data);
+        if (!text) { lastError = new Error(`${provider.name} returned empty response`); continue; }
+
+        // Success â€” clear any cooldown for this provider
+        this._clearCooldown(provider.id);
+        console.log(`[AI] âœ“ Response from ${provider.name}`);
+        return { text, provider: provider.name, model: cfg[provider.mf] || provider.dm };
+
+      } catch (err) {
+        if (err.name === 'TimeoutError') {
+          this._setCooldown(provider.id);
+          lastError = new Error(`${provider.name} timed out`);
+        } else {
+          lastError = err;
+        }
+        console.warn(`[AI] ${provider.name} exception:`, err.message);
+      }
+    }
+
+    throw new Error(lastError?.message || 'All AI providers failed or are rate limited. Add more API keys in AI Settings.');
+  },
+
+  // Convenience: single-turn prompt
+  async prompt(text, opts = {}) {
+    return this.chat([{ role: 'user', content: text }], opts);
+  },
+
+  // Get status of all providers (for the status widget)
+  async getStatus() {
+    const cfg = await this.getConfig();
+    const cooldowns = this._getCooldowns();
+    const now = Date.now();
+    return ALL_AI_PROVIDERS.map(p => ({
+      id: p.id, name: p.name, color: p.color,
+      hasKey: !!(cfg[p.kf]?.trim()),
+      isActive: cfg.active_provider === p.id,
+      cooldownUntil: cooldowns[p.id] || 0,
+      isCoolingDown: (cooldowns[p.id] || 0) > now,
+      remainingSec: Math.max(0, Math.ceil(((cooldowns[p.id] || 0) - now) / 1000)),
+    }));
+  },
+};
+
+// Expose globally so other parts of the app can call aiClient.chat(...)
+window.aiClient = aiClient;
+
+// â”€â”€ AI Status Widget (shows which provider is active/cooled-down) â”€â”€
+window.showAiStatusModal = async function() {
+  const statuses = await aiClient.getStatus();
+  const configured = statuses.filter(s => s.hasKey);
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="activity" class="w-5 h-5 text-emerald-400"></i> AI Provider Status</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="mb-4 p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300">
+          ${configured.length === 0
+            ? 'âš  No keys configured. Go to AI Settings and add at least one API key.'
+            : `${configured.length} provider${configured.length>1?'s':''} configured. Auto-switch is <strong class="text-emerald-400">ON</strong> â€” will skip rate-limited providers automatically.`}
+        </div>
+        <div class="space-y-2">
+          ${statuses.map(s => `
+            <div class="flex items-center gap-3 p-2.5 glass-soft border ${s.hasKey ? 'border-blue-500/15' : 'border-gray-800'} rounded-xl opacity-${s.hasKey ? '100' : '40'}">

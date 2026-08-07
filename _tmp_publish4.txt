@@ -1,0 +1,200 @@
+﻿              <p>5. If TikTok gives you a watch/share page, copy that into Embed URL or Host URL.</p>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-4">
+            <p class="text-xs font-black uppercase tracking-wide text-emerald-300 mb-2">Put It Here In Admin</p>
+            <div class="space-y-2 text-gray-300">
+              <p>1. Enable <strong>TikTok Live</strong>.</p>
+              <p>2. Paste the server URL into <strong>RTMP / Ingest URL</strong>.</p>
+              <p>3. Paste the stream key into <strong>Stream Key</strong>.</p>
+              <p>4. Add your TikTok page or watch link into <strong>Host / Control URL</strong>.</p>
+              <p>5. Add an embeddable player URL if you have one. If not, use the homepage LIVE badge and a watch link.</p>
+              <p>6. Save settings, then start streaming from your phone or encoder and click <strong>Start Live Now</strong> here to publish the site-wide live state.</p>
+            </div>
+          </div>
+        </div>
+        <div class="rounded-xl border border-amber-500/15 bg-amber-500/5 p-3 text-[11px] text-amber-200">
+          TikTok only becomes truly real after you collect the live RTMP details from TikTok and start the broadcast from the TikTok-supported phone/app or encoder workflow. This admin page is where you save and manage those details.
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 class="text-sm font-black text-white">Platform Connections</h3>
+            <p class="text-[11px] text-gray-500">Add your API keys, stream keys, embed URLs, and host dashboards later. Each platform can be enabled or disabled independently.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          ${orderedPlatforms.map(platform => livePlatformCard(platform, LIVE_STREAM_PLATFORM_DEFS.find(def => def.id === platform.id), 'streamingPlatforms')).join('')}
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-black text-white">Create or Schedule Live Stream</h3>
+          <p class="text-[11px] text-gray-500 mt-1">Select one or more platforms, set the homepage embed URL, and publish a synchronized live status across the website and mobile app.</p>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div><label class="lbl">Stream Title</label><input id="live-session-title" class="input-field" placeholder="e.g. Friday Product Showcase"></div>
+          <div><label class="lbl">Badge Text</label><input id="live-session-badge" class="input-field" value="${esc(live.preferences.defaultBadgeText || 'LIVE NOW')}" placeholder="LIVE NOW"></div>
+          <div class="sm:col-span-2"><label class="lbl">Homepage Headline</label><input id="live-session-headline" class="input-field" placeholder="Tell visitors what is happening live"></div>
+          <div class="sm:col-span-2"><label class="lbl">Description</label><textarea id="live-session-description" class="input-field" rows="3" placeholder="Stream summary, agenda, products, or event details"></textarea></div>
+          <div><label class="lbl">Embed URL</label><input id="live-session-embed" class="input-field" placeholder="https://... embeddable live player"></div>
+          <div><label class="lbl">Schedule Date & Time</label><input id="live-session-scheduled" type="datetime-local" class="input-field"></div>
+        </div>
+        <div>
+          <label class="lbl">Stream To Platforms</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 mt-2">
+            ${orderedPlatforms.filter(platform => platform.enabled).map(platform => `<label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input type="checkbox" class="accent-red-500" value="${platform.id}" data-live-platform-select><span>${esc(platform.label)}</span></label>`).join('') || '<p class="text-xs text-gray-500">Enable at least one streaming platform above.</p>'}
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input id="live-notify-visitors" type="checkbox" class="accent-blue-500" checked><span>Notify visitors when live</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input id="live-show-badge" type="checkbox" class="accent-blue-500" checked><span>Show LIVE NOW badge on homepage</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2 text-xs text-gray-300"><input id="live-show-embed" type="checkbox" class="accent-blue-500" checked><span>Embed live player on homepage</span></label>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="createLiveSession('scheduled')" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Schedule Stream</button>
+          <button onclick="createLiveSession('live')" class="btn-press bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Start Live Now</button>
+          <button onclick="clearPublicLiveState()" class="btn-press bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">End Current Live</button>
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3"><h3 class="text-sm font-black text-white">Live Stream Sessions</h3><span class="text-[11px] text-gray-500">Start, end, remove, or republish sessions instantly</span></div>
+        ${renderLiveSessionRows(sessions)}
+      </div>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderRoomRows(rooms) {
+  if (!rooms.length) return '<p class="text-sm text-gray-500 text-center py-8">No video call rooms created yet.</p>';
+  return rooms.map(room => `
+    <div class="glass-soft border border-blue-500/10 rounded-xl p-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1"><span class="text-sm font-black text-white">${esc(room.title)}</span>${badge(room.status)}</div>
+        <p class="text-[11px] text-gray-500">Provider: ${esc(room.providerId)} â€¢ Type: ${esc(room.callType)}${room.scheduledAt ? ` â€¢ Scheduled: ${esc(fmtDT(room.scheduledAt))}` : ''}</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="startVideoRoom('${room.id}')" class="btn-press px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-xl transition">Start</button>
+        <button onclick="endVideoRoom('${room.id}')" class="btn-press px-3 py-2 bg-gray-700/50 hover:bg-gray-700 text-gray-200 text-xs font-bold rounded-xl transition">End</button>
+        <button onclick="removeVideoRoom('${room.id}')" class="btn-press px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs font-bold rounded-xl transition">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function renderVideoCallManager() {
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  await ensureLiveControlLoaded();
+  const live = window._liveControlAdminState;
+  const enabledProviders = live.videoCallProviders.filter(provider => provider.enabled).length;
+  const activeRooms = live.videoCallRooms.filter(room => room.status === 'live').length;
+  content.innerHTML = `
+    <div class="space-y-5 fade-in">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex-1">
+          <h2 class="text-xl font-black text-white">Video Call Manager</h2>
+          <p class="text-sm text-gray-500 mt-1">Configure meeting providers, create one-to-one or group rooms, and manage screen sharing, recording, waiting rooms, moderation, and file sharing from the dashboard.</p>
+        </div>
+        <button onclick="saveVideoCallSettings()" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Save Video Call Settings</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        ${statCard('Enabled Call Providers', enabledProviders, 'video', 'blue', 'Provider connections ready')}
+        ${statCard('Active Calls', activeRooms, 'video', 'emerald', 'Rooms currently running')}
+        ${statCard('Scheduled Calls', live.videoCallRooms.filter(room => room.status === 'scheduled').length, 'calendar', 'amber', 'Upcoming meetings')}
+        ${statCard('Room Templates', live.videoCallRooms.length, 'layers', 'violet', 'Saved one-to-one and group rooms')}
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <h3 class="text-sm font-black text-white">Provider Connections</h3>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          ${live.videoCallProviders.map(provider => livePlatformCard(provider, VIDEO_CALL_PROVIDER_DEFS.find(def => def.id === provider.id), 'videoCallProviders')).join('')}
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-black text-white">Create Video Call Room</h3>
+          <p class="text-[11px] text-gray-500 mt-1">Prepare rooms for one-to-one calls, group calls, screen sharing, moderation, and recorded meetings.</p>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div><label class="lbl">Room Title</label><input id="video-room-title" class="input-field" placeholder="e.g. VIP Buyer Consultation"></div>
+          <div><label class="lbl">Provider</label><select id="video-room-provider" class="input-field">${live.videoCallProviders.map(provider => `<option value="${provider.id}">${esc(provider.label)}</option>`).join('')}</select></div>
+          <div><label class="lbl">Room Type</label><select id="video-room-type" class="input-field"><option value="one_to_one">One-to-one</option><option value="group">Group</option></select></div>
+          <div><label class="lbl">Schedule Date & Time</label><input id="video-room-scheduled" type="datetime-local" class="input-field"></div>
+          <div><label class="lbl">Room Code / Meeting ID</label><input id="video-room-code" class="input-field" placeholder="Meeting ID or room code"></div>
+          <div><label class="lbl">Max Participants</label><input id="video-room-max" type="number" class="input-field" value="25" min="2"></div>
+          <div><label class="lbl">Host URL</label><input id="video-room-host" class="input-field" placeholder="Host start URL"></div>
+          <div><label class="lbl">Join URL</label><input id="video-room-join" class="input-field" placeholder="Participant join URL"></div>
+          <div class="sm:col-span-2"><label class="lbl">Embed URL</label><input id="video-room-embed" class="input-field" placeholder="Embeddable call URL for web/mobile"></div>
+          <div class="sm:col-span-2"><label class="lbl">Notes</label><textarea id="video-room-notes" class="input-field" rows="3" placeholder="Call agenda, internal notes, participant instructions"></textarea></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-xs text-gray-300">
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-waiting-room" type="checkbox" checked class="accent-blue-500"><span>Waiting room</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-screen-share" type="checkbox" checked class="accent-blue-500"><span>Screen sharing</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-recording" type="checkbox" class="accent-blue-500"><span>Call recording</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-chat" type="checkbox" checked class="accent-blue-500"><span>Chat during call</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-file-share" type="checkbox" checked class="accent-blue-500"><span>File sharing</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-mute-entry" type="checkbox" class="accent-blue-500"><span>Mute on entry</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-camera-control" type="checkbox" checked class="accent-blue-500"><span>Camera controls</span></label>
+          <label class="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-950/40 px-3 py-2"><input id="video-remove-participants" type="checkbox" checked class="accent-blue-500"><span>Mute / remove participants</span></label>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="createVideoRoom('scheduled')" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Schedule Call</button>
+          <button onclick="createVideoRoom('live')" class="btn-press bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">Start Call</button>
+        </div>
+      </div>
+
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3"><h3 class="text-sm font-black text-white">Video Call Rooms</h3><span class="text-[11px] text-gray-500">Use host links, embed URLs, and moderation toggles without code changes</span></div>
+        ${renderRoomRows(live.videoCallRooms)}
+      </div>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.updateLivePlatformField = function(collectionName, platformId, path, value) {
+  const collection = window._liveControlAdminState?.[collectionName] || [];
+  const platform = collection.find(item => item.id === platformId);
+  if (!platform) return;
+  setDeepValue(platform, path, value);
+};
+
+window.toggleLivePlatformEnabled = function(collectionName, platformId, enabled) {
+  const collection = window._liveControlAdminState?.[collectionName] || [];
+  const platform = collection.find(item => item.id === platformId);
+  if (!platform) return;
+  platform.enabled = enabled;
+};
+
+async function persistLiveControl(showMessage = true) {
+  const { error } = await saveLiveControlAdminState(window._liveControlAdminState);
+  if (error) {
+    showToast('Saved locally. Run the live manager migration to persist provider settings.', 'info');
+    return false;
+  }
+  if (showMessage) showToast('Live manager settings saved');
+  return true;
+}
+
+window.saveLiveStreamingSettings = async function() { await persistLiveControl(true); };
+window.saveVideoCallSettings = async function() { await persistLiveControl(true); };
+
+window.createLiveSession = async function(mode) {
+  await ensureLiveControlLoaded();
+  const selectedPlatforms = [...document.querySelectorAll('[data-live-platform-select]:checked')].map(input => input.value);
+  const session = {
+    id: `session-${Date.now()}`,
+    title: document.getElementById('live-session-title')?.value?.trim() || 'Live Stream',
+    headline: document.getElementById('live-session-headline')?.value?.trim() || '',
+    description: document.getElementById('live-session-description')?.value?.trim() || '',
+    embedUrl: document.getElementById('live-session-embed')?.value?.trim() || '',
+    badgeText: document.getElementById('live-session-badge')?.value?.trim() || 'LIVE NOW',
+    status: mode === 'live' ? 'live' : 'scheduled',
+    scheduledAt: document.getElementById('live-session-scheduled')?.value || '',
+    startedAt: mode === 'live' ? new Date().toISOString() : '',
+    selectedPlatforms,

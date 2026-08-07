@@ -1,0 +1,200 @@
+﻿      await insertDeploymentHistory('deploying', {
+        mode: 'deploy',
+        productionUrl: s.production_url,
+        githubRepo: s.github_repo,
+        webhook: hookUrl,
+        message: 'Webhook accepted deployment request',
+      });
+      setTimeout(() => renderPublish(), 400);
+    } else {
+      const errorMsg = `Webhook returned error: ${res.status}`;
+      showToast(errorMsg, 'error');
+      await insertDeploymentHistory('failed', {
+        mode: 'deploy',
+        productionUrl: s.production_url,
+        githubRepo: s.github_repo,
+        webhook: hookUrl,
+        errorMessage: errorMsg,
+      });
+    }
+  } catch (err) {
+    showToast('Deploy failed: ' + err.message, 'error');
+    await insertDeploymentHistory('failed', { mode: 'deploy', errorMessage: err.message });
+  } finally {
+    setActionButtonBusy(btn, false, 'Deployingâ€¦', 'Deploy Now');
+  }
+};
+
+window.triggerRebuild = async function(ev) {
+  const btn = ev?.currentTarget || document.querySelector('[data-rebuild-btn]');
+  setActionButtonBusy(btn, true, 'Rebuildingâ€¦', 'Rebuild Site');
+  try {
+    const prep = await runWebhookDeploy('rebuild');
+    if (!prep.ok) return;
+    const { settings: s, hookUrl } = prep;
+    await insertDeploymentHistory('building', {
+      mode: 'rebuild',
+      productionUrl: s.production_url,
+      githubRepo: s.github_repo,
+      webhook: hookUrl,
+      message: 'Rebuild requested from admin UI',
+    });
+    const res = await fetch(hookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trigger: 'rebuild', source: 'admin-dashboard', at: new Date().toISOString() }),
+    });
+    if (res.ok) {
+      showToast('ðŸ”„ Rebuild triggered successfully.');
+      await insertDeploymentHistory('deploying', {
+        mode: 'rebuild',
+        productionUrl: s.production_url,
+        githubRepo: s.github_repo,
+        webhook: hookUrl,
+        message: 'Webhook accepted rebuild request',
+      });
+      setTimeout(() => renderPublish(), 400);
+    } else {
+      const errorMsg = `Rebuild webhook error: ${res.status}`;
+      showToast(errorMsg, 'error');
+      await insertDeploymentHistory('failed', {
+        mode: 'rebuild',
+        productionUrl: s.production_url,
+        githubRepo: s.github_repo,
+        webhook: hookUrl,
+        errorMessage: errorMsg,
+      });
+    }
+  } catch (err) {
+    showToast('Rebuild failed: ' + err.message, 'error');
+    await insertDeploymentHistory('failed', { mode: 'rebuild', errorMessage: err.message });
+  } finally {
+    setActionButtonBusy(btn, false, 'Rebuildingâ€¦', 'Rebuild Site');
+  }
+};
+
+window.publishAndDeploy = async function(ev) {
+  const btn = ev?.currentTarget || document.querySelector('[data-publish-easy-btn]');
+  setActionButtonBusy(btn, true, 'Publishingâ€¦', 'One-Click Publish');
+  try {
+    const form = document.getElementById('deploy-form');
+    if (!form) {
+      showToast('Deploy form is not available. Reload and try again.', 'error');
+      return;
+    }
+    await window.saveDeploySettings({ preventDefault() {}, target: form });
+    await window.triggerDeploy();
+  } catch (err) {
+    showToast('Publish failed: ' + err.message, 'error');
+  } finally {
+    setActionButtonBusy(btn, false, 'Publishingâ€¦', 'One-Click Publish');
+  }
+};
+
+window.testGitHubConnection = async function() {
+  const username = document.querySelector('[name=github_username]')?.value?.trim();
+  const repo = document.querySelector('[name=github_repo]')?.value?.trim();
+  if (!username || !repo) { showToast('Enter your GitHub username and repo name first', 'info'); return; }
+  try {
+    const res = await fetch(`https://api.github.com/repos/${username}/${repo}`);
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`âœ“ Connected: ${data.full_name} (${data.visibility})`);
+    } else if (res.status === 404) {
+      showToast('Repository not found. Check username and repo name.', 'error');
+    } else {
+      showToast('GitHub API error: ' + res.status, 'error');
+    }
+  } catch { showToast('Could not reach GitHub API', 'error'); }
+};
+
+window.deployToProduction = window.triggerDeploy;
+window.rebuildSite = window.triggerRebuild;
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  LIVE STREAMING & VIDEO CALL MANAGER
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+window._liveControlAdminState = null;
+window._livePublicState = null;
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+async function ensureLiveControlLoaded() {
+  if (!window._liveControlAdminState) window._liveControlAdminState = await loadLiveControlAdminState();
+  if (!window._livePublicState) window._livePublicState = await loadPublicLiveState();
+}
+
+function setDeepValue(target, path, value) {
+  const keys = path.split('.');
+  let cursor = target;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (!cursor[key] || typeof cursor[key] !== 'object') cursor[key] = {};
+    cursor = cursor[key];
+  }
+  cursor[keys[keys.length - 1]] = value;
+}
+
+function livePlatformCard(platform, definition, collectionName) {
+  const value = (path) => {
+    const keys = path.split('.');
+    let cursor = platform;
+    for (const key of keys) cursor = cursor?.[key];
+    return cursor || '';
+  };
+  return `
+    <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2 mb-1"><i data-lucide="${definition.icon}" class="w-4 h-4 text-blue-400"></i><h3 class="text-sm font-black text-white">${definition.label}</h3></div>
+          <p class="text-[11px] text-gray-500">${definition.description}</p>
+        </div>
+        <label class="toggle-switch shrink-0"><input type="checkbox" ${platform.enabled ? 'checked' : ''} onchange="toggleLivePlatformEnabled('${collectionName}','${platform.id}', this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="form-grid form-grid-2">
+        ${definition.fields.includes('apiKey') ? `<div><label class="lbl">API Key</label><input class="input-field" type="password" value="${esc(value('credentials.apiKey'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.apiKey', this.value)" placeholder="Add API key later"></div>` : ''}
+        ${definition.fields.includes('apiSecret') ? `<div><label class="lbl">API Secret</label><input class="input-field" type="password" value="${esc(value('credentials.apiSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.apiSecret', this.value)" placeholder="Add API secret later"></div>` : ''}
+        ${definition.fields.includes('clientId') ? `<div><label class="lbl">Client ID</label><input class="input-field" value="${esc(value('credentials.clientId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.clientId', this.value)" placeholder="Client ID"></div>` : ''}
+        ${definition.fields.includes('clientSecret') ? `<div><label class="lbl">Client Secret</label><input class="input-field" type="password" value="${esc(value('credentials.clientSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.clientSecret', this.value)" placeholder="Client secret"></div>` : ''}
+        ${definition.fields.includes('sdkKey') ? `<div><label class="lbl">SDK Key</label><input class="input-field" value="${esc(value('credentials.sdkKey'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.sdkKey', this.value)" placeholder="SDK key"></div>` : ''}
+        ${definition.fields.includes('sdkSecret') ? `<div><label class="lbl">SDK Secret</label><input class="input-field" type="password" value="${esc(value('credentials.sdkSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','credentials.sdkSecret', this.value)" placeholder="SDK secret"></div>` : ''}
+        ${definition.fields.includes('channelId') ? `<div><label class="lbl">Channel ID</label><input class="input-field" value="${esc(value('settings.channelId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.channelId', this.value)" placeholder="Channel or creator ID"></div>` : ''}
+        ${definition.fields.includes('pageId') ? `<div><label class="lbl">Page ID</label><input class="input-field" value="${esc(value('settings.pageId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.pageId', this.value)" placeholder="Page ID"></div>` : ''}
+        ${definition.fields.includes('meetingId') ? `<div><label class="lbl">Meeting / Room ID</label><input class="input-field" value="${esc(value('settings.meetingId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.meetingId', this.value)" placeholder="Meeting or room ID"></div>` : ''}
+        ${definition.fields.includes('tenantId') ? `<div><label class="lbl">Tenant ID</label><input class="input-field" value="${esc(value('settings.tenantId'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.tenantId', this.value)" placeholder="Tenant ID"></div>` : ''}
+        ${definition.fields.includes('streamKey') ? `<div><label class="lbl">Stream Key</label><input class="input-field font-mono" value="${esc(value('settings.streamKey'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.streamKey', this.value)" placeholder="Stream key"></div>` : ''}
+        ${definition.fields.includes('rtmpUrl') ? `<div><label class="lbl">RTMP / Ingest URL</label><input class="input-field font-mono" value="${esc(value('settings.rtmpUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.rtmpUrl', this.value)" placeholder="rtmp://..."></div>` : ''}
+        ${definition.fields.includes('hostUrl') ? `<div><label class="lbl">Host / Control URL</label><input class="input-field" value="${esc(value('links.hostUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','links.hostUrl', this.value)" placeholder="Host dashboard URL"></div>` : ''}
+        ${definition.fields.includes('embedUrl') ? `<div><label class="lbl">Embed URL</label><input class="input-field" value="${esc(value('links.embedUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','links.embedUrl', this.value)" placeholder="Embeddable player URL"></div>` : ''}
+        ${definition.fields.includes('joinUrl') ? `<div><label class="lbl">Join URL</label><input class="input-field" value="${esc(value('links.joinUrl'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','links.joinUrl', this.value)" placeholder="Call join URL"></div>` : ''}
+        ${definition.fields.includes('webhookSecret') ? `<div><label class="lbl">Webhook Secret</label><input class="input-field" type="password" value="${esc(value('settings.webhookSecret'))}" oninput="updateLivePlatformField('${collectionName}','${platform.id}','settings.webhookSecret', this.value)" placeholder="Webhook secret"></div>` : ''}
+      </div>
+      <div class="text-[11px] text-gray-500">Keys are not hardcoded. Save your settings here and control them from the dashboard only.</div>
+    </div>`;
+}
+
+function renderLiveSessionRows(sessions) {
+  if (!sessions.length) return '<p class="text-sm text-gray-500 text-center py-8">No live sessions created yet.</p>';
+  return sessions.map(session => `
+    <div class="glass-soft border border-blue-500/10 rounded-xl p-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1"><span class="text-sm font-black text-white">${esc(session.title)}</span>${badge(session.status)}</div>
+        <p class="text-[11px] text-gray-500">Platforms: ${esc(session.selectedPlatforms.join(', ') || 'None')} ${session.scheduledAt ? `â€¢ Scheduled: ${esc(fmtDT(session.scheduledAt))}` : ''}</p>
+        ${session.headline ? `<p class="text-xs text-gray-400 mt-1">${esc(session.headline)}</p>` : ''}
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="startLiveSession('${session.id}')" class="btn-press px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-xs font-bold rounded-xl transition">Start</button>
+        <button onclick="endLiveSession('${session.id}')" class="btn-press px-3 py-2 bg-gray-700/50 hover:bg-gray-700 text-gray-200 text-xs font-bold rounded-xl transition">End</button>
+        <button onclick="removeLiveSession('${session.id}')" class="btn-press px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs font-bold rounded-xl transition">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function renderLiveStreamingManager() {
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  await ensureLiveControlLoaded();
+  const liveState = window._livePublicState || {};
+  const live = window._liveControlAdminState;

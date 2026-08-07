@@ -875,7 +875,15 @@ async function renderProducts() {
   try {
     const { data: products, error } = await supabase.from('showroom_listings')
       .select('*').neq('listing_type', 'property').order('created_at', { ascending: false });
-    const items = error ? listLocalShowroomListings().filter(item => item.listing_type !== 'property') : (products || []);
+    let items = error ? listLocalShowroomListings().filter(item => item.listing_type !== 'property') : (products || []);
+    // Merge static showroom seed listings so every product shown on the public
+    // showroom is also editable here. DB/local rows win over seed on duplicate IDs.
+    if (Array.isArray(SHOWROOM_LISTINGS)) {
+      const seen = new Set(items.map(p => p.property_id));
+      const seedProducts = SHOWROOM_LISTINGS.filter(l => l.listing_type !== 'property' && l.property_id && !seen.has(l.property_id));
+      if (seedProducts.length) items = items.concat(seedProducts);
+    }
+    items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     const categories = [...new Set(items.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     const tags = [...new Set(items.flatMap(p => Array.isArray(p.tags) ? p.tags : []).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
@@ -2361,7 +2369,9 @@ let err;
 
 window.editProduct = async function(pid) {
   const { data, error } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
-  const resolved = error ? getLocalShowroomListingById(pid) : data;
+  let resolved = error ? null : data;
+  if (!resolved) resolved = getLocalShowroomListingById(pid);
+  if (!resolved) resolved = (Array.isArray(SHOWROOM_LISTINGS) ? SHOWROOM_LISTINGS.find(l => l.property_id === pid) : null) || null;
   if (!resolved) return showToast('Product not found', 'error');
   showAddProductStep2(resolved.category || 'Other', resolved);
 };
@@ -2405,7 +2415,15 @@ async function renderProperties() {
   const content = document.getElementById('content');
   try {
     const { data: props, error } = await supabase.from('showroom_listings').select('*').eq('listing_type', 'property').order('created_at', { ascending: false });
-    const items = error ? listLocalShowroomListings().filter(item => item.listing_type === 'property') : (props || []);
+    let items = error ? listLocalShowroomListings().filter(item => item.listing_type === 'property') : (props || []);
+    // Merge static showroom seed properties so every property on the public
+    // showroom is also editable here. DB/local rows win over seed on duplicate IDs.
+    if (Array.isArray(SHOWROOM_LISTINGS)) {
+      const seen = new Set(items.map(p => p.property_id));
+      const seedProps = SHOWROOM_LISTINGS.filter(l => l.listing_type === 'property' && l.property_id && !seen.has(l.property_id));
+      if (seedProps.length) items = items.concat(seedProps);
+    }
+    items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     content.innerHTML = `
       <div class="space-y-4 fade-in">
         <div class="flex flex-wrap items-center gap-3">
@@ -2600,7 +2618,9 @@ let err;
 
 window.editProperty = async function(pid) {
   const { data, error } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
-  const resolved = error ? getLocalShowroomListingById(pid) : data;
+  let resolved = error ? null : data;
+  if (!resolved) resolved = getLocalShowroomListingById(pid);
+  if (!resolved) resolved = (Array.isArray(SHOWROOM_LISTINGS) ? SHOWROOM_LISTINGS.find(l => l.property_id === pid) : null) || null;
   if (resolved) showAddPropertyModal(resolved);
 };
 
@@ -6098,6 +6118,173 @@ window.publishAndDeploy = async function(ev) {
     showToast('Publish failed: ' + err.message, 'error');
   } finally {
     setActionButtonBusy(btn, false, 'Publishing…', 'One-Click Publish');
+  }
+};
+
+// ── Reindex Search ─────────────────────────────────────────
+// Manually rebuilds the search index for all listings. The DB has an automatic
+// AFTER INSERT/UPDATE/DELETE trigger (sync_search_index) on showroom_listings,
+// so touching each row (updated_at) forces the index to rebuild for every item.
+window.reindexSearch = async function() {
+  const btn = document.querySelector('[data-publish-easy-btn]') || document.querySelector('[data-rebuild-btn]');
+  const label = btn?.querySelector('p.text-xs.font-black');
+  const origLabel = label?.textContent || '';
+  if (label) label.textContent = 'Reindexing…';
+  try {
+    const { data: listings, error } = await supabase
+      .from('showroom_listings')
+      .select('id, updated_at')
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      if (isRlsDenied(error)) return showToast('⚠️ Reindex blocked: database admin role rejected the read. Re-run the admin permission migration.', 'error');
+      return showToast('Could not load listings to reindex: ' + error.message, 'error');
+    }
+
+    const ids = listings || [];
+    if (!ids.length) {
+      showToast('No listings to reindex.');
+      return;
+    }
+
+    let success = 0;
+    let failed = 0;
+    let denied = false;
+
+    // Process in small batches to avoid hammering the DB with one huge request.
+    const BATCH = 40;
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const batch = ids.slice(i, i + BATCH);
+      const { error: batchErr } = await supabase
+        .from('showroom_listings')
+        .update({ updated_at: new Date().toISOString() })
+        .in('id', batch.map(r => r.id));
+
+      if (batchErr) {
+        if (isRlsDenied(batchErr)) denied = true;
+        failed += batch.length;
+      } else {
+        success += batch.length;
+      }
+      // Update the button label so the admin sees live progress.
+      if (label) label.textContent = `Reindexing… ${Math.min(i + BATCH, ids.length)}/${ids.length}`;
+    }
+
+    if (denied) {
+      showToast(`⚠️ Reindex partially blocked: database admin role rejected some writes. Re-run the admin permission migration. (${success}/${ids.length} done)`, 'error');
+      return;
+    }
+    showToast(`Search index rebuilt for ${success} listing${success !== 1 ? 's' : ''}${failed ? ` (${failed} failed)` : ''}.`, failed ? 'error' : 'success');
+  } catch (err) {
+    showToast('Reindex failed: ' + err.message, 'error');
+  } finally {
+    if (label) label.textContent = origLabel;
+  }
+};
+
+// ── Sync Showroom To DB ────────────────────────────────────
+// Reads the static SHOWROOM_LISTINGS fallback catalog (showroom-data.js) and
+// inserts any items that are missing from the database by property_id. This
+// keeps the admin's editable showroom populated even after a fresh DB reset.
+window.syncShowroomToDB = async function() {
+  if (!Array.isArray(SHOWROOM_LISTINGS) || !SHOWROOM_LISTINGS.length) {
+    showToast('No static showroom listings found to sync.', 'info');
+    return;
+  }
+  const btn = document.querySelector('[data-publish-easy-btn]') || document.querySelector('[data-rebuild-btn]');
+  const label = btn?.querySelector('p.text-xs.font-black');
+  const origLabel = label?.textContent || '';
+  if (label) label.textContent = 'Syncing…';
+  try {
+    // Load existing property_ids so we only insert missing items.
+    const { data: existing, error: readErr } = await supabase
+      .from('showroom_listings')
+      .select('property_id');
+
+    if (readErr) {
+      if (isRlsDenied(readErr)) return showToast('⚠️ Sync blocked: database admin role rejected the read. Re-run the admin permission migration.', 'error');
+      return showToast('Could not load existing listings: ' + readErr.message, 'error');
+    }
+
+    const existingIds = new Set((existing || []).map(r => r.property_id));
+    const missing = SHOWROOM_LISTINGS.filter(item => item && item.property_id && !existingIds.has(item.property_id));
+
+    if (!missing.length) {
+      showToast('Showroom already in sync — no new listings to add.');
+      return;
+    }
+
+    let inserted = 0;
+    let failed = 0;
+    let denied = false;
+
+    // Insert in small batches so one permission error doesn't lose all progress.
+    const BATCH = 20;
+    for (let i = 0; i < missing.length; i += BATCH) {
+      const batch = missing.slice(i, i + BATCH).map(item => ({
+        property_id: item.property_id,
+        listing_type: item.listing_type || 'product',
+        category: item.category || null,
+        subcategory: item.subcategory || null,
+        title: item.title || 'Untitled Listing',
+        description: item.description || '',
+        price: parseFloat(item.price) || 0,
+        currency: item.currency || 'USD',
+        country: item.country || '',
+        country_code: item.country_code || '',
+        state: item.state || '',
+        city: item.city || '',
+        town: item.town || '',
+        product_location: item.product_location || '',
+        latitude: item.latitude ?? null,
+        longitude: item.longitude ?? null,
+        property_type: item.property_type || null,
+        listing_status: item.listing_status || 'sale',
+        bedrooms: item.bedrooms ?? null,
+        bathrooms: item.bathrooms ?? null,
+        building_size: item.building_size || '',
+        land_size: item.land_size || '',
+        parking_spaces: item.parking_spaces ?? null,
+        furnished: item.furnished || '',
+        features: Array.isArray(item.features) ? item.features : [],
+        tags: Array.isArray(item.tags) ? item.tags : [],
+        highlights: Array.isArray(item.highlights) ? item.highlights : [],
+        seo_keywords: Array.isArray(item.seo_keywords) ? item.seo_keywords : [],
+        images: Array.isArray(item.images) ? item.images : [],
+        brand: item.brand || null,
+        color: item.color || null,
+        size: item.size || null,
+        condition: item.condition || null,
+        warranty: item.warranty || null,
+        availability_status: item.availability_status || 'In Stock',
+        stock_quantity: item.stock_quantity != null ? parseInt(item.stock_quantity, 10) : null,
+        is_active: item.is_active !== false,
+        is_featured: !!item.is_featured,
+        is_ai_generated: !!item.is_ai_generated,
+        ai_generated_fields: Array.isArray(item.ai_generated_fields) ? item.ai_generated_fields : [],
+        specifications: item.specifications || {},
+        created_at: item.created_at || new Date().toISOString(),
+      }));
+
+      const { error: batchErr } = await supabase.from('showroom_listings').insert(batch);
+      if (batchErr) {
+        if (isRlsDenied(batchErr)) denied = true;
+        failed += batch.length;
+      } else {
+        inserted += batch.length;
+      }
+      if (label) label.textContent = `Syncing… ${Math.min(i + BATCH, missing.length)}/${missing.length}`;
+    }
+
+    if (denied) {
+      showToast(`⚠️ Sync partially blocked: database admin role rejected some inserts. Re-run the admin permission migration. (${inserted}/${missing.length} added)`, 'error');
+      return;
+    }
+    showToast(`Showroom synced: ${inserted} new listing${inserted !== 1 ? 's' : ''} added to the database${failed ? ` (${failed} failed)` : ''}.`, failed ? 'error' : 'success');
+  } catch (err) {
+    showToast('Sync failed: ' + err.message, 'error');
+  } finally {
+    if (label) label.textContent = origLabel;
   }
 };
 
