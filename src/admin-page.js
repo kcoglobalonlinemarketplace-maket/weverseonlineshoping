@@ -394,12 +394,22 @@ async function getClientIP() {
 // ── Admin access check — tries 3 ways, most to least reliable ─
 async function checkAdminAccess(user) {
   if (!user) return false;
+  // Primary path: rely on the RLS-facing admin check so the user can both see
+  // the dashboard AND pass RLS on writes. The legacy email fallback is only a
+  // last-resort for when the RPC itself is unavailable/errored, but it must NOT
+  // grant access when the RPC explicitly returns false (that would let the UI
+  // load while every DB write is rejected by RLS).
+  let rpcReturned = false;
+  let rpcResult = false;
   try {
     const { data: isAdmin } = await supabase.rpc('is_current_user_admin');
-    if (isAdmin) return true;
+    rpcReturned = true;
+    rpcResult = !!isAdmin;
   } catch {
-    // Fallback below keeps access for the legacy owner email if RPC is unavailable.
+    rpcReturned = false;
   }
+  if (rpcReturned) return rpcResult;
+  // RPC unavailable (e.g. not deployed): fall back to the legacy owner email.
   return normalizeEmail(user.email) === ADMIN_EMAIL;
 }
 
@@ -932,11 +942,16 @@ async function renderProducts() {
             </select>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
+<div class="flex flex-wrap items-center gap-2">
             <button onclick="toggleSelectAllProducts(true)" class="btn-press px-3 py-1.5 text-xs font-bold rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-300 hover:bg-blue-500/15 transition">Select Visible</button>
             <button onclick="toggleSelectAllProducts(false)" class="btn-press px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-500/20 bg-gray-500/10 text-gray-300 hover:bg-gray-500/15 transition">Clear Selection</button>
             <button onclick="resetProductFilters()" class="btn-press px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-500/20 bg-transparent text-gray-300 hover:bg-white/5 transition">Reset Filters</button>
-            <div class="ml-auto text-[11px] text-gray-400"><span id="products-result-count">0</span> products shown</div>
+            <div class="ml-auto flex items-center gap-1.5">
+              <span class="text-[11px] text-gray-400">View:</span>
+<button onclick="setProductView('card')" id="view-card-btn" class="view-toggle ${!window._productView || window._productView==='card' ? 'active' : ''}"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Cards</button>
+              <button onclick="setProductView('table')" id="view-table-btn" class="view-toggle ${window._productView==='table' ? 'active' : ''}"><i data-lucide="table" class="w-3.5 h-3.5"></i> Table</button>
+            </div>
+            <span class="text-[11px] text-gray-400 ml-2"><span id="products-result-count">0</span> shown</span>
           </div>
         </div>
 
@@ -949,8 +964,16 @@ async function renderProducts() {
           <button onclick="bulkDeleteProducts()" class="btn-press text-xs font-bold text-red-200 hover:text-white px-3 py-1.5 rounded-lg bg-red-600/20 transition">Delete</button>
         </div>
 
-        <div class="space-y-4">
+<div class="space-y-4">
           <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 items-stretch"></div>
+          <div id="products-table-wrap" class="hidden overflow-x-auto scrollbar-thin rounded-2xl border border-blue-500/15">
+            <table class="w-full dt">
+              <thead><tr>
+                <th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Date</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="products-table-body"></tbody>
+            </table>
+          </div>
           <div id="products-empty" class="hidden">${emptyState('package-search', 'No matching products', 'Try different filters or add a new product.', '<button onclick="showAddProductStep1()" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl">Add Product</button>')}</div>
           <div class="text-center text-[11px] text-gray-500 py-2">Scroll to explore all products. Layout auto-rearranges as products are added, edited, moved, or removed.</div>
         </div>
@@ -1083,6 +1106,66 @@ function renderProductsShowroomGrid(items) {
   if (window.lucide) lucide.createIcons();
 }
 
+function renderProductsTable(items) {
+  const tbody = document.getElementById('products-table-body');
+  const count = document.getElementById('products-result-count');
+  if (!tbody) return;
+  tbody.innerHTML = items.length === 0
+    ? '<tr><td colspan="7" class="text-center text-gray-500 py-10">No products found.</td></tr>'
+    : items.map(p => {
+        const img = (p.images && p.images[0]) ? p.images[0] : '/fallback.svg';
+        const status = productStatusText(p);
+        const selected = window._productSelection?.has(p.property_id);
+        const publishFn = p.is_active ? `unpublishProduct('${p.property_id}')` : `publishProduct('${p.property_id}')`;
+        const publishLabel = p.is_active ? 'Unpublish' : 'Publish';
+        return `<tr class="prod-table-row" data-id="${p.property_id}" style="cursor:pointer">
+          <td>
+            <div class="flex items-center gap-2.5" onclick="editProduct('${p.property_id}')">
+              <input type="checkbox" class="prod-check accent-blue-500" value="${p.property_id}" ${selected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleProductSelection('${p.property_id}', this.checked)">
+              <img src="${esc(img)}" class="w-9 h-9 rounded-lg object-cover border border-blue-500/20" onerror="this.src='/fallback.svg'">
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-white truncate max-w-[160px]">${esc(p.title || 'Untitled Product')}</p>
+                <p class="text-[10px] font-mono text-gray-500">${esc(productSku(p))}</p>
+              </div>
+            </div>
+          </td>
+          <td><span class="text-xs text-gray-300">${esc(p.category || 'Uncategorized')}</span></td>
+          <td><span class="text-xs font-bold text-emerald-400">$${parseProductPrice(p.price).toLocaleString()}</span></td>
+          <td><span class="text-xs text-gray-300">${p.stock_quantity != null ? esc(p.stock_quantity) : 'Unlimited'}</span></td>
+          <td>${badge(status === 'archived' ? 'inactive' : (status === 'active' ? 'active' : 'inactive'))}</td>
+          <td><span class="text-xs text-gray-500">${fmtDate(p.created_at)}</span></td>
+          <td>
+            <div class="flex gap-1">
+              <button onclick="editProduct('${p.property_id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+              <button onclick="quickEditProduct('${p.property_id}')" class="btn-press p-1.5 text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition" title="Quick Edit"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i></button>
+              <button onclick="${publishFn}" class="btn-press p-1.5 ${p.is_active ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'} rounded-lg transition" title="${publishLabel}"><i data-lucide="${p.is_active ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i></button>
+              <button onclick="archiveProduct('${p.property_id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Archive"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+  if (count) count.textContent = String(items.length);
+  if (window.lucide) lucide.createIcons();
+}
+
+window.setProductView = function(view) {
+  window._productView = view === 'table' ? 'table' : 'card';
+  const grid = document.getElementById('products-grid');
+  const table = document.getElementById('products-table-wrap');
+  const cardBtn = document.getElementById('view-card-btn');
+  const tableBtn = document.getElementById('view-table-btn');
+  const empty = document.getElementById('products-empty');
+  const items = window._productsData || [];
+  if (grid) grid.classList.toggle('hidden', view === 'table');
+  if (table) {
+    table.classList.toggle('hidden', view !== 'table');
+    if (view === 'table') renderProductsTable(items);
+  }
+  if (cardBtn) cardBtn.classList.toggle('active', view !== 'table');
+  if (tableBtn) tableBtn.classList.toggle('active', view === 'table');
+  if (empty) empty.classList.toggle('hidden', items.length > 0);
+};
+
 window.filterProducts = function() {
   const f = window._productFilters || {};
   f.search = (document.getElementById('prod-search')?.value || '').trim().toLowerCase();
@@ -1103,8 +1186,9 @@ window.filterProducts = function() {
     return true;
   });
 
-  const sorted = sortProductItems(filtered, f.sort);
+const sorted = sortProductItems(filtered, f.sort);
   renderProductsShowroomGrid(sorted);
+  if (window._productView === 'table') renderProductsTable(sorted);
 };
 
 window.resetProductFilters = function() {
@@ -1162,11 +1246,49 @@ function getSelectedIds() {
   return window._productSelection ? [...window._productSelection] : [];
 }
 
+// Returns true if the error is an RLS/permission denial (not a network/schema issue).
+function isRlsDenied(error) {
+  const msg = String(error?.message || error?.code || '').toLowerCase();
+  return msg.includes('row-level security') ||
+    msg.includes('permission denied') ||
+    msg.includes('permission denied for table') ||
+    msg.includes('new row violates row-level security') ||
+    msg.includes('not permitted') ||
+    msg.includes('rls policy') ||
+    msg.includes('duplicate key') ||
+    msg.includes('violates foreign key');
+}
+
+// Shared handler for write operations: surfaces permission errors loudly instead
+// of silently falling back to local storage.
+function handleWriteError(error, fallbackFn, actionLabel) {
+  if (error && isRlsDenied(error)) {
+    showToast(`⚠️ ${actionLabel} blocked: Your account is signed in but the database admin role is not active. Re-run the admin permission migration, or contact the owner.`, 'error');
+    return true; // handled - do NOT fall back to local storage
+  }
+  if (error) {
+    // Network/schema/other error: safest to fall back to local storage so the
+    // change is not lost while the DB is unavailable.
+    if (fallbackFn) fallbackFn();
+    showToast(`${actionLabel} saved locally (DB unavailable): ${error.message || 'unknown error'}`, 'info');
+    return true;
+  }
+  return false;
+}
+
 window.bulkToggleActive = async function(active) {
   const ids = getSelectedIds();
   if (!ids.length) return;
-  await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: active }).eq('property_id', id)));
-  showToast(`${ids.length} products ${active ? 'published' : 'unpublished'}`);
+  const results = await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: active }).eq('property_id', id)));
+  const denied = results.some(r => r.error && isRlsDenied(r.error));
+  if (denied) {
+    showToast(`⚠️ ${ids.length} products NOT ${active ? 'published' : 'unpublished'}: database admin role blocked the write. Re-run the admin permission migration.`, 'error');
+    window._productSelection = new Set();
+    renderProducts();
+    return;
+  }
+  const failed = results.filter(r => r.error).length;
+  showToast(`${ids.length - failed}/${ids.length} products ${active ? 'published' : 'unpublished'}${failed ? ` (${failed} failed: ${results.find(r=>r.error)?.error?.message || 'error'})` : ''}`, failed ? 'error' : 'success');
   window._productSelection = new Set();
   renderProducts();
 };
@@ -1186,8 +1308,16 @@ window.bulkArchive = async function() {
   const ids = getSelectedIds();
   if (!ids.length) return;
   if (!confirm(`Archive ${ids.length} products? They will be hidden but not deleted.`)) return;
-  await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: false, availability_status: 'Archived' }).eq('property_id', id)));
-  showToast(`${ids.length} products archived`);
+  const results = await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: false, availability_status: 'Archived' }).eq('property_id', id)));
+  const denied = results.some(r => r.error && isRlsDenied(r.error));
+  if (denied) {
+    showToast('⚠️ Archive blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+    window._productSelection = new Set();
+    renderProducts();
+    return;
+  }
+  const failed = results.filter(r => r.error).length;
+  showToast(`${ids.length - failed}/${ids.length} products archived${failed ? ` (${failed} failed)` : ''}`, failed ? 'error' : 'success');
   window._productSelection = new Set();
   renderProducts();
 };
@@ -1196,8 +1326,16 @@ window.bulkDeleteProducts = async function() {
   const ids = getSelectedIds();
   if (!ids.length) return;
   if (!confirm(`Delete ${ids.length} products permanently? This action cannot be undone.`)) return;
-  await Promise.all(ids.map(id => supabase.from('showroom_listings').delete().eq('property_id', id)));
-  showToast(`${ids.length} products deleted`);
+  const results = await Promise.all(ids.map(id => supabase.from('showroom_listings').delete().eq('property_id', id)));
+  const denied = results.some(r => r.error && isRlsDenied(r.error));
+  if (denied) {
+    showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+    window._productSelection = new Set();
+    renderProducts();
+    return;
+  }
+  const failed = results.filter(r => r.error).length;
+  showToast(`${ids.length - failed}/${ids.length} products deleted${failed ? ` (${failed} failed)` : ''}`, failed ? 'error' : 'success');
   window._productSelection = new Set();
   renderProducts();
 };
@@ -1277,6 +1415,12 @@ window.saveQuickEditProduct = async function(e, pid) {
   };
   const { error } = await supabase.from('showroom_listings').update(patch).eq('property_id', pid);
   if (error) {
+    if (isRlsDenied(error)) {
+      showToast('⚠️ Save blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+      closeModal();
+      renderProducts();
+      return;
+    }
     patchLocalShowroomListing(pid, patch);
     showToast('Quick edit saved locally', 'info');
   } else {
@@ -1304,7 +1448,10 @@ window.shareProduct = async function(pid) {
 window.deleteProduct = async function(pid) {
   if (!confirm('Delete this product permanently? This action cannot be undone.')) return;
   const { error } = await supabase.from('showroom_listings').delete().eq('property_id', pid);
-  if (error) return showToast('Delete failed: ' + error.message, 'error');
+  if (error) {
+    if (isRlsDenied(error)) return showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+    return showToast('Delete failed: ' + error.message, 'error');
+  }
   showToast('Product deleted');
   renderProducts();
 };
@@ -1852,6 +1999,8 @@ window.showAddProductStep2 = function(category, existingData = {}) {
 function imageThumbHtml(url, i) {
   return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}" title="${i === 0 ? 'Cover Image' : 'Image ' + (i + 1)}">
     <img src="${esc(url)}" onerror="this.src='/fallback.svg'">
+    <button class="rp" onclick="document.getElementById('rp-input-${i}').click()" type="button" title="Replace image">↻</button>
+    <input type="file" accept="image/*" class="rp-input" id="rp-input-${i}" onchange="replaceImage(${i}, this)">
     <button class="rm" onclick="removeImage(${i})" type="button">✕</button>
   </div>`;
 }
@@ -1917,6 +2066,24 @@ window.removeImage = function(index) {
   updateCoverBadge();
 };
 
+// Replace an existing image at a given index with a newly uploaded file.
+window.replaceImage = async function(index, input) {
+  const preview = document.getElementById('image-preview');
+  if (!preview || !input || !input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (!file.type.startsWith('image/')) { showToast('Please choose an image file.', 'error'); return; }
+  const url = await uploadImageFile(file);
+  if (!url) return;
+  const items = [...preview.querySelectorAll('.img-thumb')];
+  const thumb = items[index];
+  if (!thumb) return;
+  const img = thumb.querySelector('img');
+  if (img) img.src = url;
+  rebuildImageInputs();
+  updateCoverBadge();
+  showToast('Image replaced. Save changes to apply.', 'info');
+};
+
 function rebuildImageInputs() {
   const preview = document.getElementById('image-preview');
   const container = document.getElementById('image-url-inputs');
@@ -1928,10 +2095,14 @@ function rebuildImageInputs() {
     const inp = document.createElement('input');
     inp.type = 'hidden'; inp.name = 'images'; inp.id = `img-url-${i}`; inp.value = img.src;
     container.appendChild(inp);
-    thumb.dataset.index = i;
-    // Update remove button
+thumb.dataset.index = i;
+    // Update remove + replace buttons and their hidden file input
     const rm = thumb.querySelector('.rm');
     if (rm) rm.setAttribute('onclick', `removeImage(${i})`);
+    const rp = thumb.querySelector('.rp');
+    if (rp) rp.setAttribute('onclick', `document.getElementById('rp-input-${i}').click()`);
+    const rpInput = thumb.querySelector('.rp-input');
+    if (rpInput) { rpInput.id = `rp-input-${i}`; rpInput.onchange = () => replaceImage(i, rpInput); }
   });
 }
 
@@ -2158,17 +2329,25 @@ window.saveProduct = async function(e, category, existingId) {
         platform: data.platform || null, voltage: data.voltage || null,
       },
     };
-    let err;
+let err;
     if (existingId) {
       ({ error: err } = await supabase.from('showroom_listings').update(payload).eq('property_id', existingId));
-      if (err) upsertLocalShowroomListing({ ...payload, property_id: existingId });
     } else {
       const pid = genId();
       payload.property_id = pid;
       ({ error: err } = await supabase.from('showroom_listings').insert(payload));
-      if (err) upsertLocalShowroomListing(payload);
     }
-    if (err && !/showroom_listings/i.test(err.message || '')) throw err;
+    if (err) {
+      const handled = handleWriteError(
+        err,
+        () => upsertLocalShowroomListing({ ...payload, property_id: existingId || payload.property_id }),
+        existingId ? 'Product update' : 'Product publish'
+      );
+      if (handled) {
+        if (btn) { btn.disabled = false; btn.textContent = existingId ? 'One-Click Publish Changes' : 'One-Click Publish Product'; }
+        return;
+      }
+    }
     showToast(isDraft ? 'Draft saved!' : existingId ? 'Product updated!' : 'Product published!');
     try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
     closeModal();
@@ -2187,7 +2366,11 @@ window.editProduct = async function(pid) {
 };
 
 window.toggleProductActive = async function(pid, active) {
-  await supabase.from('showroom_listings').update({ is_active: active, availability_status: active ? 'In Stock' : 'Out of Stock' }).eq('property_id', pid);
+  const { error } = await supabase.from('showroom_listings').update({ is_active: active, availability_status: active ? 'In Stock' : 'Out of Stock' }).eq('property_id', pid);
+  if (error) {
+    if (isRlsDenied(error)) return showToast(`⚠️ ${active ? 'Publish' : 'Unpublish'} blocked: database admin role rejected the write. Re-run the admin permission migration.`, 'error');
+    return showToast(`${active ? 'Publish' : 'Unpublish'} failed: ${error.message}`, 'error');
+  }
   showToast(active ? 'Product published' : 'Product unpublished');
   renderProducts();
 };
@@ -2395,16 +2578,21 @@ window.saveProperty = async function(e, existingId) {
     ai_generated_fields: data.catalog_template_id ? ['title', 'description', 'features', 'highlights', 'seo_keywords', 'country', 'country_code', 'product_location'] : [],
     is_active: data.is_active === 'on',
   };
-  let err;
+let err;
   if (existingId) {
     ({ error: err } = await supabase.from('showroom_listings').update(payload).eq('property_id', existingId));
-    if (err) upsertLocalShowroomListing({ ...payload, property_id: existingId });
   } else {
     payload.property_id = genId();
     ({ error: err } = await supabase.from('showroom_listings').insert(payload));
-    if (err) upsertLocalShowroomListing(payload);
   }
-  if (err && !/showroom_listings/i.test(err.message || '')) { showToast(err.message, 'error'); return; }
+  if (err) {
+    const handled = handleWriteError(
+      err,
+      () => upsertLocalShowroomListing({ ...payload, property_id: existingId || payload.property_id }),
+      existingId ? 'Property update' : 'Property publish'
+    );
+    if (handled) return;
+  }
   showToast(existingId ? 'Property updated!' : 'Property published!');
   closeModal(); renderProperties();
 };
