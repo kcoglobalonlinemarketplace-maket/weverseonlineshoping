@@ -3497,34 +3497,329 @@ async function renderNotifications() {
 }
 
 // ══════════════════════════════════════════════════════════
-//  10. ADVERTISEMENTS
+//  10. ADVERTISEMENTS  (homepage showcase ad manager)
 // ══════════════════════════════════════════════════════════
+const AD_LABEL_OPTIONS = ['Featured', 'Sponsored', 'Featured Collection', 'Discover', 'Promotion'];
+const AD_SECTION_OPTIONS = [
+  { id: 'real-estate', name: 'Real Estate & Properties' },
+  { id: 'marketplace', name: 'Marketplace Showroom' },
+];
+let _adTargetCache = null;
+
+function adLabelPill(label) {
+  const colors = {
+    'Featured': 'bg-blue-500/10 text-blue-300 border-blue-500/30',
+    'Sponsored': 'bg-violet-500/10 text-violet-300 border-violet-500/30',
+    'Featured Collection': 'bg-amber-500/10 text-amber-300 border-amber-500/30',
+    'Discover': 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+    'Promotion': 'bg-orange-500/10 text-orange-300 border-orange-500/30',
+  };
+  const c = colors[label] || colors['Featured'];
+  return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${c}">${esc(label)}</span>`;
+}
+
+function adLinkLabel(p) {
+  if (!p || !p.link_type || p.link_type === 'none') return '<span class="text-[10px] text-gray-500">No link</span>';
+  if (p.link_type === 'product') return `<span class="text-[10px] text-blue-300"><i data-lucide="package" class="w-3 h-3 inline mr-1"></i>Product · ${esc(p.link_target || '')}</span>`;
+  if (p.link_type === 'category') return `<span class="text-[10px] text-emerald-300"><i data-lucide="tag" class="w-3 h-3 inline mr-1"></i>Category · ${esc(p.link_target || '')}</span>`;
+  return `<span class="text-[10px] text-amber-300"><i data-lucide="layout-grid" class="w-3 h-3 inline mr-1"></i>Section · ${esc(p.link_target || '')}</span>`;
+}
+
+function adMediaThumb(p) {
+  if (p.video_url) return `<video src="${esc(p.video_url)}" ${p.poster_url ? `poster="${esc(p.poster_url)}"` : ''} class="w-24 h-14 rounded-lg object-cover border border-blue-500/20 shrink-0" muted preload="metadata"></video>`;
+  if (p.image_url) return `<img src="${esc(p.image_url)}" class="w-24 h-14 rounded-lg object-cover border border-blue-500/20 shrink-0" onerror="this.remove()">`;
+  return `<div class="w-24 h-14 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0"><i data-lucide="megaphone" class="w-6 h-6 text-blue-400"></i></div>`;
+}
+
+async function loadAdTargetCache() {
+  if (_adTargetCache) return _adTargetCache;
+  const products = [];
+  const seenCat = new Set();
+  const cats = [];
+  const pushListing = (l) => {
+    if (!l || !l.property_id) return;
+    products.push({ id: l.property_id, title: l.title || l.property_id });
+    const cat = l.category || '';
+    if (cat && !seenCat.has(cat)) { seenCat.add(cat); cats.push(cat); }
+  };
+  try { SHOWROOM_LISTINGS.forEach(pushListing); } catch (e) {}
+  try {
+    const { data, error } = await supabase.from('showroom_listings').select('property_id,title,category').order('created_at', { ascending: false });
+    if (!error && data) data.forEach(pushListing);
+  } catch (e) {}
+  const chips = ['Women','Men','Kids','Home','Sports','Jewellery','Electronics','Cars','Motorcycles','Phones','Computers','Furniture','Beauty','Fashion','Real Estate','Bicycles','Trucks','Land','Kitchen','Food','Pets','Books','Toys','Services'];
+  chips.forEach(c => { if (!seenCat.has(c)) { seenCat.add(c); cats.push(c); } });
+  _adTargetCache = { products, categories: cats, sections: AD_SECTION_OPTIONS };
+  return _adTargetCache;
+}
+
+async function uploadAdMedia(file) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { showToast('Sign in to upload media', 'error'); return null; }
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const isVideo = /^(mp4|webm|mov|m4v)$/.test(ext) || file.type.startsWith('video/');
+    const path = `ads/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('advertisements').upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) { showToast('Upload failed: ' + upErr.message, 'error'); return null; }
+    const { data } = supabase.storage.from('advertisements').getPublicUrl(path);
+    return { url: data.publicUrl, isVideo };
+  } catch (e) { showToast('Upload failed', 'error'); return null; }
+}
+
+function setAdDraftMedia(url, isVideo) {
+  const preview = document.getElementById('ad-media-preview');
+  if (!preview) return;
+  const iv = document.getElementById('ad-hidden-video');
+  const ii = document.getElementById('ad-hidden-image');
+  if (iv) iv.value = isVideo ? url : '';
+  if (ii) ii.value = isVideo ? '' : url;
+  preview.innerHTML = isVideo
+    ? `<video src="${esc(url)}" class="w-full h-40 object-cover rounded-xl" controls muted playsinline></video>`
+    : `<img src="${esc(url)}" class="w-full h-40 object-cover rounded-xl">`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.onAdMediaPicked = async function(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const allowed = file.type.startsWith('image/') || file.type.startsWith('video/');
+  if (!allowed) { showToast('Choose an image or video file', 'error'); return; }
+  const res = await uploadAdMedia(file);
+  if (!res) { input.value = ''; return; }
+  setAdDraftMedia(res.url, res.isVideo);
+  const urlInput = document.getElementById('ad-media-url');
+  if (urlInput) urlInput.value = res.url;
+};
+
+window.onAdMediaUrl = function(input) {
+  const v = (input.value || '').trim();
+  if (!v) return;
+  const isVideo = /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(v);
+  setAdDraftMedia(v, isVideo);
+};
+
+function setupAdLinkFields(cache, type, selected) {
+  const wrap = document.getElementById('ad-link-target-wrap');
+  if (!wrap) return;
+  if (!type || type === 'none') { wrap.innerHTML = '<p class="text-[10px] text-gray-500">This ad is informational and will not be clickable.</p>'; return; }
+  let opts = '';
+  if (type === 'product') {
+    opts = '<option value="">Select a product…</option>' + cache.products.map(p => `<option value="${esc(p.id)}" ${String(selected) === String(p.id) ? 'selected' : ''}>${esc(p.id)} — ${esc((p.title || '').slice(0, 60))}</option>`).join('');
+  } else if (type === 'category') {
+    opts = '<option value="">Select a category…</option>' + cache.categories.map(c => `<option value="${esc(c)}" ${selected === c ? 'selected' : ''}>${esc(c)}</option>`).join('');
+  } else if (type === 'section') {
+    opts = '<option value="">Select a section…</option>' + cache.sections.map(s => `<option value="${esc(s.id)}" ${selected === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  }
+  wrap.innerHTML = `<label class="lbl">Target</label><select class="input-field" name="link_target">${opts}</select>`;
+}
+
+function adFormHtml(ad) {
+  return `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box wide">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white">${ad ? 'Edit Advertisement' : 'Add Advertisement'}</h3>
+          <button onclick="closeModal()" class="btn-press text-xs font-bold text-gray-400 hover:text-white transition">✕ Close</button>
+        </div>
+        <form id="ad-form" onsubmit="saveAd(event)" class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+          <input type="hidden" name="id" value="${ad ? ad.id : ''}">
+          <div class="form-grid form-grid-2">
+            <div><label class="lbl">Title *</label><input class="input-field" name="title" required value="${esc(ad && ad.title ? ad.title : '')}" placeholder="e.g. Summer Sale 2026"></div>
+            <div><label class="lbl">Ad Label</label>
+              <select class="input-field" name="ad_label">
+                ${AD_LABEL_OPTIONS.map(l => `<option value="${l}" ${ad && ad.ad_label === l ? 'selected' : ''}>${l}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div><label class="lbl">Message</label><textarea class="input-field" name="description" rows="2" placeholder="Short message shown on the ad…">${esc(ad && ad.description ? ad.description : '')}</textarea></div>
+
+          <div class="glass-soft border border-blue-500/15 rounded-xl p-4 space-y-3">
+            <label class="lbl">Image / Video</label>
+            <div id="ad-media-preview" class="w-full h-40 rounded-xl bg-black/40 flex items-center justify-center text-gray-600 text-xs border border-dashed border-gray-700"></div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <label class="btn-press cursor-pointer flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
+                <i data-lucide="upload" class="w-4 h-4"></i> Upload File
+                <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime" class="hidden" onchange="onAdMediaPicked(this)">
+              </label>
+              <input id="ad-media-url" class="input-field flex-1 min-w-[160px]" placeholder="…or paste media URL" oninput="onAdMediaUrl(this)">
+            </div>
+            <p class="text-[10px] text-gray-500">Videos play muted in the showcase. Images are cropped to fill (object-fit: cover).</p>
+            <input type="hidden" name="image_url" id="ad-hidden-image">
+            <input type="hidden" name="video_url" id="ad-hidden-video">
+          </div>
+
+          <div class="form-grid form-grid-2">
+            <div><label class="lbl">Start Date</label><input type="date" class="input-field" name="start_date" value="${ad && ad.start_date ? String(ad.start_date).slice(0, 10) : ''}"></div>
+            <div><label class="lbl">End Date</label><input type="date" class="input-field" name="end_date" value="${ad && ad.end_date ? String(ad.end_date).slice(0, 10) : ''}"></div>
+          </div>
+
+          <div class="glass-soft border border-blue-500/15 rounded-xl p-4 space-y-3">
+            <label class="lbl">Link Destination</label>
+            <select class="input-field" name="link_type" onchange="onAdLinkTypeChange()">
+              <option value="none" ${!ad || !ad.link_type || ad.link_type === 'none' ? 'selected' : ''}>No link</option>
+              <option value="product" ${ad && ad.link_type === 'product' ? 'selected' : ''}>Link to a product</option>
+              <option value="category" ${ad && ad.link_type === 'category' ? 'selected' : ''}>Link to a category</option>
+              <option value="section" ${ad && ad.link_type === 'section' ? 'selected' : ''}>Link to a showroom section</option>
+            </select>
+            <div id="ad-link-target-wrap"></div>
+          </div>
+
+          <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
+            <p class="text-xs font-bold text-white">Active</p>
+            <label class="toggle-switch"><input type="checkbox" name="is_active" ${!ad || ad.is_active ? 'checked' : ''}><span class="toggle-slider"></span></label>
+          </div>
+          <button type="submit" class="btn-press w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-sm transition">${ad ? 'Save Changes' : 'Create Advertisement'}</button>
+        </form>
+      </div>
+    </div>`;
+}
+
+window.onAdLinkTypeChange = function() {
+  const cache = window._adLinkCache || { products: [], categories: [], sections: [] };
+  const sel = document.querySelector('#ad-form select[name="link_type"]');
+  const type = sel ? sel.value : 'none';
+  setupAdLinkFields(cache, type, '');
+};
+
+window.showAddAdModal = async function() {
+  const cache = await loadAdTargetCache();
+  window._adLinkCache = cache;
+  openModal(adFormHtml(null));
+  setupAdLinkFields(cache, 'none', '');
+};
+
+window.showEditAdModal = async function(id) {
+  const cache = await loadAdTargetCache();
+  window._adLinkCache = cache;
+  const { data } = await supabase.from('promotions').select('*').eq('id', id).maybeSingle();
+  if (!data) { showToast('Ad not found', 'error'); return; }
+  openModal(adFormHtml(data));
+  if (data.image_url) setAdDraftMedia(data.image_url, false);
+  else if (data.video_url) setAdDraftMedia(data.video_url, true);
+  setupAdLinkFields(cache, data.link_type || 'none', data.link_target || '');
+};
+
+window.saveAd = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+  const id = data.id || '';
+  const payload = {
+    title: data.title,
+    description: data.description || '',
+    ad_label: AD_LABEL_OPTIONS.includes(data.ad_label) ? data.ad_label : 'Featured',
+    image_url: data.image_url || null,
+    video_url: data.video_url || null,
+    link_type: ['none', 'product', 'category', 'section'].includes(data.link_type) ? data.link_type : 'none',
+    link_target: data.link_target || null,
+    start_date: data.start_date ? new Date(data.start_date + 'T00:00:00').toISOString() : null,
+    end_date: data.end_date ? new Date(data.end_date + 'T23:59:59').toISOString() : null,
+    is_active: data.is_active === 'on',
+    promo_type: 'banner',
+  };
+  if (!payload.image_url && !payload.video_url) { showToast('Add an image or video for the ad', 'error'); return; }
+  const btn = e.target.querySelector('button[type="submit"]');
+  if (btn) btn.disabled = true;
+  try {
+    if (id) {
+      const { error } = await supabase.from('promotions').update(payload).eq('id', id);
+      if (error) throw error;
+      showToast('Ad updated!');
+    } else {
+      const { error } = await supabase.from('promotions').insert(payload);
+      if (error) throw error;
+      showToast('Ad created!');
+    }
+  } catch (err) {
+    showToast(err.message || 'Save failed', 'error');
+    if (btn) btn.disabled = false;
+    return;
+  }
+  closeModal();
+  renderAds();
+};
+
+window.togglePromo = async function(id, active) {
+  const { error } = await supabase.from('promotions').update({ is_active: active }).eq('id', id);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast(active ? 'Ad activated' : 'Ad deactivated');
+  renderAds();
+};
+
+window.moveAd = async function(id, dir) {
+  try {
+    const { data, error } = await supabase.from('promotions').select('id,sort_order').order('sort_order', { ascending: true }).order('created_at', { ascending: false });
+    if (error) throw error;
+    const arr = data || [];
+    const i = arr.findIndex(p => p.id === id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= arr.length) { showToast('Already at the edge', 'info'); return; }
+    const a = arr[i], b = arr[j];
+    await supabase.from('promotions').update({ sort_order: b.sort_order }).eq('id', a.id);
+    await supabase.from('promotions').update({ sort_order: a.sort_order }).eq('id', b.id);
+    showToast('Order updated');
+  } catch (err) { showToast(err.message || 'Reorder failed', 'error'); }
+  renderAds();
+};
+
+window.deletePromo = async function(id) {
+  if (!confirm('Delete this ad? This cannot be undone.')) return;
+  try {
+    const { data } = await supabase.from('promotions').select('image_url,video_url,poster_url').eq('id', id).maybeSingle();
+    if (data) {
+      const paths = [data.image_url, data.video_url, data.poster_url].filter(Boolean).map(u => {
+        const m = /\/object\/public\/advertisements\/(.+)$/.exec(u);
+        return m ? decodeURIComponent(m[1]) : null;
+      }).filter(Boolean);
+      if (paths.length) { try { await supabase.storage.from('advertisements').remove(paths); } catch (e) {} }
+    }
+    const { error } = await supabase.from('promotions').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Ad deleted');
+  } catch (err) { showToast(err.message || 'Delete failed', 'error'); }
+  renderAds();
+};
+
 async function renderAds() {
   const content = document.getElementById('content');
   try {
-    const { data: promos } = await supabase.from('promotions').select('*').order('created_at', { ascending: false });
+    const { data: promos } = await supabase.from('promotions').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false });
     const items = promos || [];
     content.innerHTML = `
       <div class="space-y-4 fade-in">
-        <div class="flex items-center gap-3">
-          <h2 class="text-xl font-black text-white flex-1">Advertisement Manager</h2>
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex-1 min-w-0">
+            <h2 class="text-xl font-black text-white">Advertisement Manager</h2>
+            <p class="text-xs text-gray-500 mt-0.5">Create professional showcase ads that appear on the homepage — with labels, media and product links.</p>
+          </div>
           <button onclick="showAddAdModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
-            <i data-lucide="plus" class="w-4 h-4"></i> Add Promotion
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Advertisement
           </button>
         </div>
         <div class="grid gap-3">
-          ${items.length === 0 ? emptyState('megaphone', 'No Promotions', 'Create banners and promotions to advertise products.', `<button onclick="showAddAdModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i data-lucide="plus" class="w-4 h-4"></i> Add Promotion</button>`) :
-            items.map(p => `
+          ${items.length === 0 ? emptyState('megaphone', 'No Ads', 'Create your first showcase ad — add a title, image or video, label, and optional product link.', `<button onclick="showAddAdModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i data-lucide="plus" class="w-4 h-4"></i> Add Advertisement</button>`) :
+            items.map((p, i) => `
               <div class="glass-soft border border-blue-500/15 rounded-xl p-4 flex items-center gap-4">
-                ${p.image_url ? `<img src="${esc(p.image_url)}" class="w-20 h-14 rounded-lg object-cover border border-blue-500/20 shrink-0" onerror="this.remove()">` : `<div class="w-20 h-14 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0"><i data-lucide="megaphone" class="w-6 h-6 text-blue-400"></i></div>`}
+                ${adMediaThumb(p)}
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-black text-white">${esc(p.title || p.name)}</p>
-                  <p class="text-xs text-gray-400 mt-0.5">${esc(p.description || '')}</p>
-                  <div class="flex items-center gap-2 mt-1.5">${badge(p.is_active ? 'active' : 'inactive')}<span class="text-[10px] text-gray-500">${fmtDate(p.start_date)} → ${fmtDate(p.end_date)}</span></div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <p class="text-sm font-black text-white truncate">${esc(p.title || p.name)}</p>
+                    ${adLabelPill(p.ad_label || 'Featured')}
+                  </div>
+                  <p class="text-xs text-gray-400 mt-0.5 line-clamp-1">${esc(p.description || '')}</p>
+                  <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${p.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}">${p.is_active ? 'Active' : 'Inactive'}</span>
+                    ${adLinkLabel(p)}
+                    <span class="text-[10px] text-gray-500">${fmtDate(p.start_date)}${p.start_date ? ' → ' : ''}${fmtDate(p.end_date)}</span>
+                  </div>
                 </div>
-                <div class="flex gap-1 shrink-0">
-                  <button onclick="togglePromo('${p.id}',${!p.is_active})" class="btn-press p-1.5 ${p.is_active ? 'text-amber-400' : 'text-emerald-400'} rounded-lg transition"><i data-lucide="${p.is_active ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
-                  <button onclick="deletePromo('${p.id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <div class="flex gap-1 shrink-0 flex-wrap justify-end">
+                  <button onclick="moveAd('${p.id}',-1)" class="btn-press p-1.5 text-gray-400 hover:text-white rounded-lg transition" title="Move up"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                  <button onclick="moveAd('${p.id}',1)" class="btn-press p-1.5 text-gray-400 hover:text-white rounded-lg transition" title="Move down"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                  <button onclick="togglePromo('${p.id}',${p.is_active ? 'false' : 'true'})" class="btn-press p-1.5 ${p.is_active ? 'text-amber-400' : 'text-emerald-400'} rounded-lg transition" title="${p.is_active ? 'Deactivate' : 'Activate'}"><i data-lucide="${p.is_active ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
+                  <button onclick="showEditAdModal('${p.id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition" title="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                  <button onclick="deletePromo('${p.id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
               </div>`).join('')}
         </div>
@@ -3532,57 +3827,7 @@ async function renderAds() {
     if (window.lucide) lucide.createIcons();
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
-
-window.showAddAdModal = function() {
-  openModal(`
-    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
-      <div class="modal-box">
-        <div class="flex items-center justify-between mb-5">
-          <h3 class="text-base font-black text-white">Add Promotion / Advertisement</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
-        </div>
-        <form id="ad-form" onsubmit="saveAd(event)" class="space-y-4">
-          <div><label class="lbl">Title *</label><input class="input-field" name="title" required placeholder="e.g. Summer Sale"></div>
-          <div><label class="lbl">Description</label><textarea class="input-field" name="description" rows="2" placeholder="Short description…"></textarea></div>
-          <div class="form-grid form-grid-2">
-            <div><label class="lbl">Start Date</label><input type="date" class="input-field" name="start_date"></div>
-            <div><label class="lbl">End Date</label><input type="date" class="input-field" name="end_date"></div>
-          </div>
-          <div><label class="lbl">Banner Image URL</label><input class="input-field" name="image_url" placeholder="https://…"></div>
-          <div><label class="lbl">Link URL</label><input class="input-field" name="link_url" placeholder="https://…"></div>
-          <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
-            <p class="text-xs font-bold text-white">Active</p>
-            <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
-          </div>
-          <button type="submit" class="btn-press w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-sm transition">Create Promotion</button>
-        </form>
-      </div>
-    </div>`);
-};
-
-window.saveAd = async function(e) {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const data = Object.fromEntries(fd.entries());
-  const payload = { title: data.title, description: data.description || '', start_date: data.start_date || null, end_date: data.end_date || null, image_url: data.image_url || null, link_url: data.link_url || null, is_active: data.is_active === 'on', promo_type: 'banner' };
-  const { error } = await supabase.from('promotions').insert(payload);
-  if (error) { showToast(error.message, 'error'); return; }
-  showToast('Promotion created!');
-  closeModal(); renderAds();
-};
-
-window.togglePromo = async function(id, active) {
-  await supabase.from('promotions').update({ is_active: active }).eq('id', id);
-  showToast(active ? 'Promotion activated' : 'Promotion deactivated');
-  renderAds();
-};
-
-window.deletePromo = async function(id) {
-  if (!confirm('Delete this promotion?')) return;
-  await supabase.from('promotions').delete().eq('id', id);
-  showToast('Promotion deleted');
-  renderAds();
-};
+window.renderAds = renderAds;
 
 // ══════════════════════════════════════════════════════════
 //  11. AI SETTINGS  — 20 FREE coding AI providers

@@ -389,10 +389,26 @@ const CAROUSEL_SLIDES = [
 let currentSlide = 0, carouselTimer = null, currentLang = "en", currentCountry = "US";
 let voiceRecognition = null, isListening = false;
 let liveAdSlides = [];
+let adminAdSlides = [];
 let activeCarouselSlides = CAROUSEL_SLIDES;
 let aiAdOverride = null;
 let aiAdOverlayEl = null;
 let aiAdEndTimer = null;
+
+// Continuous rotation: remember the showcase position so the carousel
+// never restarts from the first slide on reload.
+const SHOWCASE_POSITION_KEY = 'kco_showcase_position_v1';
+function saveShowcasePosition() {
+  try { localStorage.setItem(SHOWCASE_POSITION_KEY, String(currentSlide)); } catch (e) {}
+}
+function restoreShowcasePosition(total) {
+  if (!total) return 0;
+  try {
+    const saved = parseInt(localStorage.getItem(SHOWCASE_POSITION_KEY), 10);
+    if (!isNaN(saved) && saved >= 0) return saved % total;
+  } catch (e) {}
+  return 0;
+}
 
 function isAiAdOverrideActive() {
   if (!aiAdOverride || !aiAdOverride.videoUrl) return false;
@@ -501,14 +517,23 @@ function applyAiAdOverride(payload) {
   }
 }
 
-function mergeLiveAds(){
-  const seen=new Set();
-  const live=(window._liveAdSlides||liveAdSlides).filter(s=>{
-    const key=s.video||s.image||(s.images&&s.images[0])||s.listingId;
-    if(!key||seen.has(key))return false;
-    seen.add(key);return true;
+function dedupSlides(arr, seen) {
+  return arr.filter(s => {
+    const key = s.adId || s.video || s.image || (s.images && s.images[0]) || s.listingId;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
-  activeCarouselSlides=[...live,...CAROUSEL_SLIDES];
+}
+
+// Build the showcase: admin advertisements (by sort order) first, then
+// live marketplace listings, then the default brand collection as fallback.
+function mergeAdSlides(){
+  const seen = new Set();
+  const ads = (window._ads || adminAdSlides).filter(Boolean);
+  const live = (window._liveAdSlides || liveAdSlides).filter(Boolean);
+  const priority = dedupSlides([...ads, ...live], seen);
+  activeCarouselSlides = priority.length ? [...priority, ...dedupSlides(CAROUSEL_SLIDES, seen)] : CAROUSEL_SLIDES;
 }
 
 // ---- INIT: Populate Selectors ----
@@ -772,15 +797,60 @@ function handleCameraSearch(e){
   };r.readAsDataURL(f);e.target.value="";
 }
 
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+function slideLink(slide){
+  if(!slide)return null;
+  if(slide.linkType==='product'&&slide.linkTarget)return {type:'product',target:slide.linkTarget};
+  if(slide.linkType==='category'&&slide.linkTarget)return {type:'category',target:slide.linkTarget};
+  if(slide.linkType==='section'&&slide.linkTarget)return {type:'section',target:slide.linkTarget};
+  return null;
+}
+
+function slideCtaHtml(slide,idx){
+  const link=slideLink(slide);
+  if(!link)return '';
+  return '<button id="slide-cta-'+idx+'" onclick="openSlideLink('+idx+')" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 min-h-[44px] rounded-lg text-xs tracking-wider uppercase transition-all duration-300 shadow-lg shadow-orange-500/30 hover:scale-105 fade-in-up delay-3"></button>';
+}
+
+function slideCtaLabel(slide,copy){
+  const link=slideLink(slide);
+  if(!link)return '';
+  if(link.type==='product')return copy.shopNow||'Shop Now';
+  return copy.explore||'Explore';
+}
+
+window.openSlideLink=function(idx){
+  const slide=activeCarouselSlides[idx];
+  const link=slideLink(slide);
+  if(!link)return;
+  if(link.type==='product'){
+    window.location.href='details.html?id='+encodeURIComponent(link.target);
+    return;
+  }
+  if(link.type==='category'){
+    const catEl=Array.prototype.find.call(document.querySelectorAll('#category-list a'),function(a){return a.dataset.category===link.target;});
+    if(catEl){catEl.click();}
+    else if(window._filterShowroomByCategory){window._filterShowroomByCategory(link.target);}
+    showToast('Exploring: '+link.target);
+  } else {
+    if(window._clearShowroomFilter)window._clearShowroomFilter();
+    showToast('Opening Showroom');
+  }
+  const showroom=document.getElementById('showroom-directory');
+  if(showroom)showroom.scrollIntoView({behavior:'smooth',block:'start'});
+};
+
 // ---- HERO VIDEO CAROUSEL ----
 function renderCarousel(){
-  mergeLiveAds();
+  mergeAdSlides();
   const slides=activeCarouselSlides;
   const sc=document.getElementById("carousel-slides");
+  if(!sc)return;
   sc.innerHTML="";
   slides.forEach((slide,idx)=>{
     const el=document.createElement("div");
-    el.className="carousel-slide "+(idx===0?"active-slide":"hidden-slide");
+    el.className="carousel-slide hidden-slide";
     el.id="slide-"+idx;
     var mediaHtml;
     if(slide.images&&slide.images.length>0){
@@ -789,37 +859,48 @@ function renderCarousel(){
       mediaHtml='<div class="ad-slideshow" data-interval="4000" style="position:absolute;inset:0;width:100%;height:100%;overflow:hidden">'+imgHtml+'</div>';
     }else if(slide.image){
       var kbClass2="kb-"+(((idx%5))+1);
-      mediaHtml='<div class="kb-img '+kbClass2+'" style="background-image:url(\''+slide.image+'\')"></div>';
+      mediaHtml='<div class="kb-img '+kbClass2+'" style="background-image:url(\''+slide.image+'\');background-size:cover;background-position:center"></div>';
     }else{
-      mediaHtml='<video class="hero-video" muted loop playsinline webkit-playsinline preload="'+(idx<5?"auto":"metadata")+'" data-src="'+slide.video+'" style="width:100%;height:100%">'+
+      mediaHtml='<video class="hero-video" muted loop playsinline webkit-playsinline preload="'+(idx<5?"auto":"metadata")+'" data-src="'+slide.video+'" style="width:100%;height:100%;object-fit:cover;object-position:center"'+(slide.poster?' poster="'+slide.poster+'"':'')+'>'+
       (idx<5?'<source src="'+slide.video+'" type="video/mp4">':"")+
       '</video>';
     }
     el.innerHTML=mediaHtml+
       '<div class="absolute inset-0 z-10 flex flex-col justify-end items-center text-center p-6 sm:p-10 pb-16">'+
-      '<span class="inline-block bg-orange-500 text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2 fade-in-up delay-1">'+slide.badge+'</span>'+
-      '<h2 id="slide-title-'+idx+'" class="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-3 drop-shadow-2xl fade-in-up delay-2"></h2>'+
-      '<button onclick="showToast(\'Opening '+slide.badge+'...\')" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-lg text-xs tracking-wider uppercase transition-all duration-300 shadow-lg shadow-orange-500/30 hover:scale-105 fade-in-up delay-3" id="slide-cta-'+idx+'"></button>'+
+      '<span class="inline-block bg-orange-500 text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2 fade-in-up delay-1">'+escHtml(slide.badge||'Featured')+'</span>'+
+      '<h2 id="slide-title-'+idx+'" class="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-2 drop-shadow-2xl fade-in-up delay-2"></h2>'+
+      '<p id="slide-desc-'+idx+'" class="max-w-xl text-white/85 text-xs sm:text-sm mb-4 leading-relaxed fade-in-up delay-2"></p>'+
+      slideCtaHtml(slide,idx)+
       '</div>';
     sc.appendChild(el);
   });
-  updateCarouselLanguage();startCarouselTimer();playActiveVideo();retriggerLiveBadge();
+  currentSlide=restoreShowcasePosition(activeCarouselSlides.length);
+  goToSlide(currentSlide);
+  updateCarouselLanguage();
 }
 
 function updateCarouselLanguage(){
   const copy=AD_COPY[currentLang]||AD_COPY.en;
   activeCarouselSlides.forEach((slide,idx)=>{
     const t=document.getElementById("slide-title-"+idx);
+    const d=document.getElementById("slide-desc-"+idx);
     const c=document.getElementById("slide-cta-"+idx);
     if(t)t.textContent=slide.titles[currentLang]||slide.titles.en;
-    if(c)c.textContent=copy.shopNow;
+    if(d)d.textContent=(slide.descs&&(slide.descs[currentLang]||slide.descs.en))||'';
+    if(c)c.textContent=slideCtaLabel(slide,copy);
   });
   updateBadgeLanguage();
 }
 
 window.addEventListener('live-ads-updated', (e) => {
   liveAdSlides = e.detail || [];
-  mergeLiveAds();
+  mergeAdSlides();
+  renderCarousel();
+});
+
+window.addEventListener('ads-updated', (e) => {
+  adminAdSlides = e.detail || [];
+  mergeAdSlides();
   renderCarousel();
 });
 
@@ -829,8 +910,12 @@ window.addEventListener('ai-ad-override-updated', (e) => {
 
 function initLiveAds(){
   if(window._loadLiveAds){
-    window._loadLiveAds().then(slides => { liveAdSlides=slides||[]; mergeLiveAds(); renderCarousel(); });
+    window._loadLiveAds().then(slides => { liveAdSlides=slides||[]; mergeAdSlides(); renderCarousel(); });
     window._subscribeLiveAds && window._subscribeLiveAds();
+  }
+  if(window._loadAds){
+    window._loadAds().then(slides => { adminAdSlides=slides||[]; mergeAdSlides(); renderCarousel(); });
+    window._subscribeAds && window._subscribeAds();
   }
 }
 
@@ -847,11 +932,14 @@ function goToSlide(idx){
   slides.forEach(s=>{s.classList.remove("active-slide");s.classList.add("hidden-slide")});
   const sl=document.getElementById("slide-"+idx);
   if(sl){sl.classList.remove("hidden-slide");sl.classList.add("active-slide")}
-  currentSlide=idx;resetCarouselTimer();playActiveVideo();retriggerLiveBadge();
+  currentSlide=idx;resetCarouselTimer();playActiveVideo();updateShowcaseBadge();saveShowcasePosition();
 }
-function retriggerLiveBadge(){
+function updateShowcaseBadge(){
   const b=document.getElementById('live-ad-badge');
+  const t=document.getElementById('live-ad-badge-text');
   if(!b)return;
+  const slide=activeCarouselSlides[currentSlide]||activeCarouselSlides[0]||{};
+  if(t)t.textContent=String(slide.badge||'Featured').toUpperCase();
   b.classList.remove('live-badge-in');
   void b.offsetWidth;
   b.classList.add('live-badge-in');

@@ -41,6 +41,8 @@ function buildSlide(row) {
     badge: row.category || typeLabel,
     isLive: true,
     listingId: row.id || row.property_id,
+    linkType: 'product',
+    linkTarget: row.property_id || row.id || null,
     titles: { en: BRAND + ' \u2013 ' + title + (priceText ? '  \u00b7  ' + priceText : '') },
     descs: { en: row.description || '' },
     priceText,
