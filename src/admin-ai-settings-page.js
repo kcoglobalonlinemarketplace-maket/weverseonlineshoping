@@ -56,6 +56,16 @@ const PROVIDERS = [
 },
 ];
 
+const LOCAL_AI_FIELDS = [
+  { key: 'ollama_url', label: 'Ollama Server URL', placeholder: 'http://127.0.0.1:11434', default: 'http://127.0.0.1:11434' },
+  { key: 'ollama_model', label: 'Chat Model', placeholder: 'llama3.2', default: '' },
+  { key: 'ollama_image_model', label: 'Image Model', placeholder: 'llava', default: 'llava' },
+  { key: 'comfyui_url', label: 'ComfyUI Server URL', placeholder: 'http://127.0.0.1:8188', default: 'http://127.0.0.1:8188' },
+  { key: 'comfyui_workflow', label: 'Workflow JSON', placeholder: 'Paste your workflow JSON here (optional)', default: '' },
+  { key: 'comfyui_input_node', label: 'Input Node ID', placeholder: 'image', default: 'image' },
+  { key: 'comfyui_output_node', label: 'Output Node ID', placeholder: 'image', default: 'image' },
+];
+
 const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
 const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
 const AI_FUNCTION_URL = LOCAL_DEV_HOSTS.has(window.location.hostname)
@@ -240,6 +250,38 @@ function render() {
         `;
       }).join('')}
 
+      <!-- Local AI: Ollama + ComfyUI -->
+      <div class="glass border border-violet-500/30 rounded-2xl p-5 slide-up">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+            <div class="w-8 h-8 bg-violet-500/10 rounded-lg flex items-center justify-center">
+              <i data-lucide="cpu" class="w-4 h-4 text-violet-400"></i>
+            </div>
+            Local AI — Ollama + ComfyUI
+          </h3>
+          <div class="flex items-center gap-2">
+            <button onclick="testLocalAI()" id="local-test-btn" class="btn-press px-4 py-1.5 bg-violet-950/60 border border-violet-500/30 text-violet-400 font-bold rounded-lg text-xs uppercase tracking-wide transition hover:bg-violet-500/10 disabled:opacity-40 disabled:cursor-not-allowed">
+              <i data-lucide="wifi" class="w-3 h-3 inline mr-1"></i> Test Local
+            </button>
+            <button onclick="toggleLocalAI()" id="local-ai-toggle" class="relative inline-flex h-8 w-14 items-center rounded-full transition ${s.local_ai_enabled !== false ? 'bg-emerald-500' : 'bg-gray-600'}">
+              <span class="inline-block h-6 w-6 transform rounded-full bg-white transition ${s.local_ai_enabled !== false ? 'translate-x-7' : 'translate-x-1'}"></span>
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mb-4">Run the AI fully on your own machine. <strong>Ollama</strong> provides local chat + image models, <strong>ComfyUI</strong> provides local image generation. Requests go straight from the browser to your machine — nothing is stored or sent to the cloud.</p>
+        ${LOCAL_AI_FIELDS.map((f) => {
+          const isWorkflow = f.key === 'comfyui_workflow';
+          const val = s[f.key] || f.default || '';
+          return `
+            <div class="mb-3">
+              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">${f.label}</label>
+              ${isWorkflow
+                ? `<textarea id="${f.key}" rows="5" placeholder="${f.placeholder}" class="input-field w-full bg-[#0a1124]/80 border border-violet-500/20 rounded-xl px-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-violet-500">${val}</textarea>`
+                : `<input type="text" id="${f.key}" placeholder="${f.placeholder}" value="${val}" class="input-field w-full bg-[#0a1124]/80 border border-violet-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500">`}
+            </div>`;
+        }).join('')}
+      </div>
+
       <!-- Per-mode model overrides -->
       <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
         <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
@@ -401,6 +443,53 @@ window.testConnection = async () => {
   }
 };
 
+window.toggleLocalAI = async () => {
+  const newVal = state.settings.local_ai_enabled !== false ? false : true;
+  state.settings.local_ai_enabled = newVal;
+  try {
+    const { error } = await supabase.from('ai_settings').update({ local_ai_enabled: newVal }).eq('id', state.settings.id);
+    if (error) throw error;
+    showToast(newVal ? 'Local AI enabled.' : 'Local AI disabled.');
+    render();
+  } catch (err) {
+    state.settings.local_ai_enabled = !newVal;
+    showToast('Failed to toggle: ' + err.message);
+    render();
+  }
+};
+
+window.testLocalAI = async () => {
+  const btn = document.getElementById('local-test-btn');
+  if (!btn) return;
+  const ollamaUrl = (document.getElementById('ollama_url')?.value || 'http://127.0.0.1:11434').replace(/\/$/, '');
+  const comfyUrl = (document.getElementById('comfyui_url')?.value || 'http://127.0.0.1:8188').replace(/\/$/, '');
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Testing...';
+  if (window.lucide) lucide.createIcons();
+  try {
+    const ollamaRes = await fetch(`${ollamaUrl}/api/tags`, { signal: AbortSignal.timeout(5000) });
+    const ollamaModels = await ollamaRes.json();
+    const comfyRes = await fetch(`${comfyUrl}/system_stats`, { signal: AbortSignal.timeout(5000) });
+    const ollamaOk = ollamaRes.ok && Array.isArray(ollamaModels?.models);
+    const comfyOk = comfyRes.ok;
+    if (ollamaOk && comfyOk) {
+      showToast(`Local AI OK — Ollama (${ollamaModels.models.length} models) + ComfyUI reachable`, 'success');
+    } else if (ollamaOk) {
+      showToast(`Ollama OK (${ollamaModels.models.length} models), but ComfyUI unreachable`);
+    } else if (comfyOk) {
+      showToast(`ComfyUI reachable, but Ollama unreachable at ${ollamaUrl}`);
+    } else {
+      showToast('Neither Ollama nor ComfyUI is reachable. Is the app running over HTTPS?');
+    }
+  } catch (err) {
+    showToast('Local AI unreachable: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="wifi" class="w-3 h-3 inline mr-1"></i> Test Local';
+    if (window.lucide) lucide.createIcons();
+  }
+};
+
 window.saveSettings = async () => {
   if (state.saving) return;
   state.saving = true;
@@ -427,6 +516,12 @@ window.saveSettings = async () => {
   if (cmo) updates.customer_model_override = cmo.value.trim() || null;
   if (amo) updates.admin_model_override = amo.value.trim() || null;
   if (dmo) updates.developer_model_override = dmo.value.trim() || null;
+  // Local AI
+  for (const f of LOCAL_AI_FIELDS) {
+    const el = document.getElementById(f.key);
+    if (el) updates[f.key] = el.value.trim() || (f.key === 'comfyui_workflow' ? null : f.default);
+  }
+  updates.local_ai_enabled = state.settings.local_ai_enabled !== false;
   // Rate limit
   updates.rate_limit_daily = state.settings.rate_limit_daily || 100;
 // Mode toggles

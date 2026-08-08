@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+import { SUPABASE_URL, supabase } from './supabase-client.js';
 import { COUNTRIES } from './country-data.js';
 import { ALL_CURRENCIES } from './localization.js';
 import { GLOBAL_PRICE_MAX, GLOBAL_PRICE_MIN, buildCatalogDraft, getDefaultCurrencyForCountry, getTemplatesForCategory } from './global-product-catalog.js';
@@ -15,6 +15,13 @@ const ADMIN_EMAIL = 'weverseonlineshop@gmail.com';
 const AI_AD_LOCAL_FALLBACK_KEY = 'kco_ai_ad_override_fallback_v1';
 const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
 const DEFAULT_BRAND_SLOGAN = 'SHOP GLOBALLY, DELIVERED WORLDWIDE';
+
+// Supabase edge function that proxies AI providers server-side so API keys
+// never leave the server or appear in browser network calls.
+const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
+const AI_FN_URL = import.meta.env.DEV
+  ? '/_supabase/functions/v1/ai-admin-assistant'
+  : `${SUPABASE_BASE_URL}/functions/v1/ai-admin-assistant`;
 
 // ── Navigation config ──────────────────────────────────────
 const NAV = [
@@ -2163,7 +2170,7 @@ window.runProductImageAnalysis = async function(auto = false) {
   try {
     const result = await aiClient.analyzeImages(images, { category, existingTitle: form.querySelector('[name="title"]')?.value || '' });
     if (!result) {
-      setProductAiStatus('AI analysis unavailable — add a Google Gemini API key in AI Settings.', 'warn');
+      setProductAiStatus('AI analysis unavailable — add a Gemini, Groq, or OpenRouter API key in AI Settings (or install Ollama locally).', 'warn');
       return;
     }
     applyAiAnalysisToForm(result, category);
@@ -3993,50 +4000,75 @@ const aiClient = {
         continue;
       }
 
-      const req = this._buildRequest(provider, cfg, messages, maxTokens);
-      if (!req) continue;
+      // Ollama is local (no API key) so it is called directly from the browser.
+      if (provider.id === 'ollama') {
+        const req = this._buildRequest(provider, cfg, messages, maxTokens);
+        if (!req) continue;
+        try {
+          if (onProviderSwitch) onProviderSwitch(provider.name);
+          const res = await fetch(req.url, {
+            method: req.method,
+            headers: req.headers,
+            body: JSON.stringify(req.body),
+            signal: AbortSignal.timeout(60000),
+          });
+          if (res.status === 429 || res.status === 503) {
+            this._setCooldown(provider.id);
+            console.warn(`[AI] ${provider.name} rate limited (${res.status}), switching to next provider…`);
+            lastError = new Error(`${provider.name} rate limited`);
+            continue;
+          }
+          if (!res.ok) {
+            const errBody = await res.text().catch(() => '');
+            lastError = new Error(`${provider.name} error ${res.status}: ${errBody.slice(0, 100)}`);
+            console.warn(`[AI] ${provider.name} failed:`, lastError.message);
+            continue;
+          }
+          const data = await res.json();
+          const text = req.parse(data);
+          if (!text) { lastError = new Error(`${provider.name} returned empty response`); continue; }
+          this._clearCooldown(provider.id);
+          console.log(`[AI] ✓ Response from ${provider.name}`);
+          return { text, provider: provider.name, model: cfg[provider.mf] || provider.dm };
+        } catch (err) {
+          if (err.name === 'TimeoutError') { this._setCooldown(provider.id); lastError = new Error(`${provider.name} timed out`); }
+          else lastError = err;
+          console.warn(`[AI] ${provider.name} exception:`, err.message);
+        }
+        continue;
+      }
 
+      // Cloud providers go through the Supabase edge function so their API keys
+      // never appear in the browser's network requests.
       try {
         if (onProviderSwitch) onProviderSwitch(provider.name);
-
-        const res = await fetch(req.url, {
-          method: req.method,
-          headers: req.headers,
-          body: JSON.stringify(req.body),
-          signal: AbortSignal.timeout(30000),
-        });
-
-        if (res.status === 429 || res.status === 503) {
-          // Rate limited — put this provider in cooldown and try next
+        const last = messages[messages.length - 1];
+        const body = {
+          action: 'chat',
+          message: String(last?.content || '').trim(),
+          history: messages.slice(0, -1).map(m => ({ role: m.role, content: String(m.content || '') })),
+          provider_override: provider.id,
+          max_tokens: maxTokens,
+        };
+        const res = await this._callEdge(body);
+        if (res && res.response) {
+          this._clearCooldown(provider.id);
+          console.log(`[AI] ✓ Response from ${provider.name} (via edge function)`);
+          return { text: res.response, provider: provider.name, model: res.model || cfg[provider.mf] || provider.dm };
+        }
+        const msg = String(res?.error || 'empty response');
+        const low = msg.toLowerCase();
+        if (low.includes('429') || low.includes('rate limit') || low.includes('quota')) {
           this._setCooldown(provider.id);
-          console.warn(`[AI] ${provider.name} rate limited (${res.status}), switching to next provider…`);
+          console.warn(`[AI] ${provider.name} rate limited (${msg.slice(0, 80)}), switching to next provider…`);
           lastError = new Error(`${provider.name} rate limited`);
-          continue;
-        }
-
-        if (!res.ok) {
-          const errBody = await res.text().catch(() => '');
-          lastError = new Error(`${provider.name} error ${res.status}: ${errBody.slice(0, 100)}`);
-          console.warn(`[AI] ${provider.name} failed:`, lastError.message);
-          continue;
-        }
-
-        const data = await res.json();
-        const text = req.parse(data);
-        if (!text) { lastError = new Error(`${provider.name} returned empty response`); continue; }
-
-        // Success — clear any cooldown for this provider
-        this._clearCooldown(provider.id);
-        console.log(`[AI] ✓ Response from ${provider.name}`);
-        return { text, provider: provider.name, model: cfg[provider.mf] || provider.dm };
-
-      } catch (err) {
-        if (err.name === 'TimeoutError') {
-          this._setCooldown(provider.id);
-          lastError = new Error(`${provider.name} timed out`);
         } else {
-          lastError = err;
+          lastError = new Error(`${provider.name} error: ${msg.slice(0, 200)}`);
+          console.warn(`[AI] ${provider.name} failed:`, lastError.message);
         }
+      } catch (err) {
+        if (err.name === 'TimeoutError') { this._setCooldown(provider.id); lastError = new Error(`${provider.name} timed out`); }
+        else lastError = err;
         console.warn(`[AI] ${provider.name} exception:`, err.message);
       }
     }
@@ -4064,16 +4096,12 @@ const aiClient = {
     }));
   },
 
-  // ── VISION: analyze uploaded product images (Gemini) ────────────────
+  // ── VISION: analyze uploaded product images (server-side cloud providers) ──
   // Returns a parsed JSON object { title, description, category, subcategory,
   // brand, model, color, condition, features[], highlights[], seo_keywords[],
-  // specifications{} } or null when vision is unavailable.
+  // specifications{} } or null when vision is unavailable. API keys stay
+  // server-side — the browser only sends image data and a prompt.
   async analyzeImages(imageUrls, context = {}) {
-    const cfg = await this.getConfig();
-    const providers = await this.getOrderedProviders();
-    const gemini = providers.find(p => p.id === 'gemini');
-    const fallbackProvider = providers[0];
-
     const prompt = `You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded product photo(s) and identify exactly what the product is.
 
 Return a single valid JSON object (no markdown, no extra text) with these keys:
@@ -4089,108 +4117,204 @@ Return a single valid JSON object (no markdown, no extra text) with these keys:
 - specifications (object with the relevant spec keys only, e.g. engine, transmission, fuel_type, horsepower, mileage, drive_type, body_type, model_year for vehicles; storage, ram, processor, display for electronics)
 - detected_name (string): a short plain-language label of the product, e.g. "white sneakers".
 
-Respond with valid JSON only.`;
+Rules:
+- Only include keys you can actually observe or reasonably infer from the photo(s). NEVER invent exact specs (price, storage size, RAM, horsepower, year, serial numbers) that are not visible or printed on the product.
+- Respond with valid JSON only.`;
 
-    if (gemini) {
-      return this._geminiVision(gemini, cfg, imageUrls, prompt);
+    const images = [];
+    for (const url of (imageUrls || []).slice(0, 4)) {
+      const dataUrl = await this._fetchImageAsDataUrl(url);
+      if (dataUrl) images.push(dataUrl);
     }
+    if (!images.length) throw new Error('Could not read the uploaded images.');
 
-    // No Gemini key → best-effort text-only analysis using the category context
-    if (fallbackProvider) {
-      const extra = `\n\n(No image access is configured. The product is currently categorized as "${context.category || 'Unknown'}"${context.existingTitle ? ` and titled "${context.existingTitle}"` : ''}. Base your content on that plus general knowledge of typical products in this category.)`;
+    // 1) Server-side vision: cloud providers with automatic 429/rate-limit fallback
+    try {
+      const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: 4096 });
+      if (res && res.success && res.text) {
+        const parsed = extractJsonFromAiText(res.text);
+        if (parsed) return { ...parsed, _aiProvider: res.provider, _aiModel: res.model };
+        throw new Error('The AI returned no valid analysis for these images.');
+      }
+      throw new Error((res && res.error) || 'Vision service unavailable.');
+    } catch (err) {
+      // 2) Local Ollama vision (browser → localhost; no API key, fully offline)
+      try {
+        const local = await this._tryLocalOllamaVision(prompt, images);
+        if (local) return local;
+      } catch { /* ignore — try text-only */ }
+      // 3) Text-only fallback using the category context (never invents image facts)
+      const extra = `\n\n(No image analysis is available right now. The product is currently categorized as "${context.category || 'Unknown'}"${context.existingTitle ? ` and titled "${context.existingTitle}"` : ''}. Base your content on that plus general knowledge of typical products in this category. Do not invent specific specs or prices you cannot know.)`;
       const res = await this.chat([{ role: 'user', content: prompt + extra }], { maxTokens: 4000 });
       return extractJsonFromAiText(res.text);
+    }
+  },
+
+  // POST to the Supabase edge function so provider API keys never leave the server.
+  async _callEdge(body) {
+    let token = '';
+    try { token = (await supabase.auth.getSession())?.data?.session?.access_token || ''; } catch {}
+    const res = await fetch(AI_FN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(120000),
+    });
+    return await res.json().catch(() => ({}));
+  },
+
+  // Fetch an image URL and return a compressed data URL (keeps edge payloads small).
+  async _fetchImageAsDataUrl(url) {
+    try {
+      const blob = await fetch(url).then(r => r.blob());
+      if (!blob || !blob.size) return null;
+      if (blob.size < 1_800_000) return `data:${blob.type || 'image/jpeg'};base64,${await blobToBase64(blob)}`;
+      return await this._downscaleImage(blob, 1200);
+    } catch { return null; }
+  },
+
+  async _downscaleImage(blob, maxDim) {
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      const img = new Image();
+      await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = objectUrl; });
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      return canvas.toDataURL('image/jpeg', 0.82);
+    } finally { URL.revokeObjectURL(objectUrl); }
+  },
+
+  // Local Ollama vision via the browser → localhost (no API key, fully offline).
+  async _tryLocalOllamaVision(prompt, images) {
+    const cfg = await this.getConfig();
+    const baseUrl = String(cfg.ollama_url || 'http://localhost:11434').replace(/\/$/, '');
+    const models = [cfg.ollama_model, 'llava', 'llama3.2-vision', 'moondream'].filter(Boolean);
+    for (const model of models) {
+      try {
+        const res = await fetch(`${baseUrl}/api/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model,
+            prompt,
+            images: images.map(d => String(d).split(',')[1] || d),
+            stream: false,
+            options: { temperature: 0.3, num_predict: 4096 },
+          }),
+          signal: AbortSignal.timeout(120000),
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const text = String(data?.response || '').trim();
+        if (!text) continue;
+        const parsed = extractJsonFromAiText(text);
+        return parsed
+          ? { ...parsed, _aiProvider: 'Ollama (Local)', _aiModel: model }
+          : { description: text, _aiProvider: 'Ollama (Local)', _aiModel: model };
+      } catch { /* try next local model */ }
     }
     return null;
   },
 
-  async _geminiVision(provider, cfg, imageUrls, prompt) {
-    const key = cfg[provider.kf];
-    const model = cfg[provider.mf] || 'gemini-2.5-flash';
-    const parts = [{ text: prompt }];
-    let added = 0;
-    for (const url of (imageUrls || []).slice(0, 4)) {
+  // ── IMAGE GENERATION: expand a product into realistic angle photos ──
+  // Cloud generation runs server-side (Gemini image models) so the API key
+  // never touches the browser. Falls back to local ComfyUI, then Ollama.
+  // Returns an array of data-URLs.
+  async generateImages(prompt, referenceUrl, count = 1) {
+    let refData = null;
+    if (referenceUrl) {
+      try { refData = await this._fetchImageAsDataUrl(referenceUrl); } catch { /* reference optional */ }
+    }
+    try {
+      const res = await this._callEdge({ action: 'generate_images', prompt, reference_url: refData, count: count || 1 });
+      if (res && res.success && Array.isArray(res.images) && res.images.length) return res.images;
+      throw new Error((res && res.error) || 'Image generation service unavailable.');
+    } catch (err) {
       try {
-        const blob = await fetch(url).then(r => r.blob());
-        if (!blob || !blob.size) continue;
-        const b64 = await blobToBase64(blob);
-        if (b64) { parts.push({ inlineData: { mimeType: blob.type || 'image/jpeg', data: b64 } }); added += 1; }
-      } catch { /* skip unreadable image */ }
+        const comfy = await this._tryLocalComfyUI(prompt);
+        if (comfy && comfy.length) return comfy;
+      } catch { /* ignore */ }
+      try {
+        const local = await this._tryLocalOllamaImage(prompt);
+        if (local && local.length) return local;
+      } catch { /* ignore */ }
+      throw new Error(`AI image generation failed: ${err.message || err}. Add a Google Gemini API key in AI Settings, or configure local ComfyUI/Ollama.`);
     }
-    if (!added) throw new Error('Could not read the uploaded images.');
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } }),
-      signal: AbortSignal.timeout(60000),
-    });
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new Error(`AI vision failed (${res.status}): ${body.slice(0, 120)}`);
-    }
-    const data = await res.json();
-    const text = (data?.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
-    if (!text) throw new Error('The AI returned no analysis.');
-    return extractJsonFromAiText(text);
   },
 
-  // ── IMAGE GENERATION: expand a product into realistic angle photos ──
-  // Uses a Gemini image model with the reference photo to produce new
-  // photorealistic images of the SAME product. Returns an array of data-URLs.
-  async generateImages(prompt, referenceUrl, count = 1) {
+  // Local image generation via ComfyUI (browser → localhost).
+  // Uses the saved workflow JSON; the prompt is injected into the input node.
+  async _tryLocalComfyUI(prompt) {
     const cfg = await this.getConfig();
-    const providers = await this.getOrderedProviders();
-    const gemini = providers.find(p => p.id === 'gemini');
-    if (!gemini) throw new Error('AI image generation needs a Google Gemini API key (AI Settings).');
-    const key = cfg[gemini.kf];
-    const models = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation', 'gemini-2.5-flash-preview-image'];
-    let lastErr = null;
+    const workflowRaw = String(cfg.comfyui_workflow || '').trim();
+    if (!workflowRaw) return null;
+    let workflow;
+    try { workflow = JSON.parse(workflowRaw); } catch { return null; }
+    const baseUrl = String(cfg.comfyui_url || 'http://127.0.0.1:8188').replace(/\/$/, '');
+    const inputNode = String(cfg.comfyui_input_node || 'image');
+    const outputNode = String(cfg.comfyui_output_node || 'image');
+    const input = workflow[inputNode] || Object.values(workflow)[0];
+    if (!input) return null;
+    input.inputs = { ...(input.inputs || {}), text: prompt };
+    const clientId = `web-${Date.now()}`;
+    const res = await fetch(`${baseUrl}/prompt`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: workflow, client_id: clientId }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) return null;
+    const { prompt_id } = await res.json();
+    if (!prompt_id) return null;
+    // Poll /history until the output node emits images.
+    const deadline = Date.now() + 180000;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 1000));
+      try {
+        const hres = await fetch(`${baseUrl}/history/${prompt_id}`, { signal: AbortSignal.timeout(10000) });
+        if (!hres.ok) continue;
+        const history = await hres.json();
+        const entry = history[prompt_id];
+        if (!entry) continue;
+        const outputs = Object.values(entry.outputs || {});
+        const images = outputs.flatMap(o => Array.isArray(o.images) ? o.images : []);
+        if (images.length) {
+          return Promise.all(images.slice(0, 4).map(async (img) => {
+            const ires = await fetch(`${baseUrl}/view?filename=${encodeURIComponent(img.filename)}&subfolder=${encodeURIComponent(img.subfolder || '')}&type=${encodeURIComponent(img.type || 'output')}`, { signal: AbortSignal.timeout(30000) });
+            if (!ires.ok) return null;
+            const blob = await ires.blob();
+            return await blobToBase64(blob).then(b64 => `data:${blob.type || 'image/png'};base64,${b64}`);
+          })).then(list => list.filter(Boolean));
+        }
+      } catch { /* keep polling */ }
+    }
+    return null;
+  },
+
+  // Best-effort local image generation via Ollama (browser → localhost).
+  async _tryLocalOllamaImage(prompt) {
+    const cfg = await this.getConfig();
+    const baseUrl = String(cfg.ollama_url || 'http://localhost:11434').replace(/\/$/, '');
+    const models = [cfg.ollama_image_model || cfg.ollama_model, 'llava'].filter(Boolean);
     for (const model of models) {
       try {
-        const parts = [{ text: prompt }];
-        if (referenceUrl) {
-          try {
-            const blob = await fetch(referenceUrl).then(r => r.blob());
-            const b64 = await blobToBase64(blob);
-            if (b64) parts.push({ inlineData: { mimeType: blob.type || 'image/jpeg', data: b64 } });
-          } catch { /* reference optional */ }
-        }
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
-        const res = await fetch(endpoint, {
+        const res = await fetch(`${baseUrl}/api/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts }],
-            generationConfig: { responseModalities: ['TEXT', 'IMAGE'], candidateCount: count || 1, temperature: 0.45 },
-          }),
+          body: JSON.stringify({ model, prompt, stream: false, options: { num_predict: 512 } }),
           signal: AbortSignal.timeout(120000),
         });
-        if (!res.ok) {
-          const body = await res.text().catch(() => '');
-          const low = body.toLowerCase();
-          if (low.includes('not found') || low.includes('model') || low.includes('unsupported')) {
-            lastErr = new Error(`Image model ${model} unavailable on this key.`);
-            continue;
-          }
-          throw new Error(`AI image generation failed (${res.status}): ${body.slice(0, 120)}`);
-        }
+        if (!res.ok) continue;
         const data = await res.json();
-        const images = [];
-        for (const cand of (data?.candidates || [])) {
-          for (const part of (cand?.content?.parts || [])) {
-            if (part?.inlineData?.data) {
-              images.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
-            }
-          }
-        }
-        if (images.length) return images;
-        lastErr = new Error('The AI returned no image.');
-      } catch (err) {
-        lastErr = err;
-      }
+        const imgB64 = String(data?.images?.[0] || '').trim();
+        if (imgB64) return [`data:image/png;base64,${imgB64}`];
+      } catch { /* try next local model */ }
     }
-    throw lastErr || new Error('AI image generation failed.');
+    return null;
   },
 };
 

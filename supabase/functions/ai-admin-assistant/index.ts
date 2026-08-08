@@ -229,8 +229,9 @@ async function callGemini(params: {
   model: string;
   message: string;
   history: Array<{ role: string; content: string }>;
+  maxTokens?: number;
 }) {
-  const { apiKey, model, message, history } = params;
+  const { apiKey, model, message, history, maxTokens } = params;
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
@@ -249,7 +250,7 @@ async function callGemini(params: {
       contents,
       generationConfig: {
         temperature: 0.4,
-        maxOutputTokens: 1200,
+        maxOutputTokens: maxTokens || 1200,
       },
     }),
   });
@@ -275,6 +276,7 @@ async function callGeminiWithFallback(params: {
   model: string;
   message: string;
   history: Array<{ role: string; content: string }>;
+  maxTokens?: number;
 }) {
   const preferred = (params.model || '').trim();
   const fallbacks = ['gemini-2.5-flash', 'gemini-2.0-flash'];
@@ -305,8 +307,9 @@ async function callOpenAICompatible(params: {
   message: string;
   history: Array<{ role: string; content: string }>;
   extraHeaders?: Record<string, string>;
+  maxTokens?: number;
 }) {
-  const { endpoint, apiKey, model, message, history, extraHeaders } = params;
+  const { endpoint, apiKey, model, message, history, extraHeaders, maxTokens } = params;
   const messages = [
     ...(history || []).map((item) => ({
       role: item?.role === 'assistant' ? 'assistant' : 'user',
@@ -326,7 +329,7 @@ async function callOpenAICompatible(params: {
       model,
       messages,
       temperature: 0.3,
-      max_tokens: 1200,
+      max_tokens: maxTokens || 1200,
     }),
   });
 
@@ -340,6 +343,284 @@ async function callOpenAICompatible(params: {
   const text = String(data?.choices?.[0]?.message?.content || '').trim();
   if (!text) throw new Error('Provider returned an empty response.');
   return text;
+}
+
+// ── VISION & IMAGE GENERATION (server-side, keys never sent to the browser) ──
+
+const VISION_CAPABLE_PROVIDERS = ['gemini', 'groq', 'openrouter', 'huggingface'];
+
+const VISION_MODEL_FALLBACKS: Record<string, string[]> = {
+  gemini: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'],
+  groq: ['llama-3.2-11b-vision-preview', 'meta-llama/llama-3.2-90b-vision-instruct'],
+  openrouter: [
+    'google/gemini-2.5-flash',
+    'google/gemini-2.0-flash-exp:free',
+    'meta-llama/llama-3.2-11b-vision-instruct:free',
+    'qwen/qwen-2.5-vl-72b-instruct:free',
+  ],
+  huggingface: ['Qwen/Qwen2.5-VL-72B-Instruct', 'meta-llama/Llama-3.2-11B-Vision-Instruct'],
+};
+
+function parseDataUrl(dataUrl: string): { mimeType: string; b64: string } {
+  const match = String(dataUrl || '').match(/^data:([^;,]+)[;,]base64,(.+)$/s);
+  if (!match) return { mimeType: 'image/jpeg', b64: String(dataUrl || '') };
+  return { mimeType: match[1].trim(), b64: match[2].trim() };
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status === 503;
+}
+
+function errorStatus(err: unknown): number | null {
+  const s = (err as any)?.status;
+  return typeof s === 'number' ? s : null;
+}
+
+function visionModelChain(providerId: string, settings: Record<string, unknown>, override?: string): string[] {
+  const configured = String(override || settings[`${providerId}_vision_model`] || settings[`${providerId}_model`] || '').trim();
+  const chain = new Set<string>();
+  if (configured) chain.add(configured);
+  for (const m of VISION_MODEL_FALLBACKS[providerId] || []) chain.add(m);
+  return [...chain];
+}
+
+async function callGeminiVision(params: {
+  apiKey: string;
+  model: string;
+  prompt: string;
+  images: string[];
+  maxTokens?: number;
+}) {
+  const { apiKey, model, prompt, images, maxTokens } = params;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [{ text: prompt }];
+  for (const url of images.slice(0, 4)) {
+    const { mimeType, b64 } = parseDataUrl(url);
+    if (b64) parts.push({ inlineData: { mimeType, data: b64 } });
+  }
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens || 4096 },
+    }),
+  });
+  const raw = await res.text();
+  const data = raw ? JSON.parse(raw) : {};
+  if (!res.ok) {
+    const e = new Error(data?.error?.message || raw || `Gemini vision request failed (${res.status})`);
+    (e as any).status = res.status;
+    throw e;
+  }
+  const text = (data?.candidates?.[0]?.content?.parts || [])
+    .map((p: { text?: string }) => p?.text || '')
+    .join('\n')
+    .trim();
+  if (!text) throw new Error('Gemini vision returned an empty response.');
+  return text;
+}
+
+async function callOpenAIVision(params: {
+  endpoint: string;
+  apiKey: string;
+  model: string;
+  prompt: string;
+  images: string[];
+  extraHeaders?: Record<string, string>;
+  maxTokens?: number;
+}) {
+  const { endpoint, apiKey, model, prompt, images, extraHeaders, maxTokens } = params;
+  const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+    { type: 'text', text: prompt },
+    ...images.slice(0, 4).map((url) => ({ type: 'image_url', image_url: { url } })),
+  ];
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      ...(extraHeaders || {}),
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content }],
+      temperature: 0.3,
+      max_tokens: maxTokens || 4096,
+    }),
+  });
+  const raw = await res.text();
+  const data = raw ? JSON.parse(raw) : {};
+  if (!res.ok) {
+    const e = new Error(data?.error?.message || raw || `Vision provider request failed (${res.status})`);
+    (e as any).status = res.status;
+    throw e;
+  }
+  const text = String(data?.choices?.[0]?.message?.content || '').trim();
+  if (!text) throw new Error('Vision provider returned an empty response.');
+  return text;
+}
+
+async function runCloudVision(params: {
+  settings: Record<string, unknown>;
+  prompt: string;
+  images: string[];
+  maxTokens?: number;
+}): Promise<{ text: string; provider: string; model: string }> {
+  const { settings, prompt, images, maxTokens } = params;
+  const activeId = String(settings.active_provider || 'gemini').trim().toLowerCase();
+  const ordered: string[] = [];
+  if (VISION_CAPABLE_PROVIDERS.includes(activeId)) ordered.push(activeId);
+  for (const pid of VISION_CAPABLE_PROVIDERS) if (pid !== activeId) ordered.push(pid);
+
+  const attempts: string[] = [];
+  let lastError: unknown = null;
+
+  for (const id of ordered) {
+    if (id === 'gemini') {
+      const apiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
+      if (!apiKey) { lastError = new Error('Gemini API key is not set in AI Settings.'); continue; }
+      for (const model of visionModelChain('gemini', settings)) {
+        try {
+          attempts.push(`gemini/${model}`);
+          const text = await callGeminiVision({ apiKey, model, prompt, images, maxTokens });
+          return { text, provider: 'gemini', model };
+        } catch (err) {
+          lastError = err;
+          const status = errorStatus(err);
+          if (isRetryableStatus(status) || String(err?.message || '').toLowerCase().includes('model')) continue;
+          continue;
+        }
+      }
+    }
+
+    if (id === 'groq') {
+      const apiKey = String(settings.groq_key || '').trim();
+      if (!apiKey) { lastError = new Error('Groq API key is not set in AI Settings.'); continue; }
+      for (const model of visionModelChain('groq', settings)) {
+        try {
+          attempts.push(`groq/${model}`);
+          const text = await callOpenAIVision({
+            endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+            apiKey,
+            model,
+            prompt,
+            images,
+            maxTokens,
+          });
+          return { text, provider: 'groq', model };
+        } catch (err) {
+          lastError = err;
+          continue;
+        }
+      }
+    }
+
+    if (id === 'openrouter') {
+      const apiKey = String(settings.openrouter_key || '').trim();
+      if (!apiKey) { lastError = new Error('OpenRouter API key is not set in AI Settings.'); continue; }
+      for (const model of visionModelChain('openrouter', settings)) {
+        try {
+          attempts.push(`openrouter/${model}`);
+          const text = await callOpenAIVision({
+            endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+            apiKey,
+            model,
+            prompt,
+            images,
+            extraHeaders: { 'HTTP-Referer': 'https://weverseonlineshop.com', 'X-Title': 'Weverse Admin AI' },
+            maxTokens,
+          });
+          return { text, provider: 'openrouter', model };
+        } catch (err) {
+          lastError = err;
+          continue;
+        }
+      }
+    }
+
+    if (id === 'huggingface') {
+      const apiKey = String(settings.hf_key || '').trim();
+      if (!apiKey) { lastError = new Error('Hugging Face API key is not set in AI Settings.'); continue; }
+      for (const model of visionModelChain('huggingface', settings)) {
+        try {
+          attempts.push(`huggingface/${model}`);
+          const text = await callOpenAIVision({
+            endpoint: 'https://router.huggingface.co/v1/chat/completions',
+            apiKey,
+            model,
+            prompt,
+            images,
+            maxTokens,
+          });
+          return { text, provider: 'huggingface', model };
+        } catch (err) {
+          lastError = err;
+          continue;
+        }
+      }
+    }
+  }
+
+  throw lastError || new Error('No vision-capable provider is configured. Add a Gemini, Groq, or OpenRouter key in AI Settings.');
+}
+
+async function runCloudImageGeneration(params: {
+  settings: Record<string, unknown>;
+  prompt: string;
+  referenceUrl?: string | null;
+  count?: number;
+}): Promise<{ images: string[]; provider: string; model: string }> {
+  const { settings, prompt, referenceUrl, count } = params;
+  const apiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
+  if (!apiKey) throw new Error('AI image generation needs a Google Gemini API key (AI Settings).');
+  const models = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation', 'gemini-2.5-flash-preview-image'];
+  let lastError: unknown = null;
+
+  for (const model of models) {
+    try {
+      const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [{ text: prompt }];
+      if (referenceUrl) {
+        const { mimeType, b64 } = parseDataUrl(referenceUrl);
+        if (b64) parts.push({ inlineData: { mimeType, data: b64 } });
+      }
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'], candidateCount: count || 1, temperature: 0.45 },
+        }),
+      });
+      const raw = await res.text();
+      const data = raw ? JSON.parse(raw) : {};
+      if (!res.ok) {
+        const low = String(data?.error?.message || raw || '').toLowerCase();
+        if (low.includes('not found') || low.includes('model') || low.includes('unsupported')) {
+          lastError = new Error(`Image model ${model} unavailable on this key.`);
+          continue;
+        }
+        const e = new Error(data?.error?.message || raw || `Image generation failed (${res.status})`);
+        (e as any).status = res.status;
+        throw e;
+      }
+      const images: string[] = [];
+      for (const cand of data?.candidates || []) {
+        for (const part of cand?.content?.parts || []) {
+          if (part?.inlineData?.data) {
+            images.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
+          }
+        }
+      }
+      if (!images.length) throw new Error('Image model returned no images.');
+      return { images, provider: 'gemini', model };
+    } catch (err) {
+      lastError = err;
+      if (errorStatus(err) && !isRetryableStatus(errorStatus(err) as number)) throw err;
+    }
+  }
+  throw lastError || new Error('AI image generation failed. Try again later.');
 }
 
 async function callN8nWebhook(params: {
@@ -657,6 +938,29 @@ async function logRepairReport(params: {
   }
 }
 
+// OpenAI-compatible chat providers (keys read server-side only).
+const OPENAI_COMPAT_CHAT_PROVIDERS: Array<{
+  id: string;
+  endpoint: string;
+  keyField: string;
+  modelField: string;
+  defaultModel: string;
+}> = [
+  { id: 'deepseek', endpoint: 'https://api.deepseek.com/v1/chat/completions', keyField: 'deepseek_key', modelField: 'deepseek_model', defaultModel: 'deepseek-coder' },
+  { id: 'mistral', endpoint: 'https://api.mistral.ai/v1/chat/completions', keyField: 'mistral_key', modelField: 'mistral_model', defaultModel: 'codestral-latest' },
+  { id: 'cohere', endpoint: 'https://api.cohere.com/v2/chat', keyField: 'cohere_key', modelField: 'cohere_model', defaultModel: 'command-r' },
+  { id: 'together', endpoint: 'https://api.together.xyz/v1/chat/completions', keyField: 'together_key', modelField: 'together_model', defaultModel: 'Qwen/Qwen2.5-Coder-32B-Instruct' },
+  { id: 'cerebras', endpoint: 'https://api.cerebras.ai/v1/chat/completions', keyField: 'cerebras_key', modelField: 'cerebras_model', defaultModel: 'llama3.3-70b' },
+  { id: 'fireworks', endpoint: 'https://api.fireworks.ai/inference/v1/chat/completions', keyField: 'fireworks_key', modelField: 'fireworks_model', defaultModel: 'accounts/fireworks/models/qwen2p5-coder-32b-instruct' },
+  { id: 'github', endpoint: 'https://models.inference.ai.azure.com/chat/completions', keyField: 'github_key', modelField: 'github_model', defaultModel: 'meta-llama/Llama-3.3-70B-Instruct' },
+  { id: 'sambanova', endpoint: 'https://api.sambanova.ai/v1/chat/completions', keyField: 'sambanova_key', modelField: 'sambanova_model', defaultModel: 'Meta-Llama-3.3-70B-Instruct' },
+  { id: 'hyperbolic', endpoint: 'https://api.hyperbolic.xyz/v1/chat/completions', keyField: 'hyperbolic_key', modelField: 'hyperbolic_model', defaultModel: 'Qwen/Qwen2.5-Coder-32B-Instruct' },
+  { id: 'novita', endpoint: 'https://api.novita.ai/v3/openai/chat/completions', keyField: 'novita_key', modelField: 'novita_model', defaultModel: 'qwen/qwen2.5-coder-32b-instruct' },
+  { id: 'perplexity', endpoint: 'https://api.perplexity.ai/chat/completions', keyField: 'perplexity_key', modelField: 'perplexity_model', defaultModel: 'llama-3.1-sonar-small-128k-online' },
+  { id: 'replicate', endpoint: 'https://openai-compat.replicate.com/v1/chat/completions', keyField: 'replicate_key', modelField: 'replicate_model', defaultModel: 'meta/codellama-70b-instruct' },
+  { id: 'ai21', endpoint: 'https://api.ai21.com/studio/v1/chat/completions', keyField: 'ai21_key', modelField: 'ai21_model', defaultModel: 'jamba-1.5-mini' },
+];
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
@@ -721,26 +1025,28 @@ Deno.serve(async (req) => {
   const selectedProvider = String(payload.provider_override || settings.active_provider || 'gemini').trim().toLowerCase();
   const automationEnabled = settings.automation_center_enabled === true;
 
-  async function runProviderChat(message: string, history: Array<{ role: string; content: string }>) {
+  async function runProviderChat(message: string, history: Array<{ role: string; content: string }>, maxTokens?: number) {
+    const cfg = settings as Record<string, unknown>;
+
     if (selectedProvider === 'gemini') {
-      const model = normalizeModel(settings as Record<string, unknown>, payload.developer_mode === true);
-      const apiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
+      const model = normalizeModel(cfg, payload.developer_mode === true);
+      const apiKey = String(cfg.gemini_api_key || cfg.gemini_key || '').trim();
       if (!apiKey) throw new Error('Gemini API key is not set in AI Settings.');
-      const { response, modelUsed } = await callGeminiWithFallback({ apiKey, model, message, history });
+      const { response, modelUsed } = await callGeminiWithFallback({ apiKey, model, message, history, maxTokens });
       return { response, provider: 'gemini', model: modelUsed };
     }
 
     if (selectedProvider === 'groq') {
-      const apiKey = String(settings.groq_key || '').trim();
-      const model = String(settings.groq_model || 'llama-3.3-70b-versatile').trim();
+      const apiKey = String(cfg.groq_key || '').trim();
+      const model = String(cfg.groq_model || 'llama-3.3-70b-versatile').trim();
       if (!apiKey) throw new Error('Groq API key is not set in AI Settings.');
-      const response = await callOpenAICompatible({ endpoint: 'https://api.groq.com/openai/v1/chat/completions', apiKey, model, message, history });
+      const response = await callOpenAICompatible({ endpoint: 'https://api.groq.com/openai/v1/chat/completions', apiKey, model, message, history, maxTokens });
       return { response, provider: 'groq', model };
     }
 
     if (selectedProvider === 'openrouter') {
-      const apiKey = String(settings.openrouter_key || '').trim();
-      const model = String(settings.openrouter_model || 'google/gemini-2.0-flash-exp:free').trim();
+      const apiKey = String(cfg.openrouter_key || '').trim();
+      const model = String(cfg.openrouter_model || 'google/gemini-2.0-flash-exp:free').trim();
       if (!apiKey) throw new Error('OpenRouter API key is not set in AI Settings.');
       const response = await callOpenAICompatible({
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
@@ -748,6 +1054,7 @@ Deno.serve(async (req) => {
         model,
         message,
         history,
+        maxTokens,
         extraHeaders: {
           'HTTP-Referer': 'https://weverseonlineshop.com',
           'X-Title': 'Weverse Admin AI',
@@ -757,16 +1064,16 @@ Deno.serve(async (req) => {
     }
 
     if (selectedProvider === 'huggingface') {
-      const apiKey = String(settings.hf_key || '').trim();
-      const model = String(settings.hf_model || 'Qwen/Qwen2.5-Coder-32B-Instruct').trim();
+      const apiKey = String(cfg.hf_key || '').trim();
+      const model = String(cfg.hf_model || 'Qwen/Qwen2.5-Coder-32B-Instruct').trim();
       if (!apiKey) throw new Error('Hugging Face API key is not set in AI Settings.');
-      const response = await callOpenAICompatible({ endpoint: 'https://router.huggingface.co/v1/chat/completions', apiKey, model, message, history });
+      const response = await callOpenAICompatible({ endpoint: 'https://router.huggingface.co/v1/chat/completions', apiKey, model, message, history, maxTokens });
       return { response, provider: 'huggingface', model };
     }
 
-if (selectedProvider === 'n8n') {
+    if (selectedProvider === 'n8n') {
       const result = await callN8nAssistant({
-        settings: settings as Record<string, unknown>,
+        settings: cfg,
         assistant: 'ai_repair_assistant',
         message,
         history,
@@ -776,11 +1083,55 @@ if (selectedProvider === 'n8n') {
       return { response: result.response, provider: 'n8n', model: 'n8n-automation-center' };
     }
 
+    const compat = OPENAI_COMPAT_CHAT_PROVIDERS.find((p) => p.id === selectedProvider);
+    if (compat) {
+      const apiKey = String(cfg[compat.keyField] || '').trim();
+      if (!apiKey) throw new Error(`${compat.id} API key is not set in AI Settings.`);
+      const model = String(cfg[compat.modelField] || compat.defaultModel).trim();
+      const response = await callOpenAICompatible({ endpoint: compat.endpoint, apiKey, model, message, history, maxTokens });
+      return { response, provider: compat.id, model };
+    }
+
+    if (selectedProvider === 'cloudflare') {
+      const raw = String(cfg.cloudflare_key || '').trim();
+      const [accountId, token] = raw.split('|');
+      const apiKey = (token || raw).trim();
+      if (!accountId || !apiKey) throw new Error('Cloudflare key must be in the form accountId|token.');
+      const model = String(cfg.cloudflare_model || '@cf/meta/llama-3.3-70b-instruct').trim();
+      const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${model}`;
+      const cloudMessages = [
+        ...(history || []).map((item) => ({ role: item?.role === 'assistant' ? 'assistant' : 'user', content: String(item?.content || '') })).filter((i) => i.content.trim()),
+        { role: 'user', content: message },
+      ];
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ messages: cloudMessages }),
+      });
+      const rawRes = await res.text();
+      const data = rawRes ? JSON.parse(rawRes) : {};
+      if (!res.ok) {
+        throw new Error(data?.errors?.[0]?.message || data?.error || `Cloudflare request failed (${res.status})`);
+      }
+      const text = String(data?.result?.response || '').trim();
+      if (!text) throw new Error('Cloudflare returned an empty response.');
+      return { response: text, provider: 'cloudflare', model };
+    }
+
+    if (selectedProvider === 'lepton') {
+      const apiKey = String(cfg.lepton_key || '').trim();
+      if (!apiKey) throw new Error('Lepton API key is not set in AI Settings.');
+      const model = String(cfg.lepton_model || 'qwen2-5-coder-32b-instruct').trim();
+      const endpoint = `https://${model.replace(/[^a-z0-9-]/g, '')}.lepton.run/api/v1/chat/completions`;
+      const response = await callOpenAICompatible({ endpoint, apiKey, model, message, history, maxTokens });
+      return { response, provider: 'lepton', model };
+    }
+
     throw new Error(`Unsupported provider: ${selectedProvider}`);
   }
 
   const isEnabled = settings.is_enabled !== false;
-  if (!isEnabled && !['test_connection', 'test_automation_center', 'run_ai_assistant_task', 'run_automation_pipeline', 'run_repair_scan'].includes(action)) {
+  if (!isEnabled && !['test_connection', 'test_automation_center', 'run_ai_assistant_task', 'run_automation_pipeline', 'run_repair_scan', 'vision', 'generate_images'].includes(action)) {
     return jsonResponse({ error: 'AI assistant is disabled in settings.' }, 400);
   }
 
@@ -876,6 +1227,41 @@ if (selectedProvider === 'n8n') {
       });
     } catch (err) {
       return jsonResponse({ success: false, error: String(err?.message || err), provider: selectedProvider }, 400);
+    }
+  }
+
+  if (action === 'vision') {
+    const images = Array.isArray(payload.images) ? (payload.images as string[]) : [];
+    const prompt = String(payload.prompt || '').trim() || 'Describe the product in these images and return JSON.';
+    if (!images.length) return jsonResponse({ error: 'At least one image is required.' }, 400);
+    try {
+      const result = await runCloudVision({
+        settings: settings as Record<string, unknown>,
+        prompt,
+        images,
+        maxTokens: Number(payload.max_tokens) || 4096,
+      });
+      return jsonResponse({ success: true, text: result.text, provider: result.provider, model: result.model });
+    } catch (err) {
+      return jsonResponse({ success: false, error: String(err?.message || err) }, 400);
+    }
+  }
+
+  if (action === 'generate_images') {
+    const prompt = String(payload.prompt || '').trim();
+    if (!prompt) return jsonResponse({ error: 'prompt is required' }, 400);
+    const referenceUrl = payload.reference_url ? String(payload.reference_url) : null;
+    const count = Number(payload.count) || 1;
+    try {
+      const result = await runCloudImageGeneration({
+        settings: settings as Record<string, unknown>,
+        prompt,
+        referenceUrl,
+        count,
+      });
+      return jsonResponse({ success: true, images: result.images, provider: result.provider, model: result.model });
+    } catch (err) {
+      return jsonResponse({ success: false, error: String(err?.message || err) }, 400);
     }
   }
 
@@ -1150,7 +1536,7 @@ if (selectedProvider === 'n8n') {
       : [];
 
     try {
-      const providerResult = await runProviderChat(message, history);
+      const providerResult = await runProviderChat(message, history, Number(payload.max_tokens) || undefined);
 
       await serviceClient.from('ai_chat_history').insert([
         {
