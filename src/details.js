@@ -1,5 +1,5 @@
 import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListings } from './showroom-data.js';
-import { getTruckById, formatTruckPrice } from './truck-data.js';
+import { getTruckById, formatTruckPrice, TRUCK_LISTINGS } from './truck-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
@@ -134,6 +134,21 @@ function renderTruck(listing) {
       </div>
 
       ${featuresBlock}
+
+      ${sellerBlock(listing)}
+
+      <div id="similar-section" class="hidden mb-6">
+        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Similar Products</h3>
+        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
+      <div id="related-section" class="hidden mb-6">
+        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Related Products</h3>
+        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
+      <div id="recommended-section" class="hidden mb-6">
+        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Recommended For You</h3>
+        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
     </div>
   `;
 
@@ -176,7 +191,70 @@ function renderTruck(listing) {
     } catch (e) { /* user cancelled */ }
   });
 
+  loadRelatedSections(listing);
+
   if (window.lucide) lucide.createIcons();
+}
+
+function galleryLabelsFor(listing) {
+  if (listing.listing_type === 'vehicle') {
+    return ['Front View', 'Rear View', 'Left Side', 'Right Side', 'Interior Dashboard', 'Driver Seat', 'Cargo / Bed', 'Engine', 'Wheels / Tires', 'Additional View'];
+  }
+  if (listing.listing_type === 'property') {
+    return ['Front Exterior', 'Side Exterior', 'Back Exterior', 'Living Room', 'Kitchen', 'Dining Area', 'Bedroom', 'Bathroom', 'Additional Interior', 'Additional View'];
+  }
+  return ['Front View', 'Angle View', 'Detail View', 'Packaging', 'Additional View'];
+}
+
+function sellerBlock(listing) {
+  const isAgent = listing.listing_type === 'property';
+  const base = `/contact.html?listing=${encodeURIComponent(listing.property_id || '')}`;
+  return `
+    <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+          <i data-lucide="store" class="w-5 h-5 text-orange-400"></i>
+        </div>
+        <div>
+          <p class="text-sm font-bold text-white">KCO Global Marketplace</p>
+          <p class="text-xs text-emerald-400 flex items-center gap-1"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Seller</p>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500">${isAgent ? 'Professional agent for this listing' : 'Trusted marketplace seller'} on KCO Global Marketplace</p>
+      <p class="text-xs text-gray-400 mt-2 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Secure checkout · Authentic listings</p>
+      <div class="flex gap-2 mt-4">
+        <a href="${base}" class="flex-1 bg-orange-500 hover:bg-orange-600 text-black font-bold py-2.5 rounded-xl text-xs text-center transition">Contact Seller</a>
+        <a href="${base}&subject=Enquiry" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold py-2.5 rounded-xl text-xs text-center transition">Send Message</a>
+      </div>
+    </div>`;
+}
+
+function relGridCard(item) {
+  const img = (item.images && item.images[0]) || '/fallback.svg';
+  return `<a href="/details.html?id=${encodeURIComponent(item.property_id)}" class="block bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden hover:border-orange-500/30 transition group">
+      <div class="aspect-square overflow-hidden bg-gray-800"><img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></div>
+      <div class="p-2"><p class="text-xs text-white font-bold truncate">${escapeHtml(item.title)}</p><p class="text-xs text-orange-500 font-bold mt-1">${formatPrice(item)}</p></div>
+    </a>`;
+}
+
+function fillRelGrid(sectionId, items) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  const grid = section.querySelector('.rel-grid');
+  if (!grid) return;
+  if (!items.length) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  grid.innerHTML = items.slice(0, 4).map(relGridCard).join('');
+}
+
+function loadRelatedSections(listing) {
+  const pool = TRUCK_LISTINGS.filter(t => t.property_id !== listing.property_id);
+  const similar = pool.filter(t => t.category === listing.category);
+  const related = pool.filter(t => t.brand === listing.brand);
+  const recommended = [...pool].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  fillRelGrid('similar-section', similar.length ? similar : recommended.slice(0, 4));
+  fillRelGrid('related-section', related.length ? related : recommended.slice(0, 4));
+  fillRelGrid('recommended-section', recommended);
 }
 
 function render(listing) {

@@ -1672,11 +1672,19 @@ const CAT_FIELDS = {
 ]);
 
 AUTOMOTIVE_CATEGORIES.forEach(k => CAT_FIELDS[k] = [
-  { key: 'title', label: 'Vehicle Title', type: 'text', required: true, span: 2 },
+  { key: 'title', label: 'Vehicle Title', type: 'text', required: true, span: 2, placeholder: 'e.g. 2023 Toyota Land Cruiser V8 Turbo Diesel' },
   { key: 'brand', label: 'Brand', type: 'text', required: true },
   { key: 'model', label: 'Model', type: 'text', required: true },
+  { key: 'model_year', label: 'Model Year', type: 'text', placeholder: 'e.g. 2023' },
+  { key: 'body_type', label: 'Body Type', type: 'select', options: ['Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Wagon', 'Pickup', 'Van', 'Truck', 'Sports Car', 'Luxury Sedan', 'Motorcycle', 'Yacht', 'Other'] },
+  { key: 'mileage', label: 'Mileage', type: 'text', placeholder: 'e.g. 15,000 mi or 0 (new)' },
+  { key: 'engine', label: 'Engine', type: 'text', placeholder: 'e.g. 4.0L V8 Turbo Diesel' },
+  { key: 'horsepower', label: 'Horsepower (HP)', type: 'text', placeholder: 'e.g. 500 HP' },
+  { key: 'transmission', label: 'Transmission', type: 'select', options: ['Automatic', 'Manual', 'CVT', 'Dual-Clutch', 'Semi-Automatic', 'Electric (Single Speed)'] },
+  { key: 'drive_type', label: 'Drive Type', type: 'select', options: ['FWD', 'RWD', 'AWD', '4WD'] },
+  { key: 'fuel_type', label: 'Fuel Type', type: 'select', options: ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-in Hybrid', 'LPG', 'Bio-diesel'] },
+  { key: 'safety_features', label: 'Safety Features (comma separated)', type: 'text', placeholder: 'ABS, Airbags, Lane Assist, Traction Control…' },
   { key: 'color', label: 'Color', type: 'text' },
-  { key: 'size', label: 'Body / Trim', type: 'text' },
   { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'], required: true },
   { key: 'price', label: 'Price', type: 'number', required: true },
   { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
@@ -1813,12 +1821,14 @@ function getProductFields(category) {
   return CAT_FIELDS[category] || CAT_FIELDS.default;
 }
 
-function renderProductFieldsForm(category, existing = {}) {
+function renderProductFieldsForm(category, existing = {}, isEdit = false) {
   const fields = getProductFields(category);
   return fields.map(f => {
     const val = existing[f.key] || '';
     const gridSpan = f.span === 2 ? 'sm:col-span-2' : '';
-    const req = f.required ? 'required' : '';
+    // Existing products support partial updates — never force required fields on edit.
+    const req = (!isEdit && f.required) ? 'required' : '';
+    const ph = f.placeholder || f.label;
     let input = '';
     if (f.type === 'select') {
       input = `<select class="input-field" name="${f.key}" id="pf-${f.key}" ${req}>
@@ -1839,9 +1849,9 @@ function renderProductFieldsForm(category, existing = {}) {
         platform: ['PS5', 'Xbox Series X', 'Nintendo Switch', 'PC', 'Android', 'iOS'],
       };
       const options = (suggestions[f.key] || []).map(item => `<option value="${esc(item)}"></option>`).join('');
-      input = `<input type="${f.type}" class="input-field" name="${f.key}" id="pf-${f.key}" value="${esc(val)}" placeholder="${f.label}" ${listId ? `list="${listId}"` : ''} ${req}>${listId ? `<datalist id="${listId}">${options}</datalist>` : ''}`;
+      input = `<input type="${f.type}" class="input-field" name="${f.key}" id="pf-${f.key}" value="${esc(val)}" placeholder="${ph}" ${listId ? `list="${listId}"` : ''} ${req}>${listId ? `<datalist id="${listId}">${options}</datalist>` : ''}`;
     }
-    return `<div class="${gridSpan}"><label class="lbl">${f.label}${f.required ? ' *' : ''}</label>${input}</div>`;
+    return `<div class="${gridSpan}"><label class="lbl">${f.label}${f.required ? (isEdit ? '' : ' *') : ''}</label>${input}</div>`;
   }).join('');
 }
 
@@ -1883,16 +1893,19 @@ window.showAddProductStep2 = function(category, existingData = {}) {
   const productTemplates = getTemplatesForCategory('product', category);
   const selectedCurrency = existingData.currency || 'USD';
   openModal(`
-    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal-overlay" onclick="if(event.target===this)closeProductFormModal()">
       <div class="modal-box wide">
-        <div class="flex items-center justify-between mb-5">
-          <div>
+        <div class="flex items-center justify-between gap-3 mb-5">
+          <div class="min-w-0">
             <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Product — ${esc(category)}</h3>
-            <p class="text-xs text-gray-500 mt-0.5">${isEdit ? `Editing: ${esc(existingData.property_id)}` : 'Fill in the product details below'}</p>
+            <p class="text-xs text-gray-500 mt-0.5 truncate">${isEdit ? `Editing: ${esc(existingData.property_id)}` : 'Fill in the product details below'}</p>
           </div>
-          <button onclick="${isEdit ? 'closeModal()' : "showAddProductStep1()"}" class="text-gray-500 hover:text-white transition">
-            <i data-lucide="${isEdit ? 'x' : 'arrow-left'}" class="w-5 h-5"></i>
-          </button>
+          <div class="flex items-center gap-2 shrink-0">
+            ${isEdit ? `<button type="button" onclick="closeProductFormModal()" class="btn-press px-3 py-1.5 rounded-lg text-[11px] font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Product Manager</button>` : `<button type="button" onclick="showAddProductStep1()" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5" title="Change category"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Category</button>`}
+            <button type="button" onclick="closeProductFormModal()" class="btn-press w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Close (X) — return to Product Manager">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
         </div>
 
         <form id="product-form" onsubmit="saveProduct(event,'${esc(category)}','${isEdit ? existingData.property_id : ''}')" class="space-y-4">
@@ -1935,10 +1948,37 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             </div>
           </div>
 
+          <!-- AI Auto-Listing: analyze images + expand gallery -->
+          <div class="glass-soft border border-fuchsia-500/20 rounded-2xl p-4">
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-fuchsia-400"></i> AI Auto-Listing</p>
+                <p class="text-[10px] text-gray-500 mt-0.5">AI looks at your photos, identifies the product, writes the title / description / specifications, detects the category, and can expand the gallery to 24 realistic images.</p>
+              </div>
+              <span id="pf-ai-badge" class="badge bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/25 hidden shrink-0"><i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Working…</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" onclick="runProductImageAnalysis()" class="btn-press px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-[11px] font-bold rounded-xl transition flex items-center gap-1.5">
+                <i data-lucide="scan-face" class="w-3.5 h-3.5"></i> AI Analyze & Auto-Fill
+              </button>
+              <select id="pf-ai-expand-count" class="input-field !w-24 !py-2 text-[11px]" title="How many AI images to generate">
+                <option value="12">12 images</option>
+                <option value="18">18 images</option>
+                <option value="24" selected>24 images</option>
+              </select>
+              <button type="button" onclick="expandProductGalleryAi()" class="btn-press px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold rounded-xl transition flex items-center gap-1.5">
+                <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> AI Expand Images
+              </button>
+            </div>
+            <p id="pf-ai-status" class="text-[10px] text-gray-500 mt-2"></p>
+            <div id="pf-ai-detected" class="hidden mt-2"></div>
+            <div id="pf-ai-generated" class="flex flex-wrap gap-2 mt-2"></div>
+          </div>
+
           <!-- Step 2: Product Details -->
           <div class="text-[11px] text-blue-200 font-bold uppercase tracking-wide">Step 2: Product Details</div>
           <div class="form-grid form-grid-2">
-            ${renderProductFieldsForm(category, existingData)}
+            ${renderProductFieldsForm(category, existingData, isEdit)}
           </div>
 
           <div class="form-grid form-grid-2">
@@ -2023,7 +2063,272 @@ window.showAddProductStep2 = function(category, existingData = {}) {
   applyCatalogDraftToProductForm(category, 'pricing');
   document.getElementById('pf-price')?.addEventListener('input', () => applyCatalogDraftToProductForm(category, 'pricing'));
   setupProductFormExperience(category, existingData.property_id || '');
+  // Escape key always closes the product form and returns to the Product Manager
+  window._pfEscapeHandler = (ev) => { if (ev.key === 'Escape') closeProductFormModal(); };
+  document.addEventListener('keydown', window._pfEscapeHandler);
 };
+
+window.closeProductFormModal = function() {
+  if (window._pfEscapeHandler) { document.removeEventListener('keydown', window._pfEscapeHandler); window._pfEscapeHandler = null; }
+  clearTimeout(window._pfAiTimer);
+  closeModal();
+  renderProducts();
+};
+
+// ══════════════════════════════════════════════════════════
+//  AI AUTO-LISTING: analyze uploaded images, auto-fill the
+//  product form, detect the category, and expand the gallery.
+// ══════════════════════════════════════════════════════════
+const AI_CAR_ANGLES = [
+  'Front view', 'Rear view', 'Left side', 'Right side', 'Interior', 'Dashboard',
+  'Steering wheel', 'Engine', 'Wheels and tires', 'Seats', 'Trunk', 'Headlights',
+  'Taillights', 'Roof', 'Door panels', 'Mirrors', 'Suspension', 'Exhaust',
+  'Gear selector', 'Infotainment screen', 'Brake system', 'Close-up details',
+  'Lifestyle shot', 'Three-quarter front angle',
+];
+const AI_HOUSE_ANGLES = [
+  'Front elevation', 'Back view', 'Living room', 'Kitchen', 'Dining room', 'Bedroom',
+  'Bathroom', 'Balcony', 'Garage', 'Garden', 'Swimming pool', 'Floor plan',
+  'Map location', 'Street view', 'Neighborhood', 'Interior detail', 'Exterior detail',
+  'Backyard', 'Staircase', 'Hallway', 'Home office', 'Playroom', 'Utility room', 'Landscaping',
+];
+const AI_CLOTHING_ANGLES = [
+  'Front view', 'Back view', 'Left side', 'Right side', 'Fabric close-up', 'Collar detail',
+  'Sleeves', 'Buttons', 'Zipper', 'Pocket detail', 'Brand label', 'Model wearing it',
+  'Folded view', 'Hanging view', 'Color variation', 'Size detail', 'Matching accessories',
+  'Stitching detail', 'Hem detail', 'Care label', 'Style 1', 'Style 2', 'Packaging', 'On model back',
+];
+const AI_PHONE_ANGLES = [
+  'Front view', 'Back view', 'Left side', 'Right side', 'Camera module close-up',
+  'Display close-up', 'Ports', 'Buttons', 'Box contents', 'Charging cable',
+  'Screen close-up', 'Sim tray', 'Speaker grille', 'Bottom view', 'Top view',
+  'Angled front', 'Angled back', 'With protective case', 'Retail box', 'Accessories',
+  'Held in hand', 'Lifestyle shot', 'Spec sheet', 'Package contents',
+];
+const AI_GENERAL_ANGLES = [
+  'Front view', 'Back view', 'Left side', 'Right side', 'Top view', 'Bottom view',
+  'Close-up detail 1', 'Close-up detail 2', 'Material texture', 'Packaging', 'In use',
+  'Lifestyle shot', 'Scale reference', 'Color detail', 'Brand label', 'Model angle 1',
+  'Model angle 2', 'Accessories', 'Box contents', 'Back detail', 'Angled view 1',
+  'Angled view 2', 'Detail stitching', 'Complete product',
+];
+
+function galleryAnglesForCategory(category) {
+  const cat = String(category || '').toLowerCase();
+  if (/(car|vehicle|boat|marine|motorcycle)/.test(cat)) return AI_CAR_ANGLES;
+  if (/(house|home|property|apartment|condo|villa|mansion|estate|land|real estate)/.test(cat)) return AI_HOUSE_ANGLES;
+  if (/(cloth|fashion|wear|shoe|bag|accessor)/.test(cat)) return AI_CLOTHING_ANGLES;
+  if (/(phone|electronic|computer|laptop|tablet|camera|watch)/.test(cat)) return AI_PHONE_ANGLES;
+  return AI_GENERAL_ANGLES;
+}
+
+function setProductAiStatus(msg, type = 'info') {
+  const el = document.getElementById('pf-ai-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.className = 'text-[10px] mt-2 ' + (type === 'error' ? 'text-red-400' : type === 'ok' ? 'text-emerald-300' : type === 'warn' ? 'text-amber-300' : 'text-gray-500');
+}
+
+function setProductAiBusy(busy, msg) {
+  const badge = document.getElementById('pf-ai-badge');
+  if (badge) badge.classList.toggle('hidden', !busy);
+  if (msg) setProductAiStatus(msg);
+}
+
+function scheduleAutoProductAnalysis() {
+  clearTimeout(window._pfAiTimer);
+  window._pfAiTimer = setTimeout(() => {
+    const form = document.getElementById('product-form');
+    if (!form || form.dataset.aiBusy === '1') return;
+    const hasImages = [...form.querySelectorAll('input[name="images"]')].some(i => i.value && !String(i.value).startsWith('blob:'));
+    if (hasImages) {
+      setProductAiStatus('AI detected new images — analyzing automatically…');
+      runProductImageAnalysis(true);
+    }
+  }, 900);
+}
+
+window.runProductImageAnalysis = async function(auto = false) {
+  const form = document.getElementById('product-form');
+  if (!form) return;
+  if (form.dataset.aiBusy === '1') return;
+  const category = form.dataset.category || '';
+  const images = [...form.querySelectorAll('input[name="images"]')].map(i => i.value).filter(u => u && !String(u).startsWith('blob:'));
+  if (!images.length) {
+    if (!auto) setProductAiStatus('Upload at least one image first, then AI can analyze it.', 'warn');
+    return;
+  }
+  form.dataset.aiBusy = '1';
+  setProductAiBusy(true, 'AI is analyzing your images…');
+  try {
+    const result = await aiClient.analyzeImages(images, { category, existingTitle: form.querySelector('[name="title"]')?.value || '' });
+    if (!result) {
+      setProductAiStatus('AI analysis unavailable — add a Google Gemini API key in AI Settings.', 'warn');
+      return;
+    }
+    applyAiAnalysisToForm(result, category);
+    setProductAiStatus('AI analysis complete. The fields were auto-filled — review them and save.', 'ok');
+    if (!auto) showToast('AI analyzed your images and filled the listing.', 'success');
+  } catch (err) {
+    setProductAiStatus('AI analysis failed: ' + (err.message || err), 'error');
+    if (!auto) showToast('AI analysis failed: ' + (err.message || err), 'error');
+  } finally {
+    form.dataset.aiBusy = '0';
+    setProductAiBusy(false);
+  }
+};
+
+function applyAiAnalysisToForm(result, category) {
+  const form = document.getElementById('product-form');
+  if (!form || !result) return;
+  const setIfEmpty = (name, value) => {
+    if (value == null || String(value).trim() === '') return;
+    const field = form.querySelector(`[name="${name}"]`);
+    if (!field) return;
+    if (!String(field.value || '').trim()) field.value = value;
+  };
+  const setArrayIfEmpty = (name, arr) => {
+    if (!Array.isArray(arr) || !arr.length) return;
+    const field = form.querySelector(`[name="${name}"]`);
+    if (!field) return;
+    if (!String(field.value || '').trim()) field.value = arr.join(', ');
+  };
+  setIfEmpty('title', result.title);
+  setIfEmpty('description', result.description);
+  setIfEmpty('subcategory', result.subcategory);
+  setIfEmpty('brand', result.brand);
+  setIfEmpty('model', result.model);
+  setIfEmpty('color', result.color);
+  setIfEmpty('size', result.size);
+  setIfEmpty('material', result.material);
+  setIfEmpty('storage', result.storage);
+  setIfEmpty('ram', result.ram);
+  setIfEmpty('processor', result.processor);
+  if (!String(form.querySelector('[name="condition"]')?.value || '').trim()) setIfEmpty('condition', result.condition);
+  setArrayIfEmpty('features_text', result.features);
+  setArrayIfEmpty('highlights_text', result.highlights);
+  setArrayIfEmpty('seo_keywords_text', result.seo_keywords);
+
+  const spec = result.specifications || {};
+  ['engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year'].forEach(k => {
+    if (spec[k] != null && String(spec[k]).trim() !== '') setIfEmpty(k, spec[k]);
+  });
+  if (Array.isArray(spec.safety_features)) setArrayIfEmpty('safety_features', spec.safety_features);
+
+  const detected = result.category ? String(result.category).trim() : '';
+  const detectedBox = document.getElementById('pf-ai-detected');
+  if (detectedBox && detected && detected.toLowerCase() !== String(category || '').toLowerCase()) {
+    detectedBox.classList.remove('hidden');
+    detectedBox.innerHTML = `<div class="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/25">
+      <span class="text-[11px] text-amber-200">AI detected category: <b>${esc(detected)}</b></span>
+      <button type="button" onclick="switchProductFormCategory('${esc(detected).replace(/'/g, "\\'")}')" class="btn-press px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500 text-[#111827] hover:bg-amber-400 transition">Switch category</button>
+      <button type="button" onclick="document.getElementById('pf-ai-detected').classList.add('hidden')" class="text-amber-300 hover:text-white text-[10px]">✕</button>
+    </div>`;
+  }
+  if (window.lucide) lucide.createIcons();
+  updateProductReviewPanel();
+}
+
+window.switchProductFormCategory = function(newCategory) {
+  const form = document.getElementById('product-form');
+  if (!form) return;
+  const existing = {};
+  const fd = new FormData(form);
+  for (const [k, v] of fd.entries()) {
+    if (k === 'images') {
+      existing.images = existing.images || [];
+      if (v && !String(v).startsWith('blob:')) existing.images.push(String(v));
+    } else if (k === 'tags') {
+      existing.tags = existing.tags || [];
+      existing.tags.push(v);
+    } else {
+      existing[k] = v;
+    }
+  }
+  existing.is_featured = form.querySelector('[name="is_featured"]')?.checked || false;
+  existing.is_active = form.querySelector('[name="is_active"]')?.checked || false;
+  if (existing.property_id && String(existing.property_id).trim()) {
+    showAddProductStep2(newCategory, existing);
+  } else {
+    showAddProductStep2(newCategory, { images: existing.images || [], ...existing });
+  }
+};
+
+window.expandProductGalleryAi = async function() {
+  const form = document.getElementById('product-form');
+  if (!form) return;
+  if (form.dataset.aiBusy === '1') return;
+  const category = form.dataset.category || '';
+  const countSel = document.getElementById('pf-ai-expand-count');
+  const target = Math.min(24, Math.max(1, parseInt(countSel?.value || '24', 10) || 24));
+  const current = [...form.querySelectorAll('input[name="images"]')].map(i => i.value).filter(u => u && !String(u).startsWith('blob:'));
+  const reference = current[0] || document.querySelector('#image-preview img')?.src;
+  if (!reference || reference === '/fallback.svg') {
+    setProductAiStatus('Upload at least one product image first, then AI can generate the full gallery.', 'warn');
+    return;
+  }
+  const angles = galleryAnglesForCategory(category);
+  const toGenerate = Math.min(target, angles.length);
+  form.dataset.aiBusy = '1';
+  const generatedBox = document.getElementById('pf-ai-generated');
+  if (generatedBox) generatedBox.innerHTML = '';
+  let ok = 0;
+  try {
+    for (let i = 0; i < toGenerate; i++) {
+      setProductAiBusy(true, `Generating ${i + 1}/${toGenerate} — ${angles[i]}…`);
+      try {
+        const imgs = await aiClient.generateImages(
+          `Generate a single high-quality, photorealistic marketplace photo of this EXACT product from this angle/perspective: ${angles[i]}. Keep the product identical in design, color, and branding. Clean background, sharp focus, professional e-commerce product photography.`,
+          reference, 1
+        );
+        if (imgs && imgs[0]) {
+          const url = await uploadDataUrlImage(imgs[0]);
+          if (url) { appendGeneratedThumb(url); ok += 1; }
+        }
+      } catch (err) {
+        setProductAiStatus(`Stopped at ${i}/${toGenerate}: ${err.message || err}`, 'error');
+        break;
+      }
+    }
+    if (ok) {
+      setProductAiStatus(`Generated ${ok} image${ok > 1 ? 's' : ''}. They are added to your gallery — save the product to keep them.`, 'ok');
+      showToast(`${ok} AI image(s) generated and added.`, 'success');
+    } else {
+      setProductAiStatus('No images could be generated. Check the Gemini API key / image-model access.', 'error');
+    }
+  } finally {
+    form.dataset.aiBusy = '0';
+    setProductAiBusy(false);
+  }
+};
+
+function appendGeneratedThumb(url) {
+  const preview = document.getElementById('image-preview');
+  if (!preview) return;
+  const i = preview.children.length;
+  const div = document.createElement('div');
+  div.innerHTML = imageThumbHtml(url, i);
+  preview.appendChild(div.firstElementChild);
+  rebuildImageInputs();
+  updateCoverBadge();
+  const box = document.getElementById('pf-ai-generated');
+  if (box) {
+    const t = document.createElement('div');
+    t.className = 'w-14 h-14 rounded-lg overflow-hidden border border-fuchsia-500/30 relative';
+    t.innerHTML = `<img src="${esc(url)}" class="w-full h-full object-cover" onerror="this.src='/fallback.svg'"><span class="absolute bottom-0 inset-x-0 text-center text-[7px] font-black bg-fuchsia-600/80 text-white">AI</span>`;
+    box.appendChild(t);
+  }
+}
+
+async function uploadDataUrlImage(dataUrl) {
+  try {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const name = `ai-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    return await uploadImageFile(new File([blob], name, { type: blob.type }));
+  } catch { return dataUrl; }
+}
 
 function imageThumbHtml(url, i) {
   return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}" title="${i === 0 ? 'Cover Image' : 'Image ' + (i + 1)}">
@@ -2071,6 +2376,7 @@ async function processImageFiles(files) {
   }
   updateCoverBadge();
   if (window.lucide) lucide.createIcons();
+  scheduleAutoProductAnalysis();
 }
 
 async function uploadImageFile(file) {
@@ -2304,6 +2610,7 @@ window.saveProduct = async function(e, category, existingId) {
   e.preventDefault();
   const form = e.target;
   const btn = form.querySelector('[type=submit][name=action][value=publish]');
+  const publishLabel = existingId ? 'One-Click Publish Changes' : 'One-Click Publish Product';
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
     const formData = new FormData(form);
@@ -2311,7 +2618,7 @@ window.saveProduct = async function(e, category, existingId) {
     for (const [k, v] of formData.entries()) {
       if (k === 'images') {
         data.images = data.images || [];
-        if (v && !v.startsWith('blob:')) data.images.push(v);
+        if (v && !String(v).startsWith('blob:')) data.images.push(String(v));
       } else if (k === 'tags') {
         data.tags = data.tags || [];
         data.tags.push(v);
@@ -2319,73 +2626,148 @@ window.saveProduct = async function(e, category, existingId) {
         data[k] = v;
       }
     }
-    const requiredImageCount = existingId ? 0 : (parseInt(data.required_image_count || '0', 10) || (AUTOMOTIVE_CATEGORIES.includes(category) ? 24 : 0));
-    validateImageRequirement(requiredImageCount, data.images || [], 'This listing');
+    data.is_featured = form.querySelector('[name="is_featured"]')?.checked ? 'on' : '';
+    data.is_active = form.querySelector('[name="is_active"]')?.checked ? 'on' : '';
     const isDraft = formData.get('action') === 'draft';
-    const payload = {
-      listing_type: 'product',
-      category,
-      subcategory: data.subcategory || null,
-      title: data.title || 'Untitled Product',
-      description: data.description || '',
-      price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.price) || 0)),
-      currency: data.currency || 'USD',
-      country: '', country_code: '', listing_status: 'sale',
-      state: '', city: '',
-      product_location: '',
-      latitude: null,
-      longitude: null,
-      is_active: isDraft ? false : data.is_active === 'on',
-      is_featured: data.is_featured === 'on',
-      brand: data.brand || null,
-      color: data.color || null,
-      size: data.size || null,
-      condition: data.condition || null,
-      warranty: data.warranty || null,
-      availability_status: data.availability_status || 'In Stock',
-      stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
-      images: data.images || [],
-      features: normalizeCommaList(data.features_text).length ? normalizeCommaList(data.features_text) : (data.tags || []),
-      tags: data.tags || [],
-      highlights: normalizeCommaList(data.highlights_text),
-      seo_keywords: normalizeCommaList(data.seo_keywords_text),
-      is_ai_generated: !!data.catalog_template_id,
-      ai_generated_fields: data.catalog_template_id ? ['title', 'description', 'features', 'highlights', 'seo_keywords'] : [],
-      specifications: {
-        model: data.model || null, storage: data.storage || null, ram: data.ram || null,
-        processor: data.processor || null, display: data.display || null,
-        material: data.material || null, gender: data.gender || null,
-        platform: data.platform || null, voltage: data.voltage || null,
-      },
+    const normalizeComma = (raw) => normalizeCommaList(raw);
+
+    const buildSpecifications = (src) => {
+      const specKeys = ['model', 'storage', 'ram', 'processor', 'display', 'material', 'gender', 'platform', 'voltage', 'engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year'];
+      const spec = {};
+      for (const k of specKeys) {
+        const v = src[k];
+        spec[k] = (v != null && String(v).trim() !== '') ? v : null;
+      }
+      if (src.safety_features) {
+        const sf = normalizeComma(src.safety_features);
+        spec.safety_features = sf.length ? sf : null;
+      }
+      return spec;
     };
+
     let err;
     if (existingId) {
-      payload.property_id = existingId;
-      const current = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === existingId));
-      ({ error: err } = await supabase.from('showroom_listings').upsert({ ...current, ...payload }, { onConflict: 'property_id' }));
+      // ── EXISTING PRODUCT → PARTIAL UPDATE ─────────────────────────
+      // Only save what actually changed. Nothing is required in edit mode.
+      let base = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === existingId));
+      if (!base) {
+        const { data: fresh } = await supabase.from('showroom_listings').select('*').eq('property_id', existingId).maybeSingle();
+        base = fresh ? sanitizeShowroomPayload(fresh) : null;
+      }
+      if (!base) throw new Error('Could not load the current product. Refresh the page and try again.');
+
+      const eq = (a, b) => {
+        const na = (a === '' || a == null) ? '' : a;
+        const nb = (b === '' || b == null) ? '' : b;
+        return String(na).trim() === String(nb).trim();
+      };
+      const changes = {};
+
+      ['title', 'description', 'currency', 'subcategory', 'brand', 'color', 'size', 'condition', 'warranty', 'availability_status', 'model_year', 'body_type', 'mileage', 'engine', 'horsepower', 'transmission', 'drive_type', 'fuel_type'].forEach((key) => {
+        if (!eq(data[key], base[key])) changes[key] = (data[key] == null || data[key] === '') ? null : data[key];
+      });
+
+      const formPrice = data.price === '' || data.price == null ? null : parseFloat(data.price);
+      if (!eq(formPrice, base.price)) {
+        changes.price = formPrice == null ? base.price : Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, formPrice));
+      }
+
+      const formStock = (data.stock_quantity === '' || data.stock_quantity == null) ? null : parseInt(data.stock_quantity, 10);
+      if (!eq(formStock, base.stock_quantity)) changes.stock_quantity = (Number.isFinite(formStock) ? formStock : null);
+
+      const features = normalizeComma(data.features_text);
+      if (!eq(features.join('||'), (Array.isArray(base.features) ? base.features : []).join('||'))) changes.features = features;
+      const tags = data.tags || [];
+      if (!eq(tags.join('||'), (Array.isArray(base.tags) ? base.tags : []).join('||'))) changes.tags = tags;
+      const highlights = normalizeComma(data.highlights_text);
+      if (!eq(highlights.join('||'), (Array.isArray(base.highlights) ? base.highlights : []).join('||'))) changes.highlights = highlights;
+      const seoKeywords = normalizeComma(data.seo_keywords_text);
+      if (!eq(seoKeywords.join('||'), (Array.isArray(base.seo_keywords) ? base.seo_keywords : []).join('||'))) changes.seo_keywords = seoKeywords;
+
+      const formImages = data.images || [];
+      if (!eq(formImages.join('||'), (Array.isArray(base.images) ? base.images : []).join('||'))) changes.images = formImages;
+
+      const feat = data.is_featured === 'on';
+      if (!!base.is_featured !== feat) changes.is_featured = feat;
+      const act = isDraft ? false : data.is_active === 'on';
+      if (!!base.is_active !== act) changes.is_active = act;
+
+      const spec = buildSpecifications(data);
+      const specMerged = { ...(base.specifications && typeof base.specifications === 'object' ? base.specifications : {}), ...spec };
+      if (JSON.stringify(specMerged) !== JSON.stringify(base.specifications || {})) changes.specifications = specMerged;
+
+      if (Object.keys(changes).length === 0) {
+        showToast('No changes detected — nothing was saved.', 'info');
+        if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
+        return;
+      }
+
+      const payload = { ...base, ...changes, property_id: existingId, updated_at: new Date().toISOString() };
+      ({ error: err } = await supabase.from('showroom_listings').upsert(payload, { onConflict: 'property_id' }));
+      if (err) {
+        const handled = handleWriteError(err, () => upsertLocalShowroomListing(payload), 'Product update');
+        if (handled) {
+          if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
+          return;
+        }
+      }
+      showToast(isDraft ? 'Draft saved!' : `Product updated — ${Object.keys(changes).length} change(s) saved.`);
     } else {
+      // ── NEW PRODUCT → FULL VALIDATION + FULL SAVE ─────────────────
+      const requiredImageCount = parseInt(data.required_image_count || '0', 10) || (AUTOMOTIVE_CATEGORIES.includes(category) ? 24 : 0);
+      validateImageRequirement(requiredImageCount, data.images || [], 'This listing');
+      if (!data.title || !data.title.trim()) throw new Error('A product title is required.');
+      if (data.price === '' || data.price == null || !isFinite(parseFloat(data.price))) throw new Error('A price is required.');
+      if (!data.condition) throw new Error('Please choose the product condition.');
+
+      const payload = {
+        listing_type: 'product',
+        category,
+        subcategory: data.subcategory || null,
+        title: data.title.trim(),
+        description: data.description || '',
+        price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.price) || 0)),
+        currency: data.currency || 'USD',
+        country: '', country_code: '', listing_status: 'sale',
+        state: '', city: '',
+        product_location: '',
+        latitude: null,
+        longitude: null,
+        is_active: isDraft ? false : data.is_active === 'on',
+        is_featured: data.is_featured === 'on',
+        brand: data.brand || null,
+        color: data.color || null,
+        size: data.size || null,
+        condition: data.condition || null,
+        warranty: data.warranty || null,
+        availability_status: data.availability_status || 'In Stock',
+        stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
+        images: data.images || [],
+        features: normalizeComma(data.features_text).length ? normalizeComma(data.features_text) : (data.tags || []),
+        tags: data.tags || [],
+        highlights: normalizeComma(data.highlights_text),
+        seo_keywords: normalizeComma(data.seo_keywords_text),
+        is_ai_generated: !!data.catalog_template_id,
+        ai_generated_fields: data.catalog_template_id ? ['title', 'description', 'features', 'highlights', 'seo_keywords'] : [],
+        specifications: buildSpecifications(data),
+      };
       const pid = genId();
       payload.property_id = pid;
       ({ error: err } = await supabase.from('showroom_listings').insert(payload));
-    }
-    if (err) {
-      const handled = handleWriteError(
-        err,
-        () => upsertLocalShowroomListing({ ...payload, property_id: existingId || payload.property_id }),
-        existingId ? 'Product update' : 'Product publish'
-      );
-      if (handled) {
-        if (btn) { btn.disabled = false; btn.textContent = existingId ? 'One-Click Publish Changes' : 'One-Click Publish Product'; }
-        return;
+      if (err) {
+        const handled = handleWriteError(err, () => upsertLocalShowroomListing({ ...payload, property_id: payload.property_id }), 'Product publish');
+        if (handled) {
+          if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
+          return;
+        }
       }
+      showToast(isDraft ? 'Draft saved!' : 'Product published!');
     }
-    showToast(isDraft ? 'Draft saved!' : existingId ? 'Product updated!' : 'Product published!');
     try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
-    closeModal();
-    renderProducts();
+    closeProductFormModal();
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = existingId ? 'One-Click Publish Changes' : 'One-Click Publish Product'; }
+    if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
   }
 };
 
@@ -3681,7 +4063,151 @@ const aiClient = {
       remainingSec: Math.max(0, Math.ceil(((cooldowns[p.id] || 0) - now) / 1000)),
     }));
   },
+
+  // ── VISION: analyze uploaded product images (Gemini) ────────────────
+  // Returns a parsed JSON object { title, description, category, subcategory,
+  // brand, model, color, condition, features[], highlights[], seo_keywords[],
+  // specifications{} } or null when vision is unavailable.
+  async analyzeImages(imageUrls, context = {}) {
+    const cfg = await this.getConfig();
+    const providers = await this.getOrderedProviders();
+    const gemini = providers.find(p => p.id === 'gemini');
+    const fallbackProvider = providers[0];
+
+    const prompt = `You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded product photo(s) and identify exactly what the product is.
+
+Return a single valid JSON object (no markdown, no extra text) with these keys:
+- title (string): a real, professional marketplace product title that matches the actual item (brand + model/type + key feature + category). Never use placeholders like "AI Product" or "Premium Item".
+- description (string): a detailed, persuasive 2-4 sentence description.
+- category (string): the best category from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other.
+- subcategory (string)
+- brand, model, color, condition (strings; condition from: New, Refurbished, Used - Like New, Used - Good, Used - Fair)
+- material, size, storage, ram, processor (strings, only if relevant)
+- features (array of strings)
+- highlights (array of strings)
+- seo_keywords (array of strings)
+- specifications (object with the relevant spec keys only, e.g. engine, transmission, fuel_type, horsepower, mileage, drive_type, body_type, model_year for vehicles; storage, ram, processor, display for electronics)
+- detected_name (string): a short plain-language label of the product, e.g. "white sneakers".
+
+Respond with valid JSON only.`;
+
+    if (gemini) {
+      return this._geminiVision(gemini, cfg, imageUrls, prompt);
+    }
+
+    // No Gemini key → best-effort text-only analysis using the category context
+    if (fallbackProvider) {
+      const extra = `\n\n(No image access is configured. The product is currently categorized as "${context.category || 'Unknown'}"${context.existingTitle ? ` and titled "${context.existingTitle}"` : ''}. Base your content on that plus general knowledge of typical products in this category.)`;
+      const res = await this.chat([{ role: 'user', content: prompt + extra }], { maxTokens: 4000 });
+      return extractJsonFromAiText(res.text);
+    }
+    return null;
+  },
+
+  async _geminiVision(provider, cfg, imageUrls, prompt) {
+    const key = cfg[provider.kf];
+    const model = cfg[provider.mf] || 'gemini-2.5-flash';
+    const parts = [{ text: prompt }];
+    let added = 0;
+    for (const url of (imageUrls || []).slice(0, 4)) {
+      try {
+        const blob = await fetch(url).then(r => r.blob());
+        if (!blob || !blob.size) continue;
+        const b64 = await blobToBase64(blob);
+        if (b64) { parts.push({ inlineData: { mimeType: blob.type || 'image/jpeg', data: b64 } }); added += 1; }
+      } catch { /* skip unreadable image */ }
+    }
+    if (!added) throw new Error('Could not read the uploaded images.');
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`AI vision failed (${res.status}): ${body.slice(0, 120)}`);
+    }
+    const data = await res.json();
+    const text = (data?.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
+    if (!text) throw new Error('The AI returned no analysis.');
+    return extractJsonFromAiText(text);
+  },
+
+  // ── IMAGE GENERATION: expand a product into realistic angle photos ──
+  // Uses a Gemini image model with the reference photo to produce new
+  // photorealistic images of the SAME product. Returns an array of data-URLs.
+  async generateImages(prompt, referenceUrl, count = 1) {
+    const cfg = await this.getConfig();
+    const providers = await this.getOrderedProviders();
+    const gemini = providers.find(p => p.id === 'gemini');
+    if (!gemini) throw new Error('AI image generation needs a Google Gemini API key (AI Settings).');
+    const key = cfg[gemini.kf];
+    const models = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation', 'gemini-2.5-flash-preview-image'];
+    let lastErr = null;
+    for (const model of models) {
+      try {
+        const parts = [{ text: prompt }];
+        if (referenceUrl) {
+          try {
+            const blob = await fetch(referenceUrl).then(r => r.blob());
+            const b64 = await blobToBase64(blob);
+            if (b64) parts.push({ inlineData: { mimeType: blob.type || 'image/jpeg', data: b64 } });
+          } catch { /* reference optional */ }
+        }
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: { responseModalities: ['TEXT', 'IMAGE'], candidateCount: count || 1, temperature: 0.45 },
+          }),
+          signal: AbortSignal.timeout(120000),
+        });
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          const low = body.toLowerCase();
+          if (low.includes('not found') || low.includes('model') || low.includes('unsupported')) {
+            lastErr = new Error(`Image model ${model} unavailable on this key.`);
+            continue;
+          }
+          throw new Error(`AI image generation failed (${res.status}): ${body.slice(0, 120)}`);
+        }
+        const data = await res.json();
+        const images = [];
+        for (const cand of (data?.candidates || [])) {
+          for (const part of (cand?.content?.parts || [])) {
+            if (part?.inlineData?.data) {
+              images.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
+            }
+          }
+        }
+        if (images.length) return images;
+        lastErr = new Error('The AI returned no image.');
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error('AI image generation failed.');
+  },
 };
+
+function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === 'string') {
+        const comma = result.indexOf(',');
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      } else resolve('');
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(blob);
+  });
+}
 
 // Expose globally so other parts of the app can call aiClient.chat(...)
 window.aiClient = aiClient;
