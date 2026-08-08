@@ -398,7 +398,7 @@ function parseImageShowroomRequest(text) {
   const parsedCategory = (categoryMatch?.[1] || '').trim();
   const listingType = isHouse ? 'property' : 'product';
   const category = parsedCategory || (isHouse ? 'Real Estate' : 'General');
-  const title = (namedMatch?.[1] || nameMatch?.[1] || titleMatch?.[1] || (isHouse ? 'AI Curated House Listing' : 'AI Curated Product Listing')).trim();
+  const title = (namedMatch?.[1] || nameMatch?.[1] || titleMatch?.[1] || deriveProfessionalTitle(message, category, listingType, { propertyType: isHouse ? 'House' : '' })).trim();
 
   return {
     listingType,
@@ -736,13 +736,43 @@ function generateProductId() {
   return `KCO-${tail}${rand}`;
 }
 
+// Professional title derivation — never falls back to "AI Product"/"AI Curated".
+function titleCaseProfessional(str) {
+  return String(str || '').trim()
+    .replace(/\s{2,}/g, ' ')
+    .replace(/(^|[\s\-/(])[a-z\u00e0-\u00ff]/g, (m) => m.toUpperCase());
+}
+
+function deriveProfessionalTitle(message, category, listingType, extra = {}) {
+  const text = String(message || '').trim();
+  const clean = (s) => String(s || '').trim().replace(/^["']|["']$/g, '').replace(/\s{2,}/g, ' ');
+  const explicit = clean((text.match(/named\s+["']([^"']+)["']/i) || text.match(/name\s+["']([^"']+)["']/i) || text.match(/name\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i) || text.match(/title\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\scategory\s|\sin\s|\sthen\s|$)/i))?.[1]);
+  if (explicit && !/^(a|an|the|new|product|item|listing|house|property)$/i.test(explicit)) return titleCaseProfessional(explicit);
+
+  const loose = text.match(/^(?:add|create|put|publish)\s+(?:a\s+|an\s+|new\s+|one\s+)?(.+?)(?:,|\s(?:price|stock|category|in|then|with|for)\s|$)/i)?.[1];
+  const looseClean = clean(loose);
+  if (looseClean && !/^(product|item|listing|house|property|villa|apartment|showroom)$/i.test(looseClean) && looseClean.length > 2) {
+    return titleCaseProfessional(looseClean);
+  }
+
+  const cat = clean(category && category !== 'General' ? category : '');
+  if (listingType === 'property') {
+    const type = clean(extra.propertyType) || 'Property';
+    const place = [extra.city, extra.state, extra.country].filter(Boolean).join(', ');
+    if (place) return `${titleCaseProfessional(type)} in ${place}`;
+    if (cat) return `${titleCaseProfessional(cat)} ${type}`;
+    return titleCaseProfessional(type);
+  }
+  if (cat) return titleCaseProfessional(cat);
+  return 'Premium Item';
+}
+
 function parseProductDeployRequest(text) {
   if (!/(add|create)\s+(a\s+)?(new\s+)?product/i.test(text || '') && !isLikelyProductRequest(text)) return null;
   const message = String(text || '').trim();
   const namedMatch = message.match(/named\s+["']([^"']+)["']/i) || message.match(/named\s+([^,\.]+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i);
   const nameMatch = message.match(/name\s+["']([^"']+)["']/i) || message.match(/name\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i);
   const looseAddMatch = message.match(/^(?:add|create)\s+(?:a\s+|an\s+|new\s+)?(.+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i);
-  const title = (namedMatch?.[1] || nameMatch?.[1] || looseAddMatch?.[1] || 'AI Product').trim();
 
   const priceMatch = message.match(/price\s*[:=]?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
   const stockMatch = message.match(/stock\s*[:=]?\s*([0-9]+)/i);
@@ -751,6 +781,8 @@ function parseProductDeployRequest(text) {
 
   const categoryRaw = (categoryMatch?.[1] || 'General').trim();
   const category = categoryRaw.split(/\s+then\s+/i)[0].trim();
+
+  const title = (namedMatch?.[1] || nameMatch?.[1] || looseAddMatch?.[1] || deriveProfessionalTitle(message, category, 'product')).trim();
 
   return {
     title,
@@ -768,7 +800,6 @@ function parseHouseRequest(text) {
 
   const namedMatch = message.match(/named\s+["']([^"']+)["']/i) || message.match(/named\s+([^,\.]+?)(?:,|\sprice\s|\sin\s|\slocation\s|\smap\s|\sthen\s|$)/i);
   const titleMatch = message.match(/title\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\sin\s|\sthen\s|$)/i);
-  const title = (namedMatch?.[1] || titleMatch?.[1] || 'AI House Listing').trim();
 
   const priceMatch = message.match(/price\s*[:=]?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
   const bedsMatch = message.match(/(bedrooms?|beds?)\s*[:=]?\s*([0-9]+)/i);
@@ -784,6 +815,13 @@ function parseHouseRequest(text) {
   const locationMatch = message.match(/(location|area|address)\s*[:=]?\s*([a-zA-Z0-9\-,\s]+?)(?:\sthen\s|$)/i);
   const latMatch = message.match(/lat(?:itude)?\s*[:=]?\s*(-?[0-9]+(?:\.[0-9]+)?)/i);
   const lngMatch = message.match(/(?:lng|lon|long|longitude)\s*[:=]?\s*(-?[0-9]+(?:\.[0-9]+)?)/i);
+
+  const title = (namedMatch?.[1] || titleMatch?.[1] || deriveProfessionalTitle(message, 'Real Estate', 'property', {
+    propertyType: (categoryMatch?.[2] || 'House').trim(),
+    city: (cityMatch?.[1] || '').trim(),
+    state: (stateMatch?.[1] || '').trim(),
+    country: (countryMatch?.[1] || '').trim(),
+  })).trim();
 
   const imageCountMatch = message.match(/(\d{1,2})\s+images?/i);
   const requestedImages = imageCountMatch ? parseInt(imageCountMatch[1], 10) : 24;

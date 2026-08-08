@@ -85,6 +85,20 @@ function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { year:
 function fmtDT(d) { return d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
 function genId() { return 'KCO-' + String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0'); }
 
+// Whitelist of showroom_listings columns known to exist in the live DB.
+// Used to sanitize upsert payloads so seed/local objects (which may carry
+// extra display-only keys) never cause "column does not exist" errors.
+const SHOWROOM_COLUMNS = ['id','property_id','listing_type','category','subcategory','title','description','price','price_period','currency','country','country_code','state','city','town','product_location','latitude','longitude','bedrooms','bathrooms','building_size','land_size','parking_spaces','property_type','furnished','listing_status','images','features','features_text','tags','highlights','seo_keywords','specifications','brand','color','size','condition','warranty','shipping_info','delivery_estimate','weight','dimensions','storage_options','ram_options','color_options','availability_status','stock_quantity','sku','is_active','is_featured','is_ai_generated','ai_generated_fields','rating','rating_count','favorite_count','review_count','video','video_url','approval_status','published_at','created_at','updated_at'];
+
+function sanitizeShowroomPayload(obj) {
+  const out = {};
+  if (!obj || typeof obj !== 'object') return out;
+  for (const k of SHOWROOM_COLUMNS) {
+    if (k in obj) out[k] = obj[k];
+  }
+  return out;
+}
+
 function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
   const m = document.getElementById('toast-msg');
@@ -1077,6 +1091,7 @@ function productCard(product) {
 
     <div class="flex flex-wrap gap-1.5 mt-auto">
       <button onclick="editProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-blue-500/15 text-blue-200 hover:bg-blue-500/25 transition">Edit</button>
+      <button onclick="openProductAiAssistant('${product.property_id}','products')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-fuchsia-500/15 text-fuchsia-200 hover:bg-fuchsia-500/25 transition">AI Assistant</button>
       <button onclick="quickEditProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 transition">Quick Edit</button>
       <button onclick="previewProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-sky-500/15 text-sky-200 hover:bg-sky-500/25 transition">Preview</button>
       <button onclick="duplicateProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white/10 text-gray-200 hover:bg-white/20 transition">Duplicate</button>
@@ -1146,6 +1161,7 @@ function renderProductsTable(items) {
           <td>
             <div class="flex gap-1">
               <button onclick="editProduct('${p.property_id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+              <button onclick="openProductAiAssistant('${p.property_id}','products')" class="btn-press p-1.5 text-fuchsia-400 hover:bg-fuchsia-500/10 rounded-lg transition" title="AI Assistant"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i></button>
               <button onclick="quickEditProduct('${p.property_id}')" class="btn-press p-1.5 text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition" title="Quick Edit"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i></button>
               <button onclick="${publishFn}" class="btn-press p-1.5 ${p.is_active ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'} rounded-lg transition" title="${publishLabel}"><i data-lucide="${p.is_active ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i></button>
               <button onclick="archiveProduct('${p.property_id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Archive"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>
@@ -1288,7 +1304,10 @@ function handleWriteError(error, fallbackFn, actionLabel) {
 window.bulkToggleActive = async function(active) {
   const ids = getSelectedIds();
   if (!ids.length) return;
-  const results = await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: active }).eq('property_id', id)));
+  const results = await Promise.all(ids.map(id => {
+    const full = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === id));
+    return supabase.from('showroom_listings').upsert({ ...full, property_id: id, is_active: active }, { onConflict: 'property_id' });
+  }));
   const denied = results.some(r => r.error && isRlsDenied(r.error));
   if (denied) {
     showToast(`⚠️ ${ids.length} products NOT ${active ? 'published' : 'unpublished'}: database admin role blocked the write. Re-run the admin permission migration.`, 'error');
@@ -1422,7 +1441,8 @@ window.saveQuickEditProduct = async function(e, pid) {
     is_featured: fd.get('is_featured') === 'on',
     is_active: fd.get('is_active') === 'on',
   };
-  const { error } = await supabase.from('showroom_listings').update(patch).eq('property_id', pid);
+  const full = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === pid));
+  const { error } = await supabase.from('showroom_listings').upsert({ ...full, ...patch, property_id: pid }, { onConflict: 'property_id' });
   if (error) {
     if (isRlsDenied(error)) {
       showToast('⚠️ Save blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
@@ -2299,7 +2319,7 @@ window.saveProduct = async function(e, category, existingId) {
         data[k] = v;
       }
     }
-    const requiredImageCount = parseInt(data.required_image_count || '0', 10) || (AUTOMOTIVE_CATEGORIES.includes(category) ? 24 : 0);
+    const requiredImageCount = existingId ? 0 : (parseInt(data.required_image_count || '0', 10) || (AUTOMOTIVE_CATEGORIES.includes(category) ? 24 : 0));
     validateImageRequirement(requiredImageCount, data.images || [], 'This listing');
     const isDraft = formData.get('action') === 'draft';
     const payload = {
@@ -2338,9 +2358,11 @@ window.saveProduct = async function(e, category, existingId) {
         platform: data.platform || null, voltage: data.voltage || null,
       },
     };
-let err;
+    let err;
     if (existingId) {
-      ({ error: err } = await supabase.from('showroom_listings').update(payload).eq('property_id', existingId));
+      payload.property_id = existingId;
+      const current = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === existingId));
+      ({ error: err } = await supabase.from('showroom_listings').upsert({ ...current, ...payload }, { onConflict: 'property_id' }));
     } else {
       const pid = genId();
       payload.property_id = pid;
@@ -2377,7 +2399,8 @@ window.editProduct = async function(pid) {
 };
 
 window.toggleProductActive = async function(pid, active) {
-  const { error } = await supabase.from('showroom_listings').update({ is_active: active, availability_status: active ? 'In Stock' : 'Out of Stock' }).eq('property_id', pid);
+  const full = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === pid));
+  const { error } = await supabase.from('showroom_listings').upsert({ ...full, property_id: pid, is_active: active, availability_status: active ? 'In Stock' : 'Out of Stock' }, { onConflict: 'property_id' });
   if (error) {
     if (isRlsDenied(error)) return showToast(`⚠️ ${active ? 'Publish' : 'Unpublish'} blocked: database admin role rejected the write. Re-run the admin permission migration.`, 'error');
     return showToast(`${active ? 'Publish' : 'Unpublish'} failed: ${error.message}`, 'error');
@@ -2424,6 +2447,7 @@ async function renderProperties() {
       if (seedProps.length) items = items.concat(seedProps);
     }
     items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    window._propertiesData = items;
     content.innerHTML = `
       <div class="space-y-4 fade-in">
         <div class="flex flex-wrap items-center gap-3">
@@ -2455,6 +2479,7 @@ async function renderProperties() {
                     <td>
                       <div class="flex gap-1">
                         <button onclick="editProperty('${p.property_id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="openProductAiAssistant('${p.property_id}','properties')" class="btn-press p-1.5 text-fuchsia-400 hover:bg-fuchsia-500/10 rounded-lg transition" title="AI Assistant"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i></button>
                         <button onclick="archiveProduct('${p.property_id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>
                       </div>
                     </td>
@@ -2572,7 +2597,7 @@ window.saveProperty = async function(e, existingId) {
   const data = Object.fromEntries(fd.entries());
   const images = fd.getAll('images').filter(u => u && !u.startsWith('blob:'));
   const features = (data.features_text || '').split(',').map(s => s.trim()).filter(Boolean);
-  const requiredImageCount = parseInt(data.required_image_count || '24', 10) || 24;
+  const requiredImageCount = existingId ? 0 : (parseInt(data.required_image_count || '24', 10) || 24);
   validateImageRequirement(requiredImageCount, images, 'This property');
   const payload = {
     listing_type: 'property',
@@ -2597,9 +2622,11 @@ window.saveProperty = async function(e, existingId) {
     ai_generated_fields: data.catalog_template_id ? ['title', 'description', 'features', 'highlights', 'seo_keywords', 'country', 'country_code', 'product_location'] : [],
     is_active: data.is_active === 'on',
   };
-let err;
+  let err;
   if (existingId) {
-    ({ error: err } = await supabase.from('showroom_listings').update(payload).eq('property_id', existingId));
+    payload.property_id = existingId;
+    const current = sanitizeShowroomPayload((window._propertiesData || []).find(item => item.property_id === existingId) || (window._productsData || []).find(item => item.property_id === existingId));
+    ({ error: err } = await supabase.from('showroom_listings').upsert({ ...current, ...payload }, { onConflict: 'property_id' }));
   } else {
     payload.property_id = genId();
     ({ error: err } = await supabase.from('showroom_listings').insert(payload));
@@ -3714,6 +3741,460 @@ window.testAiCall = async function() {
     output.textContent = `✓ [${result.provider} · ${result.model}]\n\n${result.text}`;
   } catch (err) {
     output.textContent = `❌ ${err.message}`;
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+//  11.5 PER-PRODUCT AI ASSISTANT
+//  One permanent AI assistant, auto-attached to every product
+//  (existing and new) in the Admin Dashboard. Scoped to a single
+//  product — it can only ever edit the product it is attached to.
+// ══════════════════════════════════════════════════════════
+let _productAiState = null; // { pid, from, product, busy, suggestions, approved, removedImages, addedImages, instruction }
+
+const PRODUCT_AI_QUICK_ACTIONS = [
+  { key: 'rewrite', label: 'Rewrite Title & Description', icon: 'pen-line', prompt: 'Rewrite the title and description to be more professional, compelling, and conversion-focused. Keep all product facts accurate. The title must be a real, professional product name that matches the item and its category — never a generic placeholder.' },
+  { key: 'name', label: 'Professional Name', icon: 'badge-check', prompt: 'Give this product a real, professional product name that accurately matches what it actually is and its category. Never use placeholder names like "AI Product", "AI Curated Product", or anything similar.' },
+  { key: 'price', label: 'Optimize Price & Stock', icon: 'dollar-sign', prompt: 'Suggest a competitive, realistic price and an optimal stock quantity for this product based on the category and current data.' },
+  { key: 'category', label: 'Fix Category & Specs', icon: 'tags', prompt: 'Fix the category, subcategory, and specifications so they accurately describe this product. Use the category list if possible.' },
+  { key: 'images', label: 'Clean Up Duplicate/Bad Images', icon: 'images', prompt: 'Identify duplicate, broken, or low-quality images among the CURRENT images list only, and list their exact URLs in images_to_remove. Do not invent any image URLs.' },
+];
+
+function productAiFindProduct(pid) {
+  const pool = [
+    ...(window._productsData || []),
+    ...(window._propertiesData || []),
+  ];
+  return pool.find((p) => p.property_id === pid) || null;
+}
+
+function productAiSnapshot(product) {
+  const keys = ['property_id','listing_type','category','subcategory','title','description','price','currency','brand','color','size','condition','availability_status','stock_quantity','features','tags','highlights','seo_keywords','specifications','bedrooms','bathrooms','city','state','country','images'];
+  const out = {};
+  for (const k of keys) {
+    if (k in product) out[k] = product[k];
+  }
+  return out;
+}
+
+function extractJsonFromAiText(text) {
+  if (!text) return null;
+  let t = String(text).trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  const start = t.indexOf('{');
+  const end = t.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) return null;
+  const candidate = t.slice(start, end + 1);
+  try { return JSON.parse(candidate); }
+  catch { return null; }
+}
+
+function productAiValuePreview(value) {
+  if (Array.isArray(value)) return value.length ? value.join(' · ') : '(empty)';
+  if (value && typeof value === 'object') return JSON.stringify(value);
+  return value === undefined || value === null || value === '' ? '(empty)' : String(value);
+}
+
+window.openProductAiAssistant = async function(pid, from = 'products') {
+  let product = productAiFindProduct(pid);
+  if (!product) {
+    try {
+      const { data } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
+      if (data) product = data;
+    } catch { /* fall back to undefined */ }
+  }
+  if (!product) { showToast('Product not found.', 'error'); return; }
+  _productAiState = {
+    pid,
+    from: from === 'properties' ? 'properties' : 'products',
+    product,
+    busy: false,
+    suggestions: null,
+    approved: new Set(),
+    removedImages: new Set(),
+    addedImages: [],
+    instruction: '',
+  };
+  renderProductAiModal();
+};
+
+function renderProductAiModal() {
+  const s = _productAiState;
+  if (!s) return;
+  const p = s.product;
+  const thumb = (p.images && p.images[0]) ? p.images[0] : '/fallback.svg';
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box wide max-h-[92vh] overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between mb-4 shrink-0">
+          <div class="flex items-center gap-3 min-w-0">
+            <img src="${esc(thumb)}" class="w-11 h-11 rounded-xl object-cover border border-fuchsia-500/30" onerror="this.src='/fallback.svg'">
+            <div class="min-w-0">
+              <h3 class="text-sm font-black text-white truncate">${esc(p.title || 'Untitled')}</h3>
+              <p class="text-[10px] font-mono text-gray-500">${esc(p.property_id)} · ${esc(p.category || 'Uncategorized')}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/25"><i data-lucide="sparkles" class="w-3 h-3"></i> AI Assistant</span>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto scrollbar-thin pr-1 space-y-4">
+          ${renderProductAiImagesPanel()}
+          ${renderProductAiChatPanel()}
+          ${renderProductAiPreviewPanel()}
+        </div>
+
+        <div class="shrink-0 pt-3 mt-3 border-t border-blue-500/10 flex items-center justify-between gap-3">
+          <p class="text-[10px] text-gray-500">AI can only edit this product. Review changes, approve what you want, then save directly to Supabase.</p>
+          <button onclick="applyProductAiChanges()" class="btn-press px-4 py-2.5 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white text-xs font-black rounded-xl transition flex items-center gap-1.5 shrink-0" ${s.busy ? 'disabled' : ''}>
+            <i data-lucide="database" class="w-4 h-4"></i> Save Approved to Supabase
+          </button>
+        </div>
+      </div>
+    </div>`);
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderProductAiImagesPanel() {
+  const s = _productAiState;
+  if (!s) return '';
+  const current = Array.isArray(s.product.images) ? s.product.images : [];
+  const all = [...current, ...s.addedImages];
+  const dupCounts = {};
+  current.forEach((u) => { dupCounts[u] = (dupCounts[u] || 0) + 1; });
+  const dupUrls = Object.keys(dupCounts).filter((u) => dupCounts[u] > 1);
+
+  const thumbs = all.map((url, i) => {
+    const isCurrent = i < current.length;
+    const removed = isCurrent && s.removedImages.has(url);
+    const isDup = isCurrent && dupUrls.includes(url);
+    return `
+      <div class="relative group w-20 h-20 rounded-lg overflow-hidden border ${removed ? 'border-red-500/60 opacity-50' : isDup ? 'border-amber-400/70' : 'border-white/10'}">
+        <img src="${esc(url)}" class="w-full h-full object-cover" onerror="this.src='/fallback.svg'">
+        ${isDup ? '<span class="absolute top-0.5 left-0.5 text-[8px] font-black px-1 rounded bg-amber-400 text-[#111827]">DUP</span>' : ''}
+        ${removed ? '<div class="absolute inset-0 flex items-center justify-center bg-red-950/70 text-[9px] font-black text-red-200">REMOVE</div>' : ''}
+        <button onclick="productAiToggleRemoveImage(${i})" class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-red-600 text-white text-[10px] flex items-center justify-center" title="${removed ? 'Keep image' : 'Remove image'}">${removed ? '↺' : '✕'}</button>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="glass-soft border border-blue-500/15 rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <p class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="images" class="w-4 h-4 text-fuchsia-400"></i> Product Images</p>
+          <p class="text-[10px] text-gray-500 mt-0.5">${current.length} current ${s.addedImages.length ? `+ ${s.addedImages.length} new` : ''} ${s.removedImages.size ? `· ${s.removedImages.size} to remove` : ''}</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="productAiDetectDuplicates()" class="btn-press px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-200 hover:bg-amber-500/25 transition">Detect Duplicates</button>
+          <label class="btn-press px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25 transition cursor-pointer flex items-center gap-1">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upload Better Images
+            <input type="file" accept="image/*" multiple class="hidden" onchange="productAiUploadImages(this)">
+          </label>
+        </div>
+      </div>
+      ${thumbs || '<p class="text-xs text-gray-500">No images yet.</p>'}
+      <p class="text-[10px] text-gray-500 mt-2">Uploaded images are added to the product. Remove old ones with ✕, then ask the AI to rewrite copy or review the listing.</p>
+    </div>`;
+}
+
+function renderProductAiChatPanel() {
+  const s = _productAiState;
+  if (!s) return '';
+  const chips = PRODUCT_AI_QUICK_ACTIONS.map((a) => `
+    <button onclick="productAiQuickAction('${a.key}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-fuchsia-500/10 text-fuchsia-200 hover:bg-fuchsia-500/20 border border-fuchsia-500/15 transition flex items-center gap-1.5">
+      <i data-lucide="${a.icon}" class="w-3 h-3"></i> ${a.label}
+    </button>`).join('');
+
+  return `
+    <div class="glass-soft border border-fuchsia-500/20 rounded-2xl p-4">
+      <p class="text-xs font-black text-white flex items-center gap-2 mb-3"><i data-lucide="bot" class="w-4 h-4 text-fuchsia-400"></i> Ask the AI Assistant</p>
+      <div class="flex flex-wrap gap-1.5 mb-3">${chips}</div>
+      <div class="flex gap-2">
+        <textarea id="product-ai-input" rows="2" class="input-field flex-1 text-xs resize-none" placeholder="e.g. Make the title more professional, rewrite the description, or suggest a better price…" oninput="productAiSyncInput(this.value)">${esc(s.instruction)}</textarea>
+        <button onclick="runProductAiInstruction()" class="btn-press px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 self-start" ${s.busy ? 'disabled' : ''}>
+          <i data-lucide="send" class="w-3.5 h-3.5"></i> Run
+        </button>
+      </div>
+      ${s.busy ? '<p class="text-[11px] text-fuchsia-300 mt-2 flex items-center gap-2"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Thinking… this product only.</p>' : ''}
+    </div>`;
+}
+
+function renderProductAiPreviewPanel() {
+  const s = _productAiState;
+  if (!s) return '';
+  if (!s.suggestions) {
+    return `
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-4">
+        <p class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="eye" class="w-4 h-4 text-blue-400"></i> Preview Changes</p>
+        <p class="text-[11px] text-gray-500 mt-2">No suggestions yet. Use a quick action above or type an instruction, then review and approve changes before saving.</p>
+      </div>`;
+  }
+
+  const rows = [];
+  const fieldLabels = {
+    title: 'Title', description: 'Description', price: 'Price', stock_quantity: 'Stock',
+    category: 'Category', subcategory: 'Subcategory', brand: 'Brand', availability_status: 'Availability',
+    features: 'Features', tags: 'Tags', highlights: 'Highlights', seo_keywords: 'SEO Keywords',
+  };
+
+  for (const key of Object.keys(s.suggestions)) {
+    if (key === 'images_to_remove' || key === 'images_to_add' || key === 'summary') continue;
+    const oldVal = productAiValuePreview(s.product[key]);
+    const newVal = productAiValuePreview(s.suggestions[key]);
+    if (oldVal === newVal) continue;
+    const checked = s.approved.has(key) ? 'checked' : '';
+    rows.push(`
+      <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5 border ${checked ? 'border-emerald-500/25' : 'border-white/10'}">
+        <input type="checkbox" class="mt-0.5 accent-emerald-500" ${checked} onchange="productAiToggleApproved('${key}', this.checked)">
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-black uppercase tracking-wide text-gray-400">${esc(fieldLabels[key] || key)}</p>
+          <p class="text-[11px] text-gray-500 line-through decoration-red-400/60 mt-0.5 break-words">${esc(oldVal)}</p>
+          <p class="text-[11px] text-emerald-300 font-semibold mt-1 break-words">${esc(newVal)}</p>
+        </div>
+      </div>`);
+  }
+
+  const currentImages = Array.isArray(s.product.images) ? s.product.images : [];
+  const aiRemovals = Array.isArray(s.suggestions.images_to_remove) ? s.suggestions.images_to_remove.filter((u) => currentImages.includes(u)) : [];
+  const removals = [...new Set([...s.removedImages, ...aiRemovals])];
+  if (removals.length) {
+    const checked = s.approved.has('images_to_remove') ? 'checked' : '';
+    rows.push(`
+      <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5 border ${checked ? 'border-emerald-500/25' : 'border-white/10'}">
+        <input type="checkbox" class="mt-0.5 accent-emerald-500" ${checked} onchange="productAiToggleApproved('images_to_remove', this.checked)">
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-black uppercase tracking-wide text-gray-400">Remove ${removals.length} image${removals.length>1?'s':''}</p>
+          <div class="flex flex-wrap gap-1.5 mt-1.5">${removals.slice(0, 12).map((u) => `<img src="${esc(u)}" class="w-10 h-10 rounded-md object-cover border border-red-500/40" onerror="this.src='/fallback.svg'">`).join('')}</div>
+        </div>
+      </div>`);
+  }
+
+  if (s.addedImages.length) {
+    rows.push(`
+      <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-emerald-500/25">
+        <input type="checkbox" class="mt-0.5 accent-emerald-500" checked disabled>
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-black uppercase tracking-wide text-gray-400">Add ${s.addedImages.length} uploaded image${s.addedImages.length>1?'s':''}</p>
+          <div class="flex flex-wrap gap-1.5 mt-1.5">${s.addedImages.map((u) => `<img src="${esc(u)}" class="w-10 h-10 rounded-md object-cover border border-emerald-500/40" onerror="this.src='/fallback.svg'">`).join('')}</div>
+        </div>
+      </div>`);
+  }
+
+  if (s.suggestions.summary) {
+    rows.unshift(`<p class="text-[11px] text-fuchsia-300 bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-xl p-3">${esc(s.suggestions.summary)}</p>`);
+  }
+
+  if (!rows.length) {
+    return `
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-4">
+        <p class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="eye" class="w-4 h-4 text-blue-400"></i> Preview Changes</p>
+        <p class="text-[11px] text-gray-500 mt-2">The AI had no new suggestions beyond what's already saved. Try a different instruction.</p>
+      </div>`;
+  }
+
+  return `
+    <div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-2">
+      <div class="flex items-center justify-between mb-1">
+        <p class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="eye" class="w-4 h-4 text-emerald-400"></i> Review & Approve Changes</p>
+        <button onclick="productAiApproveAll()" class="btn-press text-[10px] font-bold text-emerald-300 hover:text-emerald-200 px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition">Approve all</button>
+      </div>
+      ${rows.join('')}
+    </div>`;
+}
+
+window.productAiSyncInput = function(value) {
+  if (_productAiState) _productAiState.instruction = value;
+};
+
+window.productAiQuickAction = function(key) {
+  const action = PRODUCT_AI_QUICK_ACTIONS.find((a) => a.key === key);
+  if (!action || !_productAiState) return;
+  _productAiState.instruction = action.prompt;
+  runProductAiInstruction();
+};
+
+window.productAiToggleApproved = function(key, checked) {
+  if (!_productAiState) return;
+  if (checked) _productAiState.approved.add(key);
+  else _productAiState.approved.delete(key);
+  renderProductAiModal();
+};
+
+window.productAiApproveAll = function() {
+  if (!_productAiState || !_productAiState.suggestions) return;
+  for (const key of Object.keys(_productAiState.suggestions)) {
+    _productAiState.approved.add(key);
+  }
+  if (_productAiState.removedImages.size) _productAiState.approved.add('images_to_remove');
+  renderProductAiModal();
+};
+
+window.productAiToggleRemoveImage = function(index) {
+  if (!_productAiState) return;
+  const current = Array.isArray(_productAiState.product.images) ? _productAiState.product.images : [];
+  const all = [...current, ..._productAiState.addedImages];
+  const url = all[index];
+  if (!url) return;
+  if (index < current.length) {
+    if (_productAiState.removedImages.has(url)) _productAiState.removedImages.delete(url);
+    else _productAiState.removedImages.add(url);
+  } else {
+    _productAiState.addedImages = _productAiState.addedImages.filter((u) => u !== url);
+  }
+  renderProductAiModal();
+};
+
+window.productAiDetectDuplicates = function() {
+  if (!_productAiState) return;
+  const current = Array.isArray(_productAiState.product.images) ? _productAiState.product.images : [];
+  const counts = {};
+  current.forEach((u) => { counts[u] = (counts[u] || 0) + 1; });
+  let added = 0;
+  const seen = new Set();
+  for (const u of current) {
+    if (counts[u] > 1) {
+      if (seen.has(u)) { if (!_productAiState.removedImages.has(u)) added += 1; _productAiState.removedImages.add(u); }
+      else seen.add(u);
+    }
+  }
+  if (added) { _productAiState.approved.add('images_to_remove'); showToast(`Marked ${added} duplicate image(s) for removal.`, 'info'); }
+  else showToast('No duplicate images found.', 'info');
+  renderProductAiModal();
+};
+
+window.productAiUploadImages = async function(input) {
+  if (!_productAiState || !input || !input.files || !input.files.length) return;
+  const files = [...input.files];
+  let ok = 0;
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    const url = await uploadImageFile(file);
+    if (url) { _productAiState.addedImages.push(url); ok += 1; }
+  }
+  input.value = '';
+  if (ok) showToast(`${ok} image(s) uploaded and staged.`, 'success');
+  else showToast('Upload failed.', 'error');
+  renderProductAiModal();
+};
+
+window.runProductAiInstruction = async function() {
+  const s = _productAiState;
+  if (!s || s.busy) return;
+  const instruction = (s.instruction || '').trim() || 'Improve this product listing professionally.';
+  s.busy = true;
+  renderProductAiModal();
+
+  const prompt = buildProductAiPrompt(s, instruction);
+
+  try {
+    const res = await aiClient.prompt(prompt, {
+      maxTokens: 4000,
+      onProviderSwitch: (name) => { /* keep modal rendering; ignore */ },
+    });
+    const json = extractJsonFromAiText(res.text);
+    if (!json) throw new Error('The AI did not return valid JSON suggestions.');
+    s.suggestions = json;
+    s.approved = new Set(Object.keys(json));
+    s.approved.add('images_to_remove');
+    showToast('Suggestions ready — review and approve before saving.', 'info');
+  } catch (err) {
+    showToast(`AI error: ${err.message}`, 'error');
+  } finally {
+    s.busy = false;
+    renderProductAiModal();
+  }
+};
+
+function buildProductAiPrompt(s, instruction) {
+  const p = s.product;
+  const snapshot = JSON.stringify(productAiSnapshot(p), null, 2);
+  return `You are the AI product manager assistant for ONE product in the Weverse Online Shop admin dashboard.
+
+You are attached to EXACTLY ONE product (property_id ${s.pid}). You may ONLY edit THIS product — never create, delete, or modify any other product.
+
+CURRENT PRODUCT DATA (JSON):
+${snapshot}
+
+ADMIN INSTRUCTION:
+${instruction}
+
+Return a single valid JSON object (no markdown, no extra text) that proposes changes to THIS product only. Allowed keys:
+- title (string): a real, professional product name that matches the actual item and its category. NEVER use placeholders like "AI Product", "AI Curated Product", or similar.
+- description (string)
+- price (number)
+- stock_quantity (number)
+- category (string)
+- subcategory (string)
+- brand (string)
+- availability_status (string)
+- features (array of strings)
+- tags (array of strings)
+- highlights (array of strings)
+- seo_keywords (array of strings)
+- specifications (object)
+- images_to_remove (array of EXACT URLs that already exist in the CURRENT product images list — only for duplicate, broken, or clearly low-quality images. Never invent URLs.)
+- summary (string): one short sentence summarizing the proposed changes.
+
+Rules:
+- Only include keys you actually want to change. Omit unchanged keys.
+- Do not change the property_id.
+- Only list image URLs that are already in the CURRENT images array above.
+- Respond with valid JSON only.`;
+}
+
+window.applyProductAiChanges = async function() {
+  const s = _productAiState;
+  if (!s || s.busy) return;
+  const hasApprovedFields = [...s.approved].some((k) => k !== 'images_to_remove');
+  const changes = {};
+  if (s.suggestions) {
+    for (const key of s.approved) {
+      if (key === 'images_to_remove') continue;
+      if (key in s.suggestions && s.suggestions[key] !== undefined) changes[key] = s.suggestions[key];
+    }
+  }
+  if (!hasApprovedFields && !s.removedImages.size && !s.addedImages.length) {
+    showToast('Approve at least one change before saving.', 'error');
+    return;
+  }
+
+  const currentImages = Array.isArray(s.product.images) ? s.product.images : [];
+  const removeSet = new Set(s.removedImages);
+  if (s.approved.has('images_to_remove') && Array.isArray(s.suggestions?.images_to_remove)) {
+    s.suggestions.images_to_remove.forEach((u) => removeSet.add(u));
+  }
+  const images = [...currentImages.filter((u) => !removeSet.has(u)), ...s.addedImages];
+
+  const payload = sanitizeShowroomPayload({
+    ...s.product,
+    ...changes,
+    images,
+    property_id: s.pid,
+    updated_at: new Date().toISOString(),
+  });
+
+  s.busy = true;
+  renderProductAiModal();
+  try {
+    const { error } = await supabase.from('showroom_listings').upsert(payload, { onConflict: 'property_id' });
+    if (error) throw error;
+    showToast('Changes saved to Supabase.', 'success');
+    const from = s.from;
+    _productAiState = null;
+    closeModal();
+    if (from === 'properties') renderProperties();
+    else renderProducts();
+  } catch (err) {
+    s.busy = false;
+    if (err && isRlsDenied(err)) {
+      showToast('⚠️ Save blocked: database admin role is not active. Re-run the admin permission migration, or contact the owner.', 'error');
+    } else {
+      showToast(`Save failed: ${(err && err.message) || 'unknown error'}`, 'error');
+    }
+    renderProductAiModal();
   }
 };
 

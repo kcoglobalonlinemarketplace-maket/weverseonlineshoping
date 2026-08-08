@@ -47,6 +47,35 @@ function genPropertyId() {
   return `KCO-${tail}${rand}`;
 }
 
+function titleCaseProfessional(str: string) {
+  return String(str || '')
+    .trim()
+    .replace(/\s{2,}/g, ' ')
+    .replace(/(^|[\s\-/(])[a-z\u00e0-\u00ff]/g, (m) => m.toUpperCase());
+}
+
+function deriveProfessionalTitle(message: string, category: string): string {
+  const text = String(message || '').trim();
+  const clean = (s: string) => String(s || '').trim().replace(/^["']|["']$/g, '').replace(/\s{2,}/g, ' ');
+  const explicit = clean(
+    (text.match(/named\s+["']([^"']+)["']/i)
+      || text.match(/name\s+["']([^"']+)["']/i)
+      || text.match(/name\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\sstock\s|\scategory\s|\sthen\s|$)/i)
+      || text.match(/title\s*[:=]\s*([^,\.]+?)(?:,|\sprice\s|\scategory\s|\sthen\s|$)/i))?.[1],
+  );
+  if (explicit && !/^(a|an|the|new|product|item|listing)$/i.test(explicit)) return titleCaseProfessional(explicit);
+
+  const loose = text.match(/^(?:add|create|put|publish)\s+(?:a\s+|an\s+|new\s+|one\s+)?(.+?)(?:,|\s(?:price|stock|category|in|then|with|for)\s|$)/i)?.[1];
+  const looseClean = clean(loose);
+  if (looseClean && !/^(product|item|listing)$/i.test(looseClean) && looseClean.length > 2) {
+    return titleCaseProfessional(looseClean);
+  }
+
+  const cat = clean(category && category !== 'General' ? category : '');
+  if (cat) return titleCaseProfessional(cat);
+  return 'Premium Item';
+}
+
 function parseAddProductIntent(message: string) {
   const text = message.trim();
   const hasProductIntent = /(add|create)\s+(a\s+)?(new\s+)?product/i.test(text);
@@ -54,7 +83,6 @@ function parseAddProductIntent(message: string) {
 
   const namedMatch = text.match(/named\s+["']([^"']+)["']/i) || text.match(/named\s+([^,\.]+?)(?:,|\sthen\s|\sprice\s|\sstock\s|\scategory\s|$)/i);
   const nameMatch = text.match(/name\s+["']([^"']+)["']/i) || text.match(/name\s*[:=]\s*([^,\.]+?)(?:,|\sthen\s|\sprice\s|\sstock\s|\scategory\s|$)/i);
-  const title = (namedMatch?.[1] || nameMatch?.[1] || 'AI Product').trim();
 
   const priceMatch = text.match(/price\s*[:=]?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
   const stockMatch = text.match(/stock\s*[:=]?\s*([0-9]+)/i);
@@ -67,6 +95,7 @@ function parseAddProductIntent(message: string) {
   const category = categoryRaw.split(/\s+then\s+/i)[0].trim();
   const currency = (currencyMatch?.[1] || 'USD').toUpperCase();
   const shouldDeploy = /\bdeploy\b|\bpublish\b.*\bsite\b|\bdeploy\s+site\b/i.test(text);
+  const title = (namedMatch?.[1] || nameMatch?.[1] || deriveProfessionalTitle(text, category)).trim();
 
   return {
     title,
