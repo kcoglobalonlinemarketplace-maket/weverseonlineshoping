@@ -144,36 +144,36 @@ export function renderCard(listing) {
   if (isProperty) {
     const flag = flagEmoji(listing.country_code);
     const parts = [listing.city, listing.state].filter(Boolean);
-    locationHtml = `<div class="flex items-center gap-1 text-gray-500 text-[11px] mb-1.5 truncate"><span>${flag}</span><span class="truncate">${parts.join(', ') || listing.country}</span></div>`;
+    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><span>${flag}</span><span class="truncate">${parts.join(', ') || listing.country}</span></div>`;
   }
 
   let specsHtml = '';
   if (isProperty) {
     const specs = [];
-    if (listing.bedrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bed-double" class="w-3 h-3"></i>${listing.bedrooms}</span>`);
-    if (listing.bathrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bath" class="w-3 h-3"></i>${listing.bathrooms}</span>`);
-    if (listing.land_size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3 h-3"></i>${listing.land_size}</span>`);
-    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-500 text-[11px] mb-2">${specs.join('')}</div>`;
+    if (listing.bedrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i>${listing.bedrooms}</span>`);
+    if (listing.bathrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${listing.bathrooms}</span>`);
+    if (listing.land_size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${listing.land_size}</span>`);
+    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
   } else if (isTruck) {
     const specs = [];
-    specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="calendar" class="w-3 h-3"></i>${listing.model_year}</span>`);
-    specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="gauge" class="w-3 h-3"></i>${listing.mileage}</span>`);
-    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-500 text-[11px] mb-2">${specs.join('')}</div>`;
+    specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${listing.model_year}</span>`);
+    specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="gauge" class="w-3.5 h-3.5"></i>${listing.mileage}</span>`);
+    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
   } else if (listing.listing_type === 'product') {
     const specs = [];
-    if (listing.brand) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="factory" class="w-3 h-3"></i>${listing.brand}</span>`);
-    if (listing.color) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="palette" class="w-3 h-3"></i>${listing.color}</span>`);
-    if (listing.size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3 h-3"></i>${listing.size}</span>`);
-    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-500 text-[11px] mb-2 flex-wrap">${specs.join('')}</div>`;
+    if (listing.brand) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="factory" class="w-3.5 h-3.5"></i>${listing.brand}</span>`);
+    if (listing.color) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="palette" class="w-3.5 h-3.5"></i>${listing.color}</span>`);
+    if (listing.size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${listing.size}</span>`);
+    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2 flex-wrap">${specs.join('')}</div>`;
   }
 
   // Rating display: real reviews take priority, AI estimate shown with label
   let ratingStars = '';
   if (displayRating > 0) {
     const aiLabel = !hasRealReviews && listing.is_ai_generated
-      ? `<span class="text-[8px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1 rounded ml-0.5">AI</span>`
+      ? `<span class="text-[9px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded ml-0.5">AI</span>`
       : '';
-    ratingStars = `<div class="flex items-center gap-0.5 text-[11px]"><i data-lucide="star" class="w-3 h-3 fill-orange-500 text-orange-500"></i><span class="text-gray-300 font-medium">${displayRating.toFixed(1)}</span><span class="text-gray-600">(${reviewCount})</span>${aiLabel}</div>`;
+    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-orange-500 text-orange-500"></i><span class="text-gray-200 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span>${aiLabel}</div>`;
   }
 
   // Product badges (New Arrival, Best Seller, etc.)
@@ -189,9 +189,9 @@ export function renderCard(listing) {
     };
     const badgeTags = badges.slice(0, 2).map((b) => {
       const color = badgeColors[b] || 'bg-gray-700 text-white';
-      return `<span class="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${color}">${b}</span>`;
+      return `<span class="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${color}">${b}</span>`;
     }).join('');
-    badgesHtml = `<div class="absolute top-1.5 right-1.5 flex flex-col gap-1 items-end">${badgeTags}</div>`;
+    badgesHtml = `<div class="absolute top-2 right-2 flex flex-col gap-1 items-end">${badgeTags}</div>`;
   }
 
   // Availability status
@@ -199,7 +199,7 @@ export function renderCard(listing) {
   const availColor = availability === 'In Stock' ? 'text-emerald-400' : availability === 'Pre-order' ? 'text-blue-400' : 'text-orange-400';
 
   const card = document.createElement('div');
-  card.className = 'showroom-card group relative bg-[#0f172a]/80 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 flex flex-col';
+  card.className = 'showroom-card group relative bg-[#0f172a]/80 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 flex flex-col cursor-pointer';
   card.dataset.id = listingId;
 
   card.innerHTML = `
@@ -207,43 +207,41 @@ export function renderCard(listing) {
       <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-      <span class="absolute top-1.5 left-1.5 bg-orange-500 text-black text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full">${statusBadge}</span>
+      <span class="absolute top-2 left-2 bg-orange-500 text-black text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>
       ${badgesHtml}
     </div>
-    <div class="p-2.5 flex flex-col flex-1">
-      <h3 class="text-xs font-bold text-white leading-tight mb-1 line-clamp-2">${listing.title}</h3>
+    <div class="p-3 flex flex-col flex-1">
+      <h3 class="text-sm font-bold text-white leading-snug mb-1 line-clamp-2">${listing.title}</h3>
       ${locationHtml}
       ${specsHtml}
-      <div class="flex items-center justify-between mt-auto pt-1.5">
-        <span class="text-sm font-black text-orange-500">${price}</span>
+      <div class="flex items-center justify-between mt-auto pt-2">
+        <span class="text-base font-black text-orange-500">${price}</span>
         ${ratingStars}
       </div>
-      <div class="flex items-center gap-1 mt-1">
-        <span class="text-[9px] font-bold ${availColor}">${availability}</span>
+      <div class="flex items-center gap-1 mt-1.5">
+        <span class="text-[11px] font-bold ${availColor}">${availability}</span>
       </div>
-      <div class="flex gap-1.5 mt-2">
-        <button class="view-btn flex-1 bg-gray-800 hover:bg-gray-700 text-white text-[10px] font-bold py-1.5 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1">
-          <i data-lucide="eye" class="w-3 h-3"></i> View
+      <div class="flex gap-2 mt-2.5">
+        <button class="buy-btn flex-1 min-w-0 bg-orange-500 hover:bg-orange-600 active:scale-95 text-black text-xs font-bold py-2.5 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
+          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
         </button>
-        <button class="buy-btn flex-1 bg-orange-500 hover:bg-orange-600 text-black text-[10px] font-bold py-1.5 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1">
-          <i data-lucide="shopping-bag" class="w-3 h-3"></i> Buy Now
+        <button class="wishlist-btn shrink-0 w-10 h-10 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="Add to wishlist" aria-label="Add to wishlist">
+          <i data-lucide="heart" class="w-4 h-4"></i>
         </button>
-        <button class="wishlist-btn bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-400 text-[10px] font-bold p-1.5 rounded-lg transition flex items-center justify-center" title="Add to wishlist">
-          <i data-lucide="heart" class="w-3 h-3"></i>
-        </button>
-        <button class="share-btn bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 text-[10px] font-bold p-1.5 rounded-lg transition flex items-center justify-center" title="Share product">
-          <i data-lucide="share-2" class="w-3 h-3"></i>
+        <button class="share-btn shrink-0 w-10 h-10 bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
   `;
 
-  card.querySelector('.view-btn').addEventListener('click', () => {
+  card.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
     window.location.href = `/details.html?id=${listing.property_id}`;
   });
-  card.querySelector('.buy-btn').addEventListener('click', () => handleBuyNow(listing));
-  card.querySelector('.wishlist-btn').addEventListener('click', () => handleWishlist(listing));
-  card.querySelector('.share-btn').addEventListener('click', () => handleShare(listing));
+  card.querySelector('.buy-btn').addEventListener('click', (e) => { e.stopPropagation(); handleBuyNow(listing); });
+  card.querySelector('.wishlist-btn').addEventListener('click', (e) => { e.stopPropagation(); handleWishlist(listing); });
+  card.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
 
   return card;
 }
@@ -337,14 +335,14 @@ function renderRow(rowDef) {
   row.innerHTML = `
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
-        <i data-lucide="${rowDef.icon}" class="w-3.5 h-3.5 text-orange-500/80"></i>
-        <h4 class="text-xs font-semibold text-gray-300 tracking-wide">${rowDef.label}</h4>
+        <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-orange-500/80"></i>
+        <h4 class="text-sm font-semibold text-gray-200 tracking-wide">${rowDef.label}</h4>
       </div>
       <div class="flex items-center gap-1 ${hasItems ? '' : 'hidden'}">
-        <button class="scroll-left hscroll-btn p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
           <i data-lucide="chevron-left" class="w-4 h-4"></i>
         </button>
-        <button class="scroll-right hscroll-btn p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll right">
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll right">
           <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </button>
       </div>
@@ -359,7 +357,9 @@ function renderRow(rowDef) {
     listings.forEach(listing => frag.appendChild(renderCard(listing)));
     track.appendChild(frag);
   } else {
-    track.innerHTML = `<div class="flex items-center justify-center w-full py-6 text-gray-600 text-xs uppercase tracking-widest">Coming Soon</div>`;
+    track.innerHTML = `<div class="flex items-center justify-center w-full py-6">
+      <span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-700 rounded-xl px-5 py-3">Coming Soon</span>
+    </div>`;
   }
 
   row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
@@ -380,12 +380,12 @@ function renderSection(section, accentColor) {
   const header = document.createElement('div');
   header.className = 'flex items-center gap-3';
   header.innerHTML = `
-    <div class="p-2 rounded-lg border ${accentBg} shrink-0">
-      <i data-lucide="${section.icon}" class="w-4 h-4 ${accentText}"></i>
+    <div class="p-2.5 rounded-xl border ${accentBg} shrink-0">
+      <i data-lucide="${section.icon}" class="w-5 h-5 ${accentText}"></i>
     </div>
     <div class="flex-1 min-w-0">
-      <h3 class="text-base sm:text-lg font-black text-white tracking-tight leading-tight">${section.label}</h3>
-      <p class="text-gray-500 text-[11px] leading-tight mt-0.5 truncate">${section.subtitle}</p>
+      <h3 class="text-lg sm:text-xl font-black text-white tracking-tight leading-tight">${section.label}</h3>
+      <p class="text-gray-400 text-xs leading-tight mt-1 truncate">${section.subtitle}</p>
     </div>
     <div class="flex-1 h-px bg-gradient-to-r from-gray-700/60 to-transparent ml-2 hidden sm:block"></div>
   `;

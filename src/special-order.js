@@ -92,8 +92,8 @@ function renderSpecialOrderForm(user) {
               <p class="text-xs text-gray-400">We'll source this item for you</p>
             </div>
           </div>
-          <button onclick="closeSpecialOrderModal()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition">
-            <i data-lucide="x" class="w-5 h-5"></i>
+          <button onclick="closeSpecialOrderModal()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition text-[10px] font-bold uppercase tracking-wide">
+            🔙 Back
           </button>
         </div>
 

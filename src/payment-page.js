@@ -573,11 +573,11 @@ function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
               <p class="text-sm text-gray-300 font-medium">Click to upload, take a photo, or drag and drop</p>
               <p class="text-xs text-gray-600 mt-1">JPG, JPEG, PNG, WEBP, or PDF — Max 20 MB</p>
               <div class="flex items-center justify-center gap-2 mt-3">
-                <button type="button" id="btn-take-photo" class="btn-press text-[11px] font-bold px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition flex items-center gap-1.5">
-                  <i data-lucide="camera" class="w-3.5 h-3.5"></i> Take Photo
+                <button type="button" id="btn-take-photo" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition flex items-center gap-1.5">
+                  <i data-lucide="camera" class="w-4 h-4"></i> Take Photo
                 </button>
-                <button type="button" id="btn-choose-file" class="btn-press text-[11px] font-bold px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition flex items-center gap-1.5">
-                  <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> Choose File
+                <button type="button" id="btn-choose-file" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition flex items-center gap-1.5">
+                  <i data-lucide="folder-open" class="w-4 h-4"></i> Choose File
                 </button>
               </div>
             </div>
@@ -595,7 +595,7 @@ function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
                     <p id="file-size-display" class="text-xs text-gray-500"></p>
                   </div>
                   <button type="button" onclick="removeReceiptFile()" class="p-2 bg-blue-900/40 hover:bg-red-500/20 rounded-lg transition">
-                    <i data-lucide="x" class="w-4 h-4 text-gray-400 hover:text-red-400"></i>
+                    <i data-lucide="trash-2" class="w-4 h-4 text-gray-400 hover:text-red-400"></i>
                   </button>
                 </div>
                 <button type="button" onclick="removeReceiptFile();document.getElementById('form-receipt-file').click()" class="text-[11px] text-blue-400 hover:text-blue-300 font-bold uppercase tracking-wide flex items-center gap-1.5 transition">

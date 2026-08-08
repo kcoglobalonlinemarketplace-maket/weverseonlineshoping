@@ -527,10 +527,10 @@ function renderCategories(){
     const active=idx===0;
     const col=CAT_COLORS[cat.color]||CAT_COLORS.orange;
     const iconWrapClass=active
-      ?"cat-icon-wrap p-2.5 rounded-xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" shadow-["+col.glow+"]"
-      :"cat-icon-wrap p-2.5 rounded-xl border bg-gray-900/80 border-gray-800 group-hover:bg-gray-800 group-hover:"+col.hoverBorder+" group-hover:shadow-[0_4px_14px_rgba(0,0,0,0.3)]";
+      ?"cat-icon-wrap p-3 rounded-xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" shadow-["+col.glow+"]"
+      :"cat-icon-wrap p-3 rounded-xl border bg-gray-900/80 border-gray-800 group-hover:bg-gray-800 group-hover:"+col.hoverBorder+" group-hover:shadow-[0_4px_14px_rgba(0,0,0,0.3)]";
     a.className="cat-item flex flex-col items-center gap-1.5 transition-all duration-300 group shrink-0 "+(active?"active "+col.text:"text-gray-400 hover:"+col.text);
-    a.innerHTML='<div class="'+iconWrapClass+'"><i data-lucide="'+cat.icon+'" class="w-5 h-5"></i></div><span class="text-[11px] font-semibold tracking-wide whitespace-nowrap">'+cat.name+"</span>";
+    a.innerHTML='<div class="'+iconWrapClass+'"><i data-lucide="'+cat.icon+'" class="w-6 h-6"></i></div><span class="text-xs font-semibold tracking-wide whitespace-nowrap">'+cat.name+"</span>";
     c.appendChild(a);
   });
   lucide.createIcons();
@@ -543,13 +543,13 @@ function filterByCategory(name,el){
     a.classList.remove("active");a.classList.add("text-gray-400");
     a.classList.remove("text-orange-400","text-pink-400","text-blue-400","text-amber-400","text-emerald-400","text-lime-400","text-cyan-400","text-sky-400","text-red-400","text-violet-400","text-indigo-400","text-teal-400","text-rose-400","text-fuchsia-400","text-slate-300","text-green-400","text-yellow-400","text-amber-600","text-purple-400","text-gray-400");
     const b=a.querySelector("div");
-    b.className="cat-icon-wrap p-2.5 rounded-xl border bg-gray-900/80 border-gray-800 transition-all duration-300";
+    b.className="cat-icon-wrap p-3 rounded-xl border bg-gray-900/80 border-gray-800 transition-all duration-300";
     b.style.boxShadow="";
   });
   const col=CAT_COLORS[el.dataset.color]||CAT_COLORS.orange;
   el.classList.remove("text-gray-400");el.classList.add("active",col.text);
   const b=el.querySelector("div");
-  b.className="cat-icon-wrap p-2.5 rounded-xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" transition-all duration-300";
+  b.className="cat-icon-wrap p-3 rounded-xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" transition-all duration-300";
   b.style.boxShadow=col.glow;
   closeSearchResults();
   if(name==="All"){if(window._clearShowroomFilter)window._clearShowroomFilter();}
@@ -651,7 +651,7 @@ function showSearchResultsLoading(q){
     skeletonHtml+=`<div class="bg-[#0f172a] border border-gray-800 rounded-xl overflow-hidden"><div class="aspect-square bg-gray-900 animate-pulse"></div><div class="p-2.5 space-y-2"><div class="h-3 bg-gray-800 rounded animate-pulse"></div><div class="h-2 bg-gray-800 rounded w-2/3 animate-pulse"></div><div class="h-3 bg-gray-800 rounded w-1/3 animate-pulse"></div></div></div>`;
   }
   skeletonHtml+='</div>';
-  panel.innerHTML=`<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6"><div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-orange-400"></i><h3 class="text-lg font-bold text-white">Searching for "${escapeHtmlAttr(q)}"</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button></div>${skeletonHtml}</div>`;
+  panel.innerHTML=`<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6"><div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-orange-400"></i><h3 class="text-lg font-bold text-white">Searching for "${escapeHtmlAttr(q)}"</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>🔙 Back</span></button></div>${skeletonHtml}</div>`;
   panel.style.display="block";
   document.body.style.overflow="hidden";
   if(window.lucide)lucide.createIcons();
@@ -673,7 +673,7 @@ function renderSearchResults(query,results,meta){
   if(hasResults){html+=`${results.length} result${results.length>1?"s":""} for "${safeQuery}"`}
   else{html+=`No results for "${safeQuery}"`}
   if(isPartial){html+=` <span class="text-xs text-gray-500 font-normal flex items-center gap-1"><i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> checking suppliers...</span>`}
-  html+=`</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button></div>`;
+  html+=`</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>🔙 Back</span></button></div>`;
   if(hasResults){
     html+=`<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">`;
     results.forEach(function(r){
@@ -1178,7 +1178,7 @@ function showRegionNotification(msg){
     n.innerHTML='<i data-lucide="globe" class="w-5 h-5 text-orange-400 shrink-0 mt-0.5"></i>'+
       '<div class="flex-1 min-w-0"><p class="text-xs text-gray-200 leading-snug" id="region-detect-text"></p>'+
       '<button onclick="document.getElementById(\'region-detect-notification\').classList.add(\'opacity-0\',\'translate-y-[-10px]\');setTimeout(()=>document.getElementById(\'region-detect-notification\').remove(),500)" class="text-[10px] text-orange-400 hover:text-orange-300 font-semibold mt-1.5">Dismiss</button></div>'+
-      '<button onclick="document.getElementById(\'region-detect-notification\').remove()" class="text-gray-500 hover:text-white shrink-0" aria-label="Close"><i data-lucide="x" class="w-4 h-4"></i></button>';
+      '<button onclick="document.getElementById(\'region-detect-notification\').remove()" class="text-gray-500 hover:text-white shrink-0 text-[10px] font-bold uppercase tracking-wide" aria-label="Close">🔙 Back</button>';
     document.body.appendChild(n);
     if(window.lucide)lucide.createIcons();
   }

@@ -1021,7 +1021,7 @@ window.openPaymentMethodModal = function (existingId) {
     <div class="glass border border-blue-500/20 rounded-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto slide-up">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-base font-bold text-white">${existing ? 'Edit' : 'Add'} Payment Method</h3>
-        <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white text-[10px] font-bold uppercase tracking-wide">🔙 Back</button>
       </div>
       <form onsubmit="savePaymentMethod(event, '${existingId || ''}')" class="space-y-3">
         <div>

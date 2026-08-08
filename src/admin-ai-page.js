@@ -1976,7 +1976,7 @@ function renderApprovalPrompt(approvals) {
             <i data-lucide="check" class="w-4 h-4"></i> Approve & Execute
           </button>
           <button onclick="rejectDevAction('${a.result.approval_id}')" class="btn-press flex items-center gap-1.5 bg-red-500/20 border border-red-500/40 text-red-300 font-bold text-xs px-4 py-2 rounded-lg transition hover:bg-red-500/30">
-            <i data-lucide="x" class="w-4 h-4"></i> Reject
+            <i data-lucide="ban" class="w-4 h-4"></i> Reject
           </button>
         </div>
       </div>
@@ -2057,7 +2057,7 @@ function renderPendingApprovalFromDB(record) {
           <i data-lucide="check" class="w-4 h-4"></i> Approve & Execute
         </button>
         <button onclick="rejectDevAction('${record.id}')" class="btn-press flex items-center gap-1.5 bg-red-500/20 border border-red-500/40 text-red-300 font-bold text-xs px-4 py-2 rounded-lg transition hover:bg-red-500/30">
-          <i data-lucide="x" class="w-4 h-4"></i> Reject
+          <i data-lucide="ban" class="w-4 h-4"></i> Reject
         </button>
       </div>
     </div>

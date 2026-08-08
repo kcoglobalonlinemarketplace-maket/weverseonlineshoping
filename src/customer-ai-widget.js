@@ -175,8 +175,8 @@ function buildWidget() {
         <button id="kco-ai-voice-accent" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-blue-100 transition text-[10px] font-bold" title="Switch voice accent" aria-label="Switch voice accent">
           ${state.voiceAccent}
         </button>
-        <button id="kco-ai-close" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-blue-100 transition" title="Close" aria-label="Close">
-          <i data-lucide="x" class="w-4 h-4"></i>
+        <button id="kco-ai-close" class="h-8 px-2 rounded-lg hover:bg-white/10 flex items-center justify-center text-blue-100 transition text-[10px] font-bold uppercase tracking-wide" title="Close" aria-label="Close">
+          🔙 Back
         </button>
       </div>
     </div>

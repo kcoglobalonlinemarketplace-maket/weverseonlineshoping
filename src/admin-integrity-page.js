@@ -168,11 +168,11 @@ function renderReviewQueue(queue) {
         <p class="text-xs text-gray-400 mb-2">${item.reason || ''}</p>
         <p class="text-[10px] text-gray-600 mb-3">${date}</p>
         <div class="flex gap-2">
-          <button onclick="approveReview('${item.id}')" class="btn-press text-[10px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition">
-            <i data-lucide="check" class="w-3 h-3 inline mr-1"></i> Approve
+          <button onclick="approveReview('${item.id}')" class="btn-press text-xs font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2 rounded-lg hover:bg-emerald-500/20 transition">
+            <i data-lucide="check" class="w-3.5 h-3.5 inline mr-1"></i> Approve
           </button>
-          <button onclick="rejectReview('${item.id}')" class="btn-press text-[10px] font-bold text-red-300 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition">
-            <i data-lucide="x" class="w-3 h-3 inline mr-1"></i> Reject
+          <button onclick="rejectReview('${item.id}')" class="btn-press text-xs font-bold text-red-300 bg-red-500/10 border border-red-500/20 px-3.5 py-2 rounded-lg hover:bg-red-500/20 transition">
+            <i data-lucide="ban" class="w-3 h-3 inline mr-1"></i> Reject
           </button>
         </div>
       </div>
@@ -321,7 +321,7 @@ function renderAutomationStatus(status) {
         <span class="w-2.5 h-2.5 rounded-full ${statusDot}"></span>
         <span class="text-sm font-bold ${statusColor}">${statusText}</span>
       </div>
-      <button onclick="toggleAutomation(${!enabled})" class="btn-press text-[10px] font-bold ${enabled ? 'text-red-300 bg-red-500/10 border border-red-500/20' : 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20'} px-3 py-1.5 rounded-lg hover:opacity-80 transition">
+      <button onclick="toggleAutomation(${!enabled})" class="btn-press text-xs font-bold ${enabled ? 'text-red-300 bg-red-500/10 border border-red-500/20' : 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20'} px-3.5 py-2 rounded-lg hover:opacity-80 transition">
         ${enabled ? 'Disable' : 'Enable'}
       </button>
     </div>

@@ -1,4 +1,4 @@
-import{f as d,C as E,L as I,A as C,h as z,i as B,j as S,k as T,l as M,m as N,o as j,n as $}from"./localization-Bz_VLe81.js";let u=!1;function A(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
+import{f as d,C as E,L as I,A as C,h as z,i as B,j as S,k as T,l as M,m as N,o as j,n as $}from"./localization-YU_l848j.js";let u=!1;function A(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
     @keyframes kcoLocPulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
     @keyframes kcoLocSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
     @keyframes kcoLocFadeIn { from { opacity:0; } to { opacity:1; } }
@@ -24,8 +24,8 @@ import{f as d,C as E,L as I,A as C,h as z,i as B,j as S,k as T,l as M,m as N,o a
           </div>
           <h3 class="text-sm font-bold text-white">Your Location</h3>
         </div>
-        <button id="kco-loc-close" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition" aria-label="Close">
-          <i data-lucide="x" class="w-4 h-4"></i>
+        <button id="kco-loc-close" class="h-8 px-2 rounded-lg hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition text-[10px] font-bold uppercase tracking-wide" aria-label="Close">
+          🔙 Back
         </button>
       </div>
 

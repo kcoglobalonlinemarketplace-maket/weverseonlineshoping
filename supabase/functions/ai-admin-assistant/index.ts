@@ -573,54 +573,129 @@ async function runCloudImageGeneration(params: {
 }): Promise<{ images: string[]; provider: string; model: string }> {
   const { settings, prompt, referenceUrl, count } = params;
   const apiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
-  if (!apiKey) throw new Error('AI image generation needs a Google Gemini API key (AI Settings).');
   const models = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation', 'gemini-2.5-flash-preview-image'];
   let lastError: unknown = null;
 
-  for (const model of models) {
-    try {
-      const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [{ text: prompt }];
-      if (referenceUrl) {
-        const { mimeType, b64 } = parseDataUrl(referenceUrl);
-        if (b64) parts.push({ inlineData: { mimeType, data: b64 } });
-      }
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts }],
-          generationConfig: { responseModalities: ['TEXT', 'IMAGE'], candidateCount: count || 1, temperature: 0.45 },
-        }),
-      });
-      const raw = await res.text();
-      const data = raw ? JSON.parse(raw) : {};
-      if (!res.ok) {
-        const low = String(data?.error?.message || raw || '').toLowerCase();
-        if (low.includes('not found') || low.includes('model') || low.includes('unsupported')) {
-          lastError = new Error(`Image model ${model} unavailable on this key.`);
-          continue;
+  if (apiKey) {
+    for (const model of models) {
+      try {
+        const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [{ text: prompt }];
+        if (referenceUrl) {
+          const { mimeType, b64 } = parseDataUrl(referenceUrl);
+          if (b64) parts.push({ inlineData: { mimeType, data: b64 } });
         }
-        const e = new Error(data?.error?.message || raw || `Image generation failed (${res.status})`);
-        (e as any).status = res.status;
-        throw e;
-      }
-      const images: string[] = [];
-      for (const cand of data?.candidates || []) {
-        for (const part of cand?.content?.parts || []) {
-          if (part?.inlineData?.data) {
-            images.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: { responseModalities: ['TEXT', 'IMAGE'], candidateCount: count || 1, temperature: 0.45 },
+          }),
+        });
+        const raw = await res.text();
+        const data = raw ? JSON.parse(raw) : {};
+        if (!res.ok) {
+          const low = String(data?.error?.message || raw || '').toLowerCase();
+          if (low.includes('not found') || low.includes('model') || low.includes('unsupported')) {
+            lastError = new Error(`Image model ${model} unavailable on this key.`);
+            continue;
+          }
+          const e = new Error(data?.error?.message || raw || `Image generation failed (${res.status})`);
+          (e as any).status = res.status;
+          throw e;
+        }
+        const images: string[] = [];
+        for (const cand of data?.candidates || []) {
+          for (const part of cand?.content?.parts || []) {
+            if (part?.inlineData?.data) {
+              images.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
+            }
           }
         }
+        if (!images.length) throw new Error('Image model returned no images.');
+        return { images, provider: 'gemini', model };
+      } catch (err) {
+        lastError = err;
+        if (errorStatus(err) && !isRetryableStatus(errorStatus(err) as number)) throw err;
       }
-      if (!images.length) throw new Error('Image model returned no images.');
-      return { images, provider: 'gemini', model };
-    } catch (err) {
-      lastError = err;
-      if (errorStatus(err) && !isRetryableStatus(errorStatus(err) as number)) throw err;
     }
   }
+
+  try {
+    const images = await runCloudflareImageGeneration(settings, prompt, count || 1);
+    return { images, provider: 'cloudflare', model: '@cf/black-forest-labs/flux-1-schnell' };
+  } catch (err) {
+    lastError = err;
+  }
+
+  try {
+    const images = await runPollinationsImageGeneration(prompt, count || 1);
+    return { images, provider: 'pollinations', model: 'flux' };
+  } catch (err) {
+    lastError = err;
+  }
+
+  if (!apiKey) {
+    throw new Error('AI image generation needs a Google Gemini API key (AI Settings), or free Cloudflare/Pollinations fallback failed.');
+  }
   throw lastError || new Error('AI image generation failed. Try again later.');
+}
+
+async function runCloudflareImageGeneration(settings: Record<string, unknown>, prompt: string, count: number): Promise<string[]> {
+  const raw = String(settings.cloudflare_key || '').trim();
+  const [accountId, token] = raw.split('|');
+  const apiKey = (token || raw).trim();
+  if (!accountId || !apiKey) throw new Error('Cloudflare key must be in the form accountId|token.');
+  const model = '@cf/black-forest-labs/flux-1-schnell';
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${model}`;
+  const images: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ prompt, n: 1 }),
+    });
+    const rawRes = await res.text();
+    const data = rawRes ? JSON.parse(rawRes) : {};
+    if (!res.ok) {
+      throw new Error(data?.errors?.[0]?.message || data?.error || `Cloudflare image generation failed (${res.status})`);
+    }
+    const img = String(data?.result?.image || '').trim();
+    if (!img) throw new Error('Cloudflare image generation returned no image.');
+    images.push(img.startsWith('data:') ? img : `data:image/png;base64,${img}`);
+  }
+  if (!images.length) throw new Error('Cloudflare image generation returned no images.');
+  return images;
+}
+
+async function runPollinationsImageGeneration(prompt: string, count: number): Promise<string[]> {
+  const encodedPrompt = encodeURIComponent(prompt.slice(0, 4000));
+  const images: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const seed = Math.floor(Math.random() * 1000000);
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'image/*' },
+    });
+    if (!res.ok) {
+      const raw = await res.text().catch(() => '');
+      throw new Error(`Pollinations image generation failed (${res.status}): ${raw.slice(0, 200)}`);
+    }
+    const buf = await res.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = '';
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+    }
+    const b64 = btoa(binary);
+    const mimeType = res.headers.get('content-type') || 'image/jpeg';
+    images.push(`data:${mimeType};base64,${b64}`);
+  }
+  if (!images.length) throw new Error('Pollinations image generation returned no images.');
+  return images;
 }
 
 async function callN8nWebhook(params: {

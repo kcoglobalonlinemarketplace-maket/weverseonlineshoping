@@ -1,1 +1,75 @@
 @import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════
+   K.C.O GLOBE — Global design system (mobile-app feel)
+   Loaded before each page's inline <style>, so page-specific styles
+   may still refine these defaults.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base polish */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation; /* removes the mobile double-tap zoom delay */
+}
+::selection {
+  background: rgba(249, 115, 22, 0.35);
+  color: #fff;
+}
+
+/* Readability: no body text below 12px, no micro labels below 10px.
+   Neutralizes the many tiny arbitrary Tailwind sizes used across the app. */
+.text-\[8px\] {
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+.text-\[9px\] {
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
+.text-\[10px\] {
+  font-size: 12px !important;
+}
+.text-\[11px\] {
+  font-size: 12px !important;
+}
+
+/* Smallest buttons/links get a taller, easier-to-tap hit area */
+button.text-\[9px\],
+button.text-\[10px\],
+a.text-\[9px\],
+a.text-\[10px\],
+[role="button"].text-\[9px\],
+[role="button"].text-\[10px\] {
+  min-height: 30px;
+}
+
+/* Consistent focus ring for keyboard/touch navigation */
+:focus-visible {
+  outline: 2px solid rgba(249, 115, 22, 0.65);
+  outline-offset: 2px;
+}
+
+/* App-like rounded scrollbars wherever the thin scrollbar is used */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(249, 115, 22, 0.3);
+  border-radius: 999px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}

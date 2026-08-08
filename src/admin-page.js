@@ -1384,7 +1384,7 @@ window.previewProduct = async function(pid) {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">Product Live Preview</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="space-y-2">
@@ -1420,7 +1420,7 @@ window.quickEditProduct = async function(pid) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">Quick Edit Product</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
         </div>
         <form onsubmit="saveQuickEditProduct(event,'${data.property_id}')" class="space-y-3">
           <div><label class="lbl">Title</label><input name="title" class="input-field" value="${esc(data.title || '')}"></div>
@@ -1498,7 +1498,7 @@ window.openProductMoreActions = function(pid) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">More Actions</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
         </div>
         <div class="grid grid-cols-1 gap-2">
           <button onclick="previewProduct('${pid}');closeModal();" class="btn-press text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-semibold text-gray-200">Live Preview</button>
@@ -1869,7 +1869,7 @@ window.showAddProductStep1 = function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Select Product Category</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
         </div>
         <p class="text-xs text-gray-400 mb-3">Choose the category that best matches your product. The form will show smart fields automatically.</p>
         <div class="relative mb-3">
@@ -1909,8 +1909,8 @@ window.showAddProductStep2 = function(category, existingData = {}) {
           </div>
           <div class="flex items-center gap-2 shrink-0">
             ${isEdit ? `<button type="button" onclick="closeProductFormModal()" class="btn-press px-3 py-1.5 rounded-lg text-[11px] font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Product Manager</button>` : `<button type="button" onclick="showAddProductStep1()" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5" title="Change category"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Category</button>`}
-            <button type="button" onclick="closeProductFormModal()" class="btn-press w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Close (X) — return to Product Manager">
-              <i data-lucide="x" class="w-5 h-5"></i>
+            <button type="button" onclick="closeProductFormModal()" class="btn-press px-2.5 h-8 flex items-center justify-center rounded-lg text-[10px] font-bold uppercase tracking-wide text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Close (X) — return to Product Manager">
+              🔙 Back
             </button>
           </div>
         </div>
@@ -2229,7 +2229,7 @@ function applyAiAnalysisToForm(result, category) {
     detectedBox.innerHTML = `<div class="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/25">
       <span class="text-[11px] text-amber-200">AI detected category: <b>${esc(detected)}</b></span>
       <button type="button" onclick="switchProductFormCategory('${esc(detected).replace(/'/g, "\\'")}')" class="btn-press px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500 text-[#111827] hover:bg-amber-400 transition">Switch category</button>
-      <button type="button" onclick="document.getElementById('pf-ai-detected').classList.add('hidden')" class="text-amber-300 hover:text-white text-[10px]">✕</button>
+      <button type="button" onclick="document.getElementById('pf-ai-detected').classList.add('hidden')" class="text-amber-300 hover:text-white text-[10px] font-bold uppercase tracking-wide">🔙 Back</button>
     </div>`;
   }
   if (window.lucide) lucide.createIcons();
@@ -2342,7 +2342,7 @@ function imageThumbHtml(url, i) {
     <img src="${esc(url)}" onerror="this.src='/fallback.svg'">
     <button class="rp" onclick="document.getElementById('rp-input-${i}').click()" type="button" title="Replace image">↻</button>
     <input type="file" accept="image/*" class="rp-input" id="rp-input-${i}" onchange="replaceImage(${i}, this)">
-    <button class="rm" onclick="removeImage(${i})" type="button">✕</button>
+    <button class="rm" onclick="removeImage(${i})" type="button">🔙</button>
   </div>`;
 }
 
@@ -2550,7 +2550,7 @@ window.previewProductDraft = function() {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">Live Draft Preview</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <img src="${esc(image)}" class="w-full h-64 object-cover rounded-xl border border-blue-500/20" onerror="this.src='/fallback.svg'">
@@ -2892,7 +2892,7 @@ window.showAddPropertyModal = function(existing = {}) {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Property</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
         </div>
         <form id="property-form" onsubmit="saveProperty(event,'${isEdit ? existing.property_id : ''}')" class="space-y-4">
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-3">
@@ -3134,7 +3134,7 @@ window.viewOrder = async function(id) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Order ${esc(o.order_number)}</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
         </div>
         <div class="space-y-3 text-sm">
           <div class="grid grid-cols-2 gap-3">
@@ -3233,7 +3233,7 @@ window.viewCustomer = async function(uid) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Customer Profile</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
         </div>
         <div class="flex items-center gap-4 mb-5 p-4 glass-soft border border-blue-500/15 rounded-xl">
           <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
@@ -3419,7 +3419,7 @@ window.showAddCouponModal = function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Create Coupon</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
         </div>
         <form id="coupon-form" onsubmit="saveCoupon(event)" class="space-y-4">
           <div class="form-grid form-grid-2">
@@ -3539,7 +3539,7 @@ window.showAddAdModal = function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Add Promotion / Advertisement</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
         </div>
         <form id="ad-form" onsubmit="saveAd(event)" class="space-y-4">
           <div><label class="lbl">Title *</label><input class="input-field" name="title" required placeholder="e.g. Summer Sale"></div>
@@ -4345,7 +4345,7 @@ window.showAiStatusModal = async function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="activity" class="w-5 h-5 text-emerald-400"></i> AI Provider Status</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
         </div>
         <div class="mb-4 p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300">
           ${configured.length === 0
@@ -4487,7 +4487,7 @@ function renderProductAiModal() {
           </div>
           <div class="flex items-center gap-2">
             <span class="badge bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/25"><i data-lucide="sparkles" class="w-3 h-3"></i> AI Assistant</span>
-            <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
           </div>
         </div>
 
@@ -5692,7 +5692,7 @@ window.setup2FAFlow = async function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="shield-plus" class="w-5 h-5 text-emerald-400"></i> Enable Two-Factor Authentication</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
         </div>
         <div id="2fa-setup-content">
           <div class="flex items-center justify-center py-8"><i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-400"></i></div>

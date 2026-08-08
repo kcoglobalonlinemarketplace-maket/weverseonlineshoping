@@ -305,9 +305,9 @@ function renderStep1() {
                 <p class="text-sm font-bold text-amber-400 mt-1">${formatPrice(item.listing)}</p>
               </div>
               <div class="flex items-center gap-2 shrink-0">
-                <button onclick="changeQty(${i}, -1)" class="w-7 h-7 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-gray-400 hover:text-white transition flex items-center justify-center"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
-                <span class="text-sm font-bold text-white w-6 text-center">${item.quantity}</span>
-                <button onclick="changeQty(${i}, 1)" class="w-7 h-7 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-gray-400 hover:text-white transition flex items-center justify-center"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+                <button onclick="changeQty(${i}, -1)" class="w-9 h-9 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-gray-400 hover:text-white transition flex items-center justify-center"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                <span class="text-sm font-bold text-white w-8 text-center">${item.quantity}</span>
+                <button onclick="changeQty(${i}, 1)" class="w-9 h-9 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-gray-400 hover:text-white transition flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></button>
               </div>
               <button onclick="removeCartItem(${i})" class="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-red-400 transition shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>

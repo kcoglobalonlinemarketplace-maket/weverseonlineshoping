@@ -260,8 +260,8 @@ function render() {
             Local AI — Ollama + ComfyUI
           </h3>
           <div class="flex items-center gap-2">
-            <button onclick="testLocalAI()" id="local-test-btn" class="btn-press px-4 py-1.5 bg-violet-950/60 border border-violet-500/30 text-violet-400 font-bold rounded-lg text-xs uppercase tracking-wide transition hover:bg-violet-500/10 disabled:opacity-40 disabled:cursor-not-allowed">
-              <i data-lucide="wifi" class="w-3 h-3 inline mr-1"></i> Test Local
+            <button onclick="testLocalAI()" id="local-test-btn" class="btn-press px-4 py-2 bg-violet-950/60 border border-violet-500/30 text-violet-400 font-bold rounded-lg text-xs uppercase tracking-wide transition hover:bg-violet-500/10 disabled:opacity-40 disabled:cursor-not-allowed">
+              <i data-lucide="wifi" class="w-4 h-4 inline mr-1"></i> Test Local
             </button>
             <button onclick="toggleLocalAI()" id="local-ai-toggle" class="relative inline-flex h-8 w-14 items-center rounded-full transition ${s.local_ai_enabled !== false ? 'bg-emerald-500' : 'bg-gray-600'}">
               <span class="inline-block h-6 w-6 transform rounded-full bg-white transition ${s.local_ai_enabled !== false ? 'translate-x-7' : 'translate-x-1'}"></span>

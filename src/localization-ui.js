@@ -82,8 +82,8 @@ function buildModal() {
           </div>
           <h3 class="text-sm font-bold text-white">Your Location</h3>
         </div>
-        <button id="kco-loc-close" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition" aria-label="Close">
-          <i data-lucide="x" class="w-4 h-4"></i>
+        <button id="kco-loc-close" class="h-8 px-2 rounded-lg hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition text-[10px] font-bold uppercase tracking-wide" aria-label="Close">
+          🔙 Back
         </button>
       </div>
 
