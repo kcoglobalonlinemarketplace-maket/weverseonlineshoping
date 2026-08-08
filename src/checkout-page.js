@@ -150,6 +150,10 @@ async function init() {
   if (listingId) {
     state.listing = findListingById(listingId);
     if (!state.listing) {
+      const { generateListingById } = await import('./catalog.js');
+      state.listing = generateListingById(listingId);
+    }
+    if (!state.listing) {
       await loadDBListings();
       state.listing = findListingById(listingId);
     }
@@ -160,8 +164,9 @@ async function init() {
     const cart = JSON.parse(localStorage.getItem('kco_cart') || '[]');
     await loadDBListings();
     const listings = getAllListings();
+    const { generateListingById } = await import('./catalog.js');
     state.cartItems = cart.map(id => {
-      const l = listings.find(x => x.property_id === id);
+      const l = listings.find(x => x.property_id === id) || generateListingById(id);
       return l ? { listing: l, quantity: 1 } : null;
     }).filter(Boolean);
     if (state.cartItems.length === 0) {

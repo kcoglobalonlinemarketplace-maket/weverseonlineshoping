@@ -1,6 +1,7 @@
 import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings } from './showroom-data.js';
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
+import { generateProduct, getCatalogCategory } from './catalog.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -124,6 +125,114 @@ const MARKETPLACE_SECTIONS = [
   { id: 'mp-bicycles', label: 'Bicycles', icon: 'bike', subtitle: 'Bicycles, e-bikes, and cycling accessories.', rows: [{ id: 'mp-bicycles-all', label: 'All Bicycles', icon: 'bike', ids: [] }] },
   { id: 'mp-future', label: 'Future Categories', icon: 'sparkles', subtitle: 'New categories coming soon to the marketplace.', rows: [{ id: 'mp-future-all', label: 'Coming Soon', icon: 'sparkles', ids: [] }] },
 ];
+
+// ── Catalog-backed rows ────────────────────────────────────────
+// Maps a showroom row to its generated catalog slug. Rows that map to a
+// catalog are filled with deterministic generated listings (seeded items
+// and DB items come first, then generated extras) instead of "Coming Soon".
+const ROW_TO_CATALOG_SLUG = {
+  // Real estate & vehicles
+  'affordable-homes': 'real-estate',
+  'apartment-homes': 'real-estate',
+  'cape-cod': 'real-estate',
+  'beach-houses': 'real-estate',
+  'new-homes': 'real-estate',
+  'modern-homes': 'real-estate',
+  'mansion-homes': 'real-estate',
+  'farm-house': 'real-estate',
+  'commercial': 'real-estate',
+  'hotels': 'real-estate',
+  'new-cars': 'cars',
+  'used-cars': 'cars',
+  'all-trucks': 'trucks',
+  'motorhomes': 'motorhomes',
+  'heavy-equipment-all': 'heavy-equipment',
+  'auto-parts-all': 'auto-parts',
+  // Marketplace categories
+  'mp-men-all': 'men',
+  'mp-women-all': 'women',
+  'mp-kids-all': 'kids',
+  'mp-fashion-all': 'fashion',
+  'mp-jewelry-all': 'jewelry',
+  'mp-beauty-all': 'beauty',
+  'mp-home-all': 'home',
+  'mp-furniture-all': 'furniture',
+  'mp-kitchen-all': 'kitchen',
+  'mp-appliances-all': 'appliances',
+  'mp-electronics-all': 'electronics',
+  'mp-phones-all': 'phones',
+  'mp-computers-all': 'computers',
+  'mp-gaming-all': 'gaming',
+  'mp-sports-all': 'sports',
+  'mp-food-all': 'food',
+  'mp-baby-all': 'baby',
+  'mp-pets-all': 'pets',
+  'mp-agriculture-all': 'agriculture',
+  'mp-books-all': 'books',
+  'mp-office-all': 'office',
+  'mp-business-all': 'business',
+  'mp-health-all': 'health',
+  'mp-music-all': 'music',
+  'mp-arts-all': 'arts',
+  'mp-toys-all': 'toys',
+  'mp-travel-all': 'travel',
+  'mp-watches-all': 'watches',
+  'mp-garden-all': 'garden',
+  'mp-party-all': 'party',
+  'mp-cameras-all': 'cameras',
+  'mp-software-all': 'software',
+  'mp-collectibles-all': 'collectibles',
+  'mp-safety-all': 'safety',
+  'mp-fitness-all': 'fitness',
+  'mp-camping-all': 'camping',
+  'mp-pool-all': 'pool',
+  'mp-industrial-all': 'industrial',
+  'mp-packaging-all': 'packaging',
+  'mp-cleaning-all': 'cleaning',
+  'mp-religious-all': 'religious',
+  'mp-flowers-all': 'flowers',
+  'mp-luxury-all': 'luxury',
+  'mp-wedding-all': 'wedding',
+  'mp-costumes-all': 'costumes',
+  'mp-coins-all': 'coins',
+  'mp-fireplace-all': 'fireplace',
+  'mp-marine-all': 'marine',
+  'mp-rv-all': 'rv',
+  'mp-educational-all': 'educational',
+  'mp-funeral-all': 'funeral',
+  'mp-bicycles-all': 'bicycles',
+};
+
+// How many generated catalog listings to append per row (after seeds/DB).
+const GENERATED_PER_ROW = 10;
+
+// Tiny deterministic seed so different rows in the same category
+// surface different generated items instead of repeating the same set.
+function rowSeed(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % 997;
+}
+
+function getCatalogListingsForRow(rowDef, existingIds) {
+  const slug = ROW_TO_CATALOG_SLUG[rowDef.id];
+  if (!slug) return [];
+  const def = getCatalogCategory(slug);
+  if (!def) return [];
+  const seen = new Set(existingIds);
+  const cap = Math.min(GENERATED_PER_ROW, def.count);
+  const out = [];
+  const seed = rowSeed(rowDef.id);
+  for (let i = 0; i < cap; i++) {
+    const idx = (seed + i * 53) % def.count;
+    const item = generateProduct(slug, idx);
+    if (item && !seen.has(item.property_id)) {
+      seen.add(item.property_id);
+      out.push(item);
+    }
+  }
+  return out;
+}
 
 // ── Card rendering ──
 export function renderCard(listing) {
@@ -325,6 +434,10 @@ function renderRow(rowDef) {
     listings = TRUCK_LISTINGS;
   } else {
     listings = getListingsByIds(rowDef.ids);
+  }
+  const catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
+  if (catalogExtra.length > 0) {
+    listings = [...listings, ...catalogExtra];
   }
   const hasItems = listings.length > 0;
 

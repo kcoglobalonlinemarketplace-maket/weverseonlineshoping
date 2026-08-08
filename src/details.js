@@ -731,6 +731,11 @@ async function init() {
 
   let listing = SHOWROOM_LISTINGS.find(l => l.property_id === id);
   if (!listing) {
+    // Deterministic catalog listings (KCO-XX-NNNN) resolve instantly.
+    const { generateListingById } = await import('./catalog.js');
+    listing = generateListingById(id);
+  }
+  if (!listing) {
     // Try loading from the database (AI-created products)
     await loadDBListings();
     listing = findListingById(id);

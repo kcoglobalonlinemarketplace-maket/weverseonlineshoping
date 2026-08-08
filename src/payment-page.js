@@ -678,6 +678,10 @@ async function init() {
   const id = getListingId();
   let listing = findListingById(id);
   if (!listing) {
+    const { generateListingById } = await import('./catalog.js');
+    listing = generateListingById(id);
+  }
+  if (!listing) {
     await loadDBListings();
     listing = findListingById(id);
   }
@@ -964,7 +968,7 @@ function attachEventHandlers(listing, baseAmount, orderNumber, user, isGuest) {
       } catch (e) { /* non-blocking */ }
 
       const root = document.getElementById('payment-content');
-      const listingRef = SHOWROOM_LISTINGS.find(l => l.property_id === document.getElementById('form-listing-id').value);
+      const listingRef = listing;
       root.innerHTML = renderPendingVerification(orderNumber, listingRef, parseFloat(document.getElementById('form-amount-paid').value), document.getElementById('form-currency').value);
       if (window.lucide) lucide.createIcons();
       showToast('Payment receipt submitted successfully.');
