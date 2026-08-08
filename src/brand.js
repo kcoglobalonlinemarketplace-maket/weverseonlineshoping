@@ -7,6 +7,7 @@ import { supabase } from './supabase-client.js';
 export const DEFAULT_BADGE = '/verified-badge.svg';
 export const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
 export const DEFAULT_BRAND_SLOGAN = 'SHOP GLOBALLY, DELIVERED WORLDWIDE';
+export const DEFAULT_BRAND_LOGO = '/brand-logo.jpeg';
 
 const CACHE_KEY = 'weverse_brand_v1';
 const OVERRIDE_KEY = 'weverse_brand_override_v1';
@@ -48,7 +49,7 @@ function applyBrand(b) {
 
   const name    = b.brand_name    || b.site_name    || DEFAULT_BRAND_NAME;
   const slogan  = b.brand_slogan  || b.site_tagline || DEFAULT_BRAND_SLOGAN;
-  const logo    = b.brand_logo    || b.brand_header_logo || '';
+  const logo    = b.brand_logo    || b.brand_header_logo || DEFAULT_BRAND_LOGO;
   const badge   = b.brand_badge   || DEFAULT_BADGE;   // always show badge — custom or default
   const favicon = b.brand_favicon || '';
   const font    = b.brand_custom_font || b.brand_font || '';

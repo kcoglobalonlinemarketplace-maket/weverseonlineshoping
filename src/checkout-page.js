@@ -150,7 +150,11 @@ async function init() {
   if (listingId) {
     state.listing = findListingById(listingId);
     if (!state.listing) {
-      const { generateListingById } = await import('./catalog.js');
+      const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
+        import('./catalog.js'),
+        import('./catalog-hidden-store.js'),
+      ]);
+      await loadHiddenCatalogIds();
       state.listing = generateListingById(listingId);
     }
     if (!state.listing) {
@@ -164,7 +168,11 @@ async function init() {
     const cart = JSON.parse(localStorage.getItem('kco_cart') || '[]');
     await loadDBListings();
     const listings = getAllListings();
-    const { generateListingById } = await import('./catalog.js');
+    const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
+      import('./catalog.js'),
+      import('./catalog-hidden-store.js'),
+    ]);
+    await loadHiddenCatalogIds();
     state.cartItems = cart.map(id => {
       const l = listings.find(x => x.property_id === id) || generateListingById(id);
       return l ? { listing: l, quantity: 1 } : null;

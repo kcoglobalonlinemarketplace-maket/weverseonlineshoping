@@ -13,6 +13,8 @@
 // Existing seed IDs (KCO-000001 … KCO-000105) never collide with these.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { getHiddenCatalogIds, isCatalogListingHidden, isHiddenCatalogLoaded, loadHiddenCatalogIds, saveCatalogHidden, resetHiddenCatalogIds } from './catalog-hidden-store.js';
+
 const PEXELS = (id, w = 1000) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
 // ── Deterministic PRNG helpers ──────────────────────────────────────────────
@@ -1551,11 +1553,20 @@ function generateVehicle(def, idx) {
 
 // ── Resolver used by details/checkout/payment pages ───────────────────────
 // Turns a "KCO-XX-NNNN" catalog id back into its deterministic listing so
-// catalog cards are fully clickable end-to-end.
+// catalog cards are fully clickable end-to-end. Hidden listings resolve to
+// null so they cannot be reached directly either.
 export function generateListingById(id) {
-  const p = parseCatalogId(id);
-  if (!p) return null;
-  const def = getCatalogCategory(p.code);
-  if (!def) return null;
-  return generateProduct(def.slug, p.idx);
+  const listing = findCatalogListingById(id);
+  if (!listing || isCatalogListingHidden(id)) return null;
+  return listing;
 }
+
+// ── Catalog item visibility control ─────────────────────────────────────────
+// Catalog listings are deterministic: they regenerate on every page load, so a
+// plain DB "is_active: false" row cannot hide them (loadDBListings only loads
+// active rows). The admin therefore toggles a small hidden-ids list instead,
+// persisted in site_settings.hidden_catalog_ids and cached locally. The real
+// implementation lives in catalog-hidden-store.js; these re-exports keep
+// existing imports (showroom-cards, etc.) working unchanged.
+
+export { getHiddenCatalogIds, isCatalogListingHidden, isHiddenCatalogLoaded, loadHiddenCatalogIds, saveCatalogHidden, resetHiddenCatalogIds };

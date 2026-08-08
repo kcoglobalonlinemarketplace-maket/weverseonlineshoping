@@ -678,7 +678,11 @@ async function init() {
   const id = getListingId();
   let listing = findListingById(id);
   if (!listing) {
-    const { generateListingById } = await import('./catalog.js');
+    const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
+      import('./catalog.js'),
+      import('./catalog-hidden-store.js'),
+    ]);
+    await loadHiddenCatalogIds();
     listing = generateListingById(id);
   }
   if (!listing) {

@@ -6,6 +6,7 @@ import { getLocalShowroomListingById, listLocalShowroomListings, patchLocalShowr
 import { LIVE_STREAM_PLATFORM_DEFS, VIDEO_CALL_PROVIDER_DEFS, loadLiveControlAdminState, loadPublicLiveState, saveLiveControlAdminState, savePublicLiveState } from './live-control-store.js';
 import { getFlagEmojiFromCountryCode, getManualPaymentAccounts, getPaymentInstructions, loadPaymentSettingsCache, savePaymentSettingsCache } from './payment-settings.js';
 import { SHOWROOM_LISTINGS } from './showroom-data.js';
+import { generateProduct, getCatalogCategories, getCatalogCategory, getHiddenCatalogIds, loadHiddenCatalogIds, resetHiddenCatalogIds, saveCatalogHidden } from './catalog.js';
 
 // ══════════════════════════════════════════════════════════
 //  KCO ADMIN DASHBOARD  —  Complete Management Console
@@ -29,6 +30,7 @@ const NAV = [
     { id: 'dashboard',   label: 'Dashboard',         icon: 'layout-dashboard' },
     { id: 'products',    label: 'Products',           icon: 'package' },
     { id: 'properties',  label: 'Properties',         icon: 'home' },
+    { id: 'catalog',     label: 'Catalog Manager',    icon: 'boxes' },
     { id: 'orders',      label: 'Orders',             icon: 'shopping-bag' },
     { id: 'customers',   label: 'Customers',          icon: 'users' },
     { id: 'reviews',     label: 'Reviews',            icon: 'star' },
@@ -61,6 +63,7 @@ const NAV = [
 
 const PAGE_TITLES = {
   dashboard: 'Dashboard', products: 'Products Manager', properties: 'Properties Manager',
+  catalog: 'Catalog Manager',
   orders: 'Orders Manager', customers: 'Customers Manager', reviews: 'Reviews Manager',
 messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement Manager',
   'ai-settings': 'AI Settings', content: 'Content Manager',
@@ -192,6 +195,7 @@ window.navigate = function(section) {
   if (window.lucide) lucide.createIcons();
   const renderers = {
     dashboard: renderDashboard, products: renderProducts, properties: renderProperties,
+    catalog: renderCatalogManager,
     orders: renderOrders, customers: renderCustomers, reviews: renderReviews,
     messages: renderMessages, coupons: renderCoupons, ads: renderAds,
     notifications: renderNotifications, 'live-streaming': renderLiveStreamingManager, 'video-calls': renderVideoCallManager, ai: renderAiAssistant,
@@ -8173,6 +8177,144 @@ window.removeVideoRoom = async function(roomId) {
   await persistLiveControl(false);
   showToast('Video room deleted');
   renderVideoCallManager();
+};
+
+// ══════════════════════════════════════════════════════════
+//  CATALOG MANAGER
+// ══════════════════════════════════════════════════════════
+// The generated catalog (catalog.js) fills homepage rows with deterministic
+// listings. Because they regenerate on every page load, the admin hides them
+// via a persisted hidden-ids list (site_settings.hidden_catalog_ids) instead
+// of deactivating DB rows. This section lists the generated items and lets the
+// admin toggle each one.
+
+const CATALOG_PAGE_SIZE = 30;
+const catalogUi = { category: null, page: 0, query: '' };
+
+async function renderCatalogManager() {
+  const content = document.getElementById('content');
+  if (!content) return;
+  await loadHiddenCatalogIds();
+  const hidden = new Set(getHiddenCatalogIds());
+  const categories = getCatalogCategories();
+  if (!catalogUi.category) catalogUi.category = categories[0]?.slug || null;
+  const def = getCatalogCategory(catalogUi.category);
+  const count = def ? def.count : 0;
+  const q = catalogUi.query.trim().toLowerCase();
+
+  const header = `
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="text-xl font-black text-white">Generated Catalog</h2>
+        <p class="text-xs text-gray-500 mt-1">Deterministic storefront items. Hiding a listing removes it from the site everywhere — including direct links.</p>
+      </div>
+      <button onclick="catalogResetHidden()" class="btn-press px-3 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-300 border border-red-500/25 hover:bg-red-500/20 transition">Show All Hidden</button>
+    </div>`;
+
+  const pills = `
+    <div class="flex flex-wrap gap-2">
+      ${categories.map(c => `<button onclick="catalogSetCategory('${c.slug}')" class="btn-press px-3 py-1.5 rounded-xl text-xs font-bold border transition ${catalogUi.category === c.slug ? 'bg-blue-500/20 text-blue-200 border-blue-500/40' : 'bg-white/5 text-gray-400 border-white/10 hover:text-white'}">${esc(c.name)}</button>`).join('')}
+    </div>`;
+
+  const search = `
+    <div class="flex flex-wrap items-center gap-2">
+      <input id="catalog-search-input" class="input-field flex-1 min-w-[220px]" placeholder="Search title, id or subcategory…" value="${esc(catalogUi.query)}" onkeyup="if (event.key === 'Enter') catalogSearch()">
+      <button onclick="catalogSearch()" class="btn-press px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition">Search</button>
+    </div>`;
+
+  // Build the visible page of items for the current category
+  let filtered = [];
+  if (def) {
+    if (q) {
+      const scanLimit = Math.min(count, 8000);
+      for (let i = 0; i < scanLimit && filtered.length < CATALOG_PAGE_SIZE; i++) {
+        const p = generateProduct(def.slug, i);
+        if (!p) continue;
+        const hay = `${p.property_id} ${p.title} ${p.subcategory || ''} ${p.category || ''}`.toLowerCase();
+        if (hay.includes(q)) filtered.push(p);
+      }
+    } else {
+      const start = catalogUi.page * CATALOG_PAGE_SIZE;
+      const end = Math.min(start + CATALOG_PAGE_SIZE, count);
+      for (let i = start; i < end; i++) {
+        const p = generateProduct(def.slug, i);
+        if (p) filtered.push(p);
+      }
+    }
+  }
+
+  const rows = filtered.length
+    ? filtered.map(p => {
+        const isHidden = hidden.has(p.property_id);
+        const cover = (p.images && p.images[0]) || '/fallback.svg';
+        return `
+          <div class="flex items-center gap-3 p-3 rounded-xl border ${isHidden ? 'border-red-500/25 bg-red-500/5' : 'border-white/10 bg-white/[0.02]'}">
+            <img src="${esc(cover)}" alt="" class="w-12 h-12 rounded-lg object-cover bg-gray-800 shrink-0" loading="lazy">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-white truncate">${esc(p.title)}</p>
+              <p class="text-[11px] text-gray-500 truncate">${esc(p.property_id)} · ${esc(p.subcategory || p.category || '')} · ${fmtMoney(p.price, 'USD')}</p>
+            </div>
+            ${isHidden ? badge(false) : badge(true)}
+            <button onclick="catalogToggle('${esc(p.property_id)}')" class="btn-press px-3 py-1.5 rounded-xl text-xs font-bold border transition ${isHidden ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25' : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'}">
+              ${isHidden ? 'Show' : 'Hide'}
+            </button>
+          </div>`;
+      }).join('')
+    : `<div class="text-center py-16 text-gray-500 text-sm">No catalog items match.</div>`;
+
+  const totalPages = q ? 1 : Math.max(1, Math.ceil(count / CATALOG_PAGE_SIZE));
+  const pager = `
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs text-gray-500">${q ? `${filtered.length} match` : `${count.toLocaleString()} items in ${esc(def?.name || '')}`} · ${hidden.size} hidden</p>
+      <div class="flex items-center gap-2">
+        <button onclick="catalogPage(-1)" ${catalogUi.page <= 0 ? 'disabled' : ''} class="btn-press px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 text-gray-300 border border-white/10 hover:text-white disabled:opacity-40">Prev</button>
+        <span class="text-xs text-gray-500">Page ${catalogUi.page + 1} / ${totalPages}</span>
+        <button onclick="catalogPage(1)" ${catalogUi.page >= totalPages - 1 ? 'disabled' : ''} class="btn-press px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 text-gray-300 border border-white/10 hover:text-white disabled:opacity-40">Next</button>
+      </div>
+    </div>`;
+
+  content.innerHTML = `
+    <div class="space-y-4 fade-in">
+      ${header}
+      ${pills}
+      ${search}
+      <div class="glass-soft border border-blue-500/15 rounded-2xl p-3 space-y-2">${rows}</div>
+      ${pager}
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.catalogSetCategory = function(slug) {
+  catalogUi.category = slug; catalogUi.page = 0; catalogUi.query = '';
+  renderCatalogManager();
+};
+
+window.catalogSearch = function() {
+  const el = document.getElementById('catalog-search-input');
+  catalogUi.query = el ? el.value : '';
+  catalogUi.page = 0;
+  renderCatalogManager();
+};
+
+window.catalogPage = function(dir) {
+  const def = getCatalogCategory(catalogUi.category);
+  const count = def ? def.count : 0;
+  const totalPages = catalogUi.query.trim() ? 1 : Math.max(1, Math.ceil(count / CATALOG_PAGE_SIZE));
+  catalogUi.page = Math.max(0, Math.min(totalPages - 1, catalogUi.page + dir));
+  renderCatalogManager();
+};
+
+window.catalogToggle = async function(id) {
+  const hidden = !getHiddenCatalogIds().includes(id);
+  const res = await saveCatalogHidden(id, hidden);
+  showToast(hidden ? 'Listing hidden from storefront' : 'Listing restored', res.ok ? 'success' : 'info');
+  renderCatalogManager();
+};
+
+window.catalogResetHidden = async function() {
+  await resetHiddenCatalogIds();
+  showToast('All hidden catalog listings restored');
+  renderCatalogManager();
 };
 
 // ══════════════════════════════════════════════════════════

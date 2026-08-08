@@ -1,7 +1,7 @@
 import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings } from './showroom-data.js';
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
-import { generateProduct, getCatalogCategory } from './catalog.js';
+import { generateProduct, getCatalogCategory, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -228,6 +228,7 @@ function getCatalogListingsForRow(rowDef, existingIds) {
     const item = generateProduct(slug, idx);
     if (item && !seen.has(item.property_id)) {
       seen.add(item.property_id);
+      if (isCatalogListingHidden(item.property_id)) continue;
       out.push(item);
     }
   }
@@ -749,7 +750,7 @@ function findSectionAndRowById(id) {
 export async function initAllShowrooms() {
   // Load products from the database (created by AI Admin Assistant)
   // and merge them with the hardcoded seed data.
-  await loadDBListings();
+  await Promise.all([loadDBListings(), loadHiddenCatalogIds()]);
   const dbListings = getDBListings();
   const seedIds = new Set(SHOWROOM_LISTINGS.map(l => l.property_id));
   const dbOnly = dbListings.filter(l => !seedIds.has(l.property_id));

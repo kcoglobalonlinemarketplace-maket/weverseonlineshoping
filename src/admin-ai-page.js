@@ -35,6 +35,7 @@ let state = {
   repairRunning: false,
   automationTesting: false,
   automationRunning: false,
+  autoPipelineRunning: false,
 };
 
 function formatBytes(bytes) {
@@ -608,6 +609,288 @@ async function runLocalBrandImageAutomation(text) {
       { tool: 'refresh_brand', result: { success: true } },
     ],
   };
+}
+
+// ── Auto image pipeline: scan → fill fields → free AI generates 24 images ──
+const AUTO_RUN_PIPELINE_ON_UPLOAD = true;
+
+const VISION_SCAN_PROMPT = `You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded photo(s) and identify exactly what the item is.
+
+Return a single valid JSON object (no markdown, no extra text) with these keys:
+- listing_type (string): "product" or "property" (property if it is a house, building, villa, apartment, estate, or land).
+- title (string): a real, professional marketplace listing title that matches the actual item (brand + model/type + key feature + category). Never use placeholders like "AI Product" or "Premium Item".
+- description (string): a detailed, persuasive 2-4 sentence description.
+- category (string): best category (e.g. Electronics, Fashion, Home & Kitchen, Real Estate).
+- subcategory (string)
+- brand (string): brand name if visible, otherwise empty string.
+- model (string)
+- color (string)
+- condition (string): one of New, Refurbished, Used - Like New, Used - Good, Used - Fair.
+- material, size, storage, ram, processor (strings, only if relevant)
+- bedrooms (number, only for property)
+- bathrooms (number, only for property)
+- property_type (string, only for property: House, Villa, Apartment, etc.)
+- features (array of strings)
+- highlights (array of strings)
+- seo_keywords (array of strings)
+- specifications (object with relevant spec keys only)
+- generation_prompt (string): a detailed visual description of the exact item in the photo, written as an instruction for an AI image generator. Include the item's design, colors, materials, branding, and requested professional e-commerce photography style so the generator can produce a 24-image gallery of this SAME item.
+
+Rules:
+- Only include keys you can actually observe or reasonably infer from the photo(s). NEVER invent exact specs (price, storage size, RAM, horsepower, year, serial numbers) that are not visible or printed on the product.
+- Respond with valid JSON only.`;
+
+async function callAiEdge(body) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(AI_FUNCTION_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  return await res.json().catch(() => ({}));
+}
+
+function extractJsonFromAiText(text) {
+  if (!text) return null;
+  let t = String(text).trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  const start = t.indexOf('{');
+  const end = t.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) return null;
+  const candidate = t.slice(start, end + 1);
+  try { return JSON.parse(candidate); } catch { return null; }
+}
+
+function cleanScanString(v) {
+  return String(v || '').trim().replace(/^["']+|["']+$/g, '');
+}
+
+function deriveTitleFromFileName(name) {
+  const base = String(name || '').replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  return base ? titleCaseProfessional(base) : 'Premium Item';
+}
+
+function buildGenerationPromptFromScan(scan, fallbackTitle) {
+  const explicit = cleanScanString(scan?.generation_prompt);
+  if (explicit) return explicit;
+  const title = cleanScanString(scan?.title) || fallbackTitle || 'this product';
+  const brand = cleanScanString(scan?.brand) ? ` Brand: ${scan.brand}.` : '';
+  const color = cleanScanString(scan?.color) ? ` Color: ${scan.color}.` : '';
+  const desc = cleanScanString(scan?.description) ? ` ${scan.description}` : '';
+  return `Generate high-quality, photorealistic marketplace photos of this EXACT item${title ? `: ${title}` : ''}.${brand}${color}${desc} Keep the item identical in design, color, and branding. Clean background, sharp focus, professional e-commerce product photography, premium showroom presentation.`;
+}
+
+function galleryAnglesForListing(listingType) {
+  if (listingType === 'property') {
+    return [
+      'front exterior view', 'three-quarter front view', 'side elevation view', 'back yard view',
+      'entry and doorway detail', 'living room interior', 'kitchen interior', 'bedroom interior',
+      'bathroom interior', 'aerial roof view', 'neighborhood context shot', 'evening exterior with lights',
+    ];
+  }
+  return [
+    'front hero shot', 'three-quarter angle', 'left side view', 'right side view', 'back view',
+    'top-down flat lay', 'detail close-up', 'lifestyle in-use shot', 'boxed retail presentation',
+    'angle with soft shadows', 'clean minimal hero', 'alternate colorway look',
+  ];
+}
+
+function buildScanListingPayload({ propertyId, listingType, scan, title, images }) {
+  const description = cleanScanString(scan?.description) || buildProfessionalDescription({ listingType }, images.length);
+  const features = Array.isArray(scan?.features) && scan.features.length
+    ? scan.features.map(String)
+    : (listingType === 'property'
+      ? ['Professional Photo Gallery', 'Map-ready Listing', 'Structured Details', 'Premium Presentation']
+      : ['Professional Photo Set', 'Structured Product Details', 'Premium Showroom Presentation', 'AI Optimized Listing']);
+  const highlights = Array.isArray(scan?.highlights) && scan.highlights.length
+    ? scan.highlights.map(String)
+    : (listingType === 'property'
+      ? ['Image-led narrative flow', 'Consistent showroom styling', 'Conversion-ready visuals']
+      : ['Organized image sequence', 'Trust-focused listing structure', 'Conversion-oriented copy']);
+  const seo = Array.isArray(scan?.seo_keywords) && scan.seo_keywords.length
+    ? scan.seo_keywords.map(String)
+    : (listingType === 'property'
+      ? ['house listing', 'real estate', 'showroom property']
+      : ['product listing', 'showroom', 'professional product photos']);
+
+  return {
+    property_id: propertyId,
+    listing_type: listingType,
+    category: cleanScanString(scan?.category) || (listingType === 'property' ? 'Real Estate' : 'General'),
+    subcategory: listingType === 'property'
+      ? (cleanScanString(scan?.property_type) || 'House')
+      : (cleanScanString(scan?.subcategory) || null),
+    title,
+    description,
+    price: 0,
+    currency: 'USD',
+    listing_status: 'sale',
+    brand: listingType === 'product' ? (cleanScanString(scan?.brand) || '') : null,
+    color: listingType === 'product' ? (cleanScanString(scan?.color) || '') : null,
+    condition: listingType === 'product' ? (cleanScanString(scan?.condition) || '') : null,
+    stock_quantity: listingType === 'product' ? 1 : null,
+    bedrooms: listingType === 'property' ? (Number.isFinite(Number(scan?.bedrooms)) ? Number(scan.bedrooms) : null) : null,
+    bathrooms: listingType === 'property' ? (Number.isFinite(Number(scan?.bathrooms)) ? Number(scan.bathrooms) : null) : null,
+    property_type: listingType === 'property' ? (cleanScanString(scan?.property_type) || 'House') : null,
+    features,
+    highlights,
+    tags: listingType === 'property' ? ['Featured Property'] : ['New Arrival', 'Image Verified'],
+    seo_keywords: seo,
+    specifications: (scan?.specifications && typeof scan.specifications === 'object') ? scan.specifications : {},
+    images,
+    is_ai_generated: true,
+    ai_generated_fields: ['title', 'description', 'images', 'brand', 'features', 'highlights', 'seo_keywords'],
+  };
+}
+
+async function uploadDataUrlImageToStorage(propertyId, index, dataUrl) {
+  try {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const objectPath = `ai-generated/${new Date().toISOString().slice(0, 10)}/${propertyId}-${String(index + 1).padStart(2, '0')}.${ext}`;
+    const { error } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).upload(objectPath, blob, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: blob.type || 'image/png',
+    });
+    if (!error) {
+      const { data: pub } = supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(objectPath);
+      if (pub?.publicUrl) return pub.publicUrl;
+    }
+  } catch {}
+  return dataUrl;
+}
+
+async function runAutoImagePipeline() {
+  if (!AUTO_RUN_PIPELINE_ON_UPLOAD) return null;
+  if (!state.pendingUploads.length) return null;
+  if (state.autoPipelineRunning) return null;
+  state.autoPipelineRunning = true;
+
+  try {
+    const progressMsg = {
+      role: 'assistant',
+      content: `🔍 **Auto pipeline started.** Scanning your uploaded image(s) with Gemini + providers, then asking the free AI generator to build a **24-image** gallery from what the scan tells it.`,
+    };
+    state.history.push(progressMsg);
+    renderMessage(progressMsg);
+
+    const propertyId = generateProductId();
+    const firstItem = state.pendingUploads[0];
+    const firstDataUrl = await fileToDataUrl(firstItem.file);
+
+    const uploadResult = await uploadPendingImages(propertyId);
+    const baseUrls = uploadResult.urls;
+    if (!baseUrls.length) {
+      return {
+        ok: false,
+        content: '❌ I could not read the uploaded images. Try smaller files (under 8MB each) and retry.',
+        tool_results: [{ tool: 'upload_images', result: { error: 'Image upload failed.' } }],
+      };
+    }
+
+    // 1) Gemini + other AI providers scan the photo and fill the fields.
+    let scan = null;
+    let scanProvider = 'unavailable';
+    try {
+      const scanRes = await callAiEdge({
+        action: 'vision',
+        images: [firstDataUrl],
+        prompt: VISION_SCAN_PROMPT,
+        max_tokens: 4096,
+      });
+      if (scanRes?.success && scanRes.text) {
+        const parsed = extractJsonFromAiText(scanRes.text);
+        if (parsed) {
+          scan = parsed;
+          scanProvider = scanRes.provider || 'gemini';
+        }
+      }
+    } catch { scan = null; }
+
+    const listingType = scan?.listing_type === 'property' ? 'property' : 'product';
+    const title = cleanScanString(scan?.title) || deriveTitleFromFileName(firstItem.name);
+    const generationPrompt = buildGenerationPromptFromScan(scan, title);
+
+    // 2) Free AI generator creates the 24-image gallery using the photo as reference.
+    const generatedDataUrls = [];
+    const angleHints = galleryAnglesForListing(listingType);
+    for (let i = 0; i < angleHints.length && generatedDataUrls.length < 24; i += 1) {
+      try {
+        const genRes = await callAiEdge({
+          action: 'generate_images',
+          prompt: `${generationPrompt}\n\nAngle/composition ${i + 1}/24: ${angleHints[i]}. Keep the item visually identical to the reference photo.`,
+          reference_url: firstDataUrl,
+          count: 4,
+        });
+        if (genRes?.success && Array.isArray(genRes.images) && genRes.images.length) {
+          generatedDataUrls.push(...genRes.images);
+        }
+      } catch { /* continue with next angle */ }
+    }
+
+    // 3) Upload generated images to storage (fallback: keep data URLs).
+    const generatedUrls = [];
+    for (let i = 0; i < generatedDataUrls.length; i += 1) {
+      const url = await uploadDataUrlImageToStorage(propertyId, baseUrls.length + i, generatedDataUrls[i]);
+      if (url) generatedUrls.push(url);
+    }
+
+    const allImages = [...baseUrls, ...generatedUrls];
+    const arrangedImages = ensureImageCount(allImages, 24);
+
+    const payload = buildScanListingPayload({ propertyId, listingType, scan, title, images: arrangedImages });
+
+    const candidate = { ...payload };
+    let insertErr = null;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const { error } = await supabase.from('showroom_listings').insert(candidate);
+      if (!error) { insertErr = null; break; }
+      const msg = String(error.message || '');
+      const missingColMatch = msg.match(/Could not find the '([^']+)' column/i);
+      if (missingColMatch?.[1]) {
+        delete candidate[missingColMatch[1]];
+        continue;
+      }
+      insertErr = error;
+      break;
+    }
+
+    if (insertErr) {
+      return {
+        ok: false,
+        content: `❌ Listing creation failed: ${insertErr.message}`,
+        tool_results: [{ tool: 'create_listing', result: { error: insertErr.message } }],
+      };
+    }
+
+    const filledFields = ['title', 'description', 'images', 'brand', 'features', 'highlights', 'seo_keywords'];
+    if (listingType === 'product') filledFields.push('category', 'subcategory', 'color', 'condition', 'specifications');
+    if (listingType === 'property') filledFields.push('bedrooms', 'bathrooms', 'property_type');
+
+    clearPendingUploadsLocal();
+
+    return {
+      ok: true,
+      content: `✅ **Auto pipeline complete.** Gemini + providers scanned your photo and filled **${filledFields.length} fields** (title, brand, description, category, features, highlights, SEO keywords${listingType === 'property' ? ', beds/baths/property type' : ', color/condition/specs'}). The free AI generator created a **${arrangedImages.length}-image** gallery from what the scan described (${generatedUrls.length} AI-generated + ${baseUrls.length} uploaded). Listing **${title}** saved as **${propertyId}**.${scanProvider !== 'unavailable' ? `\n\n*Scan provider: ${scanProvider}*` : ''}`,
+      tool_results: [
+        { tool: 'upload_images', result: { success: true, total: uploadResult.total, saved: baseUrls.length } },
+        { tool: 'scan_image', result: { success: true, provider: scanProvider, fields_filled: filledFields } },
+        { tool: 'generate_images', result: { success: true, generated: generatedUrls.length, target: 24 } },
+        { tool: 'create_listing', result: { success: true, property_id: propertyId, listing_type: listingType, image_count: arrangedImages.length } },
+      ],
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      content: `⚠️ **Auto image pipeline error:** ${err.message}`,
+      tool_results: [{ tool: 'scan_image', result: { error: err.message } }],
+    };
+  } finally {
+    state.autoPipelineRunning = false;
+  }
 }
 
 function showToast(msg) {
@@ -1734,6 +2017,16 @@ window.handleAiImageUpload = async (event) => {
   if (rejected > 0) {
     showToast(`${rejected} file(s) skipped. Use images under 8MB each.`);
   }
+  if (added > 0) {
+    const autoResult = await runAutoImagePipeline();
+    if (autoResult) {
+      const aiMsg = { role: 'assistant', content: autoResult.content, tool_results: autoResult.tool_results };
+      state.history.push(aiMsg);
+      renderMessage(aiMsg);
+      if (autoResult.ok) showToast('Auto pipeline finished — listing created with AI-filled fields and 24 images.');
+      else showToast('Auto pipeline had an issue.');
+    }
+  }
 };
 
 window.clearHistory = async () => {
@@ -1842,15 +2135,6 @@ async function init() {
   state.developerMode = true;
   state.autoDeveloperMode = true;
   applyDeveloperModeUI();
-
-  // Load provider info — always Gemini for admin
-  const badge = document.getElementById('provider-badge');
-  const name = document.getElementById('provider-name');
-  if (badge && name) {
-    badge.classList.remove('hidden');
-    badge.className = 'hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full';
-    name.textContent = 'Google Gemini';
-  }
 
   // Load chat history
   try {
