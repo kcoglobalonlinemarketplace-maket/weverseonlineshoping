@@ -7,6 +7,12 @@ import { supabase } from './supabase-client.js';
 let currentUser = null;
 let currentProfile = null;
 
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text == null ? '' : String(text);
+  return div.innerHTML;
+}
+
 async function fetchProfile(user) {
   if (!user) return null;
   const { data } = await supabase
@@ -63,6 +69,38 @@ function renderNavAuth(user, profile) {
   // More menu sign-out row
   const moreSignOut = document.getElementById('more-signout');
   if (moreSignOut) moreSignOut.classList.toggle('hidden', !user);
+
+  // More menu account card (guest vs signed-in)
+  const moreAccount = document.getElementById('more-account-card');
+  if (moreAccount) {
+    if (user) {
+      const name = displayName(user, profile);
+      const initials = (name.replace(/[^a-zA-Z0-9 ]/g, '').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('') || '?').toUpperCase();
+      moreAccount.innerHTML = `
+        <button onclick="closeMoreMenu();window.location.href='/account.html'"
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-orange-500/40 transition text-left">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500/30 to-blue-500/30 border border-orange-500/40 flex items-center justify-center shrink-0 text-white text-sm font-black">${escapeHtml(initials)}</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[13px] font-bold text-white leading-none truncate">${escapeHtml(name)}</p>
+            <p class="text-[11px] text-gray-400 mt-0.5 leading-none truncate">${escapeHtml(user.email || '')}</p>
+          </div>
+          <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 shrink-0"><i data-lucide="shield-check" class="w-3 h-3"></i>Account</span>
+        </button>`;
+    } else {
+      moreAccount.innerHTML = `
+        <button onclick="closeMoreMenu();openAuthModal();"
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-orange-500/15 to-orange-600/10 border border-orange-400/30 hover:border-orange-400/60 hover:bg-orange-500/15 transition text-left active:scale-[0.99]">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shrink-0 shadow-md shadow-orange-500/30">
+            <i data-lucide="user-round" class="w-5 h-5 text-white"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[13px] font-bold text-white leading-none">Sign In / Create Account</p>
+            <p class="text-[11px] text-gray-400 mt-0.5 leading-none">Orders, wishlist &amp; more</p>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 shrink-0"></i>
+        </button>`;
+    }
+  }
 
   if (window.lucide) lucide.createIcons();
 }

@@ -121,21 +121,21 @@
     "sameAs": ["https://weverseonlineshop.com"]
   }
   </script>
-  <script type="module" crossorigin src="/assets/main-CBKUInXE.js"></script>
+  <script type="module" crossorigin src="/assets/main-DHQlp8pU.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/supabase-client-7_ZWSEp6.js">
-  <link rel="modulepreload" crossorigin href="/assets/localization-D8zG2wD-.js">
+  <link rel="modulepreload" crossorigin href="/assets/localization-C0xPa6if.js">
   <link rel="modulepreload" crossorigin href="/assets/preload-helper-CLcXU_4U.js">
-  <link rel="modulepreload" crossorigin href="/assets/showroom-data-BrLq5AXT.js">
+  <link rel="modulepreload" crossorigin href="/assets/showroom-data-BoOhjLzR.js">
   <link rel="modulepreload" crossorigin href="/assets/truck-data-CXeZJZHb.js">
   <link rel="modulepreload" crossorigin href="/assets/auth-D3ZJ7kZA.js">
   <link rel="modulepreload" crossorigin href="/assets/catalog-hidden-store-DbF0xVeS.js">
   <link rel="modulepreload" crossorigin href="/assets/catalog-DZE9rOFe.js">
   <link rel="modulepreload" crossorigin href="/assets/native-bridge-BNMM1XVo.js">
-  <link rel="modulepreload" crossorigin href="/assets/live-stream-mode-CQiuOo9o.js">
+  <link rel="modulepreload" crossorigin href="/assets/live-stream-mode-lW6jT3Oh.js">
   <link rel="modulepreload" crossorigin href="/assets/live-control-store-DzHEnoMc.js">
-  <link rel="modulepreload" crossorigin href="/assets/customer-ai-widget-D8Hn02p4.js">
+  <link rel="modulepreload" crossorigin href="/assets/customer-ai-widget-K-BSazB0.js">
   <link rel="modulepreload" crossorigin href="/assets/brand-BhhjU3ex.js">
-  <link rel="stylesheet" crossorigin href="/assets/localization-CrHMdyvp.css">
+  <link rel="stylesheet" crossorigin href="/assets/localization-C1zydFPL.css">
 </head>
 <body class="bg-[#0b0f19] text-gray-100 font-sans antialiased selection:bg-orange-500 selection:text-black min-h-screen overflow-x-hidden">
 
@@ -177,7 +177,7 @@
                   <path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/>
                 </svg>
               </div>
-              <span class="block mt-1 whitespace-nowrap text-[10px] sm:text-xs lg:text-[13px] font-bold tracking-[0.06em] leading-none">
+              <span class="hidden sm:block mt-1 truncate text-[10px] sm:text-xs lg:text-[13px] font-bold tracking-[0.06em] leading-none max-w-[46vw] md:max-w-[30vw]">
                 <span class="brand-tagline-1 text-cyan-400 [text-shadow:0_0_10px_rgba(34,211,238,0.6)]">🌐 SHOP GLOBALLY,</span>
                 <span class="brand-tagline-2 text-lime-400 [text-shadow:0_0_10px_rgba(163,230,53,0.55)]"> DELIVERED WORLDWIDE</span>
               </span>
@@ -321,6 +321,17 @@
     <div id="more-menu-panel"
          class="hidden fixed inset-x-0 top-[140px] z-50 bg-[#0f172a] border-b border-gray-800 max-h-[calc(100dvh-140px)] overflow-y-auto overscroll-contain shadow-2xl">
       <div class="max-w-sm mx-auto px-4 py-3 space-y-0.5">
+
+        <!-- Panel header -->
+        <div class="flex items-center justify-between px-1 pt-0.5 pb-1 mb-1">
+          <p class="text-sm font-black text-white tracking-tight">More</p>
+          <button onclick="closeMoreMenu()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition" aria-label="Close menu">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Account (dual state, rendered by nav-auth.js) -->
+        <div id="more-account-card" class="mx-1 mb-1"></div>
 
         <p class="more-label">Region</p>
         <div class="mx-1 mb-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.07] space-y-2">
@@ -868,7 +879,7 @@
           <ul class="space-y-2 text-xs text-gray-500">
             <li><a href="mailto:support@weverseonlineshop.com" class="hover:text-blue-400 transition">Email Support</a></li>
             <li><a href="/help.html" class="hover:text-blue-400 transition">FAQ</a></li>
-            <li><span class="text-gray-600">Live Chat (Coming Soon)</span></li>
+            <li><a href="#" onclick="window.__kcoAiOpen&&window.__kcoAiOpen();return false;" class="hover:text-blue-400 transition">Live AI Chat Assistant</a></li>
           </ul>
         </div>
       </div>

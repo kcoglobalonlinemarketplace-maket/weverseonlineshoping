@@ -1,6 +1,8 @@
 // Showroom Phase 1 — 20 professional sample listings
 // Real estate + vehicles. Uses real Pexels stock photo URLs of actual homes.
 
+import { HOUSE_KITCHEN_LISTINGS } from './home-kitchen-data.js';
+
 const PEXELS = (id, w = 800) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
 // Real Pexels photo IDs — actual residential homes, interiors, and vehicles
@@ -1359,6 +1361,9 @@ export const SHOWROOM_LISTINGS = [
     features: ['12 Brushes', 'Synthetic Bristles', 'Rose Gold Handles', 'Travel Case', 'Cruelty-Free'],
   },
 ];
+
+// Home & Kitchen — 200 curated products appended to the marketplace listings.
+SHOWROOM_LISTINGS.push(...HOUSE_KITCHEN_LISTINGS);
 
 // Real-world coordinates for every seeded property listing so showroom cards can
 // render a map preview and the details page map can skip geocoding lookups.

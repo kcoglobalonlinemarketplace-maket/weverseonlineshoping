@@ -5,6 +5,94 @@ import { generateProduct, getCatalogCategory, isCatalogListingHidden, loadHidden
 
 const FALLBACK_IMG = '/fallback.svg';
 
+// ── Wishlist state (guest + signed-in) ──────────────────────────
+// Guests keep a local list so the heart works immediately; signed-in
+// users get the same list mirrored to their Supabase wishlist table.
+const WISHLIST_LOCAL_KEY = 'kco_wishlist_ids';
+let wishlistIds = new Set();
+let _wishStylesInjected = false;
+
+function injectWishStyles() {
+  if (_wishStylesInjected) return;
+  _wishStylesInjected = true;
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes kcoWishPop{0%{transform:scale(1)}35%{transform:scale(1.45)}60%{transform:scale(.86)}100%{transform:scale(1)}}
+    .wish-pop i{animation:kcoWishPop .5s cubic-bezier(.34,1.56,.64,1)}
+  `;
+  document.head.appendChild(style);
+}
+
+function loadLocalWishlist() {
+  try { wishlistIds = new Set(JSON.parse(localStorage.getItem(WISHLIST_LOCAL_KEY) || '[]')); }
+  catch { wishlistIds = new Set(); }
+}
+function saveLocalWishlist() {
+  try { localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify([...wishlistIds])); }
+  catch { /* noop */ }
+}
+
+async function syncWishlistFromDB() {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return;
+    const { supabase } = await import('./supabase-client.js');
+    const { data } = await supabase.from('wishlist').select('listing_id, property_id');
+    if (data) data.forEach((row) => { if (row.listing_id) wishlistIds.add(row.listing_id); else if (row.property_id) wishlistIds.add(row.property_id); });
+  } catch { /* best-effort */ }
+}
+
+function isSaved(listing) {
+  return wishlistIds.has(listing.id || listing.property_id);
+}
+
+function updateWishlistButton(btn, saved) {
+  if (!btn) return;
+  btn.classList.toggle('saved', saved);
+  btn.classList.toggle('text-red-400', saved);
+  btn.classList.toggle('bg-red-500/20', saved);
+  btn.classList.toggle('border', saved);
+  btn.classList.toggle('border-red-500/40', saved);
+  btn.setAttribute('aria-label', saved ? 'Remove from wishlist' : 'Add to wishlist');
+  btn.title = saved ? 'Remove from wishlist' : 'Add to wishlist';
+  btn.innerHTML = `<i data-lucide="heart" class="w-4 h-4 ${saved ? 'fill-red-500 text-red-500' : ''}"></i>`;
+  btn.classList.remove('wish-pop');
+  void btn.offsetWidth;
+  btn.classList.add('wish-pop');
+  if (window.lucide) lucide.createIcons();
+}
+
+async function toggleWishlist(listing, btn) {
+  const id = listing.id || listing.property_id;
+  const wasSaved = wishlistIds.has(id);
+  const saved = !wasSaved;
+  if (saved) wishlistIds.add(id); else wishlistIds.delete(id);
+  saveLocalWishlist();
+  updateWishlistButton(btn, saved);
+
+  const user = await getCurrentUser();
+  if (!user) {
+    showToast(saved ? 'Saved to wishlist \u2665' : 'Removed from wishlist');
+    if (saved) {
+      setTimeout(() => showToast('Sign in to sync your wishlist across devices'), 1400);
+    }
+    return;
+  }
+  try {
+    const { supabase } = await import('./supabase-client.js');
+    const { data: existing } = await supabase.from('wishlist')
+      .select('id').eq('listing_id', id).eq('user_id', user.id).maybeSingle();
+    if (saved && !existing) {
+      await supabase.from('wishlist').insert({ user_id: user.id, listing_id: id, property_id: listing.property_id });
+    } else if (!saved && existing) {
+      await supabase.from('wishlist').delete().eq('id', existing.id);
+    }
+    showToast(saved ? 'Added to wishlist \u2665' : 'Removed from wishlist');
+  } catch {
+    showToast('Wishlist action failed');
+  }
+}
+
 // ── Section 1: Real Estate & Vehicles ──
 // Each listing ID appears in exactly ONE row — no overlaps, no duplicates.
 const REAL_ESTATE_SECTIONS = [
@@ -81,6 +169,21 @@ const MARKETPLACE_SECTIONS = [
   { id: 'mp-furniture', label: 'Furniture', icon: 'armchair', subtitle: 'Stylish furniture for every room in your home.', rows: [{ id: 'mp-furniture-all', label: 'All Furniture', icon: 'armchair', ids: [] }] },
   { id: 'mp-kitchen', label: 'Kitchen', icon: 'utensils', subtitle: 'Cookware, dining, and kitchen essentials.', rows: [{ id: 'mp-kitchen-all', label: 'All Kitchen', icon: 'utensils', ids: [] }] },
   { id: 'mp-appliances', label: 'Home Appliances', icon: 'refrigerator', subtitle: 'Reliable appliances to power your home.', rows: [{ id: 'mp-appliances-all', label: 'All Home Appliances', icon: 'refrigerator', ids: [] }] },
+  { id: 'mp-home-kitchen', label: 'Home & Kitchen', icon: 'home', subtitle: 'Appliances, cookware, furniture, and essentials for every room.', rows: [
+      { id: 'mp-hk-kitchen-appliances', label: 'Kitchen Appliances', icon: 'microwave', ids: ['KCO-001001','KCO-001002','KCO-001003','KCO-001004','KCO-001005','KCO-001006','KCO-001007','KCO-001008','KCO-001009','KCO-001010','KCO-001011','KCO-001012','KCO-001013','KCO-001014','KCO-001015','KCO-001016','KCO-001017','KCO-001018','KCO-001019'] },
+      { id: 'mp-hk-cooking', label: 'Cooking', icon: 'chef-hat', ids: ['KCO-001020','KCO-001021','KCO-001022','KCO-001023','KCO-001024','KCO-001025','KCO-001026','KCO-001027','KCO-001028','KCO-001029','KCO-001030','KCO-001031','KCO-001032','KCO-001033','KCO-001034','KCO-001035','KCO-001036','KCO-001037'] },
+      { id: 'mp-hk-food-prep', label: 'Food Preparation', icon: 'blender', ids: ['KCO-001038','KCO-001039','KCO-001040','KCO-001041','KCO-001042','KCO-001043','KCO-001044','KCO-001045','KCO-001046','KCO-001047','KCO-001048','KCO-001049','KCO-001050','KCO-001051','KCO-001052','KCO-001053'] },
+      { id: 'mp-hk-refrigeration', label: 'Refrigeration', icon: 'refrigerator', ids: ['KCO-001054','KCO-001055','KCO-001056','KCO-001057','KCO-001058','KCO-001059','KCO-001060','KCO-001061','KCO-001062','KCO-001063','KCO-001064','KCO-001065'] },
+      { id: 'mp-hk-cleaning', label: 'Cleaning', icon: 'spray-can', ids: ['KCO-001066','KCO-001067','KCO-001068','KCO-001069','KCO-001070','KCO-001071','KCO-001072','KCO-001073','KCO-001074','KCO-001075','KCO-001076','KCO-001077','KCO-001078','KCO-001079','KCO-001080','KCO-001081','KCO-001082','KCO-001083'] },
+      { id: 'mp-hk-laundry', label: 'Laundry', icon: 'washing-machine', ids: ['KCO-001084','KCO-001085','KCO-001086','KCO-001087','KCO-001088','KCO-001089','KCO-001090','KCO-001091','KCO-001092','KCO-001093','KCO-001094','KCO-001095','KCO-001096','KCO-001097'] },
+      { id: 'mp-hk-furniture', label: 'Furniture', icon: 'armchair', ids: ['KCO-001098','KCO-001099','KCO-001100','KCO-001101','KCO-001102','KCO-001103','KCO-001104','KCO-001105','KCO-001106','KCO-001107','KCO-001108','KCO-001109','KCO-001110','KCO-001111','KCO-001112','KCO-001113','KCO-001114','KCO-001115','KCO-001116','KCO-001117','KCO-001118','KCO-001119'] },
+      { id: 'mp-hk-bedroom', label: 'Bedroom', icon: 'bed', ids: ['KCO-001120','KCO-001121','KCO-001122','KCO-001123','KCO-001124','KCO-001125','KCO-001126','KCO-001127','KCO-001128','KCO-001129','KCO-001130','KCO-001131','KCO-001132','KCO-001133','KCO-001134','KCO-001135'] },
+      { id: 'mp-hk-bathroom', label: 'Bathroom', icon: 'shower-head', ids: ['KCO-001136','KCO-001137','KCO-001138','KCO-001139','KCO-001140','KCO-001141','KCO-001142','KCO-001143','KCO-001144','KCO-001145','KCO-001146','KCO-001147'] },
+      { id: 'mp-hk-security', label: 'Home Security', icon: 'shield-check', ids: ['KCO-001148','KCO-001149','KCO-001150','KCO-001151','KCO-001152','KCO-001153','KCO-001154','KCO-001155','KCO-001156','KCO-001157','KCO-001158','KCO-001159','KCO-001160','KCO-001161'] },
+      { id: 'mp-hk-tools', label: 'Tools & Maintenance', icon: 'hammer', ids: ['KCO-001162','KCO-001163','KCO-001164','KCO-001165','KCO-001166','KCO-001167','KCO-001168','KCO-001169','KCO-001170','KCO-001171','KCO-001172','KCO-001173','KCO-001174','KCO-001175'] },
+      { id: 'mp-hk-org', label: 'Home Organization', icon: 'package', ids: ['KCO-001176','KCO-001177','KCO-001178','KCO-001179','KCO-001180','KCO-001181','KCO-001182','KCO-001183','KCO-001184','KCO-001185','KCO-001186','KCO-001187','KCO-001188','KCO-001189'] },
+      { id: 'mp-hk-family', label: 'Family & Baby', icon: 'baby', ids: ['KCO-001190','KCO-001191','KCO-001192','KCO-001193','KCO-001194','KCO-001195','KCO-001196','KCO-001197','KCO-001198','KCO-001199','KCO-001200'] },
+  ] },
   { id: 'mp-electronics', label: 'Electronics', icon: 'cpu', subtitle: 'Latest electronics and gadgets for tech lovers.', rows: [{ id: 'mp-electronics-all', label: 'All Electronics', icon: 'cpu', ids: [] }] },
   { id: 'mp-phones', label: 'Phones', icon: 'smartphone', subtitle: 'Smartphones and mobile accessories from top brands.', rows: [{ id: 'mp-phones-all', label: 'All Phones', icon: 'smartphone', ids: [] }] },
   { id: 'mp-computers', label: 'Computers', icon: 'monitor', subtitle: 'Laptops, desktops, and computing accessories.', rows: [{ id: 'mp-computers-all', label: 'All Computers', icon: 'monitor', ids: [] }] },
@@ -323,6 +426,15 @@ export function renderCard(listing) {
   card.className = 'showroom-card group relative bg-[#0f172a]/80 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 flex flex-col cursor-pointer';
   card.dataset.id = listingId;
 
+  const wishSaved = isSaved(listing);
+
+  // "View the property details" — a clear, professional call to action at
+  // the bottom of property cards, right next to the map/location preview.
+  const detailsBtnHtml = isProperty ? `
+    <button class="details-btn mt-2.5 w-full inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-lg transition active:scale-[0.98] bg-blue-600/15 hover:bg-blue-600/30 text-blue-200 hover:text-white border border-blue-500/25 hover:border-blue-400/50">
+      <i data-lucide="eye" class="w-4 h-4 shrink-0"></i><span class="truncate">View the property details</span>
+    </button>` : '';
+
   card.innerHTML = `
     <div class="relative aspect-[4/3] overflow-hidden bg-gray-900">
       <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
@@ -346,14 +458,15 @@ export function renderCard(listing) {
         <button class="buy-btn flex-1 min-w-0 bg-orange-500 hover:bg-orange-600 active:scale-95 text-black text-xs font-bold py-2.5 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
           <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
         </button>
-        <button class="wishlist-btn shrink-0 w-10 h-10 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="Add to wishlist" aria-label="Add to wishlist">
-          <i data-lucide="heart" class="w-4 h-4"></i>
+        <button class="wishlist-btn ${wishSaved ? 'saved bg-red-500/20 text-red-400 border border-red-500/40' : ''} shrink-0 w-10 h-10 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}" aria-label="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}">
+          <i data-lucide="heart" class="w-4 h-4 ${wishSaved ? 'fill-red-500 text-red-500' : ''}"></i>
         </button>
         <button class="share-btn shrink-0 w-10 h-10 bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
           <i data-lucide="share-2" class="w-4 h-4"></i>
         </button>
       </div>
       ${mapPreviewHtml}
+      ${detailsBtnHtml}
     </div>
   `;
 
@@ -362,8 +475,9 @@ export function renderCard(listing) {
     window.location.href = `/details.html?id=${listing.property_id}`;
   });
   card.querySelector('.buy-btn').addEventListener('click', (e) => { e.stopPropagation(); handleBuyNow(listing); });
-  card.querySelector('.wishlist-btn').addEventListener('click', (e) => { e.stopPropagation(); handleWishlist(listing); });
+  card.querySelector('.wishlist-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleWishlist(listing, e.currentTarget); });
   card.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
+  card.querySelector('.details-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/details.html?id=${listing.property_id}`; });
 
   return card;
 }
@@ -375,33 +489,6 @@ async function handleBuyNow(listing) {
   } else {
     setRedirectAfterAuth(`/checkout.html?id=${listing.property_id}`);
     window.location.href = `/auth.html?redirect=${encodeURIComponent('/checkout.html?id=' + listing.property_id)}`;
-  }
-}
-
-async function handleWishlist(listing) {
-  const user = await getCurrentUser();
-  if (!user) {
-    setRedirectAfterAuth(window.location.pathname);
-    window.location.href = `/auth.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-    return;
-  }
-  try {
-    const { supabase } = await import('./supabase-client.js');
-    const { data: existing } = await supabase.from('wishlist')
-      .select('id').eq('listing_id', listing.id || listing.property_id).eq('user_id', user.id).maybeSingle();
-    if (existing) {
-      await supabase.from('wishlist').delete().eq('id', existing.id);
-      showToast('Removed from wishlist');
-    } else {
-      await supabase.from('wishlist').insert({
-        user_id: user.id,
-        listing_id: listing.id,
-        property_id: listing.property_id,
-      });
-      showToast('Added to wishlist');
-    }
-  } catch {
-    showToast('Wishlist action failed');
   }
 }
 
@@ -460,9 +547,11 @@ function renderRow(rowDef) {
 
   row.innerHTML = `
     <div class="flex items-center justify-between mb-2">
-      <div class="flex items-center gap-2">
-        <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-orange-500/80"></i>
-        <h4 class="text-sm font-semibold text-gray-200 tracking-wide">${rowDef.label}</h4>
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-orange-400"></i>
+        </span>
+        <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
       </div>
       <div class="flex items-center gap-1 ${hasItems ? '' : 'hidden'}">
         <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
@@ -495,25 +584,45 @@ function renderRow(rowDef) {
 }
 
 // ── Section rendering ──
-// Clean section headings introduce each category; products flow continuously.
+// Professional showroom headings: large gradient title, glowing icon tile,
+// subtitle, live item count, and a clean divider. Products flow continuously.
+function countSectionItems(section) {
+  let count = 0;
+  section.rows.forEach((r) => {
+    const base = r.allTrucks ? TRUCK_LISTINGS : getListingsByIds(r.ids);
+    count += base.length;
+    count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
+  });
+  return count;
+}
+
 function renderSection(section, accentColor) {
   const sec = document.createElement('div');
   sec.className = 'showroom-section space-y-3';
 
-  const accentText = accentColor === 'blue' ? 'text-blue-300' : 'text-emerald-300';
-  const accentBg = accentColor === 'blue' ? 'bg-blue-500/10 border-blue-500/25' : 'bg-emerald-500/10 border-emerald-500/25';
+  const isBlue = accentColor === 'blue';
+  const accentText = isBlue ? 'text-blue-300' : 'text-emerald-300';
+  const accentBorder = isBlue ? 'border-blue-500/30' : 'border-emerald-500/30';
+  const accentBg = isBlue ? 'bg-blue-500/10' : 'bg-emerald-500/10';
+  const glow = isBlue ? '0 0 22px rgba(59,130,246,0.25)' : '0 0 22px rgba(16,185,129,0.25)';
+  const itemCount = countSectionItems(section);
 
   const header = document.createElement('div');
-  header.className = 'flex items-center gap-3';
+  header.className = 'relative pt-2 pb-3';
   header.innerHTML = `
-    <div class="p-2.5 rounded-xl border ${accentBg} shrink-0">
-      <i data-lucide="${section.icon}" class="w-5 h-5 ${accentText}"></i>
+    <div class="flex items-center gap-3.5">
+      <div class="p-3 rounded-2xl border ${accentBorder} ${accentBg} shrink-0" style="box-shadow:${glow}">
+        <i data-lucide="${section.icon}" class="w-6 h-6 ${accentText}"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
+          <span class="bg-gradient-to-r ${isBlue ? 'from-blue-200 via-white to-blue-300' : 'from-emerald-200 via-white to-emerald-300'} bg-clip-text text-transparent">${section.label}</span>
+        </h3>
+        <p class="text-gray-400 text-xs sm:text-[13px] leading-tight mt-1 truncate">${section.subtitle}</p>
+      </div>
+      <span class="hidden sm:inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border ${accentBorder} ${accentBg} ${accentText}">${itemCount} Items</span>
     </div>
-    <div class="flex-1 min-w-0">
-      <h3 class="text-lg sm:text-xl font-black text-white tracking-tight leading-tight">${section.label}</h3>
-      <p class="text-gray-400 text-xs leading-tight mt-1 truncate">${section.subtitle}</p>
-    </div>
-    <div class="flex-1 h-px bg-gradient-to-r from-gray-700/60 to-transparent ml-2 hidden sm:block"></div>
+    <div class="mt-3 h-px bg-gradient-to-r ${isBlue ? 'from-blue-500/40 via-gray-700/40 to-transparent' : 'from-emerald-500/40 via-gray-700/40 to-transparent'}"></div>
   `;
   sec.appendChild(header);
 
@@ -763,6 +872,9 @@ export async function initAllShowrooms() {
   // Load products from the database (created by AI Admin Assistant)
   // and merge them with the hardcoded seed data.
   await Promise.all([loadDBListings(), loadHiddenCatalogIds()]);
+  loadLocalWishlist();
+  injectWishStyles();
+  await syncWishlistFromDB();
   const dbListings = getDBListings();
   const seedIds = new Set(SHOWROOM_LISTINGS.map(l => l.property_id));
   const dbOnly = dbListings.filter(l => !seedIds.has(l.property_id));

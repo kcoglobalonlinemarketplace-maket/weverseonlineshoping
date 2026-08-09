@@ -598,6 +598,34 @@ function render(listing) {
 
 let selectedRating = 0;
 
+// Heart pop animation (smooth, app-like toggle feedback)
+let _wishPopStyleInjected = false;
+function ensureWishPopStyle() {
+  if (_wishPopStyleInjected) return;
+  _wishPopStyleInjected = true;
+  const s = document.createElement('style');
+  s.textContent = '@keyframes kcoWishPop{0%{transform:scale(1)}35%{transform:scale(1.45)}60%{transform:scale(.86)}100%{transform:scale(1)}}';
+  document.head.appendChild(s);
+}
+function setWishlistBtn(btn, saved) {
+  if (!btn) return;
+  ensureWishPopStyle();
+  btn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${saved ? 'fill-red-500 text-red-500' : ''}"></i>`;
+  btn.classList.toggle('bg-red-500/10', saved);
+  btn.classList.toggle('border', saved);
+  btn.classList.toggle('border-red-500/20', saved);
+  const sub = btn.querySelector('span');
+  if (sub) sub.textContent = saved ? 'Saved to Wishlist' : 'Add to Wishlist';
+  if (window.lucide) lucide.createIcons();
+  const icon = btn.querySelector('i');
+  if (icon) {
+    icon.style.animation = 'none';
+    void icon.offsetWidth;
+    icon.style.animation = 'kcoWishPop .5s cubic-bezier(.34,1.56,.64,1)';
+    setTimeout(() => { if (icon) icon.style.animation = ''; }, 550);
+  }
+}
+
 async function setupWishlistButton(listing) {
   const btn = document.getElementById('wishlist-btn');
   if (!btn) return;
@@ -616,11 +644,7 @@ async function setupWishlistButton(listing) {
     .eq('listing_id', listing.id)
     .maybeSingle();
   if (wishErr) { console.error('Wishlist check failed:', wishErr.message); return; }
-  if (existing) {
-    btn.innerHTML = '<i data-lucide="heart" class="w-5 h-5 fill-red-500 text-red-500"></i>';
-    btn.classList.add('bg-red-500/10','border','border-red-500/20');
-    if (window.lucide) lucide.createIcons();
-  }
+  if (existing) setWishlistBtn(btn, true);
   btn.addEventListener('click', async () => {
     const { data: fav, error: favErr } = await supabase
       .from('wishlist')
@@ -632,15 +656,12 @@ async function setupWishlistButton(listing) {
     if (fav) {
       const { error: delErr } = await supabase.from('wishlist').delete().eq('id', fav.id);
       if (delErr) { console.error('Wishlist delete failed:', delErr.message); return; }
-      btn.innerHTML = '<i data-lucide="heart" class="w-5 h-5"></i>';
-      btn.classList.remove('bg-red-500/10','border','border-red-500/20');
+      setWishlistBtn(btn, false);
     } else {
       const { error: insErr } = await supabase.from('wishlist').insert({ user_id: user.id, listing_id: listing.id });
       if (insErr) { console.error('Wishlist insert failed:', insErr.message); return; }
-      btn.innerHTML = '<i data-lucide="heart" class="w-5 h-5 fill-red-500 text-red-500"></i>';
-      btn.classList.add('bg-red-500/10','border','border-red-500/20');
+      setWishlistBtn(btn, true);
     }
-    if (window.lucide) lucide.createIcons();
   });
 }
 

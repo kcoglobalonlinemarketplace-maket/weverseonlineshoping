@@ -20,6 +20,17 @@
     }
   }
 
+  // A page already has its own in-header back control (arrow, "Back to Home",
+  // "Back to Marketplace", etc.). Creating a second floating button would be
+  // redundant and overlap the header / verified badge, so we skip it.
+  function hasHeaderBackControl() {
+    var header = document.querySelector("header");
+    if (!header) return false;
+    if (header.querySelector('[data-lucide="arrow-left"]')) return true;
+    var text = (header.textContent || "").toLowerCase();
+    return /back to (home|marketplace)/i.test(text);
+  }
+
   function createBackButton() {
     var existing = document.getElementById("back-to-home");
     if (existing) {
@@ -27,6 +38,7 @@
       return;
     }
     if (document.getElementById("kco-back-btn")) return;
+    if (hasHeaderBackControl()) return;
 
     var btn = document.createElement("button");
     btn.id = "kco-back-btn";

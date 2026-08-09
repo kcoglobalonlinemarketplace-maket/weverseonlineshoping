@@ -552,8 +552,8 @@ function renderCategories(){
     const active=idx===0;
     const col=CAT_COLORS[cat.color]||CAT_COLORS.orange;
     const iconWrapClass=active
-      ?"cat-icon-wrap p-3 rounded-xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" shadow-["+col.glow+"]"
-      :"cat-icon-wrap p-3 rounded-xl border bg-gray-900/80 border-gray-800 group-hover:bg-gray-800 group-hover:"+col.hoverBorder+" group-hover:shadow-[0_4px_14px_rgba(0,0,0,0.3)]";
+      ?"cat-icon-wrap p-3.5 rounded-2xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" shadow-["+col.glow+"] ring-1 ring-white/10"
+      :"cat-icon-wrap p-3.5 rounded-2xl border bg-gradient-to-br from-gray-800/70 to-gray-900/90 border-gray-800/90 group-hover:border-gray-600 group-hover:bg-gray-800 group-hover:shadow-[0_4px_16px_rgba(0,0,0,0.35)]";
     a.className="cat-item flex flex-col items-center gap-1.5 transition-all duration-300 group shrink-0 "+(active?"active "+col.text:"text-gray-400 hover:"+col.text);
     a.innerHTML='<div class="'+iconWrapClass+'"><i data-lucide="'+cat.icon+'" class="w-6 h-6"></i></div><span class="text-xs font-semibold tracking-wide whitespace-nowrap">'+cat.name+"</span>";
     c.appendChild(a);
@@ -568,13 +568,13 @@ function filterByCategory(name,el){
     a.classList.remove("active");a.classList.add("text-gray-400");
     a.classList.remove("text-orange-400","text-pink-400","text-blue-400","text-amber-400","text-emerald-400","text-lime-400","text-cyan-400","text-sky-400","text-red-400","text-violet-400","text-indigo-400","text-teal-400","text-rose-400","text-fuchsia-400","text-slate-300","text-green-400","text-yellow-400","text-amber-600","text-purple-400","text-gray-400");
     const b=a.querySelector("div");
-    b.className="cat-icon-wrap p-3 rounded-xl border bg-gray-900/80 border-gray-800 transition-all duration-300";
+    b.className="cat-icon-wrap p-3.5 rounded-2xl border bg-gradient-to-br from-gray-800/70 to-gray-900/90 border-gray-800/90 transition-all duration-300";
     b.style.boxShadow="";
   });
   const col=CAT_COLORS[el.dataset.color]||CAT_COLORS.orange;
   el.classList.remove("text-gray-400");el.classList.add("active",col.text);
   const b=el.querySelector("div");
-  b.className="cat-icon-wrap p-3 rounded-xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" transition-all duration-300";
+  b.className="cat-icon-wrap p-3.5 rounded-2xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" transition-all duration-300 ring-1 ring-white/10";
   b.style.boxShadow=col.glow;
   closeSearchResults();
   if(name==="All"){if(window._clearShowroomFilter)window._clearShowroomFilter();}
@@ -1278,7 +1278,7 @@ function showRegionNotification(msg){
 
 // ---- UI HELPERS ----
 function toggleNotifications(){document.getElementById("notification-panel").classList.toggle("hidden")}
-function openAuthModal(){window.location.href="/auth.html"}
+function openAuthModal(){var cur=window.location.pathname+window.location.search;if(!cur||cur==="/"){window.location.href="/auth.html"}else{window.location.href="/auth.html?redirect="+encodeURIComponent(cur)}}
 function closeAuthModal(){document.getElementById("auth-modal").classList.add("hidden")}
 function switchAuthTab(tab){
   const lt=document.getElementById("tab-login"),rt=document.getElementById("tab-register"),uf=document.getElementById("field-username"),sb=document.getElementById("auth-submit-btn");
