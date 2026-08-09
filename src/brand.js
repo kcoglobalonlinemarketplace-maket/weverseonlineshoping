@@ -20,7 +20,7 @@ export const W_LOGO_SVG = (cls = 'w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8') =>
 
 // Centralized one-line tagline markup — single leading globe, two colors.
 export function taglineHtml() {
-  return `<span class="brand-tagline-1 text-cyan-400 [text-shadow:0_0_10px_rgba(34,211,238,0.6)]">🌐 GLOBAL SHOPPING</span><span class="brand-tagline-2 text-lime-400 [text-shadow:0_0_10px_rgba(163,230,53,0.55)]"> • WORLDWIDE DELIVERY</span>`;
+  return `<span class="flex flex-col items-start"><span class="brand-tagline-1 text-cyan-400 [text-shadow:0_0_10px_rgba(34,211,238,0.6)]">🌐GLOBAL SHOPPING • WORLDWIDE</span><span class="brand-tagline-2 text-lime-400 [text-shadow:0_0_10px_rgba(163,230,53,0.55)]">DELIVERY 🚚</span></span>`;
 }
 
 const CACHE_KEY = 'weverse_brand_v1';
