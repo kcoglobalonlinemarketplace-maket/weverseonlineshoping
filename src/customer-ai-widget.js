@@ -152,19 +152,22 @@ function buildWidget() {
   // ── FAB — small, circular, never blocks the site ──
   const fab = document.createElement('button');
   fab.id = 'kco-ai-fab';
-  fab.setAttribute('aria-label', 'Chat with Weverse support');
-  fab.className = 'fixed bottom-5 right-5 z-[60] w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-transform hover:scale-105 active:scale-95';
+  fab.setAttribute('aria-label', 'Contact us');
+  fab.className = 'fixed bottom-5 right-5 z-[60] flex items-center gap-2 pl-2.5 pr-4 py-2 rounded-full shadow-xl transition-transform hover:scale-105 active:scale-95';
   fab.style.background = 'linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)';
   fab.style.border = '1px solid rgba(255,255,255,0.18)';
   fab.style.boxShadow = '0 8px 24px rgba(59,130,246,0.4)';
 
   fab.innerHTML = `
     <span class="kco-fab-ring absolute inset-0 rounded-full pointer-events-none" style="background:radial-gradient(circle,rgba(59,130,246,.35),transparent 70%)"></span>
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative">
-      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    <span class="kco-online-dot absolute top-1 right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#1e293b]"></span>
-    <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#1e293b] border border-white/20 flex items-center justify-center pointer-events-none">
+    <span class="relative shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-white/10 border border-white/20">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="kco-online-dot absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#1e293b]"></span>
+    </span>
+    <span class="text-sm font-black text-white tracking-wide whitespace-nowrap">Contact us</span>
+    <span class="shrink-0 w-5 h-5 rounded-full bg-[#1e293b] border border-white/20 flex items-center justify-center pointer-events-none">
       ${VERIFIED_BADGE_SVG}
     </span>
   `;
