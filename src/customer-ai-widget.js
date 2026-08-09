@@ -164,6 +164,9 @@ function buildWidget() {
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <span class="kco-online-dot absolute top-1 right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#1e293b]"></span>
+    <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#1e293b] border border-white/20 flex items-center justify-center pointer-events-none">
+      ${VERIFIED_BADGE_SVG}
+    </span>
   `;
   fab.onclick = () => togglePanel(true);
   document.body.appendChild(fab);

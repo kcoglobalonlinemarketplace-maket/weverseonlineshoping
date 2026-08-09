@@ -1,4 +1,4 @@
-import{f as d,C as E,L as I,A as C,h as z,i as B,j as S,k as T,l as M,m as N,o as j,n as $}from"./localization-C0xPa6if.js";let u=!1;function A(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
+import{f as d,C as E,L as I,A as C,h as z,i as B,j as S,k as T,l as M,m as N,o as j,n as $}from"./localization-BprxZ2jD.js";let u=!1;function A(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
     @keyframes kcoLocPulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
     @keyframes kcoLocSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
     @keyframes kcoLocFadeIn { from { opacity:0; } to { opacity:1; } }
