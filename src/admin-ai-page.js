@@ -586,7 +586,7 @@ async function runLocalBrandImageAutomation(text) {
   }
 
   const brandTitle = 'Weverse Online Shop';
-  const brandSlogan = 'SHOP GLOBALLY, DELIVERED WORLDWIDE';
+  const brandSlogan = 'GLOBAL SHOPPING • WORLDWIDE DELIVERY';
   const brandPayload = {
     brand_name: brandTitle,
     brand_slogan: brandSlogan,

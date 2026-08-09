@@ -15,7 +15,7 @@ import { generateProduct, getCatalogCategories, getCatalogCategory, getHiddenCat
 const ADMIN_EMAIL = 'weverseonlineshop@gmail.com';
 const AI_AD_LOCAL_FALLBACK_KEY = 'kco_ai_ad_override_fallback_v1';
 const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
-const DEFAULT_BRAND_SLOGAN = 'SHOP GLOBALLY, DELIVERED WORLDWIDE';
+const DEFAULT_BRAND_SLOGAN = 'GLOBAL SHOPPING • WORLDWIDE DELIVERY';
 
 // Supabase edge function that proxies AI providers server-side so API keys
 // never leave the server or appear in browser network calls.
@@ -6449,7 +6449,7 @@ async function renderBrandManager() {
               </div>
               <div class="sm:col-span-2">
                 <label class="lbl">Slogan / Tagline *</label>
-                <input class="input-field" name="brand_slogan" id="inp-brand-slogan" value="${esc(fallbackBrandSlogan)}" placeholder="e.g. Shop Globally, Delivered Worldwide" oninput="updateLivePreview()">
+                <input class="input-field" name="brand_slogan" id="inp-brand-slogan" value="${esc(fallbackBrandSlogan)}" placeholder="e.g. Global Shopping • Worldwide Delivery" oninput="updateLivePreview()">
               </div>
               <div class="sm:col-span-2">
                 <label class="lbl">Brand Description</label>
@@ -6477,14 +6477,14 @@ async function renderBrandManager() {
                 </div>
               </div>
               <div>
-                <label class="lbl">Tagline Color 1 (e.g. "SHOP GLOBALLY,")</label>
+                <label class="lbl">Tagline Color 1 (e.g. "GLOBAL SHOPPING")</label>
                 <div class="flex gap-2 items-center">
                   <input type="color" class="w-10 h-10 rounded-xl border border-blue-500/20 bg-transparent cursor-pointer shrink-0" id="cp-tag1" value="${esc(d.brand_tagline_color1||'#22d3ee')}" oninput="document.getElementById('ct-tag1').value=this.value;updateLivePreview()">
                   <input class="input-field flex-1 font-mono" id="ct-tag1" name="brand_tagline_color1" value="${esc(d.brand_tagline_color1||'#22d3ee')}" placeholder="#22d3ee" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('cp-tag1').value=this.value;updateLivePreview()">
                 </div>
               </div>
               <div>
-                <label class="lbl">Tagline Color 2 (e.g. "DELIVERED WORLDWIDE")</label>
+                <label class="lbl">Tagline Color 2 (e.g. "WORLDWIDE DELIVERY")</label>
                 <div class="flex gap-2 items-center">
                   <input type="color" class="w-10 h-10 rounded-xl border border-blue-500/20 bg-transparent cursor-pointer shrink-0" id="cp-tag2" value="${esc(d.brand_tagline_color2||'#a3e635')}" oninput="document.getElementById('ct-tag2').value=this.value;updateLivePreview()">
                   <input class="input-field flex-1 font-mono" id="ct-tag2" name="brand_tagline_color2" value="${esc(d.brand_tagline_color2||'#a3e635')}" placeholder="#a3e635" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('cp-tag2').value=this.value;updateLivePreview()">
