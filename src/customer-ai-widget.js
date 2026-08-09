@@ -184,7 +184,7 @@ function buildWidget() {
           ${SUPPORT_AVATAR_SVG}
         </div>
         <div class="min-w-0">
-          <p class="text-sm font-bold text-white leading-tight tracking-wide flex items-center gap-1 truncate">Weverse Support ${VERIFIED_BADGE_SVG}</p>
+          <p class="text-sm font-bold text-white leading-tight tracking-wide flex items-center gap-1 truncate">Contact us ${VERIFIED_BADGE_SVG}</p>
           <p class="text-[10px] leading-tight flex items-center gap-1.5 mt-0.5">
             <span class="w-2 h-2 bg-emerald-400 rounded-full inline-block kco-online-dot"></span>
             <span class="text-emerald-400 font-medium">Online \u00B7 AI Assistant</span>
