@@ -181,7 +181,8 @@ function syncHomepageLayout() {
   const headerHeight = Math.ceil(header.getBoundingClientRect().height || header.offsetHeight || 0);
   const categoriesHeight = Math.ceil(categories.getBoundingClientRect().height || categories.offsetHeight || 0);
   categories.style.top = `${headerHeight}px`;
-  main.style.paddingTop = `${headerHeight + categoriesHeight + 12}px`;
+  const gap = window.innerWidth < 640 ? 20 : 12;
+  main.style.paddingTop = `${headerHeight + categoriesHeight + gap}px`;
 }
 
 function injectHeaderBrand(name, slogan, logo, badge, primary) {

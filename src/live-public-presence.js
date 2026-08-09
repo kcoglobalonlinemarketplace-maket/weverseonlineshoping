@@ -32,7 +32,7 @@ function ensureBanner() {
   if (!banner) {
     banner = document.createElement('section');
     banner.id = 'kco-live-home-banner';
-    banner.className = 'hidden relative z-[20] mx-auto mt-[136px] w-[calc(100%-1.5rem)] max-w-[1600px] overflow-hidden rounded-2xl border border-red-500/20 bg-gradient-to-r from-[#1b1020] via-[#111827] to-[#0b1324] p-4 shadow-2xl shadow-red-500/10 sm:w-[calc(100%-2.5rem)] sm:p-5';
+    banner.className = 'hidden relative z-[20] mx-auto mt-[156px] sm:mt-[136px] w-[calc(100%-1.5rem)] max-w-[1600px] overflow-hidden rounded-2xl border border-red-500/20 bg-gradient-to-r from-[#1b1020] via-[#111827] to-[#0b1324] p-4 shadow-2xl shadow-red-500/10 sm:w-[calc(100%-2.5rem)] sm:p-5';
     const header = document.querySelector('header');
     if (header?.parentNode) header.parentNode.insertBefore(banner, header.nextSibling);
     else document.body.prepend(banner);

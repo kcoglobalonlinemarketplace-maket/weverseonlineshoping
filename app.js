@@ -1262,7 +1262,7 @@ function showRegionNotification(msg){
   if(!n){
     n=document.createElement("div");
     n.id="region-detect-notification";
-    n.className="fixed top-[185px] left-1/2 -translate-x-1/2 z-[55] max-w-[92vw] sm:max-w-md bg-[#1e293b] border border-orange-500/40 rounded-xl shadow-2xl px-4 py-3 flex items-start gap-3 transition-all duration-500";
+    n.className="fixed top-[201px] sm:top-[185px] left-1/2 -translate-x-1/2 z-[55] max-w-[92vw] sm:max-w-md bg-[#1e293b] border border-orange-500/40 rounded-xl shadow-2xl px-4 py-3 flex items-start gap-3 transition-all duration-500";
     n.innerHTML='<i data-lucide="globe" class="w-5 h-5 text-orange-400 shrink-0 mt-0.5"></i>'+
       '<div class="flex-1 min-w-0"><p class="text-xs text-gray-200 leading-snug" id="region-detect-text"></p>'+
       '<button onclick="document.getElementById(\'region-detect-notification\').classList.add(\'opacity-0\',\'translate-y-[-10px]\');setTimeout(()=>document.getElementById(\'region-detect-notification\').remove(),500)" class="text-[10px] text-orange-400 hover:text-orange-300 font-semibold mt-1.5">Dismiss</button></div>'+
