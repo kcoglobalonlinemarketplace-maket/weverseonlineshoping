@@ -9,6 +9,20 @@ export const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
 export const DEFAULT_BRAND_SLOGAN = 'SHOP GLOBALLY, DELIVERED WORLDWIDE';
 export const DEFAULT_BRAND_LOGO = '/brand-logo.jpeg';
 
+// Centralized inline verified badge — identical design to the homepage badge.
+// #1877F2 blue circle + white check. Injected beside every brand-name element.
+const BADGE_SVG = (cls = 'weverse-badge w-4 h-4 sm:w-[18px] sm:h-[18px] lg:w-5 lg:h-5 shrink-0') =>
+  `<svg viewBox="0 0 24 24" class="${cls}" aria-label="Verified" role="img" data-weverse-badge="true"><circle cx="12" cy="12" r="11" fill="#1877F2"/><path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/></svg>`;
+
+// Centralized W logo — identical to the homepage logo box.
+export const W_LOGO_SVG = (cls = 'w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8') =>
+  `<svg viewBox="0 0 24 24" class="${cls}" fill="none" aria-hidden="true"><path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#0b0f19" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+// Centralized one-line tagline markup — single leading globe, two colors.
+export function taglineHtml() {
+  return `<span class="brand-tagline-1 text-cyan-400 [text-shadow:0_0_10px_rgba(34,211,238,0.6)]">🌐 SHOP GLOBALLY,</span><span class="brand-tagline-2 text-lime-400 [text-shadow:0_0_10px_rgba(163,230,53,0.55)]"> DELIVERED WORLDWIDE</span>`;
+}
+
 const CACHE_KEY = 'weverse_brand_v1';
 const OVERRIDE_KEY = 'weverse_brand_override_v1';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -31,7 +45,8 @@ async function loadBrand() {
     const { data } = await supabase.from('site_settings').select(
       'brand_name,brand_slogan,brand_logo,brand_badge,brand_favicon,' +
       'brand_mobile_logo,brand_header_logo,brand_footer_logo,' +
-      'brand_primary_color,brand_secondary_color,brand_font,brand_custom_font,' +
+      'brand_primary_color,brand_secondary_color,brand_tagline_color1,brand_tagline_color2,' +
+      'brand_font,brand_custom_font,' +
       'brand_website_url,brand_email,site_name,site_tagline,' +
       'homepage_banner_image,homepage_banner_alt'
     ).limit(1).maybeSingle();
@@ -55,8 +70,16 @@ function applyBrand(b) {
   const font    = b.brand_custom_font || b.brand_font || '';
   const primary = b.brand_primary_color || '';
   const secondary = b.brand_secondary_color || '';
+  const tagline1 = b.brand_tagline_color1 || '';
+  const tagline2 = b.brand_tagline_color2 || '';
 
   injectHomepageBanner(b.homepage_banner_image || '', b.homepage_banner_alt || 'Homepage header banner');
+
+  // ── 0. Tagline colors (split two-color tagline) ──────────
+  if (tagline1 || tagline2) {
+    document.querySelectorAll('.brand-tagline-1').forEach(el => { if (tagline1) el.style.color = tagline1; });
+    document.querySelectorAll('.brand-tagline-2').forEach(el => { if (tagline2) el.style.color = tagline2; });
+  }
 
   // ── 1. Page title (prepend brand name) ──────────────────
   if (name && document.title && !document.title.startsWith(name)) {
@@ -95,7 +118,13 @@ function applyBrand(b) {
   // ── 4. Explicit data-brand attributes ────────────────────
   document.querySelectorAll('[data-brand]').forEach(el => {
     const role = el.dataset.brand;
-    if (role === 'name')    { el.textContent = name; }
+    if (role === 'name') {
+      el.textContent = name;
+      // Ensure the centralized verified badge sits immediately beside the name
+      if (!el.querySelector('[data-weverse-badge]') && !el.parentElement?.querySelector('[data-weverse-badge]')) {
+        el.appendChild(Object.assign(document.createElement('span'), { className: 'inline-flex items-center ml-1 align-middle' , innerHTML: BADGE_SVG('weverse-badge w-4 h-4 sm:w-[18px] sm:h-[18px] lg:w-5 lg:h-5 shrink-0') }));
+      }
+    }
     if (role === 'slogan')  { el.textContent = slogan; }
     if (role === 'logo')    { if (logo) { el.src = logo; el.alt = name; el.style.display = ''; } else { el.style.display = 'none'; } }
     if (role === 'badge')   { if (badge) { el.src = badge; el.alt = 'Verified'; el.style.display = ''; } else if (el.tagName === 'IMG') { el.style.display = 'none'; } }
@@ -171,6 +200,7 @@ function injectHeaderBrand(name, slogan, logo, badge, primary) {
   // Update specific span patterns we know exist in our HTML
   // Brand name span (large text in header)
   document.querySelectorAll('header span').forEach(span => {
+    if (span.classList.contains('brand-tagline-1') || span.classList.contains('brand-tagline-2')) return;
     const t = span.textContent.trim();
     if (t === 'Weverse Online Shop' || t === 'KCO Global Online Marketplace' || span.classList.contains('brand-name')) {
       span.textContent = name;

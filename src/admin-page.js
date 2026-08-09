@@ -9,7 +9,7 @@ import { SHOWROOM_LISTINGS } from './showroom-data.js';
 import { generateProduct, getCatalogCategories, getCatalogCategory, getHiddenCatalogIds, loadHiddenCatalogIds, resetHiddenCatalogIds, saveCatalogHidden } from './catalog.js';
 
 // ══════════════════════════════════════════════════════════
-//  KCO ADMIN DASHBOARD  —  Complete Management Console
+//  WEVERSE ADMIN DASHBOARD  —  Complete Management Console
 // ══════════════════════════════════════════════════════════
 
 const ADMIN_EMAIL = 'weverseonlineshop@gmail.com';
@@ -720,7 +720,7 @@ function showPasswordResetFlow() {
   card.innerHTML = `
     <div class="flex items-center gap-3 mb-6">
       <div class="w-11 h-11 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shrink-0"><i data-lucide="lock" class="w-5 h-5 text-white"></i></div>
-      <div><h1 class="text-lg font-black text-white">Set New Password</h1><p class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">KCO Admin</p></div>
+      <div><h1 class="text-lg font-black text-white">Set New Password</h1><p class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Weverse Admin</p></div>
     </div>
     <div id="reset-pw-error" class="hidden mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs"></div>
     <div class="space-y-4">
@@ -5596,7 +5596,7 @@ async function renderContent() {
         <form id="content-form" onsubmit="saveContent(event)" class="space-y-5">
           ${[
             { section: 'Site Identity', fields: [
-              { key: 'site_name', label: 'Site Name', type: 'text', placeholder: 'KCO Global Online Marketplace' },
+               { key: 'site_name', label: 'Site Name', type: 'text', placeholder: 'Weverse Online Shop' },
               { key: 'site_tagline', label: 'Tagline / Slogan', type: 'text', placeholder: 'Premium International Commerce' },
               { key: 'site_description', label: 'Site Description (SEO)', type: 'textarea', placeholder: 'Your trusted global shop…' },
             ]},
@@ -5708,7 +5708,7 @@ async function renderSeo() {
       <form id="seo-form" onsubmit="saveSeo(event)" class="space-y-4">
         <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
           <h3 class="text-sm font-black text-white">Homepage SEO</h3>
-          <div><label class="lbl">Meta Title</label><input class="input-field" name="meta_title" value="${esc(d.meta_title || '')}" placeholder="KCO Global Online Marketplace | Premium International Commerce"></div>
+          <div><label class="lbl">Meta Title</label><input class="input-field" name="meta_title" value="${esc(d.meta_title || '')}" placeholder="Weverse Online Shop | Premium International Commerce"></div>
           <div><label class="lbl">Meta Description</label><textarea class="input-field" name="meta_description" rows="2" placeholder="Your trusted global shop…">${esc(d.meta_description || '')}</textarea></div>
           <div><label class="lbl">Meta Keywords (comma separated)</label><input class="input-field" name="meta_keywords" value="${esc(d.meta_keywords || '')}" placeholder="global marketplace, online shopping, …"></div>
           <div><label class="lbl">Canonical URL</label><input class="input-field" name="canonical_url" value="${esc(d.canonical_url || '')}" placeholder="https://yoursite.com"></div>
@@ -5756,7 +5756,7 @@ async function renderEmail() {
         </div>
         <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
           <h3 class="text-sm font-black text-white">Sender Information</h3>
-          <div><label class="lbl">Sender Name</label><input class="input-field" name="email_from_name" value="${esc(d.email_from_name || '')}" placeholder="KCO Global Online Marketplace"></div>
+          <div><label class="lbl">Sender Name</label><input class="input-field" name="email_from_name" value="${esc(d.email_from_name || '')}" placeholder="Weverse Online Shop"></div>
           <div><label class="lbl">Reply-To Email</label><input type="email" class="input-field" name="email_reply_to" value="${esc(d.email_reply_to || '')}" placeholder="support@example.com"></div>
         </div>
         <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Email Settings</button>
@@ -5950,7 +5950,7 @@ window.setup2FAFlow = async function() {
     </div>`);
   if (window.lucide) lucide.createIcons();
   try {
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'KCO Admin' });
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Weverse Admin' });
     if (error) throw error;
     const qrUri = data.totp.qr_code;
     const secret = data.totp.secret;
@@ -6054,7 +6054,7 @@ function showBackupCodesModal(codes) {
 
 window.copyBackupCodes = function(codes) { navigator.clipboard.writeText(codes.join('\n')).then(() => showToast('Backup codes copied!')); };
 window.downloadBackupCodes = function(codes) {
-  const blob = new Blob([`KCO Admin Backup Codes\nGenerated: ${new Date().toISOString()}\n\n${codes.join('\n')}\n\nEach code works once. Store securely.`], { type: 'text/plain' });
+  const blob = new Blob([`Weverse Admin Backup Codes\nGenerated: ${new Date().toISOString()}\n\n${codes.join('\n')}\n\nEach code works once. Store securely.`], { type: 'text/plain' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'kco-admin-backup-codes.txt'; a.click();
 };
 
@@ -6476,6 +6476,20 @@ async function renderBrandManager() {
                   <input class="input-field flex-1 font-mono" id="ct-secondary" name="brand_secondary_color" value="${esc(d.brand_secondary_color||'#3b82f6')}" placeholder="#3b82f6" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('cp-secondary').value=this.value;updateLivePreview()">
                 </div>
               </div>
+              <div>
+                <label class="lbl">Tagline Color 1 (e.g. "SHOP GLOBALLY,")</label>
+                <div class="flex gap-2 items-center">
+                  <input type="color" class="w-10 h-10 rounded-xl border border-blue-500/20 bg-transparent cursor-pointer shrink-0" id="cp-tag1" value="${esc(d.brand_tagline_color1||'#22d3ee')}" oninput="document.getElementById('ct-tag1').value=this.value;updateLivePreview()">
+                  <input class="input-field flex-1 font-mono" id="ct-tag1" name="brand_tagline_color1" value="${esc(d.brand_tagline_color1||'#22d3ee')}" placeholder="#22d3ee" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('cp-tag1').value=this.value;updateLivePreview()">
+                </div>
+              </div>
+              <div>
+                <label class="lbl">Tagline Color 2 (e.g. "DELIVERED WORLDWIDE")</label>
+                <div class="flex gap-2 items-center">
+                  <input type="color" class="w-10 h-10 rounded-xl border border-blue-500/20 bg-transparent cursor-pointer shrink-0" id="cp-tag2" value="${esc(d.brand_tagline_color2||'#a3e635')}" oninput="document.getElementById('ct-tag2').value=this.value;updateLivePreview()">
+                  <input class="input-field flex-1 font-mono" id="ct-tag2" name="brand_tagline_color2" value="${esc(d.brand_tagline_color2||'#a3e635')}" placeholder="#a3e635" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('cp-tag2').value=this.value;updateLivePreview()">
+                </div>
+              </div>
             </div>
           </div>
 
@@ -6570,12 +6584,24 @@ window.updateLivePreview = function() {
   const slogan = document.getElementById('inp-brand-slogan')?.value || DEFAULT_BRAND_SLOGAN;
   const primary   = document.getElementById('ct-primary')?.value   || '#f97316';
   const secondary = document.getElementById('ct-secondary')?.value || '#3b82f6';
+  const tagColor1 = document.getElementById('ct-tag1')?.value   || '#22d3ee';
+  const tagColor2 = document.getElementById('ct-tag2')?.value   || '#a3e635';
   const logo  = document.getElementById('val-brand_logo')?.value   || DEFAULT_BRAND_LOGO;
   const badge = document.getElementById('val-brand_badge')?.value  || '';
 
   // Update preview elements
   ['preview-name','preview-footer-name','preview-copy-name'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = name; });
   ['preview-slogan','preview-footer-slogan'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = slogan; });
+
+  // Tagline preview colors (show split colors on the preview slogan)
+  const ps = document.getElementById('preview-slogan');
+  if (ps && slogan) {
+    const s = slogan;
+    const commaIdx = s.indexOf(',');
+    const part1 = commaIdx > -1 ? s.slice(0, commaIdx + 1) : s;
+    const part2 = commaIdx > -1 ? s.slice(commaIdx + 1) : '';
+    ps.innerHTML = `<span style="color:${tagColor1};font-weight:800">${esc(part1)}</span><span style="color:${tagColor2};font-weight:700">${esc(part2)}</span>`;
+  }
 
   const btn = document.getElementById('preview-btn');
   if (btn) { btn.style.background = primary; }

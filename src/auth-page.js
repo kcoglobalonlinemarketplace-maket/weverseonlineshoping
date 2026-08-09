@@ -103,7 +103,7 @@ function setMode(m) {
     moveIndicator(tabRegister);
     submitBtn.innerHTML = '<i data-lucide="user-plus" class="w-5 h-5"></i> <span id="auth-submit-label">Create Account</span>';
     welcomeTitle.textContent = 'Create Your Account';
-    welcomeSubtitle.textContent = 'Join KCO Global Online Marketplace to buy and sell securely worldwide.';
+    welcomeSubtitle.textContent = 'Join Weverse Online Shop to buy and sell securely worldwide.';
     loginExtras.classList.add('hidden');
     registerExtras.classList.remove('hidden');
     fieldUsername.classList.remove('hidden');

@@ -1,4 +1,4 @@
-// ── KCO Localization Bootstrap ──────────────────────────────
+// ── Weverse Localization Bootstrap ──────────────────────────
 // Imported by every HTML page. Initializes localization detection,
 // persistence, and the floating selector UI.
 import { initLocalization } from './localization.js';

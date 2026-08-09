@@ -21,8 +21,11 @@ const EXTERIOR = {
 const INTERIOR = {
   livingRoom: [19916702, 6510951, 8089172, 21765129, 35189707, 36353381],
   kitchen: [30673264, 36511371, 14614482, 15409477, 6510951],
-  bedroom: [19916702, 8089172, 21765129],
+  bedroom: [19916702, 8089172, 21765129, 1080721],
   bathroom: [10827343, 19227244, 19846350, 19966786, 19991863],
+  dining: [280222, 262048],
+  office: [1643383, 2082090],
+  garden: [186077],
 };
 
 const VEHICLE = {
@@ -30,14 +33,13 @@ const VEHICLE = {
   motorhome: [14577843, 18797772],
 };
 
-// Build a gallery of 12 images: exterior front, exterior angle, then interiors
-function propertyGallery(exteriorIds, count = 12) {
+// Build a gallery of 24 images: exterior front, exterior angle, then interiors
+function propertyGallery(exteriorIds, count = 24) {
   const imgs = [];
   // Front exterior
   imgs.push(PEXELS(exteriorIds[0], 1200));
   // Side/back exterior
   if (exteriorIds[1]) imgs.push(PEXELS(exteriorIds[1], 1200));
-  if (exteriorIds[2]) imgs.push(PEXELS(exteriorIds[2], 1200));
   // Living room
   imgs.push(PEXELS(INTERIOR.livingRoom[0], 1000));
   imgs.push(PEXELS(INTERIOR.livingRoom[1], 1000));
@@ -49,10 +51,27 @@ function propertyGallery(exteriorIds, count = 12) {
   imgs.push(PEXELS(INTERIOR.bedroom[1], 1000));
   // Bathroom
   imgs.push(PEXELS(INTERIOR.bathroom[0], 1000));
+  imgs.push(PEXELS(INTERIOR.bathroom[1], 1000));
   // Additional exterior
-  if (exteriorIds[3]) imgs.push(PEXELS(exteriorIds[3], 1200));
-  // Additional living area
+  if (exteriorIds[2]) imgs.push(PEXELS(exteriorIds[2], 1200));
+  // Dining room
+  imgs.push(PEXELS(INTERIOR.dining[0], 1000));
+  // Home office
+  imgs.push(PEXELS(INTERIOR.office[0], 1000));
+  // Additional living areas
   imgs.push(PEXELS(INTERIOR.livingRoom[2], 1000));
+  imgs.push(PEXELS(INTERIOR.kitchen[2], 1000));
+  imgs.push(PEXELS(INTERIOR.bedroom[2], 1000));
+  imgs.push(PEXELS(INTERIOR.bathroom[2], 1000));
+  // Exterior back yard
+  if (exteriorIds[3]) imgs.push(PEXELS(exteriorIds[3], 1200));
+  imgs.push(PEXELS(INTERIOR.dining[1], 1000));
+  // Garden / grounds
+  imgs.push(PEXELS(INTERIOR.garden[0], 1200));
+  imgs.push(PEXELS(INTERIOR.livingRoom[3], 1000));
+  imgs.push(PEXELS(INTERIOR.bedroom[3], 1000));
+  imgs.push(PEXELS(INTERIOR.office[1], 1000));
+  imgs.push(PEXELS(INTERIOR.bathroom[3], 1000));
   return imgs.slice(0, count);
 }
 
@@ -64,9 +83,27 @@ function vehicleGallery(vehicleIds, count = 12) {
   return imgs;
 }
 
-// Build a 10-image gallery from explicit photo IDs — each home has its own unique set
+// Build a 24-image gallery from explicit photo IDs — each home has its own unique
+// exterior set, then shared interior shots fill out the remaining photos.
 function newHomeGallery(ids) {
-  return ids.map((id, i) => PEXELS(id, i < 3 ? 1200 : 1000));
+  const base = ids.map((id, i) => PEXELS(id, i < 3 ? 1200 : 1000));
+  const extra = [
+    PEXELS(INTERIOR.livingRoom[0], 1000),
+    PEXELS(INTERIOR.kitchen[0], 1000),
+    PEXELS(INTERIOR.bedroom[0], 1000),
+    PEXELS(INTERIOR.bathroom[0], 1000),
+    PEXELS(INTERIOR.dining[0], 1000),
+    PEXELS(INTERIOR.office[0], 1000),
+    PEXELS(INTERIOR.livingRoom[1], 1000),
+    PEXELS(INTERIOR.kitchen[1], 1000),
+    PEXELS(INTERIOR.bedroom[1], 1000),
+    PEXELS(INTERIOR.bathroom[1], 1000),
+    PEXELS(INTERIOR.livingRoom[2], 1000),
+    PEXELS(INTERIOR.kitchen[2], 1000),
+    PEXELS(INTERIOR.bedroom[2], 1000),
+    PEXELS(INTERIOR.garden[0], 1200),
+  ];
+  return [...base, ...extra];
 }
 
 // Build a 10-image motorhome gallery from explicit photo IDs — each motorhome has its own unique set
@@ -1322,6 +1359,41 @@ export const SHOWROOM_LISTINGS = [
     features: ['12 Brushes', 'Synthetic Bristles', 'Rose Gold Handles', 'Travel Case', 'Cruelty-Free'],
   },
 ];
+
+// Real-world coordinates for every seeded property listing so showroom cards can
+// render a map preview and the details page map can skip geocoding lookups.
+const PROPERTY_COORDS = {
+  'KCO-000001': [40.0330, -83.1583],  // Hilliard, OH
+  'KCO-000002': [30.5083, -97.6789],  // Round Rock, TX
+  'KCO-000003': [42.2529, -71.0023],  // Quincy, MA
+  'KCO-000004': [43.7765, -79.2317],  // Scarborough, ON
+  'KCO-000005': [35.1168, -80.7237],  // Matthews, NC
+  'KCO-000006': [51.5051, -0.0196],   // Canary Wharf, London
+  'KCO-000007': [36.4840, -4.9904],   // San Pedro de Alcántara, Marbella
+  'KCO-000008': [48.8844, 2.2691],    // Neuilly-sur-Seine, Paris
+  'KCO-000009': [-28.0890, 153.4533], // Burleigh Heads, Gold Coast
+  'KCO-000010': [25.1972, 55.2744],   // Downtown Dubai
+  'KCO-000011': [45.2269, -75.6831],  // Manotick, Ottawa
+  'KCO-000012': [48.1615, 11.5780],   // Schwabing, Munich
+  'KCO-000013': [39.9556, -86.0139],  // Fishers, IN
+  'KCO-000014': [43.7666, 11.2478],   // Oltrarno, Florence
+  'KCO-000015': [-28.0027, 153.4309], // Surfers Paradise
+  'KCO-000016': [52.3744, 4.8821],    // Jordaan, Amsterdam
+  'KCO-000021': [45.5615, -122.6501], // Alberta Arts District, Portland
+  'KCO-000022': [49.2643, -123.1542], // Kitsilano, Vancouver
+  'KCO-000023': [53.4431, -2.2729],   // Chorlton, Manchester
+  'KCO-000024': [-37.8188, 145.1252], // Box Hill, Melbourne
+  'KCO-000025': [52.5200, 13.4050],   // Berlin Mitte
+  'KCO-000026': [43.7891, 4.8317],    // Saint-Rémy-de-Provence
+  'KCO-000027': [43.6586, 11.1855],   // San Casciano in Val di Pesa
+  'KCO-000028': [41.3831, 2.1767],    // Gothic Quarter, Barcelona
+  'KCO-000029': [46.0207, 7.7491],    // Winkelmatten, Zermatt
+  'KCO-000030': [59.4022, 18.3533],   // Vaxholm
+};
+for (const l of SHOWROOM_LISTINGS) {
+  const c = PROPERTY_COORDS[l.property_id];
+  if (c) { l.latitude = c[0]; l.longitude = c[1]; }
+}
 
 export function formatPrice(listing) {
   const formatted = listing.price.toLocaleString('en-US', { style: 'currency', currency: listing.currency || 'USD', maximumFractionDigits: 0 });

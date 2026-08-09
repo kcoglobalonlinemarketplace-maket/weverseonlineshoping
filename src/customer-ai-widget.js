@@ -1,4 +1,4 @@
-// ─── KCO Customer Support Widget ─────────────────────────────
+// ─── Weverse Online Shop Contact Widget ──────────────────────
 // Premium messaging-style chat widget. Text + voice.
 // Multilingual, proactive, separate from Admin AI.
 import { supabase } from './supabase-client.js';
@@ -128,13 +128,16 @@ const SUPPORT_AVATAR_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill
 // ── Professional send button SVG (paper plane) ────────────────
 const SEND_ICON_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a1 1 0 0 0-1.39 1.21L4 12l-1.99 7.19a1 1 0 0 0 1.39 1.21z" fill="white"/></svg>`;
 
+// ── Central verified badge (identical design/color to homepage) ─
+const VERIFIED_BADGE_SVG = `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 inline-block align-middle" aria-label="Verified" role="img"><circle cx="12" cy="12" r="11" fill="#1877F2"/><path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/></svg>`;
+
 function buildWidget() {
   injectStyles();
 
   // ── FAB with pulsing online dot ──
   const fab = document.createElement('button');
   fab.id = 'kco-ai-fab';
-  fab.setAttribute('aria-label', 'Customer Support');
+  fab.setAttribute('aria-label', 'Contact Us');
   fab.className = 'fixed bottom-5 right-5 z-[60] flex items-center gap-2.5 px-5 py-3 rounded-xl text-white text-sm font-semibold shadow-lg transition-all hover:scale-105';
   fab.style.background = '#1e293b';
   fab.style.border = '1px solid rgba(255,255,255,0.12)';
@@ -144,7 +147,7 @@ function buildWidget() {
       <span class="text-base leading-none">\u{1F4AC}</span>
       <span class="kco-online-dot absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-slate-900"></span>
     </div>
-    <span>Customer Support</span>
+    <span class="flex items-center gap-1.5">Contact Us ${VERIFIED_BADGE_SVG}</span>
   `;
   fab.onclick = togglePanel;
   document.body.appendChild(fab);
@@ -161,7 +164,7 @@ function buildWidget() {
           ${SUPPORT_AVATAR_SVG}
         </div>
         <div>
-          <p class="text-sm font-bold text-white leading-tight tracking-wide">Customer Support</p>
+          <p class="text-sm font-bold text-white leading-tight tracking-wide flex items-center gap-1">Contact Us ${VERIFIED_BADGE_SVG}</p>
           <p class="text-[10px] leading-tight flex items-center gap-1.5 mt-0.5">
             <span class="w-2 h-2 bg-emerald-400 rounded-full inline-block kco-online-dot"></span>
             <span class="text-emerald-400 font-medium">Online</span>
@@ -296,30 +299,30 @@ function renderMessage(msg, animate = true) {
 function renderWelcome() {
   const lang = getCurrentLang();
   const welcomes = {
-    en: "Welcome to KCO Global Online Marketplace!\n\nI'm here to help you with products, orders, payments, shipping, returns, and any questions you may have.\n\nHow can I help you today?",
-    es: "¡Bienvenido a KCO Global Online Marketplace!\n\nEstoy aquí para ayudarte con productos, pedidos, pagos, envíos, devoluciones y cualquier pregunta que tengas.\n\n¿Cómo puedo ayudarte hoy?",
-    fr: "Bienvenue sur KCO Global Online Marketplace !\n\nJe suis là pour vous aider avec les produits, les commandes, les paiements, la livraison, les retours et toute question que vous pourriez avoir.\n\nComment puis-je vous aider aujourd'hui ?",
-    de: "Willkommen bei KCO Global Online Marketplace!\n\nIch bin hier, um Ihnen bei Produkten, Bestellungen, Zahlungen, Versand, Rücksendungen und allen Fragen zu helfen.\n\nWie kann ich Ihnen heute helfen?",
-    ar: "مرحباً بك في KCO Global Online Marketplace!\n\nأنا هنا لمساعدتك في المنتجات والطلبات والمدفوعات والشحن والإرجاع وأي أسئلة قد تكون لديك.\n\nكيف يمكنني مساعدتك اليوم؟",
-    pt: "Bem-vindo à KCO Global Online Marketplace!\n\nEstou aqui para ajudar com produtos, pedidos, pagamentos, envios, devoluções e qualquer pergunta que você tenha.\n\nComo posso ajudar você hoje?",
-    ja: "KCO Global Online Marketplaceへようこそ！\n\n商品、ご注文、お支払い、配送、返品などについてご質問があればお手伝いします。\n\n本日はいかがいたしましたか？",
-    zh: "欢迎来到 KCO Global Online Marketplace！\n\n我在这里帮助您解决产品、订单、付款、运输、退货以及您可能有的任何问题。\n\n今天我能为您做些什么？",
-    hi: "KCO Global Online Marketplace में आपका स्वागत है!\n\nमैं आपको उत्पादों, ऑर्डर, भुगतान, शिपिंग, रिटर्न और आपके किसी भी प्रश्न में मदद करने के लिए यहाँ हूँ।\n\nआज मैं आपकी कैसे मदद कर सकता हूँ?",
-    ru: "Добро пожаловать в KCO Global Online Marketplace!\n\nЯ здесь, чтобы помочь вам с товарами, заказами, оплатой, доставкой, возвратами и любыми вопросами, которые у вас могут возникнуть.\n\nЧем я могу помочь вам сегодня?",
-    it: "Benvenuto su KCO Global Online Marketplace!\n\nSono qui per aiutarti con prodotti, ordini, pagamenti, spedizioni, resi e qualsiasi domanda tu possa avere.\n\nCome posso aiutarti oggi?",
-    nl: "Welkom bij KCO Global Online Marketplace!\n\nIk ben hier om je te helpen met producten, bestellingen, betalingen, verzending, retouren en eventuele vragen.\n\nHoe kan ik je vandaag helpen?",
-    tr: "KCO Global Online Marketplace'e hoş geldiniz!\n\nÜrünler, siparişler, ödemeler, kargo, iadeler ve herhangi bir sorunuzda size yardımcı olmak için buradayım.\n\nBugün size nasıl yardımcı olabilirim?",
-    ko: "KCO Global Online Marketplace에 오신 것을 환영합니다!\n\n상품, 주문, 결제, 배송, 반품 및 궁금한 점을 도와드릴 수 있습니다.\n\n오늘 어떻게 도와드릴까요?",
-    id: "Selamat datang di KCO Global Online Marketplace!\n\nSaya di sini untuk membantu Anda dengan produk, pesanan, pembayaran, pengiriman, pengembalian, dan pertanyaan apa pun.\n\nBagaimana saya bisa membantu Anda hari ini?",
-    vi: "Chào mừng đến với KCO Global Online Marketplace!\n\nTôi ở đây để giúp bạn với các sản phẩm, đơn hàng, thanh toán, vận chuyển, đổi trả và bất kỳ câu hỏi nào.\n\nTôi có thể giúp gì cho bạn hôm nay?",
-    th: "ยินดีต้อนรับสู่ KCO Global Online Marketplace!\n\nฉันพร้อมช่วยคุณเรื่องสินค้า คำสั่งซื้อ การชำระเงิน การจัดส่ง การคืนสินค้า และคำถามใดๆ\n\nวันนี้ฉันช่วยอะไรได้บ้าง?",
-    pl: "Witamy w KCO Global Online Marketplace!\n\nJestem tutaj, aby pomóc Ci z produktami, zamówieniami, płatnościami, wysyłką, zwrotami i wszelkimi pytaniami.\n\nJak mogę Ci dzisiaj pomóc?",
-    uk: "Ласкаво просимо до KCO Global Online Marketplace!\n\nЯ тут, щоб допомогти вам з товарами, замовленнями, оплатою, доставкою, поверненнями та будь-якими питаннями.\n\nЧим я можу допомогти вам сьогодні?",
-    sv: "Välkommen till KCO Global Online Marketplace!\n\nJag är här för att hjälpa dig med produkter, beställningar, betalningar, frakt, returer och frågor du kan ha.\n\nHur kan jag hjälpa dig idag?",
-    sv2: "Välkommen till KCO Global Online Marketplace!",
-    el: "Καλώς ήρθατε στο KCO Global Online Marketplace!\n\nΕίμαι εδώ για να σας βοηθήσω με προϊόντα, παραγγελίες, πληρωμές, αποστολές, επιστροφές και οποιαδήποτε ερωτήσεις μπορεί να έχετε.\n\nΠώς μπορώ να σας βοηθήσω σήμερα;",
-    he: "ברוכים הבאים ל-KCO Global Online Marketplace!\n\nאני כאן כדי לעזור לך עם מוצרים, הזמנות, תשלומים, משלוחים, החזרות וכל שאלה שיש לך.\n\nאיך אוכל לעזור לך היום?",
-    sw: "Karibu kwenye KCO Global Online Marketplace!\n\nNiko hapa kukusaidia na bidhaa, maagizo, malipo, usafirishaji, marejesho na maswali yoyote unayoweza kuwa nayo.\n\nNaweza kukusaidia vipi leo?",
+    en: "Welcome to Weverse Online Shop!\n\nI'm here to help you with products, orders, payments, shipping, returns, and any questions you may have.\n\nHow can I help you today?",
+    es: "¡Bienvenido a Weverse Online Shop!\n\nEstoy aquí para ayudarte con productos, pedidos, pagos, envíos, devoluciones y cualquier pregunta que tengas.\n\n¿Cómo puedo ayudarte hoy?",
+    fr: "Bienvenue sur Weverse Online Shop !\n\nJe suis là pour vous aider avec les produits, les commandes, les paiements, la livraison, les retours et toute question que vous pourriez avoir.\n\nComment puis-je vous aider aujourd'hui ?",
+    de: "Willkommen bei Weverse Online Shop!\n\nIch bin hier, um Ihnen bei Produkten, Bestellungen, Zahlungen, Versand, Rücksendungen und allen Fragen zu helfen.\n\nWie kann ich Ihnen heute helfen?",
+    ar: "مرحباً بك في Weverse Online Shop!\n\nأنا هنا لمساعدتك في المنتجات والطلبات والمدفوعات والشحن والإرجاع وأي أسئلة قد تكون لديك.\n\nكيف يمكنني مساعدتك اليوم؟",
+    pt: "Bem-vindo à Weverse Online Shop!\n\nEstou aqui para ajudar com produtos, pedidos, pagamentos, envios, devoluções e qualquer pergunta que você tenha.\n\nComo posso ajudar você hoje?",
+    ja: "Weverse Online Shopへようこそ！\n\n商品、ご注文、お支払い、配送、返品などについてご質問があればお手伝いします。\n\n本日はいかがいたしましたか？",
+    zh: "欢迎来到 Weverse Online Shop！\n\n我在这里帮助您解决产品、订单、付款、运输、退货以及您可能有的任何问题。\n\n今天我能为您做些什么？",
+    hi: "Weverse Online Shop में आपका स्वागत है!\n\nमैं आपको उत्पादों, ऑर्डर, भुगतान, शिपिंग, रिटर्न और आपके किसी भी प्रश्न में मदद करने के लिए यहाँ हूँ।\n\nआज मैं आपकी कैसे मदद कर सकता हूँ?",
+    ru: "Добро пожаловать в Weverse Online Shop!\n\nЯ здесь, чтобы помочь вам с товарами, заказами, оплатой, доставкой, возвратами и любыми вопросами, которые у вас могут возникнуть.\n\nЧем я могу помочь вам сегодня?",
+    it: "Benvenuto su Weverse Online Shop!\n\nSono qui per aiutarti con prodotti, ordini, pagamenti, spedizioni, resi e qualsiasi domanda tu possa avere.\n\nCome posso aiutarti oggi?",
+    nl: "Welkom bij Weverse Online Shop!\n\nIk ben hier om je te helpen met producten, bestellingen, betalingen, verzending, retouren en eventuele vragen.\n\nHoe kan ik je vandaag helpen?",
+    tr: "Weverse Online Shop'e hoş geldiniz!\n\nÜrünler, siparişler, ödemeler, kargo, iadeler ve herhangi bir sorunuzda size yardımcı olmak için buradayım.\n\nBugün size nasıl yardımcı olabilirim?",
+    ko: "Weverse Online Shop에 오신 것을 환영합니다!\n\n상품, 주문, 결제, 배송, 반품 및 궁금한 점을 도와드릴 수 있습니다.\n\n오늘 어떻게 도와드릴까요?",
+    id: "Selamat datang di Weverse Online Shop!\n\nSaya di sini untuk membantu Anda dengan produk, pesanan, pembayaran, pengiriman, pengembalian, dan pertanyaan apa pun.\n\nBagaimana saya bisa membantu Anda hari ini?",
+    vi: "Chào mừng đến với Weverse Online Shop!\n\nTôi ở đây để giúp bạn với các sản phẩm, đơn hàng, thanh toán, vận chuyển, đổi trả và bất kỳ câu hỏi nào.\n\nTôi có thể giúp gì cho bạn hôm nay?",
+    th: "ยินดีต้อนรับสู่ Weverse Online Shop!\n\nฉันพร้อมช่วยคุณเรื่องสินค้า คำสั่งซื้อ การชำระเงิน การจัดส่ง การคืนสินค้า และคำถามใดๆ\n\nวันนี้ฉันช่วยอะไรได้บ้าง?",
+    pl: "Witamy w Weverse Online Shop!\n\nJestem tutaj, aby pomóc Ci z produktami, zamówieniami, płatnościami, wysyłką, zwrotami i wszelkimi pytaniami.\n\nJak mogę Ci dzisiaj pomóc?",
+    uk: "Ласкаво просимо до Weverse Online Shop!\n\nЯ тут, щоб допомогти вам з товарами, замовленнями, оплатою, доставкою, поверненнями та будь-якими питаннями.\n\nЧим я можу допомогти вам сьогодні?",
+    sv: "Välkommen till Weverse Online Shop!\n\nJag är här för att hjälpa dig med produkter, beställningar, betalningar, frakt, returer och frågor du kan ha.\n\nHur kan jag hjälpa dig idag?",
+    sv2: "Välkommen till Weverse Online Shop!",
+    el: "Καλώς ήρθατε στο Weverse Online Shop!\n\nΕίμαι εδώ για να σας βοηθήσω με προϊόντα, παραγγελίες, πληρωμές, αποστολές, επιστροφές και οποιαδήποτε ερωτήσεις μπορεί να έχετε.\n\nΠώς μπορώ να σας βοηθήσω σήμερα;",
+    he: "ברוכים הבאים ל-Weverse Online Shop!\n\nאני כאן כדי לעזור לך עם מוצרים, הזמנות, תשלומים, משלוחים, החזרות וכל שאלה שיש לך.\n\nאיך אוכל לעזור לך היום?",
+    sw: "Karibu kwenye Weverse Online Shop!\n\nNiko hapa kukusaidia na bidhaa, maagizo, malipo, usafirishaji, marejesho na maswali yoyote unayoweza kuwa nayo.\n\nNaweza kukusaidia vipi leo?",
   };
   renderMessage({ role: 'assistant', content: welcomes[lang] || welcomes.en });
 }

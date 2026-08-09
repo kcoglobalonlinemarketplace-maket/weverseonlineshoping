@@ -206,6 +206,35 @@ function galleryLabelsFor(listing) {
   return ['Front View', 'Angle View', 'Detail View', 'Packaging', 'Additional View'];
 }
 
+function actionGridHtml(listing) {
+  const isProperty = listing.listing_type === 'property';
+  const shareLabel = isProperty ? 'Share Property' : 'Share';
+  const contactHref = `/contact.html?listing=${encodeURIComponent(listing.property_id || '')}`;
+  return `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+      <button type="button" id="view-details-btn" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition text-sm">
+        <i data-lucide="eye" class="w-5 h-5"></i> View Details
+      </button>
+      <button type="button" id="add-cart-btn" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition text-sm">
+        <i data-lucide="shopping-cart" class="w-5 h-5"></i> Add to Cart
+      </button>
+      <button type="button" id="buy-now-btn" class="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-black font-bold py-3.5 rounded-xl transition text-sm uppercase tracking-wider">
+        <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
+      </button>
+      <a href="${contactHref}" class="flex items-center justify-center gap-2 bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 text-blue-300 font-bold py-3.5 rounded-xl transition text-sm">
+        <i data-lucide="badge-check" class="w-4 h-4"></i> Contact Us
+        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online</span>
+      </a>
+      <button type="button" id="wishlist-btn" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-300 font-bold py-3.5 rounded-xl transition text-sm">
+        <i data-lucide="heart" class="w-5 h-5"></i> Add to Wishlist
+      </button>
+      <button type="button" id="share-btn" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-300 font-bold py-3.5 rounded-xl transition text-sm">
+        <i data-lucide="share-2" class="w-5 h-5"></i> ${shareLabel}
+      </button>
+    </div>
+  `;
+}
+
 function sellerBlock(listing) {
   const isAgent = listing.listing_type === 'property';
   const base = `/contact.html?listing=${encodeURIComponent(listing.property_id || '')}`;
@@ -216,11 +245,11 @@ function sellerBlock(listing) {
           <i data-lucide="store" class="w-5 h-5 text-orange-400"></i>
         </div>
         <div>
-          <p class="text-sm font-bold text-white">KCO Global Marketplace</p>
+          <p class="text-sm font-bold text-white">Weverse Online Shop</p>
           <p class="text-xs text-emerald-400 flex items-center gap-1"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Seller</p>
         </div>
       </div>
-      <p class="text-xs text-gray-500">${isAgent ? 'Professional agent for this listing' : 'Trusted marketplace seller'} on KCO Global Marketplace</p>
+      <p class="text-xs text-gray-500">${isAgent ? 'Professional agent for this listing' : 'Trusted marketplace seller'} on Weverse Online Shop</p>
       <p class="text-xs text-gray-400 mt-2 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Secure checkout · Authentic listings</p>
       <div class="flex gap-2 mt-4">
         <a href="${base}" class="flex-1 bg-orange-500 hover:bg-orange-600 text-black font-bold py-2.5 rounded-xl text-xs text-center transition">Contact Seller</a>
@@ -429,16 +458,9 @@ function render(listing) {
         ${galleryThumbs}
       </div>
 
-      <div class="flex gap-3 mb-8">
-        <button id="buy-now-btn" class="flex-1 bg-orange-500 hover:bg-orange-600 text-black font-bold py-3.5 rounded-xl uppercase text-sm tracking-wider transition flex items-center justify-center gap-2">
-          <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
-        </button>
-        <button id="share-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Share">
-          <i data-lucide="share-2" class="w-5 h-5"></i>
-        </button>
-      </div>
+      ${actionGridHtml(listing)}
 
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
+      <div id="listing-details" class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
         <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3">Description</h3>
         <p class="text-gray-400 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
       </div>
@@ -510,6 +532,30 @@ function render(listing) {
       }
     } catch (e) { /* user cancelled */ }
   });
+
+  const viewDetailsBtn = document.getElementById('view-details-btn');
+  if (viewDetailsBtn) {
+    viewDetailsBtn.addEventListener('click', () => {
+      const target = document.getElementById('listing-details');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+  const addCartBtn = document.getElementById('add-cart-btn');
+  if (addCartBtn) {
+    addCartBtn.addEventListener('click', () => {
+      let cart = JSON.parse(localStorage.getItem('kco_cart') || '[]');
+      if (!cart.includes(listing.property_id)) {
+        cart.push(listing.property_id);
+        localStorage.setItem('kco_cart', JSON.stringify(cart));
+      }
+      addCartBtn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Added to Cart';
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => {
+        addCartBtn.innerHTML = '<i data-lucide="shopping-cart" class="w-5 h-5"></i> Add to Cart';
+        if (window.lucide) lucide.createIcons();
+      }, 2000);
+    });
+  }
 
   setupWishlistButton(listing);
   setupReviewForm(listing);
@@ -724,7 +770,7 @@ async function init() {
 
   const truck = getTruckById(id);
   if (truck) {
-    document.title = `${truck.title} | KCO Global Online Marketplace`;
+    document.title = `${truck.title} | Weverse Online Shop`;
     renderTruck(truck);
     return;
   }
@@ -748,7 +794,7 @@ async function init() {
     document.getElementById('details-content').innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>';
     return;
   }
-  document.title = `${listing.title} | KCO Global Online Marketplace`;
+  document.title = `${listing.title} | Weverse Online Shop`;
   render(listing);
 }
 

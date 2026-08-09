@@ -43,7 +43,7 @@ const NAV_SECTIONS = [
     group: 'Support & Settings',
     items: [
       { id: 'email-prefs', label: 'Email Preferences', icon: 'settings' },
-      { id: 'support', label: 'Customer Support', icon: 'headphones' },
+      { id: 'support', label: 'Contact Us', icon: 'headphones' },
       { id: 'help', label: 'Help Center', icon: 'help-circle' },
       { id: 'privacy', label: 'Privacy & Security', icon: 'shield-check' },
     ],
@@ -939,7 +939,7 @@ const AVAILABLE_PAYMENT_METHODS = [
   { type: 'atm_card', label: 'ATM / Debit Card', icon: 'credit-card', color: 'text-emerald-400', available: true, desc: 'Visa, Mastercard, Verve' },
   { type: 'bank_transfer', label: 'Bank Transfer', icon: 'building-2', color: 'text-cyan-400', available: true, desc: 'Online banking transfer' },
   { type: 'mobile_money', label: 'Mobile Money Transfer', icon: 'smartphone', color: 'text-orange-400', available: true, desc: 'Send money from your mobile wallet' },
-  { type: 'wallet', label: 'Wallet', icon: 'wallet', color: 'text-amber-400', available: true, desc: 'Use your KCO wallet balance' },
+  { type: 'wallet', label: 'Wallet', icon: 'wallet', color: 'text-amber-400', available: true, desc: 'Use your Weverse wallet balance' },
   { type: 'paypal', label: 'PayPal', icon: 'wallet', color: 'text-blue-400', available: false, desc: 'Pay with your PayPal account' },
 ];
 
@@ -1323,11 +1323,11 @@ window.saveEmailPrefs = async () => {
 };
 
 /* ════════════════════════════════════════════════════════════
-   SECTION: Customer Support
+   SECTION: Contact Us
 ════════════════════════════════════════════════════════════ */
 function renderSupport() {
   return `
-    ${pageTitle('Customer Support', 'Get help with your orders and account.')}
+    ${pageTitle('Contact Us', 'Get help with your orders and account.')}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div class="lg:col-span-2 glass border border-blue-500/20 rounded-2xl p-5 slide-up">
         <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="message-square" class="w-4 h-4 text-blue-400"></i> Send a Support Request</h3>
@@ -1371,7 +1371,7 @@ function renderHelp() {
     { q: 'How do I download my receipt?', a: 'Go to Download Receipts in your dashboard. Click the Download button next to any order with a receipt on file.' },
     { q: 'How do I update my email preferences?', a: 'Go to Email Preferences in your dashboard to toggle which notification emails you receive.' },
     { q: 'Is my account secure?', a: 'Yes. Your account is protected with SSL encryption and secure authentication. We never share your personal information.' },
-    { q: 'How do I contact support?', a: 'Use the Customer Support section in your dashboard to send a message, or email us at support@weverseonlineshop.com.' },
+    { q: 'How do I contact support?', a: 'Use the Contact Us section in your dashboard to send a message, or email us at support@weverseonlineshop.com.' },
   ];
   return `
     ${pageTitle('Help Center', 'Frequently asked questions and guides.')}
@@ -1691,7 +1691,7 @@ window.navigateTo = navigateTo;
 window.copyToClipboard = copyToClipboard;
 window.contactSupport = (orderNumber) => {
   const subject = encodeURIComponent(`Order ${orderNumber} — Support Request`);
-  const body = encodeURIComponent(`Hello KCO Global Online Marketplace Support,\n\nI need assistance with my order ${orderNumber}.\n\nThank you.`);
+  const body = encodeURIComponent(`Hello Weverse Online Shop Support,\n\nI need assistance with my order ${orderNumber}.\n\nThank you.`);
   window.location.href = `mailto:support@weverseonlineshop.com?subject=${subject}&body=${body}`;
 };
 

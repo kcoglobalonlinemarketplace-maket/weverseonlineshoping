@@ -1,5 +1,5 @@
 /* ================================================================
-   KCO Global Online Marketplace — Localization UI
+   Weverse Online Shop — Localization UI
    ================================================================
    Floating location/language/currency selector. Appears on every
    page. Shows current country flag + language. Opens a modal to

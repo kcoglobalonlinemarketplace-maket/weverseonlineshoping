@@ -1,5 +1,5 @@
 /* ================================================================
-   KCO Global Online Marketplace — Worldwide Localization Engine
+   Weverse Online Shop — Worldwide Localization Engine
    ================================================================
    Detects visitor country, region, timezone, language, currency.
    Supports VPN/proxy detection with polite notice.

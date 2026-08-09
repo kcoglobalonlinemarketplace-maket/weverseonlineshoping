@@ -308,6 +308,17 @@ export function renderCard(listing) {
   const availability = listing.availability_status || 'In Stock';
   const availColor = availability === 'In Stock' ? 'text-emerald-400' : availability === 'Pre-order' ? 'text-blue-400' : 'text-orange-400';
 
+  // Map preview strip for property cards (rendered from listing coordinates).
+  let mapPreviewHtml = '';
+  if (isProperty && listing.latitude && listing.longitude) {
+    const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${listing.latitude},${listing.longitude}&zoom=13&size=600x160&markers=${listing.latitude},${listing.longitude},color-red&maptype=mapnik`;
+    mapPreviewHtml = `
+      <div class="relative mt-2.5 h-16 rounded-lg overflow-hidden border border-gray-800 bg-gray-900">
+        <img src="${mapUrl}" alt="Map location for ${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover opacity-80" onerror="this.onerror=null;this.style.display='none'">
+        <span class="absolute top-1 left-1 bg-black/70 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i>${listing.city || listing.town || ''}</span>
+      </div>`;
+  }
+
   const card = document.createElement('div');
   card.className = 'showroom-card group relative bg-[#0f172a]/80 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 flex flex-col cursor-pointer';
   card.dataset.id = listingId;
@@ -342,6 +353,7 @@ export function renderCard(listing) {
           <i data-lucide="share-2" class="w-4 h-4"></i>
         </button>
       </div>
+      ${mapPreviewHtml}
     </div>
   `;
 

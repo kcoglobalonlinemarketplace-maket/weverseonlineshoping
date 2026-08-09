@@ -5,7 +5,7 @@
 // effects that displays the listing's title, price, and location.
 import { supabase } from './supabase-client.js';
 
-const BRAND = 'KCO Global Online Marketplace';
+const BRAND = 'Weverse Online Shop';
 
 function parseImages(images) {
   if (!images) return [];

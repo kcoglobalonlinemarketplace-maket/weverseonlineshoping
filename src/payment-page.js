@@ -317,7 +317,7 @@ function renderUnsupportedCurrency(notice) {
         <div class="text-sm text-gray-300 leading-relaxed">
           <p class="font-bold text-amber-400 mb-2">Hello Customer,</p>
           <p class="mb-2">${notice?.message || 'Your local currency is not currently supported by our Manual Bank Transfer system.'}</p>
-          <p class="font-bold text-amber-400">Thank you for choosing KCO Global Online Marketplace.</p>
+          <p class="font-bold text-amber-400">Thank you for choosing Weverse Online Shop.</p>
         </div>
       </div>
     </div>
@@ -383,7 +383,7 @@ function renderComingSoonMethods() {
         <div class="p-2.5 bg-gray-700/30 rounded-lg"><i data-lucide="lock" class="w-5 h-5 text-gray-500"></i></div>
         <div>
           <h3 class="text-sm font-bold text-white uppercase tracking-wide">More Payment Methods</h3>
-          <p class="text-gray-500 text-xs">Coming soon to KCO Global Online Marketplace</p>
+          <p class="text-gray-500 text-xs">Coming soon to Weverse Online Shop</p>
         </div>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">

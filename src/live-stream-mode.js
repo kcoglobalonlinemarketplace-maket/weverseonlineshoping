@@ -1,5 +1,5 @@
 /* ================================================================
-   KCO Global Online Marketplace — Live Stream Mode
+   Weverse Online Shop — Live Stream Mode
    ================================================================
    Optimizes the entire site for live screen sharing on TikTok,
    Facebook, and YouTube Live. Enlarges cards, fonts, prices, and
