@@ -357,7 +357,7 @@ export function renderCard(listing) {
   if (isProperty) {
     const flag = flagEmoji(listing.country_code);
     const parts = [listing.city, listing.state].filter(Boolean);
-    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><span>${flag}</span><span class="truncate">${parts.join(', ') || listing.country}</span></div>`;
+    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="map" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${flag} ${parts.join(', ') || listing.country}</span></div>`;
   }
 
   let specsHtml = '';
@@ -413,9 +413,9 @@ export function renderCard(listing) {
   if (isProperty && listing.latitude && listing.longitude) {
     const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${listing.latitude},${listing.longitude}&zoom=13&size=600x160&markers=${listing.latitude},${listing.longitude},color-red&maptype=mapnik`;
     mapPreviewHtml = `
-      <div class="relative mt-2.5 h-16 rounded-lg overflow-hidden border border-gray-800 bg-gray-900">
-        <img src="${mapUrl}" alt="Map location for ${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover opacity-80" onerror="this.onerror=null;this.style.display='none'">
-        <span class="absolute top-1 left-1 bg-black/70 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i>${listing.city || listing.town || ''}</span>
+      <div class="relative mt-2.5 h-20 rounded-lg overflow-hidden border border-gray-800 bg-gray-900">
+        <img src="${mapUrl}" alt="Map location for ${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null;this.style.display='none'">
+        <span class="absolute top-1 left-1 bg-black/70 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1"><i data-lucide="map" class="w-3 h-3"></i>Map · ${listing.city || listing.town || ''}</span>
       </div>`;
   }
 
@@ -425,13 +425,6 @@ export function renderCard(listing) {
 
   const wishSaved = isSaved(listing);
 
-  // "View the property details" — a clear, professional call to action at
-  // the bottom of property cards, right next to the map/location preview.
-  const detailsBtnHtml = isProperty ? `
-    <button class="details-btn mt-2.5 w-full inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 rounded-lg transition active:scale-[0.98] bg-blue-600/15 hover:bg-blue-600/30 text-blue-200 hover:text-white border border-blue-500/25 hover:border-blue-400/50">
-      <i data-lucide="eye" class="w-4 h-4 shrink-0"></i><span class="truncate">View the property details</span>
-    </button>` : '';
-
   card.innerHTML = `
     <div class="relative aspect-[4/3] overflow-hidden bg-gray-900">
       <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
@@ -440,30 +433,34 @@ export function renderCard(listing) {
       <span class="absolute top-2 left-2 bg-orange-500 text-black text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>
       ${badgesHtml}
     </div>
-    <div class="p-3 flex flex-col flex-1">
-      <h3 class="text-sm font-bold text-white leading-snug mb-1 line-clamp-2">${listing.title}</h3>
+    <div class="p-4 flex flex-col flex-1">
+      <h3 class="text-[15px] font-bold text-white leading-snug mb-1.5 line-clamp-2">${listing.title}</h3>
       ${locationHtml}
       ${specsHtml}
       <div class="flex items-center justify-between mt-auto pt-2">
-        <span class="text-base font-black text-orange-500">${price}</span>
+        <span class="text-lg font-black text-orange-500">${price}</span>
         ${ratingStars}
       </div>
-      <div class="flex items-center gap-1 mt-1.5">
+      <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-800/60">
         <span class="text-[11px] font-bold ${availColor}">${availability}</span>
-      </div>
-      <div class="flex gap-2 mt-2.5">
-        <button class="buy-btn flex-1 min-w-0 bg-orange-500 hover:bg-orange-600 active:scale-95 text-black text-xs font-bold py-2.5 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
-          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
-        </button>
-        <button class="wishlist-btn ${wishSaved ? 'saved bg-red-500/20 text-red-400 border border-red-500/40' : ''} shrink-0 w-10 h-10 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}" aria-label="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}">
-          <i data-lucide="heart" class="w-4 h-4 ${wishSaved ? 'fill-red-500 text-red-500' : ''}"></i>
-        </button>
-        <button class="share-btn shrink-0 w-10 h-10 bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
-          <i data-lucide="share-2" class="w-4 h-4"></i>
-        </button>
+        <div class="flex items-center gap-1.5">
+          <button class="share-btn shrink-0 w-8 h-8 bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
+            <i data-lucide="share-2" class="w-4 h-4"></i>
+          </button>
+          <button class="wishlist-btn ${wishSaved ? 'saved bg-red-500/20 text-red-400 border border-red-500/40' : ''} shrink-0 w-8 h-8 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}" aria-label="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}">
+            <i data-lucide="heart" class="w-4 h-4 ${wishSaved ? 'fill-red-500 text-red-500' : ''}"></i>
+          </button>
+        </div>
       </div>
       ${mapPreviewHtml}
-      ${detailsBtnHtml}
+      <div class="flex gap-2 mt-2.5">
+        <button class="buy-btn flex-1 min-w-0 bg-orange-500 hover:bg-orange-600 active:scale-95 text-black text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
+          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
+        </button>
+        <button class="details-btn flex-1 min-w-0 bg-blue-600/15 hover:bg-blue-600/30 active:scale-95 text-blue-200 hover:text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-blue-500/25 hover:border-blue-400/50">
+          <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+        </button>
+      </div>
     </div>
   `;
 
@@ -559,7 +556,7 @@ function renderRow(rowDef) {
         </button>
       </div>
     </div>
-    <div class="hscroll flex gap-3 overflow-x-auto scrollbar-none pb-1"></div>
+    <div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"></div>
   `;
 
   const track = row.querySelector('.hscroll');
