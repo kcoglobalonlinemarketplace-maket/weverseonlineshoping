@@ -441,6 +441,18 @@ function unmountAiAdOverlay() {
   aiAdOverlayEl = null;
 }
 
+function cleanAdLabel(s){
+  if(!s)return s;
+  return String(s)
+    .replace(/AI Advertisement/gi,'Featured')
+    .replace(/AI Marketing Studio Campaign/gi,'Featured Campaign')
+    .replace(/AI[- ]powered/gi,'')
+    .replace(/AI Assistant/gi,'')
+    .replace(/\bAI\b/gi,'')
+    .replace(/\s{2,}/g,' ')
+    .replace(/^\s+|\s+$/g,'');
+}
+
 function mountAiAdOverlay() {
   if (!isAiAdOverrideActive()) {
     unmountAiAdOverlay();
@@ -457,8 +469,8 @@ function mountAiAdOverlay() {
     hero.appendChild(aiAdOverlayEl);
   }
 
-  const badge = aiAdOverride.badge || 'Featured';
-  const title = aiAdOverride.title || 'Featured Campaign';
+  const badge = cleanAdLabel(aiAdOverride.badge) || 'Featured';
+  const title = cleanAdLabel(aiAdOverride.title) || 'Featured Campaign';
   const ctaLabel = aiAdOverride.ctaLabel || 'Shop Now';
   aiAdOverlayEl.innerHTML =
     '<video id="ai-ad-override-video" class="w-full h-full object-cover" playsinline webkit-playsinline ' +
@@ -867,7 +879,7 @@ function renderCarousel(){
     }
     el.innerHTML=mediaHtml+
       '<div class="absolute inset-0 z-10 flex flex-col justify-end items-center text-center p-6 sm:p-10 pb-16">'+
-      '<span class="inline-block bg-orange-500 text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2 fade-in-up delay-1">'+escHtml(slide.badge||'Featured')+'</span>'+
+      '<span class="inline-block bg-orange-500 text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2 fade-in-up delay-1">'+escHtml(cleanAdLabel(slide.badge)||'Featured')+'</span>'+
       '<h2 id="slide-title-'+idx+'" class="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-2 drop-shadow-2xl fade-in-up delay-2"></h2>'+
       '<p id="slide-desc-'+idx+'" class="max-w-xl text-white/85 text-xs sm:text-sm mb-4 leading-relaxed fade-in-up delay-2"></p>'+
       slideCtaHtml(slide,idx)+
@@ -885,7 +897,7 @@ function updateCarouselLanguage(){
     const t=document.getElementById("slide-title-"+idx);
     const d=document.getElementById("slide-desc-"+idx);
     const c=document.getElementById("slide-cta-"+idx);
-    if(t)t.textContent=slide.titles[currentLang]||slide.titles.en;
+    if(t)t.textContent=cleanAdLabel(slide.titles[currentLang]||slide.titles.en);
     if(d)d.textContent=(slide.descs&&(slide.descs[currentLang]||slide.descs.en))||'';
     if(c)c.textContent=slideCtaLabel(slide,copy);
   });
@@ -939,7 +951,7 @@ function updateShowcaseBadge(){
   const t=document.getElementById('live-ad-badge-text');
   if(!b)return;
   const slide=activeCarouselSlides[currentSlide]||activeCarouselSlides[0]||{};
-  if(t)t.textContent=String(slide.badge||'Featured').toUpperCase();
+  if(t)t.textContent=cleanAdLabel(slide.badge)||'Featured';
   b.classList.remove('live-badge-in');
   void b.offsetWidth;
   b.classList.add('live-badge-in');
