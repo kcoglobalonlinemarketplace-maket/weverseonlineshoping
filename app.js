@@ -570,6 +570,7 @@ const STATIC_DEPARTMENTS = [
 
 let _activeCategory="All";
 let _panelDept=null;
+let _allPanel=false;
 
 function getCategoryInventory(){
   if(window._getShowroomCategoryInventory){
@@ -582,21 +583,12 @@ function renderCategories(){
   const c=document.getElementById("category-list");
   if(!c)return;
   c.innerHTML="";
-  const inv=getCategoryInventory();
-  const allBtn=document.createElement("button");
-  allBtn.className="nav-dept-btn active flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-lg border border-blue-500/40 bg-blue-500/10 text-blue-300 text-xs font-bold uppercase tracking-wide transition hover:bg-blue-500/20";
-  allBtn.innerHTML='<i data-lucide="layout-grid" class="w-4 h-4"></i><span>All</span>';
-  allBtn.onclick=()=>{filterByCategory("All",allBtn);closeCategoryPanel();};
-  c.appendChild(allBtn);
-  inv.forEach(dept=>{
-    const b=document.createElement("button");
-    b.dataset.dept=dept.id;
-    b.className="nav-dept-btn flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg border border-gray-800 bg-gray-800/40 text-gray-300 text-xs font-semibold transition hover:border-gray-600 hover:bg-gray-800 hover:text-white";
-    b.innerHTML='<i data-lucide="'+dept.icon+'" class="w-3.5 h-3.5 text-gray-400"></i><span class="whitespace-nowrap">'+dept.label+'</span><i data-lucide="chevron-down" class="w-3 h-3 text-gray-500"></i>';
-    b.addEventListener("click",()=>{toggleDeptPanel(dept,b);});
-    b.addEventListener("mouseenter",()=>{ if(window.matchMedia&&window.matchMedia('(hover:hover)').matches) openDeptPanel(dept,b); });
-    c.appendChild(b);
-  });
+  const btn=document.createElement("button");
+  btn.dataset.dept="all";
+  btn.className="nav-dept-btn active flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-lg border border-blue-500/40 bg-blue-500/10 text-blue-300 text-xs font-bold uppercase tracking-wide transition hover:bg-blue-500/20";
+  btn.innerHTML='<span class="text-sm leading-none">🛒</span><span class="whitespace-nowrap">Weverse Shop List</span><i data-lucide="chevron-down" class="w-3 h-3"></i>';
+  btn.addEventListener("click",()=>{toggleAllPanel(btn);});
+  c.appendChild(btn);
   if(window.lucide)lucide.createIcons();
 }
 
@@ -649,7 +641,62 @@ function closeCategoryPanel(){
   const panel=document.getElementById("category-panel");
   if(panel){panel.classList.add("hidden");panel.classList.remove("panel-in");}
   document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-300"));
-  _panelDept=null;
+  _panelDept=null;_allPanel=false;
+}
+function getAllCategoryEntries(){
+  const inv=getCategoryInventory();
+  const map=new Map();
+  inv.forEach(d=>(d.categories||[]).forEach(c=>{
+    const key=String(c.name).toLowerCase();
+    if(!map.has(key))map.set(key,{name:c.name,count:0,subs:[]});
+    const e=map.get(key);
+    e.count+=c.count||0;
+    (c.subs||[]).forEach(s=>{ if(!e.subs.includes(s))e.subs.push(s); });
+  }));
+  return [...map.values()].sort((a,b)=>b.count-a.count);
+}
+function openAllPanel(btn){
+  _allPanel=true;_panelDept=null;
+  const panel=document.getElementById("category-panel");
+  if(!panel)return;
+  const sorted=getAllCategoryEntries();
+  const catCards=sorted.slice(0,24).map(c=>{
+    const meta=(CATEGORIES.find(x=>x.name.toLowerCase()===String(c.name).toLowerCase()))||{icon:"shopping-bag",color:"blue"};
+    const icon=meta.icon||"shopping-bag"; const color=meta.color||"blue";
+    const col=CAT_COLORS[color]||CAT_COLORS.blue;
+    return '<button data-category="'+c.name+'" class="dept-cat flex flex-col items-start gap-2 p-3 rounded-xl border border-gray-800 bg-gray-900/60 hover:border-blue-500/40 hover:bg-gray-800/80 text-left transition group">'
+      +'<div class="flex items-center gap-2.5 w-full">'
+        +'<span class="w-8 h-8 rounded-lg bg-gradient-to-br '+col.bg+' '+col.to+' border '+col.border+' flex items-center justify-center shrink-0"><i data-lucide="'+icon+'" class="w-4 h-4 '+col.text+'"></i></span>'
+        +'<span class="flex-1 min-w-0"><span class="block text-[13px] font-bold text-gray-100 truncate group-hover:text-white">'+c.name+'</span>'
+        +(c.count>0?'<span class="text-[10px] text-gray-500">'+fmtCount(c.count)+' items</span>':'<span class="text-[10px] text-gray-600">Explore</span>')
+        +'</span>'
+        +'<i data-lucide="arrow-right" class="w-3.5 h-3.5 text-gray-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition"></i>'
+      +'</div>'
+      +(c.subs&&c.subs.length?'<span class="text-[10px] text-gray-500 truncate w-full">'+c.subs.slice(0,3).join(' · ')+'</span>':'')
+    +'</button>';
+  }).join('');
+  panel.innerHTML='<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-4">'
+    +'<div class="flex items-center justify-between mb-3">'
+      +'<div class="flex items-center gap-2.5">'
+        +'<span class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/30 flex items-center justify-center"><span class="text-base">🛒</span></span>'
+        +'<div><h3 class="text-sm font-black text-white tracking-wide">Weverse Shop List</h3><p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Shop every category</p></div>'
+      +'</div>'
+      +'<button data-all-view="1" class="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1.5">View all <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>'
+    +'</div>'
+    +'<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">'+catCards+'</div>'
+  +'</div>';
+  panel.classList.remove("hidden");void panel.offsetWidth;panel.classList.add("panel-in");
+  panel.querySelectorAll('[data-category]').forEach(el=>{ el.onclick=()=>{filterByCategory(el.dataset.category,el);closeCategoryPanel();}; });
+  const viewAll=panel.querySelector('[data-all-view]');
+  if(viewAll)viewAll.onclick=()=>{filterByCategory("All");closeCategoryPanel();};
+  if(window.lucide)lucide.createIcons();
+  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-300"));
+  if(btn)btn.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-300");
+}
+function toggleAllPanel(btn){
+  const panel=document.getElementById("category-panel");
+  if(panel&&!panel.classList.contains("hidden")&&_allPanel){closeCategoryPanel();}
+  else openAllPanel(btn);
 }
 document.addEventListener("click",(e)=>{ if(e.target.closest("#site-categories-nav"))return; closeCategoryPanel(); });
 
