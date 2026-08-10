@@ -5,76 +5,21 @@ import { HOUSE_KITCHEN_LISTINGS } from './home-kitchen-data.js';
 
 const PEXELS = (id, w = 800) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
-// Real Pexels photo IDs — actual residential homes, interiors, and vehicles
-const EXTERIOR = {
-  suburbanTwoStorey: [10628458, 10827225, 4258282, 8894802, 4469133, 17246020],
-  capeCodWhite: [18819232, 33643352, 17831878, 24245769],
-  ranchBungalow: [10628468, 17831870, 18038074, 10286038],
-  modernSuburban: [33350028, 6422929, 18280833, 38604168],
-  brickHouse: [9869371, 6422929, 10628458, 8894802],
-  villa: [1396122, 2102584, 32237414, 31817157],
-  mansion: [20200273, 35069535, 8143671, 1396122],
-  beachHouse: [29334714, 34958535, 29957213, 59924],
-  farmHouse: [30216893, 17692984, 15743372, 30580640],
-  commercial: [6474633, 16236366, 5378935, 31618415],
-  hotel: [5853322, 28448027, 20296321, 17729218],
-};
-
-const INTERIOR = {
-  livingRoom: [19916702, 6510951, 8089172, 21765129, 35189707, 36353381],
-  kitchen: [30673264, 36511371, 14614482, 15409477, 6510951],
-  bedroom: [19916702, 8089172, 21765129, 1080721],
-  bathroom: [10827343, 19227244, 19846350, 19966786, 19991863],
-  dining: [280222, 262048],
-  office: [1643383, 2082090],
-  garden: [186077],
-};
+// Every house listing builds its gallery from explicit, per-listing Pexels photo IDs —
+// each photo is used by exactly ONE house, so no duplicate images appear anywhere.
+// All IDs were HEAD-verified against images.pexels.com.
 
 const VEHICLE = {
   car: [10054672, 11836424, 30809411, 31458555],
   motorhome: [14577843, 18797772],
 };
 
-// Build a gallery of 24 images: exterior front, exterior angle, then interiors
-function propertyGallery(exteriorIds, count = 24) {
+// Build a gallery for a property: 3 unique exteriors, then unique interior room photos.
+function propertyGallery(exteriorIds, interiorIds) {
   const imgs = [];
-  // Front exterior
-  imgs.push(PEXELS(exteriorIds[0], 1200));
-  // Side/back exterior
-  if (exteriorIds[1]) imgs.push(PEXELS(exteriorIds[1], 1200));
-  // Living room
-  imgs.push(PEXELS(INTERIOR.livingRoom[0], 1000));
-  imgs.push(PEXELS(INTERIOR.livingRoom[1], 1000));
-  // Kitchen
-  imgs.push(PEXELS(INTERIOR.kitchen[0], 1000));
-  imgs.push(PEXELS(INTERIOR.kitchen[1], 1000));
-  // Bedroom
-  imgs.push(PEXELS(INTERIOR.bedroom[0], 1000));
-  imgs.push(PEXELS(INTERIOR.bedroom[1], 1000));
-  // Bathroom
-  imgs.push(PEXELS(INTERIOR.bathroom[0], 1000));
-  imgs.push(PEXELS(INTERIOR.bathroom[1], 1000));
-  // Additional exterior
-  if (exteriorIds[2]) imgs.push(PEXELS(exteriorIds[2], 1200));
-  // Dining room
-  imgs.push(PEXELS(INTERIOR.dining[0], 1000));
-  // Home office
-  imgs.push(PEXELS(INTERIOR.office[0], 1000));
-  // Additional living areas
-  imgs.push(PEXELS(INTERIOR.livingRoom[2], 1000));
-  imgs.push(PEXELS(INTERIOR.kitchen[2], 1000));
-  imgs.push(PEXELS(INTERIOR.bedroom[2], 1000));
-  imgs.push(PEXELS(INTERIOR.bathroom[2], 1000));
-  // Exterior back yard
-  if (exteriorIds[3]) imgs.push(PEXELS(exteriorIds[3], 1200));
-  imgs.push(PEXELS(INTERIOR.dining[1], 1000));
-  // Garden / grounds
-  imgs.push(PEXELS(INTERIOR.garden[0], 1200));
-  imgs.push(PEXELS(INTERIOR.livingRoom[3], 1000));
-  imgs.push(PEXELS(INTERIOR.bedroom[3], 1000));
-  imgs.push(PEXELS(INTERIOR.office[1], 1000));
-  imgs.push(PEXELS(INTERIOR.bathroom[3], 1000));
-  return imgs.slice(0, count);
+  exteriorIds.forEach((id) => imgs.push(PEXELS(id, 1200)));
+  interiorIds.forEach((id) => imgs.push(PEXELS(id, 1000)));
+  return imgs;
 }
 
 function vehicleGallery(vehicleIds, count = 12) {
@@ -85,27 +30,11 @@ function vehicleGallery(vehicleIds, count = 12) {
   return imgs;
 }
 
-// Build a 24-image gallery from explicit photo IDs — each home has its own unique
-// exterior set, then shared interior shots fill out the remaining photos.
-function newHomeGallery(ids) {
+// Build a gallery from an explicit exterior set plus unique interior room photos.
+function newHomeGallery(ids, interiorIds) {
   const base = ids.map((id, i) => PEXELS(id, i < 3 ? 1200 : 1000));
-  const extra = [
-    PEXELS(INTERIOR.livingRoom[0], 1000),
-    PEXELS(INTERIOR.kitchen[0], 1000),
-    PEXELS(INTERIOR.bedroom[0], 1000),
-    PEXELS(INTERIOR.bathroom[0], 1000),
-    PEXELS(INTERIOR.dining[0], 1000),
-    PEXELS(INTERIOR.office[0], 1000),
-    PEXELS(INTERIOR.livingRoom[1], 1000),
-    PEXELS(INTERIOR.kitchen[1], 1000),
-    PEXELS(INTERIOR.bedroom[1], 1000),
-    PEXELS(INTERIOR.bathroom[1], 1000),
-    PEXELS(INTERIOR.livingRoom[2], 1000),
-    PEXELS(INTERIOR.kitchen[2], 1000),
-    PEXELS(INTERIOR.bedroom[2], 1000),
-    PEXELS(INTERIOR.garden[0], 1200),
-  ];
-  return [...base, ...extra];
+  const interiors = interiorIds.map((id) => PEXELS(id, 1000));
+  return [...base, ...interiors];
 }
 
 // Build a 10-image motorhome gallery from explicit photo IDs — each motorhome has its own unique set
@@ -125,7 +54,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Ohio', city: 'Columbus', town: 'Hilliard',
     bedrooms: 2, bathrooms: 1, building_size: '850 sqft', land_size: '0.15 acres',
     parking_spaces: 1, property_type: 'Single-Family Home', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.ranchBungalow), rating: 4.3, rating_count: 18, favorite_count: 12,
+    images: propertyGallery([259588, 259585, 259590], [2635038, 1571466, 2724750, 2724749, 2467284, 271816, 6585745, 1974593, 262045, 196644]),
     features: ['Updated Kitchen', 'Hardwood Floors', 'New Roof', 'Private Backyard', 'Near Schools', 'Quiet Street', 'Carport'],
   },
   // 2. Suburban two-storey family home
@@ -137,7 +66,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Texas', city: 'Austin', town: 'Round Rock',
     bedrooms: 3, bathrooms: 2, building_size: '1,750 sqft', land_size: '0.2 acres',
     parking_spaces: 2, property_type: 'Single-Family Home', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.suburbanTwoStorey), rating: 4.5, rating_count: 42, favorite_count: 28,
+    images: propertyGallery([259600, 259598, 259597], [1571465, 1571463, 236747, 1080696, 279713, 2467285, 1974594, 6585748, 262047, 1181398]),
     features: ['2-Car Garage', 'Finished Basement', 'Open Floor Plan', 'Breakfast Bar', 'Level Backyard', 'Walk to School', 'Air Conditioning'],
   },
   // 3. Cape Cod style home
@@ -149,7 +78,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Massachusetts', city: 'Boston', town: 'Quincy',
     bedrooms: 3, bathrooms: 1, building_size: '1,200 sqft', land_size: '0.12 acres',
     parking_spaces: 1, property_type: 'Cape Cod', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.capeCodWhite), rating: 4.6, rating_count: 35, favorite_count: 22,
+    images: propertyGallery([18819232, 33643352, 17831878], [1571467, 1571462, 1080701, 1307697, 1648779, 1648777, 1974595, 6585722, 262978, 1595385]),
     features: ['Fireplace', 'Granite Countertops', 'Picket Fence', 'Mature Landscaping', 'Finished Attic', 'Built-in Bookshelves', 'Near Downtown'],
   },
   // 4. Duplex / two-family
@@ -161,7 +90,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Ontario', city: 'Toronto', town: 'Scarborough',
     bedrooms: 4, bathrooms: 2, building_size: '2,200 sqft', land_size: '0.18 acres',
     parking_spaces: 4, property_type: 'Duplex', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.modernSuburban), rating: 4.4, rating_count: 29, favorite_count: 31,
+    images: propertyGallery([33350028, 10628458, 17246020], [1571468, 1571471, 1307698, 1307692, 1648778, 1428350, 6585740, 6585757, 776666, 2884770]),
     features: ['Two Units', 'Separate Utilities', 'Private Entrances', 'Updated Electrical', 'New Roof', 'Rented Units', 'Near Transit', 'Investment Property'],
   },
   // 5. Renovated ranch house
@@ -173,7 +102,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'North Carolina', city: 'Charlotte', town: 'Matthews',
     bedrooms: 3, bathrooms: 2, building_size: '1,500 sqft', land_size: '0.25 acres',
     parking_spaces: 2, property_type: 'Ranch House', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.ranchBungalow), rating: 4.7, rating_count: 56, favorite_count: 44,
+    images: propertyGallery([259593, 259596, 259589], [1571461, 1571472, 1307699, 1307700, 1428348, 1428349, 1974601, 6585743, 776659, 1181399]),
     features: ['Fully Renovated', 'Open Floor Plan', 'Quartz Countertops', 'New Flooring', 'Updated Bathrooms', 'Patio', 'Fire Pit', 'Cul-de-Sac'],
   },
   // 6. Mid-range apartment for rent
@@ -185,7 +114,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'England', city: 'London', town: 'Canary Wharf',
     bedrooms: 2, bathrooms: 2, building_size: '850 sqft', land_size: null,
     parking_spaces: 1, property_type: 'Apartment', furnished: 'Furnished', listing_status: 'rent',
-    images: propertyGallery(EXTERIOR.modernSuburban), rating: 4.4, rating_count: 67, favorite_count: 38,
+    images: propertyGallery([6422929, 18280833, 38604168], [1571459, 1571474, 2724748, 1870305, 279746, 6585732, 6585758, 3201764, 1181367]),
     features: ['Concierge', 'Fitness Center', 'Rooftop Terrace', 'Air Conditioning', 'Balcony', 'Pet Friendly', 'Elevator', 'Near Transit'],
   },
   // 7. Affordable villa
@@ -197,7 +126,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Andalusia', city: 'Marbella', town: 'San Pedro de Alcántara',
     bedrooms: 3, bathrooms: 2, building_size: '1,800 sqft', land_size: '0.3 acres',
     parking_spaces: 2, property_type: 'Villa', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.villa), rating: 4.5, rating_count: 48, favorite_count: 33,
+    images: propertyGallery([1396122, 1396132, 1396133], [1571469, 1571460, 236748, 1307695, 2029693, 2029694, 6585752, 1974600, 1400019, 1181402, 261125]),
     features: ['Garden', 'Covered Terrace', 'Open Plan', 'En-suite Master', 'Family Bathroom', 'Playground Nearby', 'Air Conditioning'],
   },
   // 8. Mid-range mansion
@@ -209,7 +138,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Île-de-France', city: 'Paris', town: 'Neuilly-sur-Seine',
     bedrooms: 6, bathrooms: 5, building_size: '5,500 sqft', land_size: '1.5 acres',
     parking_spaces: 4, property_type: 'Mansion', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.mansion), rating: 4.8, rating_count: 52, favorite_count: 67,
+    images: propertyGallery([20200273, 35069535, 8143671], [1571470, 1571475, 1080702, 1307693, 271818, 2029696, 1488467, 1358904, 776656, 1181389, 261103]),
     features: ['Pool & Spa', 'Outdoor Kitchen', 'Wine Storage', 'Home Gym', 'Game Room', 'Fireplace', '4-Car Garage', 'Smart Home'],
   },
   // 9. Beach house for rent
@@ -221,7 +150,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Queensland', city: 'Gold Coast', town: 'Burleigh Heads',
     bedrooms: 2, bathrooms: 1, building_size: '1,000 sqft', land_size: '0.1 acres',
     parking_spaces: 1, property_type: 'Beach Cottage', furnished: 'Furnished', listing_status: 'rent',
-    images: propertyGallery(EXTERIOR.beachHouse), rating: 4.6, rating_count: 73, favorite_count: 51,
+    images: propertyGallery([29334714, 34958535, 29957213], [276559, 276558, 3201765, 1571453, 1571454, 6585754, 280222, 1181354]),
     features: ['Ocean View', 'Direct Beach Access', 'Deck', 'Air Conditioning', 'Outdoor Shower', 'Furnished', 'Walk to Cafes', 'Pet Friendly'],
   },
   // 10. Luxury condominium
@@ -233,7 +162,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Dubai', city: 'Dubai', town: 'Downtown Dubai',
     bedrooms: 2, bathrooms: 2, building_size: '1,200 sqft', land_size: null,
     parking_spaces: 1, property_type: 'Condominium', furnished: 'Furnished', listing_status: 'rent',
-    images: propertyGallery(EXTERIOR.modernSuburban), rating: 4.7, rating_count: 91, favorite_count: 58,
+    images: propertyGallery([10827225, 4258282, 8894802], [276724, 276560, 1743231, 3201766, 1454805, 1454806, 6585760, 6585756, 262048, 1029756]),
     features: ['Sky Lounge', 'Indoor Pool', 'Fitness Center', '24h Valet', 'Concierge', 'Smart Home', 'Balcony', 'City View'],
   },
   // 11. Farmhouse with acreage
@@ -245,7 +174,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Ontario', city: 'Ottawa', town: 'Manotick',
     bedrooms: 3, bathrooms: 2, building_size: '2,200 sqft', land_size: '5 acres',
     parking_spaces: 4, property_type: 'Farmhouse', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.farmHouse), rating: 4.5, rating_count: 38, favorite_count: 24,
+    images: propertyGallery([259950, 1850276, 1396134], [2089698, 2581922, 1599791, 271817, 1743230, 6585755, 2506940, 1029755, 186077]),
     features: ['Barn', '5 Acres', 'Fireplace', 'Garden', 'Chicken Coop', 'Equestrian Ready', 'Exposed Beams', 'Solar Panels'],
   },
   // 12. Commercial building
@@ -257,7 +186,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Bavaria', city: 'Munich', town: 'Schwabing',
     bedrooms: null, bathrooms: 2, building_size: '4,500 sqft', land_size: '0.3 acres',
     parking_spaces: 20, property_type: 'Commercial', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.commercial), rating: 4.3, rating_count: 22, favorite_count: 15,
+    images: propertyGallery([1732414, 1732415, 2079234], [1457842, 1457841, 1307696, 1743229, 1454804, 3062541, 3201763, 1181390]),
     features: ['High Traffic', 'Storefront Windows', 'Office Space', 'Parking 20', 'Signage Available', 'Separate Entrance', 'Long-Term Tenant'],
   },
   // 13. Affordable suburban home
@@ -269,7 +198,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Indiana', city: 'Indianapolis', town: 'Fishers',
     bedrooms: 3, bathrooms: 1, building_size: '1,400 sqft', land_size: '0.22 acres',
     parking_spaces: 3, property_type: 'Single-Family Home', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.brickHouse), rating: 4.2, rating_count: 19, favorite_count: 14,
+    images: propertyGallery([9869371, 18038074, 4469133], [2581923, 2082090, 236750, 1571456, 3221078, 19991863, 3201762, 1181397]),
     features: ['Brick Construction', 'Fenced Yard', 'Attached Garage', 'Storage Shed', 'Near Parks', 'Near Schools', 'Formal Dining Room'],
   },
   // 14. Hotel
@@ -281,7 +210,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Tuscany', city: 'Florence', town: 'Oltrarno',
     bedrooms: 24, bathrooms: 24, building_size: '10,000 sqft', land_size: '0.5 acres',
     parking_spaces: 12, property_type: 'Hotel', furnished: 'Furnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.hotel), rating: 4.8, rating_count: 287, favorite_count: 98,
+    images: propertyGallery([32237414, 31817157, 2102584], [2581920, 271624, 2062426, 1889657, 1166143, 1080721, 1743233, 1599790, 3184299, 3761530]),
     features: ['Restaurant', 'Bar', 'Courtyard Garden', 'Rooftop Terrace', '24 Rooms', 'Reception', 'Turnkey Operation', 'Laundry'],
   },
   // 15. Beach house for sale
@@ -293,7 +222,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'Queensland', city: 'Gold Coast', town: 'Surfers Paradise',
     bedrooms: 3, bathrooms: 2, building_size: '1,800 sqft', land_size: '0.18 acres',
     parking_spaces: 2, property_type: 'Beach House', furnished: 'Furnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.beachHouse), rating: 4.7, rating_count: 64, favorite_count: 47,
+    images: propertyGallery([59924, 15743372, 30580640], [2029732, 2121122, 1743228, 2235836, 1571455, 2029697, 19846350, 312418, 262046, 1181406]),
     features: ['Ocean View', 'Wraparound Deck', 'Direct Beach Access', 'Hurricane Windows', 'Vaulted Ceilings', 'Master Balcony', 'Air Conditioning', 'Outdoor Shower'],
   },
   // 16. Affordable apartment for sale
@@ -305,7 +234,7 @@ export const SHOWROOM_LISTINGS = [
     state: 'North Holland', city: 'Amsterdam', town: 'Jordaan',
     bedrooms: 1, bathrooms: 1, building_size: '400 sqft', land_size: null,
     parking_spaces: 0, property_type: 'Studio Apartment', furnished: 'Unfurnished', listing_status: 'sale',
-    images: propertyGallery(EXTERIOR.modernSuburban), rating: 4.1, rating_count: 31, favorite_count: 19,
+    images: propertyGallery([17831870, 10286038, 106400], [2029731, 2121121, 357568, 1648772, 1115804, 271820, 2442905, 3100796, 218717]),
     features: ['Balcony', 'Rooftop Garden', 'Bike Storage', 'Elevator', 'Near Transit', 'Walk to Cafes', 'Investment Potential'],
   },
 
@@ -455,7 +384,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 3, bathrooms: 2, building_size: '1,450 sqft', land_size: '0.12 acres',
     parking_spaces: 1, property_type: 'Craftsman Bungalow', furnished: 'Unfurnished', listing_status: 'sale',
     year_built: 1928,
-    images: newHomeGallery([1022936, 13771880, 15986536, 11354266, 13807028, 10117730, 10758468, 10213877, 15583592, 10258628]),
+    images: newHomeGallery([1022936, 13771880, 15986536, 11354266, 13807028, 10117730, 10758468, 10213877, 2079235, 10258628], [276551, 2251248, 1838804, 1570807, 3735608, 221542]),
     rating: 4.5, rating_count: 38, favorite_count: 25,
     features: ['Hardwood Floors', 'Wood-Burning Fireplace', 'Covered Porch', 'Built-in Bookshelves', 'Detached Garage', 'Raised Garden Beds', 'Near Farmers Market', 'Updated Plumbing'],
   },
@@ -469,7 +398,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 4, bathrooms: 3, building_size: '2,400 sqft', land_size: '0.15 acres',
     parking_spaces: 2, property_type: 'Victorian Heritage Home', furnished: 'Unfurnished', listing_status: 'sale',
     year_built: 1905,
-    images: newHomeGallery([16804979, 18078684, 18214902, 14714646, 1484981, 10855206, 13009887, 15683265, 15743369, 10917541]),
+    images: newHomeGallery([2079236, 18078684, 18214902, 14714646, 1484981, 10855206, 13009887, 15683265, 15743369, 10917541], [4352247, 1416536, 1889656, 1203762, 10827343, 3761532]),
     rating: 4.7, rating_count: 44, favorite_count: 31,
     features: ['Heritage Designation', 'Original Woodwork', 'Stained Glass Windows', 'Ornate Fireplaces', 'Butler\'s Pantry', 'Landscaped Garden', 'Detached Garage', 'Near Beach'],
   },
@@ -483,7 +412,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 2, bathrooms: 1, building_size: '850 sqft', land_size: '0.03 acres',
     parking_spaces: 0, property_type: 'Victorian Terraced House', furnished: 'Unfurnished', listing_status: 'sale',
     year_built: 1895,
-    images: newHomeGallery([1862402, 19344325, 1974596, 16501662, 16820353, 15409513, 17240686, 15859214, 18132311, 12405529]),
+    images: newHomeGallery([1862402, 19344325, 1974596, 16501662, 16820353, 15409513, 17240686, 15859214, 18132311, 12405529], [2251247, 4352248, 1838803, 90317, 2006734, 2189696]),
     rating: 4.3, rating_count: 27, favorite_count: 18,
     features: ['Period Features', 'Sash Windows', 'Cast-Iron Fireplaces', 'Rear Courtyard Garden', 'Near Metrolink', 'Walk to Cafes', 'Double Glazing', 'Central Heating'],
   },
@@ -497,7 +426,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 4, bathrooms: 2, building_size: '2,100 sqft', land_size: '0.2 acres',
     parking_spaces: 2, property_type: 'Contemporary Family Home', furnished: 'Unfurnished', listing_status: 'sale',
     year_built: 2015,
-    images: newHomeGallery([23639035, 2816284, 29566891, 17948130, 19227234, 18033166, 18285887, 18492337, 18823960, 12870169]),
+    images: newHomeGallery([23639035, 2816284, 29566891, 17948130, 19227234, 18033166, 18285887, 17729218, 18823960, 12870169], [245208, 225502, 2467288, 2736498, 2006735, 1859357]),
     rating: 4.6, rating_count: 52, favorite_count: 36,
     features: ['Open-Plan Living', 'Ducted Air Conditioning', 'Alfresco Dining', 'Solar Panels', 'Stone Benchtops', 'Walk-in Pantry', 'Double Garage', 'Near Top Schools'],
   },
@@ -511,7 +440,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 3, bathrooms: 2, building_size: '1,350 sqft', land_size: null,
     parking_spaces: 1, property_type: 'Modern Apartment', furnished: 'Unfurnished', listing_status: 'sale',
     year_built: 2018,
-    images: newHomeGallery([30699851, 32226825, 323780, 2343469, 276746, 19312081, 19966809, 19980080, 26840825, 13009039]),
+    images: newHomeGallery([30699851, 32226825, 323780, 2343469, 24245769, 19312081, 19966809, 19980080, 106401, 13009039], [276583, 276585, 1325073, 2736500, 19966786, 1578666]),
     rating: 4.6, rating_count: 41, favorite_count: 28,
     features: ['Underfloor Heating', 'Floor-to-Ceiling Windows', 'Built-in Kitchen', 'Private Balcony', 'Elevator', 'Bicycle Storage', 'Rooftop Garden', 'Energy Efficient'],
   },
@@ -525,7 +454,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 8, bathrooms: 6, building_size: '6,500 sqft', land_size: '4.5 acres',
     parking_spaces: 6, property_type: 'Château', furnished: 'Partially Furnished', listing_status: 'sale',
     year_built: 1780,
-    images: newHomeGallery([32716845, 33213827, 33258708, 280239, 28542161, 20348123, 29012619, 28238364, 29100031, 17741596]),
+    images: newHomeGallery([32716845, 33213827, 33258708, 280239, 28542161, 20348123, 29012619, 28238364, 29100031, 17741596], [2581921, 276586, 2467287, 1571457, 19227244, 3787841, 1438838]),
     rating: 4.9, rating_count: 33, favorite_count: 52,
     features: ['Vineyard Views', 'Swimming Pool', 'Formal Gardens', 'Wine Cellar', 'Marble Fireplaces', 'Staff Quarters', 'Helipad', 'Smart Home System'],
   },
@@ -539,7 +468,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 4, bathrooms: 3, building_size: '2,800 sqft', land_size: '2.5 acres',
     parking_spaces: 3, property_type: 'Tuscan Farmhouse', furnished: 'Partially Furnished', listing_status: 'sale',
     year_built: 1850,
-    images: newHomeGallery([35325852, 4534508, 4913326, 30484324, 32206234, 30580858, 32579238, 29377845, 30767888, 189472]),
+    images: newHomeGallery([35325852, 4534508, 4913326, 30484324, 32206234, 30580858, 32579238, 29377845, 30767888, 189472], [3935350, 3935351, 1325076, 2736499, 3735610, 3787840, 1098613]),
     rating: 4.8, rating_count: 47, favorite_count: 39,
     features: ['Olive Grove', 'Stone Construction', 'Chestnut Beams', 'Terracotta Floors', 'Wood-fired Oven', 'Infinity Pool', 'Vineyard Views', 'Outdoor Kitchen'],
   },
@@ -553,7 +482,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 2, bathrooms: 1, building_size: '750 sqft', land_size: null,
     parking_spaces: 0, property_type: 'Apartment', furnished: 'Unfurnished', listing_status: 'sale',
     year_built: 1900,
-    images: newHomeGallery([6342356, 7031406, 7031407, 32842395, 33537442, 34992776, 3926542, 31434235, 34524318, 19980228]),
+    images: newHomeGallery([6342356, 7031406, 7031407, 32842395, 33537442, 34992776, 3926542, 31434235, 34524318, 19980228], [3935352, 219794, 2467286, 1080722, 1739842, 2506923]),
     rating: 4.4, rating_count: 35, favorite_count: 22,
     features: ['Catalan Vault Ceiling', 'Exposed Brick', 'Balcony', 'Rooftop Terrace', 'Near Las Ramblas', 'Walk to Beach', 'Air Conditioning', 'Elevator'],
   },
@@ -567,7 +496,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 6, bathrooms: 5, building_size: '4,200 sqft', land_size: '0.8 acres',
     parking_spaces: 3, property_type: 'Alpine Chalet', furnished: 'Fully Furnished', listing_status: 'sale',
     year_built: 2020,
-    images: newHomeGallery([7031604, 8082312, 8146330, 34688219, 34887637, 4221389, 4300078, 34574606, 36123565, 20602372]),
+    images: newHomeGallery([7031604, 8082312, 8146330, 34688219, 34887637, 4221389, 4300078, 34574606, 36123565, 20602372], [276584, 1687845, 1098592, 1570806, 2442906, 3787843]),
     rating: 4.9, rating_count: 29, favorite_count: 44,
     features: ['Matterhorn Views', 'Floor-to-Ceiling Windows', 'Double-Height Fireplace', 'Sauna & Steam Room', 'Ski Room', 'Underfloor Heating', 'Triple Garage', 'Smart Home System'],
   },
@@ -581,7 +510,7 @@ export const SHOWROOM_LISTINGS = [
     bedrooms: 3, bathrooms: 2, building_size: '1,600 sqft', land_size: '0.5 acres',
     parking_spaces: 1, property_type: 'Scandinavian Cabin', furnished: 'Partially Furnished', listing_status: 'sale',
     year_built: 2010,
-    images: newHomeGallery([13956440, 1787034, 18493366, 34946066, 35419464, 4906490, 6186828, 38476210, 6394586, 27626183]),
+    images: newHomeGallery([13956440, 1787034, 18493366, 34946066, 35419464, 4906490, 6186828, 38476210, 6394586, 27626183], [1687846, 1909791, 236749, 1203763, 1974602, 1859330]),
     rating: 4.6, rating_count: 31, favorite_count: 26,
     features: ['Waterfront', 'Wood-fired Sauna', 'Wood-burning Stove', 'Private Dock', 'Large Deck', 'Triple-Glazed Windows', 'Forest Views', 'Ferry to City'],
   },
