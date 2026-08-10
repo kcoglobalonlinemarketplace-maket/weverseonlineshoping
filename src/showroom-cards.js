@@ -1,7 +1,7 @@
 import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings } from './showroom-data.js';
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
-import { generateProduct, getCatalogCategory, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
+import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -700,6 +700,86 @@ export function clearShowroomFilter() {
   });
 }
 
+// ── Data-driven category inventory ──────────────────────────────
+// Aggregates every category that actually exists in the showroom
+// (seed + DB products + catalog + trucks). The homepage nav is built
+// from this list, so new products/categories appear automatically.
+const DEPT_KEYWORDS = {
+  fashion: ['women', 'men', 'kids', 'fashion', 'beauty', 'jewel', 'watch', 'shoe', 'handbag', 'apparel', 'dress', 'baby'],
+  electronics: ['electronic', 'phone', 'computer', 'laptop', 'gaming', 'camera', 'software', 'digital', 'tv', 'audio', 'appliance'],
+  realestate: ['real estate', 'houses', 'homes', 'apartment', 'villa', 'mansion', 'land', 'commercial', 'hotel', 'condominium', 'property', 'beach house', 'farm house', 'estate'],
+  home: ['home', 'furniture', 'kitchen', 'garden', 'decor', 'pool', 'spa', 'cleaning', 'laundry', 'bedroom', 'bathroom'],
+  vehicles: ['car', 'motorcycle', 'truck', 'bicycle', 'marine', 'boating', 'rv', 'camper', 'auto', 'vehicle'],
+  sports: ['sport', 'fitness', 'camping', 'hiking', 'outdoor', 'gym', 'athletic', 'bike'],
+  everyday: ['food', 'grocer', 'pet', 'book', 'toy', 'office', 'health', 'medical', 'music', 'instrument', 'art', 'craft', 'service', 'travel', 'luggage', 'religious', 'flower', 'gift', 'party', 'wedding', 'costume', 'coin', 'funeral', 'packaging', 'safety', 'security', 'industrial', 'business', 'educational', 'collectible', 'fireplace', 'pharmacy'],
+};
+
+export function getShowroomCategoryInventory() {
+  const counts = new Map();
+  const add = (cat, sub, n = 1) => {
+    if (!cat) return;
+    const key = String(cat).trim();
+    if (!counts.has(key)) counts.set(key, { name: key, count: 0, subs: new Set() });
+    const e = counts.get(key);
+    e.count += n;
+    if (sub) e.subs.add(String(sub).trim());
+  };
+  [...SHOWROOM_LISTINGS, ...getDBListings()].forEach(l => add(l.category, l.subcategory));
+  TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
+  getCatalogCategories().forEach(c => add(c.name, null, c.count || 0));
+
+  // Display order
+  const deptIds = ['fashion', 'electronics', 'home', 'vehicles', 'realestate', 'sports', 'everyday'];
+  const depts = deptIds.map(id => ({ id, categories: [] }));
+  const more = { id: 'more', label: 'More', icon: 'grid', color: 'gray', categories: [] };
+  // Match priority (real-estate terms must win over the generic "home" keyword)
+  const matchOrder = ['fashion', 'electronics', 'realestate', 'home', 'vehicles', 'sports', 'everyday'];
+
+  counts.forEach((entry, name) => {
+    const n = name.toLowerCase();
+    const deptId = matchOrder.find(id => DEPT_KEYWORDS[id].some(k => n.includes(k)));
+    const dept = depts.find(d => d.id === deptId);
+    (dept || more).categories.push(entry);
+  });
+
+  const out = depts.map(d => {
+    d.categories.sort((a, b) => b.count - a.count);
+    return d;
+  }).filter(d => d.categories.length);
+  if (more.categories.length) out.push(more);
+  return out;
+}
+
+export function filterShowroomByDepartment(deptId) {
+  const inventory = getShowroomCategoryInventory();
+  let names = [];
+  inventory.forEach(d => { if (d.id === deptId) names = d.categories.map(c => c.name); });
+  filterShowroomByCategories(names.length ? names : [deptId]);
+}
+
+export function filterShowroomByCategories(names) {
+  const realEstateGrid = document.querySelector('[data-showroom-grid="real-estate"]');
+  const marketplaceGrid = document.querySelector('[data-showroom-grid="marketplace"]');
+  const allRows = collectAllRows();
+  const list = (names || []).map(n => String(n).toLowerCase()).filter(Boolean);
+  allRows.forEach(({ section, row }) => {
+    const gridName = REAL_ESTATE_SECTIONS.includes(section) ? 'real-estate' : 'marketplace';
+    const grid = gridName === 'real-estate' ? realEstateGrid : marketplaceGrid;
+    if (!grid) return;
+    const rowEl = grid.querySelector(`[data-row-id="${row.id}"]`);
+    if (!rowEl) return;
+    const match = list.length === 0 || list.some(n => categoryMatches(n, section.label, row.label));
+    rowEl.style.display = match ? '' : 'none';
+  });
+  [realEstateGrid, marketplaceGrid].forEach(grid => {
+    if (!grid) return;
+    grid.querySelectorAll('.showroom-section').forEach(sec => {
+      const visibleRows = sec.querySelectorAll('.showroom-row:not([style*="display: none"])');
+      sec.style.display = visibleRows.length > 0 ? '' : 'none';
+    });
+  });
+}
+
 // ── Initialization ──
 // Render all showroom grids immediately on page load so product cards,
 // banners, and categories are visible without requiring a scroll event.
@@ -921,11 +1001,16 @@ export async function initAllShowrooms() {
 
   const grids = document.querySelectorAll('[data-showroom-grid]');
   grids.forEach(g => renderGrid(g.dataset.showroomGrid));
+
+  window.dispatchEvent(new CustomEvent('showroom-categories-ready'));
 }
 
 // Expose filter functions to window so app.js category buttons can call them
 window._filterShowroomByCategory = filterShowroomByCategory;
 window._clearShowroomFilter = clearShowroomFilter;
+window._filterShowroomByDepartment = filterShowroomByDepartment;
+window._filterShowroomByCategories = filterShowroomByCategories;
+window._getShowroomCategoryInventory = getShowroomCategoryInventory;
 
 if (document.querySelector('[data-showroom-grid]')) {
   if (document.readyState === 'loading') {

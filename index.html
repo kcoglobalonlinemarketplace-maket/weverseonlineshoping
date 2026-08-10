@@ -89,6 +89,9 @@
     .cat-icon-wrap{transition:all .3s cubic-bezier(.34,1.56,.64,1)}
     .cat-item:hover .cat-icon-wrap{box-shadow:0 6px 20px rgba(59,130,246,.18)}
     .cat-item.active .cat-icon-wrap{box-shadow:0 0 18px rgba(59,130,246,.25)}
+    /* Mega-menu category panel */
+    @keyframes panelIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    #category-panel.panel-in{animation:panelIn .22s cubic-bezier(.22,1,.36,1)}
     /* ⋮ More popover rows */
     .more-label{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#6b7280;padding:.25rem .75rem}
     .more-row{display:flex;align-items:center;gap:.75rem;padding:.55rem .75rem;border-radius:.75rem;font-size:.8125rem;font-weight:500;color:#d1d5db;text-decoration:none;transition:background .15s,color .15s}
@@ -674,13 +677,19 @@
     </div>
   </header>
 
-  <!-- CATEGORY NAVIGATION (directly below search bar) -->
-  <div id="site-categories-nav" class="fixed top-[156px] sm:top-[140px] left-0 right-0 z-30 bg-[#0f172a]/95 backdrop-blur-md border-b border-gray-800">
-    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-2.5">
-      <div class="overflow-x-auto scrollbar-none">
-        <div id="category-list" class="flex items-center gap-3 min-w-max px-1"></div>
+  <!-- CATEGORY NAVIGATION (mega-menu department bar) -->
+  <div id="site-categories-nav" class="fixed top-[156px] sm:top-[140px] left-0 right-0 z-40 bg-[#0f172a]/95 backdrop-blur-md border-b border-gray-800 shadow-lg shadow-black/20">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-1.5">
+      <div class="flex items-center gap-2">
+        <div id="category-list" class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 px-0.5 py-0.5"></div>
+        <div class="hidden xl:flex items-center gap-3 shrink-0 pl-3 border-l border-gray-800">
+          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i>Verified</span>
+          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-400"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i>Secure</span>
+          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-cyan-400"><i data-lucide="globe" class="w-3.5 h-3.5"></i>Worldwide</span>
+        </div>
       </div>
     </div>
+    <div id="category-panel" class="hidden absolute inset-x-0 top-full z-50 bg-[#0d1424]/98 backdrop-blur-xl border-t border-gray-800 shadow-2xl shadow-black/50"></div>
   </div>
 
   <!-- MAIN -->
