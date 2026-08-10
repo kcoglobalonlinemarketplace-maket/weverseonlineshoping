@@ -380,13 +380,10 @@ export function renderCard(listing) {
     if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2 flex-wrap">${specs.join('')}</div>`;
   }
 
-  // Rating display: real reviews take priority, AI estimate shown with label
+  // Rating display: real reviews take priority, estimate shown without label
   let ratingStars = '';
   if (displayRating > 0) {
-    const aiLabel = !hasRealReviews && listing.is_ai_generated
-      ? `<span class="text-[9px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded ml-0.5">AI</span>`
-      : '';
-    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-orange-500 text-orange-500"></i><span class="text-gray-200 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span>${aiLabel}</div>`;
+    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-orange-500 text-orange-500"></i><span class="text-gray-200 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
   }
 
   // Product badges (New Arrival, Best Seller, etc.)

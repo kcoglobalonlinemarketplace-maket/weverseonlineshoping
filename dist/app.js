@@ -242,9 +242,9 @@ const AD_COPY = {
 
 // ---- DATA: Carousel Video Slides ----
 // All categories in a single hero carousel — real Pexels stock videos
-// Brand: KCO Global Online Marketplace
+// Brand: Weverse Online Shop
 const V = "https://videos.pexels.com/video-files/";
-const BRAND = "KCO Global Online Marketplace";
+const BRAND = "Weverse Online Shop";
 const CAROUSEL_SLIDES = [
   // === TRANSPORTATION & LOGISTICS ===
   {video:V+"6618332/6618332-sd_640_360_24fps.mp4",badge:"Global Logistics",titles:{en:BRAND+" \u2013 Global Logistics & Shipping"},descs:{en:"DHL, FedEx, UPS & Aramex \u2014 delivering across 200+ countries with cargo ships, aircraft, and distribution hubs."}},
@@ -259,7 +259,7 @@ const CAROUSEL_SLIDES = [
   {video:V+"16998369/16998369-sd_640_360_30fps.mp4",badge:"Waterfront Homes",titles:{en:BRAND+" \u2013 Waterfront Homes"},descs:{en:"Premium waterfront properties with private docks, lake access, and panoramic water views."}},
   {video:V+"11329982/11329982-sd_640_360_30fps.mp4",badge:"Luxury Villas",titles:{en:BRAND+" \u2013 Luxury Villas"},descs:{en:"Exclusive luxury villas featuring private pools, gardens, and world-class amenities in prime destinations."}},
   {video:V+"27690869/12206171_640_360_30fps.mp4",badge:"Mansions",titles:{en:BRAND+" \u2013 Mansions"},descs:{en:"Grand mansions and estates with expansive grounds, luxury interiors, and unparalleled prestige."}},
-  {video:V+"14408658/14408658-sd_640_360_30fps.mp4",badge:"Smart Homes",titles:{en:BRAND+" \u2013 Smart Homes"},descs:{en:"AI-powered smart homes with automated lighting, security, climate control, and connected living technology."}},
+  {video:V+"14408658/14408658-sd_640_360_30fps.mp4",badge:"Smart Homes",titles:{en:BRAND+" \u2013 Smart Homes"},descs:{en:"Connected smart homes with automated lighting, security, climate control, and smart living technology."}},
   {video:V+"30216901/12955687_640_360_60fps.mp4",badge:"Apartments",titles:{en:BRAND+" \u2013 Apartments"},descs:{en:"Modern apartments in prime city locations with contemporary design and premium amenities."}},
   {video:V+"30203752/12951125_640_360_60fps.mp4",badge:"Luxury Apartments",titles:{en:BRAND+" \u2013 Luxury Apartments"},descs:{en:"High-end luxury apartments with concierge services, rooftop terraces, and spectacular city views."}},
   {video:V+"12525959/12525959-sd_640_360_30fps.mp4",badge:"Penthouses",titles:{en:BRAND+" \u2013 Penthouses"},descs:{en:"Exclusive penthouses occupying the top floors of luxury towers with private elevators and panoramic vistas."}},
@@ -320,9 +320,9 @@ const CAROUSEL_SLIDES = [
   {video:V+"853987/853987-sd_640_360_25fps.mp4",badge:"Tablets",titles:{en:BRAND+" \u2013 Tablets & Smart Watches"},descs:{en:"Tablets, smart watches, and wearable technology from Apple, Samsung, and leading brands."}},
   {video:V+"38493702/16347971_640_360_25fps.mp4",badge:"Gaming Laptops",titles:{en:BRAND+" \u2013 Gaming & Business Laptops"},descs:{en:"Gaming laptops, business laptops, desktop computers, and high-performance workstations."}},
   {video:V+"853935/853935-sd_640_360_25fps.mp4",badge:"Smart TVs",titles:{en:BRAND+" \u2013 Smart TVs & Projectors"},descs:{en:"Smart TVs, projectors, home theater systems, and entertainment displays in every size."}},
-  {video:V+"7942902/7942902-sd_960_506_25fps.mp4",badge:"Gaming",titles:{en:BRAND+" \u2013 Gaming Consoles & VR"},descs:{en:"Gaming consoles, VR headsets, AI devices, gaming accessories, and the future of interactive entertainment."}},
+  {video:V+"7942902/7942902-sd_960_506_25fps.mp4",badge:"Gaming",titles:{en:BRAND+" \u2013 Gaming Consoles & VR"},descs:{en:"Gaming consoles, VR headsets, gaming accessories, and the future of interactive entertainment."}},
   {video:V+"12985798/12985798-sd_640_360_24fps.mp4",badge:"Cameras & Drones",titles:{en:BRAND+" \u2013 Cameras, Drones & Headphones"},descs:{en:"Professional cameras, drones, headphones, Bluetooth speakers, and smart home devices."}},
-  {video:V+"4318552/4318552-sd_640_360_30fps.mp4",badge:"Smart Home",titles:{en:BRAND+" \u2013 Smart Home & AI Devices"},descs:{en:"Smart home devices, AI-powered gadgets, networking equipment, and connected living solutions."}},
+  {video:V+"4318552/4318552-sd_640_360_30fps.mp4",badge:"Smart Home",titles:{en:BRAND+" \u2013 Smart Home & Connected Devices"},descs:{en:"Smart home devices, connected gadgets, networking equipment, and smart living solutions."}},
   // === HOME & LIVING ===
   {video:V+"4193136/4193136-sd_640_360_24fps.mp4",badge:"Furniture",titles:{en:BRAND+" \u2013 Luxury Furniture & Home Decor"},descs:{en:"Luxury furniture, home decor, lighting, curtains, bedding, mattresses, and storage solutions."}},
   {video:V+"4124932/4124932-sd_640_360_25fps.mp4",badge:"Kitchen",titles:{en:BRAND+" \u2013 Kitchen Appliances & Cookware"},descs:{en:"Kitchen appliances, cookware, dining sets, and smart kitchen products for modern living."}},
@@ -457,8 +457,8 @@ function mountAiAdOverlay() {
     hero.appendChild(aiAdOverlayEl);
   }
 
-  const badge = aiAdOverride.badge || 'AI Advertisement';
-  const title = aiAdOverride.title || 'AI Marketing Studio Campaign';
+  const badge = aiAdOverride.badge || 'Featured';
+  const title = aiAdOverride.title || 'Featured Campaign';
   const ctaLabel = aiAdOverride.ctaLabel || 'Shop Now';
   aiAdOverlayEl.innerHTML =
     '<video id="ai-ad-override-video" class="w-full h-full object-cover" playsinline webkit-playsinline ' +

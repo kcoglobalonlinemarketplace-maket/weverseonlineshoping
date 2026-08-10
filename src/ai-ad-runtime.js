@@ -21,8 +21,8 @@ function toPayload(row) {
   if (row.ai_ad_ends_at && new Date(row.ai_ad_ends_at).getTime() <= now) return null;
   return {
     videoUrl: row.ai_ad_video_url,
-    badge: row.ai_ad_badge || 'AI Advertisement',
-    title: row.ai_ad_title || 'AI Marketing Studio Campaign',
+    badge: row.ai_ad_badge || 'Featured',
+    title: row.ai_ad_title || 'Featured Campaign',
     ctaLabel: row.ai_ad_cta_label || 'Shop Now',
     muted: row.ai_ad_muted !== false,
     startsAt: row.ai_ad_starts_at || null,
@@ -40,8 +40,8 @@ function toPayloadFromLiveState(row) {
   if (endsAt && new Date(endsAt).getTime() <= now) return null;
   return {
     videoUrl: row.embed_url,
-    badge: row.badge_text || 'AI Advertisement',
-    title: row.headline || 'AI Marketing Studio Campaign',
+    badge: row.badge_text || 'Featured',
+    title: row.headline || 'Featured Campaign',
     ctaLabel: meta?.ctaLabel || 'Shop Now',
     muted: meta?.muted !== false,
     startsAt,
