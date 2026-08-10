@@ -585,8 +585,8 @@ function renderCategories(){
   c.innerHTML="";
   const btn=document.createElement("button");
   btn.dataset.dept="all";
-  btn.className="nav-dept-btn active flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-lg border border-blue-500/40 bg-blue-500/10 text-blue-300 text-xs font-bold uppercase tracking-wide transition hover:bg-blue-500/20";
-  btn.innerHTML='<span class="text-sm leading-none">🛒</span><span class="whitespace-nowrap">Weverse Shop List</span><i data-lucide="chevron-down" class="w-3 h-3"></i>';
+  btn.className="nav-dept-btn active flex items-center gap-2 shrink-0 px-4 py-2.5 rounded-xl border border-blue-500/40 bg-blue-500/10 text-blue-300 text-sm font-bold uppercase tracking-wide transition hover:bg-blue-500/20 active:scale-[0.97]";
+  btn.innerHTML='<span class="text-lg leading-none">🛒</span><span class="whitespace-nowrap">Weverse Shop List</span><i data-lucide="chevron-down" class="w-4 h-4"></i>';
   btn.addEventListener("click",()=>{toggleAllPanel(btn);});
   c.appendChild(btn);
   if(window.lucide)lucide.createIcons();
@@ -640,6 +640,8 @@ function toggleDeptPanel(dept,btn){
 function closeCategoryPanel(){
   const panel=document.getElementById("category-panel");
   if(panel){panel.classList.add("hidden");panel.classList.remove("panel-in");}
+  const backTop=document.getElementById("category-back-top");
+  if(backTop)backTop.classList.remove("flex");
   document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-300"));
   _panelDept=null;_allPanel=false;
 }
@@ -658,37 +660,48 @@ function getAllCategoryEntries(){
 function openAllPanel(btn){
   _allPanel=true;_panelDept=null;
   const panel=document.getElementById("category-panel");
-  if(!panel)return;
+  const scroller=document.getElementById("category-panel-scroll");
+  if(!panel||!scroller)return;
   const sorted=getAllCategoryEntries();
-  const catCards=sorted.slice(0,24).map(c=>{
+  const catCards=sorted.slice(0,40).map(c=>{
     const meta=(CATEGORIES.find(x=>x.name.toLowerCase()===String(c.name).toLowerCase()))||{icon:"shopping-bag",color:"blue"};
     const icon=meta.icon||"shopping-bag"; const color=meta.color||"blue";
     const col=CAT_COLORS[color]||CAT_COLORS.blue;
-    return '<button data-category="'+c.name+'" class="dept-cat flex flex-col items-start gap-2 p-3 rounded-xl border border-gray-800 bg-gray-900/60 hover:border-blue-500/40 hover:bg-gray-800/80 text-left transition group">'
-      +'<div class="flex items-center gap-2.5 w-full">'
-        +'<span class="w-8 h-8 rounded-lg bg-gradient-to-br '+col.bg+' '+col.to+' border '+col.border+' flex items-center justify-center shrink-0"><i data-lucide="'+icon+'" class="w-4 h-4 '+col.text+'"></i></span>'
-        +'<span class="flex-1 min-w-0"><span class="block text-[13px] font-bold text-gray-100 truncate group-hover:text-white">'+c.name+'</span>'
-        +(c.count>0?'<span class="text-[10px] text-gray-500">'+fmtCount(c.count)+' items</span>':'<span class="text-[10px] text-gray-600">Explore</span>')
+    return '<button data-category="'+c.name+'" class="dept-cat flex flex-col items-start justify-between gap-3 p-4 min-h-[104px] rounded-2xl border border-gray-800 bg-gray-900/60 hover:border-blue-500/40 hover:bg-gray-800/80 active:bg-gray-800/80 text-left transition group">'
+      +'<div class="flex items-center gap-3 w-full">'
+        +'<span class="w-11 h-11 rounded-xl bg-gradient-to-br '+col.bg+' '+col.to+' border '+col.border+' flex items-center justify-center shrink-0"><i data-lucide="'+icon+'" class="w-5 h-5 '+col.text+'"></i></span>'
+        +'<span class="flex-1 min-w-0"><span class="block text-[15px] font-bold text-gray-100 truncate group-hover:text-white">'+c.name+'</span>'
+        +(c.count>0?'<span class="text-[11px] text-gray-500">'+fmtCount(c.count)+' items</span>':'<span class="text-[11px] text-gray-600">Explore</span>')
         +'</span>'
-        +'<i data-lucide="arrow-right" class="w-3.5 h-3.5 text-gray-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition"></i>'
+        +'<i data-lucide="arrow-right" class="w-4 h-4 text-gray-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition shrink-0"></i>'
       +'</div>'
-      +(c.subs&&c.subs.length?'<span class="text-[10px] text-gray-500 truncate w-full">'+c.subs.slice(0,3).join(' · ')+'</span>':'')
+      +(c.subs&&c.subs.length?'<span class="text-[11px] text-gray-500 truncate w-full">'+c.subs.slice(0,3).join(' · ')+'</span>':'')
     +'</button>';
   }).join('');
-  panel.innerHTML='<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-4">'
-    +'<div class="flex items-center justify-between mb-3">'
-      +'<div class="flex items-center gap-2.5">'
-        +'<span class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/30 flex items-center justify-center"><span class="text-base">🛒</span></span>'
-        +'<div><h3 class="text-sm font-black text-white tracking-wide">Weverse Shop List</h3><p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Shop every category</p></div>'
+  scroller.innerHTML='<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-4 pb-24">'
+    +'<div class="sticky top-0 -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 pt-1 pb-3 bg-[#0d1424]/95 backdrop-blur-xl border-b border-gray-800/80 mb-4 z-10 flex items-center justify-between gap-3">'
+      +'<div class="flex items-center gap-3 min-w-0">'
+        +'<span class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/30 flex items-center justify-center shrink-0"><span class="text-xl">🛒</span></span>'
+        +'<div class="min-w-0"><h3 class="text-base font-black text-white tracking-wide truncate">Weverse Shop List</h3><p class="text-[11px] text-gray-500 font-bold uppercase tracking-widest">Shop every category</p></div>'
       +'</div>'
-      +'<button data-all-view="1" class="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1.5">View all <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>'
+      +'<div class="flex items-center gap-2 shrink-0">'
+        +'<button data-all-view="1" class="text-sm font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1.5">View all <i data-lucide="arrow-right" class="w-4 h-4"></i></button>'
+        +'<button id="category-panel-close" class="w-9 h-9 rounded-full bg-gray-800/60 border border-gray-700 text-gray-300 flex items-center justify-center active:scale-95"><i data-lucide="x" class="w-4 h-4"></i></button>'
+      +'</div>'
     +'</div>'
-    +'<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">'+catCards+'</div>'
+    +'<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">'+catCards+'</div>'
   +'</div>';
   panel.classList.remove("hidden");void panel.offsetWidth;panel.classList.add("panel-in");
-  panel.querySelectorAll('[data-category]').forEach(el=>{ el.onclick=()=>{filterByCategory(el.dataset.category,el);closeCategoryPanel();}; });
-  const viewAll=panel.querySelector('[data-all-view]');
+  scroller.scrollTop=0;
+  scroller.querySelectorAll('[data-category]').forEach(el=>{ el.onclick=()=>{filterByCategory(el.dataset.category,el);closeCategoryPanel();}; });
+  const viewAll=scroller.querySelector('[data-all-view]');
   if(viewAll)viewAll.onclick=()=>{filterByCategory("All");closeCategoryPanel();};
+  const closeBtn=scroller.querySelector('#category-panel-close');
+  if(closeBtn)closeBtn.onclick=()=>{closeCategoryPanel();};
+  const backTop=document.getElementById("category-back-top");
+  const onScroll=()=>{ if(backTop)backTop.classList.toggle("flex",scroller.scrollTop>260); };
+  scroller.addEventListener("scroll",onScroll,{passive:true}); onScroll();
+  if(backTop)backTop.onclick=()=>{ scroller.scrollTo({top:0,behavior:"smooth"}); };
   if(window.lucide)lucide.createIcons();
   document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-300"));
   if(btn)btn.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-300");
