@@ -46,7 +46,7 @@ function rndRating(rnd) { return Math.round((3.8 + rnd() * 1.2) * 10) / 10; }
 const COLORS = [
   'Midnight Black', 'Pure White', 'Graphite Grey', 'Slate Blue', 'Forest Green',
   'Burgundy', 'Navy Blue', 'Charcoal', 'Sand Beige', 'Rose Gold', 'Silver',
-  'Champagne Gold', 'Ivory', 'Terracotta', 'Ocean Teal', 'Sunset Orange',
+  'Champagne Gold', 'Ivory', 'Terracotta', 'Ocean Teal', 'Sunset blue',
   'Olive Green', 'Lavender', 'Cobalt Blue', 'Natural Brown', 'Camel', 'Dusty Rose',
 ];
 

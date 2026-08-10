@@ -30,7 +30,7 @@ function showToast(msg) {
 // ── Severity colors ──────────────────────────────────────────
 const severityColors = {
   critical: { text: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
-  high: { text: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
+  high: { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
   medium: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
   low: { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
 };
@@ -52,7 +52,7 @@ const issueTypeLabels = {
 function healthColor(score) {
   if (score >= 90) return { text: 'text-emerald-400', bg: 'bg-emerald-500', label: 'Excellent' };
   if (score >= 70) return { text: 'text-amber-400', bg: 'bg-amber-500', label: 'Good' };
-  if (score >= 50) return { text: 'text-orange-400', bg: 'bg-orange-500', label: 'Fair' };
+  if (score >= 50) return { text: 'text-blue-400', bg: 'bg-blue-500', label: 'Fair' };
   return { text: 'text-red-400', bg: 'bg-red-500', label: 'Poor' };
 }
 
@@ -65,7 +65,7 @@ function renderMetrics(metrics) {
     { label: 'Images Scanned', value: metrics.images_scanned || 0, icon: 'image', color: 'text-purple-400', bg: 'bg-purple-500/10' },
     { label: 'Issues Found', value: metrics.issues_found || 0, icon: 'alert-triangle', color: 'text-amber-400', bg: 'bg-amber-500/10' },
     { label: 'Repairs Done', value: metrics.repairs_completed || 0, icon: 'wrench', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'Pending Reviews', value: metrics.pending_reviews || 0, icon: 'clipboard-check', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    { label: 'Pending Reviews', value: metrics.pending_reviews || 0, icon: 'clipboard-check', color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { label: 'Health Score', value: metrics.health_score != null ? `${metrics.health_score}%` : '—', icon: 'heart-pulse', color: 'text-red-400', bg: 'bg-red-500/10' },
   ];
   grid.innerHTML = cards.map(c => `

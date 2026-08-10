@@ -152,7 +152,7 @@ function closeModal() { document.getElementById('modal-container').innerHTML = '
 function openModal(html) { document.getElementById('modal-container').innerHTML = html; if (window.lucide) lucide.createIcons(); }
 
 function statCard(label, value, icon, color, sub = '') {
-  const c = { blue: 'bg-blue-500/10 text-blue-400 border-blue-500/15', amber: 'bg-amber-500/10 text-amber-400 border-amber-500/15', emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15', red: 'bg-red-500/10 text-red-400 border-red-500/15', violet: 'bg-violet-500/10 text-violet-400 border-violet-500/15', orange: 'bg-orange-500/10 text-orange-400 border-orange-500/15' };
+  const c = { blue: 'bg-blue-500/10 text-blue-400 border-blue-500/15', amber: 'bg-amber-500/10 text-amber-400 border-amber-500/15', emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15', red: 'bg-red-500/10 text-red-400 border-red-500/15', violet: 'bg-violet-500/10 text-violet-400 border-violet-500/15', blue: 'bg-blue-500/10 text-blue-400 border-blue-500/15' };
   return `<div class="stat-card glass-soft border border-blue-500/15 rounded-2xl p-4">
     <div class="flex items-start justify-between mb-3">
       <div class="p-2 ${c[color] || c.blue} rounded-xl border"><i data-lucide="${icon}" class="w-4 h-4"></i></div>
@@ -838,7 +838,7 @@ async function renderDashboard() {
           ${statCard('Customers', totalCustomers, 'users', 'violet')}
           ${statCard('Products', totalProds, 'package', 'amber', `${activeProds} active`)}
           ${statCard('Properties', totalProps, 'home', 'blue')}
-          ${statCard('Reviews', totalReviews, 'star', 'orange', `${pendingReviews} pending`)}
+          ${statCard('Reviews', totalReviews, 'star', 'blue', `${pendingReviews} pending`)}
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -937,7 +937,7 @@ async function renderProducts() {
           ${statCard('Published', items.filter(p => !!p.is_active).length, 'badge-check', 'emerald')}
           ${statCard('Draft / Hidden', items.filter(p => !p.is_active).length, 'file-clock', 'amber')}
           ${statCard('Featured', items.filter(p => !!p.is_featured).length, 'sparkles', 'violet')}
-          ${statCard('Inventory Units', items.reduce((n, p) => n + (parseInt(p.stock_quantity, 10) || 0), 0), 'boxes', 'orange')}
+          ${statCard('Inventory Units', items.reduce((n, p) => n + (parseInt(p.stock_quantity, 10) || 0), 0), 'boxes', 'blue')}
           ${statCard('Avg Price', `$${Math.round(items.reduce((n, p) => n + (parseFloat(p.price) || 0), 0) / Math.max(items.length, 1)).toLocaleString()}`, 'dollar-sign', 'blue')}
         </div>
 
@@ -3516,7 +3516,7 @@ function adLabelPill(label) {
     'Sponsored': 'bg-violet-500/10 text-violet-300 border-violet-500/30',
     'Featured Collection': 'bg-amber-500/10 text-amber-300 border-amber-500/30',
     'Discover': 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
-    'Promotion': 'bg-orange-500/10 text-orange-300 border-orange-500/30',
+    'Promotion': 'bg-blue-500/10 text-blue-300 border-blue-500/30',
   };
   const c = colors[label] || colors['Featured'];
   return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${c}">${esc(label)}</span>`;
@@ -3840,7 +3840,7 @@ window.renderAds = renderAds;
 const ALL_AI_PROVIDERS = [
   // ── BATCH 1 (original 10) ──────────────────────────────
   { id:'gemini',      name:'Google Gemini',         tag:'FREE',  color:'blue',    icon:'sparkles',   kf:'gemini_key',      ph:'AIzaSy…',      signup:'https://aistudio.google.com/apikey',                        models:['gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro','gemini-2.5-pro'],                                                    mf:'gemini_model',      dm:'gemini-2.0-flash',                  desc:'Google\'s best free AI. Great for coding, writing apps & websites.',                                free_tier:'15 req/min · 1M tokens/day — Free forever' },
-  { id:'groq',        name:'Groq (Llama 3.3)',       tag:'FREE',  color:'orange',  icon:'zap',        kf:'groq_key',        ph:'gsk_…',        signup:'https://console.groq.com/keys',                             models:['llama-3.3-70b-versatile','llama-3.1-8b-instant','mixtral-8x7b-32768','gemma2-9b-it'],                                          mf:'groq_model',        dm:'llama-3.3-70b-versatile',           desc:'Fastest free AI inference. Runs Llama 3.3 & Mixtral. Excellent for coding.',                       free_tier:'30 req/min · 6,000 req/day free' },
+  { id:'groq',        name:'Groq (Llama 3.3)',       tag:'FREE',  color:'blue',  icon:'zap',        kf:'groq_key',        ph:'gsk_…',        signup:'https://console.groq.com/keys',                             models:['llama-3.3-70b-versatile','llama-3.1-8b-instant','mixtral-8x7b-32768','gemma2-9b-it'],                                          mf:'groq_model',        dm:'llama-3.3-70b-versatile',           desc:'Fastest free AI inference. Runs Llama 3.3 & Mixtral. Excellent for coding.',                       free_tier:'30 req/min · 6,000 req/day free' },
   { id:'deepseek',    name:'DeepSeek Coder',         tag:'FREE',  color:'cyan',    icon:'search',     kf:'deepseek_key',    ph:'sk-…',         signup:'https://platform.deepseek.com/api_keys',                    models:['deepseek-coder','deepseek-chat','deepseek-reasoner'],                                                                         mf:'deepseek_model',    dm:'deepseek-coder',                    desc:'Top-ranked coding AI. DeepSeek Coder beats GPT-4 on code benchmarks.',                             free_tier:'$5 free credit on signup' },
   { id:'mistral',     name:'Mistral / Codestral',    tag:'FREE',  color:'violet',  icon:'wind',       kf:'mistral_key',     ph:'…key',         signup:'https://console.mistral.ai/api-keys',                       models:['codestral-latest','mistral-small-latest','open-mistral-7b','open-mixtral-8x7b'],                                               mf:'mistral_model',     dm:'codestral-latest',                  desc:'Codestral is purpose-built for code. Free for open-source projects.',                              free_tier:'Free tier · Codestral free for open-source' },
   { id:'cohere',      name:'Cohere',                 tag:'FREE',  color:'emerald', icon:'cpu',        kf:'cohere_key',      ph:'…key',         signup:'https://dashboard.cohere.com/api-keys',                     models:['command-r-plus','command-r','command-light'],                                                                                mf:'cohere_model',      dm:'command-r',                         desc:'Free trial API. Great for chat, code, and text generation.',                                       free_tier:'Free trial · No credit card needed' },
@@ -3851,7 +3851,7 @@ const ALL_AI_PROVIDERS = [
   { id:'fireworks',   name:'Fireworks AI',           tag:'FREE',  color:'red',     icon:'flame',      kf:'fireworks_key',   ph:'fw_…',         signup:'https://fireworks.ai/api-keys',                             models:['accounts/fireworks/models/qwen2p5-coder-32b-instruct','accounts/fireworks/models/llama-v3p3-70b-instruct','accounts/fireworks/models/deepseek-v3'], mf:'fireworks_model', dm:'accounts/fireworks/models/qwen2p5-coder-32b-instruct', desc:'$1 free credit/month. DeepSeek V3, Qwen Coder, Llama 3.3 at ultra-fast speed.', free_tier:'$1 free credit every month' },
   // ── BATCH 2 (new 10) ───────────────────────────────────
   { id:'github',      name:'GitHub Models',          tag:'FREE',  color:'gray',    icon:'github',     kf:'github_key',      ph:'ghp_…',        signup:'https://github.com/marketplace/models',                     models:['meta-llama/Llama-3.3-70B-Instruct','mistral-ai/Mistral-7B-Instruct-v0.3','openai/gpt-4o','microsoft/Phi-3-mini-4k-instruct'], mf:'github_model',      dm:'meta-llama/Llama-3.3-70B-Instruct', desc:'FREE with a GitHub account. Access Llama, Mistral, GPT-4o and Phi via your GitHub token.',          free_tier:'Completely FREE with any GitHub account' },
-  { id:'cloudflare',  name:'Cloudflare Workers AI',  tag:'FREE',  color:'orange',  icon:'cloud',      kf:'cloudflare_key',  ph:'…token',       signup:'https://dash.cloudflare.com/profile/api-tokens',            models:['@cf/meta/llama-3.3-70b-instruct','@cf/deepseek-ai/deepseek-r1-distill-llama-70b','@hf/thebloke/codellama-7b-instruct-awq'],   mf:'cloudflare_model',  dm:'@cf/meta/llama-3.3-70b-instruct',   desc:'FREE 10,000 req/day. Runs Llama, CodeLlama, DeepSeek R1 on Cloudflare\'s global edge network.',    free_tier:'10,000 requests/day FREE forever' },
+  { id:'cloudflare',  name:'Cloudflare Workers AI',  tag:'FREE',  color:'blue',  icon:'cloud',      kf:'cloudflare_key',  ph:'…token',       signup:'https://dash.cloudflare.com/profile/api-tokens',            models:['@cf/meta/llama-3.3-70b-instruct','@cf/deepseek-ai/deepseek-r1-distill-llama-70b','@hf/thebloke/codellama-7b-instruct-awq'],   mf:'cloudflare_model',  dm:'@cf/meta/llama-3.3-70b-instruct',   desc:'FREE 10,000 req/day. Runs Llama, CodeLlama, DeepSeek R1 on Cloudflare\'s global edge network.',    free_tier:'10,000 requests/day FREE forever' },
   { id:'sambanova',   name:'SambaNova Cloud',        tag:'FREE',  color:'violet',  icon:'server',     kf:'sambanova_key',   ph:'…key',         signup:'https://cloud.sambanova.ai/',                               models:['Meta-Llama-3.3-70B-Instruct','Meta-Llama-3.1-405B-Instruct','Meta-Llama-3.2-3B-Instruct'],                                   mf:'sambanova_model',   dm:'Meta-Llama-3.3-70B-Instruct',       desc:'FREE fastest Llama 405B inference in the world. Purpose-built AI chips for maximum speed.',        free_tier:'Free tier with Llama 3.1 405B' },
   { id:'hyperbolic',  name:'Hyperbolic',             tag:'FREE',  color:'cyan',    icon:'activity',   kf:'hyperbolic_key',  ph:'…key',         signup:'https://app.hyperbolic.xyz/settings',                       models:['deepseek-ai/DeepSeek-V3','Qwen/Qwen2.5-Coder-32B-Instruct','meta-llama/Llama-3.3-70B-Instruct'],                             mf:'hyperbolic_model',  dm:'Qwen/Qwen2.5-Coder-32B-Instruct',   desc:'$10 FREE credit on signup. Run DeepSeek V3 and Qwen 2.5 Coder at competitive speed.',              free_tier:'$10 free credit on signup' },
   { id:'novita',      name:'Novita AI',              tag:'FREE',  color:'emerald', icon:'layers',     kf:'novita_key',      ph:'…key',         signup:'https://novita.ai/settings#key-management',                 models:['qwen/qwen2.5-coder-32b-instruct','meta-llama/llama-3.3-70b-instruct','deepseek/deepseek-v3'],                                 mf:'novita_model',      dm:'qwen/qwen2.5-coder-32b-instruct',   desc:'Free credits on signup. Runs Qwen Coder, DeepSeek V3, Llama 3.3 at affordable prices.',           free_tier:'Free credits on signup' },
@@ -3863,10 +3863,10 @@ const ALL_AI_PROVIDERS = [
 ];
 
 const AI_CLR = {
-  border: {blue:'border-blue-500/50',orange:'border-orange-500/50',cyan:'border-cyan-500/50',violet:'border-violet-500/50',emerald:'border-emerald-500/50',amber:'border-amber-500/50',pink:'border-pink-500/50',rose:'border-rose-500/50',teal:'border-teal-500/50',red:'border-red-500/50',gray:'border-gray-500/50'},
-  bg:     {blue:'bg-blue-500/8',orange:'bg-orange-500/8',cyan:'bg-cyan-500/8',violet:'bg-violet-500/8',emerald:'bg-emerald-500/8',amber:'bg-amber-500/8',pink:'bg-pink-500/8',rose:'bg-rose-500/8',teal:'bg-teal-500/8',red:'bg-red-500/8',gray:'bg-gray-500/8'},
-  text:   {blue:'text-blue-400',orange:'text-orange-400',cyan:'text-cyan-400',violet:'text-violet-400',emerald:'text-emerald-400',amber:'text-amber-400',pink:'text-pink-400',rose:'text-rose-400',teal:'text-teal-400',red:'text-red-400',gray:'text-gray-400'},
-  badge:  {blue:'bg-blue-500/15 text-blue-300',orange:'bg-orange-500/15 text-orange-300',cyan:'bg-cyan-500/15 text-cyan-300',violet:'bg-violet-500/15 text-violet-300',emerald:'bg-emerald-500/15 text-emerald-300',amber:'bg-amber-500/15 text-amber-300',pink:'bg-pink-500/15 text-pink-300',rose:'bg-rose-500/15 text-rose-300',teal:'bg-teal-500/15 text-teal-300',red:'bg-red-500/15 text-red-300',gray:'bg-gray-500/15 text-gray-300'},
+  border: {blue:'border-blue-500/50',blue:'border-blue-500/50',cyan:'border-cyan-500/50',violet:'border-violet-500/50',emerald:'border-emerald-500/50',amber:'border-amber-500/50',pink:'border-pink-500/50',rose:'border-rose-500/50',teal:'border-teal-500/50',red:'border-red-500/50',gray:'border-gray-500/50'},
+  bg:     {blue:'bg-blue-500/8',blue:'bg-blue-500/8',cyan:'bg-cyan-500/8',violet:'bg-violet-500/8',emerald:'bg-emerald-500/8',amber:'bg-amber-500/8',pink:'bg-pink-500/8',rose:'bg-rose-500/8',teal:'bg-teal-500/8',red:'bg-red-500/8',gray:'bg-gray-500/8'},
+  text:   {blue:'text-blue-400',blue:'text-blue-400',cyan:'text-cyan-400',violet:'text-violet-400',emerald:'text-emerald-400',amber:'text-amber-400',pink:'text-pink-400',rose:'text-rose-400',teal:'text-teal-400',red:'text-red-400',gray:'text-gray-400'},
+  badge:  {blue:'bg-blue-500/15 text-blue-300',blue:'bg-blue-500/15 text-blue-300',cyan:'bg-cyan-500/15 text-cyan-300',violet:'bg-violet-500/15 text-violet-300',emerald:'bg-emerald-500/15 text-emerald-300',amber:'bg-amber-500/15 text-amber-300',pink:'bg-pink-500/15 text-pink-300',rose:'bg-rose-500/15 text-rose-300',teal:'bg-teal-500/15 text-teal-300',red:'bg-red-500/15 text-red-300',gray:'bg-gray-500/15 text-gray-300'},
 };
 
 async function renderAiSettings() {
@@ -6408,7 +6408,7 @@ async function renderBrandManager() {
               </div>
               <div>
                 <p id="preview-name" class="text-sm font-black text-white leading-none">${esc(fallbackBrandName)}</p>
-                <p id="preview-slogan" class="text-[10px] text-orange-400 font-semibold mt-0.5">${esc(fallbackBrandSlogan)}</p>
+                <p id="preview-slogan" class="text-[10px] text-blue-400 font-semibold mt-0.5">${esc(fallbackBrandSlogan)}</p>
               </div>
               <div id="preview-badge-wrap" class="ml-auto ${d.brand_badge ? '' : 'hidden'}">
                 <img id="preview-badge" src="${esc(d.brand_badge||'')}" alt="Verified" class="w-6 h-6 object-contain">

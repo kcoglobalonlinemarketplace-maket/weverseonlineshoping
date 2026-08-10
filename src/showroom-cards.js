@@ -383,7 +383,7 @@ export function renderCard(listing) {
   // Rating display: real reviews take priority, estimate shown without label
   let ratingStars = '';
   if (displayRating > 0) {
-    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-orange-500 text-orange-500"></i><span class="text-gray-200 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
+    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-200 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
   }
 
   // Product badges (New Arrival, Best Seller, etc.)
@@ -395,7 +395,7 @@ export function renderCard(listing) {
       'Best Seller': 'bg-amber-500 text-black',
       'Hot Deal': 'bg-red-500 text-white',
       'Featured': 'bg-blue-500 text-white',
-      'Limited Stock': 'bg-orange-500 text-black',
+      'Limited Stock': 'bg-amber-500 text-black',
     };
     const badgeTags = badges.slice(0, 2).map((b) => {
       const color = badgeColors[b] || 'bg-gray-700 text-white';
@@ -406,7 +406,7 @@ export function renderCard(listing) {
 
   // Availability status
   const availability = listing.availability_status || 'In Stock';
-  const availColor = availability === 'In Stock' ? 'text-emerald-400' : availability === 'Pre-order' ? 'text-blue-400' : 'text-orange-400';
+  const availColor = availability === 'In Stock' ? 'text-emerald-400' : availability === 'Pre-order' ? 'text-blue-400' : 'text-amber-400';
 
   // Map preview strip for property cards (rendered from listing coordinates).
   let mapPreviewHtml = '';
@@ -420,7 +420,7 @@ export function renderCard(listing) {
   }
 
   const card = document.createElement('div');
-  card.className = 'showroom-card group relative bg-[#0f172a]/80 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 flex flex-col cursor-pointer';
+  card.className = 'showroom-card group relative bg-[#0f172a]/80 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 flex flex-col cursor-pointer';
   card.dataset.id = listingId;
 
   const wishSaved = isSaved(listing);
@@ -430,7 +430,7 @@ export function renderCard(listing) {
       <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-      <span class="absolute top-2 left-2 bg-orange-500 text-black text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>
+      <span class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>
       ${badgesHtml}
     </div>
     <div class="p-4 flex flex-col flex-1">
@@ -438,7 +438,7 @@ export function renderCard(listing) {
       ${locationHtml}
       ${specsHtml}
       <div class="flex items-center justify-between mt-auto pt-2">
-        <span class="text-lg font-black text-orange-500">${price}</span>
+        <span class="text-lg font-black text-blue-400">${price}</span>
         ${ratingStars}
       </div>
       <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-800/60">
@@ -454,10 +454,10 @@ export function renderCard(listing) {
       </div>
       ${mapPreviewHtml}
       <div class="flex gap-2 mt-2.5">
-        <button class="buy-btn flex-1 min-w-0 bg-orange-500 hover:bg-orange-600 active:scale-95 text-black text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
+        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
           <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
         </button>
-        <button class="details-btn flex-1 min-w-0 bg-blue-600/15 hover:bg-blue-600/30 active:scale-95 text-blue-200 hover:text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-blue-500/25 hover:border-blue-400/50">
+        <button class="details-btn flex-1 min-w-0 bg-white/5 hover:bg-white/10 active:scale-95 text-gray-300 hover:text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-700 hover:border-gray-500">
           <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
         </button>
       </div>
@@ -500,7 +500,7 @@ function showToast(msg) {
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'card-toast';
-    toast.className = 'fixed bottom-5 right-5 z-[200] bg-gray-900 border border-orange-500/30 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium transition-all duration-300 pointer-events-none';
+    toast.className = 'fixed bottom-5 right-5 z-[200] bg-gray-900 border border-blue-500/30 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium transition-all duration-300 pointer-events-none';
     toast.style.transform = 'translateY(20px)';
     toast.style.opacity = '0';
     document.body.appendChild(toast);
@@ -542,8 +542,8 @@ function renderRow(rowDef) {
   row.innerHTML = `
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2.5 min-w-0">
-        <span class="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-orange-400"></i>
+        <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-400"></i>
         </span>
         <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
       </div>
@@ -594,11 +594,10 @@ function renderSection(section, accentColor) {
   const sec = document.createElement('div');
   sec.className = 'showroom-section space-y-3';
 
-  const isBlue = accentColor === 'blue';
-  const accentText = isBlue ? 'text-blue-300' : 'text-emerald-300';
-  const accentBorder = isBlue ? 'border-blue-500/30' : 'border-emerald-500/30';
-  const accentBg = isBlue ? 'bg-blue-500/10' : 'bg-emerald-500/10';
-  const glow = isBlue ? '0 0 22px rgba(59,130,246,0.25)' : '0 0 22px rgba(16,185,129,0.25)';
+  const accentText = 'text-blue-300';
+  const accentBorder = 'border-blue-500/30';
+  const accentBg = 'bg-blue-500/10';
+  const glow = '0 0 22px rgba(59,130,246,0.25)';
   const itemCount = countSectionItems(section);
 
   const header = document.createElement('div');
@@ -610,13 +609,13 @@ function renderSection(section, accentColor) {
       </div>
       <div class="flex-1 min-w-0">
         <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
-          <span class="bg-gradient-to-r ${isBlue ? 'from-blue-200 via-white to-blue-300' : 'from-emerald-200 via-white to-emerald-300'} bg-clip-text text-transparent">${section.label}</span>
+          <span class="bg-gradient-to-r from-blue-200 via-white to-blue-300 bg-clip-text text-transparent">${section.label}</span>
         </h3>
         <p class="text-gray-400 text-xs sm:text-[13px] leading-tight mt-1 truncate">${section.subtitle}</p>
       </div>
       <span class="hidden sm:inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border ${accentBorder} ${accentBg} ${accentText}">${itemCount} Items</span>
     </div>
-    <div class="mt-3 h-px bg-gradient-to-r ${isBlue ? 'from-blue-500/40 via-gray-700/40 to-transparent' : 'from-emerald-500/40 via-gray-700/40 to-transparent'}"></div>
+    <div class="mt-3 h-px bg-gradient-to-r from-blue-500/40 via-gray-700/40 to-transparent"></div>
   `;
   sec.appendChild(header);
 

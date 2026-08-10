@@ -144,7 +144,7 @@ const SUPPORT_AVATAR_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill
 const SEND_ICON_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a1 1 0 0 0-1.39 1.21L4 12l-1.99 7.19a1 1 0 0 0 1.39 1.21z" fill="white"/></svg>`;
 
 // ── Central verified badge (identical design/color to homepage) ─
-const VERIFIED_BADGE_SVG = `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 inline-block align-middle" aria-label="Verified" role="img"><circle cx="12" cy="12" r="11" fill="#1877F2"/><path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/></svg>`;
+const VERIFIED_BADGE_SVG = `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 inline-block align-middle" aria-label="Verified" role="img"><circle cx="12" cy="12" r="11" fill="#3b82f6"/><path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/></svg>`;
 
 function buildWidget() {
   injectStyles();

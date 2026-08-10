@@ -151,22 +151,21 @@ const LANGUAGES = [
 
 // ---- DATA: Categories ----
 const CATEGORIES = [
-  {name:"All",icon:"layout-grid",color:"orange"},
+  {name:"All",icon:"layout-grid",color:"blue"},
   {name:"Women",icon:"shopping-bag",color:"pink"},{name:"Men",icon:"shirt",color:"blue"},{name:"Kids",icon:"baby",color:"amber"},
   {name:"Home",icon:"home",color:"emerald"},{name:"Sports",icon:"dumbbell",color:"lime"},{name:"Jewellery",icon:"gem",color:"cyan"},
-  {name:"Electronics",icon:"circuit-board",color:"sky"},{name:"Cars",icon:"car",color:"red"},{name:"Motorcycles",icon:"motorcycle",color:"orange"},
+  {name:"Electronics",icon:"circuit-board",color:"sky"},{name:"Cars",icon:"car",color:"red"},{name:"Motorcycles",icon:"motorcycle",color:"blue"},
   {name:"Phones",icon:"smartphone",color:"violet"},{name:"Computers",icon:"laptop",color:"indigo"},{name:"Furniture",icon:"armchair",color:"teal"},
   {name:"Beauty",icon:"sparkles",color:"rose"},{name:"Fashion",icon:"scissors",color:"fuchsia"},{name:"Real Estate",icon:"building-2",color:"slate"},
   {name:"Bicycles",icon:"bike",color:"green"},{name:"Trucks",icon:"truck",color:"yellow"},{name:"Land",icon:"map-pin",color:"lime"},
-  {name:"Kitchen",icon:"cooking-pot",color:"orange"},{name:"Food",icon:"shopping-basket",color:"emerald"},{name:"Pets",icon:"paw-print",color:"brown"},
+  {name:"Kitchen",icon:"cooking-pot",color:"blue"},{name:"Food",icon:"shopping-basket",color:"emerald"},{name:"Pets",icon:"paw-print",color:"brown"},
   {name:"Books",icon:"book-open",color:"blue"},{name:"Toys",icon:"gamepad-2",color:"purple"},{name:"Services",icon:"wrench",color:"gray"},
 ];
 
 // Tailwind color class maps for category accents (text + bg + border + glow)
 const CAT_COLORS = {
-  orange:{text:"text-orange-400",bg:"from-orange-500/20",to:"to-orange-500/5",border:"border-orange-500/50",glow:"0 0 18px rgba(249,115,22,0.2)",hoverBorder:"hover:border-orange-500/40"},
-  pink:{text:"text-pink-400",bg:"from-pink-500/20",to:"to-pink-500/5",border:"border-pink-500/50",glow:"0 0 18px rgba(236,72,153,0.2)",hoverBorder:"hover:border-pink-500/40"},
   blue:{text:"text-blue-400",bg:"from-blue-500/20",to:"to-blue-500/5",border:"border-blue-500/50",glow:"0 0 18px rgba(59,130,246,0.2)",hoverBorder:"hover:border-blue-500/40"},
+  pink:{text:"text-pink-400",bg:"from-pink-500/20",to:"to-pink-500/5",border:"border-pink-500/50",glow:"0 0 18px rgba(236,72,153,0.2)",hoverBorder:"hover:border-pink-500/40"},
   amber:{text:"text-amber-400",bg:"from-amber-500/20",to:"to-amber-500/5",border:"border-amber-500/50",glow:"0 0 18px rgba(245,158,11,0.2)",hoverBorder:"hover:border-amber-500/40"},
   emerald:{text:"text-emerald-400",bg:"from-emerald-500/20",to:"to-emerald-500/5",border:"border-emerald-500/50",glow:"0 0 18px rgba(16,185,129,0.2)",hoverBorder:"hover:border-emerald-500/40"},
   lime:{text:"text-lime-400",bg:"from-lime-500/20",to:"to-lime-500/5",border:"border-lime-500/50",glow:"0 0 18px rgba(132,204,22,0.2)",hoverBorder:"hover:border-lime-500/40"},
@@ -482,7 +481,7 @@ function mountAiAdOverlay() {
     '<div class="absolute inset-x-0 bottom-0 z-10 p-6 sm:p-10 text-center">' +
       '<span class="inline-block bg-violet-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2">' + badge + '</span>' +
       '<h2 class="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-3 drop-shadow-2xl">' + title + '</h2>' +
-      '<button class="bg-orange-500 text-white font-bold px-6 py-2.5 rounded-lg text-xs tracking-wider uppercase shadow-lg shadow-orange-500/30">' + ctaLabel + '</button>' +
+      '<button class="bg-blue-500 text-white font-bold px-6 py-2.5 rounded-lg text-xs tracking-wider uppercase shadow-lg shadow-blue-500/30">' + ctaLabel + '</button>' +
     '</div>';
 
   const video = document.getElementById('ai-ad-override-video');
@@ -562,7 +561,7 @@ function renderCategories(){
     const a=document.createElement("a");a.href="#";a.dataset.category=cat.name;a.dataset.color=cat.color;
     a.onclick=(e)=>{e.preventDefault();filterByCategory(cat.name,a)};
     const active=idx===0;
-    const col=CAT_COLORS[cat.color]||CAT_COLORS.orange;
+    const col=CAT_COLORS[cat.color]||CAT_COLORS.blue;
     const iconWrapClass=active
       ?"cat-icon-wrap p-3.5 rounded-2xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" shadow-["+col.glow+"] ring-1 ring-white/10"
       :"cat-icon-wrap p-3.5 rounded-2xl border bg-gradient-to-br from-gray-800/70 to-gray-900/90 border-gray-800/90 group-hover:border-gray-600 group-hover:bg-gray-800 group-hover:shadow-[0_4px_16px_rgba(0,0,0,0.35)]";
@@ -578,12 +577,12 @@ function filterByCategory(name,el){
   _activeCategory=name;
   document.querySelectorAll("#category-list a").forEach(a=>{
     a.classList.remove("active");a.classList.add("text-gray-400");
-    a.classList.remove("text-orange-400","text-pink-400","text-blue-400","text-amber-400","text-emerald-400","text-lime-400","text-cyan-400","text-sky-400","text-red-400","text-violet-400","text-indigo-400","text-teal-400","text-rose-400","text-fuchsia-400","text-slate-300","text-green-400","text-yellow-400","text-amber-600","text-purple-400","text-gray-400");
+    a.classList.remove("text-blue-400","text-pink-400","text-blue-400","text-amber-400","text-emerald-400","text-lime-400","text-cyan-400","text-sky-400","text-red-400","text-violet-400","text-indigo-400","text-teal-400","text-rose-400","text-fuchsia-400","text-slate-300","text-green-400","text-yellow-400","text-amber-600","text-purple-400","text-gray-400");
     const b=a.querySelector("div");
     b.className="cat-icon-wrap p-3.5 rounded-2xl border bg-gradient-to-br from-gray-800/70 to-gray-900/90 border-gray-800/90 transition-all duration-300";
     b.style.boxShadow="";
   });
-  const col=CAT_COLORS[el.dataset.color]||CAT_COLORS.orange;
+  const col=CAT_COLORS[el.dataset.color]||CAT_COLORS.blue;
   el.classList.remove("text-gray-400");el.classList.add("active",col.text);
   const b=el.querySelector("div");
   b.className="cat-icon-wrap p-3.5 rounded-2xl border bg-gradient-to-br "+col.bg+" "+col.to+" "+col.border+" transition-all duration-300 ring-1 ring-white/10";
@@ -631,8 +630,8 @@ function renderSuggestionDropdown(dd,results){
     const t=escapeHtmlAttr(r.title||"");
     const c=r.category?escapeHtmlAttr(r.category):"";
     const thumb=r.thumbnail?'<img src="'+escapeHtmlAttr(r.thumbnail)+'" class="w-8 h-8 rounded object-cover shrink-0" onerror="this.style.display=\'none\'">':'<div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-4 h-4 text-gray-600"></i></div>';
-    const price=r.price!=null?'<span class="text-xs font-bold text-orange-400 ml-auto">'+(r.currency||"USD")+" "+Number(r.price).toLocaleString()+"</span>":"";
-    return '<button onclick="selectSuggestion(\''+t.replace(/'/g,"\\'")+'\')" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-orange-500 transition flex items-center gap-2.5 border-b border-gray-800/50 last:border-0">'+thumb+'<div class="flex-1 min-w-0"><p class="truncate font-medium">'+t+"</p>"+(c?'<p class="text-[10px] text-gray-500 truncate">'+c+"</p>":"")+"</div>"+price+"</button>";
+    const price=r.price!=null?'<span class="text-xs font-bold text-blue-400 ml-auto">'+(r.currency||"USD")+" "+Number(r.price).toLocaleString()+"</span>":"";
+    return '<button onclick="selectSuggestion(\''+t.replace(/'/g,"\\'")+'\')" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-blue-500 transition flex items-center gap-2.5 border-b border-gray-800/50 last:border-0">'+thumb+'<div class="flex-1 min-w-0"><p class="truncate font-medium">'+t+"</p>"+(c?'<p class="text-[10px] text-gray-500 truncate">'+c+"</p>":"")+"</div>"+price+"</button>";
   }).join("");
   lucide.createIcons();dd.classList.remove("hidden");
 }
@@ -688,7 +687,7 @@ function showSearchResultsLoading(q){
     skeletonHtml+=`<div class="bg-[#0f172a] border border-gray-800 rounded-xl overflow-hidden"><div class="aspect-square bg-gray-900 animate-pulse"></div><div class="p-2.5 space-y-2"><div class="h-3 bg-gray-800 rounded animate-pulse"></div><div class="h-2 bg-gray-800 rounded w-2/3 animate-pulse"></div><div class="h-3 bg-gray-800 rounded w-1/3 animate-pulse"></div></div></div>`;
   }
   skeletonHtml+='</div>';
-  panel.innerHTML=`<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6"><div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-orange-400"></i><h3 class="text-lg font-bold text-white">Searching for "${escapeHtmlAttr(q)}"</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>🔙 Back</span></button></div>${skeletonHtml}</div>`;
+  panel.innerHTML=`<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6"><div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-blue-400"></i><h3 class="text-lg font-bold text-white">Searching for "${escapeHtmlAttr(q)}"</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>🔙 Back</span></button></div>${skeletonHtml}</div>`;
   panel.style.display="block";
   document.body.style.overflow="hidden";
   if(window.lucide)lucide.createIcons();
@@ -706,7 +705,7 @@ function renderSearchResults(query,results,meta){
   const safeQuery=escapeHtmlAttr(query);
   const isPartial=meta&&meta.supplierCount===0&&meta.marketplaceCount>0&&!meta._final;
   let html=`<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6">`;
-  html+=`<div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-orange-400"></i><h3 class="text-lg font-bold text-white">`;
+  html+=`<div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-blue-400"></i><h3 class="text-lg font-bold text-white">`;
   if(hasResults){html+=`${results.length} result${results.length>1?"s":""} for "${safeQuery}"`}
   else{html+=`No results for "${safeQuery}"`}
   if(isPartial){html+=` <span class="text-xs text-gray-500 font-normal flex items-center gap-1"><i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> checking suppliers...</span>`}
@@ -717,24 +716,24 @@ function renderSearchResults(query,results,meta){
       const img=r.thumbnail||(Array.isArray(r.images)&&r.images.length>0?r.images[0]:"");
       const price=r.price!=null?(r.currency||"USD")+" "+Number(r.price).toLocaleString():"";
       const isSpecial=r.is_special_order||r.entity_type==="special_order";
-      const typeBadge=isSpecial?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-orange-500/80 text-white border border-orange-400 z-10">Special Order</span>`:(r.entity_type?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-black/70 text-orange-400 border border-orange-500/30 z-10">${escapeHtmlAttr(r.entity_type)}</span>`:"");
+      const typeBadge=isSpecial?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-blue-500/80 text-white border border-blue-400 z-10">Special Order</span>`:(r.entity_type?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-black/70 text-blue-400 border border-blue-500/30 z-10">${escapeHtmlAttr(r.entity_type)}</span>`:"");
       const imgHtml=img?`<img src="${escapeHtmlAttr(img)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'">`:`<div class="w-full h-full flex items-center justify-center"><i data-lucide="package" class="w-10 h-10 text-gray-700"></i></div>`;
       const deliveryInfo=isSpecial&&r.estimated_delivery_days?`<p class="text-[10px] text-gray-500 flex items-center gap-1"><i data-lucide="truck" class="w-3 h-3"></i>${r.estimated_delivery_days} days delivery</p>`:"";
       const brandText=r.brand?`<p class="text-[10px] text-gray-500 truncate">${escapeHtmlAttr(r.brand)}</p>`:"";
       const clickAction=isSpecial?`openSpecialOrderFromSearch('${escapeHtmlAttr(r.title||"").replace(/'/g,"\\'")}','${escapeHtmlAttr(r.brand||"").replace(/'/g,"\\'")}','${escapeHtmlAttr(r.category||"").replace(/'/g,"\\'")}',${r.price||0},'${escapeHtmlAttr(r.currency||"USD").replace(/'/g,"\\'")}')`:`openProductFromSearch('${escapeHtmlAttr(r.property_id||"").replace(/'/g,"\\'")}')`;
-      html+=`<div class="group relative bg-[#0f172a] border border-gray-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300 cursor-pointer" onclick="${clickAction}">${typeBadge}<div class="aspect-square bg-gray-900 overflow-hidden">${imgHtml}</div><div class="p-2.5"><p class="text-xs font-bold text-white truncate mb-1">${escapeHtmlAttr(r.title||"Untitled")}</p>${brandText}${r.category?`<p class="text-[10px] text-gray-500 truncate mb-1">${escapeHtmlAttr(r.category)}</p>`:""}${price?`<p class="text-xs font-bold text-orange-400">${price}</p>`:""}${deliveryInfo}</div></div>`;
+      html+=`<div class="group relative bg-[#0f172a] border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer" onclick="${clickAction}">${typeBadge}<div class="aspect-square bg-gray-900 overflow-hidden">${imgHtml}</div><div class="p-2.5"><p class="text-xs font-bold text-white truncate mb-1">${escapeHtmlAttr(r.title||"Untitled")}</p>${brandText}${r.category?`<p class="text-[10px] text-gray-500 truncate mb-1">${escapeHtmlAttr(r.category)}</p>`:""}${price?`<p class="text-xs font-bold text-blue-400">${price}</p>`:""}${deliveryInfo}</div></div>`;
     });
     html+=`</div>`;
   } else {
     const popularHtml=(window.SEARCH_SUGGESTIONS||SEARCH_SUGGESTIONS||[]).slice(0,6).map(function(s){
       return `<button onclick="document.getElementById('search-input').value='${s.replace(/'/g,"\\'")}';executeSearch()" class="text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700 transition">${s}</button>`;
     }).join("");
-    html+=`<div class="max-w-2xl mx-auto"><div class="glass border border-orange-500/20 rounded-2xl p-6 sm:p-8 text-center">`;
-    html+=`<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/10 border border-orange-500/30 mb-4"><i data-lucide="package-search" class="w-8 h-8 text-orange-400"></i></div>`;
+    html+=`<div class="max-w-2xl mx-auto"><div class="glass border border-blue-500/20 rounded-2xl p-6 sm:p-8 text-center">`;
+    html+=`<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 mb-4"><i data-lucide="package-search" class="w-8 h-8 text-blue-400"></i></div>`;
     html+=`<h4 class="text-lg font-bold text-white mb-2">We couldn't find this item in our current marketplace</h4>`;
-    html+=`<p class="text-sm text-gray-400 mb-5 leading-relaxed">But you can place a <span class="text-orange-400 font-bold">Special Order</span> and we will source it for you. Our team will review your request, find the best supplier, and get back to you with a quote.</p>`;
+    html+=`<p class="text-sm text-gray-400 mb-5 leading-relaxed">But you can place a <span class="text-blue-400 font-bold">Special Order</span> and we will source it for you. Our team will review your request, find the best supplier, and get back to you with a quote.</p>`;
     html+=`<div class="flex flex-col sm:flex-row gap-3 justify-center">`;
-    html+=`<button onclick="openSpecialOrderModal('${safeQuery.replace(/'/g,"\\'")}')" class="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2"><i data-lucide="package-plus" class="w-4 h-4"></i> Request Product</button>`;
+    html+=`<button onclick="openSpecialOrderModal('${safeQuery.replace(/'/g,"\\'")}')" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"><i data-lucide="package-plus" class="w-4 h-4"></i> Request Product</button>`;
     html+=`<button onclick="closeSearchResults()" class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-xl text-sm uppercase tracking-wide transition">Browse Marketplace</button>`;
     html+=`</div>`;
     html+=`<div class="mt-6 pt-6 border-t border-gray-800"><p class="text-xs text-gray-500 mb-3">Popular searches you might like:</p><div class="flex flex-wrap gap-2 justify-center">${popularHtml}</div></div>`;
@@ -776,8 +775,8 @@ function toggleVoiceSearch(){
     const result=window._toggleVoiceSearch(
       (transcript)=>{document.getElementById("search-input").value=transcript},
       (listening)=>{
-        if(listening){btn.classList.add("voice-listening","text-orange-500");icon.setAttribute("data-lucide","mic-off");lucide.createIcons();showToast("Listening...")}
-        else{btn.classList.remove("voice-listening","text-orange-500");icon.setAttribute("data-lucide","mic");lucide.createIcons();const q=document.getElementById("search-input").value.trim();if(q)executeSearch()}
+        if(listening){btn.classList.add("voice-listening","text-blue-500");icon.setAttribute("data-lucide","mic-off");lucide.createIcons();showToast("Listening...")}
+        else{btn.classList.remove("voice-listening","text-blue-500");icon.setAttribute("data-lucide","mic");lucide.createIcons();const q=document.getElementById("search-input").value.trim();if(q)executeSearch()}
       }
     );
     if(!result.supported){showToast("Voice search not supported")}
@@ -789,10 +788,10 @@ function toggleVoiceSearch(){
   if(isListening){voiceRecognition.stop();return}
   voiceRecognition=new SR();voiceRecognition.continuous=false;voiceRecognition.interimResults=true;
   voiceRecognition.lang="en-US";
-  voiceRecognition.onstart=()=>{isListening=true;btn.classList.add("voice-listening","text-orange-500");icon.setAttribute("data-lucide","mic-off");lucide.createIcons();showToast("Listening...")};
+  voiceRecognition.onstart=()=>{isListening=true;btn.classList.add("voice-listening","text-blue-500");icon.setAttribute("data-lucide","mic-off");lucide.createIcons();showToast("Listening...")};
   voiceRecognition.onresult=(e)=>{let t="";for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;document.getElementById("search-input").value=t};
   voiceRecognition.onerror=()=>showToast("Voice error. Try again.");
-  voiceRecognition.onend=()=>{isListening=false;btn.classList.remove("voice-listening","text-orange-500");icon.setAttribute("data-lucide","mic");lucide.createIcons();const q=document.getElementById("search-input").value.trim();if(q)executeSearch()};
+  voiceRecognition.onend=()=>{isListening=false;btn.classList.remove("voice-listening","text-blue-500");icon.setAttribute("data-lucide","mic");lucide.createIcons();const q=document.getElementById("search-input").value.trim();if(q)executeSearch()};
   voiceRecognition.start();
 }
 
@@ -804,7 +803,7 @@ function handleCameraSearch(e){
     showToast("Photo received! Matching catalog...");
     document.getElementById("search-input").value="Photo: "+f.name.replace(/\.[^.]+$/,"");
     const dd=document.getElementById("search-suggestions");
-    dd.innerHTML='<div class="p-4"><div class="flex items-center gap-3 mb-2"><img src="'+ev.target.result+'" class="w-16 h-16 rounded-lg object-cover border border-gray-700"><div><p class="text-sm text-gray-200 font-semibold">Image uploaded</p><p class="text-xs text-gray-500">Scanning visual catalog...</p></div></div><div class="flex gap-2 flex-wrap mt-2">'+SEARCH_SUGGESTIONS.slice(0,4).map(s=>'<span class="text-[10px] bg-orange-500/10 text-orange-400 px-2 py-1 rounded-full border border-orange-500/20">'+s+"</span>").join("")+"</div></div>";
+    dd.innerHTML='<div class="p-4"><div class="flex items-center gap-3 mb-2"><img src="'+ev.target.result+'" class="w-16 h-16 rounded-lg object-cover border border-gray-700"><div><p class="text-sm text-gray-200 font-semibold">Image uploaded</p><p class="text-xs text-gray-500">Scanning visual catalog...</p></div></div><div class="flex gap-2 flex-wrap mt-2">'+SEARCH_SUGGESTIONS.slice(0,4).map(s=>'<span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full border border-blue-500/20">'+s+"</span>").join("")+"</div></div>";
     dd.classList.remove("hidden");lucide.createIcons();setTimeout(()=>dd.classList.add("hidden"),4000);
   };r.readAsDataURL(f);e.target.value="";
 }
@@ -822,7 +821,7 @@ function slideLink(slide){
 function slideCtaHtml(slide,idx){
   const link=slideLink(slide);
   if(!link)return '';
-  return '<button id="slide-cta-'+idx+'" onclick="openSlideLink('+idx+')" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 min-h-[44px] rounded-lg text-xs tracking-wider uppercase transition-all duration-300 shadow-lg shadow-orange-500/30 hover:scale-105 fade-in-up delay-3"></button>';
+  return '<button id="slide-cta-'+idx+'" onclick="openSlideLink('+idx+')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 py-2.5 min-h-[44px] rounded-lg text-xs tracking-wider uppercase transition-all duration-300 shadow-lg shadow-blue-500/30 hover:scale-105 fade-in-up delay-3"></button>';
 }
 
 function slideCtaLabel(slide,copy){
@@ -879,7 +878,7 @@ function renderCarousel(){
     }
     el.innerHTML=mediaHtml+
       '<div class="absolute inset-0 z-10 flex flex-col justify-end items-center text-center p-6 sm:p-10 pb-16">'+
-      '<span class="inline-block bg-orange-500 text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2 fade-in-up delay-1">'+escHtml(cleanAdLabel(slide.badge)||'Featured')+'</span>'+
+      '<span class="inline-block bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2 fade-in-up delay-1">'+escHtml(cleanAdLabel(slide.badge)||'Featured')+'</span>'+
       '<h2 id="slide-title-'+idx+'" class="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-2 drop-shadow-2xl fade-in-up delay-2"></h2>'+
       '<p id="slide-desc-'+idx+'" class="max-w-xl text-white/85 text-xs sm:text-sm mb-4 leading-relaxed fade-in-up delay-2"></p>'+
       slideCtaHtml(slide,idx)+
@@ -1274,10 +1273,10 @@ function showRegionNotification(msg){
   if(!n){
     n=document.createElement("div");
     n.id="region-detect-notification";
-    n.className="fixed top-[201px] sm:top-[185px] left-1/2 -translate-x-1/2 z-[55] max-w-[92vw] sm:max-w-md bg-[#1e293b] border border-orange-500/40 rounded-xl shadow-2xl px-4 py-3 flex items-start gap-3 transition-all duration-500";
-    n.innerHTML='<i data-lucide="globe" class="w-5 h-5 text-orange-400 shrink-0 mt-0.5"></i>'+
+    n.className="fixed top-[201px] sm:top-[185px] left-1/2 -translate-x-1/2 z-[55] max-w-[92vw] sm:max-w-md bg-[#1e293b] border border-blue-500/40 rounded-xl shadow-2xl px-4 py-3 flex items-start gap-3 transition-all duration-500";
+    n.innerHTML='<i data-lucide="globe" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>'+
       '<div class="flex-1 min-w-0"><p class="text-xs text-gray-200 leading-snug" id="region-detect-text"></p>'+
-      '<button onclick="document.getElementById(\'region-detect-notification\').classList.add(\'opacity-0\',\'translate-y-[-10px]\');setTimeout(()=>document.getElementById(\'region-detect-notification\').remove(),500)" class="text-[10px] text-orange-400 hover:text-orange-300 font-semibold mt-1.5">Dismiss</button></div>'+
+      '<button onclick="document.getElementById(\'region-detect-notification\').classList.add(\'opacity-0\',\'translate-y-[-10px]\');setTimeout(()=>document.getElementById(\'region-detect-notification\').remove(),500)" class="text-[10px] text-blue-400 hover:text-blue-300 font-semibold mt-1.5">Dismiss</button></div>'+
       '<button onclick="document.getElementById(\'region-detect-notification\').remove()" class="text-gray-500 hover:text-white shrink-0 text-[10px] font-bold uppercase tracking-wide" aria-label="Close">🔙 Back</button>';
     document.body.appendChild(n);
     if(window.lucide)lucide.createIcons();
@@ -1294,8 +1293,8 @@ function openAuthModal(){var cur=window.location.pathname+window.location.search
 function closeAuthModal(){document.getElementById("auth-modal").classList.add("hidden")}
 function switchAuthTab(tab){
   const lt=document.getElementById("tab-login"),rt=document.getElementById("tab-register"),uf=document.getElementById("field-username"),sb=document.getElementById("auth-submit-btn");
-  if(tab==="login"){lt.classList.add("text-orange-500","border-b-2","border-orange-500");lt.classList.remove("text-gray-400");rt.classList.remove("text-orange-500","border-b-2","border-orange-500");rt.classList.add("text-gray-400");uf.classList.add("hidden");sb.textContent="Sign In"}
-  else{rt.classList.add("text-orange-500","border-b-2","border-orange-500");rt.classList.remove("text-gray-400");lt.classList.remove("text-orange-500","border-b-2","border-orange-500");lt.classList.add("text-gray-400");uf.classList.remove("hidden");sb.textContent="Create Account"}
+  if(tab==="login"){lt.classList.add("text-blue-500","border-b-2","border-blue-500");lt.classList.remove("text-gray-400");rt.classList.remove("text-blue-500","border-b-2","border-blue-500");rt.classList.add("text-gray-400");uf.classList.add("hidden");sb.textContent="Sign In"}
+  else{rt.classList.add("text-blue-500","border-b-2","border-blue-500");rt.classList.remove("text-gray-400");lt.classList.remove("text-blue-500","border-b-2","border-blue-500");lt.classList.add("text-gray-400");uf.classList.remove("hidden");sb.textContent="Create Account"}
 }
 function handleAuthSubmit(e){e.preventDefault();closeAuthModal();showToast("Authentication processing...")}
 function showToast(msg){

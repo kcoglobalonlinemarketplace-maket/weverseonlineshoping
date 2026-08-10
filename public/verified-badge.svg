@@ -31,7 +31,7 @@
     C28 11 31 10 34 11
     C37 12 40 11 42 9
     C44 7 47 5 50 5Z"
-    fill="#1D9BF0"/>
+    fill="#3b82f6"/>
   <!-- White checkmark -->
   <path d="M30 50 L43 63 L70 36"
     stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>

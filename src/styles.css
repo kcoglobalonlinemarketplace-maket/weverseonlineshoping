@@ -24,7 +24,7 @@ textarea,
   touch-action: manipulation; /* removes the mobile double-tap zoom delay */
 }
 ::selection {
-  background: rgba(249, 115, 22, 0.35);
+  background: rgba(59, 130, 246, 0.45);
   color: #fff;
 }
 
@@ -57,7 +57,7 @@ a.text-\[10px\],
 
 /* Consistent focus ring for keyboard/touch navigation */
 :focus-visible {
-  outline: 2px solid rgba(249, 115, 22, 0.65);
+  outline: 2px solid rgba(59, 130, 246, 0.7);
   outline-offset: 2px;
 }
 
@@ -67,9 +67,28 @@ a.text-\[10px\],
   height: 6px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(249, 115, 22, 0.3);
+  background: rgba(59, 130, 246, 0.35);
   border-radius: 999px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Single-accent icon system — neutralizes the per-row rainbow in the
+   navigation drawer and ⋮ More panel so the brand reads clean & trusted.
+   (These override the per-row Tailwind color utilities.) */
+.menu-icon {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.22) !important;
+}
+.menu-icon i {
+  color: #93c5fd !important;
+}
+.more-icon {
+  color: #93c5fd !important;
+}
+.menu-row .absolute,
+.menu-icon .absolute {
+  background: #3b82f6 !important;
+  border-color: #0d1b2e !important;
 }

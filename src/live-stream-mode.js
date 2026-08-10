@@ -36,11 +36,11 @@ body.kco-live-mode .showroom-card h3 {
   margin-bottom: 6px !important;
 }
 /* Larger prices — most important for live viewers */
-body.kco-live-mode .showroom-card .text-orange-500,
-body.kco-live-mode .showroom-card [class*="text-orange"] {
+body.kco-live-mode .showroom-card .text-blue-400,
+body.kco-live-mode .showroom-card [class*="text-blue"] {
   font-size: 20px !important;
   font-weight: 900 !important;
-  text-shadow: 0 2px 8px rgba(249,115,22,0.3) !important;
+  text-shadow: 0 2px 8px rgba(59,130,246,0.3) !important;
 }
 /* Larger spec text */
 body.kco-live-mode .showroom-card .text-gray-500,

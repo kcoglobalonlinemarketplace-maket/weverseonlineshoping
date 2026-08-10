@@ -453,7 +453,7 @@ function renderStep3() {
         <!-- Flutterwave -->
         ${showFlutterwave ? `<div onclick="selectPaymentMethod('flutterwave')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'flutterwave' ? 'selected' : 'bg-blue-950/30 border-blue-500/10 hover:border-blue-500/30'}">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-orange-500/15 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="w-5 h-5 text-orange-400"></i></div>
+            <div class="w-10 h-10 bg-blue-500/15 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="w-5 h-5 text-blue-400"></i></div>
             <div class="flex-1">
               <h4 class="text-sm font-bold text-white">Flutterwave</h4>
               <p class="text-xs text-gray-500">Pay with card, bank transfer, USSD, or mobile money</p>
@@ -502,7 +502,7 @@ function renderStep3() {
     <!-- Place order button -->
     <div class="space-y-3">
       ${state.paymentMethod === 'flutterwave' ? `
-        <button onclick="payWithFlutterwave()" id="flw-pay-btn" class="btn-press w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-orange-600/30 flex items-center justify-center gap-2 relative overflow-hidden">
+        <button onclick="payWithFlutterwave()" id="flw-pay-btn" class="btn-press w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">
           <i data-lucide="zap" class="w-5 h-5"></i> Pay ${fmtMoney(getTotal(), state.selectedCurrency)} with Flutterwave
         </button>
       ` : `

@@ -20,7 +20,7 @@ function renderTruck(listing) {
 
   const imgs = safeImages(listing.images);
   const galleryThumbs = imgs.map((img, i) =>
-    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-orange-500' : 'border-gray-800'} shrink-0" data-img="${escapeHtml(img)}">
+    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-800'} shrink-0" data-img="${escapeHtml(img)}">
       <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
     </button>`
   ).join('');
@@ -59,7 +59,7 @@ function renderTruck(listing) {
   const ratingsBlock = `
     <div class="flex items-center gap-4 mb-6">
       <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-orange-500 text-orange-500"></i>
+        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>
         <span class="text-lg font-bold text-white">${safeRating(listing.rating)}</span>
         <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
       </div>
@@ -69,7 +69,7 @@ function renderTruck(listing) {
     <div class="fade-in">
       <!-- Breadcrumb -->
       <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
-        <a href="/" class="hover:text-orange-500 transition">Home</a>
+        <a href="/" class="hover:text-blue-500 transition">Home</a>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
         <span>Trucks</span>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
@@ -80,10 +80,10 @@ function renderTruck(listing) {
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
         <div>
           <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-orange-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-400 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
+          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-400 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
         </div>
         <div class="text-right shrink-0">
-          <div class="text-3xl font-black text-orange-500">${price}</div>
+          <div class="text-3xl font-black text-blue-500">${price}</div>
           <span class="inline-block bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
         </div>
       </div>
@@ -103,7 +103,7 @@ function renderTruck(listing) {
 
       <!-- Action Buttons -->
       <div class="flex gap-3 mb-8">
-        <button id="buy-now-btn" class="flex-1 bg-orange-500 hover:bg-orange-600 text-black font-bold py-3.5 rounded-xl uppercase text-sm tracking-wider transition flex items-center justify-center gap-2">
+        <button id="buy-now-btn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl uppercase text-sm tracking-wider transition flex items-center justify-center gap-2">
           <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
         </button>
         <button id="wishlist-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Add to Wishlist">
@@ -156,9 +156,9 @@ function renderTruck(listing) {
   const label = document.getElementById('gallery-label');
   root.querySelectorAll('.gallery-thumb').forEach((thumb, i) => {
     thumb.addEventListener('click', () => {
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-orange-500'));
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
       root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-800'));
-      thumb.classList.add('active', 'border-orange-500');
+      thumb.classList.add('active', 'border-blue-500');
       thumb.classList.remove('border-gray-800');
       hero.src = thumb.dataset.img;
       label.textContent = galleryLabels[i] || `View ${i + 1}`;
@@ -218,7 +218,7 @@ function actionGridHtml(listing) {
       <button type="button" id="add-cart-btn" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition text-sm">
         <i data-lucide="shopping-cart" class="w-5 h-5"></i> Add to Cart
       </button>
-      <button type="button" id="buy-now-btn" class="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-black font-bold py-3.5 rounded-xl transition text-sm uppercase tracking-wider">
+      <button type="button" id="buy-now-btn" class="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl transition text-sm uppercase tracking-wider">
         <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
       </button>
       <a href="${contactHref}" class="flex items-center justify-center gap-2 bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 text-blue-300 font-bold py-3.5 rounded-xl transition text-sm">
@@ -241,8 +241,8 @@ function sellerBlock(listing) {
   return `
     <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5">
       <div class="flex items-center gap-3 mb-4">
-        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-          <i data-lucide="store" class="w-5 h-5 text-orange-400"></i>
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/20 to-amber-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+          <i data-lucide="store" class="w-5 h-5 text-blue-400"></i>
         </div>
         <div>
           <p class="text-sm font-bold text-white">Weverse Online Shop</p>
@@ -252,7 +252,7 @@ function sellerBlock(listing) {
       <p class="text-xs text-gray-500">${isAgent ? 'Professional agent for this listing' : 'Trusted marketplace seller'} on Weverse Online Shop</p>
       <p class="text-xs text-gray-400 mt-2 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Secure checkout · Authentic listings</p>
       <div class="flex gap-2 mt-4">
-        <a href="${base}" class="flex-1 bg-orange-500 hover:bg-orange-600 text-black font-bold py-2.5 rounded-xl text-xs text-center transition">Contact Seller</a>
+        <a href="${base}" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs text-center transition">Contact Seller</a>
         <a href="${base}&subject=Enquiry" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold py-2.5 rounded-xl text-xs text-center transition">Send Message</a>
       </div>
     </div>`;
@@ -260,9 +260,9 @@ function sellerBlock(listing) {
 
 function relGridCard(item) {
   const img = (item.images && item.images[0]) || '/fallback.svg';
-  return `<a href="/details.html?id=${encodeURIComponent(item.property_id)}" class="block bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden hover:border-orange-500/30 transition group">
+  return `<a href="/details.html?id=${encodeURIComponent(item.property_id)}" class="block bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/30 transition group">
       <div class="aspect-square overflow-hidden bg-gray-800"><img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></div>
-      <div class="p-2"><p class="text-xs text-white font-bold truncate">${escapeHtml(item.title)}</p><p class="text-xs text-orange-500 font-bold mt-1">${formatPrice(item)}</p></div>
+      <div class="p-2"><p class="text-xs text-white font-bold truncate">${escapeHtml(item.title)}</p><p class="text-xs text-blue-500 font-bold mt-1">${formatPrice(item)}</p></div>
     </a>`;
 }
 
@@ -295,7 +295,7 @@ function render(listing) {
 
   const imgs2 = safeImages(listing.images);
   const galleryThumbs = imgs2.map((img, i) =>
-    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-orange-500' : 'border-gray-800'} shrink-0" data-img="${escapeHtml(img)}">
+    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-800'} shrink-0" data-img="${escapeHtml(img)}">
       <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
     </button>`
   ).join('');
@@ -314,7 +314,7 @@ function render(listing) {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           ${locItems.map(item => `
             <div class="flex items-center gap-2.5 text-sm">
-              <div class="p-2 bg-gray-800 rounded-lg"><i data-lucide="${item.icon}" class="w-4 h-4 text-orange-500"></i></div>
+              <div class="p-2 bg-gray-800 rounded-lg"><i data-lucide="${item.icon}" class="w-4 h-4 text-blue-500"></i></div>
               <div><div class="text-gray-500 text-xs">${item.label}</div><div class="text-gray-200 font-medium">${item.value}</div></div>
             </div>
           `).join('')}
@@ -414,14 +414,14 @@ function render(listing) {
     <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
       <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Highlights</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        ${listing.highlights.map(item => `<div class="flex items-start gap-2 text-sm text-gray-300"><i data-lucide="sparkles" class="w-4 h-4 text-orange-500 mt-0.5"></i><span>${escapeHtml(item)}</span></div>`).join('')}
+        ${listing.highlights.map(item => `<div class="flex items-start gap-2 text-sm text-gray-300"><i data-lucide="sparkles" class="w-4 h-4 text-blue-500 mt-0.5"></i><span>${escapeHtml(item)}</span></div>`).join('')}
       </div>
     </div>` : '';
 
   const ratingsBlock = `
     <div class="flex items-center gap-4 mb-6">
       <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-orange-500 text-orange-500"></i>
+        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>
         <span class="text-lg font-bold text-white">${safeRating(listing.rating)}</span>
         <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
       </div>
@@ -430,7 +430,7 @@ function render(listing) {
   root.innerHTML = `
     <div class="fade-in">
       <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
-        <a href="/" class="hover:text-orange-500 transition">Home</a>
+        <a href="/" class="hover:text-blue-500 transition">Home</a>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
         <span>${listing.category}</span>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
@@ -440,10 +440,10 @@ function render(listing) {
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
         <div>
           <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">${idLabel}: <span class="text-orange-500 font-mono font-bold">${escapeHtml(listing.property_id)}</span></p>
+          <p class="text-gray-500 text-sm mt-1">${idLabel}: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.property_id)}</span></p>
         </div>
         <div class="text-right shrink-0">
-          <div class="text-3xl font-black text-orange-500">${price}</div>
+          <div class="text-3xl font-black text-blue-500">${price}</div>
           <span class="inline-block bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full mt-1">${listing.listing_status === 'rent' ? 'For Rent' : 'For Sale'}</span>
         </div>
       </div>
@@ -475,16 +475,16 @@ function render(listing) {
         <div id="reviews-list"><p class="text-gray-500 text-sm">Loading reviews...</p></div>
         <div id="review-form-wrapper" class="mt-4 pt-4 border-t border-gray-800">
           <h4 class="text-sm font-bold text-white mb-3">Write a Review</h4>
-          <div id="review-login-msg" class="text-xs text-gray-500 hidden">Please <a href="/auth.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}" class="text-orange-500 hover:underline">sign in</a> to write a review.</div>
+          <div id="review-login-msg" class="text-xs text-gray-500 hidden">Please <a href="/auth.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}" class="text-blue-500 hover:underline">sign in</a> to write a review.</div>
           <form id="review-form" class="space-y-3">
             <div class="flex items-center gap-2">
               <label class="text-xs text-gray-400 font-bold uppercase">Rating</label>
               <div id="star-rating" class="flex gap-1">
-                ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-600 hover:text-orange-500 transition"></i></button>`).join('')}
+                ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-600 hover:text-blue-500 transition"></i></button>`).join('')}
               </div>
             </div>
-            <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500"></textarea>
-            <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-black font-bold py-2 px-5 rounded-xl text-sm transition">Submit Review</button>
+            <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-5 rounded-xl text-sm transition">Submit Review</button>
           </form>
         </div>
       </div>
@@ -499,9 +499,9 @@ function render(listing) {
   const hero = document.getElementById('hero-image');
   root.querySelectorAll('.gallery-thumb').forEach(thumb => {
     thumb.addEventListener('click', () => {
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-orange-500'));
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
       root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-800'));
-      thumb.classList.add('active', 'border-orange-500');
+      thumb.classList.add('active', 'border-blue-500');
       thumb.classList.remove('border-gray-800');
       hero.src = thumb.dataset.img;
     });
@@ -680,10 +680,10 @@ async function setupReviewForm(listing) {
       document.querySelectorAll('.star-btn').forEach((b, i) => {
         const icon = b.querySelector('i');
         if (i < selectedRating) {
-          icon.classList.add('fill-orange-500','text-orange-500');
+          icon.classList.add('fill-blue-500','text-blue-500');
           icon.classList.remove('text-gray-600');
         } else {
-          icon.classList.remove('fill-orange-500','text-orange-500');
+          icon.classList.remove('fill-blue-500','text-blue-500');
           icon.classList.add('text-gray-600');
         }
       });
@@ -706,7 +706,7 @@ async function setupReviewForm(listing) {
     selectedRating = 0;
     document.querySelectorAll('.star-btn').forEach(b => {
       const icon = b.querySelector('i');
-      icon.classList.remove('fill-orange-500','text-orange-500');
+      icon.classList.remove('fill-blue-500','text-blue-500');
       icon.classList.add('text-gray-600');
     });
     alert('Review submitted! It will appear after admin approval.');
@@ -731,7 +731,7 @@ async function loadReviews(listing) {
   container.innerHTML = reviews.map(r => `
     <div class="border-b border-gray-800 pb-3 mb-3 last:border-0">
       <div class="flex items-center gap-2 mb-1">
-        <div class="flex gap-0.5">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= r.rating ? 'fill-orange-500 text-orange-500' : 'text-gray-600'}"></i>`).join('')}</div>
+        <div class="flex gap-0.5">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-600'}"></i>`).join('')}</div>
         <span class="text-xs text-gray-400 font-bold">${escapeHtml(r.profiles?.full_name || 'Anonymous')}</span>
         <span class="text-xs text-gray-600">${new Date(r.created_at).toLocaleDateString()}</span>
         ${r.is_verified_purchase ? '<span class="text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">Verified Purchase</span>' : ''}
@@ -771,9 +771,9 @@ async function loadRecommendations(listing) {
     const img = (p.images && p.images[0]) || '/fallback.svg';
     const pprice = typeof p.price === 'number' ? p.price : parseFloat(p.price || 0);
     const cur = p.currency || 'USD';
-    return `<a href="/details.html?id=${p.property_id}" class="block bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden hover:border-orange-500/30 transition group">
+    return `<a href="/details.html?id=${p.property_id}" class="block bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/30 transition group">
       <div class="aspect-square overflow-hidden bg-gray-800"><img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></div>
-      <div class="p-2"><p class="text-xs text-white font-bold truncate">${escapeHtml(p.title)}</p><p class="text-xs text-orange-500 font-bold mt-1">${cur} ${pprice.toLocaleString()}</p></div>
+      <div class="p-2"><p class="text-xs text-white font-bold truncate">${escapeHtml(p.title)}</p><p class="text-xs text-blue-500 font-bold mt-1">${cur} ${pprice.toLocaleString()}</p></div>
     </a>`;
   }).join('');
 }

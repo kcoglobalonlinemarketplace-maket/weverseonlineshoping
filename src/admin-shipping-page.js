@@ -7,7 +7,7 @@ const SHIPMENT_STATUSES = [
   { id: 'packed', label: 'Packed', icon: 'package-check', color: 'text-teal-400', bg: 'bg-teal-500/15' },
   { id: 'shipped', label: 'Shipped', icon: 'truck', color: 'text-indigo-400', bg: 'bg-indigo-500/15' },
   { id: 'in_transit', label: 'In Transit', icon: 'navigation', color: 'text-violet-400', bg: 'bg-violet-500/15' },
-  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'bike', color: 'text-orange-400', bg: 'bg-orange-500/15' },
+  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'bike', color: 'text-blue-400', bg: 'bg-blue-500/15' },
   { id: 'delivered', label: 'Delivered', icon: 'check-circle', color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
   { id: 'cancelled', label: 'Cancelled', icon: 'x-circle', color: 'text-red-400', bg: 'bg-red-500/15' },
 ];
@@ -48,7 +48,7 @@ function statusBadge(status) {
     'text-teal-400': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
     'text-indigo-400': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
     'text-violet-400': 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-    'text-orange-400': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    'text-blue-400': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     'text-emerald-400': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     'text-red-400': 'bg-red-500/10 text-red-400 border-red-500/20',
   };

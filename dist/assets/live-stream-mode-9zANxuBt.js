@@ -1,4 +1,4 @@
-import{f as d,C as E,L as I,A as C,h as z,i as B,j as S,k as T,l as M,m as N,o as j,n as $}from"./localization-BLD_EE8b.js";let u=!1;function A(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
+import{f as d,C as E,L as I,A as C,h as z,i as B,j as S,k as T,l as M,m as N,o as j,n as $}from"./localization-5K8QT0JN.js";let u=!1;function A(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
     @keyframes kcoLocPulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
     @keyframes kcoLocSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
     @keyframes kcoLocFadeIn { from { opacity:0; } to { opacity:1; } }
@@ -106,11 +106,11 @@ body.kco-live-mode .showroom-card h3 {
   margin-bottom: 6px !important;
 }
 /* Larger prices — most important for live viewers */
-body.kco-live-mode .showroom-card .text-orange-500,
-body.kco-live-mode .showroom-card [class*="text-orange"] {
+body.kco-live-mode .showroom-card .text-blue-400,
+body.kco-live-mode .showroom-card [class*="text-blue"] {
   font-size: 20px !important;
   font-weight: 900 !important;
-  text-shadow: 0 2px 8px rgba(249,115,22,0.3) !important;
+  text-shadow: 0 2px 8px rgba(59,130,246,0.3) !important;
 }
 /* Larger spec text */
 body.kco-live-mode .showroom-card .text-gray-500,

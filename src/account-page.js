@@ -58,7 +58,7 @@ const ORDER_STEPS = [
   { id: 'payment_approved', label: 'Approved', icon: 'check-circle', color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
   { id: 'order_processing', label: 'Processing', icon: 'package', color: 'text-blue-400', bg: 'bg-blue-500/15' },
   { id: 'order_shipped', label: 'Shipped', icon: 'truck', color: 'text-indigo-400', bg: 'bg-indigo-500/15' },
-  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'bike', color: 'text-orange-400', bg: 'bg-orange-500/15' },
+  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'bike', color: 'text-blue-400', bg: 'bg-blue-500/15' },
   { id: 'order_delivered', label: 'Delivered', icon: 'package-check', color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
 ];
 
@@ -96,7 +96,7 @@ function statusBadge(status) {
     'text-amber-400': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     'text-emerald-400': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     'text-indigo-400': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-    'text-orange-400': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    'text-blue-400': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     'text-red-400': 'bg-red-500/10 text-red-400 border-red-500/20',
   };
   const cls = colorMap[step.color] || colorMap['text-blue-400'];
@@ -710,7 +710,7 @@ async function renderSpecialOrders() {
     if (error) throw error;
     const statusColors = { pending_review: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30', under_review: 'bg-blue-500/10 text-blue-400 border-blue-500/30', approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', rejected: 'bg-red-500/10 text-red-400 border-red-500/30', quoted: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30', fulfilled: 'bg-green-500/10 text-green-400 border-green-500/30', cancelled: 'bg-gray-500/10 text-gray-400 border-gray-500/30' };
     if (!data || data.length === 0) {
-      return `<div class="text-center py-16"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 mb-4"><i data-lucide="package-plus" class="w-8 h-8 text-gray-500"></i></div><h3 class="text-lg font-bold text-white mb-2">No Special Orders yet</h3><p class="text-sm text-gray-500 mb-5">When you can't find a product in our marketplace, you can request it as a Special Order and we'll source it for you.</p><a href="/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-orange-500/30"><i data-lucide="search" class="w-4 h-4"></i> Search Products</a></div>`;
+      return `<div class="text-center py-16"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 mb-4"><i data-lucide="package-plus" class="w-8 h-8 text-gray-500"></i></div><h3 class="text-lg font-bold text-white mb-2">No Special Orders yet</h3><p class="text-sm text-gray-500 mb-5">When you can't find a product in our marketplace, you can request it as a Special Order and we'll source it for you.</p><a href="/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-500/30"><i data-lucide="search" class="w-4 h-4"></i> Search Products</a></div>`;
     }
     let html = `<div class="mb-4"><p class="text-sm text-gray-400">Track your special order requests and their status updates.</p></div><div class="space-y-3">`;
     data.forEach(r => {
@@ -938,7 +938,7 @@ const AVAILABLE_PAYMENT_METHODS = [
   { type: 'manual_transfer', label: 'Manual Bank Transfer', icon: 'landmark', color: 'text-blue-400', available: true, desc: 'Transfer directly to our bank account' },
   { type: 'atm_card', label: 'ATM / Debit Card', icon: 'credit-card', color: 'text-emerald-400', available: true, desc: 'Visa, Mastercard, Verve' },
   { type: 'bank_transfer', label: 'Bank Transfer', icon: 'building-2', color: 'text-cyan-400', available: true, desc: 'Online banking transfer' },
-  { type: 'mobile_money', label: 'Mobile Money Transfer', icon: 'smartphone', color: 'text-orange-400', available: true, desc: 'Send money from your mobile wallet' },
+  { type: 'mobile_money', label: 'Mobile Money Transfer', icon: 'smartphone', color: 'text-blue-400', available: true, desc: 'Send money from your mobile wallet' },
   { type: 'wallet', label: 'Wallet', icon: 'wallet', color: 'text-amber-400', available: true, desc: 'Use your Weverse wallet balance' },
   { type: 'paypal', label: 'PayPal', icon: 'wallet', color: 'text-blue-400', available: false, desc: 'Pay with your PayPal account' },
 ];

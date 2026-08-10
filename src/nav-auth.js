@@ -78,8 +78,8 @@ function renderNavAuth(user, profile) {
       const initials = (name.replace(/[^a-zA-Z0-9 ]/g, '').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('') || '?').toUpperCase();
       moreAccount.innerHTML = `
         <button onclick="closeMoreMenu();window.location.href='/account.html'"
-                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-orange-500/40 transition text-left">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500/30 to-blue-500/30 border border-orange-500/40 flex items-center justify-center shrink-0 text-white text-sm font-black">${escapeHtml(initials)}</div>
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-blue-500/40 transition text-left">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-blue-500/30 border border-blue-500/40 flex items-center justify-center shrink-0 text-white text-sm font-black">${escapeHtml(initials)}</div>
           <div class="flex-1 min-w-0">
             <p class="text-[13px] font-bold text-white leading-none truncate">${escapeHtml(name)}</p>
             <p class="text-[11px] text-gray-400 mt-0.5 leading-none truncate">${escapeHtml(user.email || '')}</p>
@@ -89,8 +89,8 @@ function renderNavAuth(user, profile) {
     } else {
       moreAccount.innerHTML = `
         <button onclick="closeMoreMenu();openAuthModal();"
-                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-orange-500/15 to-orange-600/10 border border-orange-400/30 hover:border-orange-400/60 hover:bg-orange-500/15 transition text-left active:scale-[0.99]">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shrink-0 shadow-md shadow-orange-500/30">
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-blue-500/15 to-blue-600/10 border border-blue-400/30 hover:border-blue-400/60 hover:bg-blue-500/15 transition text-left active:scale-[0.99]">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-500/30">
             <i data-lucide="user-round" class="w-5 h-5 text-white"></i>
           </div>
           <div class="flex-1 min-w-0">

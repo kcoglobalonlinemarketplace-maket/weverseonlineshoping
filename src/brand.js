@@ -10,9 +10,9 @@ export const DEFAULT_BRAND_SLOGAN = 'GLOBAL SHOPPING • WORLDWIDE DELIVERY';
 export const DEFAULT_BRAND_LOGO = '/brand-logo.jpeg';
 
 // Centralized inline verified badge — identical design to the homepage badge.
-// #1877F2 blue circle + white check. Injected beside every brand-name element.
+// #3b82f6 blue circle + white check. Injected beside every brand-name element.
 const BADGE_SVG = (cls = 'weverse-badge w-4 h-4 sm:w-[18px] sm:h-[18px] lg:w-5 lg:h-5 shrink-0') =>
-  `<svg viewBox="0 0 24 24" class="${cls}" aria-label="Verified" role="img" data-weverse-badge="true"><circle cx="12" cy="12" r="11" fill="#1877F2"/><path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/></svg>`;
+  `<svg viewBox="0 0 24 24" class="${cls}" aria-label="Verified" role="img" data-weverse-badge="true"><circle cx="12" cy="12" r="11" fill="#3b82f6"/><path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/></svg>`;
 
 // Centralized W logo — identical to the homepage logo box.
 export const W_LOGO_SVG = (cls = 'w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8') =>
@@ -227,7 +227,7 @@ function injectHeaderBrand(name, slogan, logo, badge, primary) {
     });
   }
 
-  // Replace the orange gradient icon block with logo image if logo is set
+  // Replace the blue gradient icon block with logo image if logo is set
   if (logo) {
     document.querySelectorAll('header a[href="/"] .relative.shrink-0, header a .relative.w-7').forEach(iconWrap => {
       if (!iconWrap.querySelector('img.injected-logo')) {
