@@ -38,21 +38,57 @@
       <p class="text-gray-500 text-lg max-w-2xl mx-auto">We're here to help. Reach out with any questions about your orders, payments, shipping, or account.</p>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-      <div class="glass border border-blue-500/20 rounded-2xl p-5 text-center slide-up"><div class="inline-flex items-center justify-center w-12 h-12 bg-blue-500/10 rounded-xl mb-3"><i data-lucide="mail" class="w-6 h-6 text-blue-400"></i></div><h3 class="text-sm font-bold text-white uppercase tracking-wide mb-1">Email Support</h3><p class="text-xs text-gray-500 mb-2">Available 24/7</p><a href="mailto:support@weverseonlineshop.com" class="text-sm text-blue-400 hover:text-blue-300 transition break-all">support@weverseonlineshop.com</a></div>
-      <button id="live-chat-card" onclick="window.__kcoAiOpen && window.__kcoAiOpen()" class="relative w-full flex items-center justify-center gap-3 px-5 sm:px-6 py-5 rounded-full border transition hover:scale-[1.02] active:scale-[0.98] group slide-up" style="animation-delay:.1s;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);border-color:rgba(255,255,255,0.18);box-shadow:0 8px 24px rgba(59,130,246,0.4)">
-        <span class="relative shrink-0 w-11 h-11 rounded-full flex items-center justify-center bg-white/10 border border-white/20">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-[#1e293b]"></span>
-        </span>
-        <span class="text-left min-w-0">
-          <span class="block text-base sm:text-lg font-black text-white tracking-wide leading-none">Contact us</span>
-          <span class="flex items-center gap-1.5 mt-1.5 text-[11px] font-semibold text-white/90"><span class="w-2 h-2 bg-emerald-400 rounded-full inline-block animate-pulse"></span>Online · We respond to every message</span>
-        </span>
-        <span class="shrink-0 w-6 h-6 rounded-full bg-[#1e293b] border border-white/20 flex items-center justify-center pointer-events-none">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" aria-label="Verified" role="img"><circle cx="12" cy="12" r="11" fill="#3b82f6"/><path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/></svg>
-        </span>
-      </button>
-      <div class="glass border border-blue-500/20 rounded-2xl p-5 text-center slide-up" style="animation-delay:.2s"><div class="inline-flex items-center justify-center w-12 h-12 bg-amber-500/10 rounded-xl mb-3"><i data-lucide="headphones" class="w-6 h-6 text-amber-400"></i></div><h3 class="text-sm font-bold text-white uppercase tracking-wide mb-1">Help Center</h3><p class="text-xs text-gray-500 mb-2">FAQs & Guides</p><a href="/help.html" class="text-sm text-blue-400 hover:text-blue-300 transition">Visit Help Center</a></div>
+      <div id="live-chat-card" class="glass border border-blue-500/25 rounded-2xl overflow-hidden flex flex-col slide-up transition hover:border-emerald-400/40 lg:col-span-2 group" style="animation-delay:.1s">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0" style="background:linear-gradient(135deg,#1e1e2e 0%,#1a1a2e 50%,#16213e 100%)">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="relative w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background:rgba(59,130,246,0.15)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C7.58 2 4 5.58 4 10v4a3 3 0 0 0 3 3h1v-6H6v-1a6 6 0 0 1 12 0v1h-2v6h1a3 3 0 0 0 3-3v-4c0-4.42-3.58-8-8-8z" fill="#60a5fa"/><path d="M12 2C7.58 2 4 5.58 4 10v4a3 3 0 0 0 3 3h1v-6H6v-1a6 6 0 0 1 12 0v1h-2v6h1a3 3 0 0 0 3-3v-4c0-4.42-3.58-8-8-8z" stroke="#3b82f6" stroke-width="0.5"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-bold text-white leading-tight tracking-wide flex items-center gap-1 truncate">Contact us <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 inline-block align-middle" aria-label="Verified" role="img"><circle cx="12" cy="12" r="11" fill="#3b82f6"/><path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/></svg></p>
+              <p class="text-[10px] leading-tight flex items-center gap-1.5 mt-0.5">
+                <span class="w-2 h-2 bg-emerald-400 rounded-full inline-block animate-pulse"></span>
+                <span class="text-emerald-400 font-medium">Online</span>
+              </p>
+            </div>
+          </div>
+          <span class="shrink-0 text-[9px] font-bold uppercase tracking-widest text-white/60 bg-white/5 border border-white/10 rounded-full px-2.5 py-1 flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>Live</span>
+        </div>
+        <div class="flex-1 px-4 py-3 space-y-3" style="background:rgba(10,17,36,0.5);min-height:210px">
+          <div class="flex justify-start kco-ai-msg-in">
+            <div class="max-w-[88%] flex gap-2">
+              <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 shadow-md mt-0.5" style="background:rgba(59,130,246,0.15)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C7.58 2 4 5.58 4 10v4a3 3 0 0 0 3 3h1v-6H6v-1a6 6 0 0 1 12 0v1h-2v6h1a3 3 0 0 0 3-3v-4c0-4.42-3.58-8-8-8z" fill="#60a5fa"/><path d="M12 2C7.58 2 4 5.58 4 10v4a3 3 0 0 0 3 3h1v-6H6v-1a6 6 0 0 1 12 0v1h-2v6h1a3 3 0 0 0 3-3v-4c0-4.42-3.58-8-8-8z" stroke="#3b82f6" stroke-width="0.5"/></svg>
+              </div>
+              <div class="bg-slate-800/80 border border-white/10 rounded-2xl rounded-tl-sm px-3.5 py-2.5">
+                <div class="text-sm text-gray-200 leading-relaxed">Welcome to Weverse Online Shop!<br><br>I'm here to help you with products, orders, payments, shipping, returns, and any questions you may have.<br><br>How can I help you today?</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-3 pb-2 flex gap-2 overflow-x-auto shrink-0">
+          <button class="kco-quick shrink-0 text-[11px] px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition" data-q="Help me find a product">Find products</button>
+          <button class="kco-quick shrink-0 text-[11px] px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition" data-q="How do I track my order?">Track order</button>
+          <button class="kco-quick shrink-0 text-[11px] px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition" data-q="What payment methods are available?">Payments</button>
+          <button class="kco-quick shrink-0 text-[11px] px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition" data-q="Explain shipping and delivery">Shipping</button>
+          <button class="kco-quick shrink-0 text-[11px] px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition" data-q="How do returns and refunds work?">Returns</button>
+        </div>
+        <form id="kco-embed-form" class="px-3 py-2.5 border-t border-blue-500/10 shrink-0" style="background:#0f172a">
+          <div class="flex items-end gap-1.5">
+            <span class="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 shrink-0"><i data-lucide="image-plus" class="w-5 h-5"></i></span>
+            <span class="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 shrink-0"><i data-lucide="mic" class="w-5 h-5"></i></span>
+            <input id="kco-embed-input" type="text" placeholder="Type a message..." class="flex-1 bg-slate-800/80 text-sm text-gray-200 placeholder-gray-500 rounded-2xl px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500/40 border border-blue-500/15">
+            <button type="submit" class="kco-ai-send-btn w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 hover:scale-110 transition-transform" style="background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);box-shadow:0 2px 8px rgba(59,130,246,0.3)" aria-label="Send message">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a1 1 0 0 0-1.39 1.21L4 12l-1.99 7.19a1 1 0 0 0 1.39 1.21z" fill="white"/></svg>
+            </button>
+          </div>
+          <p class="text-[10px] text-gray-600 mt-1.5 text-center">Contact us anytime · We respond to every message.</p>
+        </form>
+      </div>
+      <div class="flex flex-col gap-6">
+        <div class="glass border border-blue-500/20 rounded-2xl p-5 text-center slide-up"><div class="inline-flex items-center justify-center w-12 h-12 bg-blue-500/10 rounded-xl mb-3"><i data-lucide="mail" class="w-6 h-6 text-blue-400"></i></div><h3 class="text-sm font-bold text-white uppercase tracking-wide mb-1">Email Support</h3><p class="text-xs text-gray-500 mb-2">Available 24/7</p><a href="mailto:support@weverseonlineshop.com" class="text-sm text-blue-400 hover:text-blue-300 transition break-all">support@weverseonlineshop.com</a></div>
+        <div class="glass border border-blue-500/20 rounded-2xl p-5 text-center slide-up" style="animation-delay:.2s"><div class="inline-flex items-center justify-center w-12 h-12 bg-amber-500/10 rounded-xl mb-3"><i data-lucide="headphones" class="w-6 h-6 text-amber-400"></i></div><h3 class="text-sm font-bold text-white uppercase tracking-wide mb-1">Help Center</h3><p class="text-xs text-gray-500 mb-2">FAQs & Guides</p><a href="/help.html" class="text-sm text-blue-400 hover:text-blue-300 transition">Visit Help Center</a></div>
+      </div>
     </div>
     <div class="glass border border-blue-500/20 rounded-2xl p-6 sm:p-8 slide-up">
       <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="send" class="w-5 h-5 text-blue-400"></i> Send Us a Message</h2>
@@ -98,6 +134,24 @@
       btn.disabled = false; btn.innerHTML = 'Send Message';
       lucide.createIcons();
     });
+
+    const embedForm = document.getElementById('kco-embed-form');
+    const embedInput = document.getElementById('kco-embed-input');
+    if (embedForm && embedInput) {
+      embedForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = embedInput.value.trim();
+        if (!text) return;
+        if (window.__kcoAiSend) { window.__kcoAiSend(text); embedInput.value = ''; }
+        else if (window.__kcoAiOpen) window.__kcoAiOpen();
+      });
+      document.querySelectorAll('#live-chat-card .kco-quick').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (window.__kcoAiSend) window.__kcoAiSend(btn.dataset.q);
+          else if (window.__kcoAiOpen) window.__kcoAiOpen();
+        });
+      });
+    }
     lucide.createIcons();
   </script>
   <script type="module" src="/src/localization-bootstrap.js"></script>

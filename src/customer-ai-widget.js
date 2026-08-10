@@ -678,6 +678,20 @@ function proactiveNudge(key, message) {
 
 window.__kcoAiOpen = () => togglePanel(true);
 
+// Public helper: open the chat and send a message from outside the widget
+// (used by the embedded live-chat window on the Contact page).
+window.__kcoAiSend = (text) => {
+  if (typeof text !== 'string' || !text.trim()) return;
+  togglePanel(true);
+  const input = document.getElementById('kco-ai-input');
+  if (input) {
+    input.value = text.trim();
+    input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';
+  }
+  setTimeout(() => sendMessage(), 150);
+};
+
 // ── Proactive context detection ──────────────────────────────
 function setupProactiveGuidance() {
   const ctx = getPageContext();
