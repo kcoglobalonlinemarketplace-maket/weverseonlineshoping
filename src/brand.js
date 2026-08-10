@@ -18,9 +18,9 @@ const BADGE_SVG = (cls = 'weverse-badge w-4 h-4 sm:w-[18px] sm:h-[18px] lg:w-5 l
 export const W_LOGO_SVG = (cls = 'w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8') =>
   `<svg viewBox="0 0 24 24" class="${cls}" fill="none" aria-hidden="true"><path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#0b0f19" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-// Centralized one-line tagline markup — single leading globe, two colors.
+// Centralized one-line tagline markup — single neutral, letter-spaced line.
 export function taglineHtml() {
-  return `<span class="flex flex-col items-start"><span class="brand-tagline-1 text-cyan-400 [text-shadow:0_0_12px_rgba(34,211,238,0.85)]">🌐GLOBAL SHOPPING • WORLDWIDE</span><span class="brand-tagline-2 text-lime-400 [text-shadow:0_0_12px_rgba(163,230,53,0.8)]">DELIVERY 🚚</span></span>`;
+  return `<span class="flex flex-wrap items-baseline gap-x-[0.4em] mt-1.5 text-[10px] font-semibold tracking-[0.18em] uppercase leading-snug antialiased text-white/60"><span class="brand-tagline-1">GLOBAL SHOPPING</span><span class="text-white/40" aria-hidden="true">•</span><span class="brand-tagline-2">WORLDWIDE DELIVERY</span></span>`;
 }
 
 const CACHE_KEY = 'weverse_brand_v1';
