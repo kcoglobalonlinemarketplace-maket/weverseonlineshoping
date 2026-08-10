@@ -115,7 +115,6 @@ function injectStyles() {
     @keyframes kcoAiTyping { 0%,60%,100% { opacity:0.3; transform:translateY(0); } 30% { opacity:1; transform:translateY(-4px); } }
     @keyframes kcoOnlinePulse { 0% { box-shadow:0 0 0 0 rgba(34,197,94,0.5); } 70% { box-shadow:0 0 0 6px rgba(34,197,94,0); } 100% { box-shadow:0 0 0 0 rgba(34,197,94,0); } }
     @keyframes kcoRecPulse { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0.55); } 50% { box-shadow:0 0 0 8px rgba(239,68,68,0); } }
-    @keyframes kcoFabRing { 0% { transform:scale(1); opacity:.6; } 100% { transform:scale(1.9); opacity:0; } }
     .kco-ai-msg-in { animation: kcoAiSlideUp 0.3s ease; }
     .kco-ai-fade { animation: kcoAiFadeIn 0.3s ease; }
     .kco-ai-typing-dot { animation: kcoAiTyping 1.2s infinite; }
@@ -128,7 +127,6 @@ function injectStyles() {
     .kco-ai-send-btn:disabled { opacity:0.5; }
     .kco-online-dot { animation: kcoOnlinePulse 2s infinite; }
     .kco-rec-pulse { animation: kcoRecPulse 1.2s infinite; }
-    .kco-fab-ring { animation: kcoFabRing 2.2s cubic-bezier(0,0,.2,1) infinite; }
     .kco-attach-chip { transition: all .2s ease; }
     .kco-attach-chip:hover { border-color: rgba(249,115,22,.5); }
     #kco-ai-input::-webkit-scrollbar{display:none}
@@ -149,26 +147,25 @@ const VERIFIED_BADGE_SVG = `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 sm:w-4 s
 function buildWidget() {
   injectStyles();
 
-  // ── FAB — small, circular, never blocks the site ──
+  // ── FAB — matches the chat panel header: avatar, "Contact us ✅", Online ──
   const fab = document.createElement('button');
   fab.id = 'kco-ai-fab';
   fab.setAttribute('aria-label', 'Contact us');
-  fab.className = 'fixed bottom-5 right-5 z-[60] flex items-center gap-2 pl-2.5 pr-4 py-2 rounded-full shadow-xl transition-transform hover:scale-105 active:scale-95';
-  fab.style.background = 'linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)';
-  fab.style.border = '1px solid rgba(255,255,255,0.18)';
-  fab.style.boxShadow = '0 8px 24px rgba(59,130,246,0.4)';
+  fab.className = 'fixed bottom-5 right-5 z-[60] flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-2xl shadow-2xl transition-transform hover:scale-105 active:scale-95';
+  fab.style.background = 'linear-gradient(135deg,#1e1e2e 0%,#1a1a2e 50%,#16213e 100%)';
+  fab.style.border = '1px solid rgba(59,130,246,0.35)';
+  fab.style.boxShadow = '0 8px 24px rgba(59,130,246,0.25)';
 
   fab.innerHTML = `
-    <span class="kco-fab-ring absolute inset-0 rounded-full pointer-events-none" style="background:radial-gradient(circle,rgba(59,130,246,.35),transparent 70%)"></span>
-    <span class="relative shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-white/10 border border-white/20">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="kco-online-dot absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#1e293b]"></span>
+    <span class="relative shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(59,130,246,0.15)">
+      ${SUPPORT_AVATAR_SVG}
     </span>
-    <span class="text-sm font-black text-white tracking-wide whitespace-nowrap">Contact us</span>
-    <span class="shrink-0 w-5 h-5 rounded-full bg-[#1e293b] border border-white/20 flex items-center justify-center pointer-events-none">
-      ${VERIFIED_BADGE_SVG}
+    <span class="text-left">
+      <span class="text-sm font-bold text-white leading-tight tracking-wide flex items-center gap-1 whitespace-nowrap">Contact us ${VERIFIED_BADGE_SVG}</span>
+      <span class="text-[10px] leading-tight flex items-center gap-1.5 mt-0.5">
+        <span class="w-2 h-2 bg-emerald-400 rounded-full inline-block kco-online-dot"></span>
+        <span class="text-emerald-400 font-medium">Online</span>
+      </span>
     </span>
   `;
   fab.onclick = () => togglePanel(true);
@@ -677,20 +674,6 @@ function proactiveNudge(key, message) {
 }
 
 window.__kcoAiOpen = () => togglePanel(true);
-
-// Public helper: open the chat and send a message from outside the widget
-// (used by the embedded live-chat window on the Contact page).
-window.__kcoAiSend = (text) => {
-  if (typeof text !== 'string' || !text.trim()) return;
-  togglePanel(true);
-  const input = document.getElementById('kco-ai-input');
-  if (input) {
-    input.value = text.trim();
-    input.style.height = 'auto';
-    input.style.height = input.scrollHeight + 'px';
-  }
-  setTimeout(() => sendMessage(), 150);
-};
 
 // ── Proactive context detection ──────────────────────────────
 function setupProactiveGuidance() {
