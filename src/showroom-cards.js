@@ -529,7 +529,10 @@ function renderRow(rowDef) {
   } else {
     listings = getListingsByIds(rowDef.ids);
   }
-  const catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
+  let catalogExtra = [];
+  if (!rowDef.allTrucks) {
+    catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
+  }
   if (catalogExtra.length > 0) {
     listings = [...listings, ...catalogExtra];
   }
@@ -585,7 +588,9 @@ function countSectionItems(section) {
   section.rows.forEach((r) => {
     const base = r.allTrucks ? TRUCK_LISTINGS : getListingsByIds(r.ids);
     count += base.length;
-    count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
+    if (!r.allTrucks) {
+      count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
+    }
   });
   return count;
 }
@@ -627,6 +632,81 @@ function renderSection(section, accentColor, maxRows) {
   return sec;
 }
 
+// ── Incremental overlay renderer ────────────────────────────────
+// The "View All" overlays hold thousands of catalog cards. Instead of
+// building them all at once (which freezes phones), we keep a buffer of
+// rendered cards AHEAD of the scroll position and top it up as the user
+// scrolls — so scrolling is continuous, with no waiting or gaps.
+// Cards are created with the exact same renderCard — style untouched.
+const OVERLAY_CHUNK_SIZE = 24;
+const OVERLAY_BUFFER_HEIGHTS = 2;
+const OVERLAY_IO_MARGIN = 1200;
+
+function createIncrementalLoader(scroller, body, units) {
+  let gi = 0;
+  let ii = 0;
+  let pumpTimer = null;
+  let io = null;
+  let onScroll = null;
+  const sentinel = document.createElement('div');
+  sentinel.className = 'incremental-sentinel';
+  body.appendChild(sentinel);
+
+  const finish = () => {
+    if (io) io.disconnect();
+    if (onScroll) scroller.removeEventListener('scroll', onScroll);
+    if (pumpTimer != null) cancelAnimationFrame(pumpTimer);
+    sentinel.remove();
+  };
+
+  const bufferOk = () => {
+    if (!scroller.clientHeight) return false;
+    const sentinelTop = sentinel.offsetTop;
+    const viewBottom = scroller.scrollTop + scroller.clientHeight;
+    return sentinelTop - viewBottom < OVERLAY_BUFFER_HEIGHTS * scroller.clientHeight;
+  };
+
+  const loadChunk = () => {
+    if (gi >= units.length) return false;
+    const unit = units[gi];
+    const end = Math.min(ii + OVERLAY_CHUNK_SIZE, unit.items.length);
+    const frag = document.createDocumentFragment();
+    for (let k = ii; k < end; k++) frag.appendChild(renderCard(unit.items[k]));
+    unit.grid.appendChild(frag);
+    ii = end;
+    if (ii >= unit.items.length) { gi++; ii = 0; }
+    return gi < units.length;
+  };
+
+  const pumpStep = () => {
+    pumpTimer = null;
+    if (gi >= units.length) { finish(); return; }
+    if (!bufferOk()) return;
+    loadChunk();
+    if (gi >= units.length) { finish(); return; }
+    if (bufferOk()) pumpTimer = requestAnimationFrame(pumpStep);
+  };
+
+  const pump = () => {
+    if (gi >= units.length) return;
+    if (pumpTimer == null && bufferOk()) {
+      pumpTimer = requestAnimationFrame(pumpStep);
+    }
+  };
+
+  if ('IntersectionObserver' in window) {
+    io = new IntersectionObserver((entries) => {
+      if (entries.some(en => en.isIntersecting)) pump();
+    }, { root: scroller, rootMargin: `${OVERLAY_IO_MARGIN}px 0px` });
+    io.observe(sentinel);
+  }
+  onScroll = pump;
+  scroller.addEventListener('scroll', onScroll, { passive: true });
+
+  pump();
+  return { pump };
+}
+
 // ── All Houses view ────────────────────────────────────────────
 // "View All Houses" opens a full-screen catalog of every property
 // (seed + DB + generated catalog), grouped by property type. It reuses
@@ -635,6 +715,7 @@ const HOUSE_SECTION_IDS = new Set(['local-houses', 'modern-luxury', 'commercial-
 const HOUSE_TYPE_ORDER = ['Apartment', 'Condo', 'Townhouse', 'Detached House', 'Villa', 'Beach House', 'Farm House', 'Penthouse'];
 
 let allHousesOverlay = null;
+let _housesLoader = null;
 let _housesEscBound = false;
 
 function collectAllHouses() {
@@ -709,9 +790,7 @@ function buildAllHousesOverlay() {
 
   const houses = collectAllHouses();
   const groups = groupHousesByType(houses);
-  const frag = document.createDocumentFragment();
-
-  groups.forEach(({ type, items }) => {
+  const units = groups.map(({ type, items }) => {
     const label = /s$/i.test(type) ? type : type + 's';
     const sec = document.createElement('section');
     sec.className = 'space-y-3';
@@ -726,13 +805,13 @@ function buildAllHousesOverlay() {
     `;
     const grid = document.createElement('div');
     grid.className = 'flex flex-wrap gap-4';
-    items.forEach(l => grid.appendChild(renderCard(l)));
     sec.appendChild(head);
     sec.appendChild(grid);
-    frag.appendChild(sec);
+    body.appendChild(sec);
+    return { grid, items };
   });
 
-  body.appendChild(frag);
+  _housesLoader = createIncrementalLoader(allHousesOverlay, body, units);
 
   const countEl = document.getElementById('all-houses-count');
   if (countEl) countEl.textContent = `${houses.length} homes · houses & motorhomes worldwide`;
@@ -754,6 +833,7 @@ function openAllHousesView() {
   allHousesOverlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   allHousesOverlay.scrollTop = 0;
+  if (_housesLoader) _housesLoader.pump();
 }
 
 function closeAllHousesView() {
@@ -782,6 +862,7 @@ const VEHICLE_SECTION_IDS = new Set(['cars-motorcycles', 'trucks-buses']);
 const VEHICLE_TYPE_ORDER = ['Sedan', 'SUV', 'Hatchback', 'Sports Coupe', 'Pickup Truck', 'Street Bike', 'Cruiser', 'Sport Bike', 'Adventure Bike', 'Electric Scooter', 'Heavy Duty Truck', 'Box Truck', 'Dump Truck'];
 
 let allVehiclesOverlay = null;
+let _vehiclesLoader = null;
 let _vehiclesEscBound = false;
 
 function collectAllVehicles() {
@@ -795,7 +876,7 @@ function collectAllVehicles() {
     seen.add(id);
     out.push(l);
   };
-  ['cars', 'motorcycles', 'trucks'].forEach(slug => {
+  ['cars', 'motorcycles'].forEach(slug => {
     const def = getCatalogCategory(slug);
     if (!def) return;
     for (let i = 0; i < def.count; i++) {
@@ -848,9 +929,7 @@ function buildAllVehiclesOverlay() {
 
   const vehicles = collectAllVehicles();
   const groups = groupVehiclesByType(vehicles);
-  const frag = document.createDocumentFragment();
-
-  groups.forEach(({ type, items }) => {
+  const units = groups.map(({ type, items }) => {
     const label = /s$/i.test(type) ? type : type + 's';
     const sec = document.createElement('section');
     sec.className = 'space-y-3';
@@ -865,13 +944,13 @@ function buildAllVehiclesOverlay() {
     `;
     const grid = document.createElement('div');
     grid.className = 'flex flex-wrap gap-4';
-    items.forEach(l => grid.appendChild(renderCard(l)));
     sec.appendChild(head);
     sec.appendChild(grid);
-    frag.appendChild(sec);
+    body.appendChild(sec);
+    return { grid, items };
   });
 
-  body.appendChild(frag);
+  _vehiclesLoader = createIncrementalLoader(allVehiclesOverlay, body, units);
 
   const countEl = document.getElementById('all-vehicles-count');
   if (countEl) countEl.textContent = `${vehicles.length} vehicles · cars, motorcycles & trucks`;
@@ -893,6 +972,7 @@ function openAllVehiclesView() {
   allVehiclesOverlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   allVehiclesOverlay.scrollTop = 0;
+  if (_vehiclesLoader) _vehiclesLoader.pump();
 }
 
 function closeAllVehiclesView() {
