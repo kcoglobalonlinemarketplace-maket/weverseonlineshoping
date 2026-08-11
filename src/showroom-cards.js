@@ -643,6 +643,24 @@ function renderGrid(gridName) {
   if (window.lucide) lucide.createIcons();
 }
 
+// Render every showroom grid. Preserves each row's horizontal scroll
+// position so a background refresh never makes the page jump.
+function renderAllGrids() {
+  const grids = document.querySelectorAll('[data-showroom-grid]');
+  const scrollState = new Map();
+  grids.forEach(g => {
+    const rows = [];
+    g.querySelectorAll('.hscroll').forEach(el => rows.push({ el, left: el.scrollLeft }));
+    scrollState.set(g, rows);
+    delete g.dataset.initialized;
+  });
+  grids.forEach(g => renderGrid(g.dataset.showroomGrid));
+  scrollState.forEach((rows, g) => {
+    const fresh = g.querySelectorAll('.hscroll');
+    rows.forEach((row, i) => { if (fresh[i]) fresh[i].scrollLeft = row.left; });
+  });
+}
+
 // ── Category filtering ──
 function collectAllRows() {
   return [...REAL_ESTATE_SECTIONS, ...MARKETPLACE_SECTIONS]
@@ -942,65 +960,75 @@ function findSectionAndRowById(id) {
 }
 
 export async function initAllShowrooms() {
-  // Load products from the database (created by AI Admin Assistant)
-  // and merge them with the hardcoded seed data.
-  await Promise.all([loadDBListings(), loadHiddenCatalogIds()]);
   loadLocalWishlist();
   injectWishStyles();
-  await syncWishlistFromDB();
-  const dbListings = getDBListings();
-  const seedIds = new Set(SHOWROOM_LISTINGS.map(l => l.property_id));
-  const dbOnly = dbListings.filter(l => !seedIds.has(l.property_id));
 
-  if (dbOnly.length > 0 && !_dbSectionAdded) {
-    _dbSectionAdded = true;
+  // Paint the static catalog instantly — no network wait. Every seed
+  // listing (200 home & kitchen, houses, trucks, catalog) is already in
+  // the bundle, so the showrooms appear immediately.
+  renderAllGrids();
 
-    // Distribute each DB product into its correct category section
-    const newArrivalsIds = [];
-    for (const listing of dbOnly) {
-      const target = findSectionRowForCategory(listing.category, listing.subcategory);
-      let placed = false;
-      if (target) {
-        // Find the section and row in the section definitions
-        const allSections = [...REAL_ESTATE_SECTIONS, ...MARKETPLACE_SECTIONS];
-        const section = allSections.find(s => s.id === target.section);
-        if (section) {
-          const row = section.rows.find(r => r.id === target.row);
-          if (row) {
-            // row.ids may be undefined for "all trucks" type rows
-            if (!row.ids) row.ids = [];
-            if (!row.ids.includes(listing.property_id)) {
-              row.ids.push(listing.property_id);
+  try {
+    // Load products from the database (created by AI Admin Assistant),
+    // hidden-catalog rules, and wishlist in the background, then refresh.
+    await Promise.all([loadDBListings(), loadHiddenCatalogIds()]);
+    await syncWishlistFromDB();
+    const dbListings = getDBListings();
+    const seedIds = new Set(SHOWROOM_LISTINGS.map(l => l.property_id));
+    const dbOnly = dbListings.filter(l => !seedIds.has(l.property_id));
+
+    if (dbOnly.length > 0 && !_dbSectionAdded) {
+      _dbSectionAdded = true;
+
+      // Distribute each DB product into its correct category section
+      const newArrivalsIds = [];
+      for (const listing of dbOnly) {
+        const target = findSectionRowForCategory(listing.category, listing.subcategory);
+        let placed = false;
+        if (target) {
+          // Find the section and row in the section definitions
+          const allSections = [...REAL_ESTATE_SECTIONS, ...MARKETPLACE_SECTIONS];
+          const section = allSections.find(s => s.id === target.section);
+          if (section) {
+            const row = section.rows.find(r => r.id === target.row);
+            if (row) {
+              // row.ids may be undefined for "all trucks" type rows
+              if (!row.ids) row.ids = [];
+              if (!row.ids.includes(listing.property_id)) {
+                row.ids.push(listing.property_id);
+              }
+              placed = true;
             }
-            placed = true;
           }
         }
+        // If we couldn't place it in a category, add it to New Arrivals
+        if (!placed) {
+          newArrivalsIds.push(listing.property_id);
+        }
       }
-      // If we couldn't place it in a category, add it to New Arrivals
-      if (!placed) {
-        newArrivalsIds.push(listing.property_id);
-      }
-    }
 
-    // Add "New Arrivals" section for uncategorised products
-    if (newArrivalsIds.length > 0) {
-      MARKETPLACE_SECTIONS.unshift({
-        id: 'new-arrivals',
-        label: 'New Arrivals',
-        icon: 'sparkles',
-        subtitle: 'Latest products added to the marketplace.',
-        rows: [{
-          id: 'new-arrivals-all',
-          label: 'Recently Added',
+      // Add "New Arrivals" section for uncategorised products
+      if (newArrivalsIds.length > 0) {
+        MARKETPLACE_SECTIONS.unshift({
+          id: 'new-arrivals',
+          label: 'New Arrivals',
           icon: 'sparkles',
-          ids: newArrivalsIds,
-        }],
-      });
+          subtitle: 'Latest products added to the marketplace.',
+          rows: [{
+            id: 'new-arrivals-all',
+            label: 'Recently Added',
+            icon: 'sparkles',
+            ids: newArrivalsIds,
+          }],
+        });
+      }
     }
-  }
 
-  const grids = document.querySelectorAll('[data-showroom-grid]');
-  grids.forEach(g => renderGrid(g.dataset.showroomGrid));
+    // Apply DB products, hidden-catalog rules, and wishlist state.
+    renderAllGrids();
+  } catch {
+    // Static catalog is already visible; nothing else to do.
+  }
 
   window.dispatchEvent(new CustomEvent('showroom-categories-ready'));
 }
