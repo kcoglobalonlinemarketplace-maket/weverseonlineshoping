@@ -138,6 +138,9 @@ function injectStyles() {
 // ── Professional support avatar SVG (headset icon) ─────────────
 const SUPPORT_AVATAR_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C7.58 2 4 5.58 4 10v4a3 3 0 0 0 3 3h1v-6H6v-1a6 6 0 0 1 12 0v1h-2v6h1a3 3 0 0 0 3-3v-4c0-4.42-3.58-8-8-8z" fill="#60a5fa"/><path d="M12 2C7.58 2 4 5.58 4 10v4a3 3 0 0 0 3 3h1v-6H6v-1a6 6 0 0 1 12 0v1h-2v6h1a3 3 0 0 0 3-3v-4c0-4.42-3.58-8-8-8z" stroke="#3b82f6" stroke-width="0.5"/></svg>`;
 
+// ── Professional message logo SVG (speech bubble) ──────────────
+const MESSAGE_ICON_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" fill="#60a5fa"/><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="#3b82f6" stroke-width="0.5"/></svg>`;
+
 // ── Professional send button SVG (paper plane) ────────────────
 const SEND_ICON_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a1 1 0 0 0-1.39 1.21L4 12l-1.99 7.19a1 1 0 0 0 1.39 1.21z" fill="white"/></svg>`;
 
@@ -158,7 +161,7 @@ function buildWidget() {
 
   fab.innerHTML = `
     <span class="relative shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(59,130,246,0.15)">
-      ${SUPPORT_AVATAR_SVG}
+      ${MESSAGE_ICON_SVG}
     </span>
     <span class="text-left">
       <span class="text-sm font-bold text-white leading-tight tracking-wide flex items-center gap-1 whitespace-nowrap">Contact us ${VERIFIED_BADGE_SVG}</span>
