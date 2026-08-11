@@ -46,6 +46,7 @@ export default defineConfig(({ mode }) => {
           checkout: resolve(__dirname, 'checkout.html'),
           adminShipping: resolve(__dirname, 'admin-shipping.html'),
           about: resolve(__dirname, 'about.html'),
+          team: resolve(__dirname, 'team.html'),
           contact: resolve(__dirname, 'contact.html'),
           privacy: resolve(__dirname, 'privacy.html'),
           terms: resolve(__dirname, 'terms.html'),

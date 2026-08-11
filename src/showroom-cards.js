@@ -1,5 +1,6 @@
 import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings } from './showroom-data.js';
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
+import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
@@ -143,7 +144,7 @@ const REAL_ESTATE_SECTIONS = [
     id: 'motorhomes-boats', label: 'Motorhomes & Boats', icon: 'bus',
     subtitle: 'Luxury motorhomes, RVs, and marine vehicles for travel and adventure.',
     rows: [
-      { id: 'motorhomes', label: 'Motorhomes', icon: 'bus', ids: ['KCO-000019', 'KCO-000020', 'KCO-000031', 'KCO-000032', 'KCO-000033', 'KCO-000034', 'KCO-000035'] },
+      { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
     ],
   },
   {
@@ -248,7 +249,7 @@ const ROW_TO_CATALOG_SLUG = {
   'new-cars': 'cars',
   'used-cars': 'cars',
   'all-trucks': 'trucks',
-  'motorhomes': 'motorhomes',
+  'all-motorhomes': 'motorhomes',
   'heavy-equipment-all': 'heavy-equipment',
   'auto-parts-all': 'auto-parts',
   // Marketplace categories
@@ -342,6 +343,7 @@ function getCatalogListingsForRow(rowDef, existingIds) {
 export function renderCard(listing) {
   const isProperty = listing.listing_type === 'property';
   const isTruck = listing.listing_type === 'vehicle' && listing.category === 'Trucks';
+  const isMotorhome = listing.listing_type === 'vehicle' && listing.category === 'Motorhomes';
   const listingId = listing.id || listing.property_id;
   const cover = listing.images?.[0] || FALLBACK_IMG;
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
@@ -367,10 +369,11 @@ export function renderCard(listing) {
     if (listing.bathrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${listing.bathrooms}</span>`);
     if (listing.land_size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${listing.land_size}</span>`);
     if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
-  } else if (isTruck) {
+  } else if (isTruck || isMotorhome) {
     const specs = [];
     specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${listing.model_year}</span>`);
     specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="gauge" class="w-3.5 h-3.5"></i>${listing.mileage}</span>`);
+    if (isMotorhome) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="moon" class="w-3.5 h-3.5"></i>Sleeps ${listing.sleeping_capacity}</span>`);
     if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
   } else if (listing.listing_type === 'product') {
     const specs = [];
@@ -526,11 +529,13 @@ function renderRow(rowDef) {
   let listings;
   if (rowDef.allTrucks) {
     listings = TRUCK_LISTINGS;
+  } else if (rowDef.allMotorhomes) {
+    listings = MOTORHOME_LISTINGS;
   } else {
     listings = getListingsByIds(rowDef.ids);
   }
   let catalogExtra = [];
-  if (!rowDef.allTrucks) {
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
   }
   if (catalogExtra.length > 0) {
@@ -586,9 +591,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks) {
+    if (!r.allTrucks && !r.allMotorhomes) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
@@ -739,13 +744,7 @@ function collectAllHouses() {
       if (item && !isCatalogListingHidden(item.property_id)) add(item);
     }
   }
-  const mh = getCatalogCategory('motorhomes');
-  if (mh) {
-    for (let i = 0; i < mh.count; i++) {
-      const item = generateProduct('motorhomes', i);
-      if (item && !isCatalogListingHidden(item.property_id)) add(item);
-    }
-  }
+  MOTORHOME_LISTINGS.forEach(add);
   return out;
 }
 
@@ -1205,7 +1204,7 @@ const CATEGORY_TO_SECTION_ROW = {
   'Commercial Buildings': { section: 'commercial-land', row: 'commercial' },
   'Hotels': { section: 'commercial-land', row: 'hotels' },
   'Cars': { section: 'cars-motorcycles', row: 'new-cars' },
-  'Motorhomes': { section: 'motorhomes-boats', row: 'motorhomes' },
+  'Motorhomes': { section: 'motorhomes-boats', row: 'all-motorhomes' },
   'Trucks': { section: 'trucks-buses', row: 'all-trucks' },
   // Marketplace categories
   'Men': { section: 'mp-men', row: 'mp-men-all' },
@@ -1296,7 +1295,7 @@ const CATEGORY_KEYWORDS = [
   { keywords: ['software', 'digital', 'app'], target: { section: 'mp-software', row: 'mp-software-all' } },
   { keywords: ['car', 'vehicle', 'auto', 'sedan', 'suv'], target: { section: 'cars-motorcycles', row: 'new-cars' } },
   { keywords: ['truck', 'pickup', 'lorry'], target: { section: 'trucks-buses', row: 'all-trucks' } },
-  { keywords: ['motorhome', 'camper', 'rv'], target: { section: 'motorhomes-boats', row: 'motorhomes' } },
+  { keywords: ['motorhome', 'camper', 'rv'], target: { section: 'motorhomes-boats', row: 'all-motorhomes' } },
   { keywords: ['apartment', 'condo', 'flat'], target: { section: 'local-houses', row: 'apartment-homes' } },
   { keywords: ['villa', 'luxury home'], target: { section: 'modern-luxury', row: 'modern-homes' } },
   { keywords: ['mansion', 'estate'], target: { section: 'modern-luxury', row: 'mansion-homes' } },

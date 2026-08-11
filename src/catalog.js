@@ -1462,6 +1462,7 @@ function generateProperty(def, idx) {
 
 // ── Vehicle generator (Cars, Motorcycles, Motorhomes, Trucks catalogs) ─────
 const VEHICLE_IMG = [10054672, 11836424, 30809411, 31458555, 14577843, 18797772, 2108816, 11285597, 1082526, 1697570];
+const MOTORHOME_IMG = [4906250, 5865450, 2740740, 6899732, 1759339, 1128445, 5870223, 5553420, 2993858, 2279396];
 const VEHICLE_COLORS = ['Pearl White', 'Obsidian Black', 'Graphite Grey', 'Crimson Red', 'Midnight Blue', 'Silver Metallic', 'Deep Green', 'Titanium', 'Sand Beige', 'Gunmetal'];
 const VEHICLE_TYPES = {
   Cars: [
@@ -1506,8 +1507,9 @@ function generateVehicle(def, idx) {
   const transmission = pick(rnd, ['Automatic', 'Manual']);
   const title = `${year} ${brand} ${model} — ${color}`;
 
-  const imgs = [PEXELS(VEHICLE_IMG[idx % VEHICLE_IMG.length], 1200)];
-  for (let k = 1; k < 6; k++) imgs.push(PEXELS(VEHICLE_IMG[(idx * 3 + k * 5) % VEHICLE_IMG.length], 1000));
+  const pool = def.name === 'Motorhomes' ? MOTORHOME_IMG : VEHICLE_IMG;
+  const imgs = [PEXELS(pool[idx % pool.length], 1200)];
+  for (let k = 1; k < 6; k++) imgs.push(PEXELS(pool[(idx * 3 + k * 5) % pool.length], 1000));
 
   const features = ['Full Service History', 'Road Tax Included', 'Low Mileage', 'Alloy Wheels', 'Leather Interior'];
   const desc = `${title}. A well-maintained ${vt.n.toLowerCase()} with ${mileage} miles on the clock, powered by a ${engine} ${fuel.toLowerCase()} engine with ${transmission.toLowerCase()} transmission. Comes with ${features.join(', ').toLowerCase()}. Priced at ${price.toLocaleString('en-US')} USD — a dependable choice for daily driving or business use.`;

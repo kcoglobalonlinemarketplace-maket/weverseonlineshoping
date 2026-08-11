@@ -11,7 +11,6 @@ const PEXELS = (id, w = 800) => `https://images.pexels.com/photos/${id}/pexels-p
 
 const VEHICLE = {
   car: [10054672, 11836424, 30809411, 31458555],
-  motorhome: [14577843, 18797772],
 };
 
 // Build a gallery for a property: 3 unique exteriors, then unique interior room photos.
@@ -35,11 +34,6 @@ function newHomeGallery(ids, interiorIds) {
   const base = ids.map((id, i) => PEXELS(id, i < 3 ? 1200 : 1000));
   const interiors = interiorIds.map((id) => PEXELS(id, 1000));
   return [...base, ...interiors];
-}
-
-// Build a 10-image motorhome gallery from explicit photo IDs — each motorhome has its own unique set
-function motorhomeGallery(ids) {
-  return ids.map((id, i) => PEXELS(id, i < 3 ? 1200 : 1000));
 }
 
 export const SHOWROOM_LISTINGS = [
@@ -260,116 +254,6 @@ export const SHOWROOM_LISTINGS = [
     parking_spaces: null, property_type: 'SUV', furnished: null, listing_status: 'sale',
     images: vehicleGallery(VEHICLE.car), rating: 4.8, rating_count: 65, favorite_count: 48,
     features: ['3.0L Inline-6 Turbo', '375 HP', '4MATIC AWD', '7 Seats', 'Air Suspension', 'Burmester Audio', 'Trailer Hitch', 'Warranty Active'],
-  },
-  {
-    property_id: 'KCO-000019', listing_type: 'vehicle', category: 'Motorhomes',
-    title: 'Luxury Class A Motorhome 2024 — Diesel Pusher',
-    description: 'A top-of-the-line Class A diesel pusher motorhome built for cross-country luxury travel. Powered by a Cummins 8.9L turbo diesel engine with 380 horsepower on a Freightliner chassis. The interior features three slide-outs, residential kitchen with residential refrigerator, king-size bed, and a full bathroom with glass shower. Includes a 10kW diesel generator, solar power system, and 100-gallon fresh water tank. Sleeps 6 comfortably. Excellent condition with all maintenance up to date.',
-    price: 285000, currency: 'USD', country: '', country_code: '',
-    state: null, city: null, town: null,
-    bedrooms: null, bathrooms: null, building_size: null, land_size: null,
-    parking_spaces: null, property_type: 'Class A Motorhome', furnished: null, listing_status: 'sale',
-    images: vehicleGallery(VEHICLE.motorhome), rating: 4.7, rating_count: 42, favorite_count: 35,
-    features: ['Cummins 8.9L Diesel', '380 HP', '3 Slide-outs', 'Residential Kitchen', 'Solar Power', '10kW Generator', 'Sleeps 6', '100 Gal Water'],
-  },
-  {
-    property_id: 'KCO-000020', listing_type: 'vehicle', category: 'Motorhomes',
-    title: 'Mercedes-Benz Sprinter Camper Van 2025',
-    description: 'A premium camper van built on the 2025 Mercedes-Benz Sprinter 2500 chassis with a 2.0L turbo diesel engine and 4WD. The custom interior features a pop-top roof with sleeping loft, kitchenette with sink and stove, portable toilet, and a bench seat that converts to a bed. Includes a 200W solar panel, 12V fridge, and Webasto heating system. Compact enough for city driving yet fully equipped for off-grid adventures. Perfect for couples or solo travelers.',
-    price: 145000, currency: 'USD', country: '', country_code: '',
-    state: null, city: null, town: null,
-    bedrooms: null, bathrooms: null, building_size: null, land_size: null,
-    parking_spaces: null, property_type: 'Camper Van', furnished: null, listing_status: 'sale',
-    images: vehicleGallery(VEHICLE.motorhome), rating: 4.8, rating_count: 51, favorite_count: 44,
-    features: ['2.0L Turbo Diesel', '4WD', 'Pop-Top Roof', 'Kitchenette', 'Solar Panel', '12V Fridge', 'Webasto Heat', 'Sleeps 2'],
-  },
-
-  // === 5 NEW MOTORHOMES (unique brands, styles, and galleries) ===
-
-  // 31. Class A Luxury Motorhome — Tiffin Allegro Bus 2026
-  {
-    property_id: 'KCO-000031', listing_type: 'vehicle', category: 'Motorhomes',
-    title: 'Tiffin Allegro Bus 45 OPN 2026 — Class A Diesel Pusher',
-    description: 'The 2026 Tiffin Allegro Bus 45 OPN is a flagship Class A diesel pusher motorhome built on a Freightliner XCM raised-rail chassis. Powered by a Cummins X15 12.9L turbo diesel engine producing 500 horsepower and 1,250 lb-ft of torque, paired with an Allison 3000 MH 6-speed automatic transmission. The interior features four slide-outs, a residential kitchen with a 21-cu-ft residential refrigerator, a king-size bed, and a full bathroom with a glass-enclosed shower. Includes a 12kW Onan diesel generator, a 800W solar system, and a 100-gallon fresh water tank. Sleeps 6 with a power drop-down bunk over the cab. This unit is brand new with full factory warranty.',
-    price: 475000, currency: 'USD', country: '', country_code: '',
-    state: null, city: null, town: null,
-    bedrooms: null, bathrooms: null, building_size: null, land_size: null,
-    parking_spaces: null, property_type: 'Class A Motorhome', furnished: null, listing_status: 'sale',
-    brand: 'Tiffin', model: 'Allegro Bus 45 OPN', model_year: 2026, condition: 'New', mileage: '0 mi',
-    transmission: 'Allison 3000 MH 6-Speed Auto', fuel_type: 'Diesel',
-    engine: 'Cummins X15 12.9L I6 (500 HP, 1,250 lb-ft)', drive_type: 'RWD', color: 'Platinum Silver',
-    sleeping_capacity: '6', seating_capacity: '8', bathroom: 'Full Bath with Glass Shower', kitchen: 'Residential Kitchen with 21-cu-ft Fridge', water_tank: '100 gallons',
-    images: motorhomeGallery([10539694, 14523224, 14810447, 14816413, 14924831, 15240765, 15276639, 15346246, 17674305, 27620842]),
-    rating: 4.9, rating_count: 38, favorite_count: 31,
-    features: ['Cummins X15 500 HP', '4 Slide-outs', 'Residential Refrigerator', '12kW Generator', '800W Solar', '100 Gal Water', 'Power Drop-down Bunk', 'King Bed', 'Winegard Satellite', 'Hydraulic Leveling Jacks'],
-  },
-  // 32. Class B Camper Van — Airstream Atlas 2025
-  {
-    property_id: 'KCO-000032', listing_type: 'vehicle', category: 'Motorhomes',
-    title: 'Airstream Atlas 2025 — Class B Camper Van',
-    description: 'The 2025 Airstream Atlas is a premium Class B camper van built on the Mercedes-Benz Sprinter 2500 4WD chassis. Powered by a 3.0L turbo diesel V6 producing 211 horsepower and 325 lb-ft of torque, paired with a 7-speed automatic transmission. The interior features a power retractable sofa bed, a wet bath with a cassette toilet, and a galley kitchen with a 12V compressor fridge and induction cooktop. Includes a 200W solar panel, 20-gallon fresh water tank, and a Truma Combi eco heating system. Sleeps 2 and seats 2. Compact enough for city driving and off-grid adventures alike. This unit is brand new with full warranty.',
-    price: 168000, currency: 'USD', country: '', country_code: '',
-    state: null, city: null, town: null,
-    bedrooms: null, bathrooms: null, building_size: null, land_size: null,
-    parking_spaces: null, property_type: 'Class B Camper Van', furnished: null, listing_status: 'sale',
-    brand: 'Airstream', model: 'Atlas', model_year: 2025, condition: 'New', mileage: '0 mi',
-    transmission: '7-Speed Auto', fuel_type: 'Diesel',
-    engine: '3.0L Turbo Diesel V6 (211 HP, 325 lb-ft)', drive_type: '4WD', color: 'Airstream Silver',
-    sleeping_capacity: '2', seating_capacity: '2', bathroom: 'Wet Bath with Cassette Toilet', kitchen: 'Galley with 12V Fridge and Induction Cooktop', water_tank: '20 gallons',
-    images: motorhomeGallery([28897042, 386025, 5836331, 6945637, 6945900, 6945904, 6945908, 6946075, 7476895, 7990947]),
-    rating: 4.7, rating_count: 44, favorite_count: 29,
-    features: ['Mercedes Sprinter 4WD', 'Power Retractable Sofa Bed', '200W Solar', 'Truma Combi Heat', 'Cassette Toilet', 'Induction Cooktop', '12V Compressor Fridge', 'Sleeps 2'],
-  },
-  // 33. Class C Motorhome — Winnebago Navion 2024
-  {
-    property_id: 'KCO-000033', listing_type: 'vehicle', category: 'Motorhomes',
-    title: 'Winnebago Navion 24V 2024 — Class C Family Motorhome',
-    description: 'The 2024 Winnebago Navion 24V is a versatile Class C motorhome built on the Mercedes-Benz Sprinter 3500 chassis. Powered by a 3.0L turbo diesel V6 producing 188 horsepower, paired with a 7-speed automatic transmission. The interior features a cab-over bunk, a rear corner bed, a dinette that converts to a bed, and a full bathroom with a shower. The kitchen includes a 3-burner cooktop, a 10.7-cu-ft refrigerator, and a microwave. Includes a 215W solar panel, 30-gallon fresh water tank, and a 3,200W Cummins Onan generator. Sleeps 5 and seats 7. This unit is in excellent used condition with 18,500 miles and a full service history.',
-    price: 112000, currency: 'USD', country: '', country_code: '',
-    state: null, city: null, town: null,
-    bedrooms: null, bathrooms: null, building_size: null, land_size: null,
-    parking_spaces: null, property_type: 'Class C Motorhome', furnished: null, listing_status: 'sale',
-    brand: 'Winnebago', model: 'Navion 24V', model_year: 2024, condition: 'Used', mileage: '18,500 mi',
-    transmission: '7-Speed Auto', fuel_type: 'Diesel',
-    engine: '3.0L Turbo Diesel V6 (188 HP)', drive_type: 'RWD', color: 'White with Grey Accents',
-    sleeping_capacity: '5', seating_capacity: '7', bathroom: 'Full Bath with Shower', kitchen: 'Kitchen with 3-Burner Cooktop and 10.7-cu-ft Fridge', water_tank: '30 gallons',
-    images: motorhomeGallery([8231014, 8973338, 8975069, 9143482, 13304737, 13601011, 13610268, 13721782, 14766762, 14766770]),
-    rating: 4.6, rating_count: 52, favorite_count: 38,
-    features: ['Cab-over Bunk', '215W Solar', '3,200W Generator', 'Dinette Bed', 'Rear Corner Bed', 'Full Bath', 'Sleeps 5', 'Mercedes Sprinter Chassis'],
-  },
-  // 34. Luxury Motorhome — Newmar Dutch Star 2027
-  {
-    property_id: 'KCO-000034', listing_type: 'vehicle', category: 'Motorhomes',
-    title: 'Newmar Dutch Star 4369 2027 — Luxury Class A Diesel',
-    description: 'The 2027 Newmar Dutch Star 4369 is the pinnacle of luxury Class A diesel motorhomes. Built on a Spartan K3 raised-rail chassis, it is powered by a Cummins X15 12.9L turbo diesel engine delivering 605 horsepower and 1,950 lb-ft of torque through an Allison 4000 MH 6-speed automatic transmission. The interior boasts four slide-outs, a full-wall slide, a chef\'s kitchen with a 24-cu-ft residential refrigerator and a residential induction range, a king-size Sleep Number bed, and a spa-like master bath with a tile shower. Includes a 21kW Cummins Onan diesel generator, a 1,200W solar system, and a 125-gallon fresh water tank. Sleeps 6 and seats 8. Brand new with full warranty and Comfort Drive steering assist.',
-    price: 625000, currency: 'USD', country: '', country_code: '',
-    state: null, city: null, town: null,
-    bedrooms: null, bathrooms: null, building_size: null, land_size: null,
-    parking_spaces: null, property_type: 'Class A Motorhome', furnished: null, listing_status: 'sale',
-    brand: 'Newmar', model: 'Dutch Star 4369', model_year: 2027, condition: 'New', mileage: '0 mi',
-    transmission: 'Allison 4000 MH 6-Speed Auto', fuel_type: 'Diesel',
-    engine: 'Cummins X15 12.9L I6 (605 HP, 1,950 lb-ft)', drive_type: 'RWD', color: 'Chestnut Brown',
-    sleeping_capacity: '6', seating_capacity: '8', bathroom: 'Spa Master Bath with Tile Shower', kitchen: 'Chef\'s Kitchen with 24-cu-ft Residential Fridge', water_tank: '125 gallons',
-    images: motorhomeGallery([17816414, 24363123, 29589856, 3042332, 3195762, 34287638, 3560366, 38021445, 5064952, 5991595]),
-    rating: 4.9, rating_count: 26, favorite_count: 22,
-    features: ['Cummins X15 605 HP', '4 Slide-outs', 'Full-Wall Slide', '21kW Generator', '1,200W Solar', 'Sleep Number Bed', 'Comfort Drive Steering', '125 Gal Water', 'Residential Induction Range', 'Tile Shower'],
-  },
-  // 35. Family Motorhome — Forest River Georgetown 2023
-  {
-    property_id: 'KCO-000035', listing_type: 'vehicle', category: 'Motorhomes',
-    title: 'Forest River Georgetown GT7 36B5 2023 — Family Class A',
-    description: 'The 2023 Forest River Georgetown GT7 36B5 is a family-friendly Class A gas motorhome built on a Ford F-53 chassis. Powered by a 7.3L Triton V8 gasoline engine producing 350 horsepower and 468 lb-ft of torque, paired with a 6-speed automatic transmission. The interior features three slide-outs, a bunkhouse with three bunks for the kids, a master queen bed, a full bathroom, and a half bath. The kitchen includes a 16-cu-ft refrigerator, a 3-burner cooktop, and an oven. Includes a 5,500W Cummins Onan gas generator, 75-gallon fresh water tank, and a 300W solar panel. Sleeps 8 and seats 8. This unit is in excellent used condition with 22,300 miles and a clean service history.',
-    price: 89500, currency: 'USD', country: '', country_code: '',
-    state: null, city: null, town: null,
-    bedrooms: null, bathrooms: null, building_size: null, land_size: null,
-    parking_spaces: null, property_type: 'Class A Motorhome', furnished: null, listing_status: 'sale',
-    brand: 'Forest River', model: 'Georgetown GT7 36B5', model_year: 2023, condition: 'Used', mileage: '22,300 mi',
-    transmission: '6-Speed Auto', fuel_type: 'Gasoline',
-    engine: '7.3L Triton V8 (350 HP, 468 lb-ft)', drive_type: 'RWD', color: 'White with Blue Decals',
-    sleeping_capacity: '8', seating_capacity: '8', bathroom: 'Full Bath + Half Bath', kitchen: 'Kitchen with 16-cu-ft Fridge and Oven', water_tank: '75 gallons',
-    images: motorhomeGallery([5994745, 7967406, 7510668, 7967365, 7967373, 7967374, 7967386, 7967387, 7967392, 7967405]),
-    rating: 4.5, rating_count: 61, favorite_count: 43,
-    features: ['3 Bunk Beds', 'Full Bath + Half Bath', '5,500W Generator', '300W Solar', 'Sleeps 8', 'Ford F-53 Chassis', '16-cu-ft Fridge', 'Queen Master Bed'],
   },
 
   // === 10 NEW INTERNATIONAL HOMES (one per country) ===
