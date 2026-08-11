@@ -590,7 +590,7 @@ function countSectionItems(section) {
   return count;
 }
 
-function renderSection(section, accentColor) {
+function renderSection(section, accentColor, maxRows) {
   const sec = document.createElement('div');
   sec.className = 'showroom-section space-y-3';
 
@@ -619,11 +619,298 @@ function renderSection(section, accentColor) {
   `;
   sec.appendChild(header);
 
-  section.rows.forEach(rowDef => {
+  const rowsToShow = (maxRows && maxRows > 0) ? section.rows.slice(0, maxRows) : section.rows;
+  rowsToShow.forEach(rowDef => {
     sec.appendChild(renderRow(rowDef));
   });
 
   return sec;
+}
+
+// ── All Houses view ────────────────────────────────────────────
+// "View All Houses" opens a full-screen catalog of every property
+// (seed + DB + generated catalog), grouped by property type. It reuses
+// the exact same renderCard, so card style/layout never changes.
+const HOUSE_SECTION_IDS = new Set(['local-houses', 'modern-luxury', 'commercial-land']);
+const HOUSE_TYPE_ORDER = ['Apartment', 'Condo', 'Townhouse', 'Detached House', 'Villa', 'Beach House', 'Farm House', 'Penthouse'];
+
+let allHousesOverlay = null;
+let _housesEscBound = false;
+
+function collectAllHouses() {
+  const seen = new Set();
+  const out = [];
+  const add = (l) => {
+    if (!l) return;
+    const isHome = l.listing_type === 'property' || (l.listing_type === 'vehicle' && l.category === 'Motorhomes');
+    if (!isHome) return;
+    const id = l.id || l.property_id;
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    out.push(l);
+  };
+  SHOWROOM_LISTINGS.forEach(add);
+  getDBListings().forEach(add);
+  const def = getCatalogCategory('real-estate');
+  if (def) {
+    for (let i = 0; i < def.count; i++) {
+      const item = generateProduct('real-estate', i);
+      if (item && !isCatalogListingHidden(item.property_id)) add(item);
+    }
+  }
+  const mh = getCatalogCategory('motorhomes');
+  if (mh) {
+    for (let i = 0; i < mh.count; i++) {
+      const item = generateProduct('motorhomes', i);
+      if (item && !isCatalogListingHidden(item.property_id)) add(item);
+    }
+  }
+  return out;
+}
+
+function groupHousesByType(houses) {
+  const groups = new Map();
+  houses.forEach(h => {
+    const t = h.category === 'Motorhomes' ? 'Motorhomes' : (h.property_type || h.subcategory || 'Homes');
+    if (!groups.has(t)) groups.set(t, []);
+    groups.get(t).push(h);
+  });
+  const order = [...HOUSE_TYPE_ORDER, ...Array.from(groups.keys()).filter(k => !HOUSE_TYPE_ORDER.includes(k))];
+  return order.filter(k => groups.has(k)).map(k => ({ type: k, items: groups.get(k) }));
+}
+
+function buildAllHousesOverlay() {
+  const existing = document.getElementById('all-houses-overlay');
+  if (existing) existing.remove();
+  allHousesOverlay = document.createElement('div');
+  allHousesOverlay.id = 'all-houses-overlay';
+  allHousesOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+
+  const header = document.createElement('div');
+  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.innerHTML = `
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0"><i data-lucide="home" class="w-5 h-5 text-blue-400"></i></span>
+      <div class="min-w-0">
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Houses &amp; Motorhomes</h2>
+        <p id="all-houses-count" class="text-[11px] text-gray-400 truncate"></p>
+      </div>
+    </div>
+    <button class="close-all-houses btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Houses"><i data-lucide="x" class="w-5 h-5"></i></button>
+  `;
+
+  const body = document.createElement('div');
+  body.id = 'all-houses-body';
+  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
+
+  allHousesOverlay.appendChild(header);
+  allHousesOverlay.appendChild(body);
+  document.body.appendChild(allHousesOverlay);
+
+  const houses = collectAllHouses();
+  const groups = groupHousesByType(houses);
+  const frag = document.createDocumentFragment();
+
+  groups.forEach(({ type, items }) => {
+    const label = /s$/i.test(type) ? type : type + 's';
+    const sec = document.createElement('section');
+    sec.className = 'space-y-3';
+    const head = document.createElement('div');
+    head.className = 'flex items-center justify-between gap-2';
+    head.innerHTML = `
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-4 h-4 text-blue-400"></i></span>
+        <h3 class="text-base font-bold text-gray-100 tracking-wide truncate">${label}</h3>
+      </div>
+      <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${items.length} Properties</span>
+    `;
+    const grid = document.createElement('div');
+    grid.className = 'flex flex-wrap gap-4';
+    items.forEach(l => grid.appendChild(renderCard(l)));
+    sec.appendChild(head);
+    sec.appendChild(grid);
+    frag.appendChild(sec);
+  });
+
+  body.appendChild(frag);
+
+  const countEl = document.getElementById('all-houses-count');
+  if (countEl) countEl.textContent = `${houses.length} homes · houses & motorhomes worldwide`;
+
+  header.querySelector('.close-all-houses').addEventListener('click', closeAllHousesView);
+  allHousesOverlay.addEventListener('click', (e) => { if (e.target === allHousesOverlay) closeAllHousesView(); });
+
+  if (!_housesEscBound) {
+    _housesEscBound = true;
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllHousesView(); });
+  }
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function openAllHousesView() {
+  if (!allHousesOverlay || !document.getElementById('all-houses-overlay')) buildAllHousesOverlay();
+  if (window.lucide) lucide.createIcons();
+  allHousesOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  allHousesOverlay.scrollTop = 0;
+}
+
+function closeAllHousesView() {
+  if (!allHousesOverlay) return;
+  allHousesOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function createViewAllHousesButton() {
+  const wrap = document.createElement('div');
+  wrap.className = 'flex justify-center py-1';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'view-all-houses-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-blue-600/30 transition active:scale-95';
+  btn.innerHTML = `View All Houses &amp; Motorhomes Worldwide <span class="text-lg">→ 🌎</span>`;
+  btn.addEventListener('click', openAllHousesView);
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+// ── All Cars & Trucks view ─────────────────────────────────────
+// "View all type of cars and trucks" opens a full-screen catalog of
+// every vehicle (cars + motorcycles + trucks), grouped by vehicle type.
+// It reuses the exact same renderCard, so card style/layout never changes.
+const VEHICLE_SECTION_IDS = new Set(['cars-motorcycles', 'trucks-buses']);
+const VEHICLE_TYPE_ORDER = ['Sedan', 'SUV', 'Hatchback', 'Sports Coupe', 'Pickup Truck', 'Street Bike', 'Cruiser', 'Sport Bike', 'Adventure Bike', 'Electric Scooter', 'Heavy Duty Truck', 'Box Truck', 'Dump Truck'];
+
+let allVehiclesOverlay = null;
+let _vehiclesEscBound = false;
+
+function collectAllVehicles() {
+  const seen = new Set();
+  const out = [];
+  const add = (l) => {
+    if (!l) return;
+    if (l.listing_type !== 'vehicle') return;
+    const id = l.id || l.property_id;
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    out.push(l);
+  };
+  ['cars', 'motorcycles', 'trucks'].forEach(slug => {
+    const def = getCatalogCategory(slug);
+    if (!def) return;
+    for (let i = 0; i < def.count; i++) {
+      const item = generateProduct(slug, i);
+      if (item && !isCatalogListingHidden(item.property_id)) add(item);
+    }
+  });
+  TRUCK_LISTINGS.forEach(add);
+  return out;
+}
+
+function groupVehiclesByType(vehicles) {
+  const groups = new Map();
+  vehicles.forEach(v => {
+    const t = v.subcategory || v.category || 'Vehicles';
+    if (!groups.has(t)) groups.set(t, []);
+    groups.get(t).push(v);
+  });
+  const order = [...VEHICLE_TYPE_ORDER, ...Array.from(groups.keys()).filter(k => !VEHICLE_TYPE_ORDER.includes(k))];
+  return order.filter(k => groups.has(k)).map(k => ({ type: k, items: groups.get(k) }));
+}
+
+function buildAllVehiclesOverlay() {
+  const existing = document.getElementById('all-vehicles-overlay');
+  if (existing) existing.remove();
+  allVehiclesOverlay = document.createElement('div');
+  allVehiclesOverlay.id = 'all-vehicles-overlay';
+  allVehiclesOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+
+  const header = document.createElement('div');
+  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-amber-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.innerHTML = `
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0"><i data-lucide="car-front" class="w-5 h-5 text-amber-400"></i></span>
+      <div class="min-w-0">
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Cars & Trucks</h2>
+        <p id="all-vehicles-count" class="text-[11px] text-gray-400 truncate"></p>
+      </div>
+    </div>
+    <button class="close-all-vehicles btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Cars & Trucks"><i data-lucide="x" class="w-5 h-5"></i></button>
+  `;
+
+  const body = document.createElement('div');
+  body.id = 'all-vehicles-body';
+  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
+
+  allVehiclesOverlay.appendChild(header);
+  allVehiclesOverlay.appendChild(body);
+  document.body.appendChild(allVehiclesOverlay);
+
+  const vehicles = collectAllVehicles();
+  const groups = groupVehiclesByType(vehicles);
+  const frag = document.createDocumentFragment();
+
+  groups.forEach(({ type, items }) => {
+    const label = /s$/i.test(type) ? type : type + 's';
+    const sec = document.createElement('section');
+    sec.className = 'space-y-3';
+    const head = document.createElement('div');
+    head.className = 'flex items-center justify-between gap-2';
+    head.innerHTML = `
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0"><i data-lucide="car" class="w-4 h-4 text-amber-400"></i></span>
+        <h3 class="text-base font-bold text-gray-100 tracking-wide truncate">${label}</h3>
+      </div>
+      <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300">${items.length} Vehicles</span>
+    `;
+    const grid = document.createElement('div');
+    grid.className = 'flex flex-wrap gap-4';
+    items.forEach(l => grid.appendChild(renderCard(l)));
+    sec.appendChild(head);
+    sec.appendChild(grid);
+    frag.appendChild(sec);
+  });
+
+  body.appendChild(frag);
+
+  const countEl = document.getElementById('all-vehicles-count');
+  if (countEl) countEl.textContent = `${vehicles.length} vehicles · cars, motorcycles & trucks`;
+
+  header.querySelector('.close-all-vehicles').addEventListener('click', closeAllVehiclesView);
+  allVehiclesOverlay.addEventListener('click', (e) => { if (e.target === allVehiclesOverlay) closeAllVehiclesView(); });
+
+  if (!_vehiclesEscBound) {
+    _vehiclesEscBound = true;
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllVehiclesView(); });
+  }
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function openAllVehiclesView() {
+  if (!allVehiclesOverlay || !document.getElementById('all-vehicles-overlay')) buildAllVehiclesOverlay();
+  if (window.lucide) lucide.createIcons();
+  allVehiclesOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  allVehiclesOverlay.scrollTop = 0;
+}
+
+function closeAllVehiclesView() {
+  if (!allVehiclesOverlay) return;
+  allVehiclesOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function createViewAllVehiclesButton() {
+  const wrap = document.createElement('div');
+  wrap.className = 'flex justify-center py-1';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'view-all-vehicles-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-amber-600/30 transition active:scale-95';
+  btn.innerHTML = `View all type of cars and trucks <span class="text-lg">→ 🚗</span>`;
+  btn.addEventListener('click', openAllVehiclesView);
+  wrap.appendChild(btn);
+  return wrap;
 }
 
 // ── Grid rendering ──
@@ -636,9 +923,25 @@ function renderGrid(gridName) {
   const sections = gridName === 'real-estate' ? REAL_ESTATE_SECTIONS : MARKETPLACE_SECTIONS;
   const accent = gridName === 'real-estate' ? 'blue' : 'emerald';
 
-  sections.forEach(section => {
-    container.appendChild(renderSection(section, accent));
-  });
+  if (gridName === 'real-estate') {
+    // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
+    // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
+    const byId = new Map(sections.map(s => [s.id, s]));
+    for (const id of ['local-houses', 'motorhomes-boats', 'cars-motorcycles', 'trucks-buses', 'heavy-equipment']) {
+      const section = byId.get(id);
+      if (!section) continue;
+      const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
+      container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
+      if (id === 'motorhomes-boats') container.appendChild(createViewAllHousesButton());
+      if (id === 'trucks-buses') container.appendChild(createViewAllVehiclesButton());
+    }
+    // modern-luxury & commercial-land are intentionally left off the
+    // homepage — every property stays reachable in the All Houses overlay.
+  } else {
+    sections.forEach(section => {
+      container.appendChild(renderSection(section, accent));
+    });
+  }
 
   if (window.lucide) lucide.createIcons();
 }
@@ -678,7 +981,7 @@ function categoryMatches(catName, sectionLabel, rowLabel) {
     'electronics': ['electronic', 'gadget'], 'cars': ['car'], 'motorcycles': ['motorcycle', 'motor'],
     'phones': ['phone', 'smartphone', 'mobile'], 'computers': ['computer', 'laptop', 'monitor'],
     'furniture': ['furniture', 'armchair', 'chair', 'table', 'sofa'], 'beauty': ['beauty', 'cosmetic', 'makeup', 'skincare'],
-    'fashion': ['fashion', 'apparel', 'clothing'], 'real estate': ['real estate', 'house', 'property', 'apartment', 'villa'],
+    'fashion': ['fashion', 'apparel', 'clothing'],     'real estate': ['real estate', 'house', 'property', 'apartment', 'villa', 'motorhome', 'camper', 'rv'],
     'bicycles': ['bicycle', 'bike', 'cycling'], 'trucks': ['truck'], 'land': ['land', 'commercial'],
     'kitchen': ['kitchen', 'cookware', 'utensil'], 'food': ['food', 'grocer', 'groceries'],
     'pets': ['pet'], 'books': ['book'], 'toys': ['toy', 'game', 'hobby'], 'services': ['service', 'industrial', 'equipment'],
