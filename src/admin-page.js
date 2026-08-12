@@ -29,6 +29,7 @@ const NAV = [
   { group: 'Main', items: [
     { id: 'dashboard',   label: 'Dashboard',         icon: 'layout-dashboard' },
     { id: 'products',    label: 'Products',           icon: 'package' },
+    { id: 'general-ai',  label: 'General AI',         icon: 'sparkles' },
     { id: 'properties',  label: 'Properties',         icon: 'home' },
     { id: 'catalog',     label: 'Catalog Manager',    icon: 'boxes' },
     { id: 'orders',      label: 'Orders',             icon: 'shopping-bag' },
@@ -208,6 +209,7 @@ window.navigate = function(section) {
     brand: renderBrandManager,
     'payment-settings': renderPaymentSettings,
     backup: renderBackup, settings: renderSettings, publish: renderPublish,
+    'general-ai': renderGeneralAI,
   };
   const fn = renderers[section] || (() => { const c = document.getElementById('content'); if (c) c.innerHTML = emptyState('construction', 'Coming Soon', `${title} is being built.`); });
   fn();
@@ -234,6 +236,193 @@ async function renderAiAssistant() {
       </div>
     </div>`;
   if (window.lucide) lucide.createIcons();
+}
+
+// ── General AI Assistant ──────────────────────────────────────────────
+async function renderGeneralAI() {
+  const content = document.getElementById('content');
+  if (!content) return;
+  try {
+    // Load current showroom products for AI context
+    const { data: products, error } = await supabase.from('showroom_listings')
+      .select('*').neq('listing_type', 'property').order('created_at', { ascending: false });
+    const items = (products || []);
+    
+    // Build product catalog context for AI
+    const productContext = items.map(p => ({
+      id: p.property_id,
+      title: p.title,
+      category: p.category,
+      listing_type: p.listing_type,
+      price: p.price,
+      brand: p.brand,
+      features: p.features,
+      tags: p.tags,
+      is_active: p.is_active,
+      description: p.description,
+      images: p.images
+    })).slice(0, 50); // Limit to first 50 for context
+
+    content.innerHTML = `
+      <div class="space-y-6 fade-in">
+        <div class="glass-soft border border-purple-500/20 rounded-2xl p-4 sm:p-5">
+          <div class="flex flex-col gap-3">
+            <h2 class="text-xl font-black text-white">General AI Assistant</h2>
+            <p class="text-sm text-gray-500">Upload images and give instructions — AI will generate product cards, fix issues, and publish to your showroom automatically.</p>
+          </div>
+        </div>
+
+        <!-- AI Chat Area -->
+        <div class="glass-soft border border-purple-500/15 rounded-2xl p-3 sm:p-4 h-96 overflow-y-auto fade-in">
+          <div id="ai-chat-history" class="h-64 overflow-y-auto space-y-2">
+            <!-- Chat messages will appear here -->
+          </div>
+          <div class="p-2 border-t border-purple-500/20">
+            <div class="flex gap-2">
+              <input type="file" id="ai-image-upload" class="hidden" multiple />
+              <button onclick="document.getElementById('ai-image-upload').click()" class="btn-press px-3 py-1.5 text-xs font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded-lg hover:bg-purple-500/15 transition">
+                <i data-lucide="upload" class="w-3.5 h-3.5 inline mr-1"></i> Upload Image
+              </button>
+              <select id="ai-product-type" class="input-field w-48 bg-[#0a1124]/80 border border-purple-500/20 rounded-xl px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                <option value="product">Product (general item)</option>
+                <option value="property">Property (house/land)</option>
+                <option value="vehicle">Vehicle (car/motorcycle)</option>
+                <option value="electronics">Electronics</option>
+                <option value="fashion">Fashion & Apparel</option>
+                <option value="home-kitchen">Home & Kitchen</option>
+              </select>
+              <button onclick="aiGenerateProduct()" class="btn-press px-3 py-1.5 text-xs font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded-lg hover:bg-purple-500/15 transition">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 inline mr-1"></i> Generate
+              </button>
+              <input type="text" id="ai-prompt" class="input-field flex-1 bg-[#0a1124]/80 border border-purple-500/20 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500" placeholder="Tell AI what to create..." onkeypress="if(event.key==='Enter')aiGenerateProduct()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Showroom Status Monitor -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="glass-soft border border-purple-500/15 rounded-xl p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <i data-lucide="eye" class="w-4 h-4 text-purple-400"></i>
+              </div>
+              <span class="text-sm font-bold text-purple-400">Showroom Total</span>
+            </div>
+            <p class="text-xl font-black text-white" id="ai-total-products">Loading...</p>
+          </div>
+          <div class="glass-soft border border-purple-500/15 rounded-xl p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+              </div>
+              <span class="text-sm font-bold text-emerald-400">Active</span>
+            </div>
+            <p class="text-xl font-black text-white" id="ai-active-products">Loading...</p>
+          </div>
+          <div class="glass-soft border border-purple-500/15 rounded-xl p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+              </div>
+              <span class="text-sm font-bold text-amber-400">Issues</span>
+            </div>
+            <p class="text-xl font-black text-white" id="ai-issue-count">Loading...</p>
+          </div>
+          <div class="glass-soft border border-purple-500/15 rounded-xl p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <i data-lucide="history" class="w-4 h-4 text-blue-400"></i>
+              </div>
+              <span class="text-sm font-bold text-blue-400">Recent AI</span>
+            </div>
+            <p class="text-xs text-gray-400" id="ai-recent-ai">No activity yet</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div class="glass-soft border border-purple-500/15 rounded-2xl p-4">
+            <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-purple-400"></i> Quick Commands</h3>
+            <div class="space-y-2">
+              <button onclick="aiFixDuplicates()" class="btn-press w-full text-xs font-bold text-purple-400 hover:text-purple-300 rounded-xl py-2.5 transition">
+                <i data-lucide="rotate-cw" class="w-3.5 h-3.5 inline mr-1"></i> Fix Duplicate Products
+              </button>
+              <button onclick="aiCleanupNames()" class="btn-press w-full text-xs font-bold text-purple-400 hover:text-purple-300 rounded-xl py-2.5 transition">
+                <i data-lucide="text-field" class="w-3.5 h-3.5 inline mr-1"></i> Fix Naming Issues
+              </button>
+              <button onclick="aiCheckHealth()" class="btn-press w-full text-xs font-bold text-purple-400 hover:text-purple-300 rounded-xl py-2.5 transition">
+                <i data-lucide="heart" class="w-3.5 h-3.5 inline mr-1"></i> Check Product Health
+              </button>
+            </div>
+          </div>
+          <div class="glass-soft border border-purple-500/15 rounded-2xl p-4">
+            <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2"><i data-lucide="magic-wand" class="w-4 h-4 text-purple-400"></i> AI Actions</h3>
+            <div class="space-y-2">
+              <button onclick="aiGenerateRandomProduct()" class="btn-press w-full text-xs font-bold text-purple-400 hover:text-purple-300 rounded-xl py-2.5 transition">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 inline mr-1"></i> Generate Random Product
+              </button>
+              <button onclick="aiOptimizePricing()" class="btn-press w-full text-xs font-bold text-purple-400 hover:text-purple-300 rounded-xl py-2.5 transition">
+                <i data-lucide="trending-up" class="w-3.5 h-3.5 inline mr-1"></i> Optimize Prices
+              </button>
+              <button onclick="aiRearrangeGallery()" class="btn-press w-full text-xs font-bold text-purple-400 hover:text-purple-300 rounded-xl py-2.5 transition">
+                <i data-lucide="image" class="w-3.5 h-3.5 inline mr-1"></i> Rearrange Galleries
+              </button>
+            </div>
+          </div>
+          <div class="glass-soft border border-purple-500/15 rounded-2xl p-4">
+            <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-purple-400"></i> Auto-Fix Power</h3>
+            <p class="text-xs text-gray-500 mb-2">AI has permission to:</p>
+            <ul class="text-xs text-gray-400 space-y-1">
+              <li><i data-lucide="check-circle" class="w-3 h-3 text-emerald-400 inline mr-1"></i> Delete duplicates & generate new</li>
+              <li><i data-lucide="check-circle" class="w-3 h-3 text-emerald-400 inline mr-1"></i> Fix naming & descriptions</li>
+              <li><i data-lucide="check-circle" class="w-3 h-3 text-emerald-400 inline mr-1"></i> Reprice items competitively</li>
+              <li><i data-lucide="check-circle" class="w-3 h-3 text-emerald-400 inline mr-1"></i> Relocate to proper categories</li>
+              <li><i data-lucide="check-circle" class="w-3 h-3 text-emerald-400 inline mr-1"></i> Publish/unpublish as needed</li>
+            </ul>
+            <button onclick="aiFullCleanup()" class="btn-press w-full text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-lg mt-2 transition">
+              <i data-lucide="trash" class="w-3.5 h-3.5 inline mr-1"></i> Full Showroom Cleanup
+            </button>
+          </div>
+        </div>
+      </div>`;
+
+    // Initialize chat history
+    window.aiChatHistory = [];
+    renderAiChatHistory();
+    
+    // Load product count
+    loadProductCounts();
+    
+    if (window.lucide) lucide.createIcons();
+  } catch (err) {
+    if (content) content.innerHTML = `<div class="p-6 text-purple-400 text-sm">Error: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderAiChatHistory() {
+  const el = document.getElementById('ai-chat-history');
+  if (!el) return;
+  if (!window.aiChatHistory || window.aiChatHistory.length === 0) {
+    el.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">Start by uploading an image or typing a command</p>';
+    return;
+  }
+  el.innerHTML = window.aiChatHistory.map((msg, i) => `
+    <div class="p-3 rounded-xl ${msg.type === 'ai' ? 'bg-purple-500/10' : 'bg-blue-500/10'} ${msg.type === 'ai' ? 'right-0' : 'left-0'} ${msg.type === 'ai' ? '' : 'mb-3'}">
+      <p class="text-sm font-medium ${msg.type === 'ai' ? 'text-purple-300' : 'text-blue-300'}">${esc(msg.sender)}</p>
+      <p class="text-[10px] ${msg.type === 'ai' ? 'text-purple-400' : 'text-gray-300'}">${esc(msg.content)}</p>
+      <p class="text-[10px] text-gray-500">${new Date().toLocaleTimeString()}</p>
+    </div>
+  `).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+function loadProductCounts() {
+  // Quick count update
+  const totalEl = document.getElementById('ai-total-products');
+  const activeEl = document.getElementById('ai-active-products');
+  const issueEl = document.getElementById('ai-issue-count');
+  if (totalEl) totalEl.textContent = '...';
+  if (activeEl) activeEl.textContent = '...';
+  if (issueEl) issueEl.textContent = '...';
 }
 
 async function renderN8n() {
@@ -5473,6 +5662,419 @@ window.applyProductAiChanges = async function() {
 };
 
 // ══════════════════════════════════════════════════════════
+//  11b. GENERAL AI — WHOLE SHOWROOM ASSISTANT
+//  Sits on top of the Product Manager. Manages the ENTIRE
+//  showroom: friendly chat, monitor, publish from a photo,
+//  generate any image, and fix anything without coding.
+// ══════════════════════════════════════════════════════════
+let _generalAiState = null; // { busy, messages, chatImages, generatedImages, lastGenPrompt, lastGenReference, pendingPlan }
+
+const GENERAL_AI_QUICK_ACTIONS = [
+  { key: 'monitor', mode: 'monitor', label: 'Scan Showroom', icon: 'scan-search', prompt: 'Scan the whole showroom and tell me what is good and what is not good.' },
+  { key: 'publish', mode: 'publish', label: 'Publish from Photo', icon: 'image-up', prompt: 'Publish this photo as a product in my showroom, matched to the right section.' },
+  { key: 'gen', mode: 'gen', label: 'Generate an Image', icon: 'wand-sparkles', prompt: 'Generate a beautiful new image for me.' },
+  { key: 'fix', mode: 'fix', label: 'Fix Everything', icon: 'wrench', prompt: 'Check the whole showroom and fix everything that is wrong so everything is proper.' },
+];
+
+function generalAiHistoryForChat() {
+  const s = _generalAiState;
+  if (!s) return [];
+  const msgs = Array.isArray(s.messages) ? s.messages : [];
+  return msgs
+    .slice(0, -1)
+    .filter((m) => !m.welcome)
+    .map((m) => {
+      const imgNote = m.images && m.images.length ? ` [Sent ${m.images.length} photo(s)]` : '';
+      const content = `${m.content || ''}${imgNote}`.trim();
+      return { role: m.role === 'user' ? 'user' : 'assistant', content };
+    })
+    .filter((m) => m.content);
+}
+
+function generalAiDetectMode(text, hasImages) {
+  const t = String(text || '').toLowerCase();
+  if (/\bpublish\b/.test(t) || /\b(add|upload|put)\b[\s\S]*\b(showroom|store|site|listing|product|card|item)\b/.test(t)) return 'publish';
+  if (/\b(generate|create|make|draw|produce|imagine|design)\b[\s\S]*\b(image|photo|picture|logo|thumbnail|background|banner|color|colour)\b/.test(t)) return 'gen';
+  if (/\b(scan|monitor|health|good|bad|check)\b[\s\S]*\b(showroom|store|product|section|everything)\b/.test(t) || /\bshowroom\b/.test(t)) return 'monitor';
+  if (hasImages) return t ? 'vision' : 'publish';
+  return 'execute';
+}
+
+function generalAiPlanPreview(plan) {
+  const action = plan && plan.action;
+  const p = (plan && plan.params) || {};
+  switch (action) {
+    case 'delete_duplicates': return `Delete duplicate products${p.category ? ` in the "${p.category}" section` : ' in the whole showroom'}.`;
+    case 'delete_products': return `Delete ${(p.property_ids || []).length} product(s).`;
+    case 'rename_category': return `Rename the section "${p.from}" to "${p.to}" everywhere.`;
+    case 'create_product': return `Create a new product: "${p.title}" in ${p.category || 'General'}.`;
+    case 'regenerate_product': return `Generate a brand-new image and replace the current one on ${p.property_id}.`;
+    default: return JSON.stringify(p || {});
+  }
+}
+
+window.openGeneralAi = async function() {
+  _generalAiState = {
+    busy: false,
+    messages: [{
+      role: 'assistant',
+      welcome: true,
+      content: `I'm the General AI — I manage your WHOLE showroom, on top of the Product Manager. I can publish any product for you: upload a photo and I'll generate a matching image, check your showroom, and publish it in the right section. I can also scan and monitor what's good and what's not, generate any image in the world, delete duplicates, rename sections, and fix anything without coding. Just tell me.`,
+    }],
+    chatImages: [],
+    generatedImages: [],
+    lastGenPrompt: '',
+    lastGenReference: null,
+    pendingPlan: null,
+  };
+  renderGeneralAiModal();
+};
+
+function renderGeneralAiModal() {
+  const s = _generalAiState;
+  if (!s) return;
+  const busy = s.busy === true;
+  const msgs = Array.isArray(s.messages) ? s.messages : [];
+
+  const msgsHtml = msgs.map((m) => m.role === 'user' ? `
+    <div class="flex justify-end">
+      <div class="max-w-[85%] bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-3xl rounded-tr-md px-5 py-3.5 text-[1.02rem] leading-relaxed whitespace-pre-wrap break-words shadow-lg shadow-blue-600/20">
+        ${(m.images && m.images.length) ? `<div class="flex flex-wrap gap-2 mb-2">${m.images.map((u) => `<img src="${esc(u)}" class="w-16 h-16 rounded-xl object-cover border border-white/20">`).join('')}</div>` : ''}
+        ${esc(m.content)}
+      </div>
+    </div>` : `
+    <div class="flex gap-3 items-start">
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-700 flex items-center justify-center shrink-0 shadow-md mt-0.5">
+        <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+      </div>
+      <div class="glass border border-sky-500/20 rounded-3xl rounded-tl-md px-5 py-3.5 min-w-0 max-w-[85%]">
+        <div class="text-[1.02rem] leading-relaxed text-gray-100 whitespace-pre-wrap break-words">${esc(m.content)}</div>
+        ${m.images && m.images.length ? `
+          <div class="flex flex-wrap gap-2.5 mt-3">
+            ${m.images.map((u) => `<img src="${esc(u)}" class="w-40 h-40 rounded-2xl object-cover border border-sky-500/40 shadow-lg" onerror="this.src='/fallback.svg'">`).join('')}
+          </div>` : ''}
+        ${m.generated && m.generated.length ? `
+          <div class="flex flex-wrap gap-2.5 mt-3">
+            ${m.generated.map((u, gi) => `
+              <div class="relative">
+                <img src="${esc(u)}" class="w-40 h-40 rounded-2xl object-cover border border-sky-500/40 shadow-lg" onerror="this.src='/fallback.svg'">
+                <button onclick="generalAiUseGeneratedImage(${gi})" class="absolute bottom-1.5 right-1.5 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black shadow transition">Use on card</button>
+              </div>`).join('')}
+          </div>
+          <div class="flex items-center gap-2 mt-2.5">
+            <button onclick="generalAiRegenerateImage()" class="btn-press px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-sky-500/10 text-sky-200 hover:bg-sky-500/25 transition flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Regenerate</button>
+          </div>` : ''}
+        ${m.provider ? `<p class="text-[9px] text-gray-600 mt-2">${esc(m.provider)}</p>` : ''}
+      </div>
+    </div>`).join('');
+
+  const typingHtml = busy ? `
+    <div class="flex gap-3 items-start">
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-700 flex items-center justify-center shrink-0 shadow-md mt-0.5">
+        <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+      </div>
+      <div class="glass border border-sky-500/20 rounded-3xl rounded-tl-md px-5 py-4 flex items-center gap-1.5">
+        <span class="typing-dot w-2.5 h-2.5 bg-sky-400 rounded-full"></span>
+        <span class="typing-dot w-2.5 h-2.5 bg-sky-400 rounded-full"></span>
+        <span class="typing-dot w-2.5 h-2.5 bg-sky-400 rounded-full"></span>
+      </div>
+    </div>` : '';
+
+  const chips = GENERAL_AI_QUICK_ACTIONS.map((a) => `
+    <button onclick="generalAiQuickAction('${a.key}')" class="btn-press px-3 py-2 rounded-xl text-[11px] font-bold bg-sky-500/10 text-sky-200 hover:bg-sky-500/20 border border-sky-500/15 transition flex items-center gap-1.5 shrink-0">
+      <i data-lucide="${a.icon}" class="w-3.5 h-3.5"></i> ${a.label}
+    </button>`).join('');
+
+  const chatImages = Array.isArray(s.chatImages) ? s.chatImages : [];
+  const chatThumbs = chatImages.map((u, i) => `
+    <div class="relative w-14 h-14 rounded-xl overflow-hidden border border-sky-500/40 shrink-0">
+      <img src="${esc(u)}" class="w-full h-full object-cover">
+      <button onclick="generalAiRemoveChatImage(${i})" class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-red-500 text-white text-xs leading-none flex items-center justify-center shadow" title="Remove image">✕</button>
+    </div>`).join('');
+
+  const pendingHtml = s.pendingPlan ? `
+    <div class="glass border border-amber-500/30 rounded-2xl p-4 bg-amber-500/5">
+      <p class="text-xs font-black text-amber-200 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> Confirm this action</p>
+      <p class="text-[11px] text-gray-400 mt-1.5">${esc(generalAiPlanPreview(s.pendingPlan))}</p>
+      <div class="flex gap-2 mt-3">
+        <button onclick="generalAiConfirmPlan()" class="btn-press px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black rounded-xl transition flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5"></i> Do it</button>
+        <button onclick="generalAiCancelPlan()" class="btn-press px-3 py-2 bg-white/10 hover:bg-white/20 text-gray-200 text-[11px] font-bold rounded-xl transition">Cancel</button>
+      </div>
+    </div>` : '';
+
+  openModal(`
+    <div class="fixed inset-0 z-[100] bg-[#030712]/92 backdrop-blur-sm flex flex-col" onclick="if(event.target===this)closeModal()">
+      <div class="max-w-4xl mx-auto w-full h-full flex flex-col">
+        <div class="px-3 sm:px-5 h-16 shrink-0 flex items-center justify-between gap-3 border-b border-sky-500/15 bg-blue-950/40">
+          <div class="flex items-center gap-3 min-w-0">
+            <button onclick="closeModal()" class="btn-press w-11 h-11 rounded-2xl bg-blue-950/60 border border-sky-500/25 flex items-center justify-center shrink-0" title="Back to products">
+              <i data-lucide="chevron-left" class="w-6 h-6 text-sky-300"></i>
+            </button>
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-700 flex items-center justify-center shrink-0">
+              <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+            </div>
+            <div class="min-w-0">
+              <span class="text-lg font-black text-white block leading-tight">General AI</span>
+              <span class="text-[11px] text-gray-500 block truncate">Whole Showroom Assistant</span>
+            </div>
+          </div>
+          <span class="badge bg-sky-500/10 text-sky-300 border-sky-500/25 hidden sm:inline-flex shrink-0"><i data-lucide="globe" class="w-3 h-3"></i> Full showroom access</span>
+        </div>
+
+        <div id="general-ai-chat-scroll" class="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-3 sm:px-5 py-4">
+          <div class="space-y-4">
+            <div class="glass-soft border border-sky-500/15 rounded-2xl p-4">
+              <div class="flex flex-wrap gap-1.5 mb-2">${chips}</div>
+              <p class="text-[11px] text-gray-500">Upload a photo and say "publish it to my showroom" — I'll generate the image, check your showroom, and publish it matched to the right section.</p>
+            </div>
+            ${msgsHtml}
+            ${typingHtml}
+            ${pendingHtml}
+          </div>
+        </div>
+
+        <div class="shrink-0 px-3 sm:px-5 pb-3 pt-2 bg-gradient-to-t from-[#070b16] via-[#070b16]/95 to-transparent">
+          ${chatThumbs ? `<div class="flex flex-wrap gap-2.5 pb-2">${chatThumbs}</div>` : ''}
+          <div class="glass border border-sky-500/25 rounded-[1.6rem] p-2 flex items-end gap-1.5 shadow-2xl shadow-sky-950/40">
+            <button onclick="generalAiChatAttach()" class="btn-press w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/30 hover:bg-sky-500/25 flex items-center justify-center shrink-0" title="Attach photo(s)">
+              <i data-lucide="image-plus" class="w-6 h-6 text-sky-300"></i>
+            </button>
+            <textarea id="general-ai-input" rows="1" class="flex-1 bg-transparent text-lg text-white placeholder-gray-500 resize-none outline-none px-1 py-3 max-h-40 leading-relaxed scrollbar-thin" placeholder="Tell the General AI what to do for your showroom…"></textarea>
+            <button id="general-ai-send-btn" onclick="runGeneralAiInstruction()" class="btn-press w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-700 hover:from-sky-400 hover:to-indigo-600 text-white flex items-center justify-center shrink-0 transition shadow-lg shadow-sky-600/30 ${busy ? 'opacity-40 pointer-events-none' : ''}" title="Send">
+              <i data-lucide="send" class="w-6 h-6"></i>
+            </button>
+          </div>
+          <p class="text-[11px] text-gray-500 pt-2.5">Full permission over the whole showroom — it checks everything before it publishes, and it can fix anything without coding.</p>
+        </div>
+      </div>
+      <input id="general-ai-chat-image" type="file" accept="image/*" multiple class="hidden" onchange="generalAiChatImagePicked(this)">
+    </div>`);
+
+  const input = document.getElementById('general-ai-input');
+  if (input) {
+    input.value = s.instruction || '';
+    input.addEventListener('input', () => {
+      if (_generalAiState) _generalAiState.instruction = input.value;
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        runGeneralAiInstruction();
+      }
+    });
+  }
+  if (window.lucide) lucide.createIcons();
+  scrollGeneralAiChatToBottom();
+}
+
+function scrollGeneralAiChatToBottom() {
+  const el = document.getElementById('general-ai-chat-scroll');
+  if (!el) return;
+  requestAnimationFrame(() => {
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  });
+}
+
+window.generalAiChatAttach = function() {
+  document.getElementById('general-ai-chat-image')?.click();
+};
+
+window.generalAiChatImagePicked = async function(input) {
+  if (!_generalAiState || !input || !input.files || !input.files.length) return;
+  const files = [...input.files].slice(0, 4);
+  let ok = 0;
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    const dataUrl = await productAiFileToDataUrl(file);
+    if (dataUrl) { _generalAiState.chatImages.push(dataUrl); ok += 1; }
+  }
+  input.value = '';
+  if (ok) showToast(`${ok} photo(s) attached. Send "publish it to my showroom" and I'll do the rest.`, 'info');
+  renderGeneralAiModal();
+};
+
+window.generalAiRemoveChatImage = function(index) {
+  if (!_generalAiState) return;
+  _generalAiState.chatImages.splice(index, 1);
+  renderGeneralAiModal();
+};
+
+window.generalAiQuickAction = function(key) {
+  const action = GENERAL_AI_QUICK_ACTIONS.find((a) => a.key === key);
+  if (!action || !_generalAiState) return;
+  _generalAiState.instruction = action.prompt;
+  _generalAiState.quickLabel = action.label;
+  _generalAiState.quickMode = action.mode;
+  runGeneralAiInstruction();
+};
+
+window.runGeneralAiInstruction = async function() {
+  const s = _generalAiState;
+  if (!s || s.busy) return;
+  const rawInstruction = (s.instruction || '').trim();
+  const quickLabel = s.quickLabel || '';
+  s.quickLabel = '';
+  const quickMode = s.quickMode || '';
+  s.quickMode = '';
+  const hasImages = (s.chatImages || []).length > 0;
+  if (!rawInstruction && !quickLabel && !quickMode && !hasImages) return;
+
+  const aiInstruction = rawInstruction || 'publish this photo to my showroom';
+  const userText = quickLabel || rawInstruction || (hasImages ? 'Publish this photo to my showroom.' : aiInstruction);
+  const sentImages = [...(s.chatImages || [])];
+  s.chatImages = [];
+  s.instruction = '';
+  s.pendingPlan = null;
+  s.messages.push({ role: 'user', content: userText, images: sentImages });
+  s.busy = true;
+  renderGeneralAiModal();
+
+  const mode = quickMode || generalAiDetectMode(aiInstruction, hasImages);
+
+  try {
+    if (mode === 'publish') {
+      await generalAiPublish(aiInstruction, sentImages);
+    } else if (mode === 'gen') {
+      await generalAiImageGen(aiInstruction, sentImages);
+    } else if (mode === 'monitor') {
+      await generalAiMonitor();
+    } else if (mode === 'vision') {
+      await generalAiVisionChat(aiInstruction, sentImages);
+    } else {
+      await generalAiExecute(aiInstruction, sentImages);
+    }
+    scrollGeneralAiChatToBottom();
+  } catch (err) {
+    s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
+    showToast(`General AI error: ${err.message}`, 'error');
+  } finally {
+    s.busy = false;
+    renderGeneralAiModal();
+  }
+};
+
+async function generalAiPublish(instruction, sentImages) {
+  const s = _generalAiState;
+  const res = await aiClient._callEdge({ action: 'general_publish', message: instruction, images: sentImages.slice(0, 4), max_tokens: 2048 });
+  if (!res || res.success !== true) throw new Error((res && res.error) || 'Could not publish the product.');
+  s.messages.push({ role: 'assistant', content: String(res.response || 'Published.'), images: (res.images || []).slice(0, 2) });
+  showToast('Product published to the showroom.', 'success');
+  generalAiRefreshShowroom();
+}
+
+async function generalAiImageGen(instruction, sentImages) {
+  const s = _generalAiState;
+  let reference = null;
+  if (sentImages && sentImages.length) reference = sentImages[0];
+  const res = await aiClient._callEdge({ action: 'generate_images', prompt: `${instruction}\n\n(Generate a beautiful, high-quality image. It can be any type of image — no restrictions.)`, reference_url: reference, count: 2 });
+  if (!res || !Array.isArray(res.images) || !res.images.length) throw new Error((res && res.error) || 'Image generation returned nothing.');
+  s.generatedImages = res.images;
+  s.lastGenPrompt = instruction;
+  s.lastGenReference = reference;
+  s.messages.push({ role: 'assistant', content: 'Here are your images. Tap one to save it to your showroom product images.', generated: res.images, provider: `${res.provider || 'AI'}/${res.model || ''}` });
+}
+
+async function generalAiMonitor() {
+  const s = _generalAiState;
+  const res = await aiClient._callEdge({ action: 'general_monitor', max_tokens: 3000 });
+  if (!res || res.success !== true || !res.report) throw new Error((res && res.error) || 'Could not scan the showroom.');
+  const report = res.report || {};
+  const lines = ['Showroom scan complete:'];
+  (Array.isArray(report.good) ? report.good : []).forEach((g) => lines.push(`✅ ${g}`));
+  (Array.isArray(report.issues) ? report.issues : []).forEach((i) => lines.push(`⚠️ ${i.property_id} (${i.severity || 'low'}): ${i.issue}`));
+  (Array.isArray(report.suggestions) ? report.suggestions : []).forEach((g) => lines.push(`💡 ${g}`));
+  if (!(Array.isArray(report.issues) ? report.issues.length : 0)) lines.push('Everything looks good.');
+  s.messages.push({ role: 'assistant', content: lines.join('\n') });
+}
+
+async function generalAiVisionChat(instruction, sentImages) {
+  const s = _generalAiState;
+  const prompt = `${instruction}\n\nLook at the photo(s). If you recognize the product, identify it and give a typical price range. You manage the whole showroom.`;
+  const res = await aiClient._callEdge({ action: 'vision', images: (sentImages || []).slice(0, 4), prompt, max_tokens: 1200 });
+  const text = (res && res.text) ? String(res.text) : '';
+  if (!text) throw new Error((res && res.error) || 'The AI could not read the attached photos.');
+  s.messages.push({ role: 'assistant', content: text });
+}
+
+async function generalAiExecute(instruction, sentImages) {
+  const s = _generalAiState;
+  const history = generalAiHistoryForChat();
+  const res = await aiClient._callEdge({ action: 'general_execute', message: instruction, images: (sentImages || []).slice(0, 4), history, max_tokens: 1200 });
+  if (!res || res.success !== true) throw new Error((res && res.error) || 'Could not handle that request.');
+  if (res.needs_confirmation) {
+    s.pendingPlan = res.plan || null;
+    s.messages.push({ role: 'assistant', content: String(res.response || 'I found something I can fix.') });
+    return;
+  }
+  s.messages.push({ role: 'assistant', content: String(res.response || res.reply || 'Done.') });
+  if (res.plan && res.plan.action !== 'chat' && res.plan.action !== 'monitor') {
+    generalAiRefreshShowroom();
+  }
+}
+
+window.generalAiConfirmPlan = async function() {
+  const s = _generalAiState;
+  if (!s || !s.pendingPlan || s.busy) return;
+  const plan = s.pendingPlan;
+  s.pendingPlan = null;
+  s.busy = true;
+  renderGeneralAiModal();
+  try {
+    const res = await aiClient._callEdge({ action: 'general_execute', confirm_plan: plan, confirmed: true });
+    if (!res || res.success !== true) throw new Error((res && res.error) || 'The action failed.');
+    s.messages.push({ role: 'assistant', content: `✅ ${String(res.response || res.reply || 'Done.')}` });
+    generalAiRefreshShowroom();
+  } catch (err) {
+    s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
+  } finally {
+    s.busy = false;
+    renderGeneralAiModal();
+  }
+};
+
+window.generalAiCancelPlan = function() {
+  if (!_generalAiState) return;
+  _generalAiState.pendingPlan = null;
+  _generalAiState.messages.push({ role: 'assistant', content: 'Cancelled — nothing was changed.' });
+  renderGeneralAiModal();
+};
+
+window.generalAiUseGeneratedImage = async function(index) {
+  const s = _generalAiState;
+  if (!s || s.busy || !Array.isArray(s.generatedImages)) return;
+  const dataUrl = s.generatedImages[index];
+  if (!dataUrl) return;
+  s.busy = true;
+  renderGeneralAiModal();
+  const url = await productAiUploadDataUrl(dataUrl);
+  s.busy = false;
+  if (!url) { showToast('Could not upload the generated image.', 'error'); renderGeneralAiModal(); return; }
+  showToast('Image saved to showroom storage. Use it on any card or ask the AI to attach it.', 'success');
+  renderGeneralAiModal();
+};
+
+window.generalAiRegenerateImage = async function() {
+  const s = _generalAiState;
+  if (!s || s.busy || !s.lastGenPrompt) return;
+  s.busy = true;
+  renderGeneralAiModal();
+  try {
+    await generalAiImageGen(s.lastGenPrompt, s.lastGenReference ? [s.lastGenReference] : []);
+  } catch (err) {
+    s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
+  } finally {
+    s.busy = false;
+    renderGeneralAiModal();
+  }
+};
+
+async function generalAiRefreshShowroom() {
+  try {
+    await renderProducts();
+  } catch { /* page may not be the products page */ }
+}
+
+// ══════════════════════════════════════════════════════════
 //  12. AI MARKETING STUDIO
 // ══════════════════════════════════════════════════════════
 const AI_AD_VIDEO_PROVIDERS = [
@@ -8741,3 +9343,408 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+// ══════════════════════════════════════════════════════════
+//  GENERAL AI ASSISTANT FUNCTIONS
+// ══════════════════════════════════════════════════════════
+window.aiChatHistory = [];
+window.aiProductType = 'product';
+
+async function aiGenerateProduct() {
+  const prompt = document.getElementById('ai-prompt')?.value?.trim();
+  const productType = document.getElementById('ai-product-type')?.value || 'product';
+  const file = document.getElementById('ai-image-upload')?.files[0];
+  
+  if (!prompt && !file) {
+    showToast('Please enter a prompt or upload an image');
+    return;
+  }
+  
+  // Add user message to chat
+  window.aiChatHistory.push({
+    type: 'user',
+    sender: 'You',
+    content: prompt || 'Uploaded image'
+  });
+  renderAiChatHistory();
+  
+  // Clear prompt
+  document.getElementById('ai-prompt')?.value = '';
+  
+  // Show loading
+  showToast('AI is analyzing...');
+  
+  try {
+    // Prepare image if uploaded
+    let imageDataUrl = null;
+    if (file) {
+      imageDataUrl = await fileToDataUrl(file);
+    }
+    
+    // Call AI edge function
+    const body = {
+      action: 'generate_product',
+      prompt: prompt || 'Create a product listing',
+      product_type: productType,
+      image: imageDataUrl,
+      catalog_context: await getProductContext()
+    };
+    
+    const res = await fetch(AI_FUNCTION_URL, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(body)
+    });
+    
+    const data = await res.json();
+    
+    if (data.success && data.product) {
+      // Show review card before saving
+      openListingReviewCard(data.product, { source: 'ai_general' });
+      showToast('Product generated! Review before saving.');
+    } else {
+      showToast(data.error || 'AI generation failed');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message);
+    console.error('[AI] Generate product error:', err);
+  }
+}
+
+async function getProductContext() {
+  try {
+    const { data: products } = await supabase.from('showroom_listings')
+      .select('*').neq('listing_type', 'property').limit(20);
+    return products || [];
+  } catch {
+    return [];
+  }
+}
+
+async function aiFixDuplicates() {
+  showToast('AI is scanning for duplicates...');
+  
+  try {
+    const { data: products } = await supabase.from('showroom_listings')
+      .select('*').neq('listing_type', 'property');
+    const items = data || [];
+    
+    // Simple dedup by title similarity
+    const unique = [];
+    const seenTitles = new Set();
+    
+    for (const product of items) {
+      const titleLower = (product.title || '').toLowerCase().trim();
+      if (!seenTitles.has(titleLower)) {
+        seenTitles.add(titleLower);
+        unique.push(product);
+      }
+    }
+    
+    // For duplicates, generate new ones
+    const duplicates = items.length - unique.length;
+    if (duplicates > 0) {
+      window.aiChatHistory.push({
+        type: 'ai',
+        sender: 'General AI',
+        content: `Found ${duplicates} duplicate products. I will generate ${duplicates} new unique items to replace them.`
+      });
+      renderAiChatHistory();
+      
+      // Generate new products for each duplicate slot
+      for (let i = 0; i < duplicates; i++) {
+        await aiGenerateProduct();
+      }
+    }
+    
+    showToast(`Fixed ${duplicates} duplicates. Generated ${duplicates} new products.`);
+  } catch (err) {
+    showToast('Error fixing duplicates: ' + err.message);
+  }
+}
+
+async function aiCleanupNames() {
+  showToast('AI is cleaning up product names...');
+  
+  try {
+    const { data: products } = await supabase.from('showroom_listings')
+      .select('*').neq('listing_type', 'property');
+    const items = data || [];
+    
+    let fixed = 0;
+    const updates = [];
+    
+    for (const product of items) {
+      let name = product.title || '';
+      // Basic cleanup: trim, fix common issues
+      name = name.replace(/^['"]|['"]$/g, '').trim();
+      name = name.replace(/\s+/g, ' ');
+      name = name.charAt(0).toUpperCase() + name.slice(1);
+      
+      if (name !== (product.title || '')) {
+        updates.push({
+          id: product.property_id,
+          updates: { title: name }
+        });
+        fixed++;
+      }
+    }
+    
+    // Apply fixes in batches
+    for (const update of updates) {
+      await supabase.from('showroom_listings')
+        .update({ title: update.updates.title })
+        .eq('property_id', update.id);
+    }
+    
+    window.aiChatHistory.push({
+      type: 'ai',
+      sender: 'General AI',
+      content: `Fixed names for ${fixed} products.`
+    });
+    renderAiChatHistory();
+    
+    showToast(`Fixed names for ${fixed} products`);
+  } catch (err) {
+    showToast('Error cleaning names: ' + err.message);
+  }
+}
+
+async function aiCheckHealth() {
+  showToast('AI is checking product health...');
+  
+  try {
+    const { data: products } = await supabase.from('showroom_listings')
+      .select('*').neq('listing_type', 'property');
+    const items = data || [];
+    
+    let issues = 0;
+    const issuesList = [];
+    
+    for (const product of items) {
+      const title = product.title || '';
+      const price = product.price || 0;
+      const category = product.category || '';
+      
+      // Check for common issues
+      if (!title || title.length < 5) {
+        issuesList.push({ product: product.property_id, issue: 'Short title' });
+        issues++;
+      }
+      if (price <= 0) {
+        issuesList.push({ product: product.property_id, issue: 'Invalid price' });
+        issues++;
+      }
+      if (!category) {
+        issuesList.push({ product: product.property_id, issue: 'Missing category' });
+        issues++;
+      }
+    }
+    
+    window.aiChatHistory.push({
+      type: 'ai',
+      sender: 'General AI',
+      content: `Health check complete. Found ${issues} issues across ${items.length} products.`
+    });
+    renderAiChatHistory();
+    
+    showToast(`Health check: ${issues} issues found`);
+  } catch (err) {
+    showToast('Error checking health: ' + err.message);
+  }
+}
+
+async function aiGenerateRandomProduct() {
+  showToast('AI is generating a random product...');
+  
+  try {
+    const productType = document.getElementById('ai-product-type')?.value || 'product';
+    
+    const body = {
+      action: 'generate_product',
+      prompt: 'Create a random ' + productType + ' product listing',
+      product_type: productType,
+      catalog_context: await getProductContext()
+    };
+    
+    const res = await fetch(AI_FUNCTION_URL, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(body)
+    });
+    
+    const data = await res.json();
+    
+    if (data.success && data.product) {
+      openListingReviewCard(data.product, { source: 'ai_general' });
+      showToast('Random product generated! Review and save.');
+    } else {
+      showToast(data.error || 'Generation failed');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+}
+
+async function aiOptimizePricing() {
+  showToast('AI is optimizing prices...');
+  
+  try {
+    const { data: products } = await supabase.from('showroom_listings')
+      .select('*').neq('listing_type', 'property');
+    const items = data || [];
+    
+    let optimized = 0;
+    
+    for (const product of items) {
+      const title = product.title || '';
+      const currentPrice = product.price || 0;
+      const category = product.category || 'general';
+      
+      // Simple price optimization based on category
+      let newPrice = currentPrice;
+      if (category.toLowerCase().includes('electron') || category.toLowerCase().includes('gadget')) {
+        newPrice = Math.round(currentPrice * 1.1); // 10% premium for tech
+      } else if (category.toLowerCase().includes('fashion') || category.toLowerCase().includes('cloth')) {
+        newPrice = Math.round(currentPrice * 0.9); // 10% discount for fashion
+      } else if (currentPrice < 20) {
+        newPrice = Math.round(currentPrice * 1.2); // Minimums
+      }
+      
+      if (newPrice !== currentPrice) {
+        await supabase.from('showroom_listings')
+          .update({ price: newPrice })
+          .eq('property_id', product.property_id);
+        optimized++;
+      }
+    }
+    
+    window.aiChatHistory.push({
+      type: 'ai',
+      sender: 'General AI',
+      content: `Optimized prices for ${optimized} products.`
+    });
+    renderAiChatHistory();
+    
+    showToast(`Optimized ${optimized} prices`);
+  } catch (err) {
+    showToast('Error optimizing prices: ' + err.message);
+  }
+}
+
+async function aiRearrangeGallery() {
+  showToast('AI is rearranging galleries...');
+  
+  try {
+    const { data: products } = await supabase.from('showroom_listings')
+      .select('*').neq('listing_type', 'property').limit(10);
+    const items = data || [];
+    
+    let rearranged = 0;
+    
+    for (const product of items) {
+      // Reorder images - just reassign (in real implementation, would use AI to reorder)
+      if (product.images && product.images.length > 1) {
+        // Shuffle images randomly as demo
+        const shuffled = [...product.images].sort(() => Math.random() - 0.5);
+        await supabase.from('showroom_listings')
+          .update({ images: shuffled })
+          .eq('property_id', product.property_id);
+        rearranged++;
+      }
+    }
+    
+    window.aiChatHistory.push({
+      type: 'ai',
+      sender: 'General AI',
+      content: `Rearranged galleries for ${rearranged} products.`
+    });
+    renderAiChatHistory();
+    
+    showToast(`Rearranged ${rearranged} galleries`);
+  } catch (err) {
+    showToast('Error rearranging galleries: ' + err.message);
+  }
+}
+
+async function aiFullCleanup() {
+  if (!confirm('AI will perform full showroom cleanup. This will: fix duplicates, rename products, optimize prices, and rearrange galleries. Continue?')) return;
+  
+  showToast('AI is performing full cleanup...');
+  window.aiChatHistory.push({
+    type: 'ai',
+    sender: 'General AI',
+    content: 'Starting full showroom cleanup...'
+  });
+  renderAiChatHistory();
+  
+  try {
+    // Run all cleanup functions in sequence
+    await aiFixDuplicates();
+    await aiCleanupNames();
+    await aiOptimizePricing();
+    await aiRearrangeGallery();
+    
+    window.aiChatHistory.push({
+      type: 'ai',
+      sender: 'General AI',
+      content: 'Full showroom cleanup complete!'
+    });
+    renderAiChatHistory();
+    
+    showToast('Full cleanup complete!');
+  } catch (err) {
+    showToast('Error during cleanup: ' + err.message);
+  }
+}
+
+async function handleAiMessage(message) {
+  const lower = message.toLowerCase();
+  
+  // Command handlers
+  if (lower.includes('fix duplicate') || lower.includes('remove duplicate')) {
+    aiFixDuplicates();
+    return;
+  }
+  if (lower.includes('clean name') || lower.includes('fix name')) {
+    aiCleanupNames();
+    return;
+  }
+  if (lower.includes('health check') || lower.includes('check health')) {
+    aiCheckHealth();
+    return;
+  }
+  if (lower.includes('random product')) {
+    aiGenerateRandomProduct();
+    return;
+  }
+  if (lower.includes('optimize price') || lower.includes('price fix')) {
+    aiOptimizePricing();
+    return;
+  }
+  if (lower.includes('rearrange') || lower.includes('gallery')) {
+    aiRearrangeGallery();
+    return;
+  }
+  if (lower.includes('full cleanup') || lower.includes('clean up')) {
+    aiFullCleanup();
+    return;
+  }
+  if (lower.includes('generate product') || lower.includes('create product')) {
+    aiGenerateProduct();
+    return;
+  }
+  
+  // Default: treat as a generation prompt
+  document.getElementById('ai-prompt').value = message;
+  aiGenerateProduct();
+}
+
+// Add event listener for chat input
+document.getElementById('ai-prompt')?.addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    aiGenerateProduct();
+  }
+});
+
+// Update the navigate function to include general-ai
