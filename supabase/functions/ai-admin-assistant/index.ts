@@ -37,8 +37,8 @@ function normalizeModel(settings: Record<string, unknown>, developerMode = false
   const override = developerMode
     ? (settings.developer_model_override as string | null)
     : (settings.admin_model_override as string | null);
-  const fallback = (settings.gemini_model as string | null) || 'gemini-2.5-flash';
-  return (override || fallback || 'gemini-2.5-flash').trim();
+  const fallback = (settings.gemini_model as string | null) || 'gemini-3-flash-preview';
+  return (override || fallback || 'gemini-3-flash-preview').trim();
 }
 
 function genPropertyId() {
@@ -279,7 +279,7 @@ async function callGeminiWithFallback(params: {
   maxTokens?: number;
 }) {
   const preferred = (params.model || '').trim();
-  const fallbacks = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const fallbacks = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview'];
   const tried = new Set<string>();
 
   const queue = [preferred, ...fallbacks].filter(Boolean);
@@ -350,7 +350,7 @@ async function callOpenAICompatible(params: {
 const VISION_CAPABLE_PROVIDERS = ['gemini', 'groq', 'openrouter', 'huggingface'];
 
 const VISION_MODEL_FALLBACKS: Record<string, string[]> = {
-  gemini: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'],
+  gemini: ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview'],
   groq: ['llama-3.2-11b-vision-preview', 'meta-llama/llama-3.2-90b-vision-instruct'],
   openrouter: [
     'google/gemini-2.5-flash',
@@ -573,7 +573,7 @@ async function runCloudImageGeneration(params: {
 }): Promise<{ images: string[]; provider: string; model: string }> {
   const { settings, prompt, referenceUrl, count } = params;
   const apiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
-  const models = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation', 'gemini-2.5-flash-preview-image'];
+  const models = ['gemini-2.5-flash-image'];
   let lastError: unknown = null;
 
   if (apiKey) {

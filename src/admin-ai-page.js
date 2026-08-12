@@ -212,28 +212,13 @@ function buildClarifyingReply(text) {
 
 function renderPendingUploads() {
   const preview = document.getElementById('ai-uploaded-images-preview');
-  const hint = document.getElementById('ai-upload-hint');
-  const clearBtn = document.getElementById('ai-clear-uploads-btn');
-  if (!preview || !hint || !clearBtn) return;
-
-  if (!state.pendingUploads.length) {
-    preview.innerHTML = '';
-    hint.textContent = 'No images selected. Upload images, then tell AI to create a showroom listing from them.';
-    clearBtn.classList.add('opacity-50');
-    clearBtn.disabled = true;
-    if (window.lucide) lucide.createIcons();
-    return;
-  }
-
-  clearBtn.classList.remove('opacity-50');
-  clearBtn.disabled = false;
-  hint.textContent = `${state.pendingUploads.length} image(s) ready. Say: "Use these images and add to showroom".`;
+  if (!preview) return;
 
   preview.innerHTML = state.pendingUploads.map((item) => `
-    <div class="group relative w-20 h-20 rounded-lg overflow-hidden border border-blue-500/25 bg-blue-950/40">
+    <div class="group relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-blue-500/30 bg-blue-950/40">
       <img src="${item.previewUrl}" alt="${escapeHtml(item.name)}" class="w-full h-full object-cover">
-      <button class="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-[10px] leading-none opacity-0 group-hover:opacity-100 transition" data-remove-upload-id="${item.id}" title="Remove image">×</button>
-      <div class="absolute bottom-0 inset-x-0 bg-black/65 text-[9px] text-gray-200 px-1 py-0.5 truncate">${escapeHtml(item.name)}</div>
+      <button class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/75 text-white text-sm leading-none flex items-center justify-center transition group-hover:bg-red-600/90" data-remove-upload-id="${item.id}" title="Remove image">×</button>
+      <div class="absolute bottom-0 inset-x-0 bg-black/70 text-[10px] text-gray-200 px-1.5 py-0.5 truncate">${escapeHtml(item.name)}</div>
     </div>
   `).join('');
 
@@ -456,111 +441,35 @@ async function runLocalImageShowroomAutomation(text) {
   }
 
   const listingType = intent.listingType;
-  const targetImageCount = listingType === 'property' ? 24 : uploadResult.urls.length;
-  const arrangedImages = ensureImageCount(uploadResult.urls, targetImageCount);
-  const payload = {
-    property_id: propertyId,
-    listing_type: listingType,
-    category: intent.category,
-    subcategory: listingType === 'property' ? 'House' : null,
+  const arrangedImages = buildMatchedGallery(listingType, uploadResult.urls, intent.title);
+  const scan = {
     title: intent.title,
-    description: buildProfessionalDescription(intent, arrangedImages.length),
     price: Number.isFinite(intent.price) ? intent.price : 0,
     currency: intent.currency || 'USD',
+    category: intent.category,
+    subcategory: listingType === 'property' ? 'House' : null,
     country: intent.country || '',
     country_code: intent.countryCode || '',
-    listing_status: 'sale',
     state: intent.state || '',
     city: intent.city || '',
-    town: intent.town || '',
     product_location: intent.productLocation || '',
     latitude: intent.latitude ?? null,
     longitude: intent.longitude ?? null,
-    is_active: true,
-    stock_quantity: listingType === 'product' ? intent.stock : null,
-    bedrooms: listingType === 'property' ? intent.bedrooms : null,
-    bathrooms: listingType === 'property' ? intent.bathrooms : null,
-    property_type: listingType === 'property' ? 'House' : null,
-    furnished: listingType === 'property' ? 'Unfurnished' : null,
-    features: listingType === 'property'
-      ? ['Professional Photo Gallery', 'Map-ready Listing', 'Structured Details', 'Premium Presentation']
-      : ['Professional Photo Set', 'Structured Product Details', 'Premium Showroom Presentation', 'AI Optimized Listing'],
-    highlights: listingType === 'property'
-      ? ['Image-led narrative flow', 'Consistent showroom styling', 'Conversion-ready visuals']
-      : ['Organized image sequence', 'Trust-focused listing structure', 'Conversion-oriented copy'],
-    tags: listingType === 'property' ? ['Featured Property'] : ['New Arrival', 'Image Verified'],
-    seo_keywords: listingType === 'property'
-      ? ['house listing', 'real estate', 'showroom property']
-      : ['product listing', 'showroom', 'professional product photos'],
-    images: arrangedImages,
-    is_ai_generated: true,
-    ai_generated_fields: ['title', 'description', 'images', 'features', 'highlights', 'seo_keywords'],
-    specifications: {},
+    stock_quantity: intent.stock,
+    bedrooms: intent.bedrooms,
+    bathrooms: intent.bathrooms,
   };
+  const payload = buildScanListingPayload({ propertyId, listingType, scan, title: intent.title, images: arrangedImages });
 
-  const candidate = { ...payload };
-  let insertErr = null;
-  for (let attempt = 0; attempt < 12; attempt += 1) {
-    const { error } = await supabase.from('showroom_listings').insert(candidate);
-    if (!error) {
-      insertErr = null;
-      break;
-    }
-    const msg = String(error.message || '');
-    const missingColMatch = msg.match(/Could not find the '([^']+)' column/i);
-    if (missingColMatch?.[1]) {
-      delete candidate[missingColMatch[1]];
-      continue;
-    }
-    insertErr = error;
-    break;
-  }
-
-  if (insertErr) {
-    return {
-      ok: false,
-      content: `❌ Listing creation failed: ${insertErr.message}`,
-      tool_results: [{ tool: 'create_listing', result: { error: insertErr.message } }],
-    };
-  }
-
-  let deployResult = { skipped: true };
-  let deployMessage = 'No deploy requested.';
-  if (intent.shouldDeploy) {
-    const { data: settings } = await supabase
-      .from('site_settings')
-      .select('deploy_webhook')
-      .limit(1)
-      .maybeSingle();
-    const webhook = String(settings?.deploy_webhook || '').trim();
-    if (!webhook) {
-      deployResult = { skipped: true, reason: 'missing_webhook' };
-      deployMessage = 'Listing saved, but deploy webhook is not configured in Publish & Deploy.';
-    } else {
-      const webhookRes = await fetch(webhook, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trigger: 'deploy', source: 'admin-ai-page', at: new Date().toISOString() }),
-      });
-      if (webhookRes.ok) {
-        deployResult = { ok: true, status: webhookRes.status };
-        deployMessage = 'Deploy webhook accepted. Deployment started.';
-      } else {
-        deployResult = { ok: false, status: webhookRes.status };
-        deployMessage = `Listing saved, but deploy failed (webhook status ${webhookRes.status}).`;
-      }
-    }
-  }
-
-  clearPendingUploadsLocal();
+  openListingReviewCard(payload, { source: 'typed-image-request' });
 
   return {
     ok: true,
-    content: `✅ Done. I uploaded and arranged **${arrangedImages.length} image(s)**, then created a professional ${listingType === 'property' ? 'house/property' : 'product'} listing **${intent.title}** as **${propertyId}** in your showroom.${uploadResult.storageFailures > 0 ? ' Some images used safe fallback format because storage upload was unavailable.' : ''} ${deployMessage}`,
+    reviewCard: true,
+    content: `✅ **Scan complete.** I built the card in your exact showroom format (price, brand, color, rating, features, availability) and arranged a **${arrangedImages.length}-image** gallery. **Review the card above, confirm the price, then Save.**`,
     tool_results: [
       { tool: 'upload_images', result: { success: true, total: uploadResult.total, saved: arrangedImages.length, storage_fallbacks: uploadResult.storageFailures } },
-      { tool: 'create_listing', result: { success: true, property_id: propertyId, listing_type: listingType, image_count: arrangedImages.length } },
-      { tool: 'deploy_site', result: deployResult },
+      { tool: 'scan_image', result: { success: true, source: 'typed-image-request', listing_type: listingType } },
     ],
   };
 }
@@ -626,18 +535,29 @@ Return a single valid JSON object (no markdown, no extra text) with these keys:
 - model (string)
 - color (string)
 - condition (string): one of New, Refurbished, Used - Like New, Used - Good, Used - Fair.
+- warranty (string): typical warranty for the item (e.g. "1 Year Manufacturer Warranty"), or empty string.
+- availability_status (string): "In Stock" unless clearly otherwise.
+- stock_quantity (number): a plausible available quantity (default 1-10).
+- price (number): estimate a realistic marketplace price in USD for this exact item based on its type, brand, and condition. Use a sensible mid-market price rounded to a whole number (e.g. a microwave ~89, an iPhone ~999, a house ~250000).
+- rating (number): estimate a plausible customer rating between 4.2 and 4.9 (one decimal), typical of a well-reviewed marketplace listing.
+- rating_count (number): estimate a plausible review count between 40 and 250.
+- favorite_count (number): a plausible saved/favorites count between 20 and 150.
 - material, size, storage, ram, processor (strings, only if relevant)
 - bedrooms (number, only for property)
 - bathrooms (number, only for property)
 - property_type (string, only for property: House, Villa, Apartment, etc.)
-- features (array of strings)
-- highlights (array of strings)
+- city, state, country (strings, only for property, if visible or inferable)
+- latitude, longitude (numbers, only for property, if inferable from the photo)
+- features (array of strings, at least 5)
+- highlights (array of strings, at least 4)
+- tags (array of strings, e.g. ["New Arrival", "Best Seller"])
 - seo_keywords (array of strings)
 - specifications (object with relevant spec keys only)
-- generation_prompt (string): a detailed visual description of the exact item in the photo, written as an instruction for an AI image generator. Include the item's design, colors, materials, branding, and requested professional e-commerce photography style so the generator can produce a 24-image gallery of this SAME item.
+- generation_prompt (string): a detailed visual description of the exact item in the photo, written as an instruction for an AI image generator. Include the item's design, colors, materials, branding, and requested professional e-commerce photography style so the generator can produce a gallery of this SAME item.
 
 Rules:
-- Only include keys you can actually observe or reasonably infer from the photo(s). NEVER invent exact specs (price, storage size, RAM, horsepower, year, serial numbers) that are not visible or printed on the product.
+- Only include keys you can actually observe or reasonably infer from the photo(s). For specs you cannot see (exact storage size, RAM, horsepower, year, serial numbers), leave the field empty rather than guessing.
+- price, rating, rating_count and favorite_count ARE estimates — always fill them with realistic mid-market values in the ranges above, never leave them empty or 0.
 - Respond with valid JSON only.`;
 
 async function callAiEdge(body) {
@@ -664,6 +584,175 @@ function extractJsonFromAiText(text) {
 
 function cleanScanString(v) {
   return String(v || '').trim().replace(/^["']+|["']+$/g, '');
+}
+
+// ── Full-card normalizer ──────────────────────────────────────
+// Every AI-created listing runs through this so it carries the EXACT same
+// field shape as the curated showroom cards (price, currency, brand, color,
+// size, material, rating, rating_count, favorite_count, availability,
+// stock, condition, warranty, features, highlights, tags, description).
+
+function hashSeed(str) {
+  let h = 0;
+  const s = String(str || 'kco');
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function curatedRatingValues(title) {
+  const seed = hashSeed(title || 'kco');
+  const rating = Math.round((42 + (seed % 8)) * 10) / 100; // 4.2 - 4.9
+  const rating_count = 40 + (seed % 211); // 40 - 250
+  const favorite_count = Math.round(rating_count * (0.4 + (seed % 30) / 100));
+  return { rating, rating_count, favorite_count };
+}
+
+function estimatePriceForItem(category, subcategory, title) {
+  const t = String(title || '').toLowerCase();
+  const hay = `${String(category || '')} ${String(subcategory || '')} ${t}`;
+  const seed = hashSeed(title || category || '');
+  const pick = (min, max) => min + (seed % (max - min + 1));
+  const bands = [
+    { re: /\b(iphone|smartphone|samsung galaxy|pixel|phone)(?:s|es)?\b/, min: 249, max: 1299 },
+    { re: /\b(laptop|macbook|notebook|computer)(?:s|es)?\b/, min: 499, max: 2599 },
+    { re: /\b(television|tv|oled|qled)(?:s|es)?\b/, min: 349, max: 3299 },
+    { re: /\b(fridge|refrigerator|freezer)(?:s|es)?\b/, min: 499, max: 2599 },
+    { re: /\b(stove|range|oven|cooktop)(?:s|es)?\b/, min: 549, max: 2899 },
+    { re: /\b(dishwasher)(?:s|es)?\b/, min: 449, max: 1499 },
+    { re: /\b(washing machine|washer|dryer|laundry)(?:s|es)?\b/, min: 429, max: 1699 },
+    { re: /\b(air fryer|fryer)(?:s|es)?\b/, min: 59, max: 249 },
+    { re: /\b(microwave)(?:s|es)?\b/, min: 79, max: 549 },
+    { re: /\b(blender|juicer|mixer|food processor)(?:s|es)?\b/, min: 39, max: 399 },
+    { re: /\b(coffee|espresso|kettle|toaster)(?:s|es)?\b/, min: 29, max: 899 },
+    { re: /\b(headphone|earbud|airpods|speaker|soundbar)(?:s|es)?\b/, min: 49, max: 549 },
+    { re: /\b(watch|smartwatch)(?:s|es)?\b/, min: 99, max: 1299 },
+    { re: /\b(camera|dslr|mirrorless|lens)(?:s|es)?\b/, min: 249, max: 3299 },
+    { re: /\b(bicycle|ebike|e-bike)(?:s|es)?\b/, min: 199, max: 4999 },
+    { re: /\b(sofa|couch|sectional)(?:s|es)?\b/, min: 399, max: 2499 },
+    { re: /\b(bed|mattress)(?:s|es)?\b/, min: 199, max: 1899 },
+    { re: /\b(table|desk|dining)(?:s|es)?\b/, min: 129, max: 1299 },
+    { re: /\b(air conditioner|ac|heater)(?:s|es)?\b/, min: 129, max: 1299 },
+    { re: /\b(shoe|sneaker|boot|sandal)(?:s|es)?\b/, min: 39, max: 299 },
+    { re: /\b(shirt|t-shirt|hoodie|jacket|dress)(?:s|es)?\b/, min: 19, max: 249 },
+    { re: /\b(toy|lego|doll|puzzle)(?:s|es)?\b/, min: 9, max: 199 },
+    { re: /\b(backpack|bag|luggage|suitcase)(?:s|es)?\b/, min: 29, max: 399 },
+    { re: /\b(jewel|ring|necklace|earring|bracelet)(?:s|es)?\b/, min: 49, max: 999 },
+  ];
+  for (const band of bands) {
+    if (band.re.test(hay)) return pick(band.min, band.max);
+  }
+  if (/real estate|house|property|villa|apartment|home/i.test(hay)) return pick(120000, 520000);
+  if (/vehicle|car|truck|motorcycle|auto/i.test(hay)) return pick(12000, 52000);
+  return pick(25, 200);
+}
+
+function buildCuratedDescription(listing) {
+  const title = cleanScanString(listing.title) || 'Premium item';
+  const brand = cleanScanString(listing.brand);
+  const size = cleanScanString(listing.size);
+  const material = cleanScanString(listing.material);
+  const color = cleanScanString(listing.color);
+  const features = Array.isArray(listing.features) ? listing.features.filter(Boolean).slice(0, 3) : [];
+  if (listing.listing_type === 'property') {
+    const beds = listing.bedrooms != null ? `${listing.bedrooms} bedrooms` : 'well-proportioned bedrooms';
+    const baths = listing.bathrooms != null ? `${listing.bathrooms} bathrooms` : 'modern bathrooms';
+    const place = [listing.city, listing.state, listing.country].filter(Boolean).join(', ');
+    return `${title} is a curated real estate listing offering ${beds}, ${baths}, and a presentation-ready gallery for high-conversion showroom display.${place ? ` Located in ${place}, it is positioned for serious buyers seeking quality and confidence.` : ''} A solid, well-reviewed pick — quality construction and thoughtful details at a fair price.`;
+  }
+  const sizePart = size ? ` in a practical ${size} size` : '';
+  const brandPart = brand ? ` from ${brand}` : '';
+  const matPart = material ? ` with a ${material.toLowerCase().replace(/^a\s+/, '')} build` : ' with quality construction';
+  const colPart = color ? ` in ${color}` : '';
+  const featList = features.length ? ` Key highlights include ${features.join(', ')}.` : '';
+  return `${title}${brandPart} combines everyday reliability${sizePart}${matPart}${colPart}.${featList} A solid, well-reviewed pick for your home — quality construction and thoughtful details at a fair price.`;
+}
+
+function ensureMinArray(arr, min, defaults) {
+  const out = Array.isArray(arr) ? arr.map(String).filter(Boolean) : [];
+  for (const d of defaults) {
+    if (out.length >= min) break;
+    if (!out.includes(d)) out.push(d);
+  }
+  let i = 0;
+  while (out.length < min) out.push(defaults[i++ % defaults.length]);
+  return out.slice(0, min + 4);
+}
+
+function normalizeListingToFullCard(payload) {
+  const l = { ...(payload || {}) };
+  const listingType = l.listing_type === 'property' ? 'property' : 'product';
+  const title = cleanScanString(l.title) || 'Premium Item';
+  const cat = cleanScanString(l.category) || (listingType === 'property' ? 'Real Estate' : 'Home & Kitchen');
+  const stats = curatedRatingValues(title);
+
+  l.listing_type = listingType;
+  l.title = title;
+  l.category = cat;
+  l.currency = String(l.currency || 'USD').toUpperCase();
+  l.listing_status = l.listing_status || 'sale';
+  l.is_active = l.is_active !== false;
+
+  const rawPrice = Number(l.price);
+  l.price = Number.isFinite(rawPrice) && rawPrice > 0
+    ? Math.round(rawPrice)
+    : estimatePriceForItem(cat, l.subcategory, title);
+
+  const r = Number(l.rating);
+  l.rating = Number.isFinite(r) && r >= 1 && r <= 5 ? Math.round(r * 10) / 10 : stats.rating;
+  const rc = Number(l.rating_count);
+  l.rating_count = Number.isFinite(rc) && rc > 0 ? Math.round(rc) : stats.rating_count;
+  const fc = Number(l.favorite_count);
+  l.favorite_count = Number.isFinite(fc) && fc > 0 ? Math.round(fc) : Math.round(l.rating_count * 0.5);
+
+  l.availability_status = cleanScanString(l.availability_status) || 'In Stock';
+  const st = Number(l.stock_quantity);
+  l.stock_quantity = Number.isFinite(st) && st > 0 ? Math.round(st) : 1;
+  l.condition = cleanScanString(l.condition) || 'New';
+  l.warranty = cleanScanString(l.warranty) || (listingType === 'product' ? '1 Year Manufacturer Warranty' : '');
+
+  if (listingType === 'product') {
+    l.brand = cleanScanString(l.brand);
+    l.color = cleanScanString(l.color);
+    l.size = cleanScanString(l.size);
+    l.material = cleanScanString(l.material);
+  } else {
+    l.brand = null; l.color = null; l.size = null; l.material = null;
+    l.property_type = cleanScanString(l.property_type) || 'House';
+    l.subcategory = l.subcategory || l.property_type;
+  }
+
+  l.description = cleanScanString(l.description) || buildCuratedDescription(l);
+
+  l.features = ensureMinArray(l.features, 5, listingType === 'property'
+    ? ['Professional Photo Gallery', 'Map-ready Listing', 'Structured Details', 'Premium Presentation', 'Modern Finishes', 'High Conversion Presentation']
+    : ['Premium Quality', 'Durable Build', 'Modern Design', 'Easy to Use', 'Great Value', 'Verified Listing']);
+  l.highlights = ensureMinArray(l.highlights, 4, ['Consistent showroom styling', 'Conversion-ready visuals', 'Image-led narrative flow', 'Trust-focused structure']);
+  l.tags = ensureMinArray(l.tags, 1, listingType === 'property' ? ['Featured Property', 'For Sale'] : ['New Arrival', 'Best Seller']).slice(0, 2);
+  l.seo_keywords = Array.isArray(l.seo_keywords) && l.seo_keywords.length
+    ? l.seo_keywords.map(String)
+    : [cat.toLowerCase(), 'weverse showroom', 'buy online'];
+
+  l.is_ai_generated = true;
+  l.ai_generated_fields = ['title', 'description', 'price', 'rating', 'rating_count', 'favorite_count', 'availability_status', 'stock_quantity', 'features', 'highlights', 'tags', 'condition', 'warranty'];
+
+  return l;
+}
+
+// Verified room/part photo pool (IDs already used in the curated data files,
+// confirmed against the Pexels CDN) so houses/cars get a matched gallery.
+const POOL_PEXELS = (id, w = 1200) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
+const PROPERTY_INTERIOR_POOL = [209235, 102129, 267202, 3105219, 859895, 672630, 4112598, 4469171, 6045323, 1148963, 4467899, 10558195].map((id) => POOL_PEXELS(id));
+
+function buildMatchedGallery(listingType, baseUrls, title) {
+  const unique = [...new Set(Array.isArray(baseUrls) ? baseUrls.filter(Boolean) : [])];
+  if (listingType !== 'property') return unique.slice(0, 24);
+  const seed = hashSeed(title || 'house');
+  const extra = [];
+  for (let i = 0; i < PROPERTY_INTERIOR_POOL.length; i++) {
+    const url = PROPERTY_INTERIOR_POOL[(seed + i) % PROPERTY_INTERIOR_POOL.length];
+    if (!unique.includes(url)) extra.push(url);
+  }
+  return [...unique, ...extra].slice(0, 16);
 }
 
 function deriveTitleFromFileName(name) {
@@ -697,51 +786,44 @@ function galleryAnglesForListing(listingType) {
 }
 
 function buildScanListingPayload({ propertyId, listingType, scan, title, images }) {
-  const description = cleanScanString(scan?.description) || buildProfessionalDescription({ listingType }, images.length);
-  const features = Array.isArray(scan?.features) && scan.features.length
-    ? scan.features.map(String)
-    : (listingType === 'property'
-      ? ['Professional Photo Gallery', 'Map-ready Listing', 'Structured Details', 'Premium Presentation']
-      : ['Professional Photo Set', 'Structured Product Details', 'Premium Showroom Presentation', 'AI Optimized Listing']);
-  const highlights = Array.isArray(scan?.highlights) && scan.highlights.length
-    ? scan.highlights.map(String)
-    : (listingType === 'property'
-      ? ['Image-led narrative flow', 'Consistent showroom styling', 'Conversion-ready visuals']
-      : ['Organized image sequence', 'Trust-focused listing structure', 'Conversion-oriented copy']);
-  const seo = Array.isArray(scan?.seo_keywords) && scan.seo_keywords.length
-    ? scan.seo_keywords.map(String)
-    : (listingType === 'property'
-      ? ['house listing', 'real estate', 'showroom property']
-      : ['product listing', 'showroom', 'professional product photos']);
-
-  return {
+  const s = (scan && typeof scan === 'object') ? scan : {};
+  const isProperty = listingType === 'property';
+  const listing = {
     property_id: propertyId,
-    listing_type: listingType,
-    category: cleanScanString(scan?.category) || (listingType === 'property' ? 'Real Estate' : 'General'),
-    subcategory: listingType === 'property'
-      ? (cleanScanString(scan?.property_type) || 'House')
-      : (cleanScanString(scan?.subcategory) || null),
-    title,
-    description,
-    price: 0,
+    listing_type: isProperty ? 'property' : 'product',
+    category: cleanScanString(s.category) || (isProperty ? 'Real Estate' : 'Home & Kitchen'),
+    subcategory: cleanScanString(s.subcategory) || (isProperty ? 'House' : 'General'),
+    title: cleanScanString(s.title) || title,
+    description: cleanScanString(s.description),
+    price: Number(s.price),
     currency: 'USD',
-    listing_status: 'sale',
-    brand: listingType === 'product' ? (cleanScanString(scan?.brand) || '') : null,
-    color: listingType === 'product' ? (cleanScanString(scan?.color) || '') : null,
-    condition: listingType === 'product' ? (cleanScanString(scan?.condition) || '') : null,
-    stock_quantity: listingType === 'product' ? 1 : null,
-    bedrooms: listingType === 'property' ? (Number.isFinite(Number(scan?.bedrooms)) ? Number(scan.bedrooms) : null) : null,
-    bathrooms: listingType === 'property' ? (Number.isFinite(Number(scan?.bathrooms)) ? Number(scan.bathrooms) : null) : null,
-    property_type: listingType === 'property' ? (cleanScanString(scan?.property_type) || 'House') : null,
-    features,
-    highlights,
-    tags: listingType === 'property' ? ['Featured Property'] : ['New Arrival', 'Image Verified'],
-    seo_keywords: seo,
-    specifications: (scan?.specifications && typeof scan.specifications === 'object') ? scan.specifications : {},
+    brand: cleanScanString(s.brand),
+    color: cleanScanString(s.color),
+    size: cleanScanString(s.size),
+    material: cleanScanString(s.material),
+    condition: cleanScanString(s.condition),
+    warranty: cleanScanString(s.warranty),
+    rating: Number(s.rating),
+    rating_count: Number(s.rating_count),
+    favorite_count: Number(s.favorite_count),
+    availability_status: cleanScanString(s.availability_status),
+    stock_quantity: Number(s.stock_quantity),
+    features: Array.isArray(s.features) ? s.features.map(String) : [],
+    highlights: Array.isArray(s.highlights) ? s.highlights.map(String) : [],
+    tags: Array.isArray(s.tags) ? s.tags.map(String) : [],
+    seo_keywords: Array.isArray(s.seo_keywords) ? s.seo_keywords.map(String) : [],
+    specifications: (s.specifications && typeof s.specifications === 'object') ? s.specifications : {},
+    bedrooms: isProperty ? (Number.isFinite(Number(s.bedrooms)) ? Number(s.bedrooms) : null) : null,
+    bathrooms: isProperty ? (Number.isFinite(Number(s.bathrooms)) ? Number(s.bathrooms) : null) : null,
+    property_type: isProperty ? (cleanScanString(s.property_type) || 'House') : null,
+    city: cleanScanString(s.city),
+    state: cleanScanString(s.state),
+    country: cleanScanString(s.country),
+    latitude: Number.isFinite(Number(s.latitude)) ? Number(s.latitude) : null,
+    longitude: Number.isFinite(Number(s.longitude)) ? Number(s.longitude) : null,
     images,
-    is_ai_generated: true,
-    ai_generated_fields: ['title', 'description', 'images', 'brand', 'features', 'highlights', 'seo_keywords'],
   };
+  return normalizeListingToFullCard(listing);
 }
 
 async function uploadDataUrlImageToStorage(propertyId, index, dataUrl) {
@@ -772,7 +854,7 @@ async function runAutoImagePipeline() {
   try {
     const progressMsg = {
       role: 'assistant',
-      content: `🔍 **Auto pipeline started.** Scanning your uploaded image(s) with Gemini + providers, then asking the free AI generator to build a **24-image** gallery from what the scan tells it.`,
+      content: `🔍 **Scanning your uploaded image(s)...** I am reading the photo and filling every card field (title, brand, price, rating, features) in your showroom format. You will review the card before it is saved.`,
     };
     state.history.push(progressMsg);
     renderMessage(progressMsg);
@@ -812,74 +894,27 @@ async function runAutoImagePipeline() {
 
     const listingType = scan?.listing_type === 'property' ? 'property' : 'product';
     const title = cleanScanString(scan?.title) || deriveTitleFromFileName(firstItem.name);
-    const generationPrompt = buildGenerationPromptFromScan(scan, title);
 
-    // 2) Free AI generator creates the 24-image gallery using the photo as reference.
-    const generatedDataUrls = [];
-    const angleHints = galleryAnglesForListing(listingType);
-    for (let i = 0; i < angleHints.length && generatedDataUrls.length < 24; i += 1) {
-      try {
-        const genRes = await callAiEdge({
-          action: 'generate_images',
-          prompt: `${generationPrompt}\n\nAngle/composition ${i + 1}/24: ${angleHints[i]}. Keep the item visually identical to the reference photo.`,
-          reference_url: firstDataUrl,
-          count: 4,
-        });
-        if (genRes?.success && Array.isArray(genRes.images) && genRes.images.length) {
-          generatedDataUrls.push(...genRes.images);
-        }
-      } catch { /* continue with next angle */ }
-    }
+    // 2) Build a reliable matched gallery (house interiors + uploaded shots).
+    const arrangedImages = buildMatchedGallery(listingType, baseUrls, title);
 
-    // 3) Upload generated images to storage (fallback: keep data URLs).
-    const generatedUrls = [];
-    for (let i = 0; i < generatedDataUrls.length; i += 1) {
-      const url = await uploadDataUrlImageToStorage(propertyId, baseUrls.length + i, generatedDataUrls[i]);
-      if (url) generatedUrls.push(url);
-    }
-
-    const allImages = [...baseUrls, ...generatedUrls];
-    const arrangedImages = ensureImageCount(allImages, 24);
-
+    // 3) Build the FULL card in the exact curated schema.
     const payload = buildScanListingPayload({ propertyId, listingType, scan, title, images: arrangedImages });
 
-    const candidate = { ...payload };
-    let insertErr = null;
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-      const { error } = await supabase.from('showroom_listings').insert(candidate);
-      if (!error) { insertErr = null; break; }
-      const msg = String(error.message || '');
-      const missingColMatch = msg.match(/Could not find the '([^']+)' column/i);
-      if (missingColMatch?.[1]) {
-        delete candidate[missingColMatch[1]];
-        continue;
-      }
-      insertErr = error;
-      break;
-    }
+    // 4) Show a clean review card — nothing is saved until the admin confirms.
+    openListingReviewCard(payload, { scanProvider });
 
-    if (insertErr) {
-      return {
-        ok: false,
-        content: `❌ Listing creation failed: ${insertErr.message}`,
-        tool_results: [{ tool: 'create_listing', result: { error: insertErr.message } }],
-      };
-    }
-
-    const filledFields = ['title', 'description', 'images', 'brand', 'features', 'highlights', 'seo_keywords'];
-    if (listingType === 'product') filledFields.push('category', 'subcategory', 'color', 'condition', 'specifications');
+    const filledFields = ['title', 'description', 'price', 'brand', 'color', 'condition', 'warranty', 'rating', 'rating_count', 'features', 'highlights', 'tags', 'availability_status', 'stock_quantity'];
+    if (listingType === 'product') filledFields.push('category', 'subcategory', 'size', 'material');
     if (listingType === 'property') filledFields.push('bedrooms', 'bathrooms', 'property_type');
-
-    clearPendingUploadsLocal();
 
     return {
       ok: true,
-      content: `✅ **Auto pipeline complete.** Gemini + providers scanned your photo and filled **${filledFields.length} fields** (title, brand, description, category, features, highlights, SEO keywords${listingType === 'property' ? ', beds/baths/property type' : ', color/condition/specs'}). The free AI generator created a **${arrangedImages.length}-image** gallery from what the scan described (${generatedUrls.length} AI-generated + ${baseUrls.length} uploaded). Listing **${title}** saved as **${propertyId}**.${scanProvider !== 'unavailable' ? `\n\n*Scan provider: ${scanProvider}*` : ''}`,
+      reviewCard: true,
+      content: `✅ **Scan complete.** I filled **${filledFields.length} fields** in your exact showroom format (${filledFields.join(', ')}) and arranged a **${arrangedImages.length}-image** gallery. **Review the card above, confirm the price, then Save.**${scanProvider !== 'unavailable' ? `\n\n*Scan provider: ${scanProvider}*` : ''}`,
       tool_results: [
         { tool: 'upload_images', result: { success: true, total: uploadResult.total, saved: baseUrls.length } },
         { tool: 'scan_image', result: { success: true, provider: scanProvider, fields_filled: filledFields } },
-        { tool: 'generate_images', result: { success: true, generated: generatedUrls.length, target: 24 } },
-        { tool: 'create_listing', result: { success: true, property_id: propertyId, listing_type: listingType, image_count: arrangedImages.length } },
       ],
     };
   } catch (err) {
@@ -907,6 +942,226 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// ── Review card (scan → confirm → save) ──────────────────────
+// After an image is scanned, NOTHING is written to the database until the
+// admin confirms the fully-filled card. Price is pre-filled with the AI
+// estimate and always editable.
+
+function val(v, fallback) {
+  const n = Number(v);
+  return Number.isFinite(n) && n !== 0 ? n : fallback;
+}
+
+function openListingReviewCard(listing, meta = {}) {
+  const modal = document.getElementById('listing-review-modal');
+  if (!modal) return;
+  state.reviewListing = normalizeListingToFullCard(listing);
+  state.pendingDeployAfterSave = Boolean(meta.deployRequested);
+
+  const l = state.reviewListing;
+  const isProperty = l.listing_type === 'property';
+
+  const field = (id) => document.getElementById(id);
+  field('review-title').value = l.title || '';
+  field('review-description').value = l.description || '';
+  field('review-price').value = l.price != null ? l.price : '';
+  field('review-currency').value = l.currency || 'USD';
+  field('review-category').value = l.category || '';
+  field('review-subcategory').value = l.subcategory || '';
+  field('review-availability').value = l.availability_status || 'In Stock';
+  field('review-stock').value = l.stock_quantity != null ? l.stock_quantity : 1;
+  field('review-condition').value = l.condition || 'New';
+  field('review-warranty').value = l.warranty || '';
+  field('review-rating').value = l.rating != null ? l.rating : 4.5;
+  field('review-rating-count').value = l.rating_count != null ? l.rating_count : '';
+  field('review-features').value = Array.isArray(l.features) ? l.features.join('\n') : '';
+  field('review-highlights').value = Array.isArray(l.highlights) ? l.highlights.join('\n') : '';
+  field('review-tags').value = Array.isArray(l.tags) ? l.tags.join(', ') : '';
+  field('review-brand').value = l.brand || '';
+  field('review-color').value = l.color || '';
+  field('review-size').value = l.size || '';
+  field('review-material').value = l.material || '';
+  field('review-bedrooms').value = l.bedrooms != null ? l.bedrooms : '';
+  field('review-bathrooms').value = l.bathrooms != null ? l.bathrooms : '';
+  field('review-property-type').value = l.property_type || 'House';
+  field('review-city').value = l.city || '';
+  field('review-state').value = l.state || '';
+  field('review-country').value = l.country || '';
+  field('review-lat').value = l.latitude != null ? l.latitude : '';
+  field('review-lng').value = l.longitude != null ? l.longitude : '';
+  field('review-id').textContent = l.property_id || '';
+
+  const typeBadge = document.getElementById('review-type-badge');
+  if (typeBadge) typeBadge.textContent = isProperty ? 'PROPERTY' : 'PRODUCT';
+  const providerLine = document.getElementById('review-provider');
+  if (providerLine) providerLine.textContent = meta.scanProvider && meta.scanProvider !== 'unavailable' ? `Scanned by: ${meta.scanProvider}` : 'Scanned by: local AI';
+
+  document.getElementById('review-property-fields')?.classList.toggle('hidden', !isProperty);
+  document.getElementById('review-product-fields')?.classList.toggle('hidden', isProperty);
+
+  renderReviewImages(l.images);
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function renderReviewImages(images) {
+  const grid = document.getElementById('review-images');
+  if (!grid) return;
+  const list = Array.isArray(images) ? images : [];
+  grid.innerHTML = list.length
+    ? list.map((url, i) => `
+        <div class="group relative w-24 h-24 rounded-lg overflow-hidden border border-blue-500/25 bg-blue-950/40">
+          <img src="${escapeHtml(url)}" alt="Gallery image ${i + 1}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='/fallback.svg'">
+          <button type="button" data-remove-review-image="${i}" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/75 text-white text-[10px] leading-none opacity-0 group-hover:opacity-100 transition" title="Remove image">×</button>
+        </div>
+      `).join('')
+    : '<p class="text-xs text-gray-500">No images.</p>';
+  grid.querySelectorAll('[data-remove-review-image]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.getAttribute('data-remove-review-image'));
+      if (Array.isArray(state.reviewListing.images)) {
+        state.reviewListing.images.splice(idx, 1);
+        renderReviewImages(state.reviewListing.images);
+      }
+    });
+  });
+}
+
+async function insertListingWithRetry(candidate) {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const { error } = await supabase.from('showroom_listings').insert({ ...candidate });
+    if (!error) return { ok: true, candidate };
+    const msg = String(error.message || '');
+    const missingColMatch = msg.match(/Could not find the '([^']+)' column/i);
+    if (missingColMatch?.[1]) {
+      delete candidate[missingColMatch[1]];
+      continue;
+    }
+    return { ok: false, error: error.message };
+  }
+  return { ok: false, error: 'Insert failed after retries.' };
+}
+
+async function runDeployWebhook() {
+  try {
+    const { data: settings } = await supabase
+      .from('site_settings')
+      .select('deploy_webhook')
+      .limit(1)
+      .maybeSingle();
+    const webhook = String(settings?.deploy_webhook || '').trim();
+    if (!webhook) return { ok: false, message: 'Deploy webhook is not configured in Publish & Deploy settings.' };
+    const res = await fetch(webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trigger: 'deploy', source: 'admin-ai-page', at: new Date().toISOString() }),
+    });
+    if (res.ok) return { ok: true, message: 'Deploy webhook accepted — deployment started.' };
+    return { ok: false, message: `Deploy failed (webhook status ${res.status}).` };
+  } catch (err) {
+    return { ok: false, message: `Deploy failed: ${err.message}` };
+  }
+}
+
+window.saveReviewedListing = async () => {
+  const l = state.reviewListing;
+  if (!l) return;
+  const g = (id) => document.getElementById(id)?.value;
+  const num = (id) => {
+    const v = parseFloat(g(id));
+    return Number.isFinite(v) ? v : null;
+  };
+
+  l.title = g('review-title').trim();
+  l.description = g('review-description').trim();
+  l.price = num('review-price');
+  l.currency = g('review-currency').trim().toUpperCase() || 'USD';
+  l.category = g('review-category').trim();
+  l.subcategory = g('review-subcategory').trim();
+  l.availability_status = g('review-availability').trim() || 'In Stock';
+  l.stock_quantity = num('review-stock');
+  l.condition = g('review-condition').trim() || 'New';
+  l.warranty = g('review-warranty').trim();
+  l.rating = num('review-rating');
+  l.rating_count = num('review-rating-count');
+  l.features = g('review-features').split('\n').map(s => s.trim()).filter(Boolean);
+  l.highlights = g('review-highlights').split('\n').map(s => s.trim()).filter(Boolean);
+  l.tags = g('review-tags').split(',').map(s => s.trim()).filter(Boolean);
+  l.brand = g('review-brand').trim();
+  l.color = g('review-color').trim();
+  l.size = g('review-size').trim();
+  l.material = g('review-material').trim();
+  l.bedrooms = num('review-bedrooms');
+  l.bathrooms = num('review-bathrooms');
+  l.property_type = g('review-property-type').trim() || 'House';
+  l.city = g('review-city').trim();
+  l.state = g('review-state').trim();
+  l.country = g('review-country').trim();
+  l.latitude = num('review-lat');
+  l.longitude = num('review-lng');
+
+  const final = normalizeListingToFullCard(l);
+
+  const btn = document.getElementById('review-save-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Saving...'; }
+  if (window.lucide) lucide.createIcons();
+
+  const result = await insertListingWithRetry(final);
+  if (!result.ok) {
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Save to Showroom'; }
+    showToast(`Save failed: ${result.error}`);
+    return;
+  }
+
+  let deployNote = '';
+  if (state.pendingDeployAfterSave) {
+    state.pendingDeployAfterSave = false;
+    const deploy = await runDeployWebhook();
+    deployNote = deploy.ok ? ` ${deploy.message}` : ` ${deploy.message}`;
+  }
+
+  document.getElementById('listing-review-modal')?.classList.add('hidden');
+  document.body.style.overflow = '';
+  clearPendingUploadsLocal();
+
+  const doneMsg = {
+    role: 'assistant',
+    content: `✅ **Saved to showroom.** **${final.title}** is now live as **${final.property_id}** — ${final.currency} ${final.price.toLocaleString()}, ★${final.rating} (${final.rating_count} reviews), ${final.availability_status}, ${final.images.length} image(s).${deployNote}`,
+    tool_results: [
+      { tool: 'create_listing', result: { success: true, property_id: final.property_id, title: final.title } },
+      ...(deployNote ? [{ tool: 'deploy_site', result: { ok: true, note: deployNote.trim() } }] : []),
+    ],
+  };
+  state.history.push(doneMsg);
+  renderMessage(doneMsg);
+  if (window.lucide) lucide.createIcons();
+};
+
+window.cancelListingReview = () => {
+  document.getElementById('listing-review-modal')?.classList.add('hidden');
+  document.body.style.overflow = '';
+  state.reviewListing = null;
+  state.pendingDeployAfterSave = false;
+};
+
+window.reviewAddImage = () => {
+  document.getElementById('review-image-upload')?.click();
+};
+
+window.handleReviewImageUpload = async (event) => {
+  const files = Array.from(event?.target?.files || []);
+  if (!files.length || !state.reviewListing) return;
+  for (const file of files) {
+    if (!file.type?.startsWith('image/') || file.size > MAX_UPLOAD_SIZE_BYTES) continue;
+    if (!Array.isArray(state.reviewListing.images)) state.reviewListing.images = [];
+    const dataUrl = await fileToDataUrl(file);
+    const uploaded = await uploadDataUrlImageToStorage(state.reviewListing.property_id || 'review', state.reviewListing.images.length, dataUrl);
+    state.reviewListing.images.push(uploaded || dataUrl);
+  }
+  renderReviewImages(state.reviewListing.images);
+  event.target.value = '';
+};
 
 function renderMarkdown(text) {
   let html = escapeHtml(text);
@@ -962,16 +1217,16 @@ function renderMessage(msg, animate = true) {
   const toolResultsHtml = (msg.tool_results || []).map(renderToolResult).join('');
 
   wrapper.innerHTML = isUser ? `
-    <div class="max-w-[80%] bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-lg shadow-blue-600/20">
-      <p class="text-sm leading-relaxed">${escapeHtml(msg.content)}</p>
+    <div class="msg-bubble-user max-w-[88%] bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-3xl rounded-tr-md px-5 py-3.5 shadow-lg shadow-blue-600/20">
+      <p class="whitespace-pre-wrap break-words">${escapeHtml(msg.content)}</p>
     </div>
   ` : `
-    <div class="max-w-[85%] flex gap-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-800 rounded-lg flex items-center justify-center shrink-0 shadow-md">
-        <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+    <div class="max-w-[92%] flex gap-3 items-start">
+      <div class="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-800 rounded-2xl flex items-center justify-center shrink-0 shadow-md mt-0.5">
+        <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
       </div>
-      <div class="glass border border-blue-500/15 rounded-2xl rounded-tl-sm px-4 py-3">
-        <div class="msg-content text-sm text-gray-200 leading-relaxed">${renderMarkdown(msg.content)}</div>
+      <div class="glass border border-blue-500/15 rounded-3xl rounded-tl-md px-5 py-3.5 min-w-0">
+        <div class="msg-content text-gray-100 leading-relaxed">${renderMarkdown(msg.content)}</div>
         ${toolResultsHtml}
       </div>
     </div>
@@ -988,14 +1243,14 @@ function renderTypingIndicator() {
   wrapper.id = 'typing-indicator';
   wrapper.className = 'flex justify-start fade-in';
   wrapper.innerHTML = `
-    <div class="flex gap-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-800 rounded-lg flex items-center justify-center shrink-0 shadow-md">
-        <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+    <div class="flex gap-3 items-start">
+      <div class="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-800 rounded-2xl flex items-center justify-center shrink-0 shadow-md">
+        <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
       </div>
-      <div class="glass border border-blue-500/15 rounded-2xl rounded-tl-sm px-4 py-4 flex items-center gap-1.5">
-        <span class="typing-dot w-2 h-2 bg-blue-400 rounded-full"></span>
-        <span class="typing-dot w-2 h-2 bg-blue-400 rounded-full"></span>
-        <span class="typing-dot w-2 h-2 bg-blue-400 rounded-full"></span>
+      <div class="glass border border-blue-500/15 rounded-3xl rounded-tl-md px-5 py-4 flex items-center gap-1.5">
+        <span class="typing-dot w-2.5 h-2.5 bg-blue-400 rounded-full"></span>
+        <span class="typing-dot w-2.5 h-2.5 bg-blue-400 rounded-full"></span>
+        <span class="typing-dot w-2.5 h-2.5 bg-blue-400 rounded-full"></span>
       </div>
     </div>
   `;
@@ -1232,8 +1487,7 @@ async function runLocalHouseAndDeployAutomation(text) {
   delete cloned.id;
   delete cloned.created_at;
   delete cloned.updated_at;
-
-  const mergedImages = ensureImageCount(reference.images, intent.requestedImages);
+  const arrangedImages = buildMatchedGallery('property', reference.images, intent.title);
   const payload = {
     ...cloned,
     property_id: propertyId,
@@ -1257,72 +1511,23 @@ async function runLocalHouseAndDeployAutomation(text) {
     longitude: intent.longitude ?? reference.longitude ?? null,
     bedrooms: intent.bedrooms ?? reference.bedrooms ?? null,
     bathrooms: intent.bathrooms ?? reference.bathrooms ?? null,
-    images: mergedImages,
+    images: arrangedImages,
     is_active: true,
     is_ai_generated: true,
     ai_generated_fields: ['title', 'description', 'country', 'country_code', 'product_location', 'images', 'latitude', 'longitude'],
   };
 
-  async function insertWithFallback(basePayload) {
-    const candidate = { ...basePayload };
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-      const { error } = await supabase.from('showroom_listings').insert(candidate);
-      if (!error) return { error: null };
-      const msg = String(error.message || '');
-      const missingColMatch = msg.match(/Could not find the '([^']+)' column/i);
-      if (missingColMatch?.[1]) {
-        delete candidate[missingColMatch[1]];
-        continue;
-      }
-      return { error };
-    }
-    return { error: { message: 'Insert failed after schema fallback retries.' } };
-  }
-
-  const { error: propertyErr } = await insertWithFallback(payload);
-  if (propertyErr) {
-    return {
-      ok: false,
-      content: `❌ House creation failed: ${propertyErr.message}`,
-      tool_results: [{ tool: 'create_house', result: { error: propertyErr.message } }],
-    };
-  }
-
-  let deployResult = { skipped: true };
-  let deployMessage = 'No deploy requested.';
-  if (intent.shouldDeploy) {
-    const { data: settings } = await supabase
-      .from('site_settings')
-      .select('deploy_webhook')
-      .limit(1)
-      .maybeSingle();
-    const webhook = String(settings?.deploy_webhook || '').trim();
-    if (!webhook) {
-      deployMessage = 'House created, but no deploy webhook is configured in Publish & Deploy settings.';
-      deployResult = { skipped: true, reason: 'missing_webhook' };
-    } else {
-      const webhookRes = await fetch(webhook, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trigger: 'deploy', source: 'admin-ai-page', at: new Date().toISOString() }),
-      });
-      if (webhookRes.ok) {
-        deployMessage = 'Deploy webhook accepted. Deployment started.';
-        deployResult = { ok: true, status: webhookRes.status };
-      } else {
-        deployMessage = `House created, but deploy failed (webhook status ${webhookRes.status}).`;
-        deployResult = { ok: false, status: webhookRes.status };
-      }
-    }
-  }
+  // Full curated schema + admin confirmation before anything is saved.
+  const finalPayload = normalizeListingToFullCard(payload);
+  openListingReviewCard(finalPayload, { source: 'typed-house', deployRequested: Boolean(intent.shouldDeploy) });
 
   return {
     ok: true,
-    content: `✅ Done. I added house **${intent.title}** as **${propertyId}** by learning from ${usedFallbackReference ? 'existing showroom listings' : 'an existing showroom house'} **${reference.property_id || 'template'}**. I copied the same listing style, map/location fields, and created a **${mergedImages.length}-image** gallery.${deployMessage ? ` ${deployMessage}` : ''}`,
+    reviewCard: true,
+    content: `📋 **Ready for review.** I built **${finalPayload.title}** (${finalPayload.property_id}) in your exact showroom format with a **${finalPayload.images.length}-image** matched gallery. **Confirm the price, then Save.**${intent.shouldDeploy ? '\n\n**A deploy will also be triggered after you save.**' : ''}`,
     tool_results: [
       { tool: 'reference_house', result: { success: true, property_id: reference.property_id || null, title: reference.title || null } },
-      { tool: 'create_house', result: { success: true, property_id: propertyId, image_count: mergedImages.length } },
-      { tool: 'deploy_site', result: deployResult },
+      { tool: 'create_house', result: { success: true, property_id: propertyId, image_count: arrangedImages.length, pending_review: true } },
     ],
   };
 }
@@ -1358,7 +1563,7 @@ async function runLocalProductAndDeployAutomation(text) {
     warranty: null,
     availability_status: 'In Stock',
     stock_quantity: intent.stock,
-    images: [PRODUCT_FALLBACK_IMAGE],
+    images: buildMatchedGallery('product', [PRODUCT_FALLBACK_IMAGE], intent.title),
     features: ['AI-managed storefront listing', 'Fast checkout ready', 'Premium presentation'],
     tags: ['New Arrival'],
     highlights: ['Auto-created by Admin AI', 'Visible in storefront preview', 'Ready for live publishing'],
@@ -1368,69 +1573,16 @@ async function runLocalProductAndDeployAutomation(text) {
     specifications: {},
   };
 
-  async function insertWithFallback(basePayload) {
-    const candidate = { ...basePayload };
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      const { error } = await supabase.from('showroom_listings').insert(candidate);
-      if (!error) return { error: null };
-      const msg = String(error.message || '');
-      const missingColMatch = msg.match(/Could not find the '([^']+)' column/i);
-      if (missingColMatch?.[1]) {
-        const badCol = missingColMatch[1];
-        delete candidate[badCol];
-        continue;
-      }
-      return { error };
-    }
-    return { error: { message: 'Insert failed after schema fallback retries.' } };
-  }
-
-  const { error: productErr } = await insertWithFallback(productPayload);
-  if (productErr) {
-    return {
-      ok: false,
-      content: `❌ Product creation failed: ${productErr.message}`,
-      tool_results: [{ tool: 'create_product', result: { error: productErr.message } }],
-    };
-  }
-
-  let deployResult = { skipped: true };
-  let deployMessage = 'No deploy requested.';
-
-  if (intent.shouldDeploy) {
-    const { data: settings } = await supabase
-      .from('site_settings')
-      .select('deploy_webhook,production_url,github_repo')
-      .limit(1)
-      .maybeSingle();
-
-    const webhook = String(settings?.deploy_webhook || '').trim();
-    if (!webhook) {
-      deployMessage = 'Product created, but no deploy webhook is configured in Publish & Deploy settings.';
-      deployResult = { skipped: true, reason: 'missing_webhook' };
-    } else {
-      const webhookRes = await fetch(webhook, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trigger: 'deploy', source: 'admin-ai-page', at: new Date().toISOString() }),
-      });
-
-      if (webhookRes.ok) {
-        deployMessage = 'Deploy webhook accepted. Deployment started.';
-        deployResult = { ok: true, status: webhookRes.status };
-      } else {
-        deployMessage = `Product created, but deploy failed (webhook status ${webhookRes.status}).`;
-        deployResult = { ok: false, status: webhookRes.status };
-      }
-    }
-  }
+  // Full curated schema + admin confirmation before anything is saved.
+  const finalPayload = normalizeListingToFullCard(productPayload);
+  openListingReviewCard(finalPayload, { source: 'typed', deployRequested: Boolean(intent.shouldDeploy) });
 
   return {
     ok: true,
-    content: `✅ Done. I created **${intent.title}** (${propertyId}) with **${intent.price} ${intent.currency}** and stock **${intent.stock ?? 'N/A'}** in **${intent.category}**. ${deployMessage}`,
+    reviewCard: true,
+    content: `📋 **Ready for review.** I built **${finalPayload.title}** (${finalPayload.property_id}) in your exact showroom format with a **${finalPayload.images.length}-image** gallery. **Confirm the price, then Save.**${intent.shouldDeploy ? '\n\n*A deploy will also be triggered after you save.*' : ''}`,
     tool_results: [
-      { tool: 'create_product', result: { success: true, property_id: propertyId, title: intent.title } },
-      { tool: 'deploy_site', result: deployResult },
+      { tool: 'create_product', result: { success: true, property_id: propertyId, title: intent.title, pending_review: true } },
     ],
   };
 }
@@ -1633,9 +1785,10 @@ async function autoExecutePendingApprovals(approvalIds, source = 'request') {
 
 window.sendMessage = async () => {
   const input = document.getElementById('chat-input');
-  const MIN_INPUT_HEIGHT = 112;
+  const MIN_INPUT_HEIGHT = 56;
   const text = input.value.trim();
-  if (!text || state.sending) return;
+  const hasImages = state.pendingUploads.length > 0;
+  if ((!text && !hasImages) || state.sending) return;
 
   input.value = '';
   input.style.height = `${MIN_INPUT_HEIGHT}px`;
@@ -1711,21 +1864,61 @@ window.sendMessage = async () => {
     }
 
     const headers = await getAuthHeaders();
-    const res = await fetch(AI_FUNCTION_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        action: 'chat',
-        message: text,
-        developer_mode: state.developerMode,
-        history: state.history.slice(-20, -1).map(h => ({ role: h.role, content: h.content })),
-      }),
-    });
     let data = {};
-    try {
-      data = await res.json();
-    } catch {
-      data = {};
+    let usedVision = false;
+
+    // Attach uploaded images to the AI so it sees them together with the text.
+    const pendingImages = state.pendingUploads.slice(0, 4);
+    if (pendingImages.length > 0) {
+      const images = [];
+      for (const item of pendingImages) {
+        if (item.file) {
+          const dataUrl = await fileToDataUrl(item.file);
+          if (dataUrl) images.push(dataUrl);
+        } else if (item.dataUrl) {
+          images.push(item.dataUrl);
+        }
+      }
+      if (images.length > 0) {
+        usedVision = true;
+        const visionRes = await fetch(AI_FUNCTION_URL, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            action: 'vision',
+            images,
+            prompt: text || 'Describe these images in detail.',
+            max_tokens: 4096,
+          }),
+        });
+        try {
+          data = await visionRes.json();
+        } catch {
+          data = {};
+        }
+        if (visionRes.ok && data.text) {
+          data.response = data.text;
+          clearPendingUploadsLocal();
+        }
+      }
+    }
+
+    if (!usedVision) {
+      const res = await fetch(AI_FUNCTION_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'chat',
+          message: text,
+          developer_mode: state.developerMode,
+          history: state.history.slice(-20, -1).map(h => ({ role: h.role, content: h.content })),
+        }),
+      });
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
     }
     removeTypingIndicator();
 
@@ -2012,20 +2205,12 @@ window.handleAiImageUpload = async (event) => {
   await cacheBrandImageFromUploads();
   if (added > 0) {
     const totalBytes = state.pendingUploads.reduce((sum, item) => sum + (item.size || 0), 0);
-    showToast(`${added} image(s) queued (${formatBytes(totalBytes)} total).`);
+    showToast(`${added} image(s) attached (${formatBytes(totalBytes)}). Type a message and send — the AI sees them.`);
+    const input = document.getElementById('chat-input');
+    if (input) input.focus();
   }
   if (rejected > 0) {
     showToast(`${rejected} file(s) skipped. Use images under 8MB each.`);
-  }
-  if (added > 0) {
-    const autoResult = await runAutoImagePipeline();
-    if (autoResult) {
-      const aiMsg = { role: 'assistant', content: autoResult.content, tool_results: autoResult.tool_results };
-      state.history.push(aiMsg);
-      renderMessage(aiMsg);
-      if (autoResult.ok) showToast('Auto pipeline finished — listing created with AI-filled fields and 24 images.');
-      else showToast('Auto pipeline had an issue.');
-    }
   }
 };
 
@@ -2201,9 +2386,9 @@ async function init() {
   });
   input.addEventListener('input', () => {
     input.style.height = 'auto';
-    input.style.height = Math.max(112, Math.min(input.scrollHeight, 224)) + 'px';
+    input.style.height = Math.max(56, Math.min(input.scrollHeight, 160)) + 'px';
   });
-  input.style.height = '112px';
+  input.style.height = '56px';
   renderPendingUploads();
   setPreviewForHome();
   renderAutomationCenterMeta();
