@@ -2,6 +2,7 @@
 // Real estate + vehicles. Uses real Pexels stock photo URLs of actual homes.
 
 import { HOUSE_KITCHEN_LISTINGS } from './home-kitchen-data.js';
+import { APPLIANCE_SHOWCASE_LISTINGS } from './appliance-showcase-data.js';
 
 const PEXELS = (id, w = 800) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
@@ -1177,6 +1178,10 @@ export const SHOWROOM_LISTINGS = [
 
 // Home & Kitchen — 200 curated products appended to the marketplace listings.
 SHOWROOM_LISTINGS.push(...HOUSE_KITCHEN_LISTINGS);
+
+// Modern Home Appliances — curated product-only-shot products for the
+// "Modern Home Appliances" section (former Heavy Equipment & Auto Parts).
+SHOWROOM_LISTINGS.push(...APPLIANCE_SHOWCASE_LISTINGS);
 
 // Real-world coordinates for every seeded property listing so showroom cards can
 // render a map preview and the details page map can skip geocoding lookups.

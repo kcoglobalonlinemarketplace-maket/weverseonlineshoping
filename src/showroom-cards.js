@@ -148,11 +148,11 @@ const REAL_ESTATE_SECTIONS = [
     ],
   },
   {
-    id: 'heavy-equipment', label: 'Heavy Equipment & Auto Parts', icon: 'wrench',
-    subtitle: 'Construction machinery, heavy equipment, and quality auto parts.',
+    id: 'heavy-equipment', label: 'Modern Home Appliances', icon: 'refrigerator',
+    subtitle: 'Premium espresso machines, kettles, blenders, and smart home care appliances.',
     rows: [
-      { id: 'heavy-equipment-all', label: 'Heavy Equipment', icon: 'tractor', ids: [] },
-      { id: 'auto-parts-all', label: 'Auto Parts', icon: 'wrench', ids: [] },
+      { id: 'appliances-coffee-kitchen', label: 'Coffee Makers & Kitchen', icon: 'coffee', ids: ['KCO-002001', 'KCO-002002', 'KCO-002003', 'KCO-002004', 'KCO-002005', 'KCO-002006'] },
+      { id: 'appliances-home-care', label: 'Home & Floor Care', icon: 'sparkles', ids: ['KCO-002007', 'KCO-002008', 'KCO-002009', 'KCO-002010'] },
     ],
   },
 ];
@@ -250,8 +250,6 @@ const ROW_TO_CATALOG_SLUG = {
   'used-cars': 'cars',
   'all-trucks': 'trucks',
   'all-motorhomes': 'motorhomes',
-  'heavy-equipment-all': 'heavy-equipment',
-  'auto-parts-all': 'auto-parts',
   // Marketplace categories
   'mp-men-all': 'men',
   'mp-women-all': 'women',
