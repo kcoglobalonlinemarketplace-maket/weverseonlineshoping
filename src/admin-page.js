@@ -4652,11 +4652,13 @@ window.testAiCall = async function() {
 let _productAiState = null; // { pid, from, product, busy, suggestions, approved, removedImages, addedImages, instruction }
 
 const PRODUCT_AI_QUICK_ACTIONS = [
-  { key: 'rewrite', label: 'Rewrite Title & Description', icon: 'pen-line', prompt: 'Rewrite the title and description to be more professional, compelling, and conversion-focused. Keep all product facts accurate. The title must be a real, professional product name that matches the item and its category — never a generic placeholder.' },
-  { key: 'name', label: 'Professional Name', icon: 'badge-check', prompt: 'Give this product a real, professional product name that accurately matches what it actually is and its category. Never use placeholder names like "AI Product", "AI Curated Product", or anything similar.' },
-  { key: 'price', label: 'Optimize Price & Stock', icon: 'dollar-sign', prompt: 'Suggest a competitive, realistic price and an optimal stock quantity for this product based on the category and current data.' },
-  { key: 'category', label: 'Fix Category & Specs', icon: 'tags', prompt: 'Fix the category, subcategory, and specifications so they accurately describe this product. Use the category list if possible.' },
-  { key: 'images', label: 'Clean Up Duplicate/Bad Images', icon: 'images', prompt: 'Identify duplicate, broken, or low-quality images among the CURRENT images list only, and list their exact URLs in images_to_remove. Do not invent any image URLs.' },
+  { key: 'rewrite', mode: 'edit', label: 'Rewrite Title & Description', icon: 'pen-line', prompt: 'Rewrite the title and description to be more professional, compelling, and conversion-focused. Keep all product facts accurate. The title must be a real, professional product name that matches the item and its category — never a generic placeholder.' },
+  { key: 'name', mode: 'edit', label: 'Professional Name', icon: 'badge-check', prompt: 'Give this product a real, professional product name that accurately matches what it actually is and its category. Never use placeholder names like "AI Product", "AI Curated Product", or anything similar.' },
+  { key: 'price', mode: 'edit', label: 'Optimize Price & Stock', icon: 'dollar-sign', prompt: 'Suggest a competitive, realistic price and an optimal stock quantity for this product based on the category and current data.' },
+  { key: 'category', mode: 'edit', label: 'Fix Category & Specs', icon: 'tags', prompt: 'Fix the category, subcategory, and specifications so they accurately describe this product. Use the category list if possible.' },
+  { key: 'images', mode: 'edit', label: 'Clean Up Duplicate/Bad Images', icon: 'images', prompt: 'Identify duplicate, broken, or low-quality images among the CURRENT images list only, and list their exact URLs in images_to_remove. Do not invent any image URLs.' },
+  { key: 'scan', mode: 'scan', label: 'Scan My Showroom', icon: 'scan-search', prompt: 'Scan the showroom and check this product against the other products so everything matches.' },
+  { key: 'gen', mode: 'gen', label: 'Generate an Image', icon: 'wand-sparkles', prompt: 'Generate a new professional product image for this product.' },
 ];
 
 function productAiFindProduct(pid) {
@@ -4714,10 +4716,15 @@ window.openProductAiAssistant = async function(pid, from = 'products') {
     removedImages: new Set(),
     addedImages: [],
     instruction: '',
+    quickMode: '',
     chatImages: [],
+    generatedImages: [],
+    lastGenPrompt: '',
+    lastGenReference: null,
     messages: [{
       role: 'assistant',
-      content: `I'm your AI manager for this product (${pid}). Ask me to fix anything — title, description, price, stock, category, or images — and attach photos if you want me to look at them. I can also delete bad or duplicate images for you.`,
+      welcome: true,
+      content: `I'm your AI product manager for ${pid}. We can chat about anything — or I can work on this card for you: rewrite copy, fix the price or category, clean images, scan the showroom to make sure it matches the other products, generate brand-new images, and look at any photos you attach. What do you need?`,
     }],
   };
   renderProductAiModal();
@@ -4744,6 +4751,19 @@ function renderProductAiModal() {
       </div>
       <div class="glass border border-fuchsia-500/20 rounded-3xl rounded-tl-md px-5 py-3.5 min-w-0 max-w-[85%]">
         <div class="text-[1.02rem] leading-relaxed text-gray-100 whitespace-pre-wrap break-words">${esc(m.content)}</div>
+        ${m.generated && m.generated.length ? `
+          <div class="flex flex-wrap gap-2.5 mt-3">
+            ${m.generated.map((u, gi) => `
+              <div class="relative">
+                <img src="${esc(u)}" class="w-40 h-40 rounded-2xl object-cover border border-fuchsia-500/40 shadow-lg" onerror="this.src='/fallback.svg'">
+                <button onclick="productAiUseGeneratedImage(${gi})" class="absolute bottom-1.5 right-1.5 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black shadow transition">Use on card</button>
+              </div>`).join('')}
+          </div>
+          <div class="flex items-center gap-2 mt-2.5">
+            <button onclick="productAiRegenerateImage()" class="btn-press px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-fuchsia-500/10 text-fuchsia-200 hover:bg-fuchsia-500/25 transition flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Regenerate</button>
+            <button onclick="productAiUseAllGeneratedImages()" class="btn-press px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25 transition flex items-center gap-1"><i data-lucide="images" class="w-3 h-3"></i> Add all to card</button>
+          </div>` : ''}
+        ${m.provider ? `<p class="text-[9px] text-gray-600 mt-2">${esc(m.provider)}</p>` : ''}
       </div>
     </div>`).join('');
 
@@ -4809,13 +4829,13 @@ function renderProductAiModal() {
             <button onclick="productAiChatAttach()" class="btn-press w-12 h-12 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/30 hover:bg-fuchsia-500/25 flex items-center justify-center shrink-0" title="Attach image(s)">
               <i data-lucide="image-plus" class="w-6 h-6 text-fuchsia-300"></i>
             </button>
-            <textarea id="product-ai-input" rows="1" class="flex-1 bg-transparent text-lg text-white placeholder-gray-500 resize-none outline-none px-1 py-3 max-h-40 leading-relaxed scrollbar-thin" placeholder="Tell the AI what to change on this product…"></textarea>
+            <textarea id="product-ai-input" rows="1" class="flex-1 bg-transparent text-lg text-white placeholder-gray-500 resize-none outline-none px-1 py-3 max-h-40 leading-relaxed scrollbar-thin" placeholder="Chat or ask the AI to fix this product…"></textarea>
             <button id="product-ai-send-btn" onclick="runProductAiInstruction()" class="btn-press w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-purple-700 hover:from-fuchsia-400 hover:to-purple-600 text-white flex items-center justify-center shrink-0 transition shadow-lg shadow-fuchsia-600/30 ${busy ? 'opacity-40 pointer-events-none' : ''}" title="Send">
               <i data-lucide="send" class="w-6 h-6"></i>
             </button>
           </div>
           <div class="flex items-center justify-between gap-3 pt-2.5">
-            <p class="text-[11px] text-gray-500 min-w-0">The AI only edits this one product. Attach photos to show it what to change.</p>
+            <p class="text-[11px] text-gray-500 min-w-0">Full Gemini chat. It can fix this card, scan the showroom, and generate images — and it only ever edits this one product.</p>
             ${s.suggestions ? `<button onclick="applyProductAiChanges()" class="btn-press px-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-black rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-lg shadow-emerald-600/30"><i data-lucide="database" class="w-4 h-4"></i> Save Approved</button>` : ''}
           </div>
         </div>
@@ -4862,7 +4882,7 @@ window.productAiChatImagePicked = async function(input) {
     if (dataUrl) { _productAiState.chatImages.push(dataUrl); ok += 1; }
   }
   input.value = '';
-  if (ok) showToast(`${ok} photo(s) attached. Add a message and send.`, 'info');
+  if (ok) showToast(`${ok} photo(s) attached. Send any message and the AI will look at them right away.`, 'info');
   renderProductAiModal();
 };
 
@@ -5037,6 +5057,7 @@ window.productAiQuickAction = function(key) {
   if (!action || !_productAiState) return;
   _productAiState.instruction = action.prompt;
   _productAiState.quickLabel = action.label;
+  _productAiState.quickMode = action.mode || 'edit';
   runProductAiInstruction();
 };
 
@@ -5104,17 +5125,48 @@ window.productAiUploadImages = async function(input) {
   renderProductAiModal();
 };
 
+function productAiDetectMode(text, hasImages) {
+  const t = String(text || '').toLowerCase();
+  if (/\b(generate|create|make|draw|produce|imagine)\b[\s\S]*\b(image|photo|picture|logo|thumbnail|background|banner)\b/.test(t)
+      || /\b(change|swap|replace|edit|remove)\b[\s\S]*\b(background|color|colour)\b/.test(t)) return 'gen';
+  if (/\bshowroom\b/.test(t)
+      || /\bcompare\b[\s\S]*\b(showroom|product|other|card)\b/.test(t)
+      || /\bscan\b[\s\S]*\b(showroom|product|card|listing|shop|match)\b/.test(t)
+      || /\bmatch(es|ing)?\b/.test(t)) return 'scan';
+  const verb = /\b(rewrite|rephrase|update|fix|improve|optimize|change|make|rename|retitle|set|clean up|cleanup|remove|delete|add)\b/;
+  const field = /\b(title|description|price|stock|category|subcategory|brand|name|images?|features|tags|highlights|seo)\b/;
+  if (verb.test(t) && field.test(t)) return 'edit';
+  if (hasImages) return 'vision';
+  return 'chat';
+}
+
+function productAiHistoryForChat() {
+  const s = _productAiState;
+  const msgs = Array.isArray(s.messages) ? s.messages : [];
+  return msgs
+    .slice(0, -1)
+    .filter((m) => !m.welcome)
+    .map((m) => {
+      const imgNote = m.images && m.images.length ? ` [Sent ${m.images.length} photo(s)]` : '';
+      const content = `${m.content || ''}${imgNote}`.trim();
+      return { role: m.role === 'user' ? 'user' : 'assistant', content };
+    })
+    .filter((m) => m.content);
+}
+
 window.runProductAiInstruction = async function() {
   const s = _productAiState;
   if (!s || s.busy) return;
   const rawInstruction = (s.instruction || '').trim();
   const quickLabel = s.quickLabel || '';
   s.quickLabel = '';
+  const quickMode = s.quickMode || '';
+  s.quickMode = '';
   const hasImages = (s.chatImages || []).length > 0;
-  if (!rawInstruction && !quickLabel && !hasImages) return;
+  if (!rawInstruction && !quickLabel && !quickMode && !hasImages) return;
 
   const aiInstruction = rawInstruction || 'Improve this product listing professionally.';
-  const userText = quickLabel || rawInstruction || (hasImages ? 'Look at these photos and improve the product listing.' : 'Improve this product listing professionally.');
+  const userText = quickLabel || rawInstruction || (hasImages ? 'Look at these photos and tell me what you see.' : 'Improve this product listing professionally.');
   const sentImages = [...(s.chatImages || [])];
   s.chatImages = [];
   s.instruction = '';
@@ -5122,32 +5174,208 @@ window.runProductAiInstruction = async function() {
   s.busy = true;
   renderProductAiModal();
 
-  const prompt = buildProductAiPrompt(s, aiInstruction);
+  const mode = quickMode || productAiDetectMode(aiInstruction, hasImages);
 
   try {
-    let text = '';
-    if (hasImages) {
-      const res = await aiClient._callEdge({ action: 'vision', images: sentImages.slice(0, 4), prompt, max_tokens: 4096 });
-      text = (res && res.text) ? String(res.text) : '';
-      if (!text) throw new Error((res && res.error) || 'The AI could not read the attached photos.');
+    if (mode === 'gen') {
+      await runProductAiImageGen(aiInstruction, sentImages);
+    } else if (mode === 'scan') {
+      await runProductAiScanShowroom();
+    } else if (mode === 'edit') {
+      await runProductAiEditFix(aiInstruction, sentImages);
+    } else if (mode === 'vision') {
+      await runProductAiVisionChat(aiInstruction, sentImages);
     } else {
-      const res = await aiClient.prompt(prompt, {
-        maxTokens: 4000,
-        onProviderSwitch: () => {},
-      });
-      text = res.text;
+      await runProductAiFreeChat(aiInstruction);
     }
-    const json = extractJsonFromAiText(text);
-    if (!json) throw new Error('The AI did not return valid JSON suggestions.');
-    s.suggestions = json;
-    s.approved = new Set(Object.keys(json));
-    s.approved.add('images_to_remove');
-    const summary = (json.summary || 'Changes are ready for this product.').trim();
-    s.messages.push({ role: 'assistant', content: `${summary}\n\n✅ Changes are ready below. Tick what you want, then press Save.` });
-    showToast('Suggestions ready — review and approve before saving.', 'info');
+    scrollProductAiChatToBottom();
   } catch (err) {
     s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
     showToast(`AI error: ${err.message}`, 'error');
+  } finally {
+    s.busy = false;
+    renderProductAiModal();
+  }
+};
+
+async function runProductAiEditFix(instruction, sentImages) {
+  const s = _productAiState;
+  const prompt = buildProductAiPrompt(s, instruction);
+  let text = '';
+  if (sentImages && sentImages.length) {
+    const res = await aiClient._callEdge({ action: 'vision', images: sentImages.slice(0, 4), prompt, max_tokens: 4096 });
+    text = (res && res.text) ? String(res.text) : '';
+    if (!text) throw new Error((res && res.error) || 'The AI could not read the attached photos.');
+  } else {
+    const res = await aiClient.prompt(prompt, { maxTokens: 4000, onProviderSwitch: () => {} });
+    text = res.text;
+  }
+  const json = extractJsonFromAiText(text);
+  if (!json) throw new Error('The AI did not return valid JSON suggestions.');
+  s.suggestions = json;
+  s.approved = new Set(Object.keys(json));
+  s.approved.add('images_to_remove');
+  const summary = (json.summary || 'Changes are ready for this product.').trim();
+  s.messages.push({ role: 'assistant', content: `${summary}\n\n✅ Changes are ready below. Tick what you want, then press Save.` });
+  showToast('Suggestions ready — review and approve before saving.', 'info');
+}
+
+async function runProductAiFreeChat(userText) {
+  const s = _productAiState;
+  const history = productAiHistoryForChat();
+  const res = await aiClient._callEdge({ action: 'chat', message: userText, history, max_tokens: 1200 });
+  if (res && res.response) {
+    s.messages.push({ role: 'assistant', content: String(res.response) });
+    return;
+  }
+  throw new Error((res && res.error) || 'The AI did not respond.');
+}
+
+async function runProductAiVisionChat(userText, sentImages) {
+  const s = _productAiState;
+  const prompt = `${userText || 'Look at these photos.'}\n\nIf you recognize the product in these photos, say yes and identify exactly what it is, give a typical price range for it, and offer to generate more product photos for this listing. Be friendly and helpful.`;
+  const res = await aiClient._callEdge({ action: 'vision', images: (sentImages || []).slice(0, 4), prompt, max_tokens: 1200 });
+  const text = (res && res.text) ? String(res.text) : '';
+  if (!text) throw new Error((res && res.error) || 'The AI could not read the attached photos.');
+  s.messages.push({ role: 'assistant', content: text });
+}
+
+async function productAiFetchShowroom() {
+  let items = Array.isArray(window._productsData) ? window._productsData : [];
+  if (!items.length) {
+    try {
+      const { data, error } = await supabase.from('showroom_listings').select('*').limit(500);
+      if (!error && Array.isArray(data)) items = data;
+    } catch { /* fall back to empty */ }
+  }
+  return (items || []).filter((p) => p && p.property_id !== _productAiState.pid);
+}
+
+async function runProductAiScanShowroom() {
+  const s = _productAiState;
+  const others = await productAiFetchShowroom();
+  const snapshot = JSON.stringify(productAiSnapshot(s.product), null, 2);
+  const sample = others.slice(0, 15).map((p) => ({
+    title: p.title, category: p.category, subcategory: p.subcategory,
+    price: p.price, currency: p.currency, brand: p.brand,
+    images: (Array.isArray(p.images) ? p.images.length : 0), listing_type: p.listing_type,
+  }));
+  const prompt = `You are the AI product manager for the product ${s.pid} in the Weverse Online Shop showroom.
+THIS PRODUCT (JSON):
+${snapshot}
+
+OTHER PRODUCTS IN THE SAME SHOWROOM (${others.length} found, showing ${sample.length}):
+${JSON.stringify(sample, null, 2)}
+
+Compare THIS product with the OTHER products in the showroom. Tell the admin whether everything matches (category, style, brand, price range, photo quality). If something does not match the showroom, say exactly what is wrong and how to fix it.
+
+Return a single valid JSON object (no markdown, no extra text):
+{
+  "matches": ["what already matches the showroom"],
+  "mismatches": [{ "field": "title", "current": "current value", "issue": "why it does not match", "suggested_value": "the fix" }],
+  "summary": "one short sentence summarizing the showroom check"
+}
+Rules:
+- Only list mismatches that are realistic and verifiable from the given data.
+- Allowed fields: title, description, price, stock_quantity, category, subcategory, brand, availability_status, features, tags, highlights, seo_keywords, specifications.
+- Respond with valid JSON only.`;
+  const res = await aiClient._callEdge({ action: 'chat', message: prompt, history: [], max_tokens: 3000 });
+  const text = (res && res.response) ? String(res.response) : '';
+  if (!text) throw new Error((res && res.error) || 'The showroom scan returned nothing.');
+  const json = extractJsonFromAiText(text);
+  const mismatches = Array.isArray(json && json.mismatches) ? json.mismatches : [];
+  const matches = Array.isArray(json && json.matches) ? json.matches : [];
+  if (json && (mismatches.length || matches.length || json.summary)) {
+    const fixes = {};
+    mismatches.forEach((m) => {
+      if (m && m.field && m.suggested_value !== undefined && m.suggested_value !== null) fixes[m.field] = m.suggested_value;
+    });
+    const lines = ['Showroom scan complete:'];
+    if (matches.length) lines.push(...matches.map((m) => `✅ ${m}`));
+    if (mismatches.length) lines.push(...mismatches.map((m) => `⚠️ ${m.field}: ${m.issue}`));
+    if (!mismatches.length) lines.push('✅ Everything matches the other products in this showroom.');
+    if (mismatches.length) {
+      fixes.summary = json.summary || `${mismatches.length} issue(s) found with the showroom.`;
+      s.suggestions = fixes;
+      s.approved = new Set(Object.keys(fixes));
+      s.approved.add('images_to_remove');
+      lines.push('Fixes are ready below. Tick what you want, then press Save.');
+    } else {
+      s.suggestions = null;
+    }
+    s.messages.push({ role: 'assistant', content: lines.join('\n') });
+    showToast('Showroom scan complete.', 'info');
+    return;
+  }
+  s.messages.push({ role: 'assistant', content: text || 'Showroom scan complete.' });
+}
+
+async function runProductAiImageGen(userText, sentImages) {
+  const s = _productAiState;
+  const p = s.product;
+  const prompt = `${userText}\n\n(Generate a clean, professional product photo for "${String(p.title || '').trim() || 'this product'}" in the Weverse Online Shop.)`;
+  let reference = null;
+  if (sentImages && sentImages.length) reference = sentImages[0];
+  else if (Array.isArray(p.images) && p.images[0]) reference = await aiClient._fetchImageAsDataUrl(p.images[0]);
+  const res = await aiClient._callEdge({ action: 'generate_images', prompt, reference_url: reference, count: 2 });
+  if (res && Array.isArray(res.images) && res.images.length) {
+    s.generatedImages = res.images;
+    s.lastGenPrompt = userText;
+    s.lastGenReference = reference;
+    s.messages.push({ role: 'assistant', content: 'Here are your generated images. Tap one to add it to the card, or Regenerate for new variations.', generated: res.images, provider: `${res.provider || 'AI'}/${res.model || ''}` });
+    return;
+  }
+  throw new Error((res && res.error) || 'Image generation returned nothing.');
+}
+
+async function productAiUploadDataUrl(dataUrl) {
+  try {
+    const blob = await fetch(dataUrl).then((r) => r.blob());
+    if (!blob || !blob.size) return null;
+    const file = new File([blob], `ai-${Date.now()}.png`, { type: blob.type || 'image/png' });
+    return await uploadImageFile(file);
+  } catch { return null; }
+}
+
+window.productAiUseGeneratedImage = async function(index) {
+  const s = _productAiState;
+  if (!s || s.busy || !Array.isArray(s.generatedImages)) return;
+  const dataUrl = s.generatedImages[index];
+  if (!dataUrl) return;
+  s.busy = true;
+  renderProductAiModal();
+  const url = await productAiUploadDataUrl(dataUrl);
+  s.busy = false;
+  if (!url) { showToast('Could not upload the generated image.', 'error'); renderProductAiModal(); return; }
+  s.addedImages.push(url);
+  showToast('Generated image staged. Press Save Approved to add it to the card.', 'success');
+  renderProductAiModal();
+};
+
+window.productAiUseAllGeneratedImages = async function() {
+  const s = _productAiState;
+  if (!s || s.busy || !Array.isArray(s.generatedImages) || !s.generatedImages.length) return;
+  s.busy = true;
+  renderProductAiModal();
+  let ok = 0;
+  for (const dataUrl of s.generatedImages) {
+    const url = await productAiUploadDataUrl(dataUrl);
+    if (url) { s.addedImages.push(url); ok += 1; }
+  }
+  s.busy = false;
+  showToast(ok ? `${ok} image(s) staged. Press Save Approved to add them.` : 'Upload failed.', ok ? 'success' : 'error');
+  renderProductAiModal();
+};
+
+window.productAiRegenerateImage = async function() {
+  const s = _productAiState;
+  if (!s || s.busy || !s.lastGenPrompt) return;
+  s.busy = true;
+  renderProductAiModal();
+  try {
+    await runProductAiImageGen(s.lastGenPrompt, s.lastGenReference ? [s.lastGenReference] : []);
+  } catch (err) {
+    s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
   } finally {
     s.busy = false;
     renderProductAiModal();
