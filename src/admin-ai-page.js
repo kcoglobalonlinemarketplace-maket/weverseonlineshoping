@@ -1265,7 +1265,10 @@ function removeTypingIndicator() {
 
 function scrollToBottom() {
   const chat = document.getElementById('chat-messages');
-  chat.scrollTop = chat.scrollHeight;
+  if (!chat) return;
+  requestAnimationFrame(() => {
+    chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+  });
 }
 
 function generateProductId() {

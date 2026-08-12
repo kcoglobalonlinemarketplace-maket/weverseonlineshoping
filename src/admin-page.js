@@ -4714,6 +4714,11 @@ window.openProductAiAssistant = async function(pid, from = 'products') {
     removedImages: new Set(),
     addedImages: [],
     instruction: '',
+    chatImages: [],
+    messages: [{
+      role: 'assistant',
+      content: `I'm your AI manager for this product (${pid}). Ask me to fix anything — title, description, price, stock, category, or images — and attach photos if you want me to look at them. I can also delete bad or duplicate images for you.`,
+    }],
   };
   renderProductAiModal();
 };
@@ -4723,38 +4728,157 @@ function renderProductAiModal() {
   if (!s) return;
   const p = s.product;
   const thumb = (p.images && p.images[0]) ? p.images[0] : '/fallback.svg';
+  const busy = s.busy === true;
+  const msgs = Array.isArray(s.messages) ? s.messages : [];
+
+  const msgsHtml = msgs.map((m) => m.role === 'user' ? `
+    <div class="flex justify-end">
+      <div class="max-w-[85%] bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-3xl rounded-tr-md px-5 py-3.5 text-[1.02rem] leading-relaxed whitespace-pre-wrap break-words shadow-lg shadow-blue-600/20">
+        ${(m.images && m.images.length) ? `<div class="flex flex-wrap gap-2 mb-2">${m.images.map((u) => `<img src="${esc(u)}" class="w-16 h-16 rounded-xl object-cover border border-white/20">`).join('')}</div>` : ''}
+        ${esc(m.content)}
+      </div>
+    </div>` : `
+    <div class="flex gap-3 items-start">
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-purple-700 flex items-center justify-center shrink-0 shadow-md mt-0.5">
+        <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+      </div>
+      <div class="glass border border-fuchsia-500/20 rounded-3xl rounded-tl-md px-5 py-3.5 min-w-0 max-w-[85%]">
+        <div class="text-[1.02rem] leading-relaxed text-gray-100 whitespace-pre-wrap break-words">${esc(m.content)}</div>
+      </div>
+    </div>`).join('');
+
+  const typingHtml = busy ? `
+    <div class="flex gap-3 items-start">
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-purple-700 flex items-center justify-center shrink-0 shadow-md mt-0.5">
+        <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+      </div>
+      <div class="glass border border-fuchsia-500/20 rounded-3xl rounded-tl-md px-5 py-4 flex items-center gap-1.5">
+        <span class="typing-dot w-2.5 h-2.5 bg-fuchsia-400 rounded-full"></span>
+        <span class="typing-dot w-2.5 h-2.5 bg-fuchsia-400 rounded-full"></span>
+        <span class="typing-dot w-2.5 h-2.5 bg-fuchsia-400 rounded-full"></span>
+      </div>
+    </div>` : '';
+
+  const chips = PRODUCT_AI_QUICK_ACTIONS.map((a) => `
+    <button onclick="productAiQuickAction('${a.key}')" class="btn-press px-3 py-2 rounded-xl text-[11px] font-bold bg-fuchsia-500/10 text-fuchsia-200 hover:bg-fuchsia-500/20 border border-fuchsia-500/15 transition flex items-center gap-1.5 shrink-0">
+      <i data-lucide="${a.icon}" class="w-3.5 h-3.5"></i> ${a.label}
+    </button>`).join('');
+
+  const chatImages = Array.isArray(s.chatImages) ? s.chatImages : [];
+  const chatThumbs = chatImages.map((u, i) => `
+    <div class="relative w-14 h-14 rounded-xl overflow-hidden border border-blue-500/40 shrink-0">
+      <img src="${esc(u)}" class="w-full h-full object-cover">
+      <button onclick="productAiRemoveChatImage(${i})" class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-red-500 text-white text-xs leading-none flex items-center justify-center shadow" title="Remove image">✕</button>
+    </div>`).join('');
+
+  const previewHtml = s.suggestions ? renderProductAiPreviewPanel() : '';
+  const imagesPanel = renderProductAiImagesPanel();
+
   openModal(`
-    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
-      <div class="modal-box wide max-h-[92vh] overflow-hidden flex flex-col">
-        <div class="flex items-center justify-between mb-4 shrink-0">
+    <div class="fixed inset-0 z-[100] bg-[#030712]/92 backdrop-blur-sm flex flex-col" onclick="if(event.target===this)closeModal()">
+      <div class="max-w-4xl mx-auto w-full h-full flex flex-col">
+        <div class="px-3 sm:px-5 h-16 shrink-0 flex items-center justify-between gap-3 border-b border-fuchsia-500/15 bg-blue-950/40">
           <div class="flex items-center gap-3 min-w-0">
-            <img src="${esc(thumb)}" class="w-11 h-11 rounded-xl object-cover border border-fuchsia-500/30" onerror="this.src='/fallback.svg'">
+            <button onclick="closeModal()" class="btn-press w-11 h-11 rounded-2xl bg-blue-950/60 border border-blue-500/25 flex items-center justify-center shrink-0" title="Back to products">
+              <i data-lucide="chevron-left" class="w-6 h-6 text-blue-300"></i>
+            </button>
+            <img src="${esc(thumb)}" class="w-11 h-11 rounded-2xl object-cover border border-fuchsia-500/30" onerror="this.src='/fallback.svg'">
             <div class="min-w-0">
-              <h3 class="text-sm font-black text-white truncate">${esc(p.title || 'Untitled')}</h3>
-              <p class="text-[10px] font-mono text-gray-500">${esc(p.property_id)} · ${esc(p.category || 'Uncategorized')}</p>
+              <span class="text-lg font-black text-white block leading-tight truncate">${esc(p.title || 'Untitled')}</span>
+              <span class="text-[11px] font-mono text-gray-500 block truncate">${esc(p.property_id)} · ${esc(p.category || 'Uncategorized')}</span>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="badge bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/25"><i data-lucide="sparkles" class="w-3 h-3"></i> AI Assistant</span>
-            <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
+          <span class="badge bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/25 hidden sm:inline-flex shrink-0"><i data-lucide="sparkles" class="w-3 h-3"></i> AI Assistant</span>
+        </div>
+
+        <div id="product-ai-chat-scroll" class="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-3 sm:px-5 py-4">
+          <div class="space-y-4">
+            <div class="glass-soft border border-blue-500/15 rounded-2xl p-4">
+              <div class="flex flex-wrap gap-1.5 mb-3">${chips}</div>
+              ${imagesPanel}
+            </div>
+            ${msgsHtml}
+            ${typingHtml}
+            ${previewHtml}
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto scrollbar-thin pr-1 space-y-4">
-          ${renderProductAiImagesPanel()}
-          ${renderProductAiChatPanel()}
-          ${renderProductAiPreviewPanel()}
-        </div>
-
-        <div class="shrink-0 pt-3 mt-3 border-t border-blue-500/10 flex items-center justify-between gap-3">
-          <p class="text-[10px] text-gray-500">AI can only edit this product. Review changes, approve what you want, then save directly to Supabase.</p>
-          <button onclick="applyProductAiChanges()" class="btn-press px-4 py-2.5 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white text-xs font-black rounded-xl transition flex items-center gap-1.5 shrink-0" ${s.busy ? 'disabled' : ''}>
-            <i data-lucide="database" class="w-4 h-4"></i> Save Approved to Supabase
-          </button>
+        <div class="shrink-0 px-3 sm:px-5 pb-3 pt-2 bg-gradient-to-t from-[#070b16] via-[#070b16]/95 to-transparent">
+          ${chatThumbs ? `<div class="flex flex-wrap gap-2.5 pb-2">${chatThumbs}</div>` : ''}
+          <div class="glass border border-fuchsia-500/25 rounded-[1.6rem] p-2 flex items-end gap-1.5 shadow-2xl shadow-fuchsia-950/40">
+            <button onclick="productAiChatAttach()" class="btn-press w-12 h-12 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/30 hover:bg-fuchsia-500/25 flex items-center justify-center shrink-0" title="Attach image(s)">
+              <i data-lucide="image-plus" class="w-6 h-6 text-fuchsia-300"></i>
+            </button>
+            <textarea id="product-ai-input" rows="1" class="flex-1 bg-transparent text-lg text-white placeholder-gray-500 resize-none outline-none px-1 py-3 max-h-40 leading-relaxed scrollbar-thin" placeholder="Tell the AI what to change on this product…"></textarea>
+            <button id="product-ai-send-btn" onclick="runProductAiInstruction()" class="btn-press w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-purple-700 hover:from-fuchsia-400 hover:to-purple-600 text-white flex items-center justify-center shrink-0 transition shadow-lg shadow-fuchsia-600/30 ${busy ? 'opacity-40 pointer-events-none' : ''}" title="Send">
+              <i data-lucide="send" class="w-6 h-6"></i>
+            </button>
+          </div>
+          <div class="flex items-center justify-between gap-3 pt-2.5">
+            <p class="text-[11px] text-gray-500 min-w-0">The AI only edits this one product. Attach photos to show it what to change.</p>
+            ${s.suggestions ? `<button onclick="applyProductAiChanges()" class="btn-press px-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-black rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-lg shadow-emerald-600/30"><i data-lucide="database" class="w-4 h-4"></i> Save Approved</button>` : ''}
+          </div>
         </div>
       </div>
+      <input id="product-ai-chat-image" type="file" accept="image/*" multiple class="hidden" onchange="productAiChatImagePicked(this)">
     </div>`);
+
+  const input = document.getElementById('product-ai-input');
+  if (input) {
+    input.value = s.instruction || '';
+    input.addEventListener('input', () => {
+      if (_productAiState) _productAiState.instruction = input.value;
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        runProductAiInstruction();
+      }
+    });
+  }
   if (window.lucide) lucide.createIcons();
+  scrollProductAiChatToBottom();
+}
+
+function scrollProductAiChatToBottom() {
+  const el = document.getElementById('product-ai-chat-scroll');
+  if (!el) return;
+  requestAnimationFrame(() => {
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  });
+}
+
+window.productAiChatAttach = function() {
+  document.getElementById('product-ai-chat-image')?.click();
+};
+
+window.productAiChatImagePicked = async function(input) {
+  if (!_productAiState || !input || !input.files || !input.files.length) return;
+  const files = [...input.files].slice(0, 4);
+  let ok = 0;
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    const dataUrl = await productAiFileToDataUrl(file);
+    if (dataUrl) { _productAiState.chatImages.push(dataUrl); ok += 1; }
+  }
+  input.value = '';
+  if (ok) showToast(`${ok} photo(s) attached. Add a message and send.`, 'info');
+  renderProductAiModal();
+};
+
+window.productAiRemoveChatImage = function(index) {
+  if (!_productAiState) return;
+  _productAiState.chatImages.splice(index, 1);
+  renderProductAiModal();
+};
+
+function productAiFileToDataUrl(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
 }
 
 function renderProductAiImagesPanel() {
@@ -4912,6 +5036,7 @@ window.productAiQuickAction = function(key) {
   const action = PRODUCT_AI_QUICK_ACTIONS.find((a) => a.key === key);
   if (!action || !_productAiState) return;
   _productAiState.instruction = action.prompt;
+  _productAiState.quickLabel = action.label;
   runProductAiInstruction();
 };
 
@@ -4982,24 +5107,46 @@ window.productAiUploadImages = async function(input) {
 window.runProductAiInstruction = async function() {
   const s = _productAiState;
   if (!s || s.busy) return;
-  const instruction = (s.instruction || '').trim() || 'Improve this product listing professionally.';
+  const rawInstruction = (s.instruction || '').trim();
+  const quickLabel = s.quickLabel || '';
+  s.quickLabel = '';
+  const hasImages = (s.chatImages || []).length > 0;
+  if (!rawInstruction && !quickLabel && !hasImages) return;
+
+  const aiInstruction = rawInstruction || 'Improve this product listing professionally.';
+  const userText = quickLabel || rawInstruction || (hasImages ? 'Look at these photos and improve the product listing.' : 'Improve this product listing professionally.');
+  const sentImages = [...(s.chatImages || [])];
+  s.chatImages = [];
+  s.instruction = '';
+  s.messages.push({ role: 'user', content: userText, images: sentImages });
   s.busy = true;
   renderProductAiModal();
 
-  const prompt = buildProductAiPrompt(s, instruction);
+  const prompt = buildProductAiPrompt(s, aiInstruction);
 
   try {
-    const res = await aiClient.prompt(prompt, {
-      maxTokens: 4000,
-      onProviderSwitch: (name) => { /* keep modal rendering; ignore */ },
-    });
-    const json = extractJsonFromAiText(res.text);
+    let text = '';
+    if (hasImages) {
+      const res = await aiClient._callEdge({ action: 'vision', images: sentImages.slice(0, 4), prompt, max_tokens: 4096 });
+      text = (res && res.text) ? String(res.text) : '';
+      if (!text) throw new Error((res && res.error) || 'The AI could not read the attached photos.');
+    } else {
+      const res = await aiClient.prompt(prompt, {
+        maxTokens: 4000,
+        onProviderSwitch: () => {},
+      });
+      text = res.text;
+    }
+    const json = extractJsonFromAiText(text);
     if (!json) throw new Error('The AI did not return valid JSON suggestions.');
     s.suggestions = json;
     s.approved = new Set(Object.keys(json));
     s.approved.add('images_to_remove');
+    const summary = (json.summary || 'Changes are ready for this product.').trim();
+    s.messages.push({ role: 'assistant', content: `${summary}\n\n✅ Changes are ready below. Tick what you want, then press Save.` });
     showToast('Suggestions ready — review and approve before saving.', 'info');
   } catch (err) {
+    s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
     showToast(`AI error: ${err.message}`, 'error');
   } finally {
     s.busy = false;
