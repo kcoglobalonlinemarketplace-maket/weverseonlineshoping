@@ -109,6 +109,14 @@ const REAL_ESTATE_SECTIONS = [
     ],
   },
   {
+    id: 'pets', label: 'Pets & Dogs', icon: 'paw-print',
+    subtitle: '15 beautiful, healthy dog breeds for sale — each with its own real photos.',
+    rows: [
+      { id: 'pets-popular', label: 'Popular & Lovable Breeds', icon: 'heart', ids: ['KCO-003001', 'KCO-003002', 'KCO-003003', 'KCO-003010', 'KCO-003011', 'KCO-003012', 'KCO-003013', 'KCO-003015'] },
+      { id: 'pets-strong', label: 'Strong & Loyal Breeds', icon: 'shield', ids: ['KCO-003004', 'KCO-003005', 'KCO-003006', 'KCO-003007', 'KCO-003008', 'KCO-003009', 'KCO-003014'] },
+    ],
+  },
+  {
     id: 'modern-luxury', label: 'Modern Homes & Luxury Properties', icon: 'building-2',
     subtitle: 'Contemporary villas, mansions, and new-build family homes.',
     rows: [
@@ -339,13 +347,14 @@ function getCatalogListingsForRow(rowDef, existingIds) {
 // ── Card rendering ──
 export function renderCard(listing) {
   const isProperty = listing.listing_type === 'property';
+  const isPet = listing.listing_type === 'pet';
   const isTruck = listing.listing_type === 'vehicle' && listing.category === 'Trucks';
   const isMotorhome = listing.listing_type === 'vehicle' && listing.category === 'Motorhomes';
   const isCar = listing.listing_type === 'vehicle' && listing.category === 'Cars';
   const listingId = listing.id || listing.property_id;
   const cover = listing.images?.[0] || FALLBACK_IMG;
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
-  const statusBadge = listing.listing_type === 'product' ? 'New' : (isProperty ? 'For Sale' : '');
+  const statusBadge = listing.listing_type === 'product' ? 'New' : ((isProperty || isPet) ? 'For Sale' : '');
 
   // AI-generated rating: show estimated rating with "AI" label when no real reviews exist
   const hasRealReviews = (listing.rating_count || 0) > 0;
@@ -358,6 +367,9 @@ export function renderCard(listing) {
     const flag = flagEmoji(listing.country_code);
     const parts = [listing.city, listing.state].filter(Boolean);
     locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="map" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${flag} ${parts.join(', ') || listing.country}</span></div>`;
+  } else if (isPet) {
+    const flag = flagEmoji(listing.country_code);
+    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="paw-print" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${flag} ${listing.country}</span></div>`;
   }
 
   let specsHtml = '';
@@ -1010,7 +1022,7 @@ function renderGrid(gridName) {
     // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
     // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'motorhomes-boats', 'cars', 'trucks-buses', 'heavy-equipment']) {
+    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'trucks-buses', 'heavy-equipment']) {
       const section = byId.get(id);
       if (!section) continue;
       const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
@@ -1232,7 +1244,8 @@ const CATEGORY_TO_SECTION_ROW = {
   'Food & Groceries': { section: 'mp-food', row: 'mp-food-all' },
   'Groceries': { section: 'mp-food', row: 'mp-food-all' },
   'Baby': { section: 'mp-baby', row: 'mp-baby-all' },
-  'Pets': { section: 'mp-pets', row: 'mp-pets-all' },
+  'Pets': { section: 'pets', row: 'pets-popular' },
+  'Dogs': { section: 'pets', row: 'pets-popular' },
   'Agriculture': { section: 'mp-agriculture', row: 'mp-agriculture-all' },
   'Books': { section: 'mp-books', row: 'mp-books-all' },
   'Office': { section: 'mp-office', row: 'mp-office-all' },
@@ -1286,7 +1299,7 @@ const CATEGORY_KEYWORDS = [
   { keywords: ['sport', 'fitness', 'gym', 'athletic'], target: { section: 'mp-sports', row: 'mp-sports-all' } },
   { keywords: ['food', 'grocer'], target: { section: 'mp-food', row: 'mp-food-all' } },
   { keywords: ['baby', 'infant'], target: { section: 'mp-baby', row: 'mp-baby-all' } },
-  { keywords: ['pet', 'dog', 'cat', 'animal'], target: { section: 'mp-pets', row: 'mp-pets-all' } },
+  { keywords: ['pet', 'dog', 'cat', 'animal'], target: { section: 'pets', row: 'pets-popular' } },
   { keywords: ['agriculture', 'farm', 'seed'], target: { section: 'mp-agriculture', row: 'mp-agriculture-all' } },
   { keywords: ['book', 'reading'], target: { section: 'mp-books', row: 'mp-books-all' } },
   { keywords: ['office', 'stationery'], target: { section: 'mp-office', row: 'mp-office-all' } },

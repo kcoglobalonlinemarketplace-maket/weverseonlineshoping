@@ -2,6 +2,7 @@ import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListi
 import { getTruckById, formatTruckPrice, TRUCK_LISTINGS } from './truck-data.js';
 import { getMotorhomeById, MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { getCarById, CAR_LISTINGS } from './car-data.js';
+import { PET_LISTINGS } from './pet-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
@@ -643,10 +644,17 @@ function fillRelGrid(sectionId, items) {
   grid.innerHTML = items.slice(0, 4).map(relGridCard).join('');
 }
 
-function loadRelatedSections(listing, pool = TRUCK_LISTINGS) {
-  const poolAll = pool.filter(t => t.property_id !== listing.property_id);
+function loadRelatedSections(listing, pool) {
+  let poolAll;
+  if (pool) {
+    poolAll = pool.filter(t => t.property_id !== listing.property_id);
+  } else if (listing.listing_type === 'pet') {
+    poolAll = PET_LISTINGS.filter(t => t.property_id !== listing.property_id);
+  } else {
+    poolAll = TRUCK_LISTINGS.filter(t => t.property_id !== listing.property_id);
+  }
   const similar = poolAll.filter(t => t.category === listing.category);
-  const related = poolAll.filter(t => t.brand === listing.brand);
+  const related = poolAll.filter(t => (t.breed && t.breed === listing.breed) || (t.brand && t.brand === listing.brand));
   const recommended = [...poolAll].sort((a, b) => (b.rating || 0) - (a.rating || 0));
   fillRelGrid('similar-section', similar.length ? similar : recommended.slice(0, 4));
   fillRelGrid('related-section', related.length ? related : recommended.slice(0, 4));
@@ -758,6 +766,28 @@ function render(listing) {
     specsBlock = `
       <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
         <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Product Information</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          ${specs.map(s => `
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
+              <div class="text-gray-200 font-medium text-sm">${escapeHtml(s.value)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  } else if (listing.listing_type === 'pet') {
+    const specs = [
+      { icon: 'paw-print', label: 'Breed', value: listing.breed },
+      { icon: 'calendar', label: 'Age', value: listing.age },
+      { icon: 'users', label: 'Gender', value: listing.gender },
+      { icon: 'palette', label: 'Colour', value: listing.color },
+      { icon: 'scale', label: 'Weight', value: listing.size },
+      { icon: 'globe', label: 'Origin', value: `${flagEmoji(listing.country_code)} ${listing.country}` },
+      { icon: 'badge-check', label: 'Health', value: listing.condition },
+    ].filter(s => s.value != null && s.value !== '');
+    specsBlock = `
+      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Pet Information</h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           ${specs.map(s => `
             <div class="flex flex-col gap-1">
