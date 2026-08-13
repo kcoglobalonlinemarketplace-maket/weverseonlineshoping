@@ -1108,6 +1108,39 @@ async function renderProducts() {
 
     content.innerHTML = `
       <div class="space-y-5 fade-in">
+        <!-- General AI — sits on top of the Product Manager -->
+        <div class="glass-soft border border-sky-500/25 rounded-2xl overflow-hidden">
+          <div class="px-4 py-3 flex items-center justify-between gap-3 border-b border-sky-500/15 bg-gradient-to-r from-sky-600/10 to-indigo-600/10">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-700 flex items-center justify-center shrink-0">
+                <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+              </div>
+              <div class="min-w-0">
+                <span class="text-sm font-black text-white block truncate">General AI</span>
+                <span class="text-[10px] text-sky-300/80 block truncate">Whole Showroom Assistant — scans your showroom and always writes the full brand, model &amp; year so customers feel confident</span>
+              </div>
+            </div>
+            <button onclick="openGeneralAi()" class="btn-press shrink-0 text-[10px] font-bold text-sky-200 bg-sky-500/10 border border-sky-500/25 hover:bg-sky-500/20 px-2.5 py-1.5 rounded-lg transition">
+              <i data-lucide="maximize" class="w-3 h-3 inline mr-1"></i> Fullscreen
+            </button>
+          </div>
+          <div id="general-ai-embed-scroll" class="h-64 overflow-y-auto scrollbar-thin px-3 py-3 space-y-4"></div>
+          <div class="px-3 pb-3 pt-1">
+            <div id="general-ai-embed-thumbs" class="flex flex-wrap gap-2 pb-2"></div>
+            <div class="glass border border-sky-500/25 rounded-2xl p-1.5 flex items-end gap-1.5">
+              <button onclick="generalAiEmbedAttach()" class="btn-press w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 hover:bg-sky-500/25 flex items-center justify-center shrink-0" title="Attach photo(s)">
+                <i data-lucide="image-plus" class="w-5 h-5 text-sky-300"></i>
+              </button>
+              <textarea id="general-ai-embed-input" rows="1" class="flex-1 bg-transparent text-base text-white placeholder-gray-500 resize-none outline-none px-2 py-2.5 max-h-36 leading-relaxed scrollbar-thin" placeholder="Just upload a photo — I'll scan it and publish it automatically. Or tell me anything, like: fix my showroom…"></textarea>
+              <button id="general-ai-embed-send-btn" onclick="runGeneralAiInstruction()" class="btn-press w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-700 hover:from-sky-400 hover:to-indigo-600 text-white flex items-center justify-center shrink-0 transition" title="Send">
+                <i data-lucide="send" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <p class="text-[10px] text-gray-500 pt-2">Full permission over the whole showroom — it checks how your cards look before it publishes, and it always writes the complete brand, model, year and details of what you upload so customers feel comfortable.</p>
+          </div>
+          <input id="general-ai-embed-image" type="file" accept="image/*" multiple class="hidden" onchange="generalAiChatImagePicked(this)">
+        </div>
+
         <div class="glass-soft border border-blue-500/20 rounded-2xl p-4 sm:p-5">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -1206,6 +1239,8 @@ async function renderProducts() {
     renderProductsShowroomGrid(items);
     filterProducts();
     updateBulkBar();
+    generalAiEnsureState();
+    renderGeneralAiEmbed();
     if (window.lucide) lucide.createIcons();
   } catch (err) {
     if (content) content.innerHTML = `<div class="p-6 text-red-400 text-sm">Error: ${esc(err.message)}</div>`;
@@ -5713,13 +5748,14 @@ function generalAiPlanPreview(plan) {
   }
 }
 
-window.openGeneralAi = async function() {
+function generalAiEnsureState() {
+  if (_generalAiState) return _generalAiState;
   _generalAiState = {
     busy: false,
     messages: [{
       role: 'assistant',
       welcome: true,
-      content: `I'm the General AI — I manage your WHOLE showroom, on top of the Product Manager. I can publish any product for you: upload a photo and I'll generate a matching image, check your showroom, and publish it in the right section. I can also scan and monitor what's good and what's not, generate any image in the world, delete duplicates, rename sections, and fix anything without coding. Just tell me.`,
+      content: `I'm the General AI — I manage your WHOLE showroom, right here on top of the Product Manager. Just upload a photo of any item and I'll scan it, write the complete brand, model, year, rating and details (so your customers feel confident), check your showroom first, and publish it automatically — no need to type anything. I can also generate any image, chat friendly, learn from your corrections, monitor what's good and what's not, and fix everything in the showroom without coding. Just tell me.`,
     }],
     chatImages: [],
     generatedImages: [],
@@ -5727,22 +5763,26 @@ window.openGeneralAi = async function() {
     lastGenReference: null,
     pendingPlan: null,
   };
-  renderGeneralAiModal();
+  return _generalAiState;
+}
+
+window.openGeneralAi = async function() {
+  generalAiEnsureState();
+  generalAiRefreshUi();
 };
 
-function renderGeneralAiModal() {
-  const s = _generalAiState;
-  if (!s) return;
-  const busy = s.busy === true;
-  const msgs = Array.isArray(s.messages) ? s.messages : [];
-
-  const msgsHtml = msgs.map((m) => m.role === 'user' ? `
+function generalAiMessageHtml(m) {
+  if (!m) return '';
+  if (m.role === 'user') {
+    return `
     <div class="flex justify-end">
       <div class="max-w-[85%] bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-3xl rounded-tr-md px-5 py-3.5 text-[1.02rem] leading-relaxed whitespace-pre-wrap break-words shadow-lg shadow-blue-600/20">
         ${(m.images && m.images.length) ? `<div class="flex flex-wrap gap-2 mb-2">${m.images.map((u) => `<img src="${esc(u)}" class="w-16 h-16 rounded-xl object-cover border border-white/20">`).join('')}</div>` : ''}
         ${esc(m.content)}
       </div>
-    </div>` : `
+    </div>`;
+  }
+  return `
     <div class="flex gap-3 items-start">
       <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-700 flex items-center justify-center shrink-0 shadow-md mt-0.5">
         <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
@@ -5766,9 +5806,11 @@ function renderGeneralAiModal() {
           </div>` : ''}
         ${m.provider ? `<p class="text-[9px] text-gray-600 mt-2">${esc(m.provider)}</p>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+}
 
-  const typingHtml = busy ? `
+function generalAiTypingHtml() {
+  return `
     <div class="flex gap-3 items-start">
       <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-700 flex items-center justify-center shrink-0 shadow-md mt-0.5">
         <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
@@ -5778,21 +5820,13 @@ function renderGeneralAiModal() {
         <span class="typing-dot w-2.5 h-2.5 bg-sky-400 rounded-full"></span>
         <span class="typing-dot w-2.5 h-2.5 bg-sky-400 rounded-full"></span>
       </div>
-    </div>` : '';
+    </div>`;
+}
 
-  const chips = GENERAL_AI_QUICK_ACTIONS.map((a) => `
-    <button onclick="generalAiQuickAction('${a.key}')" class="btn-press px-3 py-2 rounded-xl text-[11px] font-bold bg-sky-500/10 text-sky-200 hover:bg-sky-500/20 border border-sky-500/15 transition flex items-center gap-1.5 shrink-0">
-      <i data-lucide="${a.icon}" class="w-3.5 h-3.5"></i> ${a.label}
-    </button>`).join('');
-
-  const chatImages = Array.isArray(s.chatImages) ? s.chatImages : [];
-  const chatThumbs = chatImages.map((u, i) => `
-    <div class="relative w-14 h-14 rounded-xl overflow-hidden border border-sky-500/40 shrink-0">
-      <img src="${esc(u)}" class="w-full h-full object-cover">
-      <button onclick="generalAiRemoveChatImage(${i})" class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-red-500 text-white text-xs leading-none flex items-center justify-center shadow" title="Remove image">✕</button>
-    </div>`).join('');
-
-  const pendingHtml = s.pendingPlan ? `
+function generalAiPendingHtml() {
+  const s = _generalAiState;
+  if (!s || !s.pendingPlan) return '';
+  return `
     <div class="glass border border-amber-500/30 rounded-2xl p-4 bg-amber-500/5">
       <p class="text-xs font-black text-amber-200 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> Confirm this action</p>
       <p class="text-[11px] text-gray-400 mt-1.5">${esc(generalAiPlanPreview(s.pendingPlan))}</p>
@@ -5800,7 +5834,49 @@ function renderGeneralAiModal() {
         <button onclick="generalAiConfirmPlan()" class="btn-press px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black rounded-xl transition flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5"></i> Do it</button>
         <button onclick="generalAiCancelPlan()" class="btn-press px-3 py-2 bg-white/10 hover:bg-white/20 text-gray-200 text-[11px] font-bold rounded-xl transition">Cancel</button>
       </div>
-    </div>` : '';
+    </div>`;
+}
+
+function generalAiChatThumbsHtml() {
+  const s = _generalAiState;
+  if (!s) return '';
+  const chatImages = Array.isArray(s.chatImages) ? s.chatImages : [];
+  return chatImages.map((u, i) => `
+    <div class="relative w-14 h-14 rounded-xl overflow-hidden border border-sky-500/40 shrink-0">
+      <img src="${esc(u)}" class="w-full h-full object-cover">
+      <button onclick="generalAiRemoveChatImage(${i})" class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-red-500 text-white text-xs leading-none flex items-center justify-center shadow" title="Remove image">✕</button>
+    </div>`).join('');
+}
+
+function generalAiRefreshUi() {
+  if (document.getElementById('general-ai-embed-scroll')) renderGeneralAiEmbed();
+  const modalOpen = (document.getElementById('modal-container')?.innerHTML || '').trim().length > 0;
+  if (modalOpen) renderGeneralAiModal();
+  scrollGeneralAiChatToBottom();
+}
+
+window.generalAiEmbedAttach = function() {
+  document.getElementById('general-ai-embed-image')?.click();
+};
+
+function renderGeneralAiModal() {
+  const s = _generalAiState;
+  if (!s) return;
+  const busy = s.busy === true;
+  const msgs = Array.isArray(s.messages) ? s.messages : [];
+
+  const msgsHtml = msgs.map((m) => generalAiMessageHtml(m)).join('');
+
+  const typingHtml = busy ? generalAiTypingHtml() : '';
+
+  const chips = GENERAL_AI_QUICK_ACTIONS.map((a) => `
+    <button onclick="generalAiQuickAction('${a.key}')" class="btn-press px-3 py-2 rounded-xl text-[11px] font-bold bg-sky-500/10 text-sky-200 hover:bg-sky-500/20 border border-sky-500/15 transition flex items-center gap-1.5 shrink-0">
+      <i data-lucide="${a.icon}" class="w-3.5 h-3.5"></i> ${a.label}
+    </button>`).join('');
+
+  const chatThumbs = generalAiChatThumbsHtml();
+
+  const pendingHtml = generalAiPendingHtml();
 
   openModal(`
     <div class="fixed inset-0 z-[100] bg-[#030712]/92 backdrop-blur-sm flex flex-col" onclick="if(event.target===this)closeModal()">
@@ -5825,7 +5901,7 @@ function renderGeneralAiModal() {
           <div class="space-y-4">
             <div class="glass-soft border border-sky-500/15 rounded-2xl p-4">
               <div class="flex flex-wrap gap-1.5 mb-2">${chips}</div>
-              <p class="text-[11px] text-gray-500">Upload a photo and say "publish it to my showroom" — I'll generate the image, check your showroom, and publish it matched to the right section.</p>
+              <p class="text-[11px] text-gray-500">Upload a photo and I'll scan it and publish it automatically — I'll generate the image, check your showroom, and publish it matched to the right section. Or just chat and tell me what to fix.</p>
             </div>
             ${msgsHtml}
             ${typingHtml}
@@ -5854,11 +5930,15 @@ function renderGeneralAiModal() {
   if (input) {
     input.value = s.instruction || '';
     input.addEventListener('input', () => {
-      if (_generalAiState) _generalAiState.instruction = input.value;
+      if (_generalAiState) {
+        _generalAiState.instruction = input.value;
+        clearTimeout(_generalAiState.autoSendTimer);
+      }
     });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
+        clearTimeout(_generalAiState.autoSendTimer);
         runGeneralAiInstruction();
       }
     });
@@ -5867,11 +5947,65 @@ function renderGeneralAiModal() {
   scrollGeneralAiChatToBottom();
 }
 
+function renderGeneralAiEmbed() {
+  const s = _generalAiState;
+  const scroll = document.getElementById('general-ai-embed-scroll');
+  if (!s || !scroll) return;
+  const busy = s.busy === true;
+  const msgs = Array.isArray(s.messages) ? s.messages : [];
+
+  const chips = GENERAL_AI_QUICK_ACTIONS.map((a) => `
+    <button onclick="generalAiQuickAction('${a.key}')" class="btn-press px-3 py-2 rounded-xl text-[11px] font-bold bg-sky-500/10 text-sky-200 hover:bg-sky-500/20 border border-sky-500/15 transition flex items-center gap-1.5 shrink-0">
+      <i data-lucide="${a.icon}" class="w-3.5 h-3.5"></i> ${a.label}
+    </button>`).join('');
+
+  scroll.innerHTML = `
+    <div class="flex flex-wrap gap-1.5">${chips}</div>
+    ${msgs.map((m) => generalAiMessageHtml(m)).join('')}
+    ${busy ? generalAiTypingHtml() : ''}
+    ${generalAiPendingHtml()}
+  `;
+
+  const thumbs = document.getElementById('general-ai-embed-thumbs');
+  if (thumbs) thumbs.innerHTML = generalAiChatThumbsHtml();
+
+  const send = document.getElementById('general-ai-embed-send-btn');
+  if (send) {
+    send.classList.toggle('opacity-40', busy);
+    send.classList.toggle('pointer-events-none', busy);
+  }
+
+  const input = document.getElementById('general-ai-embed-input');
+  if (input) {
+    input.value = s.instruction || '';
+    if (!input.dataset.gaiBound) {
+      input.dataset.gaiBound = '1';
+      input.addEventListener('input', () => {
+        if (_generalAiState) {
+          _generalAiState.instruction = input.value;
+          clearTimeout(_generalAiState.autoSendTimer);
+        }
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          clearTimeout(_generalAiState.autoSendTimer);
+          runGeneralAiInstruction();
+        }
+      });
+    }
+  }
+  if (window.lucide) lucide.createIcons();
+  scrollGeneralAiChatToBottom();
+}
+
 function scrollGeneralAiChatToBottom() {
-  const el = document.getElementById('general-ai-chat-scroll');
-  if (!el) return;
+  const selectors = ['general-ai-chat-scroll', 'general-ai-embed-scroll'];
   requestAnimationFrame(() => {
-    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    for (const id of selectors) {
+      const el = document.getElementById(id);
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
   });
 }
 
@@ -5889,14 +6023,22 @@ window.generalAiChatImagePicked = async function(input) {
     if (dataUrl) { _generalAiState.chatImages.push(dataUrl); ok += 1; }
   }
   input.value = '';
-  if (ok) showToast(`${ok} photo(s) attached. Send "publish it to my showroom" and I'll do the rest.`, 'info');
-  renderGeneralAiModal();
+  if (ok) {
+    showToast(`${ok} photo(s) attached — I'll scan it and publish it to your showroom automatically.`, 'info');
+    const t = _generalAiState;
+    clearTimeout(t.autoSendTimer);
+    t.autoSendTimer = setTimeout(() => {
+      if (t.busy) return;
+      if (!(t.instruction || '').trim()) runGeneralAiInstruction();
+    }, 600);
+  }
+  generalAiRefreshUi();
 };
 
 window.generalAiRemoveChatImage = function(index) {
   if (!_generalAiState) return;
   _generalAiState.chatImages.splice(index, 1);
-  renderGeneralAiModal();
+  generalAiRefreshUi();
 };
 
 window.generalAiQuickAction = function(key) {
@@ -5927,7 +6069,7 @@ window.runGeneralAiInstruction = async function() {
   s.pendingPlan = null;
   s.messages.push({ role: 'user', content: userText, images: sentImages });
   s.busy = true;
-  renderGeneralAiModal();
+  generalAiRefreshUi();
 
   const mode = quickMode || generalAiDetectMode(aiInstruction, hasImages);
 
@@ -5949,7 +6091,7 @@ window.runGeneralAiInstruction = async function() {
     showToast(`General AI error: ${err.message}`, 'error');
   } finally {
     s.busy = false;
-    renderGeneralAiModal();
+    generalAiRefreshUi();
   }
 };
 
@@ -6018,7 +6160,7 @@ window.generalAiConfirmPlan = async function() {
   const plan = s.pendingPlan;
   s.pendingPlan = null;
   s.busy = true;
-  renderGeneralAiModal();
+  generalAiRefreshUi();
   try {
     const res = await aiClient._callEdge({ action: 'general_execute', confirm_plan: plan, confirmed: true });
     if (!res || res.success !== true) throw new Error((res && res.error) || 'The action failed.');
@@ -6028,7 +6170,7 @@ window.generalAiConfirmPlan = async function() {
     s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
   } finally {
     s.busy = false;
-    renderGeneralAiModal();
+    generalAiRefreshUi();
   }
 };
 
@@ -6036,7 +6178,7 @@ window.generalAiCancelPlan = function() {
   if (!_generalAiState) return;
   _generalAiState.pendingPlan = null;
   _generalAiState.messages.push({ role: 'assistant', content: 'Cancelled — nothing was changed.' });
-  renderGeneralAiModal();
+  generalAiRefreshUi();
 };
 
 window.generalAiUseGeneratedImage = async function(index) {
@@ -6045,26 +6187,26 @@ window.generalAiUseGeneratedImage = async function(index) {
   const dataUrl = s.generatedImages[index];
   if (!dataUrl) return;
   s.busy = true;
-  renderGeneralAiModal();
+  generalAiRefreshUi();
   const url = await productAiUploadDataUrl(dataUrl);
   s.busy = false;
-  if (!url) { showToast('Could not upload the generated image.', 'error'); renderGeneralAiModal(); return; }
+  if (!url) { showToast('Could not upload the generated image.', 'error'); generalAiRefreshUi(); return; }
   showToast('Image saved to showroom storage. Use it on any card or ask the AI to attach it.', 'success');
-  renderGeneralAiModal();
+  generalAiRefreshUi();
 };
 
 window.generalAiRegenerateImage = async function() {
   const s = _generalAiState;
   if (!s || s.busy || !s.lastGenPrompt) return;
   s.busy = true;
-  renderGeneralAiModal();
+  generalAiRefreshUi();
   try {
     await generalAiImageGen(s.lastGenPrompt, s.lastGenReference ? [s.lastGenReference] : []);
   } catch (err) {
     s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
   } finally {
     s.busy = false;
-    renderGeneralAiModal();
+    generalAiRefreshUi();
   }
 };
 
@@ -9369,7 +9511,8 @@ async function aiGenerateProduct() {
   renderAiChatHistory();
   
   // Clear prompt
-  document.getElementById('ai-prompt')?.value = '';
+  const aiPromptEl = document.getElementById('ai-prompt');
+  if (aiPromptEl) aiPromptEl.value = '';
   
   // Show loading
   showToast('AI is analyzing...');
