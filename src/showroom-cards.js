@@ -851,12 +851,12 @@ function createViewAllHousesButton() {
   return wrap;
 }
 
-// ── All Cars & Trucks view ─────────────────────────────────────
-// "View all type of cars and trucks" opens a full-screen catalog of
-// every vehicle (cars + motorcycles + trucks), grouped by vehicle type.
-// It reuses the exact same renderCard, so card style/layout never changes.
+// ── All Cars & Motorcycles view ────────────────────────────────
+// "View all type of cars" opens a full-screen catalog of every vehicle
+// (cars + motorcycles), grouped by vehicle type. Trucks have their own
+// "View all Trucks" overlay. It reuses the exact same renderCard.
 const VEHICLE_SECTION_IDS = new Set(['cars-motorcycles', 'trucks-buses']);
-const VEHICLE_TYPE_ORDER = ['Sedan', 'SUV', 'Hatchback', 'Sports Coupe', 'Pickup Truck', 'Street Bike', 'Cruiser', 'Sport Bike', 'Adventure Bike', 'Electric Scooter', 'Heavy Duty Truck', 'Box Truck', 'Dump Truck'];
+const VEHICLE_TYPE_ORDER = ['Sedan', 'SUV', 'Hatchback', 'Sports Coupe', 'Pickup Truck', 'Street Bike', 'Cruiser', 'Sport Bike', 'Adventure Bike', 'Electric Scooter'];
 
 let allVehiclesOverlay = null;
 let _vehiclesLoader = null;
@@ -881,7 +881,6 @@ function collectAllVehicles() {
       if (item && !isCatalogListingHidden(item.property_id)) add(item);
     }
   });
-  TRUCK_LISTINGS.forEach(add);
   return out;
 }
 
@@ -909,11 +908,11 @@ function buildAllVehiclesOverlay() {
     <div class="flex items-center gap-3 min-w-0">
       <span class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0"><i data-lucide="car-front" class="w-5 h-5 text-amber-400"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Cars & Trucks</h2>
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Cars & Motorcycles</h2>
         <p id="all-vehicles-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
-    <button class="close-all-vehicles btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Cars & Trucks"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button class="close-all-vehicles btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Cars & Motorcycles"><i data-lucide="x" class="w-5 h-5"></i></button>
   `;
 
   const body = document.createElement('div');
@@ -950,7 +949,7 @@ function buildAllVehiclesOverlay() {
   _vehiclesLoader = createIncrementalLoader(allVehiclesOverlay, body, units);
 
   const countEl = document.getElementById('all-vehicles-count');
-  if (countEl) countEl.textContent = `${vehicles.length} vehicles · cars, motorcycles & trucks`;
+  if (countEl) countEl.textContent = `${vehicles.length} vehicles · cars & motorcycles`;
 
   header.querySelector('.close-all-vehicles').addEventListener('click', closeAllVehiclesView);
   allVehiclesOverlay.addEventListener('click', (e) => { if (e.target === allVehiclesOverlay) closeAllVehiclesView(); });
@@ -984,8 +983,92 @@ function createViewAllVehiclesButton() {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'view-all-vehicles-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-amber-600/30 transition active:scale-95';
-  btn.innerHTML = `View all type of cars and trucks <span class="text-lg">→ 🚗</span>`;
+  btn.innerHTML = `View all type of cars <span class="text-lg">→ 🚗</span>`;
   btn.addEventListener('click', openAllVehiclesView);
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+// ── All Trucks view ────────────────────────────────────────────
+// "View all Trucks" opens a full-screen catalog of every truck listing
+// (real photos), shown in a beautiful responsive card grid that starts
+// with the newest models. Reuses the same renderCard + loader.
+let allTrucksOverlay = null;
+let _trucksLoader = null;
+let _trucksEscBound = false;
+
+function buildAllTrucksOverlay() {
+  const existing = document.getElementById('all-trucks-overlay');
+  if (existing) existing.remove();
+  allTrucksOverlay = document.createElement('div');
+  allTrucksOverlay.id = 'all-trucks-overlay';
+  allTrucksOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+
+  const header = document.createElement('div');
+  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-amber-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.innerHTML = `
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0"><i data-lucide="truck" class="w-5 h-5 text-amber-400"></i></span>
+      <div class="min-w-0">
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Trucks</h2>
+        <p id="all-trucks-count" class="text-[11px] text-gray-400 truncate"></p>
+      </div>
+    </div>
+    <button class="close-all-trucks btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Trucks"><i data-lucide="x" class="w-5 h-5"></i></button>
+  `;
+
+  const body = document.createElement('div');
+  body.id = 'all-trucks-body';
+  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
+
+  allTrucksOverlay.appendChild(header);
+  allTrucksOverlay.appendChild(body);
+  document.body.appendChild(allTrucksOverlay);
+
+  const trucks = TRUCK_LISTINGS.filter(l => l && !isCatalogListingHidden(l.property_id));
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
+  body.appendChild(grid);
+
+  _trucksLoader = createIncrementalLoader(allTrucksOverlay, body, [{ grid, items: trucks }]);
+
+  const countEl = document.getElementById('all-trucks-count');
+  if (countEl) countEl.textContent = `${trucks.length} trucks · latest models worldwide`;
+
+  header.querySelector('.close-all-trucks').addEventListener('click', closeAllTrucksView);
+  allTrucksOverlay.addEventListener('click', (e) => { if (e.target === allTrucksOverlay) closeAllTrucksView(); });
+
+  if (!_trucksEscBound) {
+    _trucksEscBound = true;
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllTrucksView(); });
+  }
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function openAllTrucksView() {
+  if (!allTrucksOverlay || !document.getElementById('all-trucks-overlay')) buildAllTrucksOverlay();
+  if (window.lucide) lucide.createIcons();
+  allTrucksOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  allTrucksOverlay.scrollTop = 0;
+  if (_trucksLoader) _trucksLoader.pump();
+}
+
+function closeAllTrucksView() {
+  if (!allTrucksOverlay) return;
+  allTrucksOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function createViewAllTrucksButton() {
+  const wrap = document.createElement('div');
+  wrap.className = 'flex justify-center py-1';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'view-all-trucks-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-amber-600/30 transition active:scale-95';
+  btn.innerHTML = `View all Trucks <span class="text-lg">→ 🚚</span>`;
+  btn.addEventListener('click', openAllTrucksView);
   wrap.appendChild(btn);
   return wrap;
 }
@@ -1010,7 +1093,8 @@ function renderGrid(gridName) {
       const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
       container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
       if (id === 'motorhomes-boats') container.appendChild(createViewAllHousesButton());
-      if (id === 'trucks-buses') container.appendChild(createViewAllVehiclesButton());
+      if (id === 'cars-motorcycles') container.appendChild(createViewAllVehiclesButton());
+      if (id === 'trucks-buses') container.appendChild(createViewAllTrucksButton());
     }
     // modern-luxury & commercial-land are intentionally left off the
     // homepage — every property stays reachable in the All Houses overlay.
