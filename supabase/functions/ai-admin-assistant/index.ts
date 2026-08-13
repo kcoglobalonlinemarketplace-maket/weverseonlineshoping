@@ -585,14 +585,6 @@ async function runCloudImageGeneration(params: {
 }): Promise<{ images: string[]; provider: string; model: string }> {
   const { settings, prompt, referenceUrl, count } = params;
   const hasReference = !!referenceUrl && String(referenceUrl).length > 0;
-  // Gemini is the only provider that can SEE the reference photo. If the admin
-  // attached a reference image (the subject to reproduce) we must use Gemini —
-  // text-only providers like Cloudflare/Pollinations would ignore the photo and
-  // draw something random. So require a Gemini key up front.
-  const hasGemini = !!String(settings.gemini_api_key || settings.gemini_key || '').trim();
-  if (hasReference && !hasGemini) {
-    throw new Error('To generate an image that matches your uploaded photo, add a Google Gemini API key in AI Settings → Image Generation. Gemini can see the reference photo; the free fallback providers cannot.');
-  }
   const apiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
   const models = ['gemini-2.5-flash-image'];
   let lastError: unknown = null;
@@ -654,7 +646,27 @@ async function runCloudImageGeneration(params: {
   }
 
   try {
-    const images = await runPollinationsImageGeneration(prompt, count || 1);
+    // Pollinations (flux) is TEXT-ONLY and cannot see the reference photo. So if
+    // the admin attached a reference image, first DESCRIBE it with a vision model
+    // (Gemini free tier supports vision but not image generation), then generate
+    // an image from that detailed description. This keeps the generated image the
+    // SAME TYPE of subject as the uploaded photo instead of a random one.
+    let genPrompt = prompt;
+    if (referenceUrl && String(referenceUrl).trim()) {
+      try {
+        const visionRes = await runCloudVision({
+          settings,
+          prompt: `Study this image carefully. Describe the MAIN SUBJECT in full detail so another AI can draw an image of the SAME thing: what type of object it is (e.g. pickup truck, luxury sedan, smartphone, house, handbag), the brand, model, body type, color, style, background, and any distinctive details. Output a single clear paragraph. Do not mention a person, woman, or man unless the image actually shows one.`,
+          images: [String(referenceUrl)],
+          maxTokens: 800,
+        });
+        const subject = String(visionRes.text || '').trim();
+        if (subject) {
+          genPrompt = `Draw an image of this subject: ${subject}. Make it match the description exactly. High quality, professional, detailed.`;
+        }
+      } catch { /* keep the original prompt if vision fails */ }
+    }
+    const images = await runPollinationsImageGeneration(genPrompt, count || 1);
     return { images, provider: 'pollinations', model: 'flux' };
   } catch (err) {
     lastError = err;
