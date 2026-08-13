@@ -6264,16 +6264,15 @@ async function generalAiImageGen(instruction, sentImages) {
   const s = _generalAiState;
   let reference = null;
   if (sentImages && sentImages.length) reference = sentImages[0];
-  const wantsMatch = /\b(exact|exactly|same|matching|match|identical|copy|replicat|just like|like this|as the (image|photo|picture))\b/i.test(instruction);
-  const genDirective = wantsMatch && reference
-    ? 'Reproduce the attached reference photo as faithfully as possible — keep the same subject, look, colors, background, and details. Make it an exact, high-quality match.'
-    : 'Generate a beautiful, high-quality image. It can be any type of image — no restrictions.';
+  const genDirective = reference
+    ? 'The attached image is your SUBJECT — study it carefully and reproduce the SAME thing: the same type of object, subject, brand, model, look, colors, style and background. Keep the identical subject; only improve quality and lighting for a professional look. Do NOT change the subject and do NOT draw a person, woman, man, or face unless the attached image actually shows one. You must match what is in the reference photo.'
+    : `Generate a beautiful, high-quality image based on this request: "${instruction}". Follow the request exactly. If it asks for a specific object, product, vehicle, or scene, draw exactly that — never swap in a different subject, a person, or a random image.`;
   const res = await aiClient._callEdge({ action: 'generate_images', prompt: `${instruction}\n\n${genDirective}`, reference_url: reference, count: 2 });
   if (!res || !Array.isArray(res.images) || !res.images.length) throw new Error((res && res.error) || 'Image generation returned nothing.');
   s.generatedImages = res.images;
   s.lastGenPrompt = instruction;
   s.lastGenReference = reference;
-  s.messages.push({ role: 'assistant', content: 'Here are your images. Tap one to save it to your showroom product images.', generated: res.images, provider: `${res.provider || 'AI'}/${res.model || ''}` });
+  s.messages.push({ role: 'assistant', content: 'Here are your images — generated to match your reference photo. Tap one to save it to your showroom product images.', generated: res.images, provider: `${res.provider || 'AI'}/${res.model || ''}` });
 }
 
 async function generalAiMonitor() {

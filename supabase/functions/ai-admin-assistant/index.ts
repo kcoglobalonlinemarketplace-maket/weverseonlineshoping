@@ -584,18 +584,30 @@ async function runCloudImageGeneration(params: {
   count?: number;
 }): Promise<{ images: string[]; provider: string; model: string }> {
   const { settings, prompt, referenceUrl, count } = params;
+  const hasReference = !!referenceUrl && String(referenceUrl).length > 0;
+  // Gemini is the only provider that can SEE the reference photo. If the admin
+  // attached a reference image (the subject to reproduce) we must use Gemini —
+  // text-only providers like Cloudflare/Pollinations would ignore the photo and
+  // draw something random. So require a Gemini key up front.
+  const hasGemini = !!String(settings.gemini_api_key || settings.gemini_key || '').trim();
+  if (hasReference && !hasGemini) {
+    throw new Error('To generate an image that matches your uploaded photo, add a Google Gemini API key in AI Settings → Image Generation. Gemini can see the reference photo; the free fallback providers cannot.');
+  }
   const apiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
   const models = ['gemini-2.5-flash-image'];
   let lastError: unknown = null;
-
   if (apiKey) {
     for (const model of models) {
       try {
-        const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [{ text: prompt }];
+        const subjectDirective = referenceUrl
+          ? 'The FIRST image in this request is your SUBJECT. Study it and generate a new image of the SAME subject — same type of object, same brand, same model, same colors, same background. Do not change the subject and do not add or draw a person/face unless the reference image shows one.'
+          : '';
+        const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
         if (referenceUrl) {
           const { mimeType, b64 } = parseDataUrl(referenceUrl);
           if (b64) parts.push({ inlineData: { mimeType, data: b64 } });
         }
+        parts.unshift({ text: `${subjectDirective}\n${prompt}`.trim() });
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
         const res = await fetch(endpoint, {
           method: 'POST',
