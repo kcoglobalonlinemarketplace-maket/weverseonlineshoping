@@ -1,6 +1,7 @@
 import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings } from './showroom-data.js';
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
+import { CAR_LISTINGS } from './car-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
@@ -126,11 +127,10 @@ const REAL_ESTATE_SECTIONS = [
     ],
   },
   {
-    id: 'cars-motorcycles', label: 'Cars & Motorcycles', icon: 'car-front',
-    subtitle: 'New and pre-owned vehicles from trusted sellers worldwide.',
+    id: 'cars', label: 'Cars', icon: 'car-front',
+    subtitle: 'Latest-model cars from trusted sellers worldwide.',
     rows: [
-      { id: 'new-cars', label: 'New Cars', icon: 'car-front', ids: ['KCO-000018'] },
-      { id: 'used-cars', label: 'Used Cars', icon: 'car', ids: ['KCO-000017'] },
+      { id: 'all-cars', label: 'All Cars', icon: 'car-front', allCars: true },
     ],
   },
   {
@@ -246,8 +246,7 @@ const ROW_TO_CATALOG_SLUG = {
   'farm-house': 'real-estate',
   'commercial': 'real-estate',
   'hotels': 'real-estate',
-  'new-cars': 'cars',
-  'used-cars': 'cars',
+  'all-cars': 'cars',
   'all-trucks': 'trucks',
   'all-motorhomes': 'motorhomes',
   // Marketplace categories
@@ -342,6 +341,7 @@ export function renderCard(listing) {
   const isProperty = listing.listing_type === 'property';
   const isTruck = listing.listing_type === 'vehicle' && listing.category === 'Trucks';
   const isMotorhome = listing.listing_type === 'vehicle' && listing.category === 'Motorhomes';
+  const isCar = listing.listing_type === 'vehicle' && listing.category === 'Cars';
   const listingId = listing.id || listing.property_id;
   const cover = listing.images?.[0] || FALLBACK_IMG;
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
@@ -367,11 +367,12 @@ export function renderCard(listing) {
     if (listing.bathrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${listing.bathrooms}</span>`);
     if (listing.land_size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${listing.land_size}</span>`);
     if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
-  } else if (isTruck || isMotorhome) {
+  } else if (isTruck || isMotorhome || isCar) {
     const specs = [];
     specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${listing.model_year}</span>`);
     specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="gauge" class="w-3.5 h-3.5"></i>${listing.mileage}</span>`);
     if (isMotorhome) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="moon" class="w-3.5 h-3.5"></i>Sleeps ${listing.sleeping_capacity}</span>`);
+    if (isCar) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="fuel" class="w-3.5 h-3.5"></i>${listing.fuel_type}</span>`);
     if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
   } else if (listing.listing_type === 'product') {
     const specs = [];
@@ -529,11 +530,13 @@ function renderRow(rowDef) {
     listings = TRUCK_LISTINGS;
   } else if (rowDef.allMotorhomes) {
     listings = MOTORHOME_LISTINGS;
+  } else if (rowDef.allCars) {
+    listings = CAR_LISTINGS;
   } else {
     listings = getListingsByIds(rowDef.ids);
   }
   let catalogExtra = [];
-  if (!rowDef.allTrucks && !rowDef.allMotorhomes) {
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
   }
   if (catalogExtra.length > 0) {
@@ -589,9 +592,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
@@ -851,56 +854,22 @@ function createViewAllHousesButton() {
   return wrap;
 }
 
-// ── All Cars & Motorcycles view ────────────────────────────────
-// "View all type of cars" opens a full-screen catalog of every vehicle
-// (cars + motorcycles), grouped by vehicle type. Trucks have their own
-// "View all Trucks" overlay. It reuses the exact same renderCard.
-const VEHICLE_SECTION_IDS = new Set(['cars-motorcycles', 'trucks-buses']);
-const VEHICLE_TYPE_ORDER = ['Sedan', 'SUV', 'Hatchback', 'Sports Coupe', 'Pickup Truck', 'Street Bike', 'Cruiser', 'Sport Bike', 'Adventure Bike', 'Electric Scooter'];
+// ── All Cars view ──────────────────────────────────────────────
+// "View all Cars" opens a full-screen catalog of every car listing
+// (real photos), shown in a beautiful responsive card grid. Reuses
+// the same renderCard + loader.
+const VEHICLE_SECTION_IDS = new Set(['cars', 'trucks-buses']);
 
-let allVehiclesOverlay = null;
-let _vehiclesLoader = null;
-let _vehiclesEscBound = false;
+let allCarsOverlay = null;
+let _carsLoader = null;
+let _carsEscBound = false;
 
-function collectAllVehicles() {
-  const seen = new Set();
-  const out = [];
-  const add = (l) => {
-    if (!l) return;
-    if (l.listing_type !== 'vehicle') return;
-    const id = l.id || l.property_id;
-    if (!id || seen.has(id)) return;
-    seen.add(id);
-    out.push(l);
-  };
-  ['cars', 'motorcycles'].forEach(slug => {
-    const def = getCatalogCategory(slug);
-    if (!def) return;
-    for (let i = 0; i < def.count; i++) {
-      const item = generateProduct(slug, i);
-      if (item && !isCatalogListingHidden(item.property_id)) add(item);
-    }
-  });
-  return out;
-}
-
-function groupVehiclesByType(vehicles) {
-  const groups = new Map();
-  vehicles.forEach(v => {
-    const t = v.subcategory || v.category || 'Vehicles';
-    if (!groups.has(t)) groups.set(t, []);
-    groups.get(t).push(v);
-  });
-  const order = [...VEHICLE_TYPE_ORDER, ...Array.from(groups.keys()).filter(k => !VEHICLE_TYPE_ORDER.includes(k))];
-  return order.filter(k => groups.has(k)).map(k => ({ type: k, items: groups.get(k) }));
-}
-
-function buildAllVehiclesOverlay() {
-  const existing = document.getElementById('all-vehicles-overlay');
+function buildAllCarsOverlay() {
+  const existing = document.getElementById('all-cars-overlay');
   if (existing) existing.remove();
-  allVehiclesOverlay = document.createElement('div');
-  allVehiclesOverlay.id = 'all-vehicles-overlay';
-  allVehiclesOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+  allCarsOverlay = document.createElement('div');
+  allCarsOverlay.id = 'all-cars-overlay';
+  allCarsOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
 
   const header = document.createElement('div');
   header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-amber-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
@@ -908,83 +877,65 @@ function buildAllVehiclesOverlay() {
     <div class="flex items-center gap-3 min-w-0">
       <span class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0"><i data-lucide="car-front" class="w-5 h-5 text-amber-400"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Cars & Motorcycles</h2>
-        <p id="all-vehicles-count" class="text-[11px] text-gray-400 truncate"></p>
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Cars</h2>
+        <p id="all-cars-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
-    <button class="close-all-vehicles btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Cars & Motorcycles"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button class="close-all-cars btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Cars"><i data-lucide="x" class="w-5 h-5"></i></button>
   `;
 
   const body = document.createElement('div');
-  body.id = 'all-vehicles-body';
+  body.id = 'all-cars-body';
   body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
 
-  allVehiclesOverlay.appendChild(header);
-  allVehiclesOverlay.appendChild(body);
-  document.body.appendChild(allVehiclesOverlay);
+  allCarsOverlay.appendChild(header);
+  allCarsOverlay.appendChild(body);
+  document.body.appendChild(allCarsOverlay);
 
-  const vehicles = collectAllVehicles();
-  const groups = groupVehiclesByType(vehicles);
-  const units = groups.map(({ type, items }) => {
-    const label = /s$/i.test(type) ? type : type + 's';
-    const sec = document.createElement('section');
-    sec.className = 'space-y-3';
-    const head = document.createElement('div');
-    head.className = 'flex items-center justify-between gap-2';
-    head.innerHTML = `
-      <div class="flex items-center gap-2.5 min-w-0">
-        <span class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0"><i data-lucide="car" class="w-4 h-4 text-amber-400"></i></span>
-        <h3 class="text-base font-bold text-gray-100 tracking-wide truncate">${label}</h3>
-      </div>
-      <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300">${items.length} Vehicles</span>
-    `;
-    const grid = document.createElement('div');
-    grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
-    sec.appendChild(head);
-    sec.appendChild(grid);
-    body.appendChild(sec);
-    return { grid, items };
-  });
+  const cars = CAR_LISTINGS.filter(l => l && !isCatalogListingHidden(l.property_id));
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
+  body.appendChild(grid);
 
-  _vehiclesLoader = createIncrementalLoader(allVehiclesOverlay, body, units);
+  _carsLoader = createIncrementalLoader(allCarsOverlay, body, [{ grid, items: cars }]);
 
-  const countEl = document.getElementById('all-vehicles-count');
-  if (countEl) countEl.textContent = `${vehicles.length} vehicles · cars & motorcycles`;
+  const countEl = document.getElementById('all-cars-count');
+  if (countEl) countEl.textContent = `${cars.length} cars · latest models worldwide`;
 
-  header.querySelector('.close-all-vehicles').addEventListener('click', closeAllVehiclesView);
-  allVehiclesOverlay.addEventListener('click', (e) => { if (e.target === allVehiclesOverlay) closeAllVehiclesView(); });
+  header.querySelector('.close-all-cars').addEventListener('click', closeAllCarsView);
+  allCarsOverlay.addEventListener('click', (e) => { if (e.target === allCarsOverlay) closeAllCarsView(); });
 
-  if (!_vehiclesEscBound) {
-    _vehiclesEscBound = true;
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllVehiclesView(); });
+  if (!_carsEscBound) {
+    _carsEscBound = true;
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllCarsView(); });
   }
 
   if (window.lucide) lucide.createIcons();
 }
 
-function openAllVehiclesView() {
-  if (!allVehiclesOverlay || !document.getElementById('all-vehicles-overlay')) buildAllVehiclesOverlay();
+function openAllCarsView() {
+  if (!allCarsOverlay || !document.getElementById('all-cars-overlay')) buildAllCarsOverlay();
   if (window.lucide) lucide.createIcons();
-  allVehiclesOverlay.classList.remove('hidden');
+  allCarsOverlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-  allVehiclesOverlay.scrollTop = 0;
-  if (_vehiclesLoader) _vehiclesLoader.pump();
+  allCarsOverlay.scrollTop = 0;
+  if (_carsLoader) _carsLoader.pump();
 }
 
-function closeAllVehiclesView() {
-  if (!allVehiclesOverlay) return;
-  allVehiclesOverlay.classList.add('hidden');
+function closeAllCarsView() {
+  if (!allCarsOverlay) return;
+  allCarsOverlay.classList.add('hidden');
   document.body.style.overflow = '';
 }
 
-function createViewAllVehiclesButton() {
+function createViewAllCarsButton() {
   const wrap = document.createElement('div');
   wrap.className = 'flex justify-center py-1';
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'view-all-vehicles-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-amber-600/30 transition active:scale-95';
-  btn.innerHTML = `View all type of cars <span class="text-lg">→ 🚗</span>`;
-  btn.addEventListener('click', openAllVehiclesView);
+  btn.className = 'view-all-cars-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-amber-600/30 transition active:scale-95';
+  btn.innerHTML = `View all Cars <span class="text-lg">→ 🚗</span>`;
+  btn.addEventListener('click', openAllCarsView);
   wrap.appendChild(btn);
   return wrap;
 }
@@ -1087,13 +1038,13 @@ function renderGrid(gridName) {
     // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
     // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'motorhomes-boats', 'cars-motorcycles', 'trucks-buses', 'heavy-equipment']) {
+    for (const id of ['local-houses', 'motorhomes-boats', 'cars', 'trucks-buses', 'heavy-equipment']) {
       const section = byId.get(id);
       if (!section) continue;
       const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
       container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
       if (id === 'motorhomes-boats') container.appendChild(createViewAllHousesButton());
-      if (id === 'cars-motorcycles') container.appendChild(createViewAllVehiclesButton());
+      if (id === 'cars') container.appendChild(createViewAllCarsButton());
       if (id === 'trucks-buses') container.appendChild(createViewAllTrucksButton());
     }
     // modern-luxury & commercial-land are intentionally left off the
@@ -1208,6 +1159,7 @@ export function getShowroomCategoryInventory() {
   };
   [...SHOWROOM_LISTINGS, ...getDBListings()].forEach(l => add(l.category, l.subcategory));
   TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
+  CAR_LISTINGS.forEach(l => add(l.category, l.subcategory));
   getCatalogCategories().forEach(c => add(c.name, null, c.count || 0));
 
   // Display order
@@ -1285,7 +1237,7 @@ const CATEGORY_TO_SECTION_ROW = {
   'Farm Houses': { section: 'modern-luxury', row: 'farm-house' },
   'Commercial Buildings': { section: 'commercial-land', row: 'commercial' },
   'Hotels': { section: 'commercial-land', row: 'hotels' },
-  'Cars': { section: 'cars-motorcycles', row: 'new-cars' },
+  'Cars': { section: 'cars', row: 'all-cars' },
   'Motorhomes': { section: 'motorhomes-boats', row: 'all-motorhomes' },
   'Trucks': { section: 'trucks-buses', row: 'all-trucks' },
   // Marketplace categories
@@ -1375,7 +1327,7 @@ const CATEGORY_KEYWORDS = [
   { keywords: ['garden', 'outdoor', 'patio'], target: { section: 'mp-garden', row: 'mp-garden-all' } },
   { keywords: ['camera', 'photography', 'lens'], target: { section: 'mp-cameras', row: 'mp-cameras-all' } },
   { keywords: ['software', 'digital', 'app'], target: { section: 'mp-software', row: 'mp-software-all' } },
-  { keywords: ['car', 'vehicle', 'auto', 'sedan', 'suv'], target: { section: 'cars-motorcycles', row: 'new-cars' } },
+  { keywords: ['car', 'vehicle', 'auto', 'sedan', 'suv'], target: { section: 'cars', row: 'all-cars' } },
   { keywords: ['truck', 'pickup', 'lorry'], target: { section: 'trucks-buses', row: 'all-trucks' } },
   { keywords: ['motorhome', 'camper', 'rv'], target: { section: 'motorhomes-boats', row: 'all-motorhomes' } },
   { keywords: ['apartment', 'condo', 'flat'], target: { section: 'local-houses', row: 'apartment-homes' } },

@@ -1,6 +1,7 @@
 import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListings } from './showroom-data.js';
 import { getTruckById, formatTruckPrice, TRUCK_LISTINGS } from './truck-data.js';
 import { getMotorhomeById, MOTORHOME_LISTINGS } from './motorhome-data.js';
+import { getCarById, CAR_LISTINGS } from './car-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
@@ -378,6 +379,186 @@ function renderMotorhome(listing) {
   });
 
   loadRelatedSections(listing, MOTORHOME_LISTINGS);
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderCar(listing) {
+  const root = document.getElementById('details-content');
+  const price = formatPrice(listing);
+
+  const imgs = safeImages(listing.images);
+  const galleryThumbs = imgs.map((img, i) =>
+    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-800'} shrink-0" data-img="${escapeHtml(img)}">
+      <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+    </button>`
+  ).join('');
+
+  const galleryLabels = [
+    'Front View', 'Rear View', 'Left Side', 'Right Side',
+    'Interior Dashboard', 'Driver Seat', 'Cabin / Interior',
+    'Wheels / Tires', 'Additional View'
+  ];
+
+  const specs = [
+    { icon: 'building-2', label: 'Brand', value: listing.brand },
+    { icon: 'car', label: 'Model', value: listing.model },
+    { icon: 'calendar', label: 'Model Year', value: listing.model_year },
+    { icon: 'badge-check', label: 'Condition', value: listing.condition },
+    { icon: 'gauge', label: 'Mileage', value: listing.mileage },
+    { icon: 'cog', label: 'Transmission', value: listing.transmission },
+    { icon: 'fuel', label: 'Fuel Type', value: listing.fuel_type },
+    { icon: 'zap', label: 'Engine', value: listing.engine },
+    { icon: 'truck', label: 'Drive Type', value: listing.drive_type },
+    { icon: 'palette', label: 'Colour', value: listing.color },
+    { icon: 'barcode', label: 'VIN', value: listing.vin },
+    { icon: 'tag', label: 'Stock Number', value: listing.stock_number },
+  ].filter(s => s.value != null && s.value !== '' && s.value !== 'N/A');
+
+  const featuresBlock = listing.features?.length ? `
+    <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
+      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Features</h3>
+      <div class="flex flex-wrap gap-2">
+        ${listing.features.map(f => `<span class="text-xs bg-gray-800 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700">${escapeHtml(f)}</span>`).join('')}
+      </div>
+    </div>` : '';
+
+  const ratingsBlock = `
+    <div class="flex items-center gap-4 mb-6">
+      <div class="flex items-center gap-1.5">
+        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>
+        <span class="text-lg font-bold text-white">${safeRating(listing.rating)}</span>
+        <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
+      </div>
+    </div>`;
+
+  root.innerHTML = `
+    <div class="fade-in">
+      <!-- Breadcrumb -->
+      <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
+        <a href="/" class="hover:text-blue-500 transition">Home</a>
+        <i data-lucide="chevron-right" class="w-3 h-3"></i>
+        <span>Cars</span>
+        <i data-lucide="chevron-right" class="w-3 h-3"></i>
+        <span class="text-gray-300 truncate">${listing.title}</span>
+      </div>
+
+      <!-- Title & ID -->
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">${escapeHtml(listing.title)}</h1>
+          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-400 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
+        </div>
+        <div class="text-right shrink-0">
+          <div class="text-3xl font-black text-blue-500">${price}</div>
+          <span class="inline-block bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+        </div>
+      </div>
+
+      ${ratingsBlock}
+
+      <!-- Main Image -->
+      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-900 mb-3 hero-zoom">
+        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+        <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
+      </div>
+
+      <!-- Gallery -->
+      <div class="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-8">
+        ${galleryThumbs}
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 mb-8">
+        <button id="buy-now-btn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl uppercase text-sm tracking-wider transition flex items-center justify-center gap-2">
+          <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
+        </button>
+        <button id="wishlist-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Add to Wishlist">
+          <i data-lucide="heart" class="w-5 h-5"></i>
+        </button>
+        <button id="share-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Share">
+          <i data-lucide="share-2" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Description -->
+      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3">Description</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
+      </div>
+
+      <!-- Car Information -->
+      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Car Information</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          ${specs.map(s => `
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
+              <div class="text-gray-200 font-medium text-sm">${escapeHtml(s.value)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      ${featuresBlock}
+
+      ${sellerBlock(listing)}
+
+      <div id="similar-section" class="hidden mb-6">
+        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Similar Products</h3>
+        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
+      <div id="related-section" class="hidden mb-6">
+        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Related Products</h3>
+        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
+      <div id="recommended-section" class="hidden mb-6">
+        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Recommended For You</h3>
+        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
+    </div>
+  `;
+
+  const hero = document.getElementById('hero-image');
+  const label = document.getElementById('gallery-label');
+  root.querySelectorAll('.gallery-thumb').forEach((thumb, i) => {
+    thumb.addEventListener('click', () => {
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-800'));
+      thumb.classList.add('active', 'border-blue-500');
+      thumb.classList.remove('border-gray-800');
+      hero.src = thumb.dataset.img;
+      label.textContent = galleryLabels[i] || `View ${i + 1}`;
+    });
+  });
+
+  document.getElementById('buy-now-btn').addEventListener('click', async () => {
+    const user = await getCurrentUser();
+    if (user) {
+      window.location.href = `/checkout.html?id=${listing.property_id}`;
+    } else {
+      setRedirectAfterAuth(`/checkout.html?id=${listing.property_id}`);
+      window.location.href = `/auth.html?redirect=${encodeURIComponent('/checkout.html?id=' + listing.property_id)}`;
+    }
+  });
+
+  document.getElementById('share-btn').addEventListener('click', async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: escapeHtml(listing.title), url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        const btn = document.getElementById('share-btn');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Copied!';
+        if (window.lucide) lucide.createIcons();
+        setTimeout(() => { btn.innerHTML = orig; if (window.lucide) lucide.createIcons(); }, 2000);
+      }
+    } catch (e) { /* user cancelled */ }
+  });
+
+  loadRelatedSections(listing, CAR_LISTINGS);
 
   if (window.lucide) lucide.createIcons();
 }
@@ -986,6 +1167,13 @@ async function init() {
   if (motorhome) {
     document.title = `${motorhome.title} | Weverse Online Shop`;
     renderMotorhome(motorhome);
+    return;
+  }
+
+  const car = getCarById(id);
+  if (car) {
+    document.title = `${car.title} | Weverse Online Shop`;
+    renderCar(car);
     return;
   }
 

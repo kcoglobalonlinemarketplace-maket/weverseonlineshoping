@@ -495,5 +495,6 @@ export function getTruckById(id) {
 }
 
 export function formatTruckPrice(price) {
-  return Number(price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const n = (price && typeof price === 'object') ? price.price : price;
+  return Number(n || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 }

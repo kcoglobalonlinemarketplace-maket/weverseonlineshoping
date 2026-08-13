@@ -1,4 +1,7 @@
 import { findListingById, formatPrice, flagEmoji, loadDBListings } from './showroom-data.js';
+import { getTruckById } from './truck-data.js';
+import { getMotorhomeById } from './motorhome-data.js';
+import { getCarById } from './car-data.js';
 import { getCurrentUser } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
@@ -676,7 +679,7 @@ async function init() {
   if (!user && !isGuest) { window.location.href = '/'; return; }
 
   const id = getListingId();
-  let listing = findListingById(id);
+  let listing = findListingById(id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id);
   if (!listing) {
     const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
       import('./catalog.js'),
