@@ -4981,6 +4981,7 @@ function renderProductAiModal() {
               <div class="relative">
                 <img src="${esc(u)}" class="w-40 h-40 rounded-2xl object-cover border border-fuchsia-500/40 shadow-lg" onerror="this.src='/fallback.svg'">
                 <button onclick="productAiUseGeneratedImage(${gi})" class="absolute bottom-1.5 right-1.5 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black shadow transition">Use on card</button>
+                <button onclick="productAiReplaceMainImage(${gi})" class="absolute top-1.5 right-1.5 px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black shadow transition" title="Replace the current MAIN image with this one">Set as main</button>
               </div>`).join('')}
           </div>
           <div class="flex items-center gap-2 mt-2.5">
@@ -5059,7 +5060,7 @@ function renderProductAiModal() {
             </button>
           </div>
           <div class="flex items-center justify-between gap-3 pt-2.5">
-            <p class="text-[11px] text-gray-500 min-w-0">Full Gemini chat. It can fix this card, scan the showroom, and generate images — and it only ever edits this one product.</p>
+            <p class="text-[11px] text-gray-500 min-w-0">Full Gemini chat. It can fix this card, scan the showroom, generate images, and manage this product's photos — you have full permission over everything here.</p>
             ${s.suggestions ? `<button onclick="applyProductAiChanges()" class="btn-press px-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-black rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-lg shadow-emerald-600/30"><i data-lucide="database" class="w-4 h-4"></i> Save Approved</button>` : ''}
           </div>
         </div>
@@ -5136,14 +5137,12 @@ function renderProductAiImagesPanel() {
 
   const thumbs = all.map((url, i) => {
     const isCurrent = i < current.length;
-    const removed = isCurrent && s.removedImages.has(url);
     const isDup = isCurrent && dupUrls.includes(url);
     return `
-      <div class="relative group w-20 h-20 rounded-lg overflow-hidden border ${removed ? 'border-red-500/60 opacity-50' : isDup ? 'border-amber-400/70' : 'border-white/10'}">
+      <div class="relative group w-20 h-20 rounded-lg overflow-hidden border ${isDup ? 'border-amber-400/70' : 'border-white/10'}">
         <img src="${esc(url)}" class="w-full h-full object-cover" onerror="this.src='/fallback.svg'">
-        ${isDup ? '<span class="absolute top-0.5 left-0.5 text-[8px] font-black px-1 rounded bg-amber-400 text-[#111827]">DUP</span>' : ''}
-        ${removed ? '<div class="absolute inset-0 flex items-center justify-center bg-red-950/70 text-[9px] font-black text-red-200">REMOVE</div>' : ''}
-        <button onclick="productAiToggleRemoveImage(${i})" class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-red-600 text-white text-[10px] flex items-center justify-center" title="${removed ? 'Keep image' : 'Remove image'}">${removed ? '↺' : '✕'}</button>
+        ${isDup ? '<span class="absolute top-0.5 left-0.5 text-[8px] font-black px-1 rounded bg-amber-400 text-[#111827]">DUP</span>' : i === 0 ? '<span class="absolute top-0.5 left-0.5 text-[8px] font-black px-1 rounded bg-blue-500 text-white">MAIN</span>' : ''}
+        ${isCurrent ? `<button onclick="productAiRemoveImageNow(${i})" class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-red-600 text-white text-[10px] flex items-center justify-center" title="Remove this image from the card now">✕</button>` : ''}
       </div>`;
   }).join('');
 
@@ -5163,7 +5162,7 @@ function renderProductAiImagesPanel() {
         </div>
       </div>
       ${thumbs || '<p class="text-xs text-gray-500">No images yet.</p>'}
-      <p class="text-[10px] text-gray-500 mt-2">Uploaded images are added to the product. Remove old ones with ✕, then ask the AI to rewrite copy or review the listing.</p>
+      <p class="text-[10px] text-gray-500 mt-2">Tap ✕ to delete an image, upload new ones, or generate with AI below — every image change is saved to the card immediately. The MAIN badge is the card cover; use "Set as main" on a generated image to replace it.</p>
     </div>`;
 }
 
@@ -5185,7 +5184,7 @@ function renderProductAiChatPanel() {
           <i data-lucide="send" class="w-3.5 h-3.5"></i> Run
         </button>
       </div>
-      ${s.busy ? '<p class="text-[11px] text-fuchsia-300 mt-2 flex items-center gap-2"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Thinking… this product only.</p>' : ''}
+      ${s.busy ? '<p class="text-[11px] text-fuchsia-300 mt-2 flex items-center gap-2"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Thinking…</p>' : ''}
     </div>`;
 }
 
@@ -5316,36 +5315,38 @@ window.productAiToggleRemoveImage = function(index) {
   renderProductAiModal();
 };
 
-window.productAiDetectDuplicates = function() {
+window.productAiDetectDuplicates = async function() {
   if (!_productAiState) return;
-  const current = Array.isArray(_productAiState.product.images) ? _productAiState.product.images : [];
+  const s = _productAiState;
+  const current = Array.isArray(s.product.images) ? s.product.images : [];
   const counts = {};
   current.forEach((u) => { counts[u] = (counts[u] || 0) + 1; });
-  let added = 0;
-  const seen = new Set();
-  for (const u of current) {
-    if (counts[u] > 1) {
-      if (seen.has(u)) { if (!_productAiState.removedImages.has(u)) added += 1; _productAiState.removedImages.add(u); }
-      else seen.add(u);
-    }
-  }
-  if (added) { _productAiState.approved.add('images_to_remove'); showToast(`Marked ${added} duplicate image(s) for removal.`, 'info'); }
-  else showToast('No duplicate images found.', 'info');
-  renderProductAiModal();
+  const newImages = current.filter((u, i) => !(counts[u] > 1 && current.indexOf(u) !== i));
+  if (newImages.length === current.length) { showToast('No duplicate images found.', 'info'); return; }
+  await productAiSaveImages(newImages, `Removed ${current.length - newImages.length} duplicate image(s) from the card.`);
 };
 
 window.productAiUploadImages = async function(input) {
   if (!_productAiState || !input || !input.files || !input.files.length) return;
+  const s = _productAiState;
   const files = [...input.files];
+  s.busy = true;
+  renderProductAiModal();
+  const current = Array.isArray(s.product.images) ? s.product.images : [];
+  const next = [...current];
   let ok = 0;
   for (const file of files) {
     if (!file.type.startsWith('image/')) continue;
     const url = await uploadImageFile(file);
-    if (url) { _productAiState.addedImages.push(url); ok += 1; }
+    if (url) { next.push(url); ok += 1; }
   }
   input.value = '';
-  if (ok) showToast(`${ok} image(s) uploaded and staged.`, 'success');
-  else showToast('Upload failed.', 'error');
+  s.busy = false;
+  if (ok) {
+    await productAiSaveImages(next, `${ok} image(s) uploaded to the card.`);
+    return;
+  }
+  showToast('Upload failed.', 'error');
   renderProductAiModal();
 };
 
@@ -5571,9 +5572,23 @@ window.productAiUseGeneratedImage = async function(index) {
   const url = await productAiUploadDataUrl(dataUrl);
   s.busy = false;
   if (!url) { showToast('Could not upload the generated image.', 'error'); renderProductAiModal(); return; }
-  s.addedImages.push(url);
-  showToast('Generated image staged. Press Save Approved to add it to the card.', 'success');
+  const current = Array.isArray(s.product.images) ? s.product.images : [];
+  await productAiSaveImages([...current, url], 'Generated image added to the card.');
+};
+
+window.productAiReplaceMainImage = async function(index) {
+  const s = _productAiState;
+  if (!s || s.busy || !Array.isArray(s.generatedImages)) return;
+  const dataUrl = s.generatedImages[index];
+  if (!dataUrl) return;
+  s.busy = true;
   renderProductAiModal();
+  const url = await productAiUploadDataUrl(dataUrl);
+  s.busy = false;
+  if (!url) { showToast('Could not upload the generated image.', 'error'); renderProductAiModal(); return; }
+  const current = Array.isArray(s.product.images) ? s.product.images : [];
+  const newImages = current.length ? [url, ...current.slice(1)] : [url];
+  await productAiSaveImages(newImages, 'Old main image replaced with the generated one.');
 };
 
 window.productAiUseAllGeneratedImages = async function() {
@@ -5581,15 +5596,52 @@ window.productAiUseAllGeneratedImages = async function() {
   if (!s || s.busy || !Array.isArray(s.generatedImages) || !s.generatedImages.length) return;
   s.busy = true;
   renderProductAiModal();
+  const current = Array.isArray(s.product.images) ? s.product.images : [];
+  const next = [...current];
   let ok = 0;
   for (const dataUrl of s.generatedImages) {
     const url = await productAiUploadDataUrl(dataUrl);
-    if (url) { s.addedImages.push(url); ok += 1; }
+    if (url) { next.push(url); ok += 1; }
   }
   s.busy = false;
-  showToast(ok ? `${ok} image(s) staged. Press Save Approved to add them.` : 'Upload failed.', ok ? 'success' : 'error');
+  if (ok) {
+    s.generatedImages = [];
+    await productAiSaveImages(next, `${ok} generated image(s) added to the card.`);
+    return;
+  }
+  showToast('Upload failed.', 'error');
   renderProductAiModal();
 };
+
+window.productAiRemoveImageNow = async function(index) {
+  const s = _productAiState;
+  if (!s || s.busy) return;
+  const current = Array.isArray(s.product.images) ? s.product.images : [];
+  if (index < 0 || index >= current.length) return;
+  await productAiSaveImages(current.filter((_, i) => i !== index), 'Image removed from the card.');
+};
+
+async function productAiSaveImages(newImages, msg) {
+  const s = _productAiState;
+  if (!s) return;
+  s.busy = true;
+  renderProductAiModal();
+  const payload = sanitizeShowroomPayload({ ...s.product, images: newImages, property_id: s.pid, updated_at: new Date().toISOString() });
+  try {
+    const { error } = await supabase.from('showroom_listings').upsert(payload, { onConflict: 'property_id' });
+    if (error) throw error;
+    s.product.images = newImages;
+    s.removedImages.clear();
+    showToast(msg, 'success');
+    if (s.from === 'properties') renderProperties(); else renderProducts();
+  } catch (err) {
+    if (err && isRlsDenied(err)) showToast('⚠️ Save blocked: database admin role is not active. Re-run the admin permission migration.', 'error');
+    else showToast(`Save failed: ${(err && err.message) || 'unknown error'}`, 'error');
+  } finally {
+    s.busy = false;
+    renderProductAiModal();
+  }
+}
 
 window.productAiRegenerateImage = async function() {
   const s = _productAiState;
@@ -5609,9 +5661,9 @@ window.productAiRegenerateImage = async function() {
 function buildProductAiPrompt(s, instruction) {
   const p = s.product;
   const snapshot = JSON.stringify(productAiSnapshot(p), null, 2);
-  return `You are the AI product manager assistant for ONE product in the Weverse Online Shop admin dashboard.
+  return `You are the AI product manager assistant for the Weverse Online Shop admin dashboard, working on ONE product.
 
-You are attached to EXACTLY ONE product (property_id ${s.pid}). You may ONLY edit THIS product — never create, delete, or modify any other product.
+You have FULL permission over the whole showroom. This is a REAL catalog managed by real store staff — always give real, usable data (real brand, realistic price, professional title). Never refuse or hedge; if something looks wrong, fix it directly. Edit the attached product, and never create or delete other products.
 
 CURRENT PRODUCT DATA (JSON):
 ${snapshot}
@@ -5619,14 +5671,25 @@ ${snapshot}
 ADMIN INSTRUCTION:
 ${instruction}
 
-Return a single valid JSON object (no markdown, no extra text) that proposes changes to THIS product only. Allowed keys:
+Return a single valid JSON object (no markdown, no extra text) that proposes changes to the attached product. Allowed keys:
 - title (string): a real, professional product name that matches the actual item and its category. NEVER use placeholders like "AI Product", "AI Curated Product", or similar.
 - description (string)
-- price (number)
+- price (number): always give the item's real market value — a realistic number, never 0, never omitted.
 - stock_quantity (number)
 - category (string)
 - subcategory (string)
-- brand (string)
+- brand (string): ALWAYS the item's real brand when identifiable; for unbranded/artisan items, "Handmade", "Unbranded", or similar. Never leave blank.
+- model (string)
+- year (number)
+- color (string)
+- condition (string)
+- mileage (string)
+- property_type (string)
+- listing_type (string)
+- warranty (string)
+- rating (number)
+- rating_count (number)
+- favorite_count (number)
 - availability_status (string)
 - features (array of strings)
 - tags (array of strings)
@@ -5730,8 +5793,8 @@ function generalAiDetectMode(text, hasImages) {
   const t = String(text || '').toLowerCase();
   if (/\bpublish\b/.test(t) || /\b(add|upload|put)\b[\s\S]*\b(showroom|store|site|listing|product|card|item)\b/.test(t)) return 'publish';
   if (/\b(generate|create|make|draw|produce|imagine|design)\b[\s\S]*\b(image|photo|picture|logo|thumbnail|background|banner|color|colour)\b/.test(t)) return 'gen';
+  if (hasImages) return t ? 'vision' : 'execute';
   if (/\b(scan|monitor|health|good|bad|check)\b[\s\S]*\b(showroom|store|product|section|everything)\b/.test(t) || /\bshowroom\b/.test(t)) return 'monitor';
-  if (hasImages) return t ? 'vision' : 'publish';
   return 'execute';
 }
 
@@ -5932,13 +5995,11 @@ function renderGeneralAiModal() {
     input.addEventListener('input', () => {
       if (_generalAiState) {
         _generalAiState.instruction = input.value;
-        clearTimeout(_generalAiState.autoSendTimer);
       }
     });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        clearTimeout(_generalAiState.autoSendTimer);
         runGeneralAiInstruction();
       }
     });
@@ -5983,13 +6044,11 @@ function renderGeneralAiEmbed() {
       input.addEventListener('input', () => {
         if (_generalAiState) {
           _generalAiState.instruction = input.value;
-          clearTimeout(_generalAiState.autoSendTimer);
         }
       });
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          clearTimeout(_generalAiState.autoSendTimer);
           runGeneralAiInstruction();
         }
       });
@@ -6024,13 +6083,9 @@ window.generalAiChatImagePicked = async function(input) {
   }
   input.value = '';
   if (ok) {
-    showToast(`${ok} photo(s) attached — I'll scan it and publish it to your showroom automatically.`, 'info');
-    const t = _generalAiState;
-    clearTimeout(t.autoSendTimer);
-    t.autoSendTimer = setTimeout(() => {
-      if (t.busy) return;
-      if (!(t.instruction || '').trim()) runGeneralAiInstruction();
-    }, 600);
+    showToast(`${ok} photo(s) attached. Now type what you want me to do with it (e.g. "scan this and list everything about it", "generate an image exactly like this", or "publish this to the showroom").`, 'info');
+    const inputEl = document.getElementById('general-ai-embed-input') || document.getElementById('general-ai-input');
+    if (inputEl) inputEl.focus();
   }
   generalAiRefreshUi();
 };
@@ -6059,10 +6114,10 @@ window.runGeneralAiInstruction = async function() {
   const quickMode = s.quickMode || '';
   s.quickMode = '';
   const hasImages = (s.chatImages || []).length > 0;
-  if (!rawInstruction && !quickLabel && !quickMode && !hasImages) return;
+  if (!rawInstruction && !quickLabel && !quickMode) return;
 
-  const aiInstruction = rawInstruction || 'publish this photo to my showroom';
-  const userText = quickLabel || rawInstruction || (hasImages ? 'Publish this photo to my showroom.' : aiInstruction);
+  const aiInstruction = rawInstruction || '';
+  const userText = quickLabel || rawInstruction || (hasImages ? 'Photo attached — please scan it and list everything you can identify about it.' : aiInstruction);
   const sentImages = [...(s.chatImages || [])];
   s.chatImages = [];
   s.instruction = '';
@@ -6108,7 +6163,11 @@ async function generalAiImageGen(instruction, sentImages) {
   const s = _generalAiState;
   let reference = null;
   if (sentImages && sentImages.length) reference = sentImages[0];
-  const res = await aiClient._callEdge({ action: 'generate_images', prompt: `${instruction}\n\n(Generate a beautiful, high-quality image. It can be any type of image — no restrictions.)`, reference_url: reference, count: 2 });
+  const wantsMatch = /\b(exact|exactly|same|matching|match|identical|copy|replicat|just like|like this|as the (image|photo|picture))\b/i.test(instruction);
+  const genDirective = wantsMatch && reference
+    ? 'Reproduce the attached reference photo as faithfully as possible — keep the same subject, look, colors, background, and details. Make it an exact, high-quality match.'
+    : 'Generate a beautiful, high-quality image. It can be any type of image — no restrictions.';
+  const res = await aiClient._callEdge({ action: 'generate_images', prompt: `${instruction}\n\n${genDirective}`, reference_url: reference, count: 2 });
   if (!res || !Array.isArray(res.images) || !res.images.length) throw new Error((res && res.error) || 'Image generation returned nothing.');
   s.generatedImages = res.images;
   s.lastGenPrompt = instruction;
@@ -6131,11 +6190,11 @@ async function generalAiMonitor() {
 
 async function generalAiVisionChat(instruction, sentImages) {
   const s = _generalAiState;
-  const prompt = `${instruction}\n\nLook at the photo(s). If you recognize the product, identify it and give a typical price range. You manage the whole showroom.`;
-  const res = await aiClient._callEdge({ action: 'vision', images: (sentImages || []).slice(0, 4), prompt, max_tokens: 1200 });
+  const prompt = `${instruction}\n\nSCAN the attached photo(s) carefully and list every detail you can actually identify, one per line, in this exact order:\n1. Brand / make\n2. Model\n3. Year\n4. Body type (for vehicles: Sedan, SUV, Coupe, Truck, etc.)\n5. Color\n6. Engine / performance specs (if visible)\n7. Mileage (if visible)\n8. Condition (New / Used - Good / Used - Fair)\n9. Visible features, badges, trims, interior, or accessories\n10. Estimated market price range\n\nRules:\n- Base every line ONLY on what you can see in the photo. Never invent specs.\n- If a badge or emblem is readable, read it exactly.\n- If you cannot identify a detail, write "Not visible" — do not guess.\n- Keep it a clean, readable list. You manage the whole showroom, so stay professional and factual.`;
+  const res = await aiClient._callEdge({ action: 'vision', images: (sentImages || []).slice(0, 4), prompt, max_tokens: 1500 });
   const text = (res && res.text) ? String(res.text) : '';
   if (!text) throw new Error((res && res.error) || 'The AI could not read the attached photos.');
-  s.messages.push({ role: 'assistant', content: text });
+  s.messages.push({ role: 'assistant', content: text, provider: res.provider ? `${res.provider}/${res.model}` : '' });
 }
 
 async function generalAiExecute(instruction, sentImages) {

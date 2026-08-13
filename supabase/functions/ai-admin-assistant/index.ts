@@ -841,6 +841,7 @@ Return a single valid JSON object (no markdown, no extra text):
 
 COMPLETE CARD REQUIRED:
 - ALWAYS fill in the brand, model, year, color, condition, features, and mileage — never leave brand/model/year empty. If a badge is not clearly readable, identify the make and model from the vehicle's design, badge shape, and known models, and give the year as your best estimate from the design era.
+- ALWAYS fill in a price — a realistic number that matches the section's price range above. Never omit the price and never use 0.
 - ALWAYS fill rating (4.2–4.9), rating_count (40–250), favorite_count (20–150) and warranty with realistic professional values so the card looks established and trusted — never 0 or empty.
 - Give the most accurate, professional identification you can so customers feel confident and comfortable buying.
 - The category, style, and price must match the showroom section it belongs to.
@@ -856,7 +857,7 @@ The showroom already has these sections, so pick a matching category and price r
 ${context || 'No existing products yet.'}
 
 Return ONLY valid JSON (no markdown): { "listing_type" ("product" unless a vehicle like a car/truck/motorcycle), "property_type" (vehicle body type or null), "title", "description", "category", "subcategory", "brand", "model", "year", "mileage", "price", "stock_quantity", "color", "condition", "rating" (4.2-4.9), "rating_count" (40-250), "favorite_count" (20-150), "warranty", "features", "tags", "seo_keywords" }
-COMPLETE CARD REQUIRED: ALWAYS fill in the brand, model, year, rating, rating_count, favorite_count, warranty and full details so customers feel confident — never leave brand/model/year empty and never leave rating or counts at 0. Base everything on the request.`;
+COMPLETE CARD REQUIRED: ALWAYS fill in the brand, model, year, price, rating, rating_count, favorite_count, warranty and full details so customers feel confident — never leave brand/model/year/price empty, never leave price at 0, and never leave rating or counts at 0. The price must be a realistic number that matches the section's price range above. Base everything on the request.`;
     const providerResult = await chat(prompt, [], 1200);
     fields = extractJsonFromAiText(providerResult.response) || {};
   }
@@ -886,6 +887,10 @@ COMPLETE CARD REQUIRED: ALWAYS fill in the brand, model, year, rating, rating_co
   const listingType = String(fields.listing_type || '').toLowerCase();
   const isVehicle = listingType === 'vehicle';
   const isProperty = listingType === 'property';
+  const priceValues = (products || []).map((p) => Number(p?.price)).filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b);
+  const fallbackPrice = priceValues.length ? priceValues[Math.floor(priceValues.length / 2)] : 499;
+  const parsedPrice = Number(fields.price);
+  const price = Number.isFinite(parsedPrice) && parsedPrice > 0 ? parsedPrice : fallbackPrice;
   const payload = {
     property_id: propertyId,
     listing_type: isVehicle ? 'vehicle' : isProperty ? 'property' : 'product',
@@ -893,7 +898,7 @@ COMPLETE CARD REQUIRED: ALWAYS fill in the brand, model, year, rating, rating_co
     subcategory: fields.subcategory ? String(fields.subcategory) : null,
     title: String(fields.title || 'New Product'),
     description: String(fields.description || `Added by General AI on ${new Date().toISOString()}.`),
-    price: Number.isFinite(Number(fields.price)) ? Number(fields.price) : 0,
+    price,
     currency: String(fields.currency || 'USD'),
     listing_status: 'sale',
     is_active: true,
