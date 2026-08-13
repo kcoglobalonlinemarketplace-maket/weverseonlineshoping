@@ -149,10 +149,10 @@ const REAL_ESTATE_SECTIONS = [
   },
   {
     id: 'heavy-equipment', label: 'Modern Home Appliances', icon: 'refrigerator',
-    subtitle: 'Premium espresso machines, kettles, blenders, and smart home care appliances.',
+    subtitle: 'World-famous washing machines, TVs, kitchen, and smart home care appliances.',
     rows: [
-      { id: 'appliances-coffee-kitchen', label: 'Coffee Makers & Kitchen', icon: 'coffee', ids: ['KCO-002001', 'KCO-002002', 'KCO-002003', 'KCO-002004', 'KCO-002005', 'KCO-002006'] },
-      { id: 'appliances-home-care', label: 'Home & Floor Care', icon: 'sparkles', ids: ['KCO-002007', 'KCO-002008', 'KCO-002009', 'KCO-002010'] },
+      { id: 'appliances-kitchen-laundry', label: 'Kitchen, Laundry & Cold', icon: 'microwave', ids: ['KCO-002001', 'KCO-002006', 'KCO-002007', 'KCO-002009', 'KCO-002010'] },
+      { id: 'appliances-electronics-care', label: 'Electronics & Home Care', icon: 'sparkles', ids: ['KCO-002002', 'KCO-002003', 'KCO-002004', 'KCO-002005', 'KCO-002008'] },
     ],
   },
 ];

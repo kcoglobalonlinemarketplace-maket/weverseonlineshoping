@@ -1179,7 +1179,7 @@ export const SHOWROOM_LISTINGS = [
 // Home & Kitchen — 200 curated products appended to the marketplace listings.
 SHOWROOM_LISTINGS.push(...HOUSE_KITCHEN_LISTINGS);
 
-// Modern Home Appliances — curated product-only-shot products for the
+// Modern Home Appliances — 10 real world-famous products for the
 // "Modern Home Appliances" section (former Heavy Equipment & Auto Parts).
 SHOWROOM_LISTINGS.push(...APPLIANCE_SHOWCASE_LISTINGS);
 
