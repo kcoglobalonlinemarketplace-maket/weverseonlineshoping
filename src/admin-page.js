@@ -5769,7 +5769,7 @@ let _generalAiState = null; // { busy, messages, chatImages, generatedImages, la
 
 const GENERAL_AI_QUICK_ACTIONS = [
   { key: 'monitor', mode: 'monitor', label: 'Scan Showroom', icon: 'scan-search', prompt: 'Scan the whole showroom and tell me what is good and what is not good.' },
-  { key: 'publish', mode: 'publish', label: 'Publish from Photo', icon: 'image-up', prompt: 'Publish this photo as a product in my showroom, matched to the right section.' },
+  { key: 'publish', mode: 'publish', label: 'Publish from Photo', icon: 'image-up', prompt: 'Scan this photo and publish it in the matching section of my showroom — show me a preview first so I can approve it.' },
   { key: 'gen', mode: 'gen', label: 'Generate an Image', icon: 'wand-sparkles', prompt: 'Generate a beautiful new image for me.' },
   { key: 'fix', mode: 'fix', label: 'Fix Everything', icon: 'wrench', prompt: 'Check the whole showroom and fix everything that is wrong so everything is proper.' },
 ];
@@ -5818,13 +5818,14 @@ function generalAiEnsureState() {
     messages: [{
       role: 'assistant',
       welcome: true,
-      content: `I'm the General AI — I manage your WHOLE showroom, right here on top of the Product Manager. Just upload a photo of any item and I'll scan it, write the complete brand, model, year, rating and details (so your customers feel confident), check your showroom first, and publish it automatically — no need to type anything. I can also generate any image, chat friendly, learn from your corrections, monitor what's good and what's not, and fix everything in the showroom without coding. Just tell me.`,
+      content: `I'm the General AI — I manage your WHOLE showroom, right here on top of the Product Manager. Upload a photo and tell me what you want: I'll scan it and list the brand, model, year and real details, generate a matching image, or publish it to the showroom (I'll always show you a preview and ask if it's good before publishing). I always scan your showroom first so trucks go where the trucks are, cars where the cars are, homes where the homes are — I never guess or make new sections unless you ask me to. I can also generate any image, chat friendly, learn from your corrections, monitor what's good and what's not, and fix everything without coding. Just tell me.`,
     }],
     chatImages: [],
     generatedImages: [],
     lastGenPrompt: '',
     lastGenReference: null,
     pendingPlan: null,
+    pendingPublish: null,
   };
   return _generalAiState;
 }
@@ -5833,6 +5834,35 @@ window.openGeneralAi = async function() {
   generalAiEnsureState();
   generalAiRefreshUi();
 };
+
+function generalAiPreviewCardHtml(p) {
+  if (!p) return '';
+  const price = (Number(p.price) || 0) > 0 ? `$${Number(p.price).toLocaleString()}` : '';
+  const imgs = Array.isArray(p.images) ? p.images.slice(0, 3) : [];
+  const feats = Array.isArray(p.features) ? p.features.slice(0, 8) : [];
+  const tags = [p.brand, p.model, p.year, p.property_type].filter(Boolean);
+  return `
+    <div class="mt-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <p class="text-[10px] font-black text-emerald-300 uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Card preview — check before publishing</p>
+        <span class="badge bg-emerald-500/15 text-emerald-300 border-emerald-500/25 text-[9px]">${esc(p.category || 'New section')}</span>
+      </div>
+      ${imgs.length ? `<div class="flex flex-wrap gap-2 mb-3">${imgs.map((u) => `<img src="${esc(u)}" class="w-28 h-28 rounded-xl object-cover border border-emerald-500/40 shadow-lg" onerror="this.src='/fallback.svg'">`).join('')}</div>` : ''}
+      <p class="text-base font-black text-white leading-tight">${esc(p.title || 'New Product')}</p>
+      ${tags.length ? `<p class="text-[11px] font-bold text-emerald-300 mt-1">${tags.map((t) => esc(String(t))).join(' · ')}${price ? ` · ${price}` : ''}</p>` : price ? `<p class="text-[11px] font-bold text-emerald-300 mt-1">${price}</p>` : ''}
+      <p class="text-[11px] text-gray-300 mt-2 leading-relaxed whitespace-pre-wrap break-words">${esc(p.description || '')}</p>
+      ${feats.length ? `<div class="flex flex-wrap gap-1.5 mt-3">${feats.map((f) => `<span class="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-[9px] text-gray-200">${esc(String(f))}</span>`).join('')}</div>` : ''}
+      <div class="flex flex-wrap items-center gap-2 mt-4">
+        <button onclick="generalAiConfirmPublish()" class="btn-press px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black rounded-xl transition flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5"></i> Yes, publish it</button>
+        <button onclick="generalAiOpenPublishFix()" class="btn-press px-3 py-2 bg-white/10 hover:bg-white/20 text-gray-200 text-[11px] font-bold rounded-xl transition flex items-center gap-1.5"><i data-lucide="pen-line" class="w-3.5 h-3.5"></i> Not professional</button>
+        <button onclick="generalAiCancelPublish()" class="btn-press px-3 py-2 bg-white/5 hover:bg-white/10 text-gray-400 text-[11px] font-bold rounded-xl transition">Cancel</button>
+      </div>
+      <div id="general-ai-publish-fix-box" class="hidden mt-3">
+        <input id="general-ai-publish-fix-input" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-amber-500/30 text-[11px] text-white placeholder-gray-400 focus:outline-none" placeholder="Tell the AI what to fix (e.g. make the title and price more professional)">
+        <button onclick="generalAiRevisePublish()" class="btn-press mt-2 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-black text-[11px] font-black rounded-xl transition flex items-center gap-1.5"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Make it professional</button>
+      </div>
+    </div>`;
+}
 
 function generalAiMessageHtml(m) {
   if (!m) return '';
@@ -5852,6 +5882,7 @@ function generalAiMessageHtml(m) {
       </div>
       <div class="glass border border-sky-500/20 rounded-3xl rounded-tl-md px-5 py-3.5 min-w-0 max-w-[85%]">
         <div class="text-[1.02rem] leading-relaxed text-gray-100 whitespace-pre-wrap break-words">${esc(m.content)}</div>
+        ${m.previewDraft ? generalAiPreviewCardHtml(m.previewDraft) : ''}
         ${m.images && m.images.length ? `
           <div class="flex flex-wrap gap-2.5 mt-3">
             ${m.images.map((u) => `<img src="${esc(u)}" class="w-40 h-40 rounded-2xl object-cover border border-sky-500/40 shadow-lg" onerror="this.src='/fallback.svg'">`).join('')}
@@ -5861,7 +5892,8 @@ function generalAiMessageHtml(m) {
             ${m.generated.map((u, gi) => `
               <div class="relative">
                 <img src="${esc(u)}" class="w-40 h-40 rounded-2xl object-cover border border-sky-500/40 shadow-lg" onerror="this.src='/fallback.svg'">
-                <button onclick="generalAiUseGeneratedImage(${gi})" class="absolute bottom-1.5 right-1.5 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black shadow transition">Use on card</button>
+                <button onclick="generalAiUseGeneratedImage(${gi})" class="absolute bottom-8 right-1.5 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black shadow transition">Use on card</button>
+                <button onclick="generalAiPublishGeneratedImage(${gi})" class="absolute bottom-1.5 right-1.5 px-2 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-black shadow transition">Publish to showroom</button>
               </div>`).join('')}
           </div>
           <div class="flex items-center gap-2 mt-2.5">
@@ -5964,7 +5996,7 @@ function renderGeneralAiModal() {
           <div class="space-y-4">
             <div class="glass-soft border border-sky-500/15 rounded-2xl p-4">
               <div class="flex flex-wrap gap-1.5 mb-2">${chips}</div>
-              <p class="text-[11px] text-gray-500">Upload a photo and I'll scan it and publish it automatically — I'll generate the image, check your showroom, and publish it matched to the right section. Or just chat and tell me what to fix.</p>
+              <p class="text-[11px] text-gray-500">Upload a photo and tell me what to do — I'll scan it and list the real details (brand, model, year), generate a matching image, or publish it after you approve a preview. I always scan your showroom so every item goes in the right existing section, and I only create new sections when you ask. Or just chat and tell me what to fix.</p>
             </div>
             ${msgsHtml}
             ${typingHtml}
@@ -6153,11 +6185,80 @@ window.runGeneralAiInstruction = async function() {
 async function generalAiPublish(instruction, sentImages) {
   const s = _generalAiState;
   const res = await aiClient._callEdge({ action: 'general_publish', message: instruction, images: sentImages.slice(0, 4), max_tokens: 2048 });
-  if (!res || res.success !== true) throw new Error((res && res.error) || 'Could not publish the product.');
+  if (!res || res.success !== true) throw new Error((res && res.error) || 'Could not prepare the product card.');
+  if (res.pending && res.draft) {
+    s.pendingPublish = { draft: res.draft, instruction };
+    s.messages.push({
+      role: 'assistant',
+      content: String(res.response || 'Here is the card I prepared. Is it good?'),
+      previewDraft: res.preview || res.draft,
+      images: (res.images || []).slice(0, 2),
+    });
+    generalAiRefreshUi();
+    return;
+  }
   s.messages.push({ role: 'assistant', content: String(res.response || 'Published.'), images: (res.images || []).slice(0, 2) });
   showToast('Product published to the showroom.', 'success');
   generalAiRefreshShowroom();
 }
+
+window.generalAiConfirmPublish = async function() {
+  const s = _generalAiState;
+  if (!s || s.busy || !s.pendingPublish || !s.pendingPublish.draft) return;
+  const draft = s.pendingPublish.draft;
+  s.pendingPublish = null;
+  s.busy = true;
+  generalAiRefreshUi();
+  try {
+    const res = await aiClient._callEdge({ action: 'general_publish', mode: 'publish', draft });
+    if (!res || res.success !== true) throw new Error((res && res.error) || 'Could not publish the product.');
+    s.messages.push({ role: 'assistant', content: `✅ ${String(res.response || 'Published to the showroom.')}`, images: (res.images || []).slice(0, 2) });
+    showToast('Product published to the showroom.', 'success');
+    generalAiRefreshShowroom();
+  } catch (err) {
+    s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
+  } finally {
+    s.busy = false;
+    generalAiRefreshUi();
+  }
+};
+
+window.generalAiCancelPublish = function() {
+  if (!_generalAiState) return;
+  _generalAiState.pendingPublish = null;
+  _generalAiState.messages.push({ role: 'assistant', content: 'Cancelled — nothing was published.' });
+  generalAiRefreshUi();
+};
+
+window.generalAiOpenPublishFix = function() {
+  const box = document.getElementById('general-ai-publish-fix-box');
+  if (box) box.classList.remove('hidden');
+};
+
+window.generalAiRevisePublish = async function() {
+  const s = _generalAiState;
+  if (!s || s.busy || !s.pendingPublish || !s.pendingPublish.draft) return;
+  const input = document.getElementById('general-ai-publish-fix-input');
+  const feedback = input ? String(input.value || '').trim() : '';
+  const draft = s.pendingPublish.draft;
+  const instruction = s.pendingPublish.instruction || '';
+  s.pendingPublish = null;
+  s.busy = true;
+  generalAiRefreshUi();
+  try {
+    const res = await aiClient._callEdge({ action: 'general_publish', mode: 'preview', message: instruction, draft, feedback: feedback || 'Make this card more professional and match the showroom style.' });
+    if (!res || res.success !== true) throw new Error((res && res.error) || 'Could not revise the card.');
+    if (!res.pending || !res.draft) throw new Error('The AI could not produce a revised card.');
+    s.pendingPublish = { draft: res.draft, instruction };
+    s.messages.push({ role: 'assistant', content: String(res.response || 'Here is the revised card. Is it good now?'), previewDraft: res.preview || res.draft, images: (res.images || []).slice(0, 2) });
+    generalAiRefreshUi();
+  } catch (err) {
+    s.messages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
+  } finally {
+    s.busy = false;
+    generalAiRefreshUi();
+  }
+};
 
 async function generalAiImageGen(instruction, sentImages) {
   const s = _generalAiState;
@@ -6252,6 +6353,18 @@ window.generalAiUseGeneratedImage = async function(index) {
   if (!url) { showToast('Could not upload the generated image.', 'error'); generalAiRefreshUi(); return; }
   showToast('Image saved to showroom storage. Use it on any card or ask the AI to attach it.', 'success');
   generalAiRefreshUi();
+};
+
+window.generalAiPublishGeneratedImage = async function(index) {
+  const s = _generalAiState;
+  if (!s || s.busy || !Array.isArray(s.generatedImages)) return;
+  const dataUrl = s.generatedImages[index];
+  if (!dataUrl) return;
+  s.instruction = 'Publish this generated image in the matching section of my showroom.';
+  s.messages.push({ role: 'user', content: 'Publish this generated image in the matching section of my showroom.', images: [dataUrl] });
+  s.chatImages = [];
+  s.generatedImages = [];
+  await generalAiPublish('Publish this generated image in the matching section of my showroom.', [dataUrl]);
 };
 
 window.generalAiRegenerateImage = async function() {

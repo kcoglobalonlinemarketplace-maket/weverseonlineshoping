@@ -783,32 +783,158 @@ function showroomContext(products: any[]): string {
   const lines = Object.entries(cats).map(([c, v]) =>
     `${c}: ${v.count} item(s), price $${v.min || 0}–$${v.max || 0}. Examples: ${v.titles.join('; ') || '—'}`,
   );
+  lines.push('');
+  lines.push('WHAT LIVES IN EACH SECTION (scan this to find the right place):');
+  const inventory: Record<string, string[]> = {};
+  for (const p of products || []) {
+    const c = String(p?.category || 'Uncategorized');
+    const lt = String(p?.listing_type || '');
+    const pt = String(p?.property_type || '');
+    const t = String(p?.title || '');
+    const tag = lt === 'vehicle' ? `vehicle (${pt || '?'}): ${t}` : lt === 'property' ? `home (${pt || '?'}): ${t}` : `product: ${t}`;
+    inventory[c] = inventory[c] || [];
+    if (inventory[c].length < 6) inventory[c].push(tag);
+  }
+  for (const [c, tags] of Object.entries(inventory)) {
+    lines.push(`- ${c}: ${tags.join(' | ')}`);
+  }
   return lines.join('\n') || 'No products yet.';
 }
 
-// Publish a new product from an uploaded photo (generates a matching image and
-// fills every field so the new card matches the section of the showroom).
+// Picks the best EXISTING section for a new item so the AI never has to say
+// "I can't find a section". Trucks/cars go where other vehicles are, homes go
+// where other homes are, everything else goes to the closest fitting section.
+function resolveBestSection(products: any[], fields: Record<string, unknown>, fallbackCat: string): string {
+  const sections = [...new Set((products || []).map((p) => String(p?.category || '').trim()).filter(Boolean))];
+  if (!sections.length) return 'General';
+  const norm = (s: string) => s.toLowerCase();
+  const catNorm = norm(fallbackCat || '');
+  const exact = sections.find((s) => norm(s) === catNorm);
+  if (exact) return exact;
+
+  const listingType = String(fields.listing_type || '').toLowerCase();
+  const propType = String(fields.property_type || '');
+  const haystack = `${propType} ${fallbackCat}`;
+  const keywords = listingType === 'vehicle' || /car|truck|motor|vehicle|auto|boat|cycle|moto/i.test(haystack)
+    ? ['car', 'truck', 'vehicle', 'auto', 'motor', 'wheel', 'moto']
+    : listingType === 'property' || /home|house|villa|apartment|estate|real|building/i.test(haystack)
+      ? ['home', 'house', 'villa', 'apartment', 'real', 'estate', 'property', 'building']
+      : ['general', 'product', 'item', 'all', 'store', 'shop', 'accessories', 'fashion', 'electronics', 'furniture', 'decor'];
+
+  for (const kw of keywords) {
+    const hit = sections.find((s) => norm(s).includes(kw));
+    if (hit) return hit;
+  }
+  for (const kw of keywords) {
+    const hit = sections.find((s) =>
+      (products || []).some((p) => String(p?.category || '') === s && String(`${p?.title || ''} ${p?.subcategory || ''}`).toLowerCase().includes(kw)),
+    );
+    if (hit) return hit;
+  }
+  const counts = sections.map((s) => ({ s, n: (products || []).filter((p) => String(p?.category || '') === s).length }));
+  counts.sort((a, b) => b.n - a.n);
+  return counts[0].s;
+}
+
+// Only these columns exist on showroom_listings. Vehicle/property spec fields
+// that the AI produces (model, year, mileage, transmission, etc.) are folded
+// into the specifications jsonb so the row insert never hits an unknown column.
+const SHOWROOM_INSERT_COLUMNS = [
+  'property_id', 'listing_type', 'category', 'subcategory', 'title', 'description',
+  'price', 'price_period', 'currency', 'country', 'country_code', 'state', 'city', 'town',
+  'product_location', 'latitude', 'longitude', 'bedrooms', 'bathrooms', 'building_size',
+  'land_size', 'parking_spaces', 'property_type', 'furnished', 'listing_status', 'images',
+  'features', 'tags', 'highlights', 'seo_keywords', 'specifications', 'brand', 'color',
+  'size', 'condition', 'warranty', 'shipping_info', 'delivery_estimate', 'weight',
+  'dimensions', 'storage_options', 'ram_options', 'color_options', 'availability_status',
+  'stock_quantity', 'sku', 'is_active', 'is_featured', 'is_ai_generated', 'ai_generated_fields',
+  'rating', 'rating_count', 'favorite_count', 'review_count', 'video', 'video_url',
+  'approval_status', 'published_at',
+];
+
+const VEHICLE_SPEC_KEYS = [
+  'model', 'model_year', 'year', 'mileage', 'transmission', 'fuel_type', 'engine',
+  'horsepower', 'drive_type', 'body_type', 'payload_capacity', 'towing_capacity', 'vin',
+  'stock_number',
+];
+
+function sanitizeDraftForInsert(draft: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  const allowed = new Set(SHOWROOM_INSERT_COLUMNS);
+  const specs: Record<string, any> = { ...(draft.specifications && typeof draft.specifications === 'object' ? draft.specifications : {}) };
+  for (const [key, value] of Object.entries(draft)) {
+    if (key === 'specifications') continue;
+    if (allowed.has(key)) {
+      out[key] = value;
+    } else if (VEHICLE_SPEC_KEYS.includes(key)) {
+      specs[key] = value;
+    }
+  }
+  if (Object.keys(specs).length) out.specifications = specs;
+  return out;
+}
+
+// Build a full product card (fields + matching image) WITHOUT inserting, so the
+// admin can preview it first. mode 'publish' inserts the already-approved draft.
 async function runPublishFromImage(params: {
   serviceClient: ReturnType<typeof createClient>;
   settings: Record<string, unknown>;
   chat: (message: string, history: Array<{ role: string; content: string }>, maxTokens?: number) => Promise<{ response: string }>;
   message: string;
   images: string[];
+  mode?: 'preview' | 'publish';
+  draft?: Record<string, any> | null;
+  feedback?: string;
+  wantsNewSection?: boolean;
 }) {
-  const { serviceClient, settings, chat, message, images } = params;
+  const {
+    serviceClient, settings, chat, message, images,
+    mode = 'preview', draft = null, feedback = '', wantsNewSection = false,
+  } = params;
+
+  if (mode === 'publish' && draft) {
+    const insertRow = sanitizeDraftForInsert({ ...draft });
+    const { error: insertErr } = await serviceClient.from('showroom_listings').insert(insertRow);
+    if (insertErr) throw new Error(insertErr.message);
+    return {
+      property_id: draft.property_id,
+      title: draft.title,
+      category: draft.category,
+      images: Array.isArray(draft.images) ? draft.images : [],
+      response: `Done. I published **${draft.title}** (${draft.property_id}) in **${draft.category}**.`,
+    };
+  }
+
   const products = await fetchShowroomProducts(serviceClient, 200);
   const context = showroomContext(products);
 
-  let fields: Record<string, unknown> = {};
-  if (images.length) {
-    const visionPrompt = `You are the General AI showroom manager for the Weverse Online Shop. Look at the uploaded photo(s) and identify exactly what the item is.
+  let fields: Record<string, unknown> = { ...((draft && draft.fields) || {}) };
 
-The showroom already has these sections, so the new item must MATCH one of them (category and price range):
+  if (feedback && feedback.trim() && draft && draft.fields) {
+    const revisePrompt = `You are the General AI showroom manager for the Weverse Online Shop. An admin reviewed the product card draft below and gave this feedback: "${feedback.trim()}".
+
+Improve the card so it is professional and matches the showroom style. Keep the SAME item (same brand, model, year, type) unless the feedback says otherwise. Fix what the feedback asks for and polish everything else.
+
+The showroom already has these sections, so the card MUST belong to one of them (category + price range):
+${context}
+
+Current draft card:
+${JSON.stringify(draft.fields, null, 2)}
+
+Return a single valid JSON object (no markdown, no extra text) with the SAME keys as the draft: listing_type, property_type, title, description, category, subcategory, brand, model, year, mileage, price, stock_quantity, color, condition, rating (4.2-4.9), rating_count (40-250), favorite_count (20-150), warranty, features, tags, seo_keywords.
+COMPLETE CARD REQUIRED: ALWAYS fill brand, model, year, price, color, condition, rating, rating_count, favorite_count and warranty. Never leave price at 0. Category MUST be one of the existing sections above. Respond with valid JSON only.`;
+    const revResult = await chat(revisePrompt, [], 1500);
+    fields = { ...fields, ...(extractJsonFromAiText(revResult.response) || {}) };
+  } else if (!(draft && draft.fields)) {
+    if (images.length) {
+      const visionPrompt = `You are the General AI showroom manager for the Weverse Online Shop. Look at the uploaded photo(s) and identify exactly what the item is.
+
+The showroom already has these sections, so the new item must go into ONE of them (category and price range). Do NOT invent a new section — put the item in the existing section that holds the same kind of thing:
 ${context || 'No existing products yet.'}
 
 Card style of the showroom (match this format):
 - Products: professional e-commerce titles like "Brand Model — Key Feature".
-- Vehicles (cars, trucks, motorcycles, boats) live in the "Cars" section and their titles look like this: "Mercedes-Benz S-Class 2024 — Premium Sedan" (REAL brand + model + year, an em dash, then the body type). The description is 3-4 rich sentences with real specs (engine, horsepower, trim, interior, tech, safety, condition), and "features" is a list of real spec strings like "3.0L Inline-6 Turbo", "429 HP", "Nappa Leather".
+- Vehicles (cars, trucks, motorcycles, boats) live in the section that already holds vehicles (e.g. "Cars") and their titles look like this: "Mercedes-Benz S-Class 2024 — Premium Sedan" (REAL brand + model + year, an em dash, then the body type). The description is 3-4 rich sentences with real specs (engine, horsepower, trim, interior, tech, safety, condition), and "features" is a list of real spec strings like "3.0L Inline-6 Turbo", "429 HP", "Nappa Leather".
 
 Return a single valid JSON object (no markdown, no extra text):
 {
@@ -816,7 +942,7 @@ Return a single valid JSON object (no markdown, no extra text):
   "property_type": "for vehicles the body type: Sedan, SUV, Coupe, Hatchback, Truck, Van, Motorcycle, etc.; for homes the type: Single-Family Home, Apartment, Villa, Townhouse, etc.; otherwise null",
   "title": "title matching the showroom card style above",
   "description": "2-4 sentence persuasive description with real details",
-  "category": "Cars for vehicles, otherwise one of the existing sections above if it fits, otherwise a clear fitting category",
+  "category": "ONE of the exact existing section names from the list above (the one that holds this kind of item — trucks go where trucks are, cars where cars are, homes where homes are). NEVER invent a new section name.",
   "subcategory": "string or null",
   "brand": "ALWAYS the brand — read the badge/emblem if you can, otherwise identify the make from the design and badge shape",
   "model": "ALWAYS the model — best professional identification from the design",
@@ -844,22 +970,33 @@ COMPLETE CARD REQUIRED:
 - ALWAYS fill in a price — a realistic number that matches the section's price range above. Never omit the price and never use 0.
 - ALWAYS fill rating (4.2–4.9), rating_count (40–250), favorite_count (20–150) and warranty with realistic professional values so the card looks established and trusted — never 0 or empty.
 - Give the most accurate, professional identification you can so customers feel confident and comfortable buying.
-- The category, style, and price must match the showroom section it belongs to.
+- The category must be one of the EXISTING section names above and the price must match that section. Scan the section list and place the item in the exact section that already holds this kind of item.
 - Write a rich 3-4 sentence description with real specs (engine, horsepower, trim, interior, tech, safety, condition) and fill "features" with 6-10 realistic spec strings.
 - Respond with valid JSON only.`;
-    const visionResult = await runCloudVision({ settings, prompt: visionPrompt, images, maxTokens: 2048 });
-    fields = extractJsonFromAiText(visionResult.text) || {};
-  } else if (message.trim()) {
-    const prompt = `You are the General AI showroom manager for the Weverse Online Shop. Extract the item the admin wants from this request:
+      const visionResult = await runCloudVision({ settings, prompt: visionPrompt, images, maxTokens: 2048 });
+      fields = extractJsonFromAiText(visionResult.text) || {};
+    } else if (message.trim()) {
+      const prompt = `You are the General AI showroom manager for the Weverse Online Shop. Extract the item the admin wants from this request:
 Request: ${message.trim()}
 
-The showroom already has these sections, so pick a matching category and price range:
+The showroom already has these sections, so pick the EXISTING category and price range that fits. Do NOT invent a new section:
 ${context || 'No existing products yet.'}
 
-Return ONLY valid JSON (no markdown): { "listing_type" ("product" unless a vehicle like a car/truck/motorcycle), "property_type" (vehicle body type or null), "title", "description", "category", "subcategory", "brand", "model", "year", "mileage", "price", "stock_quantity", "color", "condition", "rating" (4.2-4.9), "rating_count" (40-250), "favorite_count" (20-150), "warranty", "features", "tags", "seo_keywords" }
+Return ONLY valid JSON (no markdown): { "listing_type" ("product" unless a vehicle like a car/truck/motorcycle), "property_type" (vehicle body type or null), "title", "description", "category" (ONE exact existing section name above), "subcategory", "brand", "model", "year", "mileage", "price", "stock_quantity", "color", "condition", "rating" (4.2-4.9), "rating_count" (40-250), "favorite_count" (20-150), "warranty", "features", "tags", "seo_keywords" }
 COMPLETE CARD REQUIRED: ALWAYS fill in the brand, model, year, price, rating, rating_count, favorite_count, warranty and full details so customers feel confident — never leave brand/model/year/price empty, never leave price at 0, and never leave rating or counts at 0. The price must be a realistic number that matches the section's price range above. Base everything on the request.`;
-    const providerResult = await chat(prompt, [], 1200);
-    fields = extractJsonFromAiText(providerResult.response) || {};
+      const providerResult = await chat(prompt, [], 1200);
+      fields = extractJsonFromAiText(providerResult.response) || {};
+    }
+  }
+
+  const listingType = String(fields.listing_type || '').toLowerCase();
+  const isVehicle = listingType === 'vehicle';
+  const isProperty = listingType === 'property';
+  const fieldCategory = String(fields.category || '').trim();
+
+  if (!wantsNewSection) {
+    const resolved = resolveBestSection(products, fields, fieldCategory || (isVehicle ? 'Cars' : isProperty ? 'Homes' : 'General'));
+    fields.category = resolved;
   }
 
   let generated: string[] = [];
@@ -884,9 +1021,6 @@ COMPLETE CARD REQUIRED: ALWAYS fill in the brand, model, year, price, rating, ra
 
   const propertyId = genPropertyId();
   const stats = professionalStats(propertyId);
-  const listingType = String(fields.listing_type || '').toLowerCase();
-  const isVehicle = listingType === 'vehicle';
-  const isProperty = listingType === 'property';
   const priceValues = (products || []).map((p) => Number(p?.price)).filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b);
   const fallbackPrice = priceValues.length ? priceValues[Math.floor(priceValues.length / 2)] : 499;
   const parsedPrice = Number(fields.price);
@@ -894,7 +1028,7 @@ COMPLETE CARD REQUIRED: ALWAYS fill in the brand, model, year, price, rating, ra
   const payload = {
     property_id: propertyId,
     listing_type: isVehicle ? 'vehicle' : isProperty ? 'property' : 'product',
-    category: isVehicle ? 'Cars' : String(fields.category || (isProperty ? 'Homes' : 'General')).trim(),
+    category: String(fields.category || 'General').trim(),
     subcategory: fields.subcategory ? String(fields.subcategory) : null,
     title: String(fields.title || 'New Product'),
     description: String(fields.description || `Added by General AI on ${new Date().toISOString()}.`),
@@ -930,14 +1064,26 @@ COMPLETE CARD REQUIRED: ALWAYS fill in the brand, model, year, price, rating, ra
     ai_generated_fields: ['title', 'description', 'category', 'images'],
   };
 
-  const { error: insertErr } = await serviceClient.from('showroom_listings').insert(payload);
-  if (insertErr) throw new Error(insertErr.message);
   return {
+    pending: true,
+    draft: payload,
+    preview: {
+      title: payload.title,
+      category: payload.category,
+      price: payload.price,
+      brand: payload.brand,
+      model: payload.model,
+      year: payload.year,
+      property_type: payload.property_type,
+      description: payload.description,
+      images: finalImages,
+      features: payload.features,
+    },
     property_id: propertyId,
     title: payload.title,
     category: payload.category,
     images: finalImages,
-    response: `Done. I published **${payload.title}** (${propertyId}) in **${payload.category}**${isVehicle ? ` as a ${String(fields.property_type || 'vehicle')}` : isProperty ? ` as a ${String(fields.property_type || 'home')}` : ''} with a matching photo. I checked your showroom first so it fits the section, and I only used details I could actually see in the photo.`,
+    response: `Here is the card I built for **${payload.title}** (${payload.category}, $${price}). It has a matching photo and full professional details. Is it good, or should I make it more professional?`,
   };
 }
 
@@ -1047,10 +1193,12 @@ Return ONLY valid JSON: { "good": [...], "issues": [{ "property_id", "issue", "s
     const listingType = String(p.listing_type || '').toLowerCase();
     const isVehicle = listingType === 'vehicle';
     const isProperty = listingType === 'property';
+    const sectionFromPlan = String(p.category || (isVehicle ? 'Cars' : isProperty ? 'Homes' : 'General')).trim();
+    const resolvedSection = resolveBestSection(products, { listing_type: listingType, property_type: p.property_type, category: sectionFromPlan }, sectionFromPlan);
     const payload = {
       property_id: propertyId,
       listing_type: isVehicle ? 'vehicle' : isProperty ? 'property' : 'product',
-      category: isVehicle ? 'Cars' : String(p.category || (isProperty ? 'Homes' : 'General')).trim(),
+      category: resolvedSection,
       subcategory: p.subcategory ? String(p.subcategory) : null,
       title: String(p.title || 'New Product').trim(),
       description: String(p.description || `Created by General AI on ${new Date().toISOString()}.`),
@@ -2052,7 +2200,12 @@ Deno.serve(async (req) => {
   if (action === 'general_publish') {
     const message = String(payload.message || '').trim();
     const images = Array.isArray(payload.images) ? (payload.images as string[]) : [];
-    if (!images.length && !message) return jsonResponse({ error: 'Attach a photo or describe the product.' }, 400);
+    const mode = String(payload.mode || 'preview').toLowerCase();
+    const draft = payload.draft || null;
+    const feedback = String(payload.feedback || '').trim();
+    const wantsNewSection = payload.wants_new_section === true || /\bcreate\b[\s\S]*\bnew\b[\s\S]*\b(section|category)\b/i.test(message);
+    if (mode === 'preview' && !images.length && !message) return jsonResponse({ error: 'Attach a photo or describe the product.' }, 400);
+    if (mode === 'publish' && !draft) return jsonResponse({ error: 'No approved draft to publish.' }, 400);
     try {
       const result = await runPublishFromImage({
         serviceClient,
@@ -2060,6 +2213,10 @@ Deno.serve(async (req) => {
         chat: runProviderChat,
         message,
         images,
+        mode: mode === 'publish' ? 'publish' : 'preview',
+        draft,
+        feedback,
+        wantsNewSection,
       });
       return jsonResponse({ success: true, ...result });
     } catch (err) {
@@ -2115,9 +2272,9 @@ Return ONLY valid JSON (no markdown): { "good": [...], "issues": [{ "property_id
 
     const products = await fetchShowroomProducts(serviceClient, 200);
     const context = showroomContext(products);
-    const prompt = `You are the General AI showroom manager for the Weverse Online Shop. You have FULL permission over the whole showroom, you never refuse, and you can fix anything WITHOUT coding. You also answer friendly like a chat assistant.
+    const prompt = `You are the General AI showroom manager for the Weverse Online Shop. You have FULL permission over the whole showroom, you never refuse, and you can fix anything WITHOUT coding. You also answer friendly like a chat assistant. You ALWAYS scan the showroom first so you know exactly where every kind of item lives (trucks, cars, houses, products), and you ALWAYS place new items in the EXISTING section that already holds that kind of item. You NEVER say "I can't find the section" — you scan the list, find the right place, and use it. You NEVER create new sections unless the admin explicitly asked you to "create a new section".
 
-SHOWROOM (${products.length} products):
+SHOWROOM (${products.length} products) — scan this so you know where everything lives:
 ${context}
 FULL LIST (id, title, category, subcategory, price, active, images):
 ${JSON.stringify(products.map((x) => ({
@@ -2140,7 +2297,7 @@ Actions and params:
 - delete_duplicates: params: { "category": "cars" or null for whole showroom, "by": "title" or "image" }.
 - delete_products: params: { "property_ids": ["KCO-..."] }.
 - rename_category: params: { "from": "current section name", "to": "new section name" }.
-- create_product: params: { "title", "category", "price", "stock_quantity", "description", "listing_type" ("product" | "vehicle" for cars/trucks/motorcycles | "property" for homes), "property_type" ("Sedan"/"SUV"/"Truck"/"Motorcycle" for vehicles, "Single-Family Home"/"Apartment"/"Villa" for homes), "brand", "bedrooms", "bathrooms", "building_size", "land_size", "rating" (4.2-4.9), "rating_count", "favorite_count", "warranty" }.
+- create_product: params: { "title", "category" (MUST be one of the exact existing section names in the list above — scan the list and put trucks/cars where the other vehicles are, homes where the other homes are; never invent a new section), "price", "stock_quantity", "description", "listing_type" ("product" | "vehicle" for cars/trucks/motorcycles | "property" for homes), "property_type" ("Sedan"/"SUV"/"Truck"/"Motorcycle" for vehicles, "Single-Family Home"/"Apartment"/"Villa" for homes), "brand", "model", "year", "bedrooms", "bathrooms", "building_size", "land_size", "rating" (4.2-4.9), "rating_count", "favorite_count", "warranty" }.
 - regenerate_product: params: { "property_id": "...", "instruction": "what new image to make" }.
 - set_fields: params: { "property_id": "...", "fields": { "title": "...", "price": 123, "images": [...] } } — you can edit ANY card field (except property_id) on products, vehicles, and property listings.
 - publish_product: params: { "property_id": "..." }.
