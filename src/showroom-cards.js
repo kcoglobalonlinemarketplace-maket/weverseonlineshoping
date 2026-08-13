@@ -149,10 +149,10 @@ const REAL_ESTATE_SECTIONS = [
   },
   {
     id: 'heavy-equipment', label: 'Modern Home Appliances', icon: 'refrigerator',
-    subtitle: 'World-famous washing machines, TVs, kitchen, and smart home care appliances.',
+    subtitle: '20 world-famous washing machines, TVs, kitchen, and smart home care appliances.',
     rows: [
-      { id: 'appliances-kitchen-laundry', label: 'Kitchen, Laundry & Cold', icon: 'microwave', ids: ['KCO-002001', 'KCO-002006', 'KCO-002007', 'KCO-002009', 'KCO-002010'] },
-      { id: 'appliances-electronics-care', label: 'Electronics & Home Care', icon: 'sparkles', ids: ['KCO-002002', 'KCO-002003', 'KCO-002004', 'KCO-002005', 'KCO-002008'] },
+      { id: 'appliances-kitchen-laundry', label: 'Kitchen, Laundry & Cold', icon: 'microwave', ids: ['KCO-002001', 'KCO-002006', 'KCO-002007', 'KCO-002009', 'KCO-002010', 'KCO-002012', 'KCO-002013', 'KCO-002014', 'KCO-002015', 'KCO-002018', 'KCO-002020'] },
+      { id: 'appliances-electronics-care', label: 'Electronics & Home Care', icon: 'sparkles', ids: ['KCO-002002', 'KCO-002003', 'KCO-002004', 'KCO-002005', 'KCO-002008', 'KCO-002011', 'KCO-002016', 'KCO-002017', 'KCO-002019'] },
     ],
   },
 ];
@@ -345,7 +345,7 @@ export function renderCard(listing) {
   const listingId = listing.id || listing.property_id;
   const cover = listing.images?.[0] || FALLBACK_IMG;
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
-  const statusBadge = listing.listing_type === 'product' ? 'New' : (listing.listing_status === 'rent' ? 'For Rent' : 'For Sale');
+  const statusBadge = listing.listing_type === 'product' ? 'New' : (isProperty ? 'For Sale' : '');
 
   // AI-generated rating: show estimated rating with "AI" label when no real reviews exist
   const hasRealReviews = (listing.rating_count || 0) > 0;
@@ -374,12 +374,6 @@ export function renderCard(listing) {
     if (isMotorhome) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="moon" class="w-3.5 h-3.5"></i>Sleeps ${listing.sleeping_capacity}</span>`);
     if (isCar) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="fuel" class="w-3.5 h-3.5"></i>${listing.fuel_type}</span>`);
     if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
-  } else if (listing.listing_type === 'product') {
-    const specs = [];
-    if (listing.brand) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="factory" class="w-3.5 h-3.5"></i>${listing.brand}</span>`);
-    if (listing.color) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="palette" class="w-3.5 h-3.5"></i>${listing.color}</span>`);
-    if (listing.size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${listing.size}</span>`);
-    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2 flex-wrap">${specs.join('')}</div>`;
   }
 
   // Rating display: real reviews take priority, estimate shown without label
@@ -389,26 +383,7 @@ export function renderCard(listing) {
   }
 
   // Product badges (New Arrival, Best Seller, etc.)
-  const badges = listing.tags || [];
-  let badgesHtml = '';
-  if (badges.length > 0) {
-    const badgeColors = {
-      'New Arrival': 'bg-emerald-500 text-black',
-      'Best Seller': 'bg-amber-500 text-black',
-      'Hot Deal': 'bg-red-500 text-white',
-      'Featured': 'bg-blue-500 text-white',
-      'Limited Stock': 'bg-amber-500 text-black',
-    };
-    const badgeTags = badges.slice(0, 2).map((b) => {
-      const color = badgeColors[b] || 'bg-gray-700 text-white';
-      return `<span class="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${color}">${b}</span>`;
-    }).join('');
-    badgesHtml = `<div class="absolute top-2 right-2 flex flex-col gap-1 items-end">${badgeTags}</div>`;
-  }
-
-  // Availability status
-  const availability = listing.availability_status || 'In Stock';
-  const availColor = availability === 'In Stock' ? 'text-emerald-400' : availability === 'Pre-order' ? 'text-blue-400' : 'text-amber-400';
+  const badgesHtml = '';
 
   // Map preview strip for property cards (rendered from listing coordinates).
   let mapPreviewHtml = '';
@@ -432,7 +407,7 @@ export function renderCard(listing) {
       <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-      <span class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>
+      ${statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>` : ''}
       ${badgesHtml}
     </div>
     <div class="p-4 flex flex-col flex-1">
@@ -443,17 +418,14 @@ export function renderCard(listing) {
         <span class="text-lg font-black text-blue-400">${price}</span>
         ${ratingStars}
       </div>
-      <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-800/60">
-        <span class="text-[11px] font-bold ${availColor}">${availability}</span>
-        <div class="flex items-center gap-1.5">
-          <button class="share-btn shrink-0 w-8 h-8 bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
+      <div class="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-gray-800/60">
+        <button class="share-btn shrink-0 w-8 h-8 bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
             <i data-lucide="share-2" class="w-4 h-4"></i>
           </button>
           <button class="wishlist-btn ${wishSaved ? 'saved bg-red-500/20 text-red-400 border border-red-500/40' : ''} shrink-0 w-8 h-8 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}" aria-label="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}">
             <i data-lucide="heart" class="w-4 h-4 ${wishSaved ? 'fill-red-500 text-red-500' : ''}"></i>
           </button>
         </div>
-      </div>
       ${mapPreviewHtml}
       <div class="flex gap-2 mt-2.5">
         <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
@@ -521,7 +493,7 @@ function showToast(msg) {
 function scrollRow(row, dir) {
   const track = row.querySelector('.hscroll');
   if (!track) return;
-  track.scrollBy({ left: dir * 220 * 3, behavior: 'smooth' });
+  track.scrollBy({ left: dir * 260 * 3, behavior: 'smooth' });
 }
 
 function renderRow(rowDef) {
