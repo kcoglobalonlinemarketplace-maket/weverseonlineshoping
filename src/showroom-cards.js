@@ -801,7 +801,7 @@ function buildAllHousesOverlay() {
       <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${items.length} Properties</span>
     `;
     const grid = document.createElement('div');
-    grid.className = 'flex flex-wrap gap-4';
+    grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
     sec.appendChild(head);
     sec.appendChild(grid);
     body.appendChild(sec);
@@ -940,7 +940,7 @@ function buildAllVehiclesOverlay() {
       <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300">${items.length} Vehicles</span>
     `;
     const grid = document.createElement('div');
-    grid.className = 'flex flex-wrap gap-4';
+    grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
     sec.appendChild(head);
     sec.appendChild(grid);
     body.appendChild(sec);
