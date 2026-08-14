@@ -486,6 +486,14 @@ export function renderCard(listing) {
     </div>
   `;
 
+  attachCardListeners(card, listing);
+
+  return card;
+}
+
+// Wire the per-card actions onto an existing card element. Used by renderCard
+// and by the pre-render adoption pass (the static cards in index.html).
+function attachCardListeners(card, listing) {
   card.addEventListener('click', (e) => {
     if (e.target.closest('button')) return;
     window.location.href = `/details.html?id=${listing.property_id}`;
@@ -494,8 +502,6 @@ export function renderCard(listing) {
   card.querySelector('.wishlist-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleWishlist(listing, e.currentTarget); });
   card.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
   card.querySelector('.details-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/details.html?id=${listing.property_id}`; });
-
-  return card;
 }
 
 async function handleBuyNow(listing) {
@@ -730,16 +736,9 @@ function renderWomanRow(rowDef) {
 
   return row;
 }
-function renderRow(rowDef) {
-  if (rowDef.allPhones) {
-    return renderPhoneBrandsRow(rowDef);
-  }
-  if (rowDef.allMen) {
-    return renderMenRow(rowDef);
-  }
-  if (rowDef.allWomen) {
-    return renderWomanRow(rowDef);
-  }
+// Resolve the exact listings a row displays (seeds + generated catalog items).
+// Shared by renderRow and the pre-render adoption pass so both use identical data.
+function getRowListings(rowDef) {
   let listings;
   if (rowDef.allTrucks) {
     listings = TRUCK_LISTINGS;
@@ -757,6 +756,20 @@ function renderRow(rowDef) {
   if (catalogExtra.length > 0) {
     listings = [...listings, ...catalogExtra];
   }
+  return listings;
+}
+
+function renderRow(rowDef) {
+  if (rowDef.allPhones) {
+    return renderPhoneBrandsRow(rowDef);
+  }
+  if (rowDef.allMen) {
+    return renderMenRow(rowDef);
+  }
+  if (rowDef.allWomen) {
+    return renderWomanRow(rowDef);
+  }
+  const listings = getRowListings(rowDef);
   const hasItems = listings.length > 0;
   const isGrid = rowDef.layout === 'grid';
 
@@ -1600,7 +1613,19 @@ function renderGrid(gridName) {
   const container = document.querySelector(`[data-showroom-grid="${gridName}"]`);
   if (!container || container.dataset.initialized) return;
   container.dataset.initialized = 'true';
-  container.innerHTML = '';
+
+  // Static content may already be baked into index.html (build-time
+  // pre-render). When present we adopt it in place instead of wiping it,
+  // so there is never a blank-grid flash and no re-render.
+  const prerendered = container.dataset.prerendered === 'true';
+  delete container.dataset.prerendered;
+  if (!prerendered) container.innerHTML = '';
+
+  const preRenderedRowIds = new Set();
+  if (prerendered) {
+    container.querySelectorAll('.showroom-row[data-row-id]').forEach(r => preRenderedRowIds.add(r.dataset.rowId));
+  }
+  const hasRow = (id) => preRenderedRowIds.has(id);
 
   const sections = gridName === 'real-estate' ? REAL_ESTATE_SECTIONS : MARKETPLACE_SECTIONS;
   const accent = gridName === 'real-estate' ? 'blue' : 'emerald';
@@ -1612,11 +1637,14 @@ function renderGrid(gridName) {
     for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'phones', 'men', 'woman', 'trucks-buses', 'heavy-equipment']) {
       const section = byId.get(id);
       if (!section) continue;
-      const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id) || MEN_SECTION_IDS.has(id) || WOMAN_SECTION_IDS.has(id);
-      container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
-      if (id === 'pets') container.appendChild(createViewAllDogsButton());
-      if (id === 'motorhomes-boats') container.appendChild(createViewAllHousesButton());
-      if (id === 'cars') container.appendChild(createViewAllCarsButton());
+      const alreadyRendered = section.rows.some(r => hasRow(r.id));
+      if (!alreadyRendered) {
+        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id) || MEN_SECTION_IDS.has(id) || WOMAN_SECTION_IDS.has(id);
+        container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
+      }
+      if (id === 'pets' && !container.querySelector('[data-viewall="dogs"]')) container.appendChild(createViewAllDogsButton());
+      if (id === 'motorhomes-boats' && !container.querySelector('[data-viewall="houses"]')) container.appendChild(createViewAllHousesButton());
+      if (id === 'cars' && !container.querySelector('[data-viewall="cars"]')) container.appendChild(createViewAllCarsButton());
       if (id === 'phones') container.appendChild(createViewAllPhonesButton());
       if (id === 'men') container.appendChild(createViewAllMenButton());
       if (id === 'woman') container.appendChild(createViewAllWomenButton());
@@ -1631,6 +1659,46 @@ function renderGrid(gridName) {
   }
 
   if (window.lucide) lucide.createIcons();
+  adoptPrerendered(container);
+}
+
+// Find a row definition by its id across both showroom sections.
+function findRowDef(id) {
+  for (const s of [...REAL_ESTATE_SECTIONS, ...MARKETPLACE_SECTIONS]) {
+    for (const r of s.rows) if (r.id === id) return r;
+  }
+  return null;
+}
+
+// Wire up the static pre-rendered rows/buttons baked into index.html at build
+// time so every card, scroll arrow, and "View All" button behaves exactly like
+// a freshly rendered one. JS-rendered elements are left untouched.
+function adoptPrerendered(container) {
+  container.querySelectorAll('.showroom-row[data-prerendered]').forEach(row => {
+    const rowDef = findRowDef(row.dataset.rowId);
+    if (!rowDef) return;
+    row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
+    row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
+    const listings = getRowListings(rowDef);
+    const track = row.querySelector('.hscroll, .grid');
+    if (track) {
+      track.querySelectorAll('.showroom-card').forEach(card => {
+        const listing = listings.find(l => (l.id || l.property_id) === card.dataset.id);
+        if (listing) attachCardListeners(card, listing);
+      });
+    }
+    delete row.dataset.prerendered;
+  });
+
+  container.querySelectorAll('[data-viewall][data-prerendered]').forEach(wrap => {
+    const kind = wrap.dataset.viewall;
+    const btn = wrap.querySelector('button');
+    if (!btn) return;
+    if (kind === 'dogs') btn.addEventListener('click', openAllDogsView);
+    else if (kind === 'houses') btn.addEventListener('click', openAllHousesView);
+    else if (kind === 'cars') btn.addEventListener('click', openAllCarsView);
+    delete wrap.dataset.prerendered;
+  });
 }
 
 // Render every showroom grid. Preserves each row's horizontal scroll

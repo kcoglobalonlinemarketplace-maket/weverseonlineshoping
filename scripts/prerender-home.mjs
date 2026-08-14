@@ -1,0 +1,375 @@
+// scripts/prerender-home.mjs — Build-time home page pre-render.
+// Bakes the very first visible content (hero slide 0 + first showroom
+// sections) into index.html as static HTML so the browser paints it before
+// any JS runs. Replicates renderCard/renderRow/renderSection markup using the
+// same pure data modules, so the baked output matches the runtime render.
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
+const INDEX_HTML = path.join(ROOT, 'index.html');
+
+const fileUrl = (p) => pathToFileURL(p).href;
+
+// catalog-hidden-store.js reads localStorage at import time.
+const store = new Map();
+globalThis.localStorage = {
+  getItem: (k) => (store.has(k) ? store.get(k) : null),
+  setItem: (k, v) => store.set(k, String(v)),
+  removeItem: (k) => store.delete(k),
+  clear: () => store.clear(),
+};
+
+const { formatPrice, formatTruckPrice, getListingsByIds, cleanListing } = await import(
+  fileUrl(path.join(ROOT, 'src/showroom-data.js'))
+);
+const { TRUCK_LISTINGS } = await import(fileUrl(path.join(ROOT, 'src/truck-data.js')));
+const { MOTORHOME_LISTINGS } = await import(fileUrl(path.join(ROOT, 'src/motorhome-data.js')));
+const { CAR_LISTINGS } = await import(fileUrl(path.join(ROOT, 'src/car-data.js')));
+const { generateProduct, getCatalogCategory, isCatalogListingHidden } = await import(
+  fileUrl(path.join(ROOT, 'src/catalog.js'))
+);
+
+const FALLBACK_IMG = '/fallback.svg';
+const GENERATED_PER_ROW = 10;
+
+const ROW_TO_CATALOG_SLUG = {
+  'affordable-homes': 'real-estate',
+  'apartment-homes': 'real-estate',
+  'cape-cod': 'real-estate',
+  'beach-houses': 'real-estate',
+};
+
+const HOUSE_SECTION_IDS = new Set(['local-houses', 'modern-luxury', 'commercial-land']);
+const VEHICLE_SECTION_IDS = new Set(['cars', 'trucks-buses']);
+
+// First showroom sections shown on the homepage (subset of REAL_ESTATE_SECTIONS).
+const PRE_RENDER_SECTIONS = [
+  {
+    id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
+    subtitle: 'Affordable homes, apartments, and land for sale or rent near you.',
+    rows: [
+      { id: 'affordable-homes', label: 'Affordable Homes', icon: 'home', ids: ['KCO-000001', 'KCO-000013', 'KCO-000016'] },
+      { id: 'apartment-homes', label: 'Apartments', icon: 'building', ids: ['KCO-000006'] },
+      { id: 'cape-cod', label: 'Cape Cod & Duplex', icon: 'house', ids: ['KCO-000003', 'KCO-000004'] },
+      { id: 'beach-houses', label: 'Beach Houses', icon: 'palmtree', ids: ['KCO-000009', 'KCO-000015'] },
+    ],
+  },
+  {
+    id: 'pets', label: 'Beautiful Dogs', icon: 'paw-print',
+    subtitle: '30 gorgeous, healthy dog breeds — new beauties first, all in one line.',
+    rows: [
+      { id: 'pets-all', label: 'Beautiful Dogs', icon: 'paw-print', ids: ['KCO-003019', 'KCO-003020', 'KCO-003021', 'KCO-003022', 'KCO-003023', 'KCO-003024', 'KCO-003025', 'KCO-003026', 'KCO-003027', 'KCO-003028', 'KCO-003029', 'KCO-003030', 'KCO-003031', 'KCO-003032', 'KCO-003033', 'KCO-003001', 'KCO-003002', 'KCO-003003', 'KCO-003004', 'KCO-003005', 'KCO-003006', 'KCO-003007', 'KCO-003008', 'KCO-003009', 'KCO-003010', 'KCO-003011', 'KCO-003012', 'KCO-003013', 'KCO-003014', 'KCO-003015'] },
+    ],
+  },
+  {
+    id: 'motorhomes-boats', label: 'Motorhomes & Boats', icon: 'bus',
+    subtitle: 'Luxury motorhomes, RVs, and marine vehicles for travel and adventure.',
+    rows: [
+      { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
+    ],
+  },
+  {
+    id: 'cars', label: 'Cars', icon: 'car-front',
+    subtitle: 'Latest-model cars from trusted sellers worldwide.',
+    rows: [
+      { id: 'all-cars', label: 'All Cars', icon: 'car-front', allCars: true },
+    ],
+  },
+];
+
+function rowSeed(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % 997;
+}
+
+function getCatalogListingsForRow(rowDef, existingIds) {
+  const slug = ROW_TO_CATALOG_SLUG[rowDef.id];
+  if (!slug) return [];
+  const def = getCatalogCategory(slug);
+  if (!def) return [];
+  const seen = new Set(existingIds);
+  const cap = Math.min(GENERATED_PER_ROW, def.count);
+  const out = [];
+  const seed = rowSeed(rowDef.id);
+  for (let i = 0; i < cap; i++) {
+    const idx = (seed + i * 53) % def.count;
+    const item = generateProduct(slug, idx);
+    if (item && !seen.has(item.property_id)) {
+      seen.add(item.property_id);
+      if (isCatalogListingHidden(item.property_id)) continue;
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+function getRowListings(rowDef) {
+  let listings;
+  if (rowDef.allTrucks) listings = TRUCK_LISTINGS;
+  else if (rowDef.allMotorhomes) listings = MOTORHOME_LISTINGS;
+  else if (rowDef.allCars) listings = CAR_LISTINGS;
+  else listings = getListingsByIds(rowDef.ids);
+  let catalogExtra = [];
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars) {
+    catalogExtra = getCatalogListingsForRow(rowDef, listings.map((l) => l.property_id));
+  }
+  if (catalogExtra.length > 0) listings = [...listings, ...catalogExtra];
+  return listings;
+}
+
+function flagEmoji(countryCode) {
+  if (!countryCode || countryCode.length !== 2) return '';
+  const codePoints = countryCode.toUpperCase().split('').map((c) => 0x1f1e6 + c.charCodeAt(0) - 65);
+  return String.fromCodePoint(...codePoints);
+}
+
+// card markup identical to renderCard in src/showroom-cards.js (no listeners).
+function cardHtml(listing) {
+  cleanListing(listing);
+
+  const isProperty = listing.listing_type === 'property';
+  const isPet = listing.listing_type === 'pet';
+  const isTruck = listing.listing_type === 'vehicle' && listing.category === 'Trucks';
+  const isMotorhome = listing.listing_type === 'vehicle' && listing.category === 'Motorhomes';
+  const isCar = listing.listing_type === 'vehicle' && listing.category === 'Cars';
+  const listingId = listing.id || listing.property_id;
+  const cover = listing.images?.[0] || FALLBACK_IMG;
+  const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
+  const statusBadge = listing.listing_type === 'product' ? 'New' : (isProperty || isPet ? 'For Sale' : '');
+
+  const hasRealReviews = (listing.rating_count || 0) > 0;
+  const aiEstimatedRating = listing.is_ai_generated && !hasRealReviews ? 4.5 : 0;
+  const displayRating = hasRealReviews ? listing.rating : aiEstimatedRating;
+  const reviewCount = listing.review_count || listing.rating_count || 0;
+
+  let locationHtml = '';
+  if (isProperty) {
+    const flag = flagEmoji(listing.country_code);
+    const parts = [listing.city, listing.state].filter(Boolean);
+    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="map" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${flag} ${parts.join(', ') || listing.country}</span></div>`;
+  } else if (isPet) {
+    const flag = flagEmoji(listing.country_code);
+    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="paw-print" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${flag} ${listing.country}</span></div>`;
+  }
+
+  let specsHtml = '';
+  if (isProperty) {
+    const specs = [];
+    if (listing.bedrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i>${listing.bedrooms}</span>`);
+    if (listing.bathrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${listing.bathrooms}</span>`);
+    if (listing.land_size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${listing.land_size}</span>`);
+    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
+  } else if (isTruck || isMotorhome || isCar) {
+    const specs = [];
+    specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${listing.model_year}</span>`);
+    specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="gauge" class="w-3.5 h-3.5"></i>${listing.mileage}</span>`);
+    if (isMotorhome) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="moon" class="w-3.5 h-3.5"></i>Sleeps ${listing.sleeping_capacity}</span>`);
+    if (isCar) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="fuel" class="w-3.5 h-3.5"></i>${listing.fuel_type}</span>`);
+    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
+  }
+
+  let ratingStars = '';
+  if (displayRating > 0) {
+    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
+  }
+
+  let mapPreviewHtml = '';
+  if (isProperty && listing.latitude && listing.longitude) {
+    const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${listing.latitude},${listing.longitude}&zoom=13&size=600x160&markers=${listing.latitude},${listing.longitude},color-red&maptype=mapnik`;
+    mapPreviewHtml = `
+      <div class="relative mt-2.5 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+        <img src="${mapUrl}" alt="Map location for ${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null;this.style.display='none'">
+        <span class="absolute top-1 left-1 bg-black/70 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1"><i data-lucide="map" class="w-3 h-3"></i>Map · ${listing.city || listing.town || ''}</span>
+      </div>`;
+  }
+
+  return `<div class="showroom-card group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col cursor-pointer" data-id="${listingId}">
+    <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
+      <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
+           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+           onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>` : ''}
+    </div>
+    <div class="p-4 flex flex-col flex-1">
+      <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5 line-clamp-2">${listing.title}</h3>
+      ${locationHtml}
+      ${specsHtml}
+      <div class="flex items-center justify-between mt-auto pt-2">
+        <span class="text-lg font-black text-blue-600">${price}</span>
+        ${ratingStars}
+      </div>
+      <div class="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-gray-100">
+        <button class="share-btn shrink-0 w-8 h-8 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+        </button>
+        <button class="wishlist-btn shrink-0 w-8 h-8 bg-gray-100 hover:bg-red-50 hover:text-red-500 text-gray-500 rounded-lg transition flex items-center justify-center" title="Add to wishlist" aria-label="Add to wishlist">
+          <i data-lucide="heart" class="w-4 h-4"></i>
+        </button>
+      </div>
+      ${mapPreviewHtml}
+      <div class="flex gap-2 mt-2.5">
+        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
+          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
+        </button>
+        <button class="details-btn flex-1 min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
+          <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// row markup identical to renderRow in src/showroom-cards.js.
+function rowHtml(rowDef) {
+  const listings = getRowListings(rowDef);
+  const hasItems = listings.length > 0;
+  const isGrid = rowDef.layout === 'grid';
+
+  let header = `
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-600"></i>
+        </span>
+        <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
+        ${hasItems && isGrid ? `<span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${listings.length} Items</span>` : ''}
+      </div>
+      <div class="flex items-center gap-1 ${hasItems && !isGrid ? '' : 'hidden'}">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>`;
+
+  let track;
+  if (hasItems) {
+    track = `<div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1'}">${listings.map(cardHtml).join('')}</div>`;
+  } else {
+    track = `<div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1'}"><div class="flex items-center justify-center w-full py-6"><span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-300 rounded-xl px-5 py-3">Coming Soon</span></div></div>`;
+  }
+
+  return `<div class="showroom-row relative" data-row-id="${rowDef.id}"${isGrid ? ' data-layout="grid"' : ''} data-prerendered="1">${header}${track}</div>`;
+}
+
+// section markup identical to renderSection in src/showroom-cards.js.
+function countSectionItems(section) {
+  let count = 0;
+  section.rows.forEach((r) => {
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : getListingsByIds(r.ids);
+    count += base.length;
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars) {
+      count += getCatalogListingsForRow(r, base.map((l) => l.property_id)).length;
+    }
+  });
+  return count;
+}
+
+function sectionHtml(section, maxRows) {
+  const itemCount = countSectionItems(section);
+  const header = `
+    <div class="relative pt-2 pb-3">
+      <div class="flex items-center gap-3.5">
+        <div class="p-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 shrink-0" style="box-shadow:0 0 22px rgba(59,130,246,0.25)">
+          <i data-lucide="${section.icon}" class="w-6 h-6 text-blue-300"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
+            <span class="bg-gradient-to-r from-blue-200 via-white to-blue-300 bg-clip-text text-transparent">${section.label}</span>
+          </h3>
+          <p class="text-gray-400 text-xs sm:text-[13px] leading-tight mt-1 truncate">${section.subtitle}</p>
+        </div>
+        <span class="hidden sm:inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${itemCount} Items</span>
+      </div>
+      <div class="mt-3 h-px bg-gradient-to-r from-blue-500/40 via-gray-700/40 to-transparent"></div>
+    </div>`;
+
+  const rowsToShow = (maxRows && maxRows > 0) ? section.rows.slice(0, maxRows) : section.rows;
+  return `<div class="showroom-section space-y-3">${header}${rowsToShow.map(rowHtml).join('')}</div>`;
+}
+
+function viewAllButton(kind) {
+  const parts = {
+    dogs: { label: 'View All Dogs <span class="text-lg">→ 🐶</span>', cls: 'view-all-dogs-btn bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-600/30' },
+    houses: { label: 'View All Houses &amp; Motorhomes Worldwide <span class="text-lg">→ 🌎</span>', cls: 'view-all-houses-btn bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-600/30' },
+    cars: { label: 'View all Cars <span class="text-lg">→ 🚗</span>', cls: 'view-all-cars-btn bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-600/30' },
+  }[kind];
+  if (!parts) return '';
+  return `<div class="flex justify-center py-1" data-viewall="${kind}" data-prerendered="1">
+    <button type="button" class="${parts.cls} btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl text-white text-base font-extrabold tracking-wide shadow-lg transition active:scale-95">${parts.label}</button>
+  </div>`;
+}
+
+// Hero slide 0 — identical to the first slide renderCarousel builds.
+function heroHtml() {
+  const V = 'https://videos.pexels.com/video-files/';
+  const BRAND = 'Weverse Online Shop';
+  const slide = { video: V + '6618332/6618332-sd_640_360_24fps.mp4', badge: 'Global Logistics', titles: { en: BRAND + ' \u2013 Global Logistics & Shipping' }, descs: { en: 'DHL, FedEx, UPS & Aramex \u2014 delivering across 200+ countries with cargo ships, aircraft, and distribution hubs.' } };
+  return `<div class="carousel-slide active-slide" id="slide-0">
+  <video class="hero-video" muted loop playsinline webkit-playsinline preload="metadata" data-src="${slide.video}" style="width:100%;height:100%;object-fit:cover;object-position:center"></video>
+  <div class="absolute inset-0 z-10 flex flex-col justify-end items-center text-center p-6 sm:p-10 pb-16">
+    <span class="inline-block bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2 fade-in-up delay-1">${slide.badge}</span>
+    <h2 id="slide-title-0" class="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-2 drop-shadow-2xl fade-in-up delay-2">${slide.titles.en}</h2>
+    <p id="slide-desc-0" class="max-w-xl text-white/85 text-xs sm:text-sm mb-4 leading-relaxed fade-in-up delay-2">${slide.descs.en}</p>
+  </div>
+</div>`;
+}
+
+function buildGridHtml() {
+  const order = ['local-houses', 'pets', 'motorhomes-boats', 'cars'];
+  const byId = new Map(PRE_RENDER_SECTIONS.map((s) => [s.id, s]));
+  let html = '';
+  for (const id of order) {
+    const section = byId.get(id);
+    if (!section) continue;
+    const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
+    html += sectionHtml(section, isTeaser ? 1 : undefined);
+    if (id === 'pets') html += viewAllButton('dogs');
+    if (id === 'motorhomes-boats') html += viewAllButton('houses');
+    if (id === 'cars') html += viewAllButton('cars');
+  }
+  return html;
+}
+
+function main() {
+  let html = fs.readFileSync(INDEX_HTML, 'utf8');
+  const gridHtml = buildGridHtml();
+  const carouselHtml = heroHtml();
+
+  // Remove any previously baked blocks so the script is idempotent.
+  html = html.replace(/<!--PRERENDER:carousel-->[\s\S]*?<!--\/PRERENDER:carousel-->/g, '');
+  html = html.replace(/<!--PRERENDER:grid-->[\s\S]*?<!--\/PRERENDER:grid-->/g, '');
+  // Collapse the emptied containers back to their pristine empty form.
+  html = html.replace(/(<div id="carousel-slides" class="relative w-full h-full">)\s*(<\/div>)/, '$1$2');
+  html = html.replace(/(<div data-showroom-grid="real-estate" class="px-4 sm:px-6 lg:px-8 py-3\.5 space-y-4")(\s+data-prerendered="true")?>[\s\S]*?<\/div>/, (m, g1) => g1 + '></div>');
+
+  const carouselMatch = html.match(/<div id="carousel-slides" class="relative w-full h-full"><\/div>/);
+  if (!carouselMatch) throw new Error('carousel-slides container not found in index.html');
+  const gridMatch = html.match(/<div data-showroom-grid="real-estate" class="px-4 sm:px-6 lg:px-8 py-3\.5 space-y-4"><\/div>/);
+  if (!gridMatch) throw new Error('real-estate grid container not found in index.html');
+
+  const carouselBlock = `<!--PRERENDER:carousel-->\n        ${carouselHtml}\n      <!--/PRERENDER:carousel-->`;
+  const gridBlock = `<!--PRERENDER:grid-->\n        ${gridHtml}\n      <!--/PRERENDER:grid-->`;
+
+  html = html
+    .replace(carouselMatch[0], `<div id="carousel-slides" class="relative w-full h-full">\n        ${carouselBlock}\n      </div>`)
+    .replace(
+      gridMatch[0],
+      `<div data-showroom-grid="real-estate" class="px-4 sm:px-6 lg:px-8 py-3.5 space-y-4" data-prerendered="true">\n        ${gridBlock}\n      </div>`
+    );
+
+  fs.writeFileSync(INDEX_HTML, html, 'utf8');
+  console.log(
+    `pre-render ok — hero slide + ${gridHtml.split('data-row-id=').length - 1} rows baked into index.html`
+  );
+}
+
+main();
+
