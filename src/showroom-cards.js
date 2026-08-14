@@ -4,6 +4,7 @@ import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
 import { PHONE_LISTINGS, getPhoneBrandGroups } from './phone-data.js';
 import { MEN_LISTINGS } from './men-data.js';
+import { WOMAN_LISTINGS } from './woman-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
@@ -157,6 +158,13 @@ const REAL_ESTATE_SECTIONS = [
     ],
   },
   {
+    id: 'woman', label: 'Woman Love 💕', icon: 'heart',
+    subtitle: '149 beautiful makeup, skincare, fashion, jewelry & lifestyle products — one card per category.',
+    rows: [
+      { id: 'all-woman', label: 'Woman Love 💕', icon: 'heart', allWomen: true },
+    ],
+  },
+  {
     id: 'trucks-buses', label: 'Trucks & Buses', icon: 'truck',
     subtitle: 'Heavy-duty trucks and commercial transport vehicles.',
     rows: [
@@ -199,7 +207,7 @@ const MARKETPLACE_SECTIONS = [
     ],
   },
   { id: 'mp-men', label: 'Men', icon: 'shirt', subtitle: '90 international fashion, footwear, grooming & tech products.', rows: [{ id: 'mp-men-all', label: 'All Men', icon: 'shirt', allMen: true }] },
-  { id: 'mp-women', label: 'Women', icon: 'shirt', subtitle: 'Fashion, footwear, and accessories for women.', rows: [{ id: 'mp-women-all', label: 'All Women', icon: 'shirt', ids: ['KCO-000071','KCO-000072','KCO-000073','KCO-000074','KCO-000075','KCO-000076','KCO-000077','KCO-000078','KCO-000079','KCO-000080','KCO-000081','KCO-000082','KCO-000083','KCO-000084','KCO-000085','KCO-000086','KCO-000087','KCO-000088','KCO-000089','KCO-000090','KCO-000091','KCO-000092','KCO-000093','KCO-000094','KCO-000095','KCO-000096','KCO-000097','KCO-000098','KCO-000099','KCO-000100','KCO-000101','KCO-000102','KCO-000103','KCO-000104','KCO-000105'] }] },
+  { id: 'mp-women', label: 'Women', icon: 'heart', subtitle: '149 international makeup, skincare, fashion, jewelry, bags, shoes, home, tech & fitness products.', rows: [{ id: 'mp-women-all', label: 'All Women', icon: 'heart', allWomen: true }] },
   { id: 'mp-kids', label: 'Kids', icon: 'baby', subtitle: 'Clothing, toys, and essentials for children.', rows: [{ id: 'mp-kids-all', label: 'All Kids', icon: 'baby', ids: [] }] },
   { id: 'mp-fashion', label: 'Fashion', icon: 'shirt', subtitle: 'Trendy apparel and designer fashion for everyone.', rows: [{ id: 'mp-fashion-all', label: 'All Fashion', icon: 'shirt', ids: [] }] },
   { id: 'mp-jewelry', label: 'Jewelry', icon: 'gem', subtitle: 'Fine jewelry, watches, and luxury accessories.', rows: [{ id: 'mp-jewelry-all', label: 'All Jewelry', icon: 'gem', ids: [] }] },
@@ -660,24 +668,77 @@ function renderMenRow(rowDef) {
         <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
         <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${items.length} Categories</span>
       </div>
+      <div class="flex items-center gap-1">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll right">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"></div>
+    <div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"></div>
   `;
 
-  const track = row.querySelector('.grid');
+  const track = row.querySelector('.hscroll');
   const frag = document.createDocumentFragment();
   items.forEach((l) => frag.appendChild(renderCard(l)));
   track.appendChild(frag);
+  row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
+  row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
 
   return row;
 }
 
+// ── Woman Love row ──────────────────────────────────────────────
+// "Woman Love 💕" shows one product per category (149 items) in a single
+// clean line. Rose accent, product-first — the card is the hero, no ad
+// styling. Same one-line horizontal scroll as every other row.
+function renderWomanRow(rowDef) {
+  const items = WOMAN_LISTINGS.filter((l) => l && !isCatalogListingHidden(l.property_id));
+  const row = document.createElement('div');
+  row.className = 'showroom-row relative';
+  row.dataset.rowId = rowDef.id;
+
+  row.innerHTML = `
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
+          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-rose-400"></i>
+        </span>
+        <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
+        <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-300">${items.length} Products</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll right">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+    <div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"></div>
+  `;
+
+  const track = row.querySelector('.hscroll');
+  const frag = document.createDocumentFragment();
+  items.forEach((l) => frag.appendChild(renderCard(l)));
+  track.appendChild(frag);
+  row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
+  row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
+
+  return row;
+}
 function renderRow(rowDef) {
   if (rowDef.allPhones) {
     return renderPhoneBrandsRow(rowDef);
   }
   if (rowDef.allMen) {
     return renderMenRow(rowDef);
+  }
+  if (rowDef.allWomen) {
+    return renderWomanRow(rowDef);
   }
   let listings;
   if (rowDef.allTrucks) {
@@ -749,9 +810,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allPhones ? PHONE_LISTINGS : r.allMen ? MEN_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allPhones ? PHONE_LISTINGS : r.allMen ? MEN_LISTINGS : r.allWomen ? WOMAN_LISTINGS : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allPhones && !r.allMen) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allPhones && !r.allMen && !r.allWomen) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
@@ -1187,6 +1248,7 @@ function createViewAllTrucksButton() {
 // Reuses the same renderCard + loader.
 const PHONE_SECTION_IDS = new Set(['phones']);
 const MEN_SECTION_IDS = new Set(['men']);
+const WOMAN_SECTION_IDS = new Set(['woman']);
 let allPhonesOverlay = null;
 let _phonesLoader = null;
 let _phonesEscBound = false;
@@ -1353,6 +1415,90 @@ function createViewAllMenButton() {
   return wrap;
 }
 
+// ── All Woman Love view ─────────────────────────────────────────
+// "View all Woman Love 💕" opens a full-screen catalog of every Woman
+// product (one per category, 149 items), shown in the same beautiful
+// card grid. Product-first — no people, no ad styling.
+let allWomenOverlay = null;
+let _womenLoader = null;
+let _womenEscBound = false;
+
+function buildAllWomenOverlay() {
+  const existing = document.getElementById('all-women-overlay');
+  if (existing) existing.remove();
+  allWomenOverlay = document.createElement('div');
+  allWomenOverlay.id = 'all-women-overlay';
+  allWomenOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+
+  const header = document.createElement('div');
+  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-rose-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.innerHTML = `
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center shrink-0"><i data-lucide="heart" class="w-5 h-5 text-rose-400"></i></span>
+      <div class="min-w-0">
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">Woman Love 💕</h2>
+        <p id="all-women-count" class="text-[11px] text-gray-400 truncate"></p>
+      </div>
+    </div>
+    <button class="close-all-women btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close Woman Love"><i data-lucide="x" class="w-5 h-5"></i></button>
+  `;
+
+  const body = document.createElement('div');
+  body.id = 'all-women-body';
+  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
+
+  allWomenOverlay.appendChild(header);
+  allWomenOverlay.appendChild(body);
+  document.body.appendChild(allWomenOverlay);
+
+  const items = WOMAN_LISTINGS.filter((l) => l && !isCatalogListingHidden(l.property_id));
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
+  body.appendChild(grid);
+
+  _womenLoader = createIncrementalLoader(allWomenOverlay, body, [{ grid, items }]);
+
+  const countEl = document.getElementById('all-women-count');
+  if (countEl) countEl.textContent = `${items.length} products · Makeup, Skincare, Hair, Jewelry, Bags, Shoes, Home, Tech, Fitness & Clothing`;
+
+  header.querySelector('.close-all-women').addEventListener('click', closeAllWomenView);
+  allWomenOverlay.addEventListener('click', (e) => { if (e.target === allWomenOverlay) closeAllWomenView(); });
+
+  if (!_womenEscBound) {
+    _womenEscBound = true;
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllWomenView(); });
+  }
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function openAllWomenView() {
+  buildAllWomenOverlay();
+  if (window.lucide) lucide.createIcons();
+  allWomenOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  allWomenOverlay.scrollTop = 0;
+  if (_womenLoader) _womenLoader.pump();
+}
+
+function closeAllWomenView() {
+  if (!allWomenOverlay) return;
+  allWomenOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function createViewAllWomenButton() {
+  const wrap = document.createElement('div');
+  wrap.className = 'flex justify-center py-1';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'view-all-women-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-rose-600/30 transition active:scale-95';
+  btn.innerHTML = `View all Woman Love <span class="text-lg">💕</span>`;
+  btn.addEventListener('click', openAllWomenView);
+  wrap.appendChild(btn);
+  return wrap;
+}
+
 // ── All Dogs view ───────────────────────────────────────────────
 // "View All Dogs" opens a full-screen catalog of every dog listing
 // (beautiful real photos), shown in a responsive card grid. Reuses
@@ -1463,16 +1609,17 @@ function renderGrid(gridName) {
     // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
     // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'phones', 'men', 'trucks-buses', 'heavy-equipment']) {
+    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'phones', 'men', 'woman', 'trucks-buses', 'heavy-equipment']) {
       const section = byId.get(id);
       if (!section) continue;
-      const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id) || MEN_SECTION_IDS.has(id);
+      const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id) || MEN_SECTION_IDS.has(id) || WOMAN_SECTION_IDS.has(id);
       container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
       if (id === 'pets') container.appendChild(createViewAllDogsButton());
       if (id === 'motorhomes-boats') container.appendChild(createViewAllHousesButton());
       if (id === 'cars') container.appendChild(createViewAllCarsButton());
       if (id === 'phones') container.appendChild(createViewAllPhonesButton());
       if (id === 'men') container.appendChild(createViewAllMenButton());
+      if (id === 'woman') container.appendChild(createViewAllWomenButton());
       if (id === 'trucks-buses') container.appendChild(createViewAllTrucksButton());
     }
     // modern-luxury & commercial-land are intentionally left off the

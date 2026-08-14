@@ -1242,6 +1242,9 @@ async function init() {
   cleanListing(listing);
   document.title = `${listing.title} | Weverse Online Shop`;
   render(listing);
+  if (listing.listing_type === 'product') {
+    try { loadRelatedSections(listing, SHOWROOM_LISTINGS.filter(l => l.listing_type === 'product')); } catch {}
+  }
 }
 
 init();
