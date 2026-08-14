@@ -1,11 +1,12 @@
 // Phone listings — 25 flagship smartphones from 5 world-famous brands
-// (Apple, Samsung, Google, Xiaomi, OnePlus), each with real photos from
-// Wikimedia Commons. No photo is reused across models.
+// (Apple, Samsung, Google, Xiaomi, OnePlus), each with real photos stored
+// locally in public/phones/ so the showroom images always load.
+// No photo is reused across models.
 
-const WM = (p) => `https://upload.wikimedia.org/wikipedia/commons/thumb/${p}`;
+const IMG = (p) => `/phones/${p}`;
 
 function buildGallery(paths) {
-  return paths.map((p) => WM(p));
+  return paths.map((p) => IMG(p));
 }
 
 export const PHONE_LISTINGS = [
@@ -20,7 +21,7 @@ export const PHONE_LISTINGS = [
     camera: 'Triple 12MP Pro camera system', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['a/a5/IPhone_12_Pro_Max_-_2.jpg/960px-IPhone_12_Pro_Max_-_2.jpg', '7/78/IPhone_12_Pro_Max_-_3.jpg/960px-IPhone_12_Pro_Max_-_3.jpg', '2/25/IPhone-12-Pro-Max%28Blue%29.jpg/960px-IPhone-12-Pro-Max%28Blue%29.jpg']),
+    images: buildGallery(['iphone-12-pro-max-1.jpg', 'iphone-12-pro-max-2.jpg', 'iphone-12-pro-max-3.jpg']),
     rating: 4.7, rating_count: 18, favorite_count: 9,
   },
   {
@@ -34,7 +35,7 @@ export const PHONE_LISTINGS = [
     camera: 'Triple 12MP Pro camera system', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['b/b5/Apple_iPhone_13_Pro_and_13_Pro_Max.jpg/960px-Apple_iPhone_13_Pro_and_13_Pro_Max.jpg']),
+    images: buildGallery(['iphone-13-pro-max-1.jpg']),
     rating: 4.8, rating_count: 21, favorite_count: 11,
   },
   {
@@ -48,7 +49,7 @@ export const PHONE_LISTINGS = [
     camera: '48MP Pro camera system', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['b/b2/Deep_Purple_iPhone_14_Pro_Max_back_photo.jpg/960px-Deep_Purple_iPhone_14_Pro_Max_back_photo.jpg', '0/00/Deep_Purple_iPhone_14_Pro_Max_front_photo.jpg/960px-Deep_Purple_iPhone_14_Pro_Max_front_photo.jpg', 'e/ed/IPhone_14_Pro_Max_20240225.jpg/960px-IPhone_14_Pro_Max_20240225.jpg']),
+    images: buildGallery(['iphone-14-pro-max-1.jpg', 'iphone-14-pro-max-2.jpg']),
     rating: 4.8, rating_count: 24, favorite_count: 13,
   },
   {
@@ -62,7 +63,7 @@ export const PHONE_LISTINGS = [
     camera: '48MP main · 5x optical zoom', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['4/42/Front_of_iPhone_15_Pro_Max.jpg/960px-Front_of_iPhone_15_Pro_Max.jpg', '6/60/Back_view_of_iPhone_15_Pro_Max_Natural_Titanium.jpg/960px-Back_view_of_iPhone_15_Pro_Max_Natural_Titanium.jpg', '1/1d/IPhone_15_Pro_Max_Camera.jpg/960px-IPhone_15_Pro_Max_Camera.jpg']),
+    images: buildGallery(['iphone-15-pro-max-1.jpg', 'iphone-15-pro-max-2.jpg', 'iphone-15-pro-max-3.jpg']),
     rating: 4.9, rating_count: 26, favorite_count: 15,
   },
   {
@@ -76,7 +77,7 @@ export const PHONE_LISTINGS = [
     camera: '48MP Fusion camera system', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['a/ad/About_iPhone_16_Pro_Max_Natural_Titanium.jpg/960px-About_iPhone_16_Pro_Max_Natural_Titanium.jpg', 'f/fe/Back_view_of_iPhone_16_Pro_Max_Natural_Titanium.jpg/960px-Back_view_of_iPhone_16_Pro_Max_Natural_Titanium.jpg', '0/01/Right_view_of_iPhone_16_Pro_Max_Natural_Titanium.jpg/960px-Right_view_of_iPhone_16_Pro_Max_Natural_Titanium.jpg']),
+    images: buildGallery(['iphone-16-pro-max-1.jpg', 'iphone-16-pro-max-2.jpg', 'iphone-16-pro-max-3.jpg']),
     rating: 4.9, rating_count: 30, favorite_count: 18,
   },
   {
@@ -90,7 +91,7 @@ export const PHONE_LISTINGS = [
     camera: '108MP quad camera · 100x Space Zoom', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['4/41/SAMSUNG_Galaxy_S21_Ultra%281%29.jpg/960px-SAMSUNG_Galaxy_S21_Ultra%281%29.jpg', '2/22/SAMSUNG_Galaxy_S21_Ultra%282%29.jpg/960px-SAMSUNG_Galaxy_S21_Ultra%282%29.jpg', 'e/e8/SAMSUNG_Galaxy_S21_Ultra%283%29.jpg/960px-SAMSUNG_Galaxy_S21_Ultra%283%29.jpg']),
+    images: buildGallery(['samsung-s21-ultra-1.jpg', 'samsung-s21-ultra-2.jpg']),
     rating: 4.7, rating_count: 19, favorite_count: 10,
   },
   {
@@ -104,7 +105,7 @@ export const PHONE_LISTINGS = [
     camera: '108MP quad camera · Nightography', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['a/a6/Back_of_the_Samsung_Galaxy_S22_Ultra.jpg/960px-Back_of_the_Samsung_Galaxy_S22_Ultra.jpg', 'a/a0/SAMSUNG_Galaxy_S22_Ultra_BLACK.jpg/960px-SAMSUNG_Galaxy_S22_Ultra_BLACK.jpg', '6/62/SAMSUNG_Galaxy_S22_Ultra_BLACK_%283%29.jpg/960px-SAMSUNG_Galaxy_S22_Ultra_BLACK_%283%29.jpg']),
+    images: buildGallery(['samsung-s22-ultra-1.jpg', 'samsung-s22-ultra-2.jpg']),
     rating: 4.7, rating_count: 20, favorite_count: 11,
   },
   {
@@ -118,7 +119,7 @@ export const PHONE_LISTINGS = [
     camera: '200MP quad camera', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['b/b3/Samsung_Galaxy_S23_Ultra%2C_512_GB%2C_Lavender_20230416_HOF00318_RAW-Export_cens.png/960px-Samsung_Galaxy_S23_Ultra%2C_512_GB%2C_Lavender_20230416_HOF00318_RAW-Export_cens.png', '1/1c/Samsung_Galaxy_S23_Ultra%2C_512_GB%2C_Lavender_20230416_HOF00327_RAW-Export_cens.png/960px-Samsung_Galaxy_S23_Ultra%2C_512_GB%2C_Lavender_20230416_HOF00327_RAW-Export_cens.png', '8/8a/Samsung_Galaxy_S23_Ultra%2C_512_GB%2C_Lavender_20230416_HOF00352_RAW-Export_cens.png/960px-Samsung_Galaxy_S23_Ultra%2C_512_GB%2C_Lavender_20230416_HOF00352_RAW-Export_cens.png']),
+    images: buildGallery(['samsung-s23-ultra-1.jpg']),
     rating: 4.8, rating_count: 23, favorite_count: 14,
   },
   {
@@ -132,7 +133,7 @@ export const PHONE_LISTINGS = [
     camera: '200MP quad camera · Galaxy AI', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['e/e7/SAMSUNG_Galaxy_S24_Ultra.jpg/960px-SAMSUNG_Galaxy_S24_Ultra.jpg', '9/90/SAMSUNG_Galaxy_S24_Ultra_%285%29.jpg/960px-SAMSUNG_Galaxy_S24_Ultra_%285%29.jpg', '5/54/SAMSUNG_Galaxy_S24_Ultra_%284%29.jpg/960px-SAMSUNG_Galaxy_S24_Ultra_%284%29.jpg']),
+    images: buildGallery(['samsung-s24-ultra-1.jpg', 'samsung-s24-ultra-2.jpg']),
     rating: 4.8, rating_count: 25, favorite_count: 16,
   },
   {
@@ -146,7 +147,7 @@ export const PHONE_LISTINGS = [
     camera: '200MP quad camera · Galaxy AI', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['2/25/Samsung_Galaxy_S25_Ultra_Titanium_Silverblue.jpg/960px-Samsung_Galaxy_S25_Ultra_Titanium_Silverblue.jpg', '6/60/Rear_view_of_the_Samsung_Galaxy_S25_Ultra_smartphone.jpg/960px-Rear_view_of_the_Samsung_Galaxy_S25_Ultra_smartphone.jpg', 'b/b7/Samsung_Galaxy_S25_Ultra_smartphone_-_side_view.jpg/960px-Samsung_Galaxy_S25_Ultra_smartphone_-_side_view.jpg']),
+    images: buildGallery(['samsung-s25-ultra-1.jpg', 'samsung-s25-ultra-2.jpg']),
     rating: 4.9, rating_count: 28, favorite_count: 17,
   },
   {
@@ -160,7 +161,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP main · Magic Eraser', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['8/88/Rear_view_of_Google_Pixel_6_Pro.jpg/960px-Rear_view_of_Google_Pixel_6_Pro.jpg', 'f/f8/Google_Pixel_6_Pro_with_accessory_box.jpg/960px-Google_Pixel_6_Pro_with_accessory_box.jpg', '3/31/Google_Pixel_6_Pro_back_%28Stormy_Black%29.svg/960px-Google_Pixel_6_Pro_back_%28Stormy_Black%29.svg.png']),
+    images: buildGallery(['pixel-6-pro-1.jpg', 'pixel-6-pro-2.jpg']),
     rating: 4.6, rating_count: 17, favorite_count: 9,
   },
   {
@@ -174,7 +175,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · 5x optical zoom', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['0/00/Google_Pixel_7_Pro_back_%28Obsidian%29.svg/960px-Google_Pixel_7_Pro_back_%28Obsidian%29.svg.png', '9/9a/Google_Pixel_7_Pro_back_%28Snow%29.svg/960px-Google_Pixel_7_Pro_back_%28Snow%29.svg.png', 'c/c2/Google_Pixel_7_Pro_back_%28Hazel%29.svg/960px-Google_Pixel_7_Pro_back_%28Hazel%29.svg.png']),
+    images: buildGallery(['pixel-7-pro-1.jpg']),
     rating: 4.6, rating_count: 18, favorite_count: 10,
   },
   {
@@ -188,7 +189,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · AI editing', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['5/5c/Google_Pixel_8_Pro%2C_shown_in_Shibuya_Stream.jpg/960px-Google_Pixel_8_Pro%2C_shown_in_Shibuya_Stream.jpg', 'd/d7/Google_Pixel_8_Pro%2C_shown_in_Shibuya_Stream_2.jpg/960px-Google_Pixel_8_Pro%2C_shown_in_Shibuya_Stream_2.jpg', '2/21/Google_Pixel_8_Pro.jpg/960px-Google_Pixel_8_Pro.jpg']),
+    images: buildGallery(['pixel-8-pro-1.jpg', 'pixel-8-pro-2.jpg', 'pixel-8-pro-3.jpg']),
     rating: 4.8, rating_count: 22, favorite_count: 12,
   },
   {
@@ -202,7 +203,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · Gemini AI', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['e/ef/Google_Pixel_9_Pro_%28Obsidian%29_rear.svg/960px-Google_Pixel_9_Pro_%28Obsidian%29_rear.svg.png', 'a/a7/Google_Pixel_9_Pro_%28Hazel%29_front.svg/960px-Google_Pixel_9_Pro_%28Hazel%29_front.svg.png', '7/7b/Google_Pixel_9_Pro_%28Hazel%29_rear.svg/960px-Google_Pixel_9_Pro_%28Hazel%29_rear.svg.png']),
+    images: buildGallery(['pixel-9-pro-1.png', 'pixel-9-pro-2.png', 'pixel-9-pro-3.png']),
     rating: 4.8, rating_count: 24, favorite_count: 13,
   },
   {
@@ -216,7 +217,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · Gemini AI', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['e/e5/Google_Pixel_9_Pro_XL_%28back%29.jpg/960px-Google_Pixel_9_Pro_XL_%28back%29.jpg', 'f/f7/Google_Pixel_9_Pro_XL_%28front%29.jpg/960px-Google_Pixel_9_Pro_XL_%28front%29.jpg', 'd/d8/Google_Pixel_9_Pro_XL_%28Hazel%29_rear.svg/960px-Google_Pixel_9_Pro_XL_%28Hazel%29_rear.svg.png']),
+    images: buildGallery(['pixel-9-pro-xl-1.jpg', 'pixel-9-pro-xl-2.jpg']),
     rating: 4.8, rating_count: 25, favorite_count: 14,
   },
   {
@@ -230,7 +231,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · Leica optics', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['2/21/Xiaomi_12.jpg/960px-Xiaomi_12.jpg']),
+    images: buildGallery(['xiaomi-12-1.jpg']),
     rating: 4.5, rating_count: 14, favorite_count: 7,
   },
   {
@@ -244,7 +245,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · Leica optics', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['a/a9/Xiaomi_13_back.jpg/960px-Xiaomi_13_back.jpg', '0/04/Xiaomi_13_front.jpg/960px-Xiaomi_13_front.jpg']),
+    images: buildGallery(['xiaomi-13-1.jpg', 'xiaomi-13-2.jpg']),
     rating: 4.6, rating_count: 16, favorite_count: 8,
   },
   {
@@ -258,7 +259,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · Leica optics', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['d/da/Xiaomi-14T-Pro---RuinDig_001.jpg/960px-Xiaomi-14T-Pro---RuinDig_001.jpg', '7/77/Xiaomi-14T-Pro---RuinDig_002.jpg/960px-Xiaomi-14T-Pro---RuinDig_002.jpg', '8/85/Xiaomi-14T-Pro---RuinDig_003.jpg/960px-Xiaomi-14T-Pro---RuinDig_003.jpg']),
+    images: buildGallery(['xiaomi-14t-pro-1.jpg', 'xiaomi-14t-pro-2.jpg']),
     rating: 4.7, rating_count: 19, favorite_count: 10,
   },
   {
@@ -272,7 +273,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · Leica optics', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['a/af/Xiaomi_15_%281%29.jpg/960px-Xiaomi_15_%281%29.jpg', 'f/f5/Xiaomi_15_%282%29.jpg/960px-Xiaomi_15_%282%29.jpg']),
+    images: buildGallery(['xiaomi-15-1.jpg', 'xiaomi-15-2.jpg']),
     rating: 4.7, rating_count: 20, favorite_count: 11,
   },
   {
@@ -286,7 +287,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · periscope zoom', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['b/ba/Xiaomi_15_Pro_%281%29.jpg/960px-Xiaomi_15_Pro_%281%29.jpg', 'a/ad/Xiaomi_15_Pro_%282%29.jpg/960px-Xiaomi_15_Pro_%282%29.jpg']),
+    images: buildGallery(['xiaomi-15-pro-1.jpg', 'xiaomi-15-pro-2.jpg']),
     rating: 4.7, rating_count: 21, favorite_count: 12,
   },
   {
@@ -300,7 +301,7 @@ export const PHONE_LISTINGS = [
     camera: '48MP quad camera · Hasselblad', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['8/8e/OnePlus_9_Pro_back.jpg/960px-OnePlus_9_Pro_back.jpg', 'c/c2/OnePlus_9_Pro_back_logo.jpg/960px-OnePlus_9_Pro_back_logo.jpg', 'c/cc/OnePlus_9_Pro_Camera_Module.jpg/960px-OnePlus_9_Pro_Camera_Module.jpg']),
+    images: buildGallery(['oneplus-9-pro-1.jpg', 'oneplus-9-pro-2.jpg']),
     rating: 4.6, rating_count: 15, favorite_count: 8,
   },
   {
@@ -314,7 +315,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP Sony IMX890 main camera', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['3/3e/OnePlus_Ace_3_Black.jpg/960px-OnePlus_Ace_3_Black.jpg', 'b/b3/OnePlus_Ace_3_Black_Back.jpg/960px-OnePlus_Ace_3_Black_Back.jpg']),
+    images: buildGallery(['oneplus-12r-1.jpg', 'oneplus-12r-2.jpg']),
     rating: 4.6, rating_count: 17, favorite_count: 9,
   },
   {
@@ -328,7 +329,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · OIS', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['3/3b/OnePlus_13R_back.jpg/960px-OnePlus_13R_back.jpg', '4/44/OnePlus_13R_front.jpg/960px-OnePlus_13R_front.jpg']),
+    images: buildGallery(['oneplus-13r-1.jpg', 'oneplus-13r-2.jpg']),
     rating: 4.7, rating_count: 18, favorite_count: 10,
   },
   {
@@ -342,7 +343,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP triple camera · Hasselblad', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['1/14/OnePlus_13_back.jpg/960px-OnePlus_13_back.jpg', '1/13/OnePlus_13_volume_slider.jpg/960px-OnePlus_13_volume_slider.jpg']),
+    images: buildGallery(['oneplus-13-1.jpg', 'oneplus-13-2.jpg']),
     rating: 4.8, rating_count: 22, favorite_count: 13,
   },
   {
@@ -356,7 +357,7 @@ export const PHONE_LISTINGS = [
     camera: '50MP Sony main camera · OIS', connectivity: '5G',
     warranty: '1-Year Manufacturer Warranty', availability_status: 'In Stock',
     listing_status: 'sale',
-    images: buildGallery(['4/4a/OnePlus_Nord_5_back.jpg/960px-OnePlus_Nord_5_back.jpg', 'a/a3/OnePlus_Nord_5_front.jpg/960px-OnePlus_Nord_5_front.jpg']),
+    images: buildGallery(['oneplus-nord-5-1.jpg', 'oneplus-nord-5-2.jpg']),
     rating: 4.5, rating_count: 16, favorite_count: 8,
   },
 ];
