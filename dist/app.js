@@ -1011,8 +1011,7 @@ function renderCarousel(){
       var kbClass2="kb-"+(((idx%5))+1);
       mediaHtml='<div class="kb-img '+kbClass2+'" style="background-image:url(\''+slide.image+'\');background-size:cover;background-position:center"></div>';
     }else{
-      mediaHtml='<video class="hero-video" muted loop playsinline webkit-playsinline preload="'+(idx<5?"auto":"metadata")+'" data-src="'+slide.video+'" style="width:100%;height:100%;object-fit:cover;object-position:center"'+(slide.poster?' poster="'+slide.poster+'"':'')+'>'+
-      (idx<5?'<source src="'+slide.video+'" type="video/mp4">':"")+
+      mediaHtml='<video class="hero-video" muted loop playsinline webkit-playsinline preload="metadata" data-src="'+slide.video+'" style="width:100%;height:100%;object-fit:cover;object-position:center"'+(slide.poster?' poster="'+slide.poster+'"':'')+'>'+
       '</video>';
     }
     el.innerHTML=mediaHtml+

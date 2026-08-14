@@ -1644,10 +1644,24 @@ function renderAllGrids() {
     scrollState.set(g, rows);
     delete g.dataset.initialized;
   });
-  grids.forEach(g => renderGrid(g.dataset.showroomGrid));
-  scrollState.forEach((rows, g) => {
-    const fresh = g.querySelectorAll('.hscroll');
-    rows.forEach((row, i) => { if (fresh[i]) fresh[i].scrollLeft = row.left; });
+  grids.forEach((g, i) => {
+    const name = g.dataset.showroomGrid;
+    const run = () => {
+      renderGrid(name);
+      const fresh = g.querySelectorAll('.hscroll');
+      const rows = scrollState.get(g) || [];
+      rows.forEach((row, j) => { if (fresh[j]) fresh[j].scrollLeft = row.left; });
+    };
+    if (i === 0) {
+      // Render the above-the-fold grid immediately so the page paints fast.
+      run();
+    } else if (window.requestIdleCallback) {
+      // Defer the heavier marketplace grid to idle time so it never blocks
+      // first paint. requestIdleCallback falls back gracefully on old devices.
+      requestIdleCallback(run, { timeout: 2000 });
+    } else {
+      setTimeout(run, 0);
+    }
   });
 }
 
