@@ -92,3 +92,418 @@ a.text-\[10px\],
   background: #3b82f6 !important;
   border-color: #0d1b2e !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   WHITE + BLUE PREMIUM THEME
+   Converts the legacy dark/navy interface into a clean, professional
+   white e-commerce theme. Unlayered rules below override the Tailwind
+   utilities (which live inside @layer utilities) across every page.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1. Page background & base text */
+body {
+  background: #f6f8fb !important;
+  color: #0f172a !important;
+}
+
+/* 2. Dark surfaces -> white (covers opacity variants via partial match).
+   :not() guards stop hover/focus/group-hover tokens from forcing a
+   permanent background onto transparent icon buttons. */
+[class*="bg-[#0f172a]"]:not([class*="hover:bg-[#0f172a]"]):not([class*="group-hover:bg-[#0f172a]"]):not([class*="focus:bg-[#0f172a]"]),
+[class*="bg-[#0a1124]"]:not([class*="hover:bg-[#0a1124]"]):not([class*="group-hover:bg-[#0a1124]"]):not([class*="focus:bg-[#0a1124]"]),
+[class*="bg-[#0b0f19]"]:not([class*="hover:bg-[#0b0f19]"]),
+[class*="bg-[#070b16]"]:not([class*="hover:bg-[#070b16]"]),
+[class*="bg-[#0d1b2e]"]:not([class*="hover:bg-[#0d1b2e]"]),
+[class*="bg-[#0d1424]"]:not([class*="hover:bg-[#0d1424]"]),
+[class*="bg-[#0b1020]"]:not([class*="hover:bg-[#0b1020]"]),
+[class*="bg-[#0b1f3a]"]:not([class*="hover:bg-[#0b1f3a]"]),
+[class*="bg-[#111827]"]:not([class*="hover:bg-[#111827]"]),
+[class*="bg-[#1c1c1c]"]:not([class*="hover:bg-[#1c1c1c]"]),
+[class*="bg-[#111]"]:not([class*="hover:bg-[#111]"]),
+[class*="bg-gray-950"]:not([class*="hover:bg-gray-950"]),
+[class*="bg-gray-900"]:not([class*="hover:bg-gray-900"]):not([class*="group-hover:bg-gray-900"]):not([class*="focus:bg-gray-900"]),
+[class*="bg-slate-900"]:not([class*="hover:bg-slate-900"]):not([class*="group-hover:bg-slate-900"]):not([class*="focus:bg-slate-900"]) {
+  background-color: #ffffff !important;
+}
+
+/* Mid surfaces -> light gray chips */
+[class*="bg-gray-800"]:not([class*="hover:bg-gray-800"]):not([class*="group-hover:bg-gray-800"]):not([class*="focus:bg-gray-800"]),
+[class*="bg-slate-800"]:not([class*="hover:bg-slate-800"]):not([class*="group-hover:bg-slate-800"]):not([class*="focus:bg-slate-800"]),
+[class*="bg-[#1e293b]"]:not([class*="hover:bg-[#1e293b]"]) {
+  background-color: #eef2f7 !important;
+}
+[class*="bg-gray-700"]:not([class*="hover:bg-gray-700"]):not([class*="group-hover:bg-gray-700"]),
+[class*="bg-slate-700"]:not([class*="hover:bg-slate-700"]):not([class*="group-hover:bg-slate-700"]) {
+  background-color: #e2e8f0 !important;
+}
+[class*="bg-white/"]:not([class*="hover:bg-white/"]):not([class*="group-hover:bg-white/"]):not([class*="focus:bg-white/"]) {
+  background-color: #eef2f7 !important;
+}
+
+/* Dark arbitrary gradient stops -> light (only the dark navy ones) */
+[class*="from-[#0f172a]"],
+[class*="from-[#070b16]"],
+[class*="from-[#0a1124]"],
+[class*="from-[#0b0f19]"],
+[class*="from-[#0b1f3a]"] {
+  --tw-gradient-from: #ffffff !important;
+}
+[class*="via-[#0f172a]"],
+[class*="via-[#0a1124]"],
+[class*="via-[#070b16]"],
+[class*="via-[#0d1424]"] {
+  --tw-gradient-via: #f1f5f9 !important;
+}
+[class*="to-[#070b16]"],
+[class*="to-[#0a1124]"],
+[class*="to-[#0f172a]"],
+[class*="to-[#0b2a1f]"],
+[class*="to-[#0b1f3a]"] {
+  --tw-gradient-to: #ffffff !important;
+}
+[class*="via-gray-700"],
+[class*="via-gray-800"] {
+  --tw-gradient-via: #e2e8f0 !important;
+}
+
+/* 3. White text -> charcoal, EXCEPT on colored/hero surfaces (below) */
+[class*="text-white"] {
+  color: #0f172a !important;
+}
+[class*="text-white/"] {
+  color: #64748b !important;
+}
+
+/* Keep white text on colored buttons, badges & dark hero overlays */
+[class*="bg-blue-"][class*="text-white"],
+[class*="bg-blue-"] [class*="text-white"],
+[class*="from-blue-"][class*="text-white"],
+[class*="from-blue-"] [class*="text-white"],
+[class*="to-blue-"][class*="text-white"],
+[class*="to-blue-"] [class*="text-white"],
+[class*="bg-emerald-"][class*="text-white"],
+[class*="bg-emerald-"] [class*="text-white"],
+[class*="bg-green-"][class*="text-white"],
+[class*="bg-green-"] [class*="text-white"],
+[class*="bg-red-"][class*="text-white"],
+[class*="bg-red-"] [class*="text-white"],
+[class*="bg-rose-"][class*="text-white"],
+[class*="bg-rose-"] [class*="text-white"],
+[class*="bg-amber-"][class*="text-white"],
+[class*="bg-amber-"] [class*="text-white"],
+[class*="bg-orange-"][class*="text-white"],
+[class*="bg-orange-"] [class*="text-white"],
+[class*="bg-yellow-"][class*="text-white"],
+[class*="bg-yellow-"] [class*="text-white"],
+[class*="bg-violet-"][class*="text-white"],
+[class*="bg-violet-"] [class*="text-white"],
+[class*="bg-purple-"][class*="text-white"],
+[class*="bg-purple-"] [class*="text-white"],
+[class*="bg-pink-"][class*="text-white"],
+[class*="bg-pink-"] [class*="text-white"],
+[class*="bg-cyan-"][class*="text-white"],
+[class*="bg-cyan-"] [class*="text-white"],
+[class*="bg-sky-"][class*="text-white"],
+[class*="bg-sky-"] [class*="text-white"],
+[class*="bg-teal-"][class*="text-white"],
+[class*="bg-teal-"] [class*="text-white"],
+[class*="bg-indigo-"][class*="text-white"],
+[class*="bg-indigo-"] [class*="text-white"],
+[class*="bg-lime-"][class*="text-white"],
+[class*="bg-lime-"] [class*="text-white"],
+[class*="bg-fuchsia-"][class*="text-white"],
+[class*="bg-fuchsia-"] [class*="text-white"],
+[class*="bg-black"][class*="text-white"],
+[class*="bg-black"] [class*="text-white"],
+#hero-carousel [class*="text-white"],
+#live-ad-badge [class*="text-white"] {
+  color: #ffffff !important;
+}
+
+/* 4. Gray / slate text scale (dark enough to read on white) */
+[class~="text-gray-100"] { color: #0f172a !important; }
+[class~="text-gray-200"] { color: #1e293b !important; }
+[class~="text-gray-300"] { color: #334155 !important; }
+[class~="text-gray-400"] { color: #64748b !important; }
+[class~="text-gray-500"] { color: #475569 !important; }
+[class~="text-gray-600"] { color: #64748b !important; }
+[class~="text-slate-200"] { color: #1e293b !important; }
+[class~="text-slate-300"] { color: #334155 !important; }
+[class~="text-slate-400"] { color: #64748b !important; }
+[class~="text-slate-500"] { color: #475569 !important; }
+[class~="text-slate-600"] { color: #94a3b8 !important; }
+[class~="text-zinc-200"] { color: #1e293b !important; }
+[class~="text-zinc-300"] { color: #334155 !important; }
+[class~="text-zinc-400"] { color: #64748b !important; }
+[class~="text-neutral-200"] { color: #1e293b !important; }
+[class~="text-neutral-300"] { color: #334155 !important; }
+[class~="text-neutral-400"] { color: #64748b !important; }
+
+/* 5. Accent colors — deepen for contrast on white */
+[class*="text-blue-400"] { color: #2563eb !important; }
+[class*="text-blue-300"] { color: #3b82f6 !important; }
+[class*="text-blue-200"] { color: #60a5fa !important; }
+[class*="text-emerald-400"] { color: #059669 !important; }
+[class*="text-emerald-300"] { color: #059669 !important; }
+[class*="text-emerald-200"] { color: #10b981 !important; }
+[class*="text-green-400"] { color: #16a34a !important; }
+[class*="text-green-300"] { color: #16a34a !important; }
+[class*="text-cyan-400"] { color: #0891b2 !important; }
+[class*="text-cyan-300"] { color: #0e7490 !important; }
+[class*="text-sky-400"] { color: #0284c7 !important; }
+[class*="text-sky-300"] { color: #0369a1 !important; }
+[class*="text-teal-400"] { color: #0d9488 !important; }
+[class*="text-amber-400"] { color: #d97706 !important; }
+[class*="text-amber-300"] { color: #b45309 !important; }
+[class*="text-yellow-400"] { color: #ca8a04 !important; }
+[class*="text-red-400"] { color: #dc2626 !important; }
+[class*="text-red-300"] { color: #dc2626 !important; }
+[class*="text-rose-400"] { color: #e11d48 !important; }
+[class*="text-pink-400"] { color: #db2777 !important; }
+[class*="text-violet-400"] { color: #7c3aed !important; }
+[class*="text-purple-400"] { color: #9333ea !important; }
+[class*="text-indigo-400"] { color: #4f46e5 !important; }
+[class*="text-fuchsia-400"] { color: #c026d3 !important; }
+[class*="text-orange-400"] { color: #ea580c !important; }
+[class*="text-lime-400"] { color: #65a30d !important; }
+[class*="fill-amber-400"] { fill: #f59e0b !important; }
+
+/* 6. Borders -> light dividers */
+[class*="border-gray-800"],
+[class*="border-gray-900"],
+[class*="border-slate-800"] {
+  border-color: #e2e8f0 !important;
+}
+[class*="border-gray-700"],
+[class*="border-slate-700"] {
+  border-color: #d3dae4 !important;
+}
+[class*="border-[#0d1b2e]"] { border-color: #e2e8f0 !important; }
+[class*="border-[#1e293b]"] { border-color: #d3dae4 !important; }
+[class*="border-white/"] { border-color: #e2e8f0 !important; }
+
+/* 7. Hover states tuned for light surfaces */
+.hover\:bg-white\/5:hover,
+.hover\:bg-white\/8:hover,
+.hover\:bg-white\/10:hover,
+.hover\:bg-white\/15:hover,
+.hover\:bg-white\/20:hover,
+.hover\:bg-white\/\[0\.06\]:hover,
+.hover\:bg-white\/\[0\.08\]:hover {
+  background-color: #e2e8f0 !important;
+}
+.hover\:bg-gray-800:hover,
+.hover\:bg-gray-700:hover,
+.hover\:bg-gray-900:hover {
+  background-color: #e2e8f0 !important;
+}
+.hover\:text-white:hover {
+  color: #2563eb !important;
+}
+.hover\:text-gray-100:hover,
+.hover\:text-gray-200:hover,
+.hover\:text-gray-300:hover,
+.hover\:text-gray-400:hover {
+  color: #334155 !important;
+}
+
+/* 8. Gradient headlines -> solid charcoal */
+[class*="bg-clip-text"][class*="text-transparent"] {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background-image: none !important;
+}
+
+/* 9. Header, search & category bar */
+#site-header {
+  background: #ffffff !important;
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 10px rgba(15, 23, 42, 0.06) !important;
+}
+#smart-search-container > div:first-child {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+}
+#search-suggestions {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+#site-categories-nav {
+  background: #ffffff !important;
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: none !important;
+}
+#region-dropdown {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+#more-menu-panel {
+  background: #ffffff !important;
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Header inline-style classes (.menu-row / .more-row / .hdr-action) */
+.menu-row { color: #334155 !important; }
+.menu-row:hover,
+.menu-row:focus-visible {
+  background: #eef2f7 !important;
+  color: #2563eb !important;
+}
+.more-row { color: #334155 !important; }
+.more-row:hover,
+.more-row:focus-visible {
+  background: #eef2f7 !important;
+  color: #2563eb !important;
+}
+.more-row.text-red-400:hover { color: #dc2626 !important; }
+.menu-section-label,
+.more-label { color: #64748b !important; }
+.hdr-action { color: #475569 !important; }
+.hdr-action:hover {
+  background: #eef2f7 !important;
+  color: #2563eb !important;
+  box-shadow: none !important;
+}
+.hdr-action:active { background: #e2e8f0 !important; }
+
+/* Navigation drawer */
+#mobile-menu {
+  background: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+  box-shadow: 6px 0 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Notification badges/dots: dark border rings were built for the old
+   navy header — switch them to white rings on the light theme */
+.hdr-badge,
+.hdr-badge-dot,
+.menu-row .absolute,
+.menu-icon .absolute {
+  border-color: #ffffff !important;
+}
+
+/* Weverse Shop List pill -> solid blue, rounded, premium */
+.nav-dept-btn {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+}
+.nav-dept-btn:hover,
+.nav-dept-btn.active {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+/* Live date/time/trust bar */
+#trust-bar > div {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Showroom cards */
+.showroom-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07) !important;
+}
+.showroom-card:hover {
+  border-color: rgba(59, 130, 246, 0.45) !important;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.15) !important;
+}
+.details-btn {
+  background: #ffffff !important;
+  border-color: #3b82f6 !important;
+  color: #2563eb !important;
+}
+.details-btn:hover {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+  color: #1d4ed8 !important;
+}
+.share-btn,
+.wishlist-btn {
+  background: #eef2f7 !important;
+  color: #475569 !important;
+}
+.share-btn:hover {
+  background: #dbeafe !important;
+  color: #2563eb !important;
+}
+.wishlist-btn:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+.wishlist-btn.saved {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #dc2626 !important;
+}
+
+/* Details page buttons */
+#view-details-btn {
+  background: #ffffff !important;
+  border: 1px solid #3b82f6 !important;
+  color: #2563eb !important;
+}
+#view-details-btn:hover { background: #eff6ff !important; }
+#add-cart-btn {
+  background: #eef2f7 !important;
+  color: #1e293b !important;
+}
+#add-cart-btn:hover { background: #e2e8f0 !important; }
+#wishlist-btn,
+#share-btn {
+  background: #eef2f7 !important;
+  color: #475569 !important;
+}
+#share-btn:hover {
+  background: #dbeafe !important;
+  color: #2563eb !important;
+}
+#wishlist-btn:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+
+/* Footer */
+footer {
+  background: #ffffff !important;
+  border-top-color: #e2e8f0 !important;
+}
+
+/* Floating widgets: EN country selector + Contact us */
+#kco-loc-fab {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12) !important;
+}
+#kco-ai-fab {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14) !important;
+}
+#kco-ai-panel {
+  background: #ffffff !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+#kco-ai-panel > div:first-child {
+  background: #ffffff !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+#kco-ai-panel [class*="text-blue-100"],
+#kco-ai-panel [class*="text-blue-200"] {
+  color: #2563eb !important;
+}
+#kco-loc-modal .kco-loc-modal > div:first-child {
+  background: #ffffff !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+.kco-loc-tab.active {
+  background: #eff6ff !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  color: #2563eb !important;
+}
