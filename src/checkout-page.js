@@ -5,6 +5,7 @@ import { SHOWROOM_LISTINGS, findListingById, formatPrice, flagEmoji, getAllListi
 import { getTruckById } from './truck-data.js';
 import { getMotorhomeById } from './motorhome-data.js';
 import { getCarById } from './car-data.js';
+import { getPhoneById } from './phone-data.js';
 import { detectCurrency, getCountryByCode, COUNTRIES, SUPPORTED_CURRENCIES } from './country-data.js';
 import { buildFallbackNotice, getManualPaymentAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
 
@@ -151,7 +152,7 @@ async function init() {
   // Load listing from URL param or cart
   const listingId = params.get('id');
   if (listingId) {
-    state.listing = findListingById(listingId) || getTruckById(listingId) || getMotorhomeById(listingId) || getCarById(listingId);
+    state.listing = findListingById(listingId) || getTruckById(listingId) || getMotorhomeById(listingId) || getCarById(listingId) || getPhoneById(listingId);
     if (!state.listing) {
       const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
         import('./catalog.js'),
@@ -177,7 +178,7 @@ async function init() {
     ]);
     await loadHiddenCatalogIds();
     state.cartItems = cart.map(id => {
-      const l = listings.find(x => x.property_id === id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id) || generateListingById(id);
+      const l = listings.find(x => x.property_id === id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id) || generateListingById(id);
       return l ? { listing: l, quantity: 1 } : null;
     }).filter(Boolean);
     if (state.cartItems.length === 0) {

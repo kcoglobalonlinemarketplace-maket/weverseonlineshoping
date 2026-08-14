@@ -2,6 +2,7 @@ import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListi
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
+import { PHONE_LISTINGS } from './phone-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
@@ -138,6 +139,13 @@ const REAL_ESTATE_SECTIONS = [
     subtitle: 'Latest-model cars from trusted sellers worldwide.',
     rows: [
       { id: 'all-cars', label: 'All Cars', icon: 'car-front', allCars: true },
+    ],
+  },
+  {
+    id: 'phones', label: 'Phones', icon: 'smartphone',
+    subtitle: '25 flagship smartphones from Apple, Samsung, Google, Xiaomi & OnePlus.',
+    rows: [
+      { id: 'all-phones', label: 'Phones', icon: 'smartphone', allPhones: true },
     ],
   },
   {
@@ -528,11 +536,13 @@ function renderRow(rowDef) {
     listings = MOTORHOME_LISTINGS;
   } else if (rowDef.allCars) {
     listings = CAR_LISTINGS;
+  } else if (rowDef.allPhones) {
+    listings = PHONE_LISTINGS;
   } else {
     listings = getListingsByIds(rowDef.ids);
   }
   let catalogExtra = [];
-  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars) {
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.allPhones) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
   }
   if (catalogExtra.length > 0) {
@@ -591,9 +601,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allPhones ? PHONE_LISTINGS : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allPhones) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
@@ -1023,6 +1033,92 @@ function createViewAllTrucksButton() {
   return wrap;
 }
 
+// ── All Phones view ─────────────────────────────────────────────
+// "View all Phones" opens a full-screen catalog of every flagship
+// smartphone (real photos), shown in the same beautiful card grid.
+// Reuses the same renderCard + loader.
+const PHONE_SECTION_IDS = new Set(['phones']);
+
+let allPhonesOverlay = null;
+let _phonesLoader = null;
+let _phonesEscBound = false;
+
+function buildAllPhonesOverlay() {
+  const existing = document.getElementById('all-phones-overlay');
+  if (existing) existing.remove();
+  allPhonesOverlay = document.createElement('div');
+  allPhonesOverlay.id = 'all-phones-overlay';
+  allPhonesOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+
+  const header = document.createElement('div');
+  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.innerHTML = `
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0"><i data-lucide="smartphone" class="w-5 h-5 text-blue-400"></i></span>
+      <div class="min-w-0">
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Phones</h2>
+        <p id="all-phones-count" class="text-[11px] text-gray-400 truncate"></p>
+      </div>
+    </div>
+    <button class="close-all-phones btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Phones"><i data-lucide="x" class="w-5 h-5"></i></button>
+  `;
+
+  const body = document.createElement('div');
+  body.id = 'all-phones-body';
+  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
+
+  allPhonesOverlay.appendChild(header);
+  allPhonesOverlay.appendChild(body);
+  document.body.appendChild(allPhonesOverlay);
+
+  const phones = PHONE_LISTINGS.filter(l => l && !isCatalogListingHidden(l.property_id));
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
+  body.appendChild(grid);
+
+  _phonesLoader = createIncrementalLoader(allPhonesOverlay, body, [{ grid, items: phones }]);
+
+  const countEl = document.getElementById('all-phones-count');
+  if (countEl) countEl.textContent = `${phones.length} flagship phones · Apple, Samsung, Google, Xiaomi & OnePlus`;
+
+  header.querySelector('.close-all-phones').addEventListener('click', closeAllPhonesView);
+  allPhonesOverlay.addEventListener('click', (e) => { if (e.target === allPhonesOverlay) closeAllPhonesView(); });
+
+  if (!_phonesEscBound) {
+    _phonesEscBound = true;
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllPhonesView(); });
+  }
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function openAllPhonesView() {
+  if (!allPhonesOverlay || !document.getElementById('all-phones-overlay')) buildAllPhonesOverlay();
+  if (window.lucide) lucide.createIcons();
+  allPhonesOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  allPhonesOverlay.scrollTop = 0;
+  if (_phonesLoader) _phonesLoader.pump();
+}
+
+function closeAllPhonesView() {
+  if (!allPhonesOverlay) return;
+  allPhonesOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function createViewAllPhonesButton() {
+  const wrap = document.createElement('div');
+  wrap.className = 'flex justify-center py-1';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'view-all-phones-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-blue-600/30 transition active:scale-95';
+  btn.innerHTML = `View all Phones <span class="text-lg">→ 📱</span>`;
+  btn.addEventListener('click', openAllPhonesView);
+  wrap.appendChild(btn);
+  return wrap;
+}
+
 // ── All Dogs view ───────────────────────────────────────────────
 // "View All Dogs" opens a full-screen catalog of every dog listing
 // (beautiful real photos), shown in a responsive card grid. Reuses
@@ -1133,14 +1229,15 @@ function renderGrid(gridName) {
     // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
     // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'trucks-buses', 'heavy-equipment']) {
+    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'phones', 'trucks-buses', 'heavy-equipment']) {
       const section = byId.get(id);
       if (!section) continue;
-      const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
+      const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id);
       container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
       if (id === 'pets') container.appendChild(createViewAllDogsButton());
       if (id === 'motorhomes-boats') container.appendChild(createViewAllHousesButton());
       if (id === 'cars') container.appendChild(createViewAllCarsButton());
+      if (id === 'phones') container.appendChild(createViewAllPhonesButton());
       if (id === 'trucks-buses') container.appendChild(createViewAllTrucksButton());
     }
     // modern-luxury & commercial-land are intentionally left off the
@@ -1256,6 +1353,7 @@ export function getShowroomCategoryInventory() {
   [...SHOWROOM_LISTINGS, ...getDBListings()].forEach(l => add(l.category, l.subcategory));
   TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
   CAR_LISTINGS.forEach(l => add(l.category, l.subcategory));
+  PHONE_LISTINGS.forEach(l => add(l.category, l.subcategory));
   getCatalogCategories().forEach(c => add(c.name, null, c.count || 0));
 
   // Display order
@@ -1398,6 +1496,7 @@ const CATEGORY_TO_SECTION_ROW = {
 const CATEGORY_KEYWORDS = [
   { keywords: ['computer', 'laptop', 'desktop', 'monitor'], target: { section: 'mp-computers', row: 'mp-computers-all' } },
   { keywords: ['electronic', 'gadget', 'tech'], target: { section: 'mp-electronics', row: 'mp-electronics-all' } },
+  { keywords: ['phone', 'smartphone', 'mobile', 'handset'], target: { section: 'mp-electronics', row: 'mp-electronics-all' } },
   { keywords: ['fashion', 'apparel', 'clothing'], target: { section: 'mp-fashion', row: 'mp-fashion-all' } },
   { keywords: ['jewel', 'ring', 'necklace'], target: { section: 'mp-jewelry', row: 'mp-jewelry-all' } },
   { keywords: ['beauty', 'cosmetic', 'makeup', 'skincare'], target: { section: 'mp-beauty', row: 'mp-beauty-all' } },

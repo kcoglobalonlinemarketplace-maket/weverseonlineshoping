@@ -2,6 +2,7 @@ import { findListingById, formatPrice, flagEmoji, loadDBListings } from './showr
 import { getTruckById } from './truck-data.js';
 import { getMotorhomeById } from './motorhome-data.js';
 import { getCarById } from './car-data.js';
+import { getPhoneById } from './phone-data.js';
 import { getCurrentUser } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
@@ -679,7 +680,7 @@ async function init() {
   if (!user && !isGuest) { window.location.href = '/'; return; }
 
   const id = getListingId();
-  let listing = findListingById(id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id);
+  let listing = findListingById(id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id);
   if (!listing) {
     const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
       import('./catalog.js'),

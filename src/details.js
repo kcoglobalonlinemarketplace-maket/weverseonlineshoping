@@ -2,6 +2,7 @@ import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListi
 import { getTruckById, formatTruckPrice, TRUCK_LISTINGS } from './truck-data.js';
 import { getMotorhomeById, MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { getCarById, CAR_LISTINGS } from './car-data.js';
+import { getPhoneById, PHONE_LISTINGS } from './phone-data.js';
 import { PET_LISTINGS } from './pet-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
@@ -1207,6 +1208,14 @@ async function init() {
     cleanListing(car);
     document.title = `${car.title} | Weverse Online Shop`;
     renderCar(car);
+    return;
+  }
+
+  const phone = getPhoneById(id);
+  if (phone) {
+    cleanListing(phone);
+    document.title = `${phone.title} | Weverse Online Shop`;
+    render(phone);
     return;
   }
 
