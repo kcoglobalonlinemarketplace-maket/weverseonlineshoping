@@ -3,6 +3,7 @@ import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
 import { PHONE_LISTINGS, getPhoneBrandGroups } from './phone-data.js';
+import { MEN_LISTINGS } from './men-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
@@ -149,6 +150,13 @@ const REAL_ESTATE_SECTIONS = [
     ],
   },
   {
+    id: 'men', label: 'Man', icon: 'shirt',
+    subtitle: '90 international fashion & lifestyle products — one card per category.',
+    rows: [
+      { id: 'all-men', label: 'Man', icon: 'shirt', allMen: true },
+    ],
+  },
+  {
     id: 'trucks-buses', label: 'Trucks & Buses', icon: 'truck',
     subtitle: 'Heavy-duty trucks and commercial transport vehicles.',
     rows: [
@@ -190,7 +198,7 @@ const MARKETPLACE_SECTIONS = [
       { id: 'mp-appl-purifiers', label: 'Air Purifiers', icon: 'air-vent', ids: ['KCO-003114', 'KCO-003115', 'KCO-003116'] },
     ],
   },
-  { id: 'mp-men', label: 'Men', icon: 'shirt', subtitle: 'Apparel, footwear, and accessories for men.', rows: [{ id: 'mp-men-all', label: 'All Men', icon: 'shirt', ids: ['KCO-000036','KCO-000037','KCO-000038','KCO-000039','KCO-000040','KCO-000041','KCO-000042','KCO-000043','KCO-000044','KCO-000045','KCO-000046','KCO-000047','KCO-000048','KCO-000049','KCO-000050','KCO-000051','KCO-000052','KCO-000053','KCO-000054','KCO-000055','KCO-000056','KCO-000057','KCO-000058','KCO-000059','KCO-000060','KCO-000061','KCO-000062','KCO-000063','KCO-000064','KCO-000065','KCO-000066','KCO-000067','KCO-000068','KCO-000069','KCO-000070'] }] },
+  { id: 'mp-men', label: 'Men', icon: 'shirt', subtitle: '90 international fashion, footwear, grooming & tech products.', rows: [{ id: 'mp-men-all', label: 'All Men', icon: 'shirt', allMen: true }] },
   { id: 'mp-women', label: 'Women', icon: 'shirt', subtitle: 'Fashion, footwear, and accessories for women.', rows: [{ id: 'mp-women-all', label: 'All Women', icon: 'shirt', ids: ['KCO-000071','KCO-000072','KCO-000073','KCO-000074','KCO-000075','KCO-000076','KCO-000077','KCO-000078','KCO-000079','KCO-000080','KCO-000081','KCO-000082','KCO-000083','KCO-000084','KCO-000085','KCO-000086','KCO-000087','KCO-000088','KCO-000089','KCO-000090','KCO-000091','KCO-000092','KCO-000093','KCO-000094','KCO-000095','KCO-000096','KCO-000097','KCO-000098','KCO-000099','KCO-000100','KCO-000101','KCO-000102','KCO-000103','KCO-000104','KCO-000105'] }] },
   { id: 'mp-kids', label: 'Kids', icon: 'baby', subtitle: 'Clothing, toys, and essentials for children.', rows: [{ id: 'mp-kids-all', label: 'All Kids', icon: 'baby', ids: [] }] },
   { id: 'mp-fashion', label: 'Fashion', icon: 'shirt', subtitle: 'Trendy apparel and designer fashion for everyone.', rows: [{ id: 'mp-fashion-all', label: 'All Fashion', icon: 'shirt', ids: [] }] },
@@ -634,9 +642,42 @@ function renderPhoneBrandsRow(rowDef) {
   return row;
 }
 
+// ── Man row ─────────────────────────────────────────────────────
+// The "Man" section shows one card per category (90 products) in a
+// responsive grid, using the same product cards as the marketplace.
+function renderMenRow(rowDef) {
+  const items = MEN_LISTINGS.filter((l) => l && !isCatalogListingHidden(l.property_id));
+  const row = document.createElement('div');
+  row.className = 'showroom-row relative';
+  row.dataset.rowId = rowDef.id;
+
+  row.innerHTML = `
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-400"></i>
+        </span>
+        <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
+        <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${items.length} Categories</span>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"></div>
+  `;
+
+  const track = row.querySelector('.grid');
+  const frag = document.createDocumentFragment();
+  items.forEach((l) => frag.appendChild(renderCard(l)));
+  track.appendChild(frag);
+
+  return row;
+}
+
 function renderRow(rowDef) {
   if (rowDef.allPhones) {
     return renderPhoneBrandsRow(rowDef);
+  }
+  if (rowDef.allMen) {
+    return renderMenRow(rowDef);
   }
   let listings;
   if (rowDef.allTrucks) {
@@ -708,9 +749,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allPhones ? PHONE_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allPhones ? PHONE_LISTINGS : r.allMen ? MEN_LISTINGS : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allPhones) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allPhones && !r.allMen) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
@@ -1145,7 +1186,7 @@ function createViewAllTrucksButton() {
 // smartphone (real photos), shown in the same beautiful card grid.
 // Reuses the same renderCard + loader.
 const PHONE_SECTION_IDS = new Set(['phones']);
-
+const MEN_SECTION_IDS = new Set(['men']);
 let allPhonesOverlay = null;
 let _phonesLoader = null;
 let _phonesEscBound = false;
@@ -1225,6 +1266,89 @@ function createViewAllPhonesButton() {
   btn.className = 'view-all-phones-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-blue-600/30 transition active:scale-95';
   btn.innerHTML = `View all Phones <span class="text-lg">→ 📱</span>`;
   btn.addEventListener('click', openAllPhonesView);
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+// ── All Man view ────────────────────────────────────────────────
+// "View all Man 💕" opens a full-screen catalog of every Man product
+// (one per category, 90 items), shown in the same beautiful card grid.
+let allMenOverlay = null;
+let _menLoader = null;
+let _menEscBound = false;
+
+function buildAllMenOverlay() {
+  const existing = document.getElementById('all-men-overlay');
+  if (existing) existing.remove();
+  allMenOverlay = document.createElement('div');
+  allMenOverlay.id = 'all-men-overlay';
+  allMenOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+
+  const header = document.createElement('div');
+  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.innerHTML = `
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0"><i data-lucide="shirt" class="w-5 h-5 text-blue-400"></i></span>
+      <div class="min-w-0">
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Man</h2>
+        <p id="all-men-count" class="text-[11px] text-gray-400 truncate"></p>
+      </div>
+    </div>
+    <button class="close-all-men btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Man"><i data-lucide="x" class="w-5 h-5"></i></button>
+  `;
+
+  const body = document.createElement('div');
+  body.id = 'all-men-body';
+  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
+
+  allMenOverlay.appendChild(header);
+  allMenOverlay.appendChild(body);
+  document.body.appendChild(allMenOverlay);
+
+  const items = MEN_LISTINGS.filter((l) => l && !isCatalogListingHidden(l.property_id));
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
+  body.appendChild(grid);
+
+  _menLoader = createIncrementalLoader(allMenOverlay, body, [{ grid, items }]);
+
+  const countEl = document.getElementById('all-men-count');
+  if (countEl) countEl.textContent = `${items.length} international products · Clothing, Shoes, Accessories, Grooming, Tech & Fitness`;
+
+  header.querySelector('.close-all-men').addEventListener('click', closeAllMenView);
+  allMenOverlay.addEventListener('click', (e) => { if (e.target === allMenOverlay) closeAllMenView(); });
+
+  if (!_menEscBound) {
+    _menEscBound = true;
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllMenView(); });
+  }
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function openAllMenView() {
+  buildAllMenOverlay();
+  if (window.lucide) lucide.createIcons();
+  allMenOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  allMenOverlay.scrollTop = 0;
+  if (_menLoader) _menLoader.pump();
+}
+
+function closeAllMenView() {
+  if (!allMenOverlay) return;
+  allMenOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function createViewAllMenButton() {
+  const wrap = document.createElement('div');
+  wrap.className = 'flex justify-center py-1';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'view-all-men-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-blue-600/30 transition active:scale-95';
+  btn.innerHTML = `View all Man <span class="text-lg">💕</span>`;
+  btn.addEventListener('click', openAllMenView);
   wrap.appendChild(btn);
   return wrap;
 }
@@ -1339,15 +1463,16 @@ function renderGrid(gridName) {
     // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
     // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'phones', 'trucks-buses', 'heavy-equipment']) {
+    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'phones', 'men', 'trucks-buses', 'heavy-equipment']) {
       const section = byId.get(id);
       if (!section) continue;
-      const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id);
+      const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id) || MEN_SECTION_IDS.has(id);
       container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
       if (id === 'pets') container.appendChild(createViewAllDogsButton());
       if (id === 'motorhomes-boats') container.appendChild(createViewAllHousesButton());
       if (id === 'cars') container.appendChild(createViewAllCarsButton());
       if (id === 'phones') container.appendChild(createViewAllPhonesButton());
+      if (id === 'men') container.appendChild(createViewAllMenButton());
       if (id === 'trucks-buses') container.appendChild(createViewAllTrucksButton());
     }
     // modern-luxury & commercial-land are intentionally left off the

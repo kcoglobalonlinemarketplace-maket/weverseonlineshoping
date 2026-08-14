@@ -6,6 +6,7 @@ import { APPLIANCE_SHOWCASE_LISTINGS } from './appliance-showcase-data.js';
 import { APPLIANCE_ESSENTIALS_LISTINGS } from './appliance-essentials-data.js';
 import { PET_LISTINGS } from './pet-data.js';
 import { NEW_DOG_LISTINGS } from './dog-data.js';
+import { MEN_LISTINGS } from './men-data.js';
 
 const PEXELS = (id, w = 800) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
@@ -1197,6 +1198,10 @@ SHOWROOM_LISTINGS.push(...PET_LISTINGS);
 // Beautiful Dogs — 15 extra gorgeous, healthy breeds shown at the front
 // of the "Beautiful Dogs" line.
 SHOWROOM_LISTINGS.push(...NEW_DOG_LISTINGS);
+
+// Man — 90 international fashion & lifestyle products (one per category),
+// product-only photos, powering the "Man" homepage section.
+SHOWROOM_LISTINGS.push(...MEN_LISTINGS);
 
 // Real-world coordinates for every seeded property listing so showroom cards can
 // render a map preview and the details page map can skip geocoding lookups.
