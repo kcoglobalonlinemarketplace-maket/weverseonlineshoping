@@ -3,6 +3,7 @@
 
 import { HOUSE_KITCHEN_LISTINGS } from './home-kitchen-data.js';
 import { APPLIANCE_SHOWCASE_LISTINGS } from './appliance-showcase-data.js';
+import { APPLIANCE_ESSENTIALS_LISTINGS } from './appliance-essentials-data.js';
 import { PET_LISTINGS } from './pet-data.js';
 
 const PEXELS = (id, w = 800) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
@@ -1183,6 +1184,11 @@ SHOWROOM_LISTINGS.push(...HOUSE_KITCHEN_LISTINGS);
 // Modern Home Appliances — 10 real world-famous products for the
 // "Modern Home Appliances" section (former Heavy Equipment & Auto Parts).
 SHOWROOM_LISTINGS.push(...APPLIANCE_SHOWCASE_LISTINGS);
+
+// Home Appliance Essentials — real photos for the marketplace
+// "Home Appliances" section (washers, dryers, cooling, fans, water,
+// irons, and air purifiers).
+SHOWROOM_LISTINGS.push(...APPLIANCE_ESSENTIALS_LISTINGS);
 
 // Beautiful Pets — 15 dog breeds for sale in the "Pets & Dogs" section.
 SHOWROOM_LISTINGS.push(...PET_LISTINGS);

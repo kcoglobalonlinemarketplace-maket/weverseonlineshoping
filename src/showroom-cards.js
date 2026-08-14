@@ -168,6 +168,21 @@ const REAL_ESTATE_SECTIONS = [
 // ── Section 2: Shopping Marketplace ──
 // Every other marketplace category. Empty ids arrays show "Coming Soon".
 const MARKETPLACE_SECTIONS = [
+  {
+    id: 'mp-appliances', label: 'Home Appliances', icon: 'washing-machine',
+    subtitle: 'Modern washers, dryers, cooling, fans, water, and home care appliances.',
+    rows: [
+      { id: 'mp-appl-washers', label: 'Washing Machines', icon: 'washing-machine', layout: 'grid', ids: ['KCO-002001', 'KCO-002012'] },
+      { id: 'mp-appl-dryers', label: 'Dryers', icon: 'wind', layout: 'grid', ids: ['KCO-002014', 'KCO-003018'] },
+      { id: 'mp-appl-ac', label: 'Air Conditioners', icon: 'snowflake', layout: 'grid', ids: ['KCO-003001', 'KCO-003002', 'KCO-003003'] },
+      { id: 'mp-appl-fans', label: 'Fans', icon: 'fan', layout: 'grid', ids: ['KCO-003004', 'KCO-003005', 'KCO-003006'] },
+      { id: 'mp-appl-vacuums', label: 'Vacuum Cleaners', icon: 'sparkles', layout: 'grid', ids: ['KCO-002005', 'KCO-002008'] },
+      { id: 'mp-appl-dispensers', label: 'Water Dispensers', icon: 'glass-water', layout: 'grid', ids: ['KCO-003007', 'KCO-003008', 'KCO-003009'] },
+      { id: 'mp-appl-heaters', label: 'Water Heaters', icon: 'flame', layout: 'grid', ids: ['KCO-003010', 'KCO-003011', 'KCO-003012'] },
+      { id: 'mp-appl-irons', label: 'Irons', icon: 'zap', layout: 'grid', ids: ['KCO-003013', 'KCO-003014'] },
+      { id: 'mp-appl-purifiers', label: 'Air Purifiers', icon: 'air-vent', layout: 'grid', ids: ['KCO-003015', 'KCO-003016', 'KCO-003017'] },
+    ],
+  },
   { id: 'mp-men', label: 'Men', icon: 'shirt', subtitle: 'Apparel, footwear, and accessories for men.', rows: [{ id: 'mp-men-all', label: 'All Men', icon: 'shirt', ids: ['KCO-000036','KCO-000037','KCO-000038','KCO-000039','KCO-000040','KCO-000041','KCO-000042','KCO-000043','KCO-000044','KCO-000045','KCO-000046','KCO-000047','KCO-000048','KCO-000049','KCO-000050','KCO-000051','KCO-000052','KCO-000053','KCO-000054','KCO-000055','KCO-000056','KCO-000057','KCO-000058','KCO-000059','KCO-000060','KCO-000061','KCO-000062','KCO-000063','KCO-000064','KCO-000065','KCO-000066','KCO-000067','KCO-000068','KCO-000069','KCO-000070'] }] },
   { id: 'mp-women', label: 'Women', icon: 'shirt', subtitle: 'Fashion, footwear, and accessories for women.', rows: [{ id: 'mp-women-all', label: 'All Women', icon: 'shirt', ids: ['KCO-000071','KCO-000072','KCO-000073','KCO-000074','KCO-000075','KCO-000076','KCO-000077','KCO-000078','KCO-000079','KCO-000080','KCO-000081','KCO-000082','KCO-000083','KCO-000084','KCO-000085','KCO-000086','KCO-000087','KCO-000088','KCO-000089','KCO-000090','KCO-000091','KCO-000092','KCO-000093','KCO-000094','KCO-000095','KCO-000096','KCO-000097','KCO-000098','KCO-000099','KCO-000100','KCO-000101','KCO-000102','KCO-000103','KCO-000104','KCO-000105'] }] },
   { id: 'mp-kids', label: 'Kids', icon: 'baby', subtitle: 'Clothing, toys, and essentials for children.', rows: [{ id: 'mp-kids-all', label: 'All Kids', icon: 'baby', ids: [] }] },
@@ -177,7 +192,6 @@ const MARKETPLACE_SECTIONS = [
   { id: 'mp-home', label: 'Home', icon: 'home', subtitle: 'Everything for your living space and home decor.', rows: [{ id: 'mp-home-all', label: 'All Home', icon: 'home', ids: [] }] },
   { id: 'mp-furniture', label: 'Furniture', icon: 'armchair', subtitle: 'Stylish furniture for every room in your home.', rows: [{ id: 'mp-furniture-all', label: 'All Furniture', icon: 'armchair', ids: [] }] },
   { id: 'mp-kitchen', label: 'Kitchen', icon: 'utensils', subtitle: 'Cookware, dining, and kitchen essentials.', rows: [{ id: 'mp-kitchen-all', label: 'All Kitchen', icon: 'utensils', ids: [] }] },
-  { id: 'mp-appliances', label: 'Home Appliances', icon: 'refrigerator', subtitle: 'Reliable appliances to power your home.', rows: [{ id: 'mp-appliances-all', label: 'All Home Appliances', icon: 'refrigerator', ids: [] }] },
   { id: 'mp-home-kitchen', label: 'Home & Kitchen', icon: 'home', subtitle: 'Appliances, cookware, furniture, and essentials for every room.', rows: [
       { id: 'mp-hk-kitchen-appliances', label: 'Kitchen Appliances', icon: 'microwave', ids: ['KCO-001001','KCO-001002','KCO-001003','KCO-001004','KCO-001005','KCO-001006','KCO-001007','KCO-001008','KCO-001009','KCO-001010','KCO-001011','KCO-001012','KCO-001013','KCO-001014','KCO-001015','KCO-001016','KCO-001017','KCO-001018','KCO-001019'] },
       { id: 'mp-hk-cooking', label: 'Cooking', icon: 'chef-hat', ids: ['KCO-001020','KCO-001021','KCO-001022','KCO-001023','KCO-001024','KCO-001025','KCO-001026','KCO-001027','KCO-001028','KCO-001029','KCO-001030','KCO-001031','KCO-001032','KCO-001033','KCO-001034','KCO-001035','KCO-001036','KCO-001037'] },
@@ -194,7 +208,6 @@ const MARKETPLACE_SECTIONS = [
       { id: 'mp-hk-family', label: 'Family & Baby', icon: 'baby', ids: ['KCO-001190','KCO-001191','KCO-001192','KCO-001193','KCO-001194','KCO-001195','KCO-001196','KCO-001197','KCO-001198','KCO-001199','KCO-001200'] },
   ] },
   { id: 'mp-electronics', label: 'Electronics', icon: 'cpu', subtitle: 'Latest electronics and gadgets for tech lovers.', rows: [{ id: 'mp-electronics-all', label: 'All Electronics', icon: 'cpu', ids: [] }] },
-  { id: 'mp-phones', label: 'Phones', icon: 'smartphone', subtitle: 'Smartphones and mobile accessories from top brands.', rows: [{ id: 'mp-phones-all', label: 'All Phones', icon: 'smartphone', ids: [] }] },
   { id: 'mp-computers', label: 'Computers', icon: 'monitor', subtitle: 'Laptops, desktops, and computing accessories.', rows: [{ id: 'mp-computers-all', label: 'All Computers', icon: 'monitor', ids: [] }] },
   { id: 'mp-gaming', label: 'Gaming', icon: 'gamepad-2', subtitle: 'Consoles, games, and gaming accessories.', rows: [{ id: 'mp-gaming-all', label: 'All Gaming', icon: 'gamepad-2', ids: [] }] },
   { id: 'mp-sports', label: 'Sports', icon: 'dumbbell', subtitle: 'Sporting goods and fitness equipment for athletes.', rows: [{ id: 'mp-sports-all', label: 'All Sports', icon: 'dumbbell', ids: [] }] },
@@ -267,9 +280,7 @@ const ROW_TO_CATALOG_SLUG = {
   'mp-home-all': 'home',
   'mp-furniture-all': 'furniture',
   'mp-kitchen-all': 'kitchen',
-  'mp-appliances-all': 'appliances',
   'mp-electronics-all': 'electronics',
-  'mp-phones-all': 'phones',
   'mp-computers-all': 'computers',
   'mp-gaming-all': 'gaming',
   'mp-sports-all': 'sports',
@@ -527,10 +538,12 @@ function renderRow(rowDef) {
     listings = [...listings, ...catalogExtra];
   }
   const hasItems = listings.length > 0;
+  const isGrid = rowDef.layout === 'grid';
 
   const row = document.createElement('div');
   row.className = 'showroom-row relative';
   row.dataset.rowId = rowDef.id;
+  if (isGrid) row.dataset.layout = 'grid';
 
   row.innerHTML = `
     <div class="flex items-center justify-between mb-2">
@@ -539,8 +552,9 @@ function renderRow(rowDef) {
           <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-400"></i>
         </span>
         <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
+        ${hasItems && isGrid ? `<span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${listings.length} Items</span>` : ''}
       </div>
-      <div class="flex items-center gap-1 ${hasItems ? '' : 'hidden'}">
+      <div class="flex items-center gap-1 ${hasItems && !isGrid ? '' : 'hidden'}">
         <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
           <i data-lucide="chevron-left" class="w-4 h-4"></i>
         </button>
@@ -549,10 +563,10 @@ function renderRow(rowDef) {
         </button>
       </div>
     </div>
-    <div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"></div>
+    <div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1'}"></div>
   `;
 
-  const track = row.querySelector('.hscroll');
+  const track = row.querySelector(isGrid ? '.grid' : '.hscroll');
 
   if (hasItems) {
     const frag = document.createDocumentFragment();
@@ -1235,9 +1249,8 @@ const CATEGORY_TO_SECTION_ROW = {
   'Home': { section: 'mp-home', row: 'mp-home-all' },
   'Furniture': { section: 'mp-furniture', row: 'mp-furniture-all' },
   'Kitchen': { section: 'mp-kitchen', row: 'mp-kitchen-all' },
-  'Home Appliances': { section: 'mp-appliances', row: 'mp-appliances-all' },
+  'Home Appliances': { section: 'mp-appliances', row: 'mp-appl-washers' },
   'Electronics': { section: 'mp-electronics', row: 'mp-electronics-all' },
-  'Phones': { section: 'mp-phones', row: 'mp-phones-all' },
   'Computers': { section: 'mp-computers', row: 'mp-computers-all' },
   'Gaming': { section: 'mp-gaming', row: 'mp-gaming-all' },
   'Sports': { section: 'mp-sports', row: 'mp-sports-all' },
@@ -1285,7 +1298,6 @@ const CATEGORY_TO_SECTION_ROW = {
 
 // Fuzzy keyword matching for categories not found exactly
 const CATEGORY_KEYWORDS = [
-  { keywords: ['phone', 'smartphone', 'mobile'], target: { section: 'mp-phones', row: 'mp-phones-all' } },
   { keywords: ['computer', 'laptop', 'desktop', 'monitor'], target: { section: 'mp-computers', row: 'mp-computers-all' } },
   { keywords: ['electronic', 'gadget', 'tech'], target: { section: 'mp-electronics', row: 'mp-electronics-all' } },
   { keywords: ['fashion', 'apparel', 'clothing'], target: { section: 'mp-fashion', row: 'mp-fashion-all' } },
@@ -1294,7 +1306,16 @@ const CATEGORY_KEYWORDS = [
   { keywords: ['home', 'decor'], target: { section: 'mp-home', row: 'mp-home-all' } },
   { keywords: ['furniture', 'chair', 'table', 'sofa'], target: { section: 'mp-furniture', row: 'mp-furniture-all' } },
   { keywords: ['kitchen', 'cookware', 'utensil'], target: { section: 'mp-kitchen', row: 'mp-kitchen-all' } },
-  { keywords: ['appliance'], target: { section: 'mp-appliances', row: 'mp-appliances-all' } },
+  { keywords: ['washing machine', 'washer', 'laundry'], target: { section: 'mp-appliances', row: 'mp-appl-washers' } },
+  { keywords: ['dryer', 'tumble'], target: { section: 'mp-appliances', row: 'mp-appl-dryers' } },
+  { keywords: ['air condition', 'air conditioning', 'cooling unit'], target: { section: 'mp-appliances', row: 'mp-appl-ac' } },
+  { keywords: ['fan'], target: { section: 'mp-appliances', row: 'mp-appl-fans' } },
+  { keywords: ['vacuum', 'vacuum cleaner', 'robot vacuum'], target: { section: 'mp-appliances', row: 'mp-appl-vacuums' } },
+  { keywords: ['water dispenser', 'water cooler'], target: { section: 'mp-appliances', row: 'mp-appl-dispensers' } },
+  { keywords: ['water heater', 'geyser', 'boiler'], target: { section: 'mp-appliances', row: 'mp-appl-heaters' } },
+  { keywords: ['iron', 'ironing'], target: { section: 'mp-appliances', row: 'mp-appl-irons' } },
+  { keywords: ['air purifier', 'air cleaner', 'hepa'], target: { section: 'mp-appliances', row: 'mp-appl-purifiers' } },
+  { keywords: ['appliance'], target: { section: 'mp-appliances', row: 'mp-appl-washers' } },
   { keywords: ['game', 'gaming', 'console'], target: { section: 'mp-gaming', row: 'mp-gaming-all' } },
   { keywords: ['sport', 'fitness', 'gym', 'athletic'], target: { section: 'mp-sports', row: 'mp-sports-all' } },
   { keywords: ['food', 'grocer'], target: { section: 'mp-food', row: 'mp-food-all' } },

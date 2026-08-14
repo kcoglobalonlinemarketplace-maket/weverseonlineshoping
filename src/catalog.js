@@ -376,23 +376,6 @@ export const CATALOG_CATEGORIES = [
   },
 
   {
-    name: 'Phones', slug: 'phones', code: 'PH', count: 2000,
-    brands: ['Global Mobile', 'NovaPhone', 'Pixel Prime', 'Volt Mobile', 'Orbit', 'Celluxe'],
-    imgs: [...IMG_GENERAL],
-    colors: COLORS,
-    types: [
-      { n: 'Flagship Smartphone', models: ['Pro', 'Ultra', 'Max', 'Prime', 'X'], p: [699, 1399], s: ['6.7"'], m: ['Glass', 'Titanium Frame'], f: ['5G', 'OLED Display', 'Triple Camera', 'Fast Charging'], d: ['Pro-grade cameras and a stunning display.', 'Flagship performance that keeps up with you.'] },
-      { n: 'Budget Smartphone', models: ['Go', 'Lite', 'Essential', 'A', 'Eco'], p: [129, 249], s: ['6.4"', '6.5"'], m: ['Plastic', 'Glass'], f: ['Long Battery', 'Dual Camera', 'Fingerprint', 'Expandable Storage'], d: ['Reliable performance at a friendly price.', 'A battery that lasts all day.'] },
-      { n: 'Mid-Range Smartphone', models: ['Plus', 'Air', 'Neo', 'Active', 'Prime'], p: [299, 499], s: ['6.5"', '6.6"'], m: ['Glass', 'Aluminium'], f: ['AMOLED', 'Fast Charging', 'Multi-Camera', '5G'], d: ['Premium features without the flagship price.', 'A crisp display perfect for media.'] },
-      { n: 'Gaming Phone', models: ['Pro', 'Ultra', 'Razer', 'Turbo', 'Max'], p: [499, 899], s: ['6.8"'], m: ['Glass', 'Metal'], f: ['High Refresh Rate', 'Cooling System', 'Triggers', 'Fast Charge'], d: ['Built for competitive, lag-free gaming.', 'Dedicated cooling keeps performance high.'] },
-      { n: 'Camera Phone', models: ['Shot', 'Pro', 'Pixel', 'Vision', 'Ultra'], p: [549, 999], s: ['6.6"'], m: ['Glass', 'Aluminium'], f: ['Periscope Zoom', 'Night Mode', '4K Video', 'OIS'], d: ['Photography-first hardware and software.', 'Zoom, detail and low-light shots that impress.'] },
-      { n: 'Compact Smartphone', models: ['Mini', 'Pocket', 'Lite', 'Go', 'Essence'], p: [399, 699], s: ['5.8"', '6.1"'], m: ['Glass', 'Aluminium'], f: ['Pocket Size', 'Flagship Chip', 'Wireless Charging', 'Great Cameras'], d: ['Full flagship power in a pocket-friendly size.', 'One-handed comfort without compromise.'] },
-      { n: 'Durable Rugged Phone', models: ['Armor', 'Rugged', 'Pro', 'Field', 'Tough'], p: [349, 649], s: ['6.2"'], m: ['Rubberised Body', 'Gorilla Glass'], f: ['IP68', 'MIL-STD Drop', 'Replaceable Battery', 'Physical Buttons'], d: ['Built to survive drops, dust and water.', 'Reliable in the toughest conditions.'] },
-      { n: 'Feature Phone', models: ['Basic', 'Go', 'Eco', 'Classic', 'Plus'], p: [39, 89], s: ['2.4"'], m: ['Plastic'], f: ['Long Battery', 'Big Buttons', 'Dual SIM', 'FM Radio'], d: ['Simple, dependable calling with week-long battery.', 'Large buttons for easy use.'] },
-    ],
-  },
-
-  {
     name: 'Computers', slug: 'computers', code: 'CO', count: 2000,
     brands: ['NorthBridge', 'CoreTech', 'Pixel Prime', 'Orbit Digital', 'Machline', 'Apex Computing'],
     imgs: [...IMG_GENERAL],
