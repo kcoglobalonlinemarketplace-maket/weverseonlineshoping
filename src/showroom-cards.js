@@ -427,7 +427,7 @@ export function renderCard(listing) {
   // Rating display: real reviews take priority, estimate shown without label
   let ratingStars = '';
   if (displayRating > 0) {
-    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-200 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
+    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
   }
 
   // Product badges (New Arrival, Best Seller, etc.)
@@ -438,20 +438,20 @@ export function renderCard(listing) {
   if (isProperty && listing.latitude && listing.longitude) {
     const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${listing.latitude},${listing.longitude}&zoom=13&size=600x160&markers=${listing.latitude},${listing.longitude},color-red&maptype=mapnik`;
     mapPreviewHtml = `
-      <div class="relative mt-2.5 h-20 rounded-lg overflow-hidden border border-gray-800 bg-gray-900">
+      <div class="relative mt-2.5 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
         <img src="${mapUrl}" alt="Map location for ${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null;this.style.display='none'">
         <span class="absolute top-1 left-1 bg-black/70 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1"><i data-lucide="map" class="w-3 h-3"></i>Map · ${listing.city || listing.town || ''}</span>
       </div>`;
   }
 
   const card = document.createElement('div');
-  card.className = 'showroom-card group relative bg-[#0f172a]/80 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 flex flex-col cursor-pointer';
+  card.className = 'showroom-card group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col cursor-pointer';
   card.dataset.id = listingId;
 
   const wishSaved = isSaved(listing);
 
   card.innerHTML = `
-    <div class="relative aspect-[4/3] overflow-hidden bg-gray-900">
+    <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
       <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
@@ -459,18 +459,18 @@ export function renderCard(listing) {
       ${badgesHtml}
     </div>
     <div class="p-4 flex flex-col flex-1">
-      <h3 class="text-[15px] font-bold text-white leading-snug mb-1.5 line-clamp-2">${listing.title}</h3>
+      <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5 line-clamp-2">${listing.title}</h3>
       ${locationHtml}
       ${specsHtml}
       <div class="flex items-center justify-between mt-auto pt-2">
-        <span class="text-lg font-black text-blue-400">${price}</span>
+        <span class="text-lg font-black text-blue-600">${price}</span>
         ${ratingStars}
       </div>
-      <div class="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-gray-800/60">
-        <button class="share-btn shrink-0 w-8 h-8 bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
+      <div class="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-gray-100">
+        <button class="share-btn shrink-0 w-8 h-8 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
             <i data-lucide="share-2" class="w-4 h-4"></i>
           </button>
-          <button class="wishlist-btn ${wishSaved ? 'saved bg-red-500/20 text-red-400 border border-red-500/40' : ''} shrink-0 w-8 h-8 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-400 rounded-lg transition flex items-center justify-center" title="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}" aria-label="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}">
+          <button class="wishlist-btn ${wishSaved ? 'saved bg-red-500/20 text-red-400 border border-red-500/40' : ''} shrink-0 w-8 h-8 bg-gray-100 hover:bg-red-50 hover:text-red-500 text-gray-500 rounded-lg transition flex items-center justify-center" title="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}" aria-label="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}">
             <i data-lucide="heart" class="w-4 h-4 ${wishSaved ? 'fill-red-500 text-red-500' : ''}"></i>
           </button>
         </div>
@@ -479,7 +479,7 @@ export function renderCard(listing) {
         <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
           <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
         </button>
-        <button class="details-btn flex-1 min-w-0 bg-white/5 hover:bg-white/10 active:scale-95 text-gray-300 hover:text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-700 hover:border-gray-500">
+        <button class="details-btn flex-1 min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
           <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
         </button>
       </div>
@@ -567,7 +567,7 @@ function renderPhoneBrandCard(group) {
     const pid = p.id || p.property_id;
     const img = p.images?.[0] || FALLBACK_IMG;
     return `
-      <button type="button" class="phone-thumb relative aspect-square rounded-lg overflow-hidden bg-gray-800 border border-gray-700/60 hover:border-blue-500/70 transition group/thumb" data-phone-id="${pid}" title="${p.title}">
+      <button type="button" class="phone-thumb relative aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 hover:border-blue-400 transition group/thumb" data-phone-id="${pid}" title="${p.title}">
         <img src="${img}" alt="${p.model || p.title}" loading="lazy" decoding="async"
              class="w-full h-full object-contain group-hover/thumb:scale-105 transition-transform duration-300"
              onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
@@ -575,7 +575,7 @@ function renderPhoneBrandCard(group) {
   }).join('');
 
   const card = document.createElement('div');
-  card.className = 'showroom-card group relative w-[300px] sm:w-[340px] shrink-0 bg-[#0f172a]/80 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 flex flex-col cursor-pointer';
+  card.className = 'showroom-card group relative w-[300px] sm:w-[340px] shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col cursor-pointer';
   card.dataset.phoneBrand = brand;
 
   card.innerHTML = `
@@ -590,8 +590,8 @@ function renderPhoneBrandCard(group) {
     </div>
     <div class="p-3 flex flex-col flex-1">
       <div class="flex items-center justify-between gap-2 mb-1">
-        <h3 class="text-[15px] font-bold text-white leading-snug truncate">${brand} Phones</h3>
-        <span class="shrink-0 text-sm font-black text-blue-400">${priceRange}</span>
+        <h3 class="text-[15px] font-bold text-gray-900 leading-snug truncate">${brand} Phones</h3>
+        <span class="shrink-0 text-sm font-black text-blue-600">${priceRange}</span>
       </div>
       <p class="text-xs text-gray-400 truncate mb-2">${hero.title}</p>
       <div class="grid grid-cols-4 gap-1.5 mt-auto">
@@ -622,16 +622,16 @@ function renderPhoneBrandsRow(rowDef) {
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2.5 min-w-0">
         <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-400"></i>
+          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-600"></i>
         </span>
-        <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
+        <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
         <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${groups.reduce((n, g) => n + g.phones.length, 0)} Phones</span>
       </div>
       <div class="flex items-center gap-1">
-        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
           <i data-lucide="chevron-left" class="w-4 h-4"></i>
         </button>
-        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll right">
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
           <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </button>
       </div>
@@ -663,16 +663,16 @@ function renderMenRow(rowDef) {
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2.5 min-w-0">
         <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-400"></i>
+          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-600"></i>
         </span>
-        <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
+        <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
         <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${items.length} Categories</span>
       </div>
       <div class="flex items-center gap-1">
-        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
           <i data-lucide="chevron-left" class="w-4 h-4"></i>
         </button>
-        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll right">
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
           <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </button>
       </div>
@@ -706,14 +706,14 @@ function renderWomanRow(rowDef) {
         <span class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
           <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-rose-400"></i>
         </span>
-        <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
+        <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
         <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-300">${items.length} Products</span>
       </div>
       <div class="flex items-center gap-1">
-        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
           <i data-lucide="chevron-left" class="w-4 h-4"></i>
         </button>
-        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll right">
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
           <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </button>
       </div>
@@ -769,16 +769,16 @@ function renderRow(rowDef) {
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2.5 min-w-0">
         <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-400"></i>
+          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-600"></i>
         </span>
-        <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
+        <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
         ${hasItems && isGrid ? `<span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${listings.length} Items</span>` : ''}
       </div>
       <div class="flex items-center gap-1 ${hasItems && !isGrid ? '' : 'hidden'}">
-        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
           <i data-lucide="chevron-left" class="w-4 h-4"></i>
         </button>
-        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll right">
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
           <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </button>
       </div>
@@ -794,7 +794,7 @@ function renderRow(rowDef) {
     track.appendChild(frag);
   } else {
     track.innerHTML = `<div class="flex items-center justify-center w-full py-6">
-      <span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-700 rounded-xl px-5 py-3">Coming Soon</span>
+      <span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-300 rounded-xl px-5 py-3">Coming Soon</span>
     </div>`;
   }
 
@@ -837,7 +837,7 @@ function renderSection(section, accentColor, maxRows) {
         <i data-lucide="${section.icon}" class="w-6 h-6 ${accentText}"></i>
       </div>
       <div class="flex-1 min-w-0">
-        <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
+        <h3 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
           <span class="bg-gradient-to-r from-blue-200 via-white to-blue-300 bg-clip-text text-transparent">${section.label}</span>
         </h3>
         <p class="text-gray-400 text-xs sm:text-[13px] leading-tight mt-1 truncate">${section.subtitle}</p>
@@ -983,19 +983,19 @@ function buildAllHousesOverlay() {
   if (existing) existing.remove();
   allHousesOverlay = document.createElement('div');
   allHousesOverlay.id = 'all-houses-overlay';
-  allHousesOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+  allHousesOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
 
   const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
   header.innerHTML = `
     <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0"><i data-lucide="home" class="w-5 h-5 text-blue-400"></i></span>
+      <span class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><i data-lucide="home" class="w-5 h-5 text-blue-600"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Houses &amp; Motorhomes</h2>
+        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">All Houses &amp; Motorhomes</h2>
         <p id="all-houses-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
-    <button class="close-all-houses btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Houses"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button class="close-all-houses btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close All Houses"><i data-lucide="x" class="w-5 h-5"></i></button>
   `;
 
   const body = document.createElement('div');
@@ -1016,7 +1016,7 @@ function buildAllHousesOverlay() {
     head.className = 'flex items-center justify-between gap-2';
     head.innerHTML = `
       <div class="flex items-center gap-2.5 min-w-0">
-        <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-4 h-4 text-blue-400"></i></span>
+        <span class="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-4 h-4 text-blue-600"></i></span>
         <h3 class="text-base font-bold text-gray-100 tracking-wide truncate">${label}</h3>
       </div>
       <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${items.length} Properties</span>
@@ -1087,19 +1087,19 @@ function buildAllCarsOverlay() {
   if (existing) existing.remove();
   allCarsOverlay = document.createElement('div');
   allCarsOverlay.id = 'all-cars-overlay';
-  allCarsOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+  allCarsOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
 
   const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-amber-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
   header.innerHTML = `
     <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0"><i data-lucide="car-front" class="w-5 h-5 text-amber-400"></i></span>
+      <span class="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0"><i data-lucide="car-front" class="w-5 h-5 text-amber-600"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Cars</h2>
+        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">All Cars</h2>
         <p id="all-cars-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
-    <button class="close-all-cars btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Cars"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button class="close-all-cars btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close All Cars"><i data-lucide="x" class="w-5 h-5"></i></button>
   `;
 
   const body = document.createElement('div');
@@ -1171,19 +1171,19 @@ function buildAllTrucksOverlay() {
   if (existing) existing.remove();
   allTrucksOverlay = document.createElement('div');
   allTrucksOverlay.id = 'all-trucks-overlay';
-  allTrucksOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+  allTrucksOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
 
   const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-amber-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
   header.innerHTML = `
     <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0"><i data-lucide="truck" class="w-5 h-5 text-amber-400"></i></span>
+      <span class="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0"><i data-lucide="truck" class="w-5 h-5 text-amber-600"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Trucks</h2>
+        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">All Trucks</h2>
         <p id="all-trucks-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
-    <button class="close-all-trucks btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Trucks"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button class="close-all-trucks btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close All Trucks"><i data-lucide="x" class="w-5 h-5"></i></button>
   `;
 
   const body = document.createElement('div');
@@ -1258,19 +1258,19 @@ function buildAllPhonesOverlay(brand) {
   if (existing) existing.remove();
   allPhonesOverlay = document.createElement('div');
   allPhonesOverlay.id = 'all-phones-overlay';
-  allPhonesOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+  allPhonesOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
 
   const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
   header.innerHTML = `
     <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0"><i data-lucide="smartphone" class="w-5 h-5 text-blue-400"></i></span>
+      <span class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><i data-lucide="smartphone" class="w-5 h-5 text-blue-600"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">${brand ? `${brand} Phones` : 'All Phones'}</h2>
+        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">${brand ? `${brand} Phones` : 'All Phones'}</h2>
         <p id="all-phones-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
-    <button class="close-all-phones btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Phones"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button class="close-all-phones btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close All Phones"><i data-lucide="x" class="w-5 h-5"></i></button>
   `;
 
   const body = document.createElement('div');
@@ -1344,19 +1344,19 @@ function buildAllMenOverlay() {
   if (existing) existing.remove();
   allMenOverlay = document.createElement('div');
   allMenOverlay.id = 'all-men-overlay';
-  allMenOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+  allMenOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
 
   const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
   header.innerHTML = `
     <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0"><i data-lucide="shirt" class="w-5 h-5 text-blue-400"></i></span>
+      <span class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><i data-lucide="shirt" class="w-5 h-5 text-blue-600"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Man</h2>
+        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">All Man</h2>
         <p id="all-men-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
-    <button class="close-all-men btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Man"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button class="close-all-men btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close All Man"><i data-lucide="x" class="w-5 h-5"></i></button>
   `;
 
   const body = document.createElement('div');
@@ -1428,19 +1428,19 @@ function buildAllWomenOverlay() {
   if (existing) existing.remove();
   allWomenOverlay = document.createElement('div');
   allWomenOverlay.id = 'all-women-overlay';
-  allWomenOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+  allWomenOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
 
   const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-rose-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
   header.innerHTML = `
     <div class="flex items-center gap-3 min-w-0">
       <span class="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center shrink-0"><i data-lucide="heart" class="w-5 h-5 text-rose-400"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">Woman Love 💕</h2>
+        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">Woman Love 💕</h2>
         <p id="all-women-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
-    <button class="close-all-women btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close Woman Love"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button class="close-all-women btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close Woman Love"><i data-lucide="x" class="w-5 h-5"></i></button>
   `;
 
   const body = document.createElement('div');
@@ -1526,19 +1526,19 @@ function buildAllDogsOverlay() {
   if (existing) existing.remove();
   allDogsOverlay = document.createElement('div');
   allDogsOverlay.id = 'all-dogs-overlay';
-  allDogsOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+  allDogsOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
 
   const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
   header.innerHTML = `
     <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0"><i data-lucide="paw-print" class="w-5 h-5 text-blue-400"></i></span>
+      <span class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><i data-lucide="paw-print" class="w-5 h-5 text-blue-600"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Dogs</h2>
+        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">All Dogs</h2>
         <p id="all-dogs-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
-    <button class="close-all-dogs btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Dogs"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <button class="close-all-dogs btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close All Dogs"><i data-lucide="x" class="w-5 h-5"></i></button>
   `;
 
   const body = document.createElement('div');

@@ -26,7 +26,7 @@ function renderTruck(listing) {
 
   const imgs = safeImages(listing.images);
   const galleryThumbs = imgs.map((img, i) =>
-    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-800'} shrink-0" data-img="${escapeHtml(img)}">
+    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
       <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
     </button>`
   ).join('');
@@ -55,18 +55,18 @@ function renderTruck(listing) {
   ].filter(s => s.value != null && s.value !== '' && s.value !== 'N/A');
 
   const featuresBlock = listing.features?.length ? `
-    <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Features</h3>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Features</h3>
       <div class="flex flex-wrap gap-2">
-        ${listing.features.map(f => `<span class="text-xs bg-gray-800 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700">${escapeHtml(f)}</span>`).join('')}
+        ${listing.features.map(f => `<span class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full border border-gray-300">${escapeHtml(f)}</span>`).join('')}
       </div>
     </div>` : '';
 
   const ratingsBlock = `
     <div class="flex items-center gap-4 mb-6">
       <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>
-        <span class="text-lg font-bold text-white">${safeRating(listing.rating)}</span>
+        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-600"></i>
+        <span class="text-lg font-bold text-gray-900">${safeRating(listing.rating)}</span>
         <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
       </div>
     </div>`;
@@ -79,25 +79,25 @@ function renderTruck(listing) {
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
         <span>Trucks</span>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
-        <span class="text-gray-300 truncate">${listing.title}</span>
+        <span class="text-gray-700 truncate">${listing.title}</span>
       </div>
 
       <!-- Title & ID -->
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-400 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
+          <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
+          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-600 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
         </div>
         <div class="text-right shrink-0">
           <div class="text-3xl font-black text-blue-500">${price}</div>
-          <span class="inline-block bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+          <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
         </div>
       </div>
 
       ${ratingsBlock}
 
       <!-- Main Image -->
-      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-900 mb-3 hero-zoom">
+      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 hero-zoom">
         <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
         <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
       </div>
@@ -112,28 +112,28 @@ function renderTruck(listing) {
         <button id="buy-now-btn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl uppercase text-sm tracking-wider transition flex items-center justify-center gap-2">
           <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
         </button>
-        <button id="wishlist-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Add to Wishlist">
+        <button id="wishlist-btn" class="px-5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Add to Wishlist">
           <i data-lucide="heart" class="w-5 h-5"></i>
         </button>
-        <button id="share-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Share">
+        <button id="share-btn" class="px-5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Share">
           <i data-lucide="share-2" class="w-5 h-5"></i>
         </button>
       </div>
 
       <!-- Description -->
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3">Description</h3>
-        <p class="text-gray-400 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Description</h3>
+        <p class="text-gray-600 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
       </div>
 
       <!-- Truck Information -->
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Truck Information</h3>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Truck Information</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           ${specs.map(s => `
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-200 font-medium text-sm">${escapeHtml(s.value)}</div>
+              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
             </div>
           `).join('')}
         </div>
@@ -152,9 +152,9 @@ function renderTruck(listing) {
   root.querySelectorAll('.gallery-thumb').forEach((thumb, i) => {
     thumb.addEventListener('click', () => {
       root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-800'));
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-200'));
       thumb.classList.add('active', 'border-blue-500');
-      thumb.classList.remove('border-gray-800');
+      thumb.classList.remove('border-gray-200');
       hero.src = thumb.dataset.img;
       label.textContent = galleryLabels[i] || `View ${i + 1}`;
     });
@@ -197,7 +197,7 @@ function renderMotorhome(listing) {
 
   const imgs = safeImages(listing.images);
   const galleryThumbs = imgs.map((img, i) =>
-    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-800'} shrink-0" data-img="${escapeHtml(img)}">
+    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
       <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
     </button>`
   ).join('');
@@ -229,18 +229,18 @@ function renderMotorhome(listing) {
   ].filter(s => s.value != null && s.value !== '' && s.value !== 'N/A');
 
   const featuresBlock = listing.features?.length ? `
-    <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Features</h3>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Features</h3>
       <div class="flex flex-wrap gap-2">
-        ${listing.features.map(f => `<span class="text-xs bg-gray-800 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700">${escapeHtml(f)}</span>`).join('')}
+        ${listing.features.map(f => `<span class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full border border-gray-300">${escapeHtml(f)}</span>`).join('')}
       </div>
     </div>` : '';
 
   const ratingsBlock = `
     <div class="flex items-center gap-4 mb-6">
       <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>
-        <span class="text-lg font-bold text-white">${safeRating(listing.rating)}</span>
+        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-600"></i>
+        <span class="text-lg font-bold text-gray-900">${safeRating(listing.rating)}</span>
         <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
       </div>
     </div>`;
@@ -253,25 +253,25 @@ function renderMotorhome(listing) {
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
         <span>Motorhomes</span>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
-        <span class="text-gray-300 truncate">${listing.title}</span>
+        <span class="text-gray-700 truncate">${listing.title}</span>
       </div>
 
       <!-- Title & ID -->
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-400 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
+          <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
+          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-600 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
         </div>
         <div class="text-right shrink-0">
           <div class="text-3xl font-black text-blue-500">${price}</div>
-          <span class="inline-block bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+          <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
         </div>
       </div>
 
       ${ratingsBlock}
 
       <!-- Main Image -->
-      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-900 mb-3 hero-zoom">
+      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 hero-zoom">
         <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
         <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
       </div>
@@ -286,28 +286,28 @@ function renderMotorhome(listing) {
         <button id="buy-now-btn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl uppercase text-sm tracking-wider transition flex items-center justify-center gap-2">
           <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
         </button>
-        <button id="wishlist-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Add to Wishlist">
+        <button id="wishlist-btn" class="px-5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Add to Wishlist">
           <i data-lucide="heart" class="w-5 h-5"></i>
         </button>
-        <button id="share-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Share">
+        <button id="share-btn" class="px-5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Share">
           <i data-lucide="share-2" class="w-5 h-5"></i>
         </button>
       </div>
 
       <!-- Description -->
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3">Description</h3>
-        <p class="text-gray-400 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Description</h3>
+        <p class="text-gray-600 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
       </div>
 
       <!-- Motorhome Information -->
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Motorhome Information</h3>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Motorhome Information</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           ${specs.map(s => `
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-200 font-medium text-sm">${escapeHtml(s.value)}</div>
+              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
             </div>
           `).join('')}
         </div>
@@ -326,9 +326,9 @@ function renderMotorhome(listing) {
   root.querySelectorAll('.gallery-thumb').forEach((thumb, i) => {
     thumb.addEventListener('click', () => {
       root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-800'));
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-200'));
       thumb.classList.add('active', 'border-blue-500');
-      thumb.classList.remove('border-gray-800');
+      thumb.classList.remove('border-gray-200');
       hero.src = thumb.dataset.img;
       label.textContent = galleryLabels[i] || `View ${i + 1}`;
     });
@@ -371,7 +371,7 @@ function renderCar(listing) {
 
   const imgs = safeImages(listing.images);
   const galleryThumbs = imgs.map((img, i) =>
-    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-800'} shrink-0" data-img="${escapeHtml(img)}">
+    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
       <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
     </button>`
   ).join('');
@@ -398,18 +398,18 @@ function renderCar(listing) {
   ].filter(s => s.value != null && s.value !== '' && s.value !== 'N/A');
 
   const featuresBlock = listing.features?.length ? `
-    <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Features</h3>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Features</h3>
       <div class="flex flex-wrap gap-2">
-        ${listing.features.map(f => `<span class="text-xs bg-gray-800 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700">${escapeHtml(f)}</span>`).join('')}
+        ${listing.features.map(f => `<span class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full border border-gray-300">${escapeHtml(f)}</span>`).join('')}
       </div>
     </div>` : '';
 
   const ratingsBlock = `
     <div class="flex items-center gap-4 mb-6">
       <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>
-        <span class="text-lg font-bold text-white">${safeRating(listing.rating)}</span>
+        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-600"></i>
+        <span class="text-lg font-bold text-gray-900">${safeRating(listing.rating)}</span>
         <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
       </div>
     </div>`;
@@ -422,25 +422,25 @@ function renderCar(listing) {
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
         <span>Cars</span>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
-        <span class="text-gray-300 truncate">${listing.title}</span>
+        <span class="text-gray-700 truncate">${listing.title}</span>
       </div>
 
       <!-- Title & ID -->
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-400 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
+          <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
+          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-600 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
         </div>
         <div class="text-right shrink-0">
           <div class="text-3xl font-black text-blue-500">${price}</div>
-          <span class="inline-block bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+          <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
         </div>
       </div>
 
       ${ratingsBlock}
 
       <!-- Main Image -->
-      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-900 mb-3 hero-zoom">
+      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 hero-zoom">
         <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
         <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
       </div>
@@ -455,28 +455,28 @@ function renderCar(listing) {
         <button id="buy-now-btn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl uppercase text-sm tracking-wider transition flex items-center justify-center gap-2">
           <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
         </button>
-        <button id="wishlist-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Add to Wishlist">
+        <button id="wishlist-btn" class="px-5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Add to Wishlist">
           <i data-lucide="heart" class="w-5 h-5"></i>
         </button>
-        <button id="share-btn" class="px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Share">
+        <button id="share-btn" class="px-5 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2" aria-label="Share">
           <i data-lucide="share-2" class="w-5 h-5"></i>
         </button>
       </div>
 
       <!-- Description -->
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3">Description</h3>
-        <p class="text-gray-400 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Description</h3>
+        <p class="text-gray-600 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
       </div>
 
       <!-- Car Information -->
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Car Information</h3>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Car Information</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           ${specs.map(s => `
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-200 font-medium text-sm">${escapeHtml(s.value)}</div>
+              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
             </div>
           `).join('')}
         </div>
@@ -495,9 +495,9 @@ function renderCar(listing) {
   root.querySelectorAll('.gallery-thumb').forEach((thumb, i) => {
     thumb.addEventListener('click', () => {
       root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-800'));
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-200'));
       thumb.classList.add('active', 'border-blue-500');
-      thumb.classList.remove('border-gray-800');
+      thumb.classList.remove('border-gray-200');
       hero.src = thumb.dataset.img;
       label.textContent = galleryLabels[i] || `View ${i + 1}`;
     });
@@ -550,23 +550,23 @@ function actionGridHtml(listing) {
   const contactHref = `/contact.html?listing=${encodeURIComponent(listing.property_id || '')}`;
   return `
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-      <button type="button" id="view-details-btn" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition text-sm">
+      <button type="button" id="view-details-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition text-sm">
         <i data-lucide="eye" class="w-5 h-5"></i> View Details
       </button>
-      <button type="button" id="add-cart-btn" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3.5 rounded-xl transition text-sm">
+      <button type="button" id="add-cart-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition text-sm">
         <i data-lucide="shopping-cart" class="w-5 h-5"></i> Add to Cart
       </button>
       <button type="button" id="buy-now-btn" class="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl transition text-sm uppercase tracking-wider">
         <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
       </button>
-      <a href="${contactHref}" class="flex items-center justify-center gap-2 bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 text-blue-300 font-bold py-3.5 rounded-xl transition text-sm">
+      <a href="${contactHref}" class="flex items-center justify-center gap-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-bold py-3.5 rounded-xl transition text-sm">
         <i data-lucide="badge-check" class="w-4 h-4"></i> Contact Us
-        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online</span>
+        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online</span>
       </a>
-      <button type="button" id="wishlist-btn" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 text-gray-300 font-bold py-3.5 rounded-xl transition text-sm">
+      <button type="button" id="wishlist-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-red-100 hover:text-red-600 text-gray-700 font-bold py-3.5 rounded-xl transition text-sm">
         <i data-lucide="heart" class="w-5 h-5"></i> Add to Wishlist
       </button>
-      <button type="button" id="share-btn" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-blue-500/20 hover:text-blue-400 text-gray-300 font-bold py-3.5 rounded-xl transition text-sm">
+      <button type="button" id="share-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-600 text-gray-700 font-bold py-3.5 rounded-xl transition text-sm">
         <i data-lucide="share-2" class="w-5 h-5"></i> ${shareLabel}
       </button>
     </div>
@@ -577,21 +577,21 @@ function sellerBlock(listing) {
   const isAgent = listing.listing_type === 'property';
   const base = `/contact.html?listing=${encodeURIComponent(listing.property_id || '')}`;
   return `
-    <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5">
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
       <div class="flex items-center gap-3 mb-4">
-        <div class="shrink-0 w-11 h-11 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-gray-800">
+        <div class="shrink-0 w-11 h-11 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-gray-200">
           <img src="/brand-logo.jpeg" alt="Weverse Online Shop" class="w-full h-full object-contain" onerror="this.onerror=null;this.style.display='none'">
         </div>
         <div>
-          <p class="text-sm font-bold text-white">Weverse Online Shop</p>
-          <p class="text-xs text-emerald-400 flex items-center gap-1"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Seller</p>
+          <p class="text-sm font-bold text-gray-900">Weverse Online Shop</p>
+          <p class="text-xs text-emerald-600 flex items-center gap-1"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Seller</p>
         </div>
       </div>
       <p class="text-xs text-gray-500">${isAgent ? 'Professional agent for this listing' : 'Trusted marketplace seller'} on Weverse Online Shop</p>
-      <p class="text-xs text-gray-400 mt-2 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Secure checkout · Authentic listings</p>
+      <p class="text-xs text-gray-600 mt-2 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i> Secure checkout · Authentic listings</p>
       <div class="flex gap-2 mt-4">
         <a href="${base}" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs text-center transition">Contact Seller</a>
-        <a href="${base}&subject=Enquiry" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold py-2.5 rounded-xl text-xs text-center transition">Send Message</a>
+        <a href="${base}&subject=Enquiry" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2.5 rounded-xl text-xs text-center transition">Send Message</a>
       </div>
     </div>`;
 }
@@ -599,15 +599,15 @@ function sellerBlock(listing) {
 function relSectionsHtml() {
   return `
       <div id="similar-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Similar Products</h3>
+        <h3 class="rel-title text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Similar Products</h3>
         <div class="rel-grid flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory"></div>
       </div>
       <div id="related-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Related Products</h3>
+        <h3 class="rel-title text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Related Products</h3>
         <div class="rel-grid flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory"></div>
       </div>
       <div id="recommended-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Recommended For You</h3>
+        <h3 class="rel-title text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Recommended For You</h3>
         <div class="rel-grid flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory"></div>
       </div>`;
 }
@@ -701,7 +701,7 @@ function render(listing) {
 
   const imgs2 = safeImages(listing.images);
   const galleryThumbs = imgs2.map((img, i) =>
-    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-800'} shrink-0" data-img="${escapeHtml(img)}">
+    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
       <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
     </button>`
   ).join('');
@@ -715,17 +715,17 @@ function render(listing) {
       { icon: 'navigation', label: 'Town / Local Area', value: listing.town },
     ].filter(item => item.value);
     locationBlock = `
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Location</h3>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Location</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           ${locItems.map(item => `
             <div class="flex items-center gap-2.5 text-sm">
-              <div class="p-2 bg-gray-800 rounded-lg"><i data-lucide="${item.icon}" class="w-4 h-4 text-blue-500"></i></div>
-              <div><div class="text-gray-500 text-xs">${item.label}</div><div class="text-gray-200 font-medium">${item.value}</div></div>
+              <div class="p-2 bg-gray-100 rounded-lg"><i data-lucide="${item.icon}" class="w-4 h-4 text-blue-500"></i></div>
+              <div><div class="text-gray-500 text-xs">${item.label}</div><div class="text-gray-800 font-medium">${item.value}</div></div>
             </div>
           `).join('')}
         </div>
-        <div id="listing-map" class="mt-4 rounded-xl overflow-hidden border border-gray-800" style="height:280px"></div>
+        <div id="listing-map" class="mt-4 rounded-xl overflow-hidden border border-gray-200" style="height:280px"></div>
       </div>`;
   }
 
@@ -743,13 +743,13 @@ function render(listing) {
       { icon: 'tag', label: 'Status', value: listing.listing_status === 'rent' ? 'For Rent' : 'For Sale' },
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = `
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Property Information</h3>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Property Information</h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           ${specs.map(s => `
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-200 font-medium text-sm">${escapeHtml(s.value)}</div>
+              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
             </div>
           `).join('')}
         </div>
@@ -772,13 +772,13 @@ function render(listing) {
       { icon: 'droplet', label: 'Water Tank', value: listing.water_tank },
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = `
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Vehicle Information</h3>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Vehicle Information</h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           ${specs.map(s => `
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-200 font-medium text-sm">${escapeHtml(s.value)}</div>
+              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
             </div>
           `).join('')}
         </div>
@@ -795,13 +795,13 @@ function render(listing) {
       { icon: 'package-check', label: 'Availability', value: listing.availability_status },
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = `
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Product Information</h3>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Product Information</h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           ${specs.map(s => `
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-200 font-medium text-sm">${escapeHtml(s.value)}</div>
+              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
             </div>
           `).join('')}
         </div>
@@ -817,13 +817,13 @@ function render(listing) {
       { icon: 'badge-check', label: 'Health', value: listing.condition },
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = `
-      <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Pet Information</h3>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Pet Information</h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           ${specs.map(s => `
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-200 font-medium text-sm">${escapeHtml(s.value)}</div>
+              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
             </div>
           `).join('')}
         </div>
@@ -831,26 +831,26 @@ function render(listing) {
   }
 
   const featuresBlock = listing.features?.length ? `
-    <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Features & Amenities</h3>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Features & Amenities</h3>
       <div class="flex flex-wrap gap-2">
-        ${listing.features.map(f => `<span class="text-xs bg-gray-800 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700">${escapeHtml(f)}</span>`).join('')}
+        ${listing.features.map(f => `<span class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full border border-gray-300">${escapeHtml(f)}</span>`).join('')}
       </div>
     </div>` : '';
 
   const highlightsBlock = listing.highlights?.length ? `
-    <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Highlights</h3>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Highlights</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        ${listing.highlights.map(item => `<div class="flex items-start gap-2 text-sm text-gray-300"><i data-lucide="sparkles" class="w-4 h-4 text-blue-500 mt-0.5"></i><span>${escapeHtml(item)}</span></div>`).join('')}
+        ${listing.highlights.map(item => `<div class="flex items-start gap-2 text-sm text-gray-700"><i data-lucide="sparkles" class="w-4 h-4 text-blue-500 mt-0.5"></i><span>${escapeHtml(item)}</span></div>`).join('')}
       </div>
     </div>` : '';
 
   const ratingsBlock = `
     <div class="flex items-center gap-4 mb-6">
       <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>
-        <span class="text-lg font-bold text-white">${safeRating(listing.rating)}</span>
+        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-600"></i>
+        <span class="text-lg font-bold text-gray-900">${safeRating(listing.rating)}</span>
         <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
       </div>
     </div>`;
@@ -862,23 +862,23 @@ function render(listing) {
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
         <span>${listing.category}</span>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
-        <span class="text-gray-300 truncate">${escapeHtml(listing.title)}</span>
+        <span class="text-gray-700 truncate">${escapeHtml(listing.title)}</span>
       </div>
 
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">${escapeHtml(listing.title)}</h1>
+          <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
           <p class="text-gray-500 text-sm mt-1">${idLabel}: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.property_id)}</span></p>
         </div>
         <div class="text-right shrink-0">
           <div class="text-3xl font-black text-blue-500">${price}</div>
-          <span class="inline-block bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full mt-1">${listing.listing_status === 'rent' ? 'For Rent' : 'For Sale'}</span>
+          <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${listing.listing_status === 'rent' ? 'For Rent' : 'For Sale'}</span>
         </div>
       </div>
 
       ${ratingsBlock}
 
-      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-900 mb-3 hero-zoom">
+      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 hero-zoom">
         <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
       </div>
 
@@ -888,9 +888,9 @@ function render(listing) {
 
       ${actionGridHtml(listing)}
 
-      <div id="listing-details" class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-3">Description</h3>
-        <p class="text-gray-400 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
+      <div id="listing-details" class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Description</h3>
+        <p class="text-gray-600 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
       </div>
 
       ${locationBlock}
@@ -898,27 +898,27 @@ function render(listing) {
       ${featuresBlock}
       ${highlightsBlock}
 
-      <div id="reviews-section" class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Customer Reviews</h3>
+      <div id="reviews-section" class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Customer Reviews</h3>
         <div id="reviews-list"><p class="text-gray-500 text-sm">Loading reviews...</p></div>
-        <div id="review-form-wrapper" class="mt-4 pt-4 border-t border-gray-800">
-          <h4 class="text-sm font-bold text-white mb-3">Write a Review</h4>
+        <div id="review-form-wrapper" class="mt-4 pt-4 border-t border-gray-200">
+          <h4 class="text-sm font-bold text-gray-900 mb-3">Write a Review</h4>
           <div id="review-login-msg" class="text-xs text-gray-500 hidden">Please <a href="/auth.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}" class="text-blue-500 hover:underline">sign in</a> to write a review.</div>
           <form id="review-form" class="space-y-3">
             <div class="flex items-center gap-2">
-              <label class="text-xs text-gray-400 font-bold uppercase">Rating</label>
+              <label class="text-xs text-gray-600 font-bold uppercase">Rating</label>
               <div id="star-rating" class="flex gap-1">
                 ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-600 hover:text-blue-500 transition"></i></button>`).join('')}
               </div>
             </div>
-            <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></textarea>
+            <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></textarea>
             <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-5 rounded-xl text-sm transition">Submit Review</button>
           </form>
         </div>
       </div>
 
       <div id="recommendations-section" class="hidden">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">You May Also Like</h3>
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">You May Also Like</h3>
         <div id="recommendations-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
       </div>
 
@@ -930,9 +930,9 @@ function render(listing) {
   root.querySelectorAll('.gallery-thumb').forEach(thumb => {
     thumb.addEventListener('click', () => {
       root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-800'));
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-200'));
       thumb.classList.add('active', 'border-blue-500');
-      thumb.classList.remove('border-gray-800');
+      thumb.classList.remove('border-gray-200');
       hero.src = thumb.dataset.img;
     });
   });
@@ -1041,9 +1041,9 @@ function setWishlistBtn(btn, saved) {
   if (!btn) return;
   ensureWishPopStyle();
   btn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${saved ? 'fill-red-500 text-red-500' : ''}"></i>`;
-  btn.classList.toggle('bg-red-500/10', saved);
+  btn.classList.toggle('bg-red-50', saved);
   btn.classList.toggle('border', saved);
-  btn.classList.toggle('border-red-500/20', saved);
+  btn.classList.toggle('border-red-200', saved);
   const sub = btn.querySelector('span');
   if (sub) sub.textContent = saved ? 'Saved to Wishlist' : 'Add to Wishlist';
   if (window.lucide) lucide.createIcons();
@@ -1159,15 +1159,15 @@ async function loadReviews(listing) {
     return;
   }
   container.innerHTML = reviews.map(r => `
-    <div class="border-b border-gray-800 pb-3 mb-3 last:border-0">
+    <div class="border-b border-gray-200 pb-3 mb-3 last:border-0">
       <div class="flex items-center gap-2 mb-1">
-        <div class="flex gap-0.5">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-600'}"></i>`).join('')}</div>
-        <span class="text-xs text-gray-400 font-bold">${escapeHtml(r.profiles?.full_name || 'Anonymous')}</span>
+        <div class="flex gap-0.5">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= r.rating ? 'fill-amber-400 text-amber-600' : 'text-gray-600'}"></i>`).join('')}</div>
+        <span class="text-xs text-gray-600 font-bold">${escapeHtml(r.profiles?.full_name || 'Anonymous')}</span>
         <span class="text-xs text-gray-600">${new Date(r.created_at).toLocaleDateString()}</span>
-        ${r.is_verified_purchase ? '<span class="text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">Verified Purchase</span>' : ''}
+        ${r.is_verified_purchase ? '<span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Verified Purchase</span>' : ''}
       </div>
-      <p class="text-sm text-gray-300">${escapeHtml(r.review_text || '')}</p>
-      ${r.vendor_response ? `<div class="mt-2 bg-gray-800/50 rounded-lg p-2 text-xs text-gray-400"><strong class="text-gray-300">Seller response:</strong> ${escapeHtml(r.vendor_response)}</div>` : ''}
+      <p class="text-sm text-gray-700">${escapeHtml(r.review_text || '')}</p>
+      ${r.vendor_response ? `<div class="mt-2 bg-gray-100 rounded-lg p-2 text-xs text-gray-600"><strong class="text-gray-700">Seller response:</strong> ${escapeHtml(r.vendor_response)}</div>` : ''}
     </div>`).join('');
   if (window.lucide) lucide.createIcons();
 }
@@ -1201,9 +1201,9 @@ async function loadRecommendations(listing) {
     const img = (p.images && p.images[0]) || '/fallback.svg';
     const pprice = typeof p.price === 'number' ? p.price : parseFloat(p.price || 0);
     const cur = p.currency || 'USD';
-    return `<a href="/details.html?id=${p.property_id}" class="block bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/30 transition group">
-      <div class="aspect-square overflow-hidden bg-gray-800"><img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></div>
-      <div class="p-2"><p class="text-xs text-white font-bold truncate">${escapeHtml(p.title)}</p><p class="text-xs text-blue-500 font-bold mt-1">${cur} ${pprice.toLocaleString()}</p></div>
+    return `<a href="/details.html?id=${p.property_id}" class="block bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition group">
+      <div class="aspect-square overflow-hidden bg-gray-100"><img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></div>
+      <div class="p-2"><p class="text-xs text-gray-900 font-bold truncate">${escapeHtml(p.title)}</p><p class="text-xs text-blue-500 font-bold mt-1">${cur} ${pprice.toLocaleString()}</p></div>
     </a>`;
   }).join('');
 }

@@ -120,31 +120,31 @@ const BANK_ACCOUNTS = {
 
 /* ── Coming Soon payment methods ───────────────────────────── */
 const COMING_SOON_METHODS = [
-  { name: 'PayPal', icon: 'wallet', color: 'text-blue-400' },
-  { name: 'Stripe', icon: 'credit-card', color: 'text-violet-400' },
-  { name: 'Flutterwave', icon: 'zap', color: 'text-blue-400' },
-  { name: 'Paystack', icon: 'layers', color: 'text-cyan-400' },
-  { name: 'Apple Pay', icon: 'smartphone', color: 'text-gray-300' },
-  { name: 'Google Pay', icon: 'smartphone', color: 'text-green-400' },
+  { name: 'PayPal', icon: 'wallet', color: 'text-blue-600' },
+  { name: 'Stripe', icon: 'credit-card', color: 'text-violet-600' },
+  { name: 'Flutterwave', icon: 'zap', color: 'text-blue-600' },
+  { name: 'Paystack', icon: 'layers', color: 'text-cyan-600' },
+  { name: 'Apple Pay', icon: 'smartphone', color: 'text-gray-700' },
+  { name: 'Google Pay', icon: 'smartphone', color: 'text-green-600' },
   { name: 'Visa', icon: 'credit-card', color: 'text-blue-500' },
   { name: 'Mastercard', icon: 'credit-card', color: 'text-red-500' },
-  { name: 'American Express', icon: 'credit-card', color: 'text-blue-300' },
+  { name: 'American Express', icon: 'credit-card', color: 'text-blue-700' },
   { name: 'Discover', icon: 'credit-card', color: 'text-blue-500' },
   { name: 'Verve', icon: 'credit-card', color: 'text-green-500' },
   { name: 'Bitcoin (BTC)', icon: 'bitcoin', color: 'text-yellow-500' },
-  { name: 'Ethereum (ETH)', icon: 'bitcoin', color: 'text-indigo-400' },
-  { name: 'USDT', icon: 'bitcoin', color: 'text-green-400' },
+  { name: 'Ethereum (ETH)', icon: 'bitcoin', color: 'text-indigo-600' },
+  { name: 'USDT', icon: 'bitcoin', color: 'text-green-600' },
 ];
 
 /* ── Order progress tracker steps ─────────────────────────── */
 const ORDER_STEPS = [
-  { id: 'placed', label: 'Order Placed', icon: 'shopping-bag', color: 'text-blue-400', bg: 'bg-blue-500/15' },
-  { id: 'submitted', label: 'Payment Submitted', icon: 'upload', color: 'text-cyan-400', bg: 'bg-cyan-500/15' },
-  { id: 'verification', label: 'Pending Verification', icon: 'loader', color: 'text-amber-400', bg: 'bg-amber-500/15' },
-  { id: 'approved', label: 'Approved', icon: 'check-circle', color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
-  { id: 'processing', label: 'Processing', icon: 'package', color: 'text-blue-400', bg: 'bg-blue-500/15' },
-  { id: 'shipped', label: 'Shipped', icon: 'truck', color: 'text-indigo-400', bg: 'bg-indigo-500/15' },
-  { id: 'delivered', label: 'Delivered', icon: 'package-check', color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+  { id: 'placed', label: 'Order Placed', icon: 'shopping-bag', color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'submitted', label: 'Payment Submitted', icon: 'upload', color: 'text-cyan-600', bg: 'bg-cyan-50' },
+  { id: 'verification', label: 'Pending Verification', icon: 'loader', color: 'text-amber-600', bg: 'bg-amber-50' },
+  { id: 'approved', label: 'Approved', icon: 'check-circle', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { id: 'processing', label: 'Processing', icon: 'package', color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'shipped', label: 'Shipped', icon: 'truck', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+  { id: 'delivered', label: 'Delivered', icon: 'package-check', color: 'text-emerald-600', bg: 'bg-emerald-50' },
 ];
 
 /* ── Helpers ───────────────────────────────────────────────── */
@@ -180,7 +180,7 @@ function copyToClipboard(text, btnEl) {
   }
   if (btnEl) {
     const orig = btnEl.innerHTML;
-    btnEl.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>';
+    btnEl.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i>';
     if (window.lucide) lucide.createIcons();
     setTimeout(() => { btnEl.innerHTML = orig; if (window.lucide) lucide.createIcons(); }, 1500);
   }
@@ -193,7 +193,7 @@ function showToast(msg) {
     toast = document.createElement('div');
     toast.id = 'payment-toast';
     toast.className = 'fixed bottom-5 right-5 z-[100] transform translate-y-20 opacity-0 bg-gray-900 border border-blue-500/30 text-white px-5 py-3 rounded-xl shadow-xl text-xs flex items-center gap-2 font-medium transition-all duration-300';
-    toast.innerHTML = '<i data-lucide="info" class="w-4 h-4 text-blue-400"></i><span id="payment-toast-msg">Action</span>';
+    toast.innerHTML = '<i data-lucide="info" class="w-4 h-4 text-blue-600"></i><span id="payment-toast-msg">Action</span>';
     document.body.appendChild(toast);
   }
   toast.querySelector('#payment-toast-msg').textContent = msg;
@@ -235,20 +235,20 @@ spawnParticles();
 function renderOrderSummary(listing, cover, isProperty) {
   const price = formatPrice(listing);
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
       <div class="flex items-center gap-2 mb-4">
-        <div class="p-2 bg-blue-500/10 rounded-lg"><i data-lucide="shopping-bag" class="w-4 h-4 text-blue-400"></i></div>
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide">Order Summary</h3>
+        <div class="p-2 bg-blue-50 rounded-lg"><i data-lucide="shopping-bag" class="w-4 h-4 text-blue-600"></i></div>
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Order Summary</h3>
       </div>
       <div class="flex gap-4">
-        <div class="w-24 h-24 rounded-xl overflow-hidden bg-gray-900 shrink-0 ring-1 ring-blue-500/10">
+        <div class="w-24 h-24 rounded-xl overflow-hidden bg-gray-50 shrink-0 ring-1 ring-blue-500/10">
           <img src="${cover}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
         </div>
         <div class="flex-1 min-w-0">
-          <h4 class="text-sm font-bold text-white truncate">${listing.title}</h4>
-          <p class="text-gray-500 text-xs mt-0.5">ID: <span class="text-blue-400 font-mono">${listing.property_id}</span></p>
-          ${isProperty && listing.city ? `<p class="text-gray-400 text-xs mt-0.5">${flagEmoji(listing.country_code)} ${listing.city}, ${listing.country}</p>` : ''}
-          <p class="text-2xl font-black text-blue-400 mt-2">${price}</p>
+          <h4 class="text-sm font-bold text-gray-900 truncate">${listing.title}</h4>
+          <p class="text-gray-500 text-xs mt-0.5">ID: <span class="text-blue-600 font-mono">${listing.property_id}</span></p>
+          ${isProperty && listing.city ? `<p class="text-gray-600 text-xs mt-0.5">${flagEmoji(listing.country_code)} ${listing.city}, ${listing.country}</p>` : ''}
+          <p class="text-2xl font-black text-blue-600 mt-2">${price}</p>
         </div>
       </div>
     </div>
@@ -279,35 +279,35 @@ function renderBankAccount(account, fallbackNotice, instructions) {
   const copyFields = fields.map(f => ({ label: f.label, value: f.value }));
 
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 slide-up">
-      ${fallbackNotice ? `<div class="mb-4 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl text-sm text-amber-200">${fallbackNotice.message}</div>` : ''}
+    <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
+      ${fallbackNotice ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">${fallbackNotice.message}</div>` : ''}
       <div class="flex items-center gap-3 mb-5">
-        <div class="p-2.5 bg-blue-500/10 rounded-lg"><i data-lucide="landmark" class="w-5 h-5 text-blue-400"></i></div>
+        <div class="p-2.5 bg-blue-50 rounded-lg"><i data-lucide="landmark" class="w-5 h-5 text-blue-600"></i></div>
         <div class="flex-1">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Receiving Bank Account</h3>
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Receiving Bank Account</h3>
           <p class="text-gray-500 text-xs">${account.flag} ${account.currencyName} (${account.currency})</p>
         </div>
-        <span class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-500/20">
+        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-200">
           <i data-lucide="shield-check" class="w-3 h-3"></i> Verified
         </span>
       </div>
       <div class="space-y-2">
         ${fields.map(f => `
-          <div class="flex items-center justify-between gap-3 bg-blue-950/40 border border-blue-500/10 rounded-xl px-4 py-2.5">
+          <div class="flex items-center justify-between gap-3 bg-gray-50 border border-blue-100 rounded-xl px-4 py-2.5">
             <div class="min-w-0 flex-1">
               <div class="text-gray-500 text-[11px] uppercase tracking-wide">${f.label}</div>
-              <div class="text-gray-100 text-sm font-medium font-mono break-all">${f.value}</div>
+              <div class="text-gray-900 text-sm font-medium font-mono break-all">${f.value}</div>
             </div>
-            <button onclick="copyToClipboard('${f.value.replace(/'/g, "\\'")}', this)" class="shrink-0 p-2 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/40 rounded-lg transition group" title="Copy ${f.label}">
-              <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-blue-400"></i>
+            <button onclick="copyToClipboard('${f.value.replace(/'/g, "\\'")}', this)" class="shrink-0 p-2 bg-gray-100 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition group" title="Copy ${f.label}">
+              <i data-lucide="copy" class="w-4 h-4 text-gray-600 group-hover:text-blue-600"></i>
             </button>
           </div>
         `).join('')}
       </div>
-      <button onclick='copyAllDetails(${JSON.stringify(copyFields).replace(/'/g, "&#39;")})' class="btn-press w-full mt-4 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold py-2.5 rounded-xl uppercase text-xs tracking-wider transition flex items-center justify-center gap-2 relative overflow-hidden">
+      <button onclick='copyAllDetails(${JSON.stringify(copyFields).replace(/'/g, "&#39;")})' class="btn-press w-full mt-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 font-bold py-2.5 rounded-xl uppercase text-xs tracking-wider transition flex items-center justify-center gap-2 relative overflow-hidden">
         <i data-lucide="copy-check" class="w-4 h-4"></i> Copy All Account Details
       </button>
-      <div class="mt-4 p-3 bg-blue-950/40 border border-blue-500/10 rounded-xl text-xs text-gray-300 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
+      <div class="mt-4 p-3 bg-gray-50 border border-blue-100 rounded-xl text-xs text-gray-700 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
     </div>
   `;
 }
@@ -315,13 +315,13 @@ function renderBankAccount(account, fallbackNotice, instructions) {
 /* ── Render: Unsupported currency message ─────────────────── */
 function renderUnsupportedCurrency(notice) {
   return `
-    <div class="glass border border-amber-500/30 rounded-2xl p-5 mb-5 slide-up">
+    <div class="glass border border-amber-200 rounded-2xl p-5 mb-5 slide-up">
       <div class="flex items-start gap-3 mb-4">
-        <div class="p-2.5 bg-amber-500/10 rounded-lg shrink-0"><i data-lucide="info" class="w-5 h-5 text-amber-400"></i></div>
-        <div class="text-sm text-gray-300 leading-relaxed">
-          <p class="font-bold text-amber-400 mb-2">Hello Customer,</p>
+        <div class="p-2.5 bg-amber-50 rounded-lg shrink-0"><i data-lucide="info" class="w-5 h-5 text-amber-600"></i></div>
+        <div class="text-sm text-gray-700 leading-relaxed">
+          <p class="font-bold text-amber-600 mb-2">Hello Customer,</p>
           <p class="mb-2">${notice?.message || 'Your local currency is not currently supported by our Manual Bank Transfer system.'}</p>
-          <p class="font-bold text-amber-400">Thank you for choosing Weverse Online Shop.</p>
+          <p class="font-bold text-amber-600">Thank you for choosing Weverse Online Shop.</p>
         </div>
       </div>
     </div>
@@ -334,11 +334,11 @@ function renderCurrencySelector(selectedCurrency, countryName, countryCode) {
   const currencies = getSupportedCurrenciesFromAccounts(manualPaymentAccounts);
   const country = countryCode ? getCountryByCode(countryCode) : null;
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
       <div class="flex items-center gap-3 mb-4">
-        <div class="p-2.5 bg-blue-500/10 rounded-lg"><i data-lucide="globe" class="w-5 h-5 text-blue-400"></i></div>
+        <div class="p-2.5 bg-blue-50 rounded-lg"><i data-lucide="globe" class="w-5 h-5 text-blue-600"></i></div>
         <div class="flex-1">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Payment Currency</h3>
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Payment Currency</h3>
           <p class="text-gray-500 text-xs">${country ? country.flag + ' ' + countryName : countryName || 'Select currency'} ${selectedCurrency ? '→ ' + selectedCurrency : '→ USD (default)'}</p>
         </div>
       </div>
@@ -347,7 +347,7 @@ function renderCurrencySelector(selectedCurrency, countryName, countryCode) {
           const acc = manualPaymentAccounts.find(account => account.currency === c);
           const active = c === selectedCurrency;
           return `
-            <button onclick="selectCurrency('${c}')" class="btn-press flex flex-col items-center gap-1 p-3 rounded-xl border transition relative overflow-hidden ${active ? 'bg-blue-500/15 border-blue-500/50 text-blue-400 pulse-glow' : 'bg-blue-950/40 border-blue-500/10 text-gray-400 hover:border-blue-500/30 hover:text-white'}">
+            <button onclick="selectCurrency('${c}')" class="btn-press flex flex-col items-center gap-1 p-3 rounded-xl border transition relative overflow-hidden ${active ? 'bg-blue-50 border-blue-300 text-blue-600 pulse-glow' : 'bg-gray-50 border-blue-100 text-gray-600 hover:border-blue-200 hover:text-gray-900'}">
               <span class="text-2xl">${acc.flag}</span>
               <span class="text-xs font-bold">${c}</span>
               <span class="text-[10px] text-gray-500">${acc.currencyName}</span>
@@ -362,16 +362,16 @@ function renderCurrencySelector(selectedCurrency, countryName, countryCode) {
 /* ── Render: Manual bank transfer method card ──────────────── */
 function renderBankTransferMethod() {
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-3">
-          <div class="p-2.5 bg-blue-500/10 rounded-lg"><i data-lucide="landmark" class="w-6 h-6 text-blue-400"></i></div>
+          <div class="p-2.5 bg-blue-50 rounded-lg"><i data-lucide="landmark" class="w-6 h-6 text-blue-600"></i></div>
           <div>
-            <h3 class="text-sm font-bold text-white">Manual Bank Transfer</h3>
+            <h3 class="text-sm font-bold text-gray-900">Manual Bank Transfer</h3>
             <p class="text-gray-500 text-xs">Pay directly to our bank account</p>
           </div>
         </div>
-        <span class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/20">
+        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
           <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Available
         </span>
       </div>
@@ -382,21 +382,21 @@ function renderBankTransferMethod() {
 /* ── Render: Coming soon methods ───────────────────────────── */
 function renderComingSoonMethods() {
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
       <div class="flex items-center gap-3 mb-4">
-        <div class="p-2.5 bg-gray-700/30 rounded-lg"><i data-lucide="lock" class="w-5 h-5 text-gray-500"></i></div>
+        <div class="p-2.5 bg-gray-100 rounded-lg"><i data-lucide="lock" class="w-5 h-5 text-gray-500"></i></div>
         <div>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">More Payment Methods</h3>
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">More Payment Methods</h3>
           <p class="text-gray-500 text-xs">Coming soon to Weverse Online Shop</p>
         </div>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         ${COMING_SOON_METHODS.map(m => `
-          <div class="relative bg-blue-950/30 border border-blue-500/10 rounded-xl p-3 opacity-50 cursor-not-allowed select-none">
-            <span class="absolute top-1.5 right-1.5 bg-gray-700 text-gray-400 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full">Soon</span>
+          <div class="relative bg-gray-50 border border-blue-100 rounded-xl p-3 opacity-50 cursor-not-allowed select-none">
+            <span class="absolute top-1.5 right-1.5 bg-gray-200 text-gray-600 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full">Soon</span>
             <div class="flex items-center gap-2 mb-0.5">
               <i data-lucide="${m.icon}" class="w-4 h-4 ${m.color}"></i>
-              <span class="text-xs font-bold text-gray-400">${m.name}</span>
+              <span class="text-xs font-bold text-gray-600">${m.name}</span>
             </div>
           </div>
         `).join('')}
@@ -409,14 +409,14 @@ function renderComingSoonMethods() {
 function renderOrderTracker(currentStep) {
   const stepIndex = ORDER_STEPS.findIndex(s => s.id === currentStep);
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
       <div class="flex items-center gap-2 mb-5">
-        <div class="p-2 bg-blue-500/10 rounded-lg"><i data-lucide="git-branch" class="w-4 h-4 text-blue-400"></i></div>
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide">Order Progress</h3>
+        <div class="p-2 bg-blue-50 rounded-lg"><i data-lucide="git-branch" class="w-4 h-4 text-blue-600"></i></div>
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Order Progress</h3>
       </div>
       <div class="relative">
         <!-- Progress line -->
-        <div class="absolute left-4 top-4 bottom-4 w-0.5 bg-blue-500/10"></div>
+        <div class="absolute left-4 top-4 bottom-4 w-0.5 bg-blue-50"></div>
         <div class="absolute left-4 top-4 w-0.5 bg-blue-500 transition-all duration-500" style="height: ${stepIndex >= 0 ? (stepIndex / (ORDER_STEPS.length - 1)) * 100 : 0}%; min-height: 0; max-height: calc(100% - 2rem)"></div>
         <div class="space-y-4">
           ${ORDER_STEPS.map((step, i) => {
@@ -424,14 +424,14 @@ function renderOrderTracker(currentStep) {
             const active = i === stepIndex;
             return `
               <div class="flex items-center gap-3 relative">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 transition-all duration-300 ${done ? step.bg + ' border border-blue-500/30' : 'bg-blue-950/40 border border-blue-500/10'} ${active ? 'pulse-glow' : ''}">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 transition-all duration-300 ${done ? step.bg + ' border border-blue-200' : 'bg-gray-50 border border-blue-100'} ${active ? 'pulse-glow' : ''}">
                   <i data-lucide="${step.icon}" class="w-4 h-4 ${done ? step.color : 'text-gray-600'} ${active ? 'animate-pulse' : ''}"></i>
                 </div>
                 <div class="flex-1">
-                  <div class="text-sm font-medium ${done ? 'text-white' : 'text-gray-600'}">${step.label}</div>
+                  <div class="text-sm font-medium ${done ? 'text-gray-900' : 'text-gray-600'}">${step.label}</div>
                 </div>
-                ${done && !active ? '<i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i>' : ''}
-                ${active ? '<span class="text-[10px] text-blue-400 font-bold uppercase shrink-0">Current</span>' : ''}
+                ${done && !active ? '<i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i>' : ''}
+                ${active ? '<span class="text-[10px] text-blue-600 font-bold uppercase shrink-0">Current</span>' : ''}
               </div>
             `;
           }).join('')}
@@ -444,49 +444,49 @@ function renderOrderTracker(currentStep) {
 /* ── Render: Upload receipt form ───────────────────────────── */
 function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
   const guestShippingBlock = isGuest ? `
-        <div class="glass-soft border border-blue-500/15 rounded-xl p-4">
+        <div class="glass-soft border border-blue-100 rounded-xl p-4">
           <div class="flex items-center gap-2 mb-4">
-            <div class="p-2 bg-blue-500/10 rounded-lg"><i data-lucide="truck" class="w-4 h-4 text-blue-400"></i></div>
-            <h4 class="text-xs font-bold text-white uppercase tracking-wide">Shipping Information</h4>
-            <span class="ml-auto bg-amber-500/10 text-amber-400 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">Guest Checkout</span>
+            <div class="p-2 bg-blue-50 rounded-lg"><i data-lucide="truck" class="w-4 h-4 text-blue-600"></i></div>
+            <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide">Shipping Information</h4>
+            <span class="ml-auto bg-amber-50 text-amber-600 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">Guest Checkout</span>
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Full Name *</label>
-              <input type="text" id="form-full-name" required placeholder="John Doe" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+              <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Full Name *</label>
+              <input type="text" id="form-full-name" required placeholder="John Doe" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Email Address *</label>
-                <input type="email" id="form-email" required placeholder="you@example.com" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Email Address *</label>
+                <input type="email" id="form-email" required placeholder="you@example.com" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
               </div>
               <div>
-                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Phone Number *</label>
-                <input type="tel" id="form-phone" required placeholder="+1 234 567 890" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Phone Number *</label>
+                <input type="tel" id="form-phone" required placeholder="+1 234 567 890" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
               </div>
             </div>
             <div>
-              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Shipping Address *</label>
-              <input type="text" id="form-shipping-address" required placeholder="123 Main Street, Apt 4B" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+              <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Shipping Address *</label>
+              <input type="text" id="form-shipping-address" required placeholder="123 Main Street, Apt 4B" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Country *</label>
-                <input type="text" id="form-guest-country" required placeholder="United States" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Country *</label>
+                <input type="text" id="form-guest-country" required placeholder="United States" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
               </div>
               <div>
-                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">State / Province *</label>
-                <input type="text" id="form-guest-state" required placeholder="New York" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">State / Province *</label>
+                <input type="text" id="form-guest-state" required placeholder="New York" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">City *</label>
-                <input type="text" id="form-guest-city" required placeholder="New York City" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">City *</label>
+                <input type="text" id="form-guest-city" required placeholder="New York City" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
               </div>
               <div>
-                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Postal Code *</label>
-                <input type="text" id="form-guest-postal" required placeholder="10001" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Postal Code *</label>
+                <input type="text" id="form-guest-postal" required placeholder="10001" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
               </div>
             </div>
           </div>
@@ -496,26 +496,26 @@ function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
   const contactBlock = isGuest ? '' : `
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Full Name *</label>
-            <input type="text" id="form-full-name" required placeholder="John Doe" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Full Name *</label>
+            <input type="text" id="form-full-name" required placeholder="John Doe" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Phone Number *</label>
-            <input type="tel" id="form-phone" required placeholder="+1 234 567 890" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Phone Number *</label>
+            <input type="tel" id="form-phone" required placeholder="+1 234 567 890" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Email Address *</label>
-          <input type="email" id="form-email" required placeholder="you@example.com" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Email Address *</label>
+          <input type="email" id="form-email" required placeholder="you@example.com" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
   `;
 
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 slide-up" id="upload-section">
+    <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up" id="upload-section">
       <div class="flex items-center gap-3 mb-5">
-        <div class="p-2.5 bg-blue-500/10 rounded-lg"><i data-lucide="upload-cloud" class="w-5 h-5 text-blue-400"></i></div>
+        <div class="p-2.5 bg-blue-50 rounded-lg"><i data-lucide="upload-cloud" class="w-5 h-5 text-blue-600"></i></div>
         <div>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Upload Payment Receipt</h3>
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Upload Payment Receipt</h3>
           <p class="text-gray-500 text-xs">After making your payment, upload your receipt for verification.</p>
         </div>
       </div>
@@ -530,8 +530,8 @@ function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Order Number</label>
-            <input type="text" value="${orderNumber}" disabled class="w-full bg-[#0a1124]/80 border border-blue-500/10 rounded-xl px-4 py-2.5 text-sm text-blue-400 font-mono font-bold">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Order Number</label>
+            <input type="text" value="${orderNumber}" disabled class="w-full bg-white/80 border border-blue-100 rounded-xl px-4 py-2.5 text-sm text-blue-600 font-mono font-bold">
           </div>
           <div class="flex items-end">
             <div class="text-xs text-gray-500 pb-2">Save your order number to track your payment status.</div>
@@ -543,44 +543,44 @@ function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Selected Currency</label>
-            <input type="text" id="form-currency-display" value="${currency}" disabled class="w-full bg-[#0a1124]/80 border border-blue-500/10 rounded-xl px-4 py-2.5 text-sm text-white font-mono">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Selected Currency</label>
+            <input type="text" id="form-currency-display" value="${currency}" disabled class="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 font-mono">
           </div>
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Amount Paid *</label>
-            <input type="number" id="form-amount-paid" required step="0.01" value="${amount}" placeholder="0.00" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Amount Paid *</label>
+            <input type="number" id="form-amount-paid" required step="0.01" value="${amount}" placeholder="0.00" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Payment Date *</label>
-            <input type="date" id="form-payment-date" required value="${new Date().toISOString().slice(0,10)}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Payment Date *</label>
+            <input type="date" id="form-payment-date" required value="${new Date().toISOString().slice(0,10)}" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Transaction Reference *</label>
-          <input type="text" id="form-tx-ref" required placeholder="Bank transfer reference / confirmation number" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Transaction Reference *</label>
+          <input type="text" id="form-tx-ref" required placeholder="Bank transfer reference / confirmation number" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
 
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Additional Notes</label>
-          <textarea id="form-notes" rows="2" placeholder="Any additional information about your payment (optional)" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 resize-none"></textarea>
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Additional Notes</label>
+          <textarea id="form-notes" rows="2" placeholder="Any additional information about your payment (optional)" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-none"></textarea>
         </div>
 
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Upload Receipt *</label>
-          <div id="file-drop-zone" class="border-2 border-dashed border-blue-500/20 hover:border-blue-500/50 rounded-2xl p-8 text-center cursor-pointer transition group">
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Upload Receipt *</label>
+          <div id="file-drop-zone" class="border-2 border-dashed border-blue-200 hover:border-blue-300 rounded-2xl p-8 text-center cursor-pointer transition group">
             <input type="file" id="form-receipt-file" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" capture="environment" class="hidden">
             <div id="file-prompt">
-              <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-500/10 rounded-2xl mb-3 group-hover:bg-blue-500/20 transition">
-                <i data-lucide="upload-cloud" class="w-7 h-7 text-blue-400 group-hover:scale-110 transition"></i>
+              <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-50 rounded-2xl mb-3 group-hover:bg-blue-100 transition">
+                <i data-lucide="upload-cloud" class="w-7 h-7 text-blue-600 group-hover:scale-110 transition"></i>
               </div>
-              <p class="text-sm text-gray-300 font-medium">Click to upload, take a photo, or drag and drop</p>
+              <p class="text-sm text-gray-700 font-medium">Click to upload, take a photo, or drag and drop</p>
               <p class="text-xs text-gray-600 mt-1">JPG, JPEG, PNG, WEBP, or PDF — Max 20 MB</p>
               <div class="flex items-center justify-center gap-2 mt-3">
-                <button type="button" id="btn-take-photo" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition flex items-center gap-1.5">
+                <button type="button" id="btn-take-photo" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition flex items-center gap-1.5">
                   <i data-lucide="camera" class="w-4 h-4"></i> Take Photo
                 </button>
-                <button type="button" id="btn-choose-file" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition flex items-center gap-1.5">
+                <button type="button" id="btn-choose-file" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition flex items-center gap-1.5">
                   <i data-lucide="folder-open" class="w-4 h-4"></i> Choose File
                 </button>
               </div>
@@ -588,35 +588,35 @@ function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
             <div id="file-info" class="hidden">
               <div class="flex flex-col items-center gap-3">
                 <div id="file-preview-container" class="hidden">
-                  <img id="file-preview-img" class="max-h-40 rounded-xl border border-blue-500/20 object-contain" alt="Receipt preview">
+                  <img id="file-preview-img" class="max-h-40 rounded-xl border border-blue-200 object-contain" alt="Receipt preview">
                 </div>
                 <div class="flex items-center justify-center gap-3">
-                  <div class="inline-flex items-center justify-center w-12 h-12 bg-emerald-500/10 rounded-xl check-pop">
-                    <i data-lucide="file-text" class="w-6 h-6 text-emerald-400"></i>
+                  <div class="inline-flex items-center justify-center w-12 h-12 bg-emerald-50 rounded-xl check-pop">
+                    <i data-lucide="file-text" class="w-6 h-6 text-emerald-600"></i>
                   </div>
                   <div class="text-left">
-                    <p id="file-name-display" class="text-sm text-white font-medium truncate max-w-[200px]"></p>
+                    <p id="file-name-display" class="text-sm text-gray-900 font-medium truncate max-w-[200px]"></p>
                     <p id="file-size-display" class="text-xs text-gray-500"></p>
                   </div>
-                  <button type="button" onclick="removeReceiptFile()" class="p-2 bg-blue-900/40 hover:bg-red-500/20 rounded-lg transition">
-                    <i data-lucide="trash-2" class="w-4 h-4 text-gray-400 hover:text-red-400"></i>
+                  <button type="button" onclick="removeReceiptFile()" class="p-2 bg-gray-100 hover:bg-red-100 rounded-lg transition">
+                    <i data-lucide="trash-2" class="w-4 h-4 text-gray-600 hover:text-red-600"></i>
                   </button>
                 </div>
-                <button type="button" onclick="removeReceiptFile();document.getElementById('form-receipt-file').click()" class="text-[11px] text-blue-400 hover:text-blue-300 font-bold uppercase tracking-wide flex items-center gap-1.5 transition">
+                <button type="button" onclick="removeReceiptFile();document.getElementById('form-receipt-file').click()" class="text-[11px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wide flex items-center gap-1.5 transition">
                   <i data-lucide="refresh-cw" class="w-3 h-3"></i> Replace Receipt
                 </button>
               </div>
             </div>
           </div>
-          <div id="file-error" class="hidden text-xs text-red-400 mt-1.5"></div>
+          <div id="file-error" class="hidden text-xs text-red-600 mt-1.5"></div>
         </div>
 
         <div id="upload-progress" class="hidden">
           <div class="flex items-center gap-3 mb-2">
-            <i data-lucide="loader-2" class="w-4 h-4 text-blue-400 animate-spin"></i>
-            <span class="text-xs text-gray-400" id="upload-progress-text">Uploading receipt...</span>
+            <i data-lucide="loader-2" class="w-4 h-4 text-blue-600 animate-spin"></i>
+            <span class="text-xs text-gray-600" id="upload-progress-text">Uploading receipt...</span>
           </div>
-          <div class="w-full bg-blue-950/60 rounded-full h-2 overflow-hidden">
+          <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
             <div id="upload-progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-300" style="width:0%"></div>
           </div>
         </div>
@@ -634,31 +634,31 @@ function renderPendingVerification(orderNumber, listing, amount, currency) {
   const price = formatPrice(listing);
   return `
     <div class="fade-in text-center py-8">
-      <div class="inline-flex items-center justify-center w-20 h-20 bg-emerald-500/10 rounded-full mb-6 check-pop">
-        <i data-lucide="check-circle" class="w-12 h-12 text-emerald-400"></i>
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-emerald-50 rounded-full mb-6 check-pop">
+        <i data-lucide="check-circle" class="w-12 h-12 text-emerald-600"></i>
       </div>
-      <h1 class="text-2xl font-black text-white mb-2">Receipt Submitted</h1>
-      <p class="text-gray-400 text-sm mb-6">Your payment receipt has been received successfully.</p>
+      <h1 class="text-2xl font-black text-gray-900 mb-2">Receipt Submitted</h1>
+      <p class="text-gray-600 text-sm mb-6">Your payment receipt has been received successfully.</p>
 
-      <div class="glass border border-blue-500/20 rounded-2xl p-5 max-w-md mx-auto mb-5 text-left">
-        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Order Number</span><span class="text-blue-400 font-mono font-bold">${orderNumber}</span></div>
-        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Item</span><span class="text-white font-bold truncate ml-2">${listing.title}</span></div>
-        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Amount</span><span class="text-white font-bold">${price}</span></div>
-        <div class="flex justify-between text-sm mb-4"><span class="text-gray-500">Currency</span><span class="text-white font-bold">${currency}</span></div>
-        <div class="border-t border-blue-500/10 pt-3">
+      <div class="glass border border-blue-200 rounded-2xl p-5 max-w-md mx-auto mb-5 text-left">
+        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Order Number</span><span class="text-blue-600 font-mono font-bold">${orderNumber}</span></div>
+        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Item</span><span class="text-gray-900 font-bold truncate ml-2">${listing.title}</span></div>
+        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Amount</span><span class="text-gray-900 font-bold">${price}</span></div>
+        <div class="flex justify-between text-sm mb-4"><span class="text-gray-500">Currency</span><span class="text-gray-900 font-bold">${currency}</span></div>
+        <div class="border-t border-blue-100 pt-3">
           <div class="flex items-center gap-2 text-sm">
             <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-            <span class="text-amber-400 font-bold">Pending Verification</span>
+            <span class="text-amber-600 font-bold">Pending Verification</span>
           </div>
         </div>
       </div>
 
       ${renderOrderTracker('verification')}
 
-      <div class="glass border border-blue-500/20 rounded-2xl p-5 max-w-md mx-auto mb-6 text-left">
+      <div class="glass border border-blue-200 rounded-2xl p-5 max-w-md mx-auto mb-6 text-left">
         <div class="flex items-start gap-2.5">
-          <i data-lucide="info" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
-          <div class="text-sm text-gray-400 leading-relaxed">
+          <i data-lucide="info" class="w-5 h-5 text-blue-600 shrink-0 mt-0.5"></i>
+          <div class="text-sm text-gray-600 leading-relaxed">
             <p class="mb-2">Our finance team will verify your payment.</p>
             <p class="mb-2">Verification usually takes between a few minutes and 24 hours.</p>
             <p>You will receive a notification once your payment has been approved.</p>
@@ -729,12 +729,12 @@ async function init() {
   root.innerHTML = `
     <div class="fade-in">
       <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
-        <a href="/" class="hover:text-blue-400 transition">Home</a>
+        <a href="/" class="hover:text-blue-600 transition">Home</a>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
         <span>Checkout</span>
       </div>
 
-      <h1 class="text-2xl sm:text-3xl font-black text-white mb-2">Secure Checkout</h1>
+      <h1 class="text-2xl sm:text-3xl font-black text-gray-900 mb-2">Secure Checkout</h1>
       <p class="text-gray-500 text-sm mb-6">Complete your purchase using manual bank transfer. Upload your receipt after payment for verification.</p>
 
       ${renderOrderSummary(listing, cover, isProperty)}
@@ -752,7 +752,7 @@ async function init() {
       ${renderOrderTracker('submitted')}
 
       <p class="text-center text-xs text-gray-500 mb-6 flex items-center justify-center gap-1.5">
-        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Your payment is secured with SSL encryption. Manual verification by our finance team.
+        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> Your payment is secured with SSL encryption. Manual verification by our finance team.
       </p>
     </div>
   `;
@@ -785,9 +785,9 @@ function attachEventHandlers(listing, baseAmount, orderNumber, user, isGuest) {
     container.innerHTML = next.isFallback ? renderUnsupportedCurrency(next.fallbackNotice) : renderBankAccount(next.account, null, manualPaymentInstructions);
     document.querySelectorAll('#currency-selector-container button').forEach(btn => {
       if (btn.getAttribute('onclick')?.includes(`'${currency}'`)) {
-        btn.className = btn.className.replace('bg-blue-950/40 border-blue-500/10 text-gray-400 hover:border-blue-500/30 hover:text-white', 'bg-blue-500/15 border-blue-500/50 text-blue-400 pulse-glow');
+        btn.className = btn.className.replace('bg-gray-50 border-blue-100 text-gray-600 hover:border-blue-200 hover:text-gray-900', 'bg-blue-50 border-blue-300 text-blue-600 pulse-glow');
       } else {
-        btn.className = btn.className.replace('bg-blue-500/15 border-blue-500/50 text-blue-400 pulse-glow', 'bg-blue-950/40 border-blue-500/10 text-gray-400 hover:border-blue-500/30 hover:text-white');
+        btn.className = btn.className.replace('bg-blue-50 border-blue-300 text-blue-600 pulse-glow', 'bg-gray-50 border-blue-100 text-gray-600 hover:border-blue-200 hover:text-gray-900');
       }
     });
     const currencyDisplay = document.getElementById('form-currency-display');
@@ -870,14 +870,14 @@ function attachEventHandlers(listing, baseAmount, orderNumber, user, isGuest) {
 
   dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
-    dropZone.classList.add('border-blue-500/50', 'bg-blue-500/5');
+    dropZone.classList.add('border-blue-300', 'bg-blue-50');
   });
   dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('border-blue-500/50', 'bg-blue-500/5');
+    dropZone.classList.remove('border-blue-300', 'bg-blue-50');
   });
   dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
-    dropZone.classList.remove('border-blue-500/50', 'bg-blue-500/5');
+    dropZone.classList.remove('border-blue-300', 'bg-blue-50');
     if (e.dataTransfer.files.length) {
       const dt = new DataTransfer();
       dt.items.add(e.dataTransfer.files[0]);

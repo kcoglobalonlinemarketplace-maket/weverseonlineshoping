@@ -36,7 +36,7 @@ body.kco-live-mode .showroom-card h3 {
   margin-bottom: 6px !important;
 }
 /* Larger prices — most important for live viewers */
-body.kco-live-mode .showroom-card .text-blue-400,
+body.kco-live-mode .showroom-card .text-blue-600,
 body.kco-live-mode .showroom-card [class*="text-blue"] {
   font-size: 20px !important;
   font-weight: 900 !important;
@@ -44,7 +44,7 @@ body.kco-live-mode .showroom-card [class*="text-blue"] {
 }
 /* Larger spec text */
 body.kco-live-mode .showroom-card .text-gray-500,
-body.kco-live-mode .showroom-card .text-gray-400 {
+body.kco-live-mode .showroom-card .text-gray-600 {
   font-size: 13px !important;
 }
 /* Larger status badges */
@@ -69,7 +69,7 @@ body.kco-live-mode .showroom-card [class*="star"] {
   width: 16px !important;
   height: 16px !important;
 }
-body.kco-live-mode .showroom-card [class*="text-gray-300"],
+body.kco-live-mode .showroom-card [class*="text-gray-700"],
 body.kco-live-mode .showroom-card [class*="text-gray-600"] {
   font-size: 13px !important;
 }

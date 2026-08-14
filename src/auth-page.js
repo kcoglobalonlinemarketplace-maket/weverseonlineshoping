@@ -79,10 +79,10 @@ function moveIndicator(activeTab) {
 function setMode(m) {
   mode = m;
   if (m === 'login') {
-    tabLogin.classList.add('text-blue-300');
-    tabLogin.classList.remove('text-gray-400');
-    tabRegister.classList.add('text-gray-400');
-    tabRegister.classList.remove('text-blue-300');
+    tabLogin.classList.add('text-blue-700');
+    tabLogin.classList.remove('text-gray-600');
+    tabRegister.classList.add('text-gray-600');
+    tabRegister.classList.remove('text-blue-700');
     moveIndicator(tabLogin);
     submitBtn.innerHTML = '<i data-lucide="log-in" class="w-5 h-5"></i> <span id="auth-submit-label">Sign In</span>';
     welcomeTitle.textContent = 'Welcome Back';
@@ -96,10 +96,10 @@ function setMode(m) {
     usernameInput.required = false;
     passwordInput.setAttribute('autocomplete', 'current-password');
   } else {
-    tabRegister.classList.add('text-blue-300');
-    tabRegister.classList.remove('text-gray-400');
-    tabLogin.classList.add('text-gray-400');
-    tabLogin.classList.remove('text-blue-300');
+    tabRegister.classList.add('text-blue-700');
+    tabRegister.classList.remove('text-gray-600');
+    tabLogin.classList.add('text-gray-600');
+    tabLogin.classList.remove('text-blue-700');
     moveIndicator(tabRegister);
     submitBtn.innerHTML = '<i data-lucide="user-plus" class="w-5 h-5"></i> <span id="auth-submit-label">Create Account</span>';
     welcomeTitle.textContent = 'Create Your Account';
@@ -164,13 +164,13 @@ function calcStrength(pw) {
 passwordInput.addEventListener('input', () => {
   if (mode !== 'register') return;
   const score = calcStrength(passwordInput.value);
-  const colors = ['bg-gray-800', 'bg-red-500', 'bg-amber-500', 'bg-yellow-500', 'bg-emerald-500'];
+  const colors = ['bg-gray-100', 'bg-red-500', 'bg-amber-500', 'bg-yellow-500', 'bg-emerald-500'];
   const labels = ['Password strength', 'Weak', 'Fair', 'Good', 'Strong'];
   strengthBars.forEach((bar, i) => {
-    bar.className = 'strength-bar h-1 flex-1 rounded-full ' + (i < score ? colors[score] : 'bg-gray-800');
+    bar.className = 'strength-bar h-1 flex-1 rounded-full ' + (i < score ? colors[score] : 'bg-gray-100');
   });
   strengthLabel.textContent = labels[score];
-  strengthLabel.className = 'text-[11px] font-medium ' + (score >= 3 ? 'text-emerald-400' : score >= 2 ? 'text-yellow-400' : score >= 1 ? 'text-amber-400' : 'text-gray-500');
+  strengthLabel.className = 'text-[11px] font-medium ' + (score >= 3 ? 'text-emerald-600' : score >= 2 ? 'text-yellow-600' : score >= 1 ? 'text-amber-600' : 'text-gray-500');
 });
 
 /* ── Country selector modal ────────────────────────────────── */
@@ -187,13 +187,13 @@ const countryMeta = document.getElementById('country-meta');
 function renderCountryList(query) {
   const results = searchCountries(query);
   countryList.innerHTML = results.map(c => `
-    <button type="button" data-code="${c.code}" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-500/10 transition text-left">
+    <button type="button" data-code="${c.code}" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition text-left">
       <span class="text-2xl">${c.flag}</span>
       <div class="flex-1 min-w-0">
-        <div class="text-sm font-medium text-white truncate">${c.name}</div>
+        <div class="text-sm font-medium text-gray-900 truncate">${c.name}</div>
         <div class="text-xs text-gray-500">ISO: ${c.code} · Dial: +${c.dial}</div>
       </div>
-      ${selectedCountry?.code === c.code ? '<i data-lucide="check" class="w-5 h-5 text-blue-400 shrink-0"></i>' : ''}
+      ${selectedCountry?.code === c.code ? '<i data-lucide="check" class="w-5 h-5 text-blue-600 shrink-0"></i>' : ''}
     </button>
   `).join('');
   if (window.lucide) lucide.createIcons();
@@ -255,7 +255,7 @@ function showToast(msg) {
     toast = document.createElement('div');
     toast.id = 'auth-toast';
     toast.className = 'fixed bottom-5 right-5 z-[100] transform translate-y-20 opacity-0 bg-gray-900 border border-blue-500/30 text-white px-5 py-3 rounded-xl shadow-xl text-xs flex items-center gap-2 font-medium transition-all duration-300';
-    toast.innerHTML = '<i data-lucide="info" class="w-4 h-4 text-blue-400"></i><span id="auth-toast-msg">Action</span>';
+    toast.innerHTML = '<i data-lucide="info" class="w-4 h-4 text-blue-600"></i><span id="auth-toast-msg">Action</span>';
     document.body.appendChild(toast);
   }
   toast.querySelector('#auth-toast-msg').textContent = msg;
@@ -388,15 +388,15 @@ function showRecoveryPasswordPrompt() {
   const overlay = document.createElement('div');
   overlay.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4';
   overlay.innerHTML = `
-    <div class="glass border border-blue-500/20 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(15,23,42,.95)">
-      <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5 text-blue-400"></i> Set New Password</h3>
-      <p class="text-sm text-gray-400 mb-4">Your reset link is verified. Enter a new password below.</p>
+    <div class="glass border border-blue-200 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(255,255,255,.95)">
+      <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5 text-blue-600"></i> Set New Password</h3>
+      <p class="text-sm text-gray-600 mb-4">Your reset link is verified. Enter a new password below.</p>
       <div class="space-y-3">
-        <input id="rp-new" type="password" minlength="8" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-3 text-sm text-white" placeholder="New password (min 8 chars)">
-        <input id="rp-confirm" type="password" minlength="8" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-3 text-sm text-white" placeholder="Confirm new password">
+        <input id="rp-new" type="password" minlength="8" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900" placeholder="New password (min 8 chars)">
+        <input id="rp-confirm" type="password" minlength="8" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900" placeholder="Confirm new password">
         <button id="rp-save" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm uppercase tracking-wide">Update Password</button>
       </div>
-      <p id="rp-error" class="hidden text-xs text-red-400 mt-3"></p>
+      <p id="rp-error" class="hidden text-xs text-red-600 mt-3"></p>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -447,12 +447,12 @@ function showForgotPassword() {
   const overlay = document.createElement('div');
   overlay.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4';
   overlay.innerHTML = `
-    <div class="glass border border-blue-500/20 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(15,23,42,.95)">
-      <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="key-round" class="w-5 h-5 text-blue-400"></i> Reset Password</h3>
-      <p class="text-sm text-gray-400 mb-4">We'll send a password reset link to <span class="text-blue-400 font-bold">${email}</span></p>
+    <div class="glass border border-blue-200 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(255,255,255,.95)">
+      <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2"><i data-lucide="key-round" class="w-5 h-5 text-blue-600"></i> Reset Password</h3>
+      <p class="text-sm text-gray-600 mb-4">We'll send a password reset link to <span class="text-blue-600 font-bold">${email}</span></p>
       <div class="flex gap-3">
         <button id="fp-send" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">Send Reset Link</button>
-        <button id="fp-cancel" class="btn-press px-4 py-2.5 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold rounded-xl text-sm uppercase transition relative overflow-hidden">Cancel</button>
+        <button id="fp-cancel" class="btn-press px-4 py-2.5 bg-gray-100 border border-blue-200 text-gray-600 font-bold rounded-xl text-sm uppercase transition relative overflow-hidden">Cancel</button>
       </div>
     </div>
   `;
@@ -467,7 +467,7 @@ function showForgotPassword() {
     try {
       const { error } = await resetPassword(email);
       if (error) throw error;
-      overlay.innerHTML = `<div class="glass border border-blue-500/20 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(15,23,42,.95)"><h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i> Check Your Email</h3><p class="text-sm text-gray-400 mb-4">A password reset link has been sent to <span class="text-blue-400 font-bold">${email}</span>. The link expires in 1 hour.</p><button id="fp-close" class="btn-press w-full bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold py-2.5 rounded-xl text-sm uppercase transition relative overflow-hidden">Close</button></div>`;
+      overlay.innerHTML = `<div class="glass border border-blue-200 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(255,255,255,.95)"><h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> Check Your Email</h3><p class="text-sm text-gray-600 mb-4">A password reset link has been sent to <span class="text-blue-600 font-bold">${email}</span>. The link expires in 1 hour.</p><button id="fp-close" class="btn-press w-full bg-gray-100 border border-blue-200 text-gray-600 font-bold py-2.5 rounded-xl text-sm uppercase transition relative overflow-hidden">Close</button></div>`;
       if (window.lucide) lucide.createIcons();
       overlay.querySelector('#fp-close').onclick = () => overlay.remove();
     } catch (err) {

@@ -1,5 +1,5 @@
 /* ================================================================
-   KCO GLOBAL ONLINE MARKETPLACE — PREMIUM HOMEPAGE ENGINE
+   KCO GLOBAL ONLINE MARKETPLACE â€” PREMIUM HOMEPAGE ENGINE
    ================================================================ */
 
 // ---- DATA: Countries (full global list, alphabetically sorted) ----
@@ -25,7 +25,7 @@ const COUNTRIES = [
   {code:"KM",name:"Comoros"},{code:"CG",name:"Republic of the Congo"},
   {code:"CD",name:"Democratic Republic of the Congo"},{code:"CK",name:"Cook Islands"},
   {code:"CR",name:"Costa Rica"},{code:"CI",name:"Ivory Coast"},{code:"HR",name:"Croatia"},
-  {code:"CU",name:"Cuba"},{code:"CW",name:"Curaçao"},{code:"CY",name:"Cyprus"},
+  {code:"CU",name:"Cuba"},{code:"CW",name:"CuraÃ§ao"},{code:"CY",name:"Cyprus"},
   {code:"CZ",name:"Czech Republic"},{code:"DK",name:"Denmark"},{code:"DJ",name:"Djibouti"},
   {code:"DM",name:"Dominica"},{code:"DO",name:"Dominican Republic"},{code:"EC",name:"Ecuador"},
   {code:"EG",name:"Egypt"},{code:"SV",name:"El Salvador"},{code:"GQ",name:"Equatorial Guinea"},
@@ -67,13 +67,13 @@ const COUNTRIES = [
   {code:"PG",name:"Papua New Guinea"},{code:"PY",name:"Paraguay"},{code:"PE",name:"Peru"},
   {code:"PH",name:"Philippines"},{code:"PN",name:"Pitcairn Islands"},{code:"PL",name:"Poland"},
   {code:"PT",name:"Portugal"},{code:"PR",name:"Puerto Rico"},{code:"QA",name:"Qatar"},
-  {code:"RE",name:"Réunion"},{code:"RO",name:"Romania"},{code:"RU",name:"Russia"},
-  {code:"RW",name:"Rwanda"},{code:"BL",name:"Saint Barthélemy"},
+  {code:"RE",name:"RÃ©union"},{code:"RO",name:"Romania"},{code:"RU",name:"Russia"},
+  {code:"RW",name:"Rwanda"},{code:"BL",name:"Saint BarthÃ©lemy"},
   {code:"SH",name:"Saint Helena"},{code:"KN",name:"Saint Kitts and Nevis"},
   {code:"LC",name:"Saint Lucia"},{code:"MF",name:"Saint Martin (French)"},
   {code:"PM",name:"Saint Pierre and Miquelon"},
   {code:"VC",name:"Saint Vincent and the Grenadines"},{code:"WS",name:"Samoa"},
-  {code:"SM",name:"San Marino"},{code:"ST",name:"São Tomé and Príncipe"},
+  {code:"SM",name:"San Marino"},{code:"ST",name:"SÃ£o TomÃ© and PrÃ­ncipe"},
   {code:"SA",name:"Saudi Arabia"},{code:"SN",name:"Senegal"},{code:"RS",name:"Serbia"},
   {code:"SC",name:"Seychelles"},{code:"SL",name:"Sierra Leone"},{code:"SG",name:"Singapore"},
   {code:"SX",name:"Sint Maarten"},{code:"SK",name:"Slovakia"},{code:"SI",name:"Slovenia"},
@@ -94,59 +94,59 @@ const COUNTRIES = [
   {code:"VA",name:"Vatican City"},{code:"VE",name:"Venezuela"},{code:"VN",name:"Vietnam"},
   {code:"VI",name:"United States Virgin Islands"},{code:"WF",name:"Wallis and Futuna"},
   {code:"EH",name:"Western Sahara"},{code:"YE",name:"Yemen"},{code:"ZM",name:"Zambia"},
-  {code:"ZW",name:"Zimbabwe"},{code:"AX",name:"Åland Islands"},{code:"AQ",name:"Antarctica"},
+  {code:"ZW",name:"Zimbabwe"},{code:"AX",name:"Ã…land Islands"},{code:"AQ",name:"Antarctica"},
 ];
 
 const LANGUAGES = [
   {code:"aa",name:"Afar"},{code:"ab",name:"Abkhazian"},{code:"af",name:"Afrikaans"},
-  {code:"ak",name:"Akan"},{code:"am",name:"Amharic"},{code:"ar",name:"العربية"},
-  {code:"as",name:"Assamese"},{code:"az",name:"Azərbaycan"},{code:"ba",name:"Bashkir"},
-  {code:"be",name:"Беларуская"},{code:"bg",name:"Български"},{code:"bm",name:"Bambara"},
-  {code:"bn",name:"বাংলা"},{code:"bo",name:"བོད་སྐད"},{code:"br",name:"Breton"},
-  {code:"bs",name:"Bosanski"},{code:"ca",name:"Català"},{code:"ce",name:"Chechen"},
-  {code:"cs",name:"Čeština"},{code:"cy",name:"Cymraeg"},{code:"da",name:"Dansk"},
+  {code:"ak",name:"Akan"},{code:"am",name:"Amharic"},{code:"ar",name:"Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©"},
+  {code:"as",name:"Assamese"},{code:"az",name:"AzÉ™rbaycan"},{code:"ba",name:"Bashkir"},
+  {code:"be",name:"Ð‘ÐµÐ»Ð°Ñ€ÑƒÑÐºÐ°Ñ"},{code:"bg",name:"Ð‘ÑŠÐ»Ð³Ð°Ñ€ÑÐºÐ¸"},{code:"bm",name:"Bambara"},
+  {code:"bn",name:"à¦¬à¦¾à¦‚à¦²à¦¾"},{code:"bo",name:"à½–à½¼à½‘à¼‹à½¦à¾à½‘"},{code:"br",name:"Breton"},
+  {code:"bs",name:"Bosanski"},{code:"ca",name:"CatalÃ "},{code:"ce",name:"Chechen"},
+  {code:"cs",name:"ÄŒeÅ¡tina"},{code:"cy",name:"Cymraeg"},{code:"da",name:"Dansk"},
   {code:"de",name:"Deutsch"},{code:"dv",name:"Dhivehi"},{code:"dz",name:"Dzongkha"},
-  {code:"ee",name:"Ewe"},{code:"el",name:"Ελληνικά"},{code:"en",name:"English"},
-  {code:"eo",name:"Esperanto"},{code:"es",name:"Español"},{code:"et",name:"Eesti"},
-  {code:"eu",name:"Euskara"},{code:"fa",name:"فارسی"},{code:"ff",name:"Fulah"},
-  {code:"fi",name:"Suomi"},{code:"fo",name:"Føroyskt"},{code:"fr",name:"Français"},
-  {code:"fy",name:"Frysk"},{code:"ga",name:"Gaeilge"},{code:"gd",name:"Gàidhlig"},
-  {code:"gl",name:"Galego"},{code:"gn",name:"Guarani"},{code:"gu",name:"ગુજરાતી"},
-  {code:"gv",name:"Gaelg"},{code:"ha",name:"Hausa"},{code:"he",name:"עברית"},
-  {code:"hi",name:"हिन्दी"},{code:"hr",name:"Hrvatski"},{code:"hu",name:"Magyar"},
-  {code:"hy",name:"Հայերեն"},{code:"ia",name:"Interlingua"},{code:"id",name:"Bahasa Indonesia"},
-  {code:"ig",name:"Igbo"},{code:"is",name:"Íslenska"},{code:"it",name:"Italiano"},
-  {code:"iu",name:"Inuktitut"},{code:"ja",name:"日本語"},{code:"jv",name:"Basa Jawa"},
-  {code:"ka",name:"ქართული"},{code:"kk",name:"Қазақ"},{code:"kl",name:"Kalaallisut"},
-  {code:"km",name:"ខ្មែរ"},{code:"kn",name:"ಕನ್ನಡ"},{code:"ko",name:"한국어"},
-  {code:"ks",name:"कश्मीरी"},{code:"ku",name:"Kurdî"},{code:"kw",name:"Kernewek"},
-  {code:"ky",name:"Кыргызча"},{code:"la",name:"Latina"},{code:"lb",name:"Lëtzebuergesch"},
-  {code:"lg",name:"Luganda"},{code:"ln",name:"Lingala"},{code:"lo",name:"ລາວ"},
-  {code:"lt",name:"Lietuvių"},{code:"lv",name:"Latviešu"},{code:"mg",name:"Malagasy"},
-  {code:"mi",name:"Māori"},{code:"mk",name:"Македонски"},{code:"ml",name:"മലയാളം"},
-  {code:"mn",name:"Монгол"},{code:"mr",name:"मराठी"},{code:"ms",name:"Bahasa Melayu"},
-  {code:"mt",name:"Malti"},{code:"my",name:"ဗမာ"},{code:"ne",name:"नेपाली"},
+  {code:"ee",name:"Ewe"},{code:"el",name:"Î•Î»Î»Î·Î½Î¹ÎºÎ¬"},{code:"en",name:"English"},
+  {code:"eo",name:"Esperanto"},{code:"es",name:"EspaÃ±ol"},{code:"et",name:"Eesti"},
+  {code:"eu",name:"Euskara"},{code:"fa",name:"ÙØ§Ø±Ø³ÛŒ"},{code:"ff",name:"Fulah"},
+  {code:"fi",name:"Suomi"},{code:"fo",name:"FÃ¸royskt"},{code:"fr",name:"FranÃ§ais"},
+  {code:"fy",name:"Frysk"},{code:"ga",name:"Gaeilge"},{code:"gd",name:"GÃ idhlig"},
+  {code:"gl",name:"Galego"},{code:"gn",name:"Guarani"},{code:"gu",name:"àª—à«àªœàª°àª¾àª¤à«€"},
+  {code:"gv",name:"Gaelg"},{code:"ha",name:"Hausa"},{code:"he",name:"×¢×‘×¨×™×ª"},
+  {code:"hi",name:"à¤¹à¤¿à¤¨à¥à¤¦à¥€"},{code:"hr",name:"Hrvatski"},{code:"hu",name:"Magyar"},
+  {code:"hy",name:"Õ€Õ¡ÕµÕ¥Ö€Õ¥Õ¶"},{code:"ia",name:"Interlingua"},{code:"id",name:"Bahasa Indonesia"},
+  {code:"ig",name:"Igbo"},{code:"is",name:"Ãslenska"},{code:"it",name:"Italiano"},
+  {code:"iu",name:"Inuktitut"},{code:"ja",name:"æ—¥æœ¬èªž"},{code:"jv",name:"Basa Jawa"},
+  {code:"ka",name:"áƒ¥áƒáƒ áƒ—áƒ£áƒšáƒ˜"},{code:"kk",name:"ÒšÐ°Ð·Ð°Ò›"},{code:"kl",name:"Kalaallisut"},
+  {code:"km",name:"ážáŸ’áž˜áŸ‚ážš"},{code:"kn",name:"à²•à²¨à³à²¨à²¡"},{code:"ko",name:"í•œêµ­ì–´"},
+  {code:"ks",name:"à¤•à¤¶à¥à¤®à¥€à¤°à¥€"},{code:"ku",name:"KurdÃ®"},{code:"kw",name:"Kernewek"},
+  {code:"ky",name:"ÐšÑ‹Ñ€Ð³Ñ‹Ð·Ñ‡Ð°"},{code:"la",name:"Latina"},{code:"lb",name:"LÃ«tzebuergesch"},
+  {code:"lg",name:"Luganda"},{code:"ln",name:"Lingala"},{code:"lo",name:"àº¥àº²àº§"},
+  {code:"lt",name:"LietuviÅ³"},{code:"lv",name:"LatvieÅ¡u"},{code:"mg",name:"Malagasy"},
+  {code:"mi",name:"MÄori"},{code:"mk",name:"ÐœÐ°ÐºÐµÐ´Ð¾Ð½ÑÐºÐ¸"},{code:"ml",name:"à´®à´²à´¯à´¾à´³à´‚"},
+  {code:"mn",name:"ÐœÐ¾Ð½Ð³Ð¾Ð»"},{code:"mr",name:"à¤®à¤°à¤¾à¤ à¥€"},{code:"ms",name:"Bahasa Melayu"},
+  {code:"mt",name:"Malti"},{code:"my",name:"á€—á€™á€¬"},{code:"ne",name:"à¤¨à¥‡à¤ªà¤¾à¤²à¥€"},
   {code:"nl",name:"Nederlands"},{code:"nn",name:"Nynorsk"},{code:"no",name:"Norsk"},
   {code:"nr",name:"isiNdebele"},{code:"ny",name:"Chichewa"},{code:"oc",name:"Occitan"},
-  {code:"om",name:"Oromoo"},{code:"or",name:"ଓଡ଼ିଆ"},{code:"os",name:"Ирон"},
-  {code:"pa",name:"ਪੰਜਾਬੀ"},{code:"pl",name:"Polski"},{code:"ps",name:"پښتو"},
-  {code:"pt",name:"Português"},{code:"qu",name:"Runa Simi"},{code:"rm",name:"Rumantsch"},
-  {code:"rn",name:"Kirundi"},{code:"ro",name:"Română"},{code:"ru",name:"Русский"},
-  {code:"rw",name:"Kinyarwanda"},{code:"sa",name:"संस्कृत"},{code:"sc",name:"Sardu"},
-  {code:"sd",name:"سنڌي"},{code:"se",name:"Sámegiella"},{code:"sg",name:"Sängö"},
-  {code:"si",name:"සිංහල"},{code:"sk",name:"Slovenčina"},{code:"sl",name:"Slovenščina"},
+  {code:"om",name:"Oromoo"},{code:"or",name:"à¬“à¬¡à¬¼à¬¿à¬†"},{code:"os",name:"Ð˜Ñ€Ð¾Ð½"},
+  {code:"pa",name:"à¨ªà©°à¨œà¨¾à¨¬à©€"},{code:"pl",name:"Polski"},{code:"ps",name:"Ù¾ÚšØªÙˆ"},
+  {code:"pt",name:"PortuguÃªs"},{code:"qu",name:"Runa Simi"},{code:"rm",name:"Rumantsch"},
+  {code:"rn",name:"Kirundi"},{code:"ro",name:"RomÃ¢nÄƒ"},{code:"ru",name:"Ð ÑƒÑÑÐºÐ¸Ð¹"},
+  {code:"rw",name:"Kinyarwanda"},{code:"sa",name:"à¤¸à¤‚à¤¸à¥à¤•à¥ƒà¤¤"},{code:"sc",name:"Sardu"},
+  {code:"sd",name:"Ø³Ù†ÚŒÙŠ"},{code:"se",name:"SÃ¡megiella"},{code:"sg",name:"SÃ¤ngÃ¶"},
+  {code:"si",name:"à·ƒà·’à¶‚à·„à¶½"},{code:"sk",name:"SlovenÄina"},{code:"sl",name:"SlovenÅ¡Äina"},
   {code:"sn",name:"chiShona"},{code:"so",name:"Soomaali"},{code:"sq",name:"Shqip"},
-  {code:"sr",name:"Српски"},{code:"ss",name:"SiSwati"},{code:"st",name:"Sesotho"},
+  {code:"sr",name:"Ð¡Ñ€Ð¿ÑÐºÐ¸"},{code:"ss",name:"SiSwati"},{code:"st",name:"Sesotho"},
   {code:"su",name:"Basa Sunda"},{code:"sv",name:"Svenska"},{code:"sw",name:"Kiswahili"},
-  {code:"ta",name:"தமிழ்"},{code:"te",name:"తెలుగు"},{code:"tg",name:"Тоҷикӣ"},
-  {code:"th",name:"ไทย"},{code:"ti",name:"ትግርኛ"},{code:"tk",name:"Türkmen"},
+  {code:"ta",name:"à®¤à®®à®¿à®´à¯"},{code:"te",name:"à°¤à±†à°²à±à°—à±"},{code:"tg",name:"Ð¢Ð¾Ò·Ð¸ÐºÓ£"},
+  {code:"th",name:"à¹„à¸—à¸¢"},{code:"ti",name:"á‰µáŒáˆ­áŠ›"},{code:"tk",name:"TÃ¼rkmen"},
   {code:"tl",name:"Filipino"},{code:"tn",name:"Setswana"},{code:"to",name:"Lea Faka-Tonga"},
-  {code:"tr",name:"Türkçe"},{code:"ts",name:"Xitsonga"},{code:"tt",name:"Татар"},
-  {code:"ty",name:"Reo Tahiti"},{code:"ug",name:"ئۇيغۇرچە"},{code:"uk",name:"Українська"},
-  {code:"ur",name:"اردو"},{code:"uz",name:"Oʻzbek"},{code:"ve",name:"Tshivenḓa"},
-  {code:"vi",name:"Tiếng Việt"},{code:"wa",name:"Walon"},{code:"wo",name:"Wolof"},
-  {code:"xh",name:"isiXhosa"},{code:"yi",name:"ייִדיש"},{code:"yo",name:"Yorùbá"},
-  {code:"zh",name:"中文"},{code:"zu",name:"isiZulu"},
+  {code:"tr",name:"TÃ¼rkÃ§e"},{code:"ts",name:"Xitsonga"},{code:"tt",name:"Ð¢Ð°Ñ‚Ð°Ñ€"},
+  {code:"ty",name:"Reo Tahiti"},{code:"ug",name:"Ø¦Û‡ÙŠØºÛ‡Ø±Ú†Û•"},{code:"uk",name:"Ð£ÐºÑ€Ð°Ñ—Ð½ÑÑŒÐºÐ°"},
+  {code:"ur",name:"Ø§Ø±Ø¯Ùˆ"},{code:"uz",name:"OÊ»zbek"},{code:"ve",name:"Tshivená¸“a"},
+  {code:"vi",name:"Tiáº¿ng Viá»‡t"},{code:"wa",name:"Walon"},{code:"wo",name:"Wolof"},
+  {code:"xh",name:"isiXhosa"},{code:"yi",name:"×™×™Ö´×“×™×©"},{code:"yo",name:"YorÃ¹bÃ¡"},
+  {code:"zh",name:"ä¸­æ–‡"},{code:"zu",name:"isiZulu"},
 ];
 
 // ---- DATA: Categories ----
@@ -164,25 +164,25 @@ const CATEGORIES = [
 
 // Tailwind color class maps for category accents (text + bg + border + glow)
 const CAT_COLORS = {
-  blue:{text:"text-blue-400",bg:"from-blue-500/20",to:"to-blue-500/5",border:"border-blue-500/50",glow:"0 0 18px rgba(59,130,246,0.2)",hoverBorder:"hover:border-blue-500/40"},
-  pink:{text:"text-pink-400",bg:"from-pink-500/20",to:"to-pink-500/5",border:"border-pink-500/50",glow:"0 0 18px rgba(236,72,153,0.2)",hoverBorder:"hover:border-pink-500/40"},
-  amber:{text:"text-amber-400",bg:"from-amber-500/20",to:"to-amber-500/5",border:"border-amber-500/50",glow:"0 0 18px rgba(245,158,11,0.2)",hoverBorder:"hover:border-amber-500/40"},
-  emerald:{text:"text-emerald-400",bg:"from-emerald-500/20",to:"to-emerald-500/5",border:"border-emerald-500/50",glow:"0 0 18px rgba(16,185,129,0.2)",hoverBorder:"hover:border-emerald-500/40"},
-  lime:{text:"text-lime-400",bg:"from-lime-500/20",to:"to-lime-500/5",border:"border-lime-500/50",glow:"0 0 18px rgba(132,204,22,0.2)",hoverBorder:"hover:border-lime-500/40"},
-  cyan:{text:"text-cyan-400",bg:"from-cyan-500/20",to:"to-cyan-500/5",border:"border-cyan-500/50",glow:"0 0 18px rgba(34,211,238,0.2)",hoverBorder:"hover:border-cyan-500/40"},
-  sky:{text:"text-sky-400",bg:"from-sky-500/20",to:"to-sky-500/5",border:"border-sky-500/50",glow:"0 0 18px rgba(14,165,233,0.2)",hoverBorder:"hover:border-sky-500/40"},
-  red:{text:"text-red-400",bg:"from-red-500/20",to:"to-red-500/5",border:"border-red-500/50",glow:"0 0 18px rgba(239,68,68,0.2)",hoverBorder:"hover:border-red-500/40"},
-  violet:{text:"text-violet-400",bg:"from-violet-500/20",to:"to-violet-500/5",border:"border-violet-500/50",glow:"0 0 18px rgba(139,92,246,0.2)",hoverBorder:"hover:border-violet-500/40"},
-  indigo:{text:"text-indigo-400",bg:"from-indigo-500/20",to:"to-indigo-500/5",border:"border-indigo-500/50",glow:"0 0 18px rgba(99,102,241,0.2)",hoverBorder:"hover:border-indigo-500/40"},
-  teal:{text:"text-teal-400",bg:"from-teal-500/20",to:"to-teal-500/5",border:"border-teal-500/50",glow:"0 0 18px rgba(20,184,166,0.2)",hoverBorder:"hover:border-teal-500/40"},
-  rose:{text:"text-rose-400",bg:"from-rose-500/20",to:"to-rose-500/5",border:"border-rose-500/50",glow:"0 0 18px rgba(244,63,94,0.2)",hoverBorder:"hover:border-rose-500/40"},
-  fuchsia:{text:"text-fuchsia-400",bg:"from-fuchsia-500/20",to:"to-fuchsia-500/5",border:"border-fuchsia-500/50",glow:"0 0 18px rgba(217,70,239,0.2)",hoverBorder:"hover:border-fuchsia-500/40"},
-  slate:{text:"text-slate-300",bg:"from-slate-500/20",to:"to-slate-500/5",border:"border-slate-400/50",glow:"0 0 18px rgba(148,163,184,0.2)",hoverBorder:"hover:border-slate-400/40"},
-  green:{text:"text-green-400",bg:"from-green-500/20",to:"to-green-500/5",border:"border-green-500/50",glow:"0 0 18px rgba(34,197,94,0.2)",hoverBorder:"hover:border-green-500/40"},
-  yellow:{text:"text-yellow-400",bg:"from-yellow-500/20",to:"to-yellow-500/5",border:"border-yellow-500/50",glow:"0 0 18px rgba(234,179,8,0.2)",hoverBorder:"hover:border-yellow-500/40"},
-  brown:{text:"text-amber-600",bg:"from-amber-700/20",to:"to-amber-700/5",border:"border-amber-600/50",glow:"0 0 18px rgba(180,83,9,0.2)",hoverBorder:"hover:border-amber-600/40"},
-  purple:{text:"text-purple-400",bg:"from-purple-500/20",to:"to-purple-500/5",border:"border-purple-500/50",glow:"0 0 18px rgba(168,85,247,0.2)",hoverBorder:"hover:border-purple-500/40"},
-  gray:{text:"text-gray-400",bg:"from-gray-500/20",to:"to-gray-500/5",border:"border-gray-400/50",glow:"0 0 18px rgba(156,163,175,0.2)",hoverBorder:"hover:border-gray-400/40"},
+  blue:{text:"text-blue-600",bg:"from-blue-100",to:"to-blue-50",border:"border-blue-200",glow:"0 0 18px rgba(59,130,246,0.2)",hoverBorder:"hover:border-blue-400"},
+  pink:{text:"text-pink-600",bg:"from-pink-100",to:"to-pink-50",border:"border-pink-200",glow:"0 0 18px rgba(236,72,153,0.2)",hoverBorder:"hover:border-pink-400"},
+  amber:{text:"text-amber-600",bg:"from-amber-100",to:"to-amber-50",border:"border-amber-200",glow:"0 0 18px rgba(245,158,11,0.2)",hoverBorder:"hover:border-amber-400"},
+  emerald:{text:"text-emerald-600",bg:"from-emerald-100",to:"to-emerald-50",border:"border-emerald-200",glow:"0 0 18px rgba(16,185,129,0.2)",hoverBorder:"hover:border-emerald-400"},
+  lime:{text:"text-lime-600",bg:"from-lime-100",to:"to-lime-50",border:"border-lime-200",glow:"0 0 18px rgba(132,204,22,0.2)",hoverBorder:"hover:border-lime-400"},
+  cyan:{text:"text-cyan-600",bg:"from-cyan-100",to:"to-cyan-50",border:"border-cyan-200",glow:"0 0 18px rgba(34,211,238,0.2)",hoverBorder:"hover:border-cyan-400"},
+  sky:{text:"text-sky-600",bg:"from-sky-100",to:"to-sky-50",border:"border-sky-200",glow:"0 0 18px rgba(14,165,233,0.2)",hoverBorder:"hover:border-sky-400"},
+  red:{text:"text-red-600",bg:"from-red-100",to:"to-red-50",border:"border-red-200",glow:"0 0 18px rgba(239,68,68,0.2)",hoverBorder:"hover:border-red-400"},
+  violet:{text:"text-violet-600",bg:"from-violet-100",to:"to-violet-50",border:"border-violet-200",glow:"0 0 18px rgba(139,92,246,0.2)",hoverBorder:"hover:border-violet-400"},
+  indigo:{text:"text-indigo-600",bg:"from-indigo-100",to:"to-indigo-50",border:"border-indigo-200",glow:"0 0 18px rgba(99,102,241,0.2)",hoverBorder:"hover:border-indigo-400"},
+  teal:{text:"text-teal-600",bg:"from-teal-100",to:"to-teal-50",border:"border-teal-200",glow:"0 0 18px rgba(20,184,166,0.2)",hoverBorder:"hover:border-teal-400"},
+  rose:{text:"text-rose-600",bg:"from-rose-100",to:"to-rose-50",border:"border-rose-200",glow:"0 0 18px rgba(244,63,94,0.2)",hoverBorder:"hover:border-rose-400"},
+  fuchsia:{text:"text-fuchsia-600",bg:"from-fuchsia-100",to:"to-fuchsia-50",border:"border-fuchsia-200",glow:"0 0 18px rgba(217,70,239,0.2)",hoverBorder:"hover:border-fuchsia-400"},
+  slate:{text:"text-slate-600",bg:"from-slate-200",to:"to-slate-100",border:"border-slate-300",glow:"0 0 18px rgba(148,163,184,0.2)",hoverBorder:"hover:border-slate-400"},
+  green:{text:"text-green-600",bg:"from-green-100",to:"to-green-50",border:"border-green-200",glow:"0 0 18px rgba(34,197,94,0.2)",hoverBorder:"hover:border-green-400"},
+  yellow:{text:"text-yellow-600",bg:"from-yellow-100",to:"to-yellow-50",border:"border-yellow-200",glow:"0 0 18px rgba(234,179,8,0.2)",hoverBorder:"hover:border-yellow-400"},
+  brown:{text:"text-amber-700",bg:"from-amber-100",to:"to-amber-50",border:"border-amber-300",glow:"0 0 18px rgba(180,83,9,0.2)",hoverBorder:"hover:border-amber-400"},
+  purple:{text:"text-purple-600",bg:"from-purple-100",to:"to-purple-50",border:"border-purple-200",glow:"0 0 18px rgba(168,85,247,0.2)",hoverBorder:"hover:border-purple-400"},
+  gray:{text:"text-gray-600",bg:"from-gray-100",to:"to-gray-50",border:"border-gray-300",glow:"0 0 18px rgba(156,163,175,0.2)",hoverBorder:"hover:border-gray-400"},
 };
 
 // ---- DATA: Search Suggestions ----
@@ -207,18 +207,18 @@ const HOLIDAYS = {
   GB:[{date:"01-01",name:"New Year's Day"},{date:"12-26",name:"Boxing Day"},{date:"11-05",name:"Guy Fawkes Night"},{date:"12-25",name:"Christmas Day"}],
   JP:[{date:"01-01",name:"New Year (Shogatsu)"},{date:"04-29",name:"Golden Week Begins"},{date:"05-03",name:"Constitution Day"},{date:"05-04",name:"Greenery Day"},{date:"05-05",name:"Children's Day"},{date:"11-03",name:"Culture Day"},{date:"12-23",name:"Emperor's Birthday"}],
   DE:[{date:"01-01",name:"Neujahr"},{date:"10-03",name:"Tag der Deutschen Einheit"},{date:"12-25",name:"Erster Weihnachtstag"},{date:"12-26",name:"Zweiter Weihnachtstag"}],
-  FR:[{date:"01-01",name:"Jour de l'An"},{date:"07-14",name:"Fête Nationale"},{date:"11-11",name:"Armistice Day"},{date:"12-25",name:"Noël"}],
+  FR:[{date:"01-01",name:"Jour de l'An"},{date:"07-14",name:"FÃªte Nationale"},{date:"11-11",name:"Armistice Day"},{date:"12-25",name:"NoÃ«l"}],
   CN:[{date:"01-01",name:"New Year's Day"},{date:"02-10",name:"Spring Festival"},{date:"10-01",name:"National Day"},{date:"12-25",name:"Christmas"}],
   IN:[{date:"01-01",name:"New Year's Day"},{date:"01-26",name:"Republic Day"},{date:"08-15",name:"Independence Day"},{date:"10-02",name:"Gandhi Jayanti"},{date:"11-01",name:"Diwali"}],
-  BR:[{date:"01-01",name:"Ano Novo"},{date:"09-07",name:"Independência"},{date:"12-25",name:"Natal"}],
+  BR:[{date:"01-01",name:"Ano Novo"},{date:"09-07",name:"IndependÃªncia"},{date:"12-25",name:"Natal"}],
   AE:[{date:"01-01",name:"New Year's Day"},{date:"12-02",name:"National Day"},{date:"12-03",name:"National Day Holiday"}],
   CA:[{date:"01-01",name:"New Year's Day"},{date:"07-01",name:"Canada Day"},{date:"11-11",name:"Remembrance Day"},{date:"12-25",name:"Christmas Day"},{date:"12-26",name:"Boxing Day"}],
   AU:[{date:"01-01",name:"New Year's Day"},{date:"01-26",name:"Australia Day"},{date:"12-25",name:"Christmas Day"},{date:"12-26",name:"Boxing Day"}],
   NG:[{date:"01-01",name:"New Year's Day"},{date:"10-01",name:"Independence Day"},{date:"12-25",name:"Christmas Day"}],
   ZA:[{date:"01-01",name:"New Year's Day"},{date:"04-27",name:"Freedom Day"},{date:"12-16",name:"Day of Reconciliation"},{date:"12-25",name:"Christmas Day"}],
-  MX:[{date:"01-01",name:"Año Nuevo"},{date:"09-16",name:"Día de la Independencia"},{date:"11-02",name:"Día de los Muertos"},{date:"12-25",name:"Navidad"}],
+  MX:[{date:"01-01",name:"AÃ±o Nuevo"},{date:"09-16",name:"DÃ­a de la Independencia"},{date:"11-02",name:"DÃ­a de los Muertos"},{date:"12-25",name:"Navidad"}],
   IT:[{date:"01-01",name:"Capodanno"},{date:"06-02",name:"Festa della Repubblica"},{date:"12-25",name:"Natale"}],
-  ES:[{date:"01-01",name:"Año Nuevo"},{date:"10-12",name:"Fiesta Nacional"},{date:"12-25",name:"Navidad"}],
+  ES:[{date:"01-01",name:"AÃ±o Nuevo"},{date:"10-12",name:"Fiesta Nacional"},{date:"12-25",name:"Navidad"}],
   SA:[{date:"02-22",name:"Founding Day"},{date:"09-23",name:"Saudi National Day"}],
   KR:[{date:"01-01",name:"New Year's Day"},{date:"03-01",name:"Samiljeol"},{date:"08-15",name:"Gwangbokjeol"},{date:"10-03",name:"Gaecheonjeol"}],
   EG:[{date:"01-01",name:"New Year's Day"},{date:"07-23",name:"Revolution Day"},{date:"10-06",name:"Armed Forces Day"}],
@@ -228,19 +228,19 @@ const HOLIDAYS = {
 // ---- DATA: Ad Copy Dictionary ----
 const AD_COPY = {
   en:{shopNow:"Shop Collection",explore:"Explore Category",learnMore:"Learn More",worldwide:"Worldwide Shipping",worldwideSub:"200+ countries served",delivery:"Fast Delivery",deliverySub:"Express options available",secure:"Secure Shopping",secureSub:"SSL encrypted checkout",support:"24/7 Customer Support",supportSub:"Always here for you"},
-  es:{shopNow:"Comprar Colección",explore:"Explorar Categoría",learnMore:"Más Información",worldwide:"Envío Mundial",worldwideSub:"200+ países atendidos",delivery:"Entrega Rápida",deliverySub:"Opciones exprés disponibles",secure:"Compra Segura",secureSub:"Pago cifrado SSL",support:"Soporte 24/7",supportSub:"Siempre aquí para ti"},
-  fr:{shopNow:"Acheter Collection",explore:"Explorer Catégorie",learnMore:"En Savoir Plus",worldwide:"Livraison Mondiale",worldwideSub:"200+ pays desservis",delivery:"Livraison Rapide",deliverySub:"Options express disponibles",secure:"Achat Sécurisé",secureSub:"Paiement chiffré SSL",support:"Support 24/7",supportSub:"Toujours là pour vous"},
-  de:{shopNow:"Kollektion Kaufen",explore:"Kategorie Entdecken",learnMore:"Mehr Erfahren",worldwide:"Weltweiter Versand",worldwideSub:"200+ Länder bedient",delivery:"Schnelle Lieferung",deliverySub:"Express-Optionen verfügbar",secure:"Sicheres Einkaufen",secureSub:"SSL-verschlüsselte Kasse",support:"24/7 Kundenservice",supportSub:"Immer für Sie da"},
-  ja:{shopNow:"コレクションを見る",explore:"カテゴリーを探る",learnMore:"詳細を見る",worldwide:"世界中の配送",worldwideSub:"200カ国以上に対応",delivery:"高速配送",deliverySub:"エクスプレスオプション",secure:"安全なショッピング",secureSub:"SSL暗号化決済",support:"24時間サポート",supportSub:"いつもそばに"},
-  ar:{shopNow:"تسوق المجموعة",explore:"استكشف الفئة",learnMore:"اعرف المزيد",worldwide:"شحن عالمي",worldwideSub:"أكثر من 200 دولة",delivery:"توصيل سريع",deliverySub:"خيارات سريعة",secure:"تسوق آمن",secureSub:"دفع مشفر SSL",support:"دعم 24/7",supportSub:"نحن هنا دائماً"},
-  zh:{shopNow:"选购系列",explore:"探索类别",learnMore:"了解更多",worldwide:"全球配送",worldwideSub:"服务200+国家",delivery:"快速配送",deliverySub:"提供加急选项",secure:"安全购物",secureSub:"SSL加密结算",support:"24/7客服",supportSub:"随时为您服务"},
-  pt:{shopNow:"Comprar Coleção",explore:"Explorar Categoria",learnMore:"Saber Mais",worldwide:"Envio Mundial",worldwideSub:"200+ países atendidos",delivery:"Entrega Rápida",deliverySub:"Opções express disponíveis",secure:"Compra Segura",secureSub:"Pagamento criptografado SSL",support:"Suporte 24/7",supportSub:"Sempre aqui para você"},
-  ru:{shopNow:"Купить Коллекцию",explore:"Исследовать Категорию",learnMore:"Узнать Больше",worldwide:"Доставка по всему миру",worldwideSub:"200+ стран",delivery:"Быстрая доставка",deliverySub:"Экспресс-опции",secure:"Безопасные покупки",secureSub:"SSL-шифрование",support:"Поддержка 24/7",supportSub:"Всегда для вас"},
-  hi:{shopNow:"संग्रह खरीदें",explore:"श्रेणी देखें",learnMore:"और जानें",worldwide:"विश्वव्यापी शिपिंग",worldwideSub:"200+ देशों में सेवा",delivery:"तेज डिलीवरी",deliverySub:"एक्सप्रेस विकल्प",secure:"सुरक्षित खरीद",secureSub:"SSL एन्क्रिप्टेड चेकआउट",support:"24/7 सहायता",supportSub:"हमेशा आपके लिए"},
+  es:{shopNow:"Comprar ColecciÃ³n",explore:"Explorar CategorÃ­a",learnMore:"MÃ¡s InformaciÃ³n",worldwide:"EnvÃ­o Mundial",worldwideSub:"200+ paÃ­ses atendidos",delivery:"Entrega RÃ¡pida",deliverySub:"Opciones exprÃ©s disponibles",secure:"Compra Segura",secureSub:"Pago cifrado SSL",support:"Soporte 24/7",supportSub:"Siempre aquÃ­ para ti"},
+  fr:{shopNow:"Acheter Collection",explore:"Explorer CatÃ©gorie",learnMore:"En Savoir Plus",worldwide:"Livraison Mondiale",worldwideSub:"200+ pays desservis",delivery:"Livraison Rapide",deliverySub:"Options express disponibles",secure:"Achat SÃ©curisÃ©",secureSub:"Paiement chiffrÃ© SSL",support:"Support 24/7",supportSub:"Toujours lÃ  pour vous"},
+  de:{shopNow:"Kollektion Kaufen",explore:"Kategorie Entdecken",learnMore:"Mehr Erfahren",worldwide:"Weltweiter Versand",worldwideSub:"200+ LÃ¤nder bedient",delivery:"Schnelle Lieferung",deliverySub:"Express-Optionen verfÃ¼gbar",secure:"Sicheres Einkaufen",secureSub:"SSL-verschlÃ¼sselte Kasse",support:"24/7 Kundenservice",supportSub:"Immer fÃ¼r Sie da"},
+  ja:{shopNow:"ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ã‚’è¦‹ã‚‹",explore:"ã‚«ãƒ†ã‚´ãƒªãƒ¼ã‚’æŽ¢ã‚‹",learnMore:"è©³ç´°ã‚’è¦‹ã‚‹",worldwide:"ä¸–ç•Œä¸­ã®é…é€",worldwideSub:"200ã‚«å›½ä»¥ä¸Šã«å¯¾å¿œ",delivery:"é«˜é€Ÿé…é€",deliverySub:"ã‚¨ã‚¯ã‚¹ãƒ—ãƒ¬ã‚¹ã‚ªãƒ—ã‚·ãƒ§ãƒ³",secure:"å®‰å…¨ãªã‚·ãƒ§ãƒƒãƒ”ãƒ³ã‚°",secureSub:"SSLæš—å·åŒ–æ±ºæ¸ˆ",support:"24æ™‚é–“ã‚µãƒãƒ¼ãƒˆ",supportSub:"ã„ã¤ã‚‚ãã°ã«"},
+  ar:{shopNow:"ØªØ³ÙˆÙ‚ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø©",explore:"Ø§Ø³ØªÙƒØ´Ù Ø§Ù„ÙØ¦Ø©",learnMore:"Ø§Ø¹Ø±Ù Ø§Ù„Ù…Ø²ÙŠØ¯",worldwide:"Ø´Ø­Ù† Ø¹Ø§Ù„Ù…ÙŠ",worldwideSub:"Ø£ÙƒØ«Ø± Ù…Ù† 200 Ø¯ÙˆÙ„Ø©",delivery:"ØªÙˆØµÙŠÙ„ Ø³Ø±ÙŠØ¹",deliverySub:"Ø®ÙŠØ§Ø±Ø§Øª Ø³Ø±ÙŠØ¹Ø©",secure:"ØªØ³ÙˆÙ‚ Ø¢Ù…Ù†",secureSub:"Ø¯ÙØ¹ Ù…Ø´ÙØ± SSL",support:"Ø¯Ø¹Ù… 24/7",supportSub:"Ù†Ø­Ù† Ù‡Ù†Ø§ Ø¯Ø§Ø¦Ù…Ø§Ù‹"},
+  zh:{shopNow:"é€‰è´­ç³»åˆ—",explore:"æŽ¢ç´¢ç±»åˆ«",learnMore:"äº†è§£æ›´å¤š",worldwide:"å…¨çƒé…é€",worldwideSub:"æœåŠ¡200+å›½å®¶",delivery:"å¿«é€Ÿé…é€",deliverySub:"æä¾›åŠ æ€¥é€‰é¡¹",secure:"å®‰å…¨è´­ç‰©",secureSub:"SSLåŠ å¯†ç»“ç®—",support:"24/7å®¢æœ",supportSub:"éšæ—¶ä¸ºæ‚¨æœåŠ¡"},
+  pt:{shopNow:"Comprar ColeÃ§Ã£o",explore:"Explorar Categoria",learnMore:"Saber Mais",worldwide:"Envio Mundial",worldwideSub:"200+ paÃ­ses atendidos",delivery:"Entrega RÃ¡pida",deliverySub:"OpÃ§Ãµes express disponÃ­veis",secure:"Compra Segura",secureSub:"Pagamento criptografado SSL",support:"Suporte 24/7",supportSub:"Sempre aqui para vocÃª"},
+  ru:{shopNow:"ÐšÑƒÐ¿Ð¸Ñ‚ÑŒ ÐšÐ¾Ð»Ð»ÐµÐºÑ†Ð¸ÑŽ",explore:"Ð˜ÑÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÑŒ ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸ÑŽ",learnMore:"Ð£Ð·Ð½Ð°Ñ‚ÑŒ Ð‘Ð¾Ð»ÑŒÑˆÐµ",worldwide:"Ð”Ð¾ÑÑ‚Ð°Ð²ÐºÐ° Ð¿Ð¾ Ð²ÑÐµÐ¼Ñƒ Ð¼Ð¸Ñ€Ñƒ",worldwideSub:"200+ ÑÑ‚Ñ€Ð°Ð½",delivery:"Ð‘Ñ‹ÑÑ‚Ñ€Ð°Ñ Ð´Ð¾ÑÑ‚Ð°Ð²ÐºÐ°",deliverySub:"Ð­ÐºÑÐ¿Ñ€ÐµÑÑ-Ð¾Ð¿Ñ†Ð¸Ð¸",secure:"Ð‘ÐµÐ·Ð¾Ð¿Ð°ÑÐ½Ñ‹Ðµ Ð¿Ð¾ÐºÑƒÐ¿ÐºÐ¸",secureSub:"SSL-ÑˆÐ¸Ñ„Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ",support:"ÐŸÐ¾Ð´Ð´ÐµÑ€Ð¶ÐºÐ° 24/7",supportSub:"Ð’ÑÐµÐ³Ð´Ð° Ð´Ð»Ñ Ð²Ð°Ñ"},
+  hi:{shopNow:"à¤¸à¤‚à¤—à¥à¤°à¤¹ à¤–à¤°à¥€à¤¦à¥‡à¤‚",explore:"à¤¶à¥à¤°à¥‡à¤£à¥€ à¤¦à¥‡à¤–à¥‡à¤‚",learnMore:"à¤”à¤° à¤œà¤¾à¤¨à¥‡à¤‚",worldwide:"à¤µà¤¿à¤¶à¥à¤µà¤µà¥à¤¯à¤¾à¤ªà¥€ à¤¶à¤¿à¤ªà¤¿à¤‚à¤—",worldwideSub:"200+ à¤¦à¥‡à¤¶à¥‹à¤‚ à¤®à¥‡à¤‚ à¤¸à¥‡à¤µà¤¾",delivery:"à¤¤à¥‡à¤œ à¤¡à¤¿à¤²à¥€à¤µà¤°à¥€",deliverySub:"à¤à¤•à¥à¤¸à¤ªà¥à¤°à¥‡à¤¸ à¤µà¤¿à¤•à¤²à¥à¤ª",secure:"à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤–à¤°à¥€à¤¦",secureSub:"SSL à¤à¤¨à¥à¤•à¥à¤°à¤¿à¤ªà¥à¤Ÿà¥‡à¤¡ à¤šà¥‡à¤•à¤†à¤‰à¤Ÿ",support:"24/7 à¤¸à¤¹à¤¾à¤¯à¤¤à¤¾",supportSub:"à¤¹à¤®à¥‡à¤¶à¤¾ à¤†à¤ªà¤•à¥‡ à¤²à¤¿à¤"},
 };
 
 // ---- DATA: Carousel Video Slides ----
-// All categories in a single hero carousel — real Pexels stock videos
+// All categories in a single hero carousel â€” real Pexels stock videos
 // Brand: Weverse Online Shop
 const V = "https://videos.pexels.com/video-files/";
 const BRAND = "Weverse Online Shop";
@@ -585,8 +585,8 @@ function renderCategories(){
   c.innerHTML="";
   const btn=document.createElement("button");
   btn.dataset.dept="all";
-  btn.className="nav-dept-btn active flex items-center gap-2 shrink-0 px-4 py-2.5 rounded-xl border border-blue-500/40 bg-blue-500/10 text-blue-300 text-sm font-bold uppercase tracking-wide transition hover:bg-blue-500/20 active:scale-[0.97]";
-  btn.innerHTML='<span class="text-lg leading-none">🛒</span><span class="whitespace-nowrap">Weverse Shop List</span><i data-lucide="chevron-down" class="w-4 h-4"></i>';
+  btn.className="nav-dept-btn active flex items-center gap-2 shrink-0 px-4 py-2.5 rounded-xl border border-blue-500/40 bg-blue-500/10 text-blue-600 text-sm font-bold uppercase tracking-wide transition hover:bg-blue-500/20 active:scale-[0.97]";
+  btn.innerHTML='<span class="text-lg leading-none">ðŸ›’</span><span class="whitespace-nowrap">Weverse Shop List</span><i data-lucide="chevron-down" class="w-4 h-4"></i>';
   btn.addEventListener("click",()=>{toggleAllPanel(btn);});
   c.appendChild(btn);
   if(window.lucide)lucide.createIcons();
@@ -603,24 +603,24 @@ function openDeptPanel(dept,btn){
     const meta=(CATEGORIES.find(x=>x.name.toLowerCase()===String(c.name).toLowerCase()))||{icon:dept.icon,color:dept.color};
     const icon=meta.icon||dept.icon; const color=meta.color||dept.color;
     const col=CAT_COLORS[color]||CAT_COLORS.blue;
-    return '<button data-category="'+c.name+'" class="dept-cat flex flex-col items-start gap-2 p-3 rounded-xl border border-gray-800 bg-gray-900/60 hover:border-blue-500/40 hover:bg-gray-800/80 text-left transition group">'
+    return '<button data-category="'+c.name+'" class="dept-cat flex flex-col items-start gap-2 p-3 rounded-xl border border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50/60 shadow-sm text-left transition group">'
       +'<div class="flex items-center gap-2.5 w-full">'
         +'<span class="w-8 h-8 rounded-lg bg-gradient-to-br '+col.bg+' '+col.to+' border '+col.border+' flex items-center justify-center shrink-0"><i data-lucide="'+icon+'" class="w-4 h-4 '+col.text+'"></i></span>'
-        +'<span class="flex-1 min-w-0"><span class="block text-[13px] font-bold text-gray-100 truncate group-hover:text-white">'+c.name+'</span>'
+        +'<span class="flex-1 min-w-0"><span class="block text-[13px] font-bold text-gray-900 truncate">'+c.name+'</span>'
         +(c.count>0?'<span class="text-[10px] text-gray-500">'+fmtCount(c.count)+' items</span>':'<span class="text-[10px] text-gray-600">Explore</span>')
         +'</span>'
-        +'<i data-lucide="arrow-right" class="w-3.5 h-3.5 text-gray-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition"></i>'
+        +'<i data-lucide="arrow-right" class="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition"></i>'
       +'</div>'
-      +(c.subs&&c.subs.length?'<span class="text-[10px] text-gray-500 truncate w-full">'+c.subs.slice(0,3).join(' · ')+'</span>':'')
+      +(c.subs&&c.subs.length?'<span class="text-[10px] text-gray-500 truncate w-full">'+c.subs.slice(0,3).join(' Â· ')+'</span>':'')
     +'</button>';
   }).join('');
   panel.innerHTML='<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-4">'
     +'<div class="flex items-center justify-between mb-3">'
       +'<div class="flex items-center gap-2.5">'
-        +'<span class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/30 flex items-center justify-center"><i data-lucide="'+dept.icon+'" class="w-4 h-4 text-blue-300"></i></span>'
-        +'<div><h3 class="text-sm font-black text-white tracking-wide">'+dept.label+'</h3><p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Shop the department</p></div>'
+        +'<span class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center"><i data-lucide="'+dept.icon+'" class="w-4 h-4 text-blue-600"></i></span>'
+        +'<div><h3 class="text-sm font-black text-gray-900 tracking-wide">'+dept.label+'</h3><p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Shop the department</p></div>'
       +'</div>'
-      +'<button data-dept-view="'+dept.id+'" class="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1.5">View all <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>'
+      +'<button data-dept-view="'+dept.id+'" class="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5">View all <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>'
     +'</div>'
     +'<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">'+catCards+'</div>'
   +'</div>';
@@ -629,8 +629,8 @@ function openDeptPanel(dept,btn){
   const viewAll=panel.querySelector('[data-dept-view]');
   if(viewAll)viewAll.onclick=()=>{filterByDepartment(dept.id);closeCategoryPanel();};
   if(window.lucide)lucide.createIcons();
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-300"));
-  if(btn)btn.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-300");
+  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"));
+  if(btn)btn.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-600");
 }
 function toggleDeptPanel(dept,btn){
   const panel=document.getElementById("category-panel");
@@ -642,7 +642,7 @@ function closeCategoryPanel(){
   if(panel){panel.classList.add("hidden");panel.classList.remove("panel-in");}
   const backTop=document.getElementById("category-back-top");
   if(backTop)backTop.classList.remove("flex");
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-300"));
+  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"));
   _panelDept=null;_allPanel=false;
 }
 function getAllCategoryEntries(){
@@ -667,26 +667,26 @@ function openAllPanel(btn){
     const meta=(CATEGORIES.find(x=>x.name.toLowerCase()===String(c.name).toLowerCase()))||{icon:"shopping-bag",color:"blue"};
     const icon=meta.icon||"shopping-bag"; const color=meta.color||"blue";
     const col=CAT_COLORS[color]||CAT_COLORS.blue;
-    return '<button data-category="'+c.name+'" class="dept-cat flex flex-col items-start justify-between gap-3 p-4 min-h-[104px] rounded-2xl border border-gray-800 bg-gray-900/60 hover:border-blue-500/40 hover:bg-gray-800/80 active:bg-gray-800/80 text-left transition group">'
+    return '<button data-category="'+c.name+'" class="dept-cat flex flex-col items-start justify-between gap-3 p-4 min-h-[104px] rounded-2xl border border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50/60 active:bg-blue-50 shadow-sm text-left transition group">'
       +'<div class="flex items-center gap-3 w-full">'
         +'<span class="w-11 h-11 rounded-xl bg-gradient-to-br '+col.bg+' '+col.to+' border '+col.border+' flex items-center justify-center shrink-0"><i data-lucide="'+icon+'" class="w-5 h-5 '+col.text+'"></i></span>'
-        +'<span class="flex-1 min-w-0"><span class="block text-[15px] font-bold text-gray-100 truncate group-hover:text-white">'+c.name+'</span>'
+        +'<span class="flex-1 min-w-0"><span class="block text-[15px] font-bold text-gray-900 truncate">'+c.name+'</span>'
         +(c.count>0?'<span class="text-[11px] text-gray-500">'+fmtCount(c.count)+' items</span>':'<span class="text-[11px] text-gray-600">Explore</span>')
         +'</span>'
-        +'<i data-lucide="arrow-right" class="w-4 h-4 text-gray-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition shrink-0"></i>'
+        +'<i data-lucide="arrow-right" class="w-4 h-4 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition shrink-0"></i>'
       +'</div>'
-      +(c.subs&&c.subs.length?'<span class="text-[11px] text-gray-500 truncate w-full">'+c.subs.slice(0,3).join(' · ')+'</span>':'')
+      +(c.subs&&c.subs.length?'<span class="text-[11px] text-gray-500 truncate w-full">'+c.subs.slice(0,3).join(' Â· ')+'</span>':'')
     +'</button>';
   }).join('');
   scroller.innerHTML='<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-4 pb-24">'
-    +'<div class="sticky top-0 -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 pt-1 pb-3 bg-[#0d1424]/95 backdrop-blur-xl border-b border-gray-800/80 mb-4 z-10 flex items-center justify-between gap-3">'
+    +'<div class="sticky top-0 -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 pt-1 pb-3 bg-white/95 backdrop-blur-xl border-b border-gray-200 mb-4 z-10 flex items-center justify-between gap-3">'
       +'<div class="flex items-center gap-3 min-w-0">'
-        +'<span class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/30 flex items-center justify-center shrink-0"><span class="text-xl">🛒</span></span>'
-        +'<div class="min-w-0"><h3 class="text-base font-black text-white tracking-wide truncate">Weverse Shop List</h3><p class="text-[11px] text-gray-500 font-bold uppercase tracking-widest">Shop every category</p></div>'
+        +'<span class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><span class="text-xl">ðŸ›’</span></span>'
+        +'<div class="min-w-0"><h3 class="text-base font-black text-gray-900 tracking-wide truncate">Weverse Shop List</h3><p class="text-[11px] text-gray-500 font-bold uppercase tracking-widest">Shop every category</p></div>'
       +'</div>'
       +'<div class="flex items-center gap-2 shrink-0">'
-        +'<button data-all-view="1" class="text-sm font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1.5">View all <i data-lucide="arrow-right" class="w-4 h-4"></i></button>'
-        +'<button id="category-panel-close" class="w-9 h-9 rounded-full bg-gray-800/60 border border-gray-700 text-gray-300 flex items-center justify-center active:scale-95"><i data-lucide="x" class="w-4 h-4"></i></button>'
+        +'<button data-all-view="1" class="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5">View all <i data-lucide="arrow-right" class="w-4 h-4"></i></button>'
+        +'<button id="category-panel-close" class="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 flex items-center justify-center active:scale-95"><i data-lucide="x" class="w-4 h-4"></i></button>'
       +'</div>'
     +'</div>'
     +'<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">'+catCards+'</div>'
@@ -703,8 +703,8 @@ function openAllPanel(btn){
   scroller.addEventListener("scroll",onScroll,{passive:true}); onScroll();
   if(backTop)backTop.onclick=()=>{ scroller.scrollTo({top:0,behavior:"smooth"}); };
   if(window.lucide)lucide.createIcons();
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-300"));
-  if(btn)btn.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-300");
+  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"));
+  if(btn)btn.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-600");
 }
 function toggleAllPanel(btn){
   const panel=document.getElementById("category-panel");
@@ -718,13 +718,13 @@ function filterByDepartment(deptId){
   closeSearchResults();
   if(window._filterShowroomByDepartment){window._filterShowroomByDepartment(deptId);}
   else if(window._filterShowroomByCategory){window._filterShowroomByCategory(deptId);}
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(b=>{b.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-300"); if(b.dataset.dept===deptId)b.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-300");});
+  document.querySelectorAll("#category-list .nav-dept-btn").forEach(b=>{b.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"); if(b.dataset.dept===deptId)b.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-600");});
   showToast("Exploring: "+deptId);
 }
 
 function filterByCategory(name,el){
   _activeCategory=name;
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(b=>b.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-300"));
+  document.querySelectorAll("#category-list .nav-dept-btn").forEach(b=>b.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"));
   closeSearchResults();
   if(name==="All"){if(window._clearShowroomFilter)window._clearShowroomFilter();}
   else if(window._filterShowroomByCategory){window._filterShowroomByCategory(name);}
@@ -768,9 +768,9 @@ function renderSuggestionDropdown(dd,results){
   dd.innerHTML=results.map(function(r){
     const t=escapeHtmlAttr(r.title||"");
     const c=r.category?escapeHtmlAttr(r.category):"";
-    const thumb=r.thumbnail?'<img src="'+escapeHtmlAttr(r.thumbnail)+'" class="w-8 h-8 rounded object-cover shrink-0" onerror="this.style.display=\'none\'">':'<div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-4 h-4 text-gray-600"></i></div>';
-    const price=r.price!=null?'<span class="text-xs font-bold text-blue-400 ml-auto">'+(r.currency||"USD")+" "+Number(r.price).toLocaleString()+"</span>":"";
-    return '<button onclick="selectSuggestion(\''+t.replace(/'/g,"\\'")+'\')" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-blue-500 transition flex items-center gap-2.5 border-b border-gray-800/50 last:border-0">'+thumb+'<div class="flex-1 min-w-0"><p class="truncate font-medium">'+t+"</p>"+(c?'<p class="text-[10px] text-gray-500 truncate">'+c+"</p>":"")+"</div>"+price+"</button>";
+    const thumb=r.thumbnail?'<img src="'+escapeHtmlAttr(r.thumbnail)+'" class="w-8 h-8 rounded object-cover shrink-0" onerror="this.style.display=\'none\'">':'<div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-4 h-4 text-gray-400"></i></div>';
+    const price=r.price!=null?'<span class="text-xs font-bold text-blue-600 ml-auto">'+(r.currency||"USD")+" "+Number(r.price).toLocaleString()+"</span>":"";
+    return '<button onclick="selectSuggestion(\''+t.replace(/'/g,"\\'")+'\')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition flex items-center gap-2.5 border-b border-gray-100 last:border-0">'+thumb+'<div class="flex-1 min-w-0"><p class="truncate font-medium">'+t+"</p>"+(c?'<p class="text-[10px] text-gray-500 truncate">'+c+"</p>":"")+"</div>"+price+"</button>";
   }).join("");
   lucide.createIcons();dd.classList.remove("hidden");
 }
@@ -823,10 +823,10 @@ function showSearchResultsLoading(q){
   }
   let skeletonHtml='<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">';
   for(let i=0;i<12;i++){
-    skeletonHtml+=`<div class="bg-[#0f172a] border border-gray-800 rounded-xl overflow-hidden"><div class="aspect-square bg-gray-900 animate-pulse"></div><div class="p-2.5 space-y-2"><div class="h-3 bg-gray-800 rounded animate-pulse"></div><div class="h-2 bg-gray-800 rounded w-2/3 animate-pulse"></div><div class="h-3 bg-gray-800 rounded w-1/3 animate-pulse"></div></div></div>`;
+    skeletonHtml+=`<div class="bg-white border border-gray-200 rounded-xl overflow-hidden"><div class="aspect-square bg-gray-100 animate-pulse"></div><div class="p-2.5 space-y-2"><div class="h-3 bg-gray-100 rounded animate-pulse"></div><div class="h-2 bg-gray-100 rounded w-2/3 animate-pulse"></div><div class="h-3 bg-gray-100 rounded w-1/3 animate-pulse"></div></div></div>`;
   }
   skeletonHtml+='</div>';
-  panel.innerHTML=`<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6"><div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-blue-400"></i><h3 class="text-lg font-bold text-white">Searching for "${escapeHtmlAttr(q)}"</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>🔙 Back</span></button></div>${skeletonHtml}</div>`;
+  panel.innerHTML=`<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6"><div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-blue-600"></i><h3 class="text-lg font-bold text-gray-900">Searching for "${escapeHtmlAttr(q)}"</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>ðŸ”™ Back</span></button></div>${skeletonHtml}</div>`;
   panel.style.display="block";
   document.body.style.overflow="hidden";
   if(window.lucide)lucide.createIcons();
@@ -844,38 +844,38 @@ function renderSearchResults(query,results,meta){
   const safeQuery=escapeHtmlAttr(query);
   const isPartial=meta&&meta.supplierCount===0&&meta.marketplaceCount>0&&!meta._final;
   let html=`<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6">`;
-  html+=`<div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-blue-400"></i><h3 class="text-lg font-bold text-white">`;
+  html+=`<div class="flex items-center justify-between mb-6"><div class="flex items-center gap-3"><i data-lucide="search" class="w-5 h-5 text-blue-600"></i><h3 class="text-lg font-bold text-gray-900">`;
   if(hasResults){html+=`${results.length} result${results.length>1?"s":""} for "${safeQuery}"`}
   else{html+=`No results for "${safeQuery}"`}
   if(isPartial){html+=` <span class="text-xs text-gray-500 font-normal flex items-center gap-1"><i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> checking suppliers...</span>`}
-  html+=`</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>🔙 Back</span></button></div>`;
+  html+=`</h3></div><button onclick="closeSearchResults()" class="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>ðŸ”™ Back</span></button></div>`;
   if(hasResults){
     html+=`<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">`;
     results.forEach(function(r){
       const img=r.thumbnail||(Array.isArray(r.images)&&r.images.length>0?r.images[0]:"");
       const price=r.price!=null?(r.currency||"USD")+" "+Number(r.price).toLocaleString():"";
       const isSpecial=r.is_special_order||r.entity_type==="special_order";
-      const typeBadge=isSpecial?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-blue-500/80 text-white border border-blue-400 z-10">Special Order</span>`:(r.entity_type?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-black/70 text-blue-400 border border-blue-500/30 z-10">${escapeHtmlAttr(r.entity_type)}</span>`:"");
+      const typeBadge=isSpecial?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-blue-500/80 text-white border border-blue-400 z-10">Special Order</span>`:(r.entity_type?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-white/90 text-blue-700 border border-blue-200 z-10">${escapeHtmlAttr(r.entity_type)}</span>`:"");
       const imgHtml=img?`<img src="${escapeHtmlAttr(img)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'">`:`<div class="w-full h-full flex items-center justify-center"><i data-lucide="package" class="w-10 h-10 text-gray-700"></i></div>`;
       const deliveryInfo=isSpecial&&r.estimated_delivery_days?`<p class="text-[10px] text-gray-500 flex items-center gap-1"><i data-lucide="truck" class="w-3 h-3"></i>${r.estimated_delivery_days} days delivery</p>`:"";
       const brandText=r.brand?`<p class="text-[10px] text-gray-500 truncate">${escapeHtmlAttr(r.brand)}</p>`:"";
       const clickAction=isSpecial?`openSpecialOrderFromSearch('${escapeHtmlAttr(r.title||"").replace(/'/g,"\\'")}','${escapeHtmlAttr(r.brand||"").replace(/'/g,"\\'")}','${escapeHtmlAttr(r.category||"").replace(/'/g,"\\'")}',${r.price||0},'${escapeHtmlAttr(r.currency||"USD").replace(/'/g,"\\'")}')`:`openProductFromSearch('${escapeHtmlAttr(r.property_id||"").replace(/'/g,"\\'")}')`;
-      html+=`<div class="group relative bg-[#0f172a] border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer" onclick="${clickAction}">${typeBadge}<div class="aspect-square bg-gray-900 overflow-hidden">${imgHtml}</div><div class="p-2.5"><p class="text-xs font-bold text-white truncate mb-1">${escapeHtmlAttr(r.title||"Untitled")}</p>${brandText}${r.category?`<p class="text-[10px] text-gray-500 truncate mb-1">${escapeHtmlAttr(r.category)}</p>`:""}${price?`<p class="text-xs font-bold text-blue-400">${price}</p>`:""}${deliveryInfo}</div></div>`;
+      html+=`<div class="group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 cursor-pointer" onclick="${clickAction}">${typeBadge}<div class="aspect-square bg-gray-100 overflow-hidden">${imgHtml}</div><div class="p-2.5"><p class="text-xs font-bold text-gray-900 truncate mb-1">${escapeHtmlAttr(r.title||"Untitled")}</p>${brandText}${r.category?`<p class="text-[10px] text-gray-500 truncate mb-1">${escapeHtmlAttr(r.category)}</p>`:""}${price?`<p class="text-xs font-bold text-blue-600">${price}</p>`:""}${deliveryInfo}</div></div>`;
     });
     html+=`</div>`;
   } else {
     const popularHtml=(window.SEARCH_SUGGESTIONS||SEARCH_SUGGESTIONS||[]).slice(0,6).map(function(s){
-      return `<button onclick="document.getElementById('search-input').value='${s.replace(/'/g,"\\'")}';executeSearch()" class="text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700 transition">${s}</button>`;
+      return `<button onclick="document.getElementById('search-input').value='${s.replace(/'/g,"\\'")}';executeSearch()" class="text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full border border-gray-200 transition">${s}</button>`;
     }).join("");
     html+=`<div class="max-w-2xl mx-auto"><div class="glass border border-blue-500/20 rounded-2xl p-6 sm:p-8 text-center">`;
-    html+=`<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 mb-4"><i data-lucide="package-search" class="w-8 h-8 text-blue-400"></i></div>`;
-    html+=`<h4 class="text-lg font-bold text-white mb-2">We couldn't find this item in our current marketplace</h4>`;
-    html+=`<p class="text-sm text-gray-400 mb-5 leading-relaxed">But you can place a <span class="text-blue-400 font-bold">Special Order</span> and we will source it for you. Our team will review your request, find the best supplier, and get back to you with a quote.</p>`;
+    html+=`<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 border border-blue-200 mb-4"><i data-lucide="package-search" class="w-8 h-8 text-blue-600"></i></div>`;
+    html+=`<h4 class="text-lg font-bold text-gray-900 mb-2">We couldn't find this item in our current marketplace</h4>`;
+    html+=`<p class="text-sm text-gray-600 mb-5 leading-relaxed">But you can place a <span class="text-blue-600 font-bold">Special Order</span> and we will source it for you. Our team will review your request, find the best supplier, and get back to you with a quote.</p>`;
     html+=`<div class="flex flex-col sm:flex-row gap-3 justify-center">`;
     html+=`<button onclick="openSpecialOrderModal('${safeQuery.replace(/'/g,"\\'")}')" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"><i data-lucide="package-plus" class="w-4 h-4"></i> Request Product</button>`;
-    html+=`<button onclick="closeSearchResults()" class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-xl text-sm uppercase tracking-wide transition">Browse Marketplace</button>`;
+    html+=`<button onclick="closeSearchResults()" class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm uppercase tracking-wide transition">Browse Marketplace</button>`;
     html+=`</div>`;
-    html+=`<div class="mt-6 pt-6 border-t border-gray-800"><p class="text-xs text-gray-500 mb-3">Popular searches you might like:</p><div class="flex flex-wrap gap-2 justify-center">${popularHtml}</div></div>`;
+    html+=`<div class="mt-6 pt-6 border-t border-gray-200"><p class="text-xs text-gray-500 mb-3">Popular searches you might like:</p><div class="flex flex-wrap gap-2 justify-center">${popularHtml}</div></div>`;
     html+=`</div></div>`;
   }
   html+=`</div>`;
@@ -942,7 +942,7 @@ function handleCameraSearch(e){
     showToast("Photo received! Matching catalog...");
     document.getElementById("search-input").value="Photo: "+f.name.replace(/\.[^.]+$/,"");
     const dd=document.getElementById("search-suggestions");
-    dd.innerHTML='<div class="p-4"><div class="flex items-center gap-3 mb-2"><img src="'+ev.target.result+'" class="w-16 h-16 rounded-lg object-cover border border-gray-700"><div><p class="text-sm text-gray-200 font-semibold">Image uploaded</p><p class="text-xs text-gray-500">Scanning visual catalog...</p></div></div><div class="flex gap-2 flex-wrap mt-2">'+SEARCH_SUGGESTIONS.slice(0,4).map(s=>'<span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full border border-blue-500/20">'+s+"</span>").join("")+"</div></div>";
+    dd.innerHTML='<div class="p-4"><div class="flex items-center gap-3 mb-2"><img src="'+ev.target.result+'" class="w-16 h-16 rounded-lg object-cover border border-gray-200"><div><p class="text-sm text-gray-800 font-semibold">Image uploaded</p><p class="text-xs text-gray-500">Scanning visual catalog...</p></div></div><div class="flex gap-2 flex-wrap mt-2">'+SEARCH_SUGGESTIONS.slice(0,4).map(s=>'<span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full border border-blue-200">'+s+"</span>").join("")+"</div></div>";
     dd.classList.remove("hidden");lucide.createIcons();setTimeout(()=>dd.classList.add("hidden"),4000);
   };r.readAsDataURL(f);e.target.value="";
 }
@@ -1168,7 +1168,7 @@ function resetCarouselTimer(){
 // always match the user's real location, not the device's system clock setting.
 // Falls back to the device timezone until a location is detected.
 function updateClock(){
-  const tz=detectedLocation&&detectedLocation.timezone&&detectedLocation.timezone!=="—"
+  const tz=detectedLocation&&detectedLocation.timezone&&detectedLocation.timezone!=="â€”"
     ?detectedLocation.timezone
     :Intl.DateTimeFormat().resolvedOptions().timeZone;
   const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -1189,15 +1189,15 @@ function updateClock(){
 }
 
 // ---- LIVE LOCATION DETECTION ----
-let detectedLocation={country:"—",state:"",city:"—",timezone:"—",source:"none",vpn:false};
+let detectedLocation={country:"â€”",state:"",city:"â€”",timezone:"â€”",source:"none",vpn:false};
 let locationDetected=false;
 
 function setTimezoneDisplay(){
   try{
     // Only fall back to the device timezone when no location has been detected yet.
     // Never overwrite a timezone obtained from IP/GPS detection with the device clock.
-    if(!locationDetected||detectedLocation.timezone==="—"){
-      detectedLocation.timezone=Intl.DateTimeFormat().resolvedOptions().timeZone||"—";
+    if(!locationDetected||detectedLocation.timezone==="â€”"){
+      detectedLocation.timezone=Intl.DateTimeFormat().resolvedOptions().timeZone||"â€”";
     }
     const el=document.getElementById("live-timezone");
     if(el)el.textContent=detectedLocation.timezone;
@@ -1208,9 +1208,9 @@ function applyLocationToBar(){
   const c=document.getElementById("live-country");
   const ci=document.getElementById("live-city");
   const v=document.getElementById("vpn-warning");
-  if(c)c.textContent=detectedLocation.country||"—";
+  if(c)c.textContent=detectedLocation.country||"â€”";
   if(ci){
-    let label=detectedLocation.city||"—";
+    let label=detectedLocation.city||"â€”";
     if(detectedLocation.state&&detectedLocation.state!==detectedLocation.city)label=label+", "+detectedLocation.state;
     ci.textContent=label;
   }
@@ -1222,10 +1222,10 @@ function detectLocationByIP(){
   fetch("https://ipapi.co/json/").then(r=>r.json()).then(d=>{
     if(!d||(d.error||(d.country_code||d.country)===undefined))throw 0;
     detectedLocation={
-      country:d.country_name||d.country||"—",
+      country:d.country_name||d.country||"â€”",
       state:d.region||d.regionName||"",
-      city:d.city||"—",
-      timezone:d.timezone||detectedLocation.timezone||"—",
+      city:d.city||"â€”",
+      timezone:d.timezone||detectedLocation.timezone||"â€”",
       source:"ip",
       vpn:false
     };
@@ -1241,10 +1241,10 @@ function detectLocationByIP(){
     fetch("https://ip-api.com/json/?fields=status,country,regionName,city,timezone,proxy,hosting,isp").then(r=>r.json()).then(d=>{
       if(!d||d.status!=="success")throw 0;
       detectedLocation={
-        country:d.country||"—",
+        country:d.country||"â€”",
         state:d.regionName||"",
-        city:d.city||"—",
-        timezone:d.timezone||detectedLocation.timezone||"—",
+        city:d.city||"â€”",
+        timezone:d.timezone||detectedLocation.timezone||"â€”",
         source:"ip",
         vpn:!!(d.proxy||d.hosting)
       };
@@ -1279,10 +1279,10 @@ function detectLocationByGPS(){
       if(!d||!d.address)throw 0;
       const a=d.address;
       detectedLocation={
-        country:a.country||detectedLocation.country||"—",
+        country:a.country||detectedLocation.country||"â€”",
         state:a.state||a.region||a.county||"",
-        city:a.city||a.town||a.village||a.hamlet||a.municipality||detectedLocation.city||"—",
-        timezone:detectedLocation.timezone||"—",
+        city:a.city||a.town||a.village||a.hamlet||a.municipality||detectedLocation.city||"â€”",
+        timezone:detectedLocation.timezone||"â€”",
         source:"gps",
         vpn:false
       };
@@ -1298,7 +1298,7 @@ function detectLocationByGPS(){
 
 function initLiveLocation(){
   setTimezoneDisplay();
-  // Always run IP detection — it provides the authoritative timezone for the clock.
+  // Always run IP detection â€” it provides the authoritative timezone for the clock.
   // GPS (when available) refines city/country/state in parallel but does not override the timezone.
   detectLocationByIP();
   detectLocationByGPS();
@@ -1345,11 +1345,11 @@ function loadRegionSettings(){
 // Runs once on first visit (no saved preference). Detects from browser settings,
 // shows a friendly notification, and is VPN-aware (never forces a change).
 function detectRegionAuto(){
-  // Only auto-detect on first visit — if user already has a preference, respect it
+  // Only auto-detect on first visit â€” if user already has a preference, respect it
   if(localStorage.getItem("kco_country")||localStorage.getItem("kco_language"))return;
   let detectedCountry=null,detectedLang=null,usedFallback=false;
 
-  // 1) Try browser locale (navigator.language) — works even behind VPN
+  // 1) Try browser locale (navigator.language) â€” works even behind VPN
   try{
     const navLang=(navigator.language||navigator.userLanguage||"en").toLowerCase();
     const parts=navLang.split(/[-_]/);
@@ -1359,7 +1359,7 @@ function detectRegionAuto(){
     if(regionCode&&COUNTRIES.some(c=>c.code===regionCode))detectedCountry=regionCode;
     // Map browser language to our language list
     if(LANGUAGES.some(l=>l.code===langCode))detectedLang=langCode;
-    // Common language→country fallback when region absent
+    // Common languageâ†’country fallback when region absent
     if(!detectedCountry){
       const langToCountry={en:"US",es:"ES",fr:"FR",de:"DE",ja:"JP",zh:"CN",pt:"PT",ru:"RU",hi:"IN",ar:"SA",it:"IT",ko:"KR",nl:"NL",sv:"SE",pl:"PL",tr:"TR",id:"ID",th:"TH",vi:"VN",uk:"UA",cs:"CZ",da:"DK",fi:"FI",no:"NO",el:"GR",he:"IL",ms:"MY"};
       if(langToCountry[langCode])detectedCountry=langToCountry[langCode];
@@ -1412,11 +1412,11 @@ function showRegionNotification(msg){
   if(!n){
     n=document.createElement("div");
     n.id="region-detect-notification";
-    n.className="fixed top-[201px] sm:top-[185px] left-1/2 -translate-x-1/2 z-[55] max-w-[92vw] sm:max-w-md bg-[#1e293b] border border-blue-500/40 rounded-xl shadow-2xl px-4 py-3 flex items-start gap-3 transition-all duration-500";
-    n.innerHTML='<i data-lucide="globe" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>'+
-      '<div class="flex-1 min-w-0"><p class="text-xs text-gray-200 leading-snug" id="region-detect-text"></p>'+
-      '<button onclick="document.getElementById(\'region-detect-notification\').classList.add(\'opacity-0\',\'translate-y-[-10px]\');setTimeout(()=>document.getElementById(\'region-detect-notification\').remove(),500)" class="text-[10px] text-blue-400 hover:text-blue-300 font-semibold mt-1.5">Dismiss</button></div>'+
-      '<button onclick="document.getElementById(\'region-detect-notification\').remove()" class="text-gray-500 hover:text-white shrink-0 text-[10px] font-bold uppercase tracking-wide" aria-label="Close">🔙 Back</button>';
+    n.className="fixed top-[201px] sm:top-[185px] left-1/2 -translate-x-1/2 z-[55] max-w-[92vw] sm:max-w-md bg-white border border-blue-200 rounded-xl shadow-2xl px-4 py-3 flex items-start gap-3 transition-all duration-500";
+    n.innerHTML='<i data-lucide="globe" class="w-5 h-5 text-blue-600 shrink-0 mt-0.5"></i>'+
+      '<div class="flex-1 min-w-0"><p class="text-xs text-gray-700 leading-snug" id="region-detect-text"></p>'+
+      '<button onclick="document.getElementById(\'region-detect-notification\').classList.add(\'opacity-0\',\'translate-y-[-10px]\');setTimeout(()=>document.getElementById(\'region-detect-notification\').remove(),500)" class="text-[10px] text-blue-600 hover:text-blue-700 font-semibold mt-1.5">Dismiss</button></div>'+
+      '<button onclick="document.getElementById(\'region-detect-notification\').remove()" class="text-gray-500 hover:text-gray-900 shrink-0 text-[10px] font-bold uppercase tracking-wide" aria-label="Close">ðŸ”™ Back</button>';
     document.body.appendChild(n);
     if(window.lucide)lucide.createIcons();
   }

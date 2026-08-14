@@ -65,21 +65,21 @@
     .hscroll{scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
     /* Navigation drawer shared row styles */
     .menu-section-label{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#6b7280;padding:.25rem .75rem .25rem .75rem;display:block}
-    .menu-row{display:flex;align-items:center;gap:.75rem;padding:.55rem .75rem;border-radius:.75rem;font-size:.8125rem;font-weight:500;color:#d1d5db;text-decoration:none;transition:background .15s,color .15s}
-    .menu-row:hover,.menu-row:focus-visible{background:rgba(255,255,255,.06);color:#fff}
+    .menu-row{display:flex;align-items:center;gap:.75rem;padding:.55rem .75rem;border-radius:.75rem;font-size:.8125rem;font-weight:500;color:#334155;text-decoration:none;transition:background .15s,color .15s}
+    .menu-row:hover,.menu-row:focus-visible{background:#eef2ff;color:#0f172a}
     .menu-icon{width:2rem;height:2rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:.5rem;border-width:1px;border-style:solid;position:relative}
     /* Header action buttons (row 3) — premium mobile-app style */
-    .hdr-action{display:flex;align-items:center;gap:.4rem;padding:.4rem .6rem;border-radius:.625rem;color:#9ca3af;font-size:.75rem;font-weight:600;letter-spacing:.01em;transition:background .2s ease,color .2s ease,transform .15s ease,box-shadow .2s ease;text-decoration:none;position:relative;-webkit-tap-highlight-color:transparent;cursor:pointer}
-    .hdr-action:hover{background:linear-gradient(135deg,rgba(59,130,246,.14),rgba(31,41,55,.7));color:#fff;box-shadow:0 2px 10px rgba(59,130,246,.14)}
-    .hdr-action:active{transform:scale(.94);background:rgba(31,41,55,.9)}
+    .hdr-action{display:flex;align-items:center;gap:.4rem;padding:.4rem .6rem;border-radius:.625rem;color:#475569;font-size:.75rem;font-weight:600;letter-spacing:.01em;transition:background .2s ease,color .2s ease,transform .15s ease,box-shadow .2s ease;text-decoration:none;position:relative;-webkit-tap-highlight-color:transparent;cursor:pointer}
+    .hdr-action:hover{background:#eff6ff;color:#0f172a;box-shadow:0 2px 10px rgba(59,130,246,.14)}
+    .hdr-action:active{transform:scale(.94);background:#dbeafe}
     .hdr-action:focus-visible{outline:2px solid rgba(59,130,246,.6);outline-offset:2px}
     .hdr-action svg{transition:transform .2s ease}
     .hdr-action:hover svg{transform:scale(1.08)}
     .hdr-label{font-size:12px;font-weight:600;line-height:1;letter-spacing:.02em}
     /* Notification badge — premium pill */
-    .hdr-badge{position:absolute;top:.15rem;right:.15rem;min-width:1rem;height:1rem;padding:0 .25rem;border-radius:9999px;background:linear-gradient(135deg,#3b82f6,#2563eb);border:2px solid #0f172a;font-size:8px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 0 8px rgba(59,130,246,.6);animation:badge-pop .4s ease}
+    .hdr-badge{position:absolute;top:.15rem;right:.15rem;min-width:1rem;height:1rem;padding:0 .25rem;border-radius:9999px;background:linear-gradient(135deg,#3b82f6,#2563eb);border:2px solid #fff;font-size:8px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 0 8px rgba(59,130,246,.6);animation:badge-pop .4s ease}
     @keyframes badge-pop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
-    .hdr-badge-dot{position:absolute;top:.2rem;right:.2rem;width:.5rem;height:.5rem;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:9999px;border:2px solid #0f172a;animation:badge-pulse 1.6s ease-in-out infinite}
+    .hdr-badge-dot{position:absolute;top:.2rem;right:.2rem;width:.5rem;height:.5rem;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:9999px;border:2px solid #fff;animation:badge-pulse 1.6s ease-in-out infinite}
     @keyframes badge-pulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.6)}50%{box-shadow:0 0 0 6px rgba(249,115,22,0)}}
     /* Category navigation — premium */
     .cat-item{transition:transform .25s cubic-bezier(.34,1.56,.64,1),color .2s ease;-webkit-tap-highlight-color:transparent;cursor:pointer}
@@ -93,9 +93,35 @@
     #category-panel.panel-in{animation:panelIn .22s cubic-bezier(.22,1,.36,1)}
     /* ⋮ More popover rows */
     .more-label{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#6b7280;padding:.25rem .75rem}
-    .more-row{display:flex;align-items:center;gap:.75rem;padding:.55rem .75rem;border-radius:.75rem;font-size:.8125rem;font-weight:500;color:#d1d5db;text-decoration:none;transition:background .15s,color .15s}
-    .more-row:hover,.more-row:focus-visible{background:rgba(255,255,255,.06);color:#fff}
+    .more-row{display:flex;align-items:center;gap:.75rem;padding:.55rem .75rem;border-radius:.75rem;font-size:.8125rem;font-weight:500;color:#334155;text-decoration:none;transition:background .15s,color .15s}
+    .more-row:hover,.more-row:focus-visible{background:#eef2ff;color:#0f172a}
     .more-icon{width:1rem;height:1rem;flex-shrink:0}
+    /* Light-theme: deepen icon colors inside drawer + more panel for readability on white */
+    #mobile-menu .menu-icon i.text-slate-300{color:#475569}
+    #mobile-menu .menu-icon i.text-emerald-400{color:#059669}
+    #mobile-menu .menu-icon i.text-blue-400{color:#2563eb}
+    #mobile-menu .menu-icon i.text-purple-400{color:#9333ea}
+    #mobile-menu .menu-icon i.text-cyan-400{color:#0891b2}
+    #mobile-menu .menu-icon i.text-green-400{color:#16a34a}
+    #mobile-menu .menu-icon i.text-yellow-400{color:#d97706}
+    #mobile-menu .menu-icon i.text-pink-400{color:#db2777}
+    #mobile-menu .menu-icon i.text-teal-400{color:#0d9488}
+    #mobile-menu .menu-icon i.text-indigo-400{color:#4f46e5}
+    #mobile-menu .menu-icon i.text-sky-400{color:#0284c7}
+    #mobile-menu .menu-icon i.text-red-400{color:#dc2626}
+    #mobile-menu .menu-icon i.text-violet-400{color:#7c3aed}
+    #mobile-menu .menu-icon i.text-amber-400{color:#d97706}
+    #more-menu-panel .more-icon.text-slate-300{color:#475569}
+    #more-menu-panel .more-icon.text-emerald-400{color:#059669}
+    #more-menu-panel .more-icon.text-blue-400{color:#2563eb}
+    #more-menu-panel .more-icon.text-cyan-400{color:#0891b2}
+    #more-menu-panel .more-icon.text-green-400{color:#16a34a}
+    #more-menu-panel .more-icon.text-yellow-400{color:#d97706}
+    #more-menu-panel .more-icon.text-pink-400{color:#db2777}
+    #more-menu-panel .more-icon.text-teal-400{color:#0d9488}
+    #more-menu-panel .more-icon.text-violet-400{color:#7c3aed}
+    #more-menu-panel .more-icon.text-amber-400{color:#d97706}
+    #more-menu-panel .more-icon.text-red-400{color:#dc2626}
     .hscroll>*{scroll-snap-align:start}
     .hscroll-btn{opacity:0;transition:opacity .2s ease}
     .showroom-row:hover .hscroll-btn{opacity:1}
@@ -125,24 +151,24 @@
     "sameAs": ["https://weverseonlineshop.com"]
   }
   </script>
-  <script type="module" crossorigin src="/assets/main-DPfSm5ac.js"></script>
+  <script type="module" crossorigin src="/assets/main-DOsa_CBF.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/supabase-client-7_ZWSEp6.js">
-  <link rel="modulepreload" crossorigin href="/assets/localization-DZro7UN4.js">
+  <link rel="modulepreload" crossorigin href="/assets/localization-Bs-lQhvz.js">
   <link rel="modulepreload" crossorigin href="/assets/preload-helper-CLcXU_4U.js">
   <link rel="modulepreload" crossorigin href="/assets/showroom-data-D-nP9j-R.js">
   <link rel="modulepreload" crossorigin href="/assets/phone-data-CExU1cqD.js">
   <link rel="modulepreload" crossorigin href="/assets/auth-D3ZJ7kZA.js">
   <link rel="modulepreload" crossorigin href="/assets/catalog-hidden-store-DbF0xVeS.js">
   <link rel="modulepreload" crossorigin href="/assets/catalog-CESpPuFx.js">
-  <link rel="modulepreload" crossorigin href="/assets/showroom-cards-Cd2KWGt3.js">
-  <link rel="modulepreload" crossorigin href="/assets/native-bridge-BNMM1XVo.js">
-  <link rel="modulepreload" crossorigin href="/assets/live-stream-mode-fNPFq7rS.js">
+  <link rel="modulepreload" crossorigin href="/assets/showroom-cards-Dwrrz3nx.js">
+  <link rel="modulepreload" crossorigin href="/assets/native-bridge-BLlrAuC1.js">
+  <link rel="modulepreload" crossorigin href="/assets/live-stream-mode-Bx_m3JFi.js">
   <link rel="modulepreload" crossorigin href="/assets/live-control-store-DzHEnoMc.js">
-  <link rel="modulepreload" crossorigin href="/assets/customer-ai-widget-L9BHjKej.js">
+  <link rel="modulepreload" crossorigin href="/assets/customer-ai-widget-CmRL-789.js">
   <link rel="modulepreload" crossorigin href="/assets/brand-DYhAh01b.js">
-  <link rel="stylesheet" crossorigin href="/assets/localization-Bt34KoZp.css">
+  <link rel="stylesheet" crossorigin href="/assets/localization-C2mpcrSv.css">
 </head>
-<body class="bg-[#0b0f19] text-gray-100 font-sans antialiased selection:bg-blue-500 selection:text-white min-h-screen overflow-x-hidden">
+<body class="bg-white text-gray-900 font-sans antialiased selection:bg-blue-500 selection:text-white min-h-screen overflow-x-hidden">
 
   <!-- ═══════════════════════════════════════════════════════
        RESPONSIVE 3-ROW HEADER
@@ -151,8 +177,8 @@
        Row 3  — Action bar (h-11 on desktop / h-10 on mobile)
        Total  ≈ 129px  →  categories bar at top-[129px], main pt-[173px]
   ═══════════════════════════════════════════════════════ -->
-  <header id="site-header" class="fixed top-0 inset-x-0 z-40 bg-[#0f172a]/97 backdrop-blur-md border-b border-gray-800/80">
-    <div id="homepage-banner-shell" class="hidden border-b border-white/5 bg-[#070b16]/95 backdrop-blur-md">
+  <header id="site-header" class="fixed top-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+    <div id="homepage-banner-shell" class="hidden border-b border-gray-200 bg-gray-50 backdrop-blur-md">
       <div class="max-w-[1600px] mx-auto px-3 sm:px-5 lg:px-10 py-2 sm:py-3">
         <img id="homepage-banner-image" src="" alt="Homepage header banner" class="h-16 w-full rounded-xl object-cover sm:h-20 lg:h-24">
       </div>
@@ -164,7 +190,7 @@
         <!-- Left: hamburger + brand name -->
         <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
           <button id="menu-toggle"
-                  class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-800 transition text-gray-300 hover:text-white shrink-0"
+                  class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition text-gray-600 hover:text-gray-900 shrink-0"
                   aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-menu">
             <i data-lucide="menu" class="w-5 h-5"></i>
           </button>
@@ -176,15 +202,15 @@
             </span>
             <span class="min-w-0 pt-[8px] sm:pt-0">
               <div class="flex items-center gap-1">
-                <span class="brand-name block text-[19px] sm:text-lg lg:text-xl font-black tracking-wide text-white whitespace-nowrap leading-none antialiased">Weverse Online Shop</span>
+                <span class="brand-name block text-[19px] sm:text-lg lg:text-xl font-black tracking-wide text-gray-900 whitespace-nowrap leading-none antialiased">Weverse Online Shop</span>
                 <svg viewBox="0 0 24 24" class="w-[18px] h-[18px] sm:w-[18px] sm:h-[18px] lg:w-5 lg:h-5 shrink-0" aria-label="Verified" role="img">
                   <circle cx="12" cy="12" r="11" fill="#3b82f6"/>
                   <path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/>
                 </svg>
               </div>
-              <span class="flex items-baseline whitespace-nowrap gap-x-[0.4em] mt-1.5 text-[9px] sm:text-[11px] lg:text-xs font-semibold tracking-[0.1em] sm:tracking-[0.18em] uppercase leading-snug antialiased text-white/60">
+              <span class="flex items-baseline whitespace-nowrap gap-x-[0.4em] mt-1.5 text-[9px] sm:text-[11px] lg:text-xs font-semibold tracking-[0.1em] sm:tracking-[0.18em] uppercase leading-snug antialiased text-gray-500">
                 <span class="brand-tagline-1">GLOBAL SHOPPING</span>
-                <span class="text-white/40" aria-hidden="true">•</span>
+                <span class="text-gray-400" aria-hidden="true">•</span>
                 <span class="brand-tagline-2">WORLDWIDE DELIVERY</span>
               </span>
             </span>
@@ -195,7 +221,7 @@
         <div class="shrink-0 flex items-center gap-2">
           <!-- Cart / quick-access icon -->
           <button onclick="openAuthModal()"
-                  class="w-9 h-9 hidden sm:flex items-center justify-center rounded-lg hover:bg-gray-800 transition text-gray-400 hover:text-white"
+                  class="w-9 h-9 hidden sm:flex items-center justify-center rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-gray-900"
                   aria-label="My account">
             <i data-lucide="user-circle" class="w-5 h-5"></i>
           </button>
@@ -204,21 +230,21 @@
 
       <!-- ── ROW 2: Full-width search bar ── -->
       <div class="pt-2 pb-2 sm:pt-0 sm:pb-2" id="smart-search-container">
-        <div class="flex items-center bg-[#1e293b] rounded-xl border border-gray-700 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-inner">
+        <div class="flex items-center bg-white rounded-xl border border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-sm">
           <i data-lucide="search" class="w-4 h-4 text-gray-500 ml-3 shrink-0"></i>
           <input id="search-input" type="text"
                  placeholder="Search products, brands, categories…"
                  autocomplete="off"
-                 class="flex-1 min-w-0 bg-transparent text-sm text-gray-200 px-2.5 py-2.5 focus:outline-none placeholder-gray-500">
+                 class="flex-1 min-w-0 bg-transparent text-sm text-gray-800 px-2.5 py-2.5 focus:outline-none placeholder-gray-500">
           <!-- Voice search -->
           <button id="voice-search-btn" onclick="toggleVoiceSearch()"
-                  class="p-2 text-gray-400 hover:text-blue-500 active:scale-90 transition rounded-lg hover:bg-gray-800 shrink-0"
+                  class="p-2 text-gray-500 hover:text-blue-600 active:scale-90 transition rounded-lg hover:bg-gray-100 shrink-0"
                   aria-label="Voice search">
             <i data-lucide="mic" class="w-4 h-4" id="voice-icon"></i>
           </button>
           <!-- Camera search: all screens -->
           <button onclick="document.getElementById('camera-search-input').click()"
-                  class="p-2 text-gray-400 hover:text-blue-500 active:scale-90 transition rounded-lg hover:bg-gray-800 shrink-0"
+                  class="p-2 text-gray-500 hover:text-blue-600 active:scale-90 transition rounded-lg hover:bg-gray-100 shrink-0"
                   aria-label="Image search">
             <i data-lucide="camera" class="w-4 h-4"></i>
           </button>
@@ -229,26 +255,26 @@
             Search
           </button>
         </div>
-        <div id="search-suggestions" class="hidden absolute left-3 right-3 sm:left-5 sm:right-5 lg:left-10 lg:right-10 mt-0.5 bg-[#1e293b] border border-gray-700 rounded-xl shadow-2xl z-50 max-h-72 overflow-y-auto"></div>
+        <div id="search-suggestions" class="hidden absolute left-3 right-3 sm:left-5 sm:right-5 lg:left-10 lg:right-10 mt-0.5 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-72 overflow-y-auto"></div>
       </div>
 
       <!-- ── ROW 3: Action bar — adapts per breakpoint ── -->
-      <div class="flex items-center justify-between h-10 gap-2 border-t border-gray-800/60">
+      <div class="flex items-center justify-between h-10 gap-2 border-t border-gray-200">
 
         <!-- LEFT: Country + Language -->
         <!-- Desktop: two separate selects -->
         <div class="hidden lg:flex items-center gap-2">
           <select id="country" onchange="saveRegionSettings();updateHolidayInfo();"
-                  class="bg-transparent text-xs text-gray-300 border-none outline-none cursor-pointer hover:text-white transition max-w-[140px]"></select>
-          <span class="text-gray-700">|</span>
+                  class="bg-transparent text-xs text-gray-700 border-none outline-none cursor-pointer hover:text-gray-900 transition max-w-[140px]"></select>
+          <span class="text-gray-300">|</span>
           <select id="language" onchange="saveRegionSettings();updateCarouselLanguage();"
-                  class="bg-transparent text-xs text-gray-300 border-none outline-none cursor-pointer hover:text-white transition max-w-[110px]"></select>
+                  class="bg-transparent text-xs text-gray-700 border-none outline-none cursor-pointer hover:text-gray-900 transition max-w-[110px]"></select>
         </div>
         <!-- Tablet: single combined button -->
         <button id="region-toggle-btn"
-                class="hidden sm:flex lg:hidden items-center gap-1.5 text-xs text-gray-300 hover:text-white transition rounded-lg px-2 py-1 hover:bg-gray-800"
+                class="hidden sm:flex lg:hidden items-center gap-1.5 text-xs text-gray-700 hover:text-gray-900 transition rounded-lg px-2 py-1 hover:bg-gray-100"
                 onclick="document.getElementById('region-dropdown').classList.toggle('hidden')">
-          <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-400"></i>
+          <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-600"></i>
           <span id="region-label-display">Region &amp; Language</span>
           <i data-lucide="chevron-down" class="w-3 h-3 text-gray-500"></i>
         </button>
@@ -283,7 +309,7 @@
             <span class="hdr-label hidden sm:block">Sign In</span>
           </button>
           <a id="hdr-account-btn" href="/account.html" class="hdr-action hidden" aria-label="My account">
-            <i data-lucide="user-check" class="w-4.5 h-4.5 text-emerald-400"></i>
+            <i data-lucide="user-check" class="w-4.5 h-4.5 text-emerald-600"></i>
             <span id="hdr-account-label" class="hdr-label hidden sm:block">Account</span>
           </a>
 
@@ -303,32 +329,32 @@
 
     <!-- Tablet region dropdown (hidden by default) -->
     <div id="region-dropdown"
-         class="hidden absolute top-full left-0 right-0 bg-[#0f172a] border-t border-gray-800 px-5 py-4 flex items-center gap-4 z-50">
+         class="hidden absolute top-full left-0 right-0 bg-white border-t border-gray-200 px-5 py-4 flex items-center gap-4 z-50 shadow-lg">
       <div class="flex items-center gap-2 flex-1">
-        <i data-lucide="globe" class="w-4 h-4 text-blue-400 shrink-0"></i>
+        <i data-lucide="globe" class="w-4 h-4 text-blue-600 shrink-0"></i>
         <select id="country-tablet" onchange="saveRegionSettings();updateHolidayInfo();updateRegionLabel();"
-                class="flex-1 bg-[#1e293b] text-sm text-gray-300 border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"></select>
+                class="flex-1 bg-white text-sm text-gray-800 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"></select>
       </div>
       <div class="flex items-center gap-2 flex-1">
-        <i data-lucide="languages" class="w-4 h-4 text-blue-400 shrink-0"></i>
+        <i data-lucide="languages" class="w-4 h-4 text-blue-600 shrink-0"></i>
         <select id="language-tablet" onchange="saveRegionSettings();updateCarouselLanguage();updateRegionLabel();"
-                class="flex-1 bg-[#1e293b] text-sm text-gray-300 border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"></select>
+                class="flex-1 bg-white text-sm text-gray-800 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"></select>
       </div>
       <button onclick="document.getElementById('region-dropdown').classList.add('hidden')"
-              class="h-8 px-2.5 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:text-white transition shrink-0 text-[10px] font-bold uppercase tracking-wide">
+              class="h-8 px-2.5 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:text-gray-900 transition shrink-0 text-[10px] font-bold uppercase tracking-wide">
         🔙 Back
       </button>
     </div>
 
     <!-- ⋮ More popover panel (mobile only) -->
     <div id="more-menu-panel"
-         class="hidden fixed inset-x-0 top-[156px] sm:top-[140px] z-50 bg-[#0f172a] border-b border-gray-800 max-h-[calc(100dvh-156px)] sm:max-h-[calc(100dvh-140px)] overflow-y-auto overscroll-contain shadow-2xl">
+         class="hidden fixed inset-x-0 top-[156px] sm:top-[140px] z-50 bg-white border-b border-gray-200 max-h-[calc(100dvh-156px)] sm:max-h-[calc(100dvh-140px)] overflow-y-auto overscroll-contain shadow-2xl">
       <div class="max-w-sm mx-auto px-4 py-3 space-y-0.5">
 
         <!-- Panel header -->
         <div class="flex items-center justify-between px-1 pt-0.5 pb-1 mb-1">
-          <p class="text-sm font-black text-white tracking-tight">More</p>
-          <button onclick="closeMoreMenu()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition" aria-label="Close menu">
+          <p class="text-sm font-black text-gray-900 tracking-tight">More</p>
+          <button onclick="closeMoreMenu()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 transition" aria-label="Close menu">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
@@ -337,15 +363,15 @@
         <div id="more-account-card" class="mx-1 mb-1"></div>
 
         <p class="more-label">Region</p>
-        <div class="mx-1 mb-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.07] space-y-2">
+        <div class="mx-1 mb-2 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 space-y-2">
           <div class="flex items-center gap-2">
-            <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-400 shrink-0"></i>
-            <select id="more-country" class="flex-1 min-w-0 bg-transparent text-xs text-gray-300 outline-none cursor-pointer"></select>
+            <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+            <select id="more-country" class="flex-1 min-w-0 bg-transparent text-xs text-gray-700 outline-none cursor-pointer"></select>
           </div>
-          <div class="h-px bg-white/[0.07]"></div>
+          <div class="h-px bg-gray-200"></div>
           <div class="flex items-center gap-2">
-            <i data-lucide="languages" class="w-3.5 h-3.5 text-blue-400 shrink-0"></i>
-            <select id="more-language" class="flex-1 min-w-0 bg-transparent text-xs text-gray-300 outline-none cursor-pointer"></select>
+            <i data-lucide="languages" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+            <select id="more-language" class="flex-1 min-w-0 bg-transparent text-xs text-gray-700 outline-none cursor-pointer"></select>
           </div>
         </div>
 
@@ -383,7 +409,7 @@
         <!-- Sign Out: visible only when signed in -->
         <div id="more-signout" class="hidden mt-3 pb-3">
           <div class="h-px bg-white/[0.07] mb-2"></div>
-          <button class="more-row w-full text-left text-red-400 hover:text-red-300" onclick="closeMoreMenu();signOutUser();">
+          <button class="more-row w-full text-left text-red-600 hover:text-red-700" onclick="closeMoreMenu();signOutUser();">
             <i data-lucide="log-out" class="more-icon text-red-400"></i>Sign Out
           </button>
         </div>
@@ -396,9 +422,9 @@
     <div id="more-overlay" class="hidden fixed inset-0 z-40" onclick="closeMoreMenu()"></div>
 
     <!-- Notification panel anchored inside the header element -->
-    <div id="notification-panel" class="hidden absolute right-3 sm:right-5 lg:right-10 top-full w-72 sm:w-80 bg-[#1e293b] border border-gray-700 rounded-xl shadow-2xl p-4 z-50 mt-0.5">
-      <h3 class="font-bold text-white mb-3 text-sm">Notifications</h3>
-      <p class="text-gray-400 text-xs text-center py-4">You have no new notifications</p>
+    <div id="notification-panel" class="hidden absolute right-3 sm:right-5 lg:right-10 top-full w-72 sm:w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 mt-0.5">
+      <h3 class="font-bold text-gray-900 mb-3 text-sm">Notifications</h3>
+      <p class="text-gray-500 text-xs text-center py-4">You have no new notifications</p>
     </div>
 
     <!-- Overlay dims background, does NOT cover the page structurally -->
@@ -408,22 +434,22 @@
     <aside id="mobile-menu"
            role="dialog" aria-modal="true" aria-label="Navigation menu"
            class="fixed top-0 left-0 bottom-0 w-[300px] max-w-[90vw] z-[70] flex flex-col
-                  bg-[#0d1b2e] border-r border-white/[0.07]
-                  shadow-[6px_0_48px_rgba(0,0,0,0.8)]
+                  bg-white border-r border-gray-200
+                  shadow-[6px_0_48px_rgba(0,0,0,0.25)]
                   -translate-x-full transition-transform duration-300 ease-out">
 
       <!-- ── Brand header (fixed, never scrolls away) ── -->
-      <div class="shrink-0 px-4 pt-4 pb-3 border-b border-white/[0.07] bg-[#0d1b2e]">
+      <div class="shrink-0 px-4 pt-4 pb-3 border-b border-gray-200 bg-white">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2.5">
-            <div class="shrink-0 w-9 h-9 bg-white rounded-xl flex items-center justify-center overflow-hidden">
+            <div class="shrink-0 w-9 h-9 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-200">
               <svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" aria-hidden="true">
                 <path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#0b0f19" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-1">
-                <p class="brand-name text-[15px] font-black text-white leading-none tracking-wide whitespace-nowrap">Weverse Online Shop</p>
+                <p class="brand-name text-[15px] font-black text-gray-900 leading-none tracking-wide whitespace-nowrap">Weverse Online Shop</p>
                 <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" aria-label="Verified" role="img" data-weverse-badge="true">
                   <circle cx="12" cy="12" r="11" fill="#3b82f6"/>
                   <path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/>
@@ -432,7 +458,7 @@
             </div>
           </div>
           <button id="menu-close"
-                  class="h-8 px-2.5 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white transition text-[10px] font-bold uppercase tracking-wide"
+                  class="h-8 px-2.5 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-600 hover:text-gray-900 transition text-[10px] font-bold uppercase tracking-wide"
                   aria-label="Close">
             🔙 Back
           </button>
@@ -453,13 +479,13 @@
             <i data-lucide="chevron-right" class="w-5 h-5 text-white/70 shrink-0"></i>
           </button>
           <!-- Signed-in state: user info strip -->
-          <button id="nav-user-strip" class="hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/8 hover:bg-white/8 transition text-left" onclick="closeMobileMenu();window.location.href='/account.html'">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-blue-400/30 border border-blue-500/40 flex items-center justify-center shrink-0">
-              <i data-lucide="user-check" class="w-5 h-5 text-blue-300"></i>
+          <button id="nav-user-strip" class="hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-100 border border-gray-200 hover:bg-gray-200 transition text-left" onclick="closeMobileMenu();window.location.href='/account.html'">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-400/20 border border-blue-500/40 flex items-center justify-center shrink-0">
+              <i data-lucide="user-check" class="w-5 h-5 text-blue-600"></i>
             </div>
             <div class="flex-1 min-w-0">
-              <p id="nav-user-name" class="text-[13px] font-semibold text-white leading-none truncate">Guest User</p>
-              <p id="nav-user-sub" class="text-[11px] text-gray-400 mt-0.5 leading-none truncate">Tap to sign in</p>
+              <p id="nav-user-name" class="text-[13px] font-semibold text-gray-900 leading-none truncate">Guest User</p>
+              <p id="nav-user-sub" class="text-[11px] text-gray-500 mt-0.5 leading-none truncate">Tap to sign in</p>
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 shrink-0"></i>
           </button>
@@ -583,15 +609,15 @@
 
           <!-- REGION -->
           <p class="menu-section-label mt-3">Country &amp; Language</p>
-          <div class="mx-1 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.07] space-y-2">
+          <div class="mx-1 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 space-y-2">
             <div class="flex items-center gap-2">
               <i data-lucide="globe" class="w-3.5 h-3.5 text-gray-500 shrink-0"></i>
-              <select id="mobile-country" class="flex-1 min-w-0 bg-transparent text-xs text-gray-300 outline-none cursor-pointer"></select>
+              <select id="mobile-country" class="flex-1 min-w-0 bg-transparent text-xs text-gray-700 outline-none cursor-pointer"></select>
             </div>
-            <div class="h-px bg-white/[0.07]"></div>
+            <div class="h-px bg-gray-200"></div>
             <div class="flex items-center gap-2">
               <i data-lucide="languages" class="w-3.5 h-3.5 text-gray-500 shrink-0"></i>
-              <select id="mobile-language" class="flex-1 min-w-0 bg-transparent text-xs text-gray-300 outline-none cursor-pointer"></select>
+              <select id="mobile-language" class="flex-1 min-w-0 bg-transparent text-xs text-gray-700 outline-none cursor-pointer"></select>
             </div>
           </div>
 
@@ -665,9 +691,9 @@
 
           <!-- Sign Out (only when signed in) -->
           <div id="nav-signout-row" class="hidden mt-3 pb-2">
-            <div class="h-px bg-white/[0.07] mb-2"></div>
-            <button class="menu-row w-full text-left text-red-400 hover:text-red-300" onclick="closeMobileMenu();signOutUser();">
-              <span class="menu-icon bg-red-500/15 border-red-500/25"><i data-lucide="log-out" class="w-4 h-4 text-red-400"></i></span>
+            <div class="h-px bg-gray-200 mb-2"></div>
+            <button class="menu-row w-full text-left text-red-600 hover:text-red-700" onclick="closeMobileMenu();signOutUser();">
+              <span class="menu-icon bg-red-500/15 border-red-500/25"><i data-lucide="log-out" class="w-4 h-4 text-red-500"></i></span>
               Sign Out
             </button>
           </div>
@@ -677,33 +703,33 @@
         </nav>
       </div>
     </aside>
-    <div id="notification-panel" class="hidden absolute right-4 sm:right-16 top-16 w-72 sm:w-80 bg-[#1e293b] border border-gray-700 rounded-xl shadow-2xl p-4 z-50">
-      <div class="flex justify-between items-center border-b border-gray-700 pb-2 mb-2">
-        <h3 class="font-bold text-white text-sm">Notifications</h3>
-        <button onclick="toggleNotifications()" class="text-gray-400 hover:text-white text-xs">Clear</button>
+    <div id="notification-panel" class="hidden absolute right-4 sm:right-16 top-16 w-72 sm:w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50">
+      <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-2">
+        <h3 class="font-bold text-gray-900 text-sm">Notifications</h3>
+        <button onclick="toggleNotifications()" class="text-gray-500 hover:text-gray-900 text-xs">Clear</button>
       </div>
       <div class="space-y-3 max-h-60 overflow-y-auto">
-        <div class="p-2 rounded hover:bg-gray-800 transition text-xs border-l-2 border-blue-500">
-          <p class="text-gray-200 font-semibold">Global Logistics Network Active</p>
-          <p class="text-gray-400 text-[11px] mt-0.5">Real-time tracking across 200+ countries via DHL, FedEx, UPS & Aramex.</p>
+        <div class="p-2 rounded hover:bg-gray-50 transition text-xs border-l-2 border-blue-500">
+          <p class="text-gray-800 font-semibold">Global Logistics Network Active</p>
+          <p class="text-gray-500 text-[11px] mt-0.5">Real-time tracking across 200+ countries via DHL, FedEx, UPS & Aramex.</p>
         </div>
       </div>
     </div>
   </header>
 
   <!-- CATEGORY NAVIGATION (mega-menu department bar) -->
-  <div id="site-categories-nav" class="fixed top-[164px] sm:top-[140px] left-0 right-0 z-40 bg-[#0f172a]/95 backdrop-blur-md border-b border-gray-800 shadow-lg shadow-black/20">
+  <div id="site-categories-nav" class="fixed top-[164px] sm:top-[140px] left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-2">
       <div class="flex items-center gap-2">
         <div id="category-list" class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-1 min-w-0 px-0.5 py-0.5"></div>
-        <div class="hidden xl:flex items-center gap-3 shrink-0 pl-3 border-l border-gray-800">
-          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i>Verified</span>
-          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-400"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i>Secure</span>
-          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-cyan-400"><i data-lucide="globe" class="w-3.5 h-3.5"></i>Worldwide</span>
+        <div class="hidden xl:flex items-center gap-3 shrink-0 pl-3 border-l border-gray-200">
+          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-600"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i>Verified</span>
+          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-600"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i>Secure</span>
+          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-cyan-600"><i data-lucide="globe" class="w-3.5 h-3.5"></i>Worldwide</span>
         </div>
       </div>
     </div>
-    <div id="category-panel" class="hidden absolute inset-x-0 top-full z-50 bg-[#0d1424]/98 backdrop-blur-xl border-t border-gray-800 shadow-2xl shadow-black/50">
+    <div id="category-panel" class="hidden absolute inset-x-0 top-full z-50 bg-white/98 backdrop-blur-xl border-t border-gray-200 shadow-2xl">
       <div id="category-panel-scroll" class="max-h-[calc(100vh-200px)] sm:max-h-[72vh] overflow-y-auto overscroll-contain scroll-smooth [-webkit-overflow-scrolling:touch]"></div>
       <button id="category-back-top" class="hidden absolute bottom-4 right-4 z-20 items-center gap-1.5 px-4 py-2.5 rounded-full bg-blue-600 text-white text-xs font-bold uppercase tracking-wide shadow-lg shadow-blue-900/50 border border-blue-400/40 hover:bg-blue-500 transition active:scale-95">🔙 Top</button>
     </div>
@@ -723,42 +749,42 @@
 
     <!-- LIVE DATE, TIME & LOCATION BAR -->
     <section id="trust-bar" class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 pb-2 sm:pt-2 sm:pb-1">
-      <div class="relative overflow-hidden rounded-xl border border-slate-700/60 bg-gradient-to-r from-[#0b1f3a] via-[#0f172a] to-[#0b2a1f] shadow-lg shadow-blue-950/30">
+      <div class="relative overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-50 shadow-sm">
         <div class="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-transparent to-emerald-600/5 pointer-events-none"></div>
         <div class="relative flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 flex-wrap">
-          <div class="flex items-center gap-1.5 text-blue-300">
+          <div class="flex items-center gap-1.5 text-blue-600">
             <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
             <span id="live-day" class="font-bold uppercase tracking-wide text-[11px]">—</span>
           </div>
-          <span class="text-slate-600">·</span>
-          <span id="live-date" class="text-slate-200 font-medium text-[11px]">--</span>
-          <span class="text-slate-600">·</span>
-          <span id="live-month" class="text-slate-200 font-medium text-[11px]">—</span>
-          <span class="text-slate-600">·</span>
-          <span id="live-year" class="text-slate-200 font-medium text-[11px]">----</span>
-          <span class="text-slate-600">·</span>
-          <div class="flex items-center gap-1.5 text-blue-300">
+          <span class="text-slate-400">·</span>
+          <span id="live-date" class="text-slate-700 font-medium text-[11px]">--</span>
+          <span class="text-slate-400">·</span>
+          <span id="live-month" class="text-slate-700 font-medium text-[11px]">—</span>
+          <span class="text-slate-400">·</span>
+          <span id="live-year" class="text-slate-700 font-medium text-[11px]">----</span>
+          <span class="text-slate-400">·</span>
+          <div class="flex items-center gap-1.5 text-blue-600">
             <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-            <span id="live-time" class="text-blue-300 font-mono font-bold text-xs tabular-nums">--:--:--</span>
+            <span id="live-time" class="text-blue-600 font-mono font-bold text-xs tabular-nums">--:--:--</span>
           </div>
-          <span class="text-slate-600 hidden sm:inline">·</span>
-          <div class="flex items-center gap-1.5 text-emerald-300">
+          <span class="text-slate-400 hidden sm:inline">·</span>
+          <div class="flex items-center gap-1.5 text-emerald-600">
             <i data-lucide="globe" class="w-3.5 h-3.5"></i>
             <span id="live-country" class="font-medium text-[11px]">—</span>
           </div>
-          <span class="text-slate-600 hidden md:inline">·</span>
-          <div class="flex items-center gap-1.5 text-emerald-300 hidden md:flex">
+          <span class="text-slate-400 hidden md:inline">·</span>
+          <div class="flex items-center gap-1.5 text-emerald-600 hidden md:flex">
             <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
             <span id="live-city" class="font-medium text-[11px]">—</span>
           </div>
-          <span class="text-slate-600 hidden lg:inline">·</span>
-          <div class="flex items-center gap-1.5 text-blue-300 hidden lg:flex">
+          <span class="text-slate-400 hidden lg:inline">·</span>
+          <div class="flex items-center gap-1.5 text-blue-600 hidden lg:flex">
             <i data-lucide="navigation" class="w-3.5 h-3.5"></i>
             <span id="live-timezone" class="font-medium text-[11px]">—</span>
           </div>
         </div>
         <div id="vpn-warning" class="hidden relative px-3 sm:px-4 pb-2 -mt-0.5">
-          <div class="flex items-center gap-1.5 text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1">
+          <div class="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1">
             <i data-lucide="shield-alert" class="w-3 h-3 shrink-0"></i>
             <span>VPN Detected — Your displayed location is based on your current network connection and may not match your physical location.</span>
           </div>
@@ -772,13 +798,13 @@
       <div class="text-center pt-4 sm:pt-3 pb-2.5 fade-in-up">
         <div class="inline-flex items-center justify-center gap-3 mb-1.5">
           <div class="relative shrink-0">
-            <div class="p-2.5 bg-gradient-to-br from-blue-500/15 to-emerald-500/15 border border-blue-400/30 rounded-xl shadow-lg shadow-blue-950/50">
-              <i data-lucide="globe" class="w-6 h-6 text-blue-200"></i>
+            <div class="p-2.5 bg-gradient-to-br from-blue-50 to-emerald-50 border border-blue-200 rounded-xl shadow-sm">
+              <i data-lucide="globe" class="w-6 h-6 text-blue-600"></i>
             </div>
           </div>
           <div class="flex flex-col items-start text-left">
-            <h2 data-brand="name" class="text-xl sm:text-2xl lg:text-[1.75rem] font-black leading-[1.15] bg-gradient-to-r from-blue-200 via-white to-emerald-200 bg-clip-text text-transparent tracking-tight">Weverse Online Shop</h2>
-            <span class="text-[11px] sm:text-xs font-bold text-blue-400 uppercase tracking-[0.25em] mt-0.5">Premium Showroom</span>
+            <h2 data-brand="name" class="text-xl sm:text-2xl lg:text-[1.75rem] font-black leading-[1.15] bg-gradient-to-r from-blue-700 via-gray-900 to-emerald-700 bg-clip-text text-transparent tracking-tight">Weverse Online Shop</h2>
+            <span class="text-[11px] sm:text-xs font-bold text-blue-600 uppercase tracking-[0.25em] mt-0.5">Premium Showroom</span>
           </div>
         </div>
         <div class="flex items-center justify-center gap-2.5 mb-1.5">
@@ -786,13 +812,13 @@
           <span class="h-1.5 w-1.5 rounded-full bg-blue-400/70 shadow-sm shadow-blue-400/50"></span>
           <span class="h-px w-14 bg-gradient-to-l from-transparent to-blue-500/60"></span>
         </div>
-        <p class="text-gray-300 text-xs sm:text-[13px] max-w-xl mx-auto leading-relaxed tracking-wide">Discover premium products from around the globe — trusted sellers, secure payments, and fast worldwide delivery.</p>
+        <p class="text-gray-600 text-xs sm:text-[13px] max-w-xl mx-auto leading-relaxed tracking-wide">Discover premium products from around the globe — trusted sellers, secure payments, and fast worldwide delivery.</p>
       </div>
 
       <!-- One continuous showroom: categories flow naturally with clean section headings -->
-      <div class="relative border border-gray-800/60 rounded-2xl bg-[#0f172a]/40 backdrop-blur-sm overflow-hidden">
+      <div class="relative border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden">
         <div data-showroom-grid="real-estate" class="px-4 sm:px-6 lg:px-8 py-3.5 space-y-4"></div>
-        <div class="h-px bg-gradient-to-r from-transparent via-gray-700/60 to-transparent"></div>
+        <div class="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
         <div data-showroom-grid="marketplace" class="px-4 sm:px-6 lg:px-8 py-3.5 space-y-4"></div>
       </div>
     </section>
@@ -800,24 +826,24 @@
 
   <!-- AUTH MODAL -->
   <div id="auth-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-[#1c1c1c] border border-gray-800 rounded-2xl w-full max-w-md overflow-hidden relative shadow-2xl p-6">
-      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>🔙 Back</span></button>
-      <div class="flex border-b border-gray-800 mb-6 text-sm">
-        <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-center text-blue-500 font-bold border-b-2 border-blue-500 uppercase tracking-wider">Login</button>
-        <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-center text-gray-400 font-medium uppercase tracking-wider">Register</button>
+    <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-md overflow-hidden relative shadow-2xl p-6">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>🔙 Back</span></button>
+      <div class="flex border-b border-gray-200 mb-6 text-sm">
+        <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-center text-blue-600 font-bold border-b-2 border-blue-600 uppercase tracking-wider">Login</button>
+        <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-center text-gray-600 font-medium uppercase tracking-wider">Register</button>
       </div>
       <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
         <div id="field-username" class="hidden">
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Username</label>
-          <input type="text" class="w-full bg-[#111] border border-gray-800 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Username</label>
+          <input type="text" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Email Address</label>
-          <input type="email" required class="w-full bg-[#111] border border-gray-800 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Email Address</label>
+          <input type="email" required class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Password</label>
-          <input type="password" required class="w-full bg-[#111] border border-gray-800 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Password</label>
+          <input type="password" required class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <button id="auth-submit-btn" type="submit" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 font-bold text-white rounded-lg uppercase text-sm tracking-wider transition mt-2">Sign In</button>
       </form>
@@ -825,73 +851,73 @@
   </div>
 
   <!-- TRUST FOOTER -->
-  <footer class="border-t border-gray-800 bg-[#0f172a]/60 mt-8">
+  <footer class="border-t border-gray-200 bg-gray-50 mt-8">
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
       <!-- Trust badges -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <div class="flex items-center gap-2 text-center sm:text-left justify-center sm:justify-start">
-          <div class="p-2 bg-blue-500/10 rounded-lg shrink-0"><i data-lucide="lock" class="w-5 h-5 text-blue-400"></i></div>
-          <div><span class="block text-xs font-bold text-white">SSL Secure</span><span class="text-[10px] text-gray-500">Encrypted</span></div>
+          <div class="p-2 bg-blue-50 rounded-lg shrink-0"><i data-lucide="lock" class="w-5 h-5 text-blue-600"></i></div>
+          <div><span class="block text-xs font-bold text-gray-900">SSL Secure</span><span class="text-[10px] text-gray-500">Encrypted</span></div>
         </div>
         <div class="flex items-center gap-2 text-center sm:text-left justify-center sm:justify-start">
-          <div class="p-2 bg-blue-500/10 rounded-lg shrink-0"><i data-lucide="shield-check" class="w-5 h-5 text-blue-400"></i></div>
-          <div><span class="block text-xs font-bold text-white">Secure Checkout</span><span class="text-[10px] text-gray-500">Protected</span></div>
+          <div class="p-2 bg-blue-50 rounded-lg shrink-0"><i data-lucide="shield-check" class="w-5 h-5 text-blue-600"></i></div>
+          <div><span class="block text-xs font-bold text-gray-900">Secure Checkout</span><span class="text-[10px] text-gray-500">Protected</span></div>
         </div>
         <div class="flex items-center gap-2 text-center sm:text-left justify-center sm:justify-start">
-          <div class="p-2 bg-blue-500/10 rounded-lg shrink-0"><i data-lucide="globe" class="w-5 h-5 text-blue-400"></i></div>
-          <div><span class="block text-xs font-bold text-white">Trusted Worldwide</span><span class="text-[10px] text-gray-500">200+ countries</span></div>
+          <div class="p-2 bg-blue-50 rounded-lg shrink-0"><i data-lucide="globe" class="w-5 h-5 text-blue-600"></i></div>
+          <div><span class="block text-xs font-bold text-gray-900">Trusted Worldwide</span><span class="text-[10px] text-gray-500">200+ countries</span></div>
         </div>
         <div class="flex items-center gap-2 text-center sm:text-left justify-center sm:justify-start">
-          <div class="p-2 bg-blue-500/10 rounded-lg shrink-0"><i data-lucide="key-round" class="w-5 h-5 text-blue-400"></i></div>
-          <div><span class="block text-xs font-bold text-white">Privacy Protected</span><span class="text-[10px] text-gray-500">Your data is safe</span></div>
+          <div class="p-2 bg-blue-50 rounded-lg shrink-0"><i data-lucide="key-round" class="w-5 h-5 text-blue-600"></i></div>
+          <div><span class="block text-xs font-bold text-gray-900">Privacy Protected</span><span class="text-[10px] text-gray-500">Your data is safe</span></div>
         </div>
         <div class="flex items-center gap-2 text-center sm:text-left justify-center sm:justify-start">
-          <div class="p-2 bg-blue-500/10 rounded-lg shrink-0"><i data-lucide="package" class="w-5 h-5 text-blue-400"></i></div>
-          <div><span class="block text-xs font-bold text-white">Order Tracking</span><span class="text-[10px] text-gray-500">Real-time updates</span></div>
+          <div class="p-2 bg-blue-50 rounded-lg shrink-0"><i data-lucide="package" class="w-5 h-5 text-blue-600"></i></div>
+          <div><span class="block text-xs font-bold text-gray-900">Order Tracking</span><span class="text-[10px] text-gray-500">Real-time updates</span></div>
         </div>
         <div class="flex items-center gap-2 text-center sm:text-left justify-center sm:justify-start">
-          <div class="p-2 bg-blue-500/10 rounded-lg shrink-0"><i data-lucide="headphones" class="w-5 h-5 text-blue-400"></i></div>
-          <div><span class="block text-xs font-bold text-white">24/7 Support</span><span class="text-[10px] text-gray-500">Always here</span></div>
+          <div class="p-2 bg-blue-50 rounded-lg shrink-0"><i data-lucide="headphones" class="w-5 h-5 text-blue-600"></i></div>
+          <div><span class="block text-xs font-bold text-gray-900">24/7 Support</span><span class="text-[10px] text-gray-500">Always here</span></div>
         </div>
       </div>
       <!-- Links -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-8 pb-8 border-b border-gray-800">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-8 pb-8 border-b border-gray-200">
         <div>
-          <h4 class="text-xs font-bold text-white uppercase tracking-wide mb-3">Company</h4>
-          <ul class="space-y-2 text-xs text-gray-500">
-            <li><a href="/about.html" class="hover:text-blue-400 transition">About Us</a></li>
-            <li><a href="/team.html" class="hover:text-blue-400 transition">Our Team</a></li>
-            <li><a href="/contact.html" class="hover:text-blue-400 transition">Contact Us</a></li>
-            <li><a href="/help.html" class="hover:text-blue-400 transition">Help Center</a></li>
+          <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Company</h4>
+          <ul class="space-y-2 text-xs text-gray-600">
+            <li><a href="/about.html" class="hover:text-blue-600 transition">About Us</a></li>
+            <li><a href="/team.html" class="hover:text-blue-600 transition">Our Team</a></li>
+            <li><a href="/contact.html" class="hover:text-blue-600 transition">Contact Us</a></li>
+            <li><a href="/help.html" class="hover:text-blue-600 transition">Help Center</a></li>
           </ul>
         </div>
         <div>
-          <h4 class="text-xs font-bold text-white uppercase tracking-wide mb-3">Legal</h4>
-          <ul class="space-y-2 text-xs text-gray-500">
-            <li><a href="/privacy.html" class="hover:text-blue-400 transition">Privacy Policy</a></li>
-            <li><a href="/terms.html" class="hover:text-blue-400 transition">Terms & Conditions</a></li>
-            <li><a href="/refund-policy.html" class="hover:text-blue-400 transition">Refund Policy</a></li>
-            <li><a href="/shipping-policy.html" class="hover:text-blue-400 transition">Shipping Policy</a></li>
+          <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Legal</h4>
+          <ul class="space-y-2 text-xs text-gray-600">
+            <li><a href="/privacy.html" class="hover:text-blue-600 transition">Privacy Policy</a></li>
+            <li><a href="/terms.html" class="hover:text-blue-600 transition">Terms & Conditions</a></li>
+            <li><a href="/refund-policy.html" class="hover:text-blue-600 transition">Refund Policy</a></li>
+            <li><a href="/shipping-policy.html" class="hover:text-blue-600 transition">Shipping Policy</a></li>
           </ul>
         </div>
         <div>
-          <h4 class="text-xs font-bold text-white uppercase tracking-wide mb-3">Account</h4>
-          <ul class="space-y-2 text-xs text-gray-500">
-            <li><a href="/account.html" class="hover:text-blue-400 transition">My Account</a></li>
-            <li><a href="/account.html" class="hover:text-blue-400 transition">Track Orders</a></li>
-            <li><a href="/auth.html" class="hover:text-blue-400 transition">Sign In</a></li>
+          <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Account</h4>
+          <ul class="space-y-2 text-xs text-gray-600">
+            <li><a href="/account.html" class="hover:text-blue-600 transition">My Account</a></li>
+            <li><a href="/account.html" class="hover:text-blue-600 transition">Track Orders</a></li>
+            <li><a href="/auth.html" class="hover:text-blue-600 transition">Sign In</a></li>
           </ul>
         </div>
         <div>
-          <h4 class="text-xs font-bold text-white uppercase tracking-wide mb-3">Support</h4>
-          <ul class="space-y-2 text-xs text-gray-500">
-            <li><a href="mailto:support@weverseonlineshop.com" class="hover:text-blue-400 transition">Email Support</a></li>
-            <li><a href="/help.html" class="hover:text-blue-400 transition">FAQ</a></li>
-            <li><a href="#" onclick="window.__kcoAiOpen&&window.__kcoAiOpen();return false;" class="hover:text-blue-400 transition">Contact us</a></li>
+          <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Support</h4>
+          <ul class="space-y-2 text-xs text-gray-600">
+            <li><a href="mailto:support@weverseonlineshop.com" class="hover:text-blue-600 transition">Email Support</a></li>
+            <li><a href="/help.html" class="hover:text-blue-600 transition">FAQ</a></li>
+            <li><a href="#" onclick="window.__kcoAiOpen&&window.__kcoAiOpen();return false;" class="hover:text-blue-600 transition">Contact us</a></li>
           </ul>
         </div>
       </div>
-      <p class="text-center text-xs text-gray-600">© Weverse Online Shop. All rights reserved.</p>
+      <p class="text-center text-xs text-gray-500">© Weverse Online Shop. All rights reserved.</p>
     </div>
   </footer>
 

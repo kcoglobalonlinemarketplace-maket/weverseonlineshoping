@@ -253,9 +253,9 @@ function render() {
     <div class="fade-in">
       <!-- Breadcrumb -->
       <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
-        <a href="/" class="hover:text-blue-400 transition">Home</a>
+        <a href="/" class="hover:text-blue-600 transition">Home</a>
         <i data-lucide="chevron-right" class="w-3 h-3"></i>
-        <span class="text-blue-400">Checkout</span>
+        <span class="text-blue-600">Checkout</span>
       </div>
 
       <!-- Step indicator -->
@@ -289,12 +289,12 @@ function renderStepIndicator() {
       ${steps.map((s, i) => `
         <div class="flex items-center gap-2 sm:gap-4">
           <div class="flex items-center gap-2">
-            <div class="step-bar w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${state.step >= s.num ? 'bg-blue-500/20 border border-blue-500/50 text-blue-400' : 'bg-blue-950/40 border border-blue-500/10 text-gray-600'} ${state.step === s.num ? 'pulse-glow' : ''}">
-              ${state.step > s.num ? '<i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>' : `<i data-lucide="${s.icon}" class="w-4 h-4"></i>`}
+            <div class="step-bar w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${state.step >= s.num ? 'bg-blue-100 border border-blue-300 text-blue-600' : 'bg-gray-50 border border-blue-100 text-gray-600'} ${state.step === s.num ? 'pulse-glow' : ''}">
+              ${state.step > s.num ? '<i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>' : `<i data-lucide="${s.icon}" class="w-4 h-4"></i>`}
             </div>
-            <span class="text-xs font-bold ${state.step >= s.num ? 'text-white' : 'text-gray-600'} hidden sm:inline">${s.label}</span>
+            <span class="text-xs font-bold ${state.step >= s.num ? 'text-gray-900' : 'text-gray-600'} hidden sm:inline">${s.label}</span>
           </div>
-          ${i < steps.length - 1 ? `<div class="step-bar w-8 sm:w-16 h-0.5 ${state.step > s.num ? 'bg-blue-500' : 'bg-blue-500/10'}"></div>` : ''}
+          ${i < steps.length - 1 ? `<div class="step-bar w-8 sm:w-16 h-0.5 ${state.step > s.num ? 'bg-blue-500' : 'bg-blue-50'}"></div>` : ''}
         </div>
       `).join('')}
     </div>
@@ -304,29 +304,29 @@ function renderStepIndicator() {
 /* ── Step 1: Cart Review ────────────────────────────────────── */
 function renderStep1() {
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
-        <i data-lucide="shopping-cart" class="w-4 h-4 text-blue-400"></i> Shopping Cart (${state.cartItems.length})
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
+        <i data-lucide="shopping-cart" class="w-4 h-4 text-blue-600"></i> Shopping Cart (${state.cartItems.length})
       </h3>
       <div class="space-y-3">
         ${state.cartItems.map((item, i) => {
           const cover = item.listing.images?.[0] || FALLBACK_IMG;
           return `
-            <div class="flex items-center gap-3 p-3 bg-blue-950/30 border border-blue-500/10 rounded-xl">
-              <div class="w-16 h-16 rounded-lg bg-gray-900 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
+            <div class="flex items-center gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl">
+              <div class="w-16 h-16 rounded-lg bg-gray-50 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
                 <img src="${cover}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
               </div>
               <div class="flex-1 min-w-0">
-                <h4 class="text-sm font-bold text-white truncate">${item.listing.title}</h4>
+                <h4 class="text-sm font-bold text-gray-900 truncate">${item.listing.title}</h4>
                 <p class="text-xs text-gray-500">${item.listing.property_id}</p>
-                <p class="text-sm font-bold text-amber-400 mt-1">${formatPrice(item.listing)}</p>
+                <p class="text-sm font-bold text-amber-600 mt-1">${formatPrice(item.listing)}</p>
               </div>
               <div class="flex items-center gap-2 shrink-0">
-                <button onclick="changeQty(${i}, -1)" class="w-9 h-9 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-gray-400 hover:text-white transition flex items-center justify-center"><i data-lucide="minus" class="w-4 h-4"></i></button>
-                <span class="text-sm font-bold text-white w-8 text-center">${item.quantity}</span>
-                <button onclick="changeQty(${i}, 1)" class="w-9 h-9 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-gray-400 hover:text-white transition flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                <button onclick="changeQty(${i}, -1)" class="w-9 h-9 bg-gray-100 hover:bg-blue-100 border border-blue-200 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                <span class="text-sm font-bold text-gray-900 w-8 text-center">${item.quantity}</span>
+                <button onclick="changeQty(${i}, 1)" class="w-9 h-9 bg-gray-100 hover:bg-blue-100 border border-blue-200 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></button>
               </div>
-              <button onclick="removeCartItem(${i})" class="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-red-400 transition shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              <button onclick="removeCartItem(${i})" class="p-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-red-600 transition shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
           `;
         }).join('')}
@@ -345,22 +345,22 @@ function renderStep1() {
 function renderStep2() {
   const savedAddresses = state.addresses.length > 0 && !state.isGuest ? `
     <div class="mb-5">
-      <h4 class="text-xs font-bold text-white uppercase tracking-wide mb-3">Saved Addresses</h4>
+      <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Saved Addresses</h4>
       <div class="space-y-2">
         ${state.addresses.map(a => {
           const c = getCountryByCode(a.country_code);
           return `
-            <div onclick="selectAddress('${a.id}')" class="cursor-pointer p-3 border rounded-xl transition ${state.selectedAddressId === a.id ? 'bg-blue-500/15 border-blue-500/50' : 'bg-blue-950/30 border-blue-500/10 hover:border-blue-500/30'}">
+            <div onclick="selectAddress('${a.id}')" class="cursor-pointer p-3 border rounded-xl transition ${state.selectedAddressId === a.id ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-blue-100 hover:border-blue-200'}">
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-sm font-bold text-white">${a.label}</span>
-                ${a.is_default ? '<span class="text-[10px] text-emerald-400 font-bold uppercase">Default</span>' : ''}
+                <span class="text-sm font-bold text-gray-900">${a.label}</span>
+                ${a.is_default ? '<span class="text-[10px] text-emerald-600 font-bold uppercase">Default</span>' : ''}
               </div>
-              <p class="text-xs text-gray-400">${a.full_name} · ${a.address_line1}, ${a.city}, ${a.state} ${a.postal_code} · ${c ? c.flag + ' ' + c.name : a.country_code}</p>
+              <p class="text-xs text-gray-600">${a.full_name} · ${a.address_line1}, ${a.city}, ${a.state} ${a.postal_code} · ${c ? c.flag + ' ' + c.name : a.country_code}</p>
               <p class="text-xs text-gray-500 mt-0.5">${a.phone}</p>
             </div>
           `;
         }).join('')}
-        <button onclick="selectAddress('')" class="w-full text-left p-3 border border-dashed border-blue-500/30 hover:border-blue-500/50 rounded-xl text-sm text-blue-400 font-bold transition flex items-center gap-2">
+        <button onclick="selectAddress('')" class="w-full text-left p-3 border border-dashed border-blue-200 hover:border-blue-300 rounded-xl text-sm text-blue-600 font-bold transition flex items-center gap-2">
           <i data-lucide="plus" class="w-4 h-4"></i> Enter a new address
         </button>
       </div>
@@ -370,45 +370,45 @@ function renderStep2() {
   const isNewAddress = !state.selectedAddressId || state.isGuest;
 
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
-        <i data-lucide="map-pin" class="w-4 h-4 text-blue-400"></i> Shipping Address
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
+        <i data-lucide="map-pin" class="w-4 h-4 text-blue-600"></i> Shipping Address
       </h3>
       ${savedAddresses}
       ${isNewAddress ? `
         <div class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Full Name *</label>
-              <input type="text" id="ship-name" value="${state.fullName}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+              <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Full Name *</label>
+              <input type="text" id="ship-name" value="${state.fullName}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
             </div>
             <div>
-              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Phone *</label>
-              <input type="tel" id="ship-phone" value="${state.phone}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+              <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Phone *</label>
+              <input type="tel" id="ship-phone" value="${state.phone}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
             </div>
           </div>
           ${state.isGuest ? `
             <div>
-              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Email *</label>
-              <input type="email" id="ship-email" value="${state.email}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+              <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Email *</label>
+              <input type="email" id="ship-email" value="${state.email}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
             </div>
           ` : ''}
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Address Line 1 *</label>
-            <input type="text" id="ship-addr1" value="${state.shippingAddr1}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Address Line 1 *</label>
+            <input type="text" id="ship-addr1" value="${state.shippingAddr1}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Address Line 2 (Optional)</label>
-            <input type="text" id="ship-addr2" value="${state.shippingAddr2}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Address Line 2 (Optional)</label>
+            <input type="text" id="ship-addr2" value="${state.shippingAddr2}" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">City *</label><input type="text" id="ship-city" value="${state.shippingCity}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">State *</label><input type="text" id="ship-state" value="${state.shippingState}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-            <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Postal *</label><input type="text" id="ship-postal" value="${state.shippingPostal}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+            <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">City *</label><input type="text" id="ship-city" value="${state.shippingCity}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+            <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">State *</label><input type="text" id="ship-state" value="${state.shippingState}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+            <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Postal *</label><input type="text" id="ship-postal" value="${state.shippingPostal}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
           </div>
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Country *</label>
-            <select id="ship-country" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Country *</label>
+            <select id="ship-country" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
               ${COUNTRIES.map(c => `<option value="${c.code}" ${state.shippingCountry === c.code ? 'selected' : ''}>${c.flag} ${c.name}</option>`).join('')}
             </select>
           </div>
@@ -417,21 +417,21 @@ function renderStep2() {
     </div>
 
     <!-- Billing -->
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
-        <i data-lucide="file-text" class="w-4 h-4 text-blue-400"></i> Billing Information
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
+        <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i> Billing Information
       </h3>
       <label class="flex items-center gap-2 cursor-pointer mb-4">
-        <input type="checkbox" id="billing-same" ${state.billingSame ? 'checked' : ''} onchange="toggleBilling()" class="w-4 h-4 rounded border-gray-700 bg-[#0a1124] text-blue-500 focus:ring-blue-500">
-        <span class="text-sm text-gray-300">Billing address is the same as shipping address</span>
+        <input type="checkbox" id="billing-same" ${state.billingSame ? 'checked' : ''} onchange="toggleBilling()" class="w-4 h-4 rounded border-gray-300 bg-white text-blue-500 focus:ring-blue-500">
+        <span class="text-sm text-gray-700">Billing address is the same as shipping address</span>
       </label>
       <div id="billing-fields" class="${state.billingSame ? 'hidden' : ''}">
-        <textarea id="billing-address" rows="3" placeholder="Enter full billing address..." class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 resize-none">${state.billingAddress}</textarea>
+        <textarea id="billing-address" rows="3" placeholder="Enter full billing address..." class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-none">${state.billingAddress}</textarea>
       </div>
     </div>
 
     <div class="flex justify-between">
-      <button onclick="goToStep(1)" class="btn-press inline-flex items-center gap-2 bg-blue-950/60 hover:bg-blue-900/60 border border-blue-500/20 text-gray-400 font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
+      <button onclick="goToStep(1)" class="btn-press inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-100 border border-blue-200 text-gray-600 font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
         <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
       </button>
       <button onclick="goToStep(3)" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 relative overflow-hidden">
@@ -449,34 +449,34 @@ function renderStep3() {
   const showManual = state.paymentGateway === 'both' || state.paymentGateway === 'manual';
   return `
     <!-- Payment method selection -->
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
-        <i data-lucide="credit-card" class="w-4 h-4 text-blue-400"></i> Payment Method
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
+        <i data-lucide="credit-card" class="w-4 h-4 text-blue-600"></i> Payment Method
       </h3>
       <div class="space-y-3">
         <!-- Flutterwave -->
-        ${showFlutterwave ? `<div onclick="selectPaymentMethod('flutterwave')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'flutterwave' ? 'selected' : 'bg-blue-950/30 border-blue-500/10 hover:border-blue-500/30'}">
+        ${showFlutterwave ? `<div onclick="selectPaymentMethod('flutterwave')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'flutterwave' ? 'selected' : 'bg-gray-50 border-blue-100 hover:border-blue-200'}">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-500/15 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="w-5 h-5 text-blue-400"></i></div>
+            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="w-5 h-5 text-blue-600"></i></div>
             <div class="flex-1">
-              <h4 class="text-sm font-bold text-white">Flutterwave</h4>
+              <h4 class="text-sm font-bold text-gray-900">Flutterwave</h4>
               <p class="text-xs text-gray-500">Pay with card, bank transfer, USSD, or mobile money</p>
             </div>
-            <div class="w-5 h-5 rounded-full border-2 ${state.paymentMethod === 'flutterwave' ? 'border-blue-500 bg-blue-500' : 'border-gray-600'} flex items-center justify-center">
+            <div class="w-5 h-5 rounded-full border-2 ${state.paymentMethod === 'flutterwave' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'} flex items-center justify-center">
               ${state.paymentMethod === 'flutterwave' ? '<div class="w-2 h-2 bg-white rounded-full"></div>' : ''}
             </div>
           </div>
         </div>` : ''}
 
         <!-- Manual Bank Transfer -->
-        ${showManual ? `<div onclick="selectPaymentMethod('manual_bank_transfer')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'manual_bank_transfer' ? 'selected' : 'bg-blue-950/30 border-blue-500/10 hover:border-blue-500/30'}">
+        ${showManual ? `<div onclick="selectPaymentMethod('manual_bank_transfer')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'manual_bank_transfer' ? 'selected' : 'bg-gray-50 border-blue-100 hover:border-blue-200'}">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-500/15 rounded-lg flex items-center justify-center"><i data-lucide="landmark" class="w-5 h-5 text-blue-400"></i></div>
+            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center"><i data-lucide="landmark" class="w-5 h-5 text-blue-600"></i></div>
             <div class="flex-1">
-              <h4 class="text-sm font-bold text-white">Manual Bank Transfer</h4>
+              <h4 class="text-sm font-bold text-gray-900">Manual Bank Transfer</h4>
               <p class="text-xs text-gray-500">Pay to the matched country account and upload your receipt</p>
             </div>
-            <div class="w-5 h-5 rounded-full border-2 ${state.paymentMethod === 'manual_bank_transfer' ? 'border-blue-500 bg-blue-500' : 'border-gray-600'} flex items-center justify-center">
+            <div class="w-5 h-5 rounded-full border-2 ${state.paymentMethod === 'manual_bank_transfer' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'} flex items-center justify-center">
               ${state.paymentMethod === 'manual_bank_transfer' ? '<div class="w-2 h-2 bg-white rounded-full"></div>' : ''}
             </div>
           </div>
@@ -485,15 +485,15 @@ function renderStep3() {
     </div>
 
     <!-- Currency selector -->
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-3">
-        <i data-lucide="globe" class="w-4 h-4 text-blue-400"></i> Payment Currency
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-3">
+        <i data-lucide="globe" class="w-4 h-4 text-blue-600"></i> Payment Currency
       </h3>
       <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
         ${supportedCurrencies.map(c => {
           const acc = state.manualPaymentAccounts.find(account => account.currency === c);
           if (!acc) return '';
-          return `<button onclick="selectCurrency('${c}')" class="btn-press flex flex-col items-center gap-1 p-2.5 rounded-xl border transition relative overflow-hidden ${c === state.selectedCurrency ? 'bg-blue-500/15 border-blue-500/50 text-blue-400' : 'bg-blue-950/40 border-blue-500/10 text-gray-400 hover:border-blue-500/30'}">
+          return `<button onclick="selectCurrency('${c}')" class="btn-press flex flex-col items-center gap-1 p-2.5 rounded-xl border transition relative overflow-hidden ${c === state.selectedCurrency ? 'bg-blue-50 border-blue-300 text-blue-600' : 'bg-gray-50 border-blue-100 text-gray-600 hover:border-blue-200'}">
             <span class="text-xl">${acc.flag}</span><span class="text-xs font-bold">${c}</span>
           </button>`;
         }).join('')}
@@ -514,13 +514,13 @@ function renderStep3() {
           <i data-lucide="check-circle" class="w-5 h-5"></i> Place Order & Upload Receipt
         </button>
       `}
-      <button onclick="goToStep(2)" class="btn-press w-full bg-blue-950/60 hover:bg-blue-900/60 border border-blue-500/20 text-gray-400 font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
+      <button onclick="goToStep(2)" class="btn-press w-full bg-gray-100 hover:bg-gray-100 border border-blue-200 text-gray-600 font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
         <i data-lucide="arrow-left" class="w-4 h-4 inline mr-2"></i> Back to Shipping
       </button>
     </div>
 
     <p class="text-center text-xs text-gray-500 flex items-center justify-center gap-1.5 mt-3">
-      <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Your payment is secured with SSL encryption.
+      <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> Your payment is secured with SSL encryption.
     </p>
   `;
 }
@@ -543,25 +543,25 @@ function renderBankDetails(acc, fallbackNotice, instructions) {
   ].filter(f => f.value && f.value.trim() !== '');
 
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-      ${fallbackNotice ? `<div class="mb-4 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl text-sm text-amber-200">${fallbackNotice.message}</div>` : ''}
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+      ${fallbackNotice ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">${fallbackNotice.message}</div>` : ''}
       <div class="flex items-center gap-3 mb-4">
-        <div class="p-2.5 bg-blue-500/10 rounded-lg"><i data-lucide="landmark" class="w-5 h-5 text-blue-400"></i></div>
+        <div class="p-2.5 bg-blue-50 rounded-lg"><i data-lucide="landmark" class="w-5 h-5 text-blue-600"></i></div>
         <div class="flex-1">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Receiving Bank Account</h3>
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Receiving Bank Account</h3>
           <p class="text-gray-500 text-xs">${acc.flag} ${acc.currencyName} (${acc.currency})</p>
         </div>
-        <span class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-500/20"><i data-lucide="shield-check" class="w-3 h-3"></i> Verified</span>
+        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-200"><i data-lucide="shield-check" class="w-3 h-3"></i> Verified</span>
       </div>
       <div class="space-y-2">
         ${fields.map(f => `
-          <div class="flex items-center justify-between gap-3 bg-blue-950/40 border border-blue-500/10 rounded-xl px-4 py-2.5">
-            <div class="min-w-0 flex-1"><div class="text-gray-500 text-[11px] uppercase tracking-wide">${f.label}</div><div class="text-gray-100 text-sm font-medium font-mono break-all">${f.value}</div></div>
-            <button onclick="copyToClipboard('${f.value.replace(/'/g, "\\'")}')" class="shrink-0 p-2 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg transition"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
+          <div class="flex items-center justify-between gap-3 bg-gray-50 border border-blue-100 rounded-xl px-4 py-2.5">
+            <div class="min-w-0 flex-1"><div class="text-gray-500 text-[11px] uppercase tracking-wide">${f.label}</div><div class="text-gray-900 text-sm font-medium font-mono break-all">${f.value}</div></div>
+            <button onclick="copyToClipboard('${f.value.replace(/'/g, "\\'")}')" class="shrink-0 p-2 bg-gray-100 hover:bg-blue-100 border border-blue-200 rounded-lg transition"><i data-lucide="copy" class="w-4 h-4 text-gray-600"></i></button>
           </div>
         `).join('')}
       </div>
-      <div class="mt-4 p-3 bg-blue-950/40 border border-blue-500/10 rounded-xl text-xs text-gray-300 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
+      <div class="mt-4 p-3 bg-gray-50 border border-blue-100 rounded-xl text-xs text-gray-700 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
     </div>
   `;
 }
@@ -571,43 +571,43 @@ function renderOrderSummary() {
   const subtotal = getSubtotal();
   const total = getTotal();
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up lg:sticky lg:top-20">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
-        <i data-lucide="receipt" class="w-4 h-4 text-blue-400"></i> Order Summary
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up lg:sticky lg:top-20">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
+        <i data-lucide="receipt" class="w-4 h-4 text-blue-600"></i> Order Summary
       </h3>
       <div class="space-y-3 mb-4">
         ${state.cartItems.map(item => {
           const cover = item.listing.images?.[0] || FALLBACK_IMG;
           return `
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-lg bg-gray-900 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
+              <div class="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
                 <img src="${cover}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-white truncate">${item.listing.title}</p>
+                <p class="text-xs font-bold text-gray-900 truncate">${item.listing.title}</p>
                 <p class="text-xs text-gray-500">Qty: ${item.quantity}</p>
               </div>
-              <p class="text-xs font-bold text-amber-400 shrink-0">${fmtMoney(item.listing.price * item.quantity, item.listing.currency || 'USD')}</p>
+              <p class="text-xs font-bold text-amber-600 shrink-0">${fmtMoney(item.listing.price * item.quantity, item.listing.currency || 'USD')}</p>
             </div>
           `;
         }).join('')}
       </div>
-      <div class="space-y-2 pt-4 border-t border-blue-500/10">
-        <div class="flex justify-between text-sm"><span class="text-gray-500">Subtotal</span><span class="text-white font-bold">${fmtMoney(subtotal, state.cartItems[0]?.listing?.currency || 'USD')}</span></div>
-        <div class="flex justify-between text-sm"><span class="text-gray-500">Shipping</span><span class="text-emerald-400 font-bold">${getShippingCost() === 0 ? 'Free' : fmtMoney(getShippingCost(), state.cartItems[0]?.listing?.currency || 'USD')}</span></div>
-        ${getTaxAmount() > 0 ? `<div class="flex justify-between text-sm"><span class="text-gray-500">Tax</span><span class="text-white font-bold">${fmtMoney(getTaxAmount(), state.cartItems[0]?.listing?.currency || 'USD')}</span></div>` : ''}
-        <div class="flex justify-between text-lg pt-2 border-t border-blue-500/10"><span class="text-white font-bold">Total</span><span class="text-amber-400 font-black">${fmtMoney(total, state.cartItems[0]?.listing?.currency || 'USD')}</span></div>
+      <div class="space-y-2 pt-4 border-t border-blue-100">
+        <div class="flex justify-between text-sm"><span class="text-gray-500">Subtotal</span><span class="text-gray-900 font-bold">${fmtMoney(subtotal, state.cartItems[0]?.listing?.currency || 'USD')}</span></div>
+        <div class="flex justify-between text-sm"><span class="text-gray-500">Shipping</span><span class="text-emerald-600 font-bold">${getShippingCost() === 0 ? 'Free' : fmtMoney(getShippingCost(), state.cartItems[0]?.listing?.currency || 'USD')}</span></div>
+        ${getTaxAmount() > 0 ? `<div class="flex justify-between text-sm"><span class="text-gray-500">Tax</span><span class="text-gray-900 font-bold">${fmtMoney(getTaxAmount(), state.cartItems[0]?.listing?.currency || 'USD')}</span></div>` : ''}
+        <div class="flex justify-between text-lg pt-2 border-t border-blue-100"><span class="text-gray-900 font-bold">Total</span><span class="text-amber-600 font-black">${fmtMoney(total, state.cartItems[0]?.listing?.currency || 'USD')}</span></div>
       </div>
-      <div class="mt-4 p-3 bg-blue-950/30 border border-blue-500/10 rounded-xl">
-        <div class="flex items-center gap-2 text-xs text-gray-400">
-          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+      <div class="mt-4 p-3 bg-gray-50 border border-blue-100 rounded-xl">
+        <div class="flex items-center gap-2 text-xs text-gray-600">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
           <span>Secured with SSL encryption</span>
         </div>
       </div>
-      <div class="mt-3 p-3 bg-blue-950/30 border border-blue-500/10 rounded-xl">
-        <div class="flex items-center gap-2 text-xs text-gray-400">
-          <i data-lucide="package" class="w-4 h-4 text-blue-400"></i>
-          <span>Order #: <span class="text-blue-400 font-mono font-bold">${state.orderNumber}</span></span>
+      <div class="mt-3 p-3 bg-gray-50 border border-blue-100 rounded-xl">
+        <div class="flex items-center gap-2 text-xs text-gray-600">
+          <i data-lucide="package" class="w-4 h-4 text-blue-600"></i>
+          <span>Order #: <span class="text-blue-600 font-mono font-bold">${state.orderNumber}</span></span>
         </div>
       </div>
       ${state.step < 3 ? `
@@ -621,9 +621,9 @@ function renderOrderSummary() {
 
 function renderEmptyCart() {
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-10 text-center slide-up">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-500/10 rounded-2xl mb-4"><i data-lucide="shopping-cart" class="w-8 h-8 text-blue-400"></i></div>
-      <h3 class="text-lg font-bold text-white mb-2">Your Cart is Empty</h3>
+    <div class="glass border border-blue-200 rounded-2xl p-10 text-center slide-up">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-2xl mb-4"><i data-lucide="shopping-cart" class="w-8 h-8 text-blue-600"></i></div>
+      <h3 class="text-lg font-bold text-gray-900 mb-2">Your Cart is Empty</h3>
       <p class="text-sm text-gray-500 mb-6">Add items to your cart before checking out.</p>
       <a href="/" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl uppercase text-sm tracking-wider transition shadow-lg shadow-blue-600/30 relative overflow-hidden"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Browse Marketplace</a>
     </div>
@@ -805,11 +805,11 @@ async function handleFlwVerify(txId, txRef, orderNum) {
   const root = document.getElementById('checkout-root');
   root.innerHTML = `
     <div class="flex flex-col items-center justify-center py-20 fade-in">
-      <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-500/10 rounded-full mb-6 pulse-glow">
-        <i data-lucide="loader-2" class="w-10 h-10 text-blue-400 animate-spin"></i>
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-50 rounded-full mb-6 pulse-glow">
+        <i data-lucide="loader-2" class="w-10 h-10 text-blue-600 animate-spin"></i>
       </div>
-      <h1 class="text-2xl font-black text-white mb-2">Verifying Payment...</h1>
-      <p class="text-gray-400 text-sm">Please wait while we confirm your payment.</p>
+      <h1 class="text-2xl font-black text-gray-900 mb-2">Verifying Payment...</h1>
+      <p class="text-gray-600 text-sm">Please wait while we confirm your payment.</p>
     </div>
   `;
   if (window.lucide) lucide.createIcons();
@@ -846,23 +846,23 @@ async function handleFlwVerify(txId, txRef, orderNum) {
 function renderPaymentSuccess(orderNum) {
   return `
     <div class="fade-in text-center py-8 max-w-lg mx-auto">
-      <div class="inline-flex items-center justify-center w-20 h-20 bg-emerald-500/10 rounded-full mb-6 check-pop">
-        <i data-lucide="check-circle" class="w-12 h-12 text-emerald-400"></i>
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-emerald-50 rounded-full mb-6 check-pop">
+        <i data-lucide="check-circle" class="w-12 h-12 text-emerald-600"></i>
       </div>
-      <h1 class="text-2xl font-black text-white mb-2">Payment Successful!</h1>
-      <p class="text-gray-400 text-sm mb-6">Your order has been confirmed and an email receipt has been sent.</p>
-      <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-5 text-left">
-        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Order Number</span><span class="text-blue-400 font-mono font-bold">${orderNum}</span></div>
-        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Status</span><span class="text-emerald-400 font-bold">Payment Received</span></div>
-        <div class="border-t border-blue-500/10 pt-3 mt-3">
-          <p class="text-xs text-gray-400">You will receive email notifications at each stage: processing, shipping, and delivery.</p>
+      <h1 class="text-2xl font-black text-gray-900 mb-2">Payment Successful!</h1>
+      <p class="text-gray-600 text-sm mb-6">Your order has been confirmed and an email receipt has been sent.</p>
+      <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 text-left">
+        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Order Number</span><span class="text-blue-600 font-mono font-bold">${orderNum}</span></div>
+        <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Status</span><span class="text-emerald-600 font-bold">Payment Received</span></div>
+        <div class="border-t border-blue-100 pt-3 mt-3">
+          <p class="text-xs text-gray-600">You will receive email notifications at each stage: processing, shipping, and delivery.</p>
         </div>
       </div>
       <div class="flex gap-3 justify-center">
         <a href="/account.html" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 relative overflow-hidden">
           <i data-lucide="package" class="w-4 h-4"></i> Track Order
         </a>
-        <a href="/" class="btn-press inline-flex items-center gap-2 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
+        <a href="/" class="btn-press inline-flex items-center gap-2 bg-gray-100 border border-blue-200 text-gray-600 font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
           Continue Shopping
         </a>
       </div>
@@ -873,17 +873,17 @@ function renderPaymentSuccess(orderNum) {
 function renderPaymentFailed(msg) {
   return `
     <div class="fade-in text-center py-8 max-w-lg mx-auto">
-      <div class="inline-flex items-center justify-center w-20 h-20 bg-red-500/10 rounded-full mb-6 check-pop">
-        <i data-lucide="x-circle" class="w-12 h-12 text-red-400"></i>
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-red-50 rounded-full mb-6 check-pop">
+        <i data-lucide="x-circle" class="w-12 h-12 text-red-600"></i>
       </div>
-      <h1 class="text-2xl font-black text-white mb-2">Payment Failed</h1>
-      <p class="text-gray-400 text-sm mb-2">${msg}</p>
+      <h1 class="text-2xl font-black text-gray-900 mb-2">Payment Failed</h1>
+      <p class="text-gray-600 text-sm mb-2">${msg}</p>
       <p class="text-gray-500 text-xs mb-6">Your order has been saved. You can retry payment from your account dashboard.</p>
       <div class="flex gap-3 justify-center">
         <a href="/checkout.html" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 relative overflow-hidden">
           <i data-lucide="refresh-cw" class="w-4 h-4"></i> Try Again
         </a>
-        <a href="/account.html" class="btn-press inline-flex items-center gap-2 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
+        <a href="/account.html" class="btn-press inline-flex items-center gap-2 bg-gray-100 border border-blue-200 text-gray-600 font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
           View Orders
         </a>
       </div>

@@ -78,24 +78,24 @@ function renderNavAuth(user, profile) {
       const initials = (name.replace(/[^a-zA-Z0-9 ]/g, '').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('') || '?').toUpperCase();
       moreAccount.innerHTML = `
         <button onclick="closeMoreMenu();window.location.href='/account.html'"
-                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-blue-500/40 transition text-left">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-blue-500/30 border border-blue-500/40 flex items-center justify-center shrink-0 text-white text-sm font-black">${escapeHtml(initials)}</div>
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-blue-500/40 transition text-left">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 text-white text-sm font-black">${escapeHtml(initials)}</div>
           <div class="flex-1 min-w-0">
-            <p class="text-[13px] font-bold text-white leading-none truncate">${escapeHtml(name)}</p>
-            <p class="text-[11px] text-gray-400 mt-0.5 leading-none truncate">${escapeHtml(user.email || '')}</p>
+            <p class="text-[13px] font-bold text-gray-900 leading-none truncate">${escapeHtml(name)}</p>
+            <p class="text-[11px] text-gray-600 mt-0.5 leading-none truncate">${escapeHtml(user.email || '')}</p>
           </div>
-          <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 shrink-0"><i data-lucide="shield-check" class="w-3 h-3"></i>Account</span>
+          <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 shrink-0"><i data-lucide="shield-check" class="w-3 h-3"></i>Account</span>
         </button>`;
     } else {
       moreAccount.innerHTML = `
         <button onclick="closeMoreMenu();openAuthModal();"
-                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-blue-500/15 to-blue-600/10 border border-blue-400/30 hover:border-blue-400/60 hover:bg-blue-500/15 transition text-left active:scale-[0.99]">
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 hover:border-blue-400/60 hover:bg-blue-100 transition text-left active:scale-[0.99]">
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-500/30">
             <i data-lucide="user-round" class="w-5 h-5 text-white"></i>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-[13px] font-bold text-white leading-none">Sign In / Create Account</p>
-            <p class="text-[11px] text-gray-400 mt-0.5 leading-none">Orders, wishlist &amp; more</p>
+            <p class="text-[13px] font-bold text-gray-900 leading-none">Sign In / Create Account</p>
+            <p class="text-[11px] text-gray-600 mt-0.5 leading-none">Orders, wishlist &amp; more</p>
           </div>
           <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 shrink-0"></i>
         </button>`;

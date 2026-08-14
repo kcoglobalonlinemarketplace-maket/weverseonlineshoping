@@ -1,4 +1,4 @@
-import{f as d,C as E,L as I,A as C,h as z,i as B,j as S,k as T,l as M,m as N,o as j,n as $}from"./localization-DZro7UN4.js";let u=!1;function A(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
+import{f as d,C as E,L as I,A as C,h as z,i as B,j as S,k as T,l as M,m as N,o as j,n as $}from"./localization-Bs-lQhvz.js";let u=!1;function A(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
     @keyframes kcoLocPulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
     @keyframes kcoLocSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
     @keyframes kcoLocFadeIn { from { opacity:0; } to { opacity:1; } }
@@ -106,7 +106,7 @@ body.kco-live-mode .showroom-card h3 {
   margin-bottom: 6px !important;
 }
 /* Larger prices — most important for live viewers */
-body.kco-live-mode .showroom-card .text-blue-400,
+body.kco-live-mode .showroom-card .text-blue-600,
 body.kco-live-mode .showroom-card [class*="text-blue"] {
   font-size: 20px !important;
   font-weight: 900 !important;
@@ -114,7 +114,7 @@ body.kco-live-mode .showroom-card [class*="text-blue"] {
 }
 /* Larger spec text */
 body.kco-live-mode .showroom-card .text-gray-500,
-body.kco-live-mode .showroom-card .text-gray-400 {
+body.kco-live-mode .showroom-card .text-gray-600 {
   font-size: 13px !important;
 }
 /* Larger status badges */
@@ -139,7 +139,7 @@ body.kco-live-mode .showroom-card [class*="star"] {
   width: 16px !important;
   height: 16px !important;
 }
-body.kco-live-mode .showroom-card [class*="text-gray-300"],
+body.kco-live-mode .showroom-card [class*="text-gray-700"],
 body.kco-live-mode .showroom-card [class*="text-gray-600"] {
   font-size: 13px !important;
 }

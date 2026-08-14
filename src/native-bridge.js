@@ -10,7 +10,7 @@ export async function initNativeBridge() {
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
     await StatusBar.setStyle({ style: Style.Dark });
-    await StatusBar.setBackgroundColor({ color: '#070b16' });
+    await StatusBar.setBackgroundColor({ color: '#ffffff' });
   } catch {}
 
   try {

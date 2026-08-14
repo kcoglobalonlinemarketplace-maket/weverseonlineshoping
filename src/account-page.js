@@ -52,14 +52,14 @@ const NAV_SECTIONS = [
 
 /* ── Order steps ───────────────────────────────────────────── */
 const ORDER_STEPS = [
-  { id: 'order_placed', label: 'Order Placed', icon: 'shopping-bag', color: 'text-blue-400', bg: 'bg-blue-500/15' },
-  { id: 'payment_received', label: 'Payment Received', icon: 'credit-card', color: 'text-cyan-400', bg: 'bg-cyan-500/15' },
-  { id: 'pending_verification', label: 'Pending Verification', icon: 'shield-alert', color: 'text-amber-400', bg: 'bg-amber-500/15' },
-  { id: 'payment_approved', label: 'Approved', icon: 'check-circle', color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
-  { id: 'order_processing', label: 'Processing', icon: 'package', color: 'text-blue-400', bg: 'bg-blue-500/15' },
-  { id: 'order_shipped', label: 'Shipped', icon: 'truck', color: 'text-indigo-400', bg: 'bg-indigo-500/15' },
-  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'bike', color: 'text-blue-400', bg: 'bg-blue-500/15' },
-  { id: 'order_delivered', label: 'Delivered', icon: 'package-check', color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+  { id: 'order_placed', label: 'Order Placed', icon: 'shopping-bag', color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'payment_received', label: 'Payment Received', icon: 'credit-card', color: 'text-cyan-600', bg: 'bg-cyan-50' },
+  { id: 'pending_verification', label: 'Pending Verification', icon: 'shield-alert', color: 'text-amber-600', bg: 'bg-amber-50' },
+  { id: 'payment_approved', label: 'Approved', icon: 'check-circle', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { id: 'order_processing', label: 'Processing', icon: 'package', color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'order_shipped', label: 'Shipped', icon: 'truck', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'bike', color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'order_delivered', label: 'Delivered', icon: 'package-check', color: 'text-emerald-600', bg: 'bg-emerald-50' },
 ];
 
 const STATUS_ALIASES = { approved: 'payment_approved', submitted: 'payment_received', placed: 'order_placed' };
@@ -91,15 +91,15 @@ function statusBadge(status) {
   const norm = normalizeStatus(status);
   const step = ORDER_STEPS.find(s => s.id === norm) || ORDER_STEPS[0];
   const colorMap = {
-    'text-blue-400': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    'text-cyan-400': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-    'text-amber-400': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    'text-emerald-400': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    'text-indigo-400': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-    'text-blue-400': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    'text-red-400': 'bg-red-500/10 text-red-400 border-red-500/20',
+    'text-blue-600': 'bg-blue-50 text-blue-600 border-blue-200',
+    'text-cyan-600': 'bg-cyan-50 text-cyan-600 border-cyan-200',
+    'text-amber-600': 'bg-amber-50 text-amber-600 border-amber-200',
+    'text-emerald-600': 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    'text-indigo-600': 'bg-indigo-50 text-indigo-600 border-indigo-200',
+    'text-blue-600': 'bg-blue-50 text-blue-600 border-blue-200',
+    'text-red-600': 'bg-red-50 text-red-600 border-red-200',
   };
-  const cls = colorMap[step.color] || colorMap['text-blue-400'];
+  const cls = colorMap[step.color] || colorMap['text-blue-600'];
   const label = status === 'rejected' ? 'Rejected' : step.label;
   return `<span class="inline-flex items-center gap-1 ${cls} border text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">${label}</span>`;
 }
@@ -234,7 +234,7 @@ function renderNav() {
     <div class="mb-3">
       <p class="text-[10px] font-bold uppercase tracking-wider text-gray-600 px-3 mb-1.5">${sec.group}</p>
       ${sec.items.map(item => `
-        <button data-section="${item.id}" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-blue-500/5 rounded-xl transition border border-transparent ${state.activeSection === item.id ? 'active' : ''}">
+        <button data-section="${item.id}" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-blue-50 rounded-xl transition border border-transparent ${state.activeSection === item.id ? 'active' : ''}">
           <i data-lucide="${item.icon}" class="nav-icon w-4 h-4 shrink-0 text-gray-500"></i>
           <span class="truncate">${item.label}</span>
         </button>
@@ -319,7 +319,7 @@ async function renderSection(section) {
 function pageTitle(title, subtitle) {
   return `
     <div class="mb-6">
-      <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">${title}</h1>
+      <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">${title}</h1>
       ${subtitle ? `<p class="text-sm text-gray-500 mt-1">${subtitle}</p>` : ''}
     </div>
   `;
@@ -336,11 +336,11 @@ function orderStats() {
 
 function statCard(label, value, icon, color) {
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       <div class="flex items-center justify-between mb-3">
         <div class="p-2.5 ${color.bg} rounded-xl"><i data-lucide="${icon}" class="w-5 h-5 ${color.text}"></i></div>
       </div>
-      <p class="text-3xl font-black text-white">${value}</p>
+      <p class="text-3xl font-black text-gray-900">${value}</p>
       <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">${label}</p>
     </div>
   `;
@@ -359,32 +359,32 @@ function renderHome() {
   return `
     ${pageTitle('Dashboard Home', `Welcome back, ${name}! Here's your account overview.`)}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      ${statCard('Total Orders', stats.total, 'shopping-bag', { bg: 'bg-blue-500/10', text: 'text-blue-400' })}
-      ${statCard('Pending Orders', stats.pending, 'clock', { bg: 'bg-amber-500/10', text: 'text-amber-400' })}
-      ${statCard('Completed', stats.completed, 'check-circle', { bg: 'bg-emerald-500/10', text: 'text-emerald-400' })}
-      ${statCard('Cancelled', stats.cancelled, 'x-circle', { bg: 'bg-red-500/10', text: 'text-red-400' })}
+      ${statCard('Total Orders', stats.total, 'shopping-bag', { bg: 'bg-blue-50', text: 'text-blue-600' })}
+      ${statCard('Pending Orders', stats.pending, 'clock', { bg: 'bg-amber-50', text: 'text-amber-600' })}
+      ${statCard('Completed', stats.completed, 'check-circle', { bg: 'bg-emerald-50', text: 'text-emerald-600' })}
+      ${statCard('Cancelled', stats.cancelled, 'x-circle', { bg: 'bg-red-50', text: 'text-red-600' })}
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <!-- Recent orders -->
-      <div class="lg:col-span-2 glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+      <div class="lg:col-span-2 glass border border-blue-200 rounded-2xl p-5 slide-up">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
-            <i data-lucide="shopping-bag" class="w-4 h-4 text-blue-400"></i> Recent Orders
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2">
+            <i data-lucide="shopping-bag" class="w-4 h-4 text-blue-600"></i> Recent Orders
           </h3>
-          <button onclick="navigateTo('orders')" class="text-xs text-blue-400 hover:text-blue-300 font-bold transition">View All →</button>
+          <button onclick="navigateTo('orders')" class="text-xs text-blue-600 hover:text-blue-700 font-bold transition">View All →</button>
         </div>
-        ${recentOrders.length === 0 ? `<p class="text-sm text-gray-500 text-center py-8">No orders yet. <a href="/" class="text-blue-400 font-bold">Start shopping</a></p>` : recentOrders.map(o => `
-          <div class="flex items-center gap-3 p-3 bg-blue-950/30 border border-blue-500/10 rounded-xl mb-2 hover:border-blue-500/30 transition cursor-pointer" onclick="navigateTo('orders')">
-            <div class="w-12 h-12 rounded-lg bg-gray-900 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
+        ${recentOrders.length === 0 ? `<p class="text-sm text-gray-500 text-center py-8">No orders yet. <a href="/" class="text-blue-600 font-bold">Start shopping</a></p>` : recentOrders.map(o => `
+          <div class="flex items-center gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl mb-2 hover:border-blue-200 transition cursor-pointer" onclick="navigateTo('orders')">
+            <div class="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
               <img src="${o.listing_image || FALLBACK_IMG}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-bold text-white truncate">${o.listing_title}</p>
+              <p class="text-sm font-bold text-gray-900 truncate">${o.listing_title}</p>
               <p class="text-xs text-gray-500 font-mono">${o.order_number}</p>
             </div>
             <div class="text-right shrink-0">
-              <p class="text-sm font-bold text-amber-400">${o.amount} ${o.currency}</p>
+              <p class="text-sm font-bold text-amber-600">${o.amount} ${o.currency}</p>
               ${statusBadge(o.status)}
             </div>
           </div>
@@ -393,36 +393,36 @@ function renderHome() {
 
       <!-- Quick actions + notifications -->
       <div class="space-y-5">
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
-            <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Quick Actions
+        <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
+            <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i> Quick Actions
           </h3>
           <div class="grid grid-cols-2 gap-2">
-            <button onclick="navigateTo('tracking')" class="btn-press flex flex-col items-center gap-1.5 p-3 bg-blue-500/5 hover:bg-blue-500/15 border border-blue-500/10 hover:border-blue-500/30 rounded-xl transition relative overflow-hidden">
-              <i data-lucide="truck" class="w-5 h-5 text-blue-400"></i><span class="text-xs font-bold text-gray-300">Track Order</span>
+            <button onclick="navigateTo('tracking')" class="btn-press flex flex-col items-center gap-1.5 p-3 bg-blue-50 hover:bg-blue-50 border border-blue-100 hover:border-blue-200 rounded-xl transition relative overflow-hidden">
+              <i data-lucide="truck" class="w-5 h-5 text-blue-600"></i><span class="text-xs font-bold text-gray-700">Track Order</span>
             </button>
-            <button onclick="navigateTo('addresses')" class="btn-press flex flex-col items-center gap-1.5 p-3 bg-blue-500/5 hover:bg-blue-500/15 border border-blue-500/10 hover:border-blue-500/30 rounded-xl transition relative overflow-hidden">
-              <i data-lucide="map-pin" class="w-5 h-5 text-emerald-400"></i><span class="text-xs font-bold text-gray-300">Addresses</span>
+            <button onclick="navigateTo('addresses')" class="btn-press flex flex-col items-center gap-1.5 p-3 bg-blue-50 hover:bg-blue-50 border border-blue-100 hover:border-blue-200 rounded-xl transition relative overflow-hidden">
+              <i data-lucide="map-pin" class="w-5 h-5 text-emerald-600"></i><span class="text-xs font-bold text-gray-700">Addresses</span>
             </button>
-            <button onclick="navigateTo('support')" class="btn-press flex flex-col items-center gap-1.5 p-3 bg-blue-500/5 hover:bg-blue-500/15 border border-blue-500/10 hover:border-blue-500/30 rounded-xl transition relative overflow-hidden">
-              <i data-lucide="headphones" class="w-5 h-5 text-amber-400"></i><span class="text-xs font-bold text-gray-300">Support</span>
+            <button onclick="navigateTo('support')" class="btn-press flex flex-col items-center gap-1.5 p-3 bg-blue-50 hover:bg-blue-50 border border-blue-100 hover:border-blue-200 rounded-xl transition relative overflow-hidden">
+              <i data-lucide="headphones" class="w-5 h-5 text-amber-600"></i><span class="text-xs font-bold text-gray-700">Support</span>
             </button>
           </div>
         </div>
 
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
-            <i data-lucide="bell" class="w-4 h-4 text-blue-400"></i> Latest Notifications
+        <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
+            <i data-lucide="bell" class="w-4 h-4 text-blue-600"></i> Latest Notifications
           </h3>
           ${recentNotifs.length === 0 ? `<p class="text-xs text-gray-500 text-center py-4">No notifications yet.</p>` : recentNotifs.map(n => {
             const step = ORDER_STEPS.find(s => s.id === n.event_type) || ORDER_STEPS[0];
             return `
-              <div class="flex items-start gap-2.5 p-2.5 hover:bg-blue-500/5 rounded-xl transition cursor-pointer" onclick="navigateTo('notifications')">
+              <div class="flex items-start gap-2.5 p-2.5 hover:bg-blue-50 rounded-xl transition cursor-pointer" onclick="navigateTo('notifications')">
                 <div class="w-7 h-7 ${step.bg} rounded-lg flex items-center justify-center shrink-0">
                   <i data-lucide="${step.icon}" class="w-3.5 h-3.5 ${step.color}"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-xs font-bold text-white truncate">${n.subject}</p>
+                  <p class="text-xs font-bold text-gray-900 truncate">${n.subject}</p>
                   <p class="text-[10px] text-gray-500">${formatDateTime(n.created_at)}</p>
                 </div>
               </div>
@@ -433,14 +433,14 @@ function renderHome() {
     </div>
 
     <!-- Account info -->
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 mt-5 slide-up">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
-        <i data-lucide="user" class="w-4 h-4 text-blue-400"></i> Account Information
+    <div class="glass border border-blue-200 rounded-2xl p-5 mt-5 slide-up">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
+        <i data-lucide="user" class="w-4 h-4 text-blue-600"></i> Account Information
       </h3>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Email</p><p class="text-sm text-white truncate">${state.user.email}</p></div>
-        <div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Country</p><p class="text-sm text-white">${country ? country.flag + ' ' + country.name : '—'}</p></div>
-        <div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Member Since</p><p class="text-sm text-white">${formatDate(state.user.created_at)}</p></div>
+        <div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Email</p><p class="text-sm text-gray-900 truncate">${state.user.email}</p></div>
+        <div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Country</p><p class="text-sm text-gray-900">${country ? country.flag + ' ' + country.name : '—'}</p></div>
+        <div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Member Since</p><p class="text-sm text-gray-900">${formatDate(state.user.created_at)}</p></div>
       </div>
     </div>
   `;
@@ -458,18 +458,18 @@ function renderProfile() {
 
   return `
     ${pageTitle('My Profile', 'View your account details and personal information.')}
-    <div class="glass border border-blue-500/20 rounded-2xl p-6 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-6 slide-up">
       <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-6">
         <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white overflow-hidden shrink-0 ring-2 ring-blue-500/20 shadow-lg shadow-blue-600/30">
           ${avatarHtml}
         </div>
         <div class="flex-1 text-center sm:text-left">
-          <h2 class="text-xl font-black text-white">${p.display_name || p.first_name || 'Customer'}</h2>
-          <p class="text-sm text-gray-400">${state.user.email}</p>
+          <h2 class="text-xl font-black text-gray-900">${p.display_name || p.first_name || 'Customer'}</h2>
+          <p class="text-sm text-gray-600">${state.user.email}</p>
           <div class="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
-            ${country ? `<span class="inline-flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1 text-xs text-blue-400 font-medium">${country.flag} ${country.name}</span>` : ''}
-            <span class="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1 text-xs text-emerald-400 font-medium"><i data-lucide="shield-check" class="w-3 h-3"></i> Verified</span>
-            <span class="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1 text-xs text-amber-400 font-medium"><i data-lucide="calendar" class="w-3 h-3"></i> ${formatDate(state.user.created_at)}</span>
+            ${country ? `<span class="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-full px-3 py-1 text-xs text-blue-600 font-medium">${country.flag} ${country.name}</span>` : ''}
+            <span class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 text-xs text-emerald-600 font-medium"><i data-lucide="shield-check" class="w-3 h-3"></i> Verified</span>
+            <span class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-full px-3 py-1 text-xs text-amber-600 font-medium"><i data-lucide="calendar" class="w-3 h-3"></i> ${formatDate(state.user.created_at)}</span>
           </div>
           <button onclick="navigateTo('edit-profile')" class="btn-press mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 relative overflow-hidden">
             <i data-lucide="edit-3" class="w-4 h-4"></i> Edit Profile
@@ -477,7 +477,7 @@ function renderProfile() {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5 border-t border-blue-500/10">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5 border-t border-blue-100">
         ${profileField('First Name', p.first_name || '—')}
         ${profileField('Last Name', p.last_name || '—')}
         ${profileField('Display Name', p.display_name || '—')}
@@ -485,13 +485,13 @@ function renderProfile() {
         ${profileField('Country', country ? country.name : '—')}
         ${profileField('Email', state.user.email)}
       </div>
-      ${p.bio ? `<div class="pt-5 border-t border-blue-500/10 mt-4"><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Bio</p><p class="text-sm text-gray-300">${p.bio}</p></div>` : ''}
+      ${p.bio ? `<div class="pt-5 border-t border-blue-100 mt-4"><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Bio</p><p class="text-sm text-gray-700">${p.bio}</p></div>` : ''}
     </div>
   `;
 }
 
 function profileField(label, value) {
-  return `<div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">${label}</p><p class="text-sm text-white">${value}</p></div>`;
+  return `<div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">${label}</p><p class="text-sm text-gray-900">${value}</p></div>`;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -502,7 +502,7 @@ function renderEditProfile() {
   const country = p.country_code ? getCountryByCode(p.country_code) : null;
   return `
     ${pageTitle('Edit Profile', 'Update your personal information and profile picture.')}
-    <div class="glass border border-blue-500/20 rounded-2xl p-6 slide-up max-w-2xl">
+    <div class="glass border border-blue-200 rounded-2xl p-6 slide-up max-w-2xl">
       <form id="edit-profile-form" class="space-y-5">
         <!-- Avatar -->
         <div class="flex items-center gap-4">
@@ -510,7 +510,7 @@ function renderEditProfile() {
             ${p.avatar_url ? `<img src="${p.avatar_url}" class="w-full h-full object-cover" onerror="this.style.display='none'">` : initials(state.user.email)}
           </div>
           <div>
-            <label class="btn-press cursor-pointer inline-flex items-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/40 text-blue-400 font-bold py-2 px-4 rounded-xl text-xs uppercase tracking-wide transition relative overflow-hidden">
+            <label class="btn-press cursor-pointer inline-flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 text-blue-600 font-bold py-2 px-4 rounded-xl text-xs uppercase tracking-wide transition relative overflow-hidden">
               <i data-lucide="upload" class="w-4 h-4"></i> Upload Photo
               <input type="file" id="avatar-file" accept="image/*" class="hidden">
             </label>
@@ -520,43 +520,43 @@ function renderEditProfile() {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">First Name</label>
-            <input type="text" id="ep-first-name" value="${p.first_name || ''}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">First Name</label>
+            <input type="text" id="ep-first-name" value="${p.first_name || ''}" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Last Name</label>
-            <input type="text" id="ep-last-name" value="${p.last_name || ''}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Last Name</label>
+            <input type="text" id="ep-last-name" value="${p.last_name || ''}" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Display Name</label>
-          <input type="text" id="ep-display-name" value="${p.display_name || ''}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Display Name</label>
+          <input type="text" id="ep-display-name" value="${p.display_name || ''}" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Phone Code</label>
-            <input type="text" id="ep-phone-code" value="${p.phone_code || (country ? country.dial : '')}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Phone Code</label>
+            <input type="text" id="ep-phone-code" value="${p.phone_code || (country ? country.dial : '')}" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Phone Number</label>
-            <input type="text" id="ep-phone-number" value="${p.phone_number || ''}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Phone Number</label>
+            <input type="text" id="ep-phone-number" value="${p.phone_number || ''}" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Country</label>
-          <select id="ep-country" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Country</label>
+          <select id="ep-country" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
             ${COUNTRIES.map(c => `<option value="${c.code}" ${p.country_code === c.code ? 'selected' : ''}>${c.flag} ${c.name} (+${c.dial})</option>`).join('')}
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Bio</label>
-          <textarea id="ep-bio" rows="3" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 resize-none" placeholder="Tell us about yourself...">${p.bio || ''}</textarea>
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Bio</label>
+          <textarea id="ep-bio" rows="3" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-none" placeholder="Tell us about yourself...">${p.bio || ''}</textarea>
         </div>
         <div class="flex gap-3">
           <button type="submit" id="ep-save-btn" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">
             <i data-lucide="save" class="w-4 h-4"></i> Save Changes
           </button>
-          <button type="button" onclick="navigateTo('profile')" class="btn-press px-5 py-3 bg-blue-950/60 hover:bg-blue-900/60 border border-blue-500/20 text-gray-400 font-bold rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">Cancel</button>
+          <button type="button" onclick="navigateTo('profile')" class="btn-press px-5 py-3 bg-gray-100 hover:bg-gray-100 border border-blue-200 text-gray-600 font-bold rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">Cancel</button>
         </div>
       </form>
     </div>
@@ -569,30 +569,30 @@ function renderEditProfile() {
 function renderChangePassword() {
   return `
     ${pageTitle('Change Password', 'Update your account password to keep your account secure.')}
-    <div class="glass border border-blue-500/20 rounded-2xl p-6 slide-up max-w-md">
+    <div class="glass border border-blue-200 rounded-2xl p-6 slide-up max-w-md">
       <form id="change-password-form" class="space-y-5">
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Current Password</label>
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Current Password</label>
           <div class="relative">
             <i data-lucide="lock" class="w-5 h-5 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-            <input type="password" id="cp-current" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <input type="password" id="cp-current" required class="input-field w-full bg-white border border-gray-300 rounded-xl pl-11 pr-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">New Password</label>
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">New Password</label>
           <div class="relative">
             <i data-lucide="key-round" class="w-5 h-5 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-            <input type="password" id="cp-new" required minlength="6" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <input type="password" id="cp-new" required minlength="6" class="input-field w-full bg-white border border-gray-300 rounded-xl pl-11 pr-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Confirm New Password</label>
+          <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Confirm New Password</label>
           <div class="relative">
             <i data-lucide="shield-check" class="w-5 h-5 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-            <input type="password" id="cp-confirm" required minlength="6" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <input type="password" id="cp-confirm" required minlength="6" class="input-field w-full bg-white border border-gray-300 rounded-xl pl-11 pr-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
           </div>
         </div>
-        <div id="cp-error" class="hidden text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5"></div>
+        <div id="cp-error" class="hidden text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5"></div>
         <button type="submit" id="cp-submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">
           <i data-lucide="key-round" class="w-4 h-4"></i> Update Password
         </button>
@@ -618,27 +618,27 @@ function renderOrderCard(order, expanded) {
   const evs = state.events[order.order_number] || [];
   const isExpanded = expanded === order.order_number;
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden slide-up">
-      <div class="p-4 sm:p-5 cursor-pointer hover:bg-blue-500/5 transition" onclick="toggleOrder('${order.order_number}')">
+    <div class="glass border border-blue-200 rounded-2xl overflow-hidden slide-up">
+      <div class="p-4 sm:p-5 cursor-pointer hover:bg-blue-50 transition" onclick="toggleOrder('${order.order_number}')">
         <div class="flex items-start gap-4">
-          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-gray-900 shrink-0 ring-1 ring-blue-500/10">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-gray-50 shrink-0 ring-1 ring-blue-500/10">
             <img src="${cover}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-2 mb-1">
-              <h3 class="text-sm font-bold text-white truncate">${order.listing_title}</h3>
+              <h3 class="text-sm font-bold text-gray-900 truncate">${order.listing_title}</h3>
               ${statusBadge(order.status)}
             </div>
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-              <span class="font-mono text-blue-400">${order.order_number}</span>
+              <span class="font-mono text-blue-600">${order.order_number}</span>
               <span>·</span><span>${formatDate(order.created_at)}</span>
-              <span>·</span><span class="text-amber-400 font-bold">${order.amount} ${order.currency}</span>
+              <span>·</span><span class="text-amber-600 font-bold">${order.amount} ${order.currency}</span>
             </div>
           </div>
           <i data-lucide="chevron-${isExpanded ? 'up' : 'down'}" class="w-5 h-5 text-gray-500 shrink-0 mt-2"></i>
         </div>
       </div>
-      <div class="${isExpanded ? '' : 'hidden'} border-t border-blue-500/10 p-4 sm:p-5 bg-blue-950/20">
+      <div class="${isExpanded ? '' : 'hidden'} border-t border-blue-100 p-4 sm:p-5 bg-gray-50">
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           ${detailBox('Order Number', order.order_number, 'mono')}
           ${detailBox('Order Date', formatDate(order.created_at))}
@@ -647,25 +647,25 @@ function renderOrderCard(order, expanded) {
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div>
-            <h4 class="text-xs font-bold text-white uppercase tracking-wide mb-3 flex items-center gap-2"><i data-lucide="git-branch" class="w-4 h-4 text-blue-400"></i> Order Progress</h4>
+            <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2"><i data-lucide="git-branch" class="w-4 h-4 text-blue-600"></i> Order Progress</h4>
             ${renderOrderTracker(order.status)}
           </div>
           <div>
-            <h4 class="text-xs font-bold text-white uppercase tracking-wide mb-3 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-blue-400"></i> Order History</h4>
+            <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-blue-600"></i> Order History</h4>
             <div class="space-y-2 max-h-64 overflow-y-auto scrollbar-none">
               ${evs.length === 0 ? '<p class="text-xs text-gray-600">No events yet.</p>' : evs.map(ev => `
-                <div class="flex items-start gap-2.5 p-2.5 bg-blue-950/30 border border-blue-500/10 rounded-xl">
+                <div class="flex items-start gap-2.5 p-2.5 bg-gray-50 border border-blue-100 rounded-xl">
                   <div class="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0"></div>
-                  <div class="flex-1 min-w-0"><p class="text-xs text-gray-200 font-medium">${ev.message}</p><p class="text-[10px] text-gray-500 mt-0.5">${formatDateTime(ev.created_at)}</p></div>
+                  <div class="flex-1 min-w-0"><p class="text-xs text-gray-800 font-medium">${ev.message}</p><p class="text-[10px] text-gray-500 mt-0.5">${formatDateTime(ev.created_at)}</p></div>
                 </div>
               `).join('')}
             </div>
           </div>
         </div>
-        <div class="flex flex-wrap gap-2 mt-5 pt-4 border-t border-blue-500/10">
-          <button onclick="event.stopPropagation();copyToClipboard('${order.order_number}')" class="btn-press flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-xs font-bold text-blue-400 transition relative overflow-hidden"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Order #</button>
-          <button onclick="event.stopPropagation();contactSupport('${order.order_number}')" class="btn-press flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-lg text-xs font-bold text-amber-400 transition relative overflow-hidden"><i data-lucide="headphones" class="w-3.5 h-3.5"></i> Contact Support</button>
-          ${order.receipt_file_path ? `<button onclick="event.stopPropagation();downloadReceipt('${order.order_number}')" class="btn-press flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400 transition relative overflow-hidden"><i data-lucide="download" class="w-3.5 h-3.5"></i> Download Receipt</button>` : ''}
+        <div class="flex flex-wrap gap-2 mt-5 pt-4 border-t border-blue-100">
+          <button onclick="event.stopPropagation();copyToClipboard('${order.order_number}')" class="btn-press flex items-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-bold text-blue-600 transition relative overflow-hidden"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Order #</button>
+          <button onclick="event.stopPropagation();contactSupport('${order.order_number}')" class="btn-press flex items-center gap-1.5 px-3 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-xs font-bold text-amber-600 transition relative overflow-hidden"><i data-lucide="headphones" class="w-3.5 h-3.5"></i> Contact Support</button>
+          ${order.receipt_file_path ? `<button onclick="event.stopPropagation();downloadReceipt('${order.order_number}')" class="btn-press flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-600 transition relative overflow-hidden"><i data-lucide="download" class="w-3.5 h-3.5"></i> Download Receipt</button>` : ''}
         </div>
       </div>
     </div>
@@ -673,20 +673,20 @@ function renderOrderCard(order, expanded) {
 }
 
 function detailBox(label, value, cls) {
-  const extra = cls === 'mono' ? 'font-mono text-blue-400' : cls === 'amber' ? 'text-amber-400 font-bold' : 'text-white';
-  return `<div class="bg-blue-950/40 border border-blue-500/10 rounded-xl p-3"><div class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">${label}</div><div class="text-sm ${extra} break-all">${value}</div></div>`;
+  const extra = cls === 'mono' ? 'font-mono text-blue-600' : cls === 'amber' ? 'text-amber-600 font-bold' : 'text-gray-900';
+  return `<div class="bg-gray-50 border border-blue-100 rounded-xl p-3"><div class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">${label}</div><div class="text-sm ${extra} break-all">${value}</div></div>`;
 }
 
 function renderOrderTracker(status) {
   const idx = stepIndex(status);
   return `
     <div class="relative pt-2">
-      <div class="absolute left-4 top-6 bottom-6 w-0.5 bg-blue-500/10"></div>
+      <div class="absolute left-4 top-6 bottom-6 w-0.5 bg-blue-50"></div>
       <div class="absolute left-4 top-6 w-0.5 bg-blue-500 transition-all duration-500" style="height: calc(${(idx / (ORDER_STEPS.length - 1)) * 100}% - 1rem)"></div>
       <div class="space-y-3">
         ${ORDER_STEPS.map((s, i) => {
           const done = i <= idx; const active = i === idx;
-          return `<div class="flex items-center gap-3 relative"><div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 transition-all ${done ? s.bg + ' border border-blue-500/30' : 'bg-blue-950/40 border border-blue-500/10'} ${active ? 'pulse-glow' : ''}"><i data-lucide="${s.icon}" class="w-4 h-4 ${done ? s.color : 'text-gray-600'} ${active ? 'animate-pulse' : ''}"></i></div><div class="flex-1 flex items-center justify-between"><span class="text-sm font-medium ${done ? 'text-white' : 'text-gray-600'}">${s.label}</span>${done && !active ? '<i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i>' : ''}${active ? '<span class="text-[10px] text-blue-400 font-bold uppercase shrink-0">Current</span>' : ''}</div></div>`;
+          return `<div class="flex items-center gap-3 relative"><div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 transition-all ${done ? s.bg + ' border border-blue-200' : 'bg-gray-50 border border-blue-100'} ${active ? 'pulse-glow' : ''}"><i data-lucide="${s.icon}" class="w-4 h-4 ${done ? s.color : 'text-gray-600'} ${active ? 'animate-pulse' : ''}"></i></div><div class="flex-1 flex items-center justify-between"><span class="text-sm font-medium ${done ? 'text-gray-900' : 'text-gray-600'}">${s.label}</span>${done && !active ? '<i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i>' : ''}${active ? '<span class="text-[10px] text-blue-600 font-bold uppercase shrink-0">Current</span>' : ''}</div></div>`;
         }).join('')}
       </div>
     </div>
@@ -708,19 +708,19 @@ async function renderSpecialOrders() {
   try {
     const { data, error } = await supabase.from('product_requests').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false });
     if (error) throw error;
-    const statusColors = { pending_review: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30', under_review: 'bg-blue-500/10 text-blue-400 border-blue-500/30', approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', rejected: 'bg-red-500/10 text-red-400 border-red-500/30', quoted: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30', fulfilled: 'bg-green-500/10 text-green-400 border-green-500/30', cancelled: 'bg-gray-500/10 text-gray-400 border-gray-500/30' };
+    const statusColors = { pending_review: 'bg-yellow-50 text-yellow-600 border-yellow-200', under_review: 'bg-blue-50 text-blue-600 border-blue-200', approved: 'bg-emerald-50 text-emerald-600 border-emerald-200', rejected: 'bg-red-50 text-red-600 border-red-200', quoted: 'bg-cyan-50 text-cyan-600 border-cyan-200', fulfilled: 'bg-green-50 text-green-600 border-green-200', cancelled: 'bg-gray-100 text-gray-600 border-gray-300' };
     if (!data || data.length === 0) {
-      return `<div class="text-center py-16"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 mb-4"><i data-lucide="package-plus" class="w-8 h-8 text-gray-500"></i></div><h3 class="text-lg font-bold text-white mb-2">No Special Orders yet</h3><p class="text-sm text-gray-500 mb-5">When you can't find a product in our marketplace, you can request it as a Special Order and we'll source it for you.</p><a href="/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-500/30"><i data-lucide="search" class="w-4 h-4"></i> Search Products</a></div>`;
+      return `<div class="text-center py-16"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4"><i data-lucide="package-plus" class="w-8 h-8 text-gray-500"></i></div><h3 class="text-lg font-bold text-gray-900 mb-2">No Special Orders yet</h3><p class="text-sm text-gray-500 mb-5">When you can't find a product in our marketplace, you can request it as a Special Order and we'll source it for you.</p><a href="/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-500/30"><i data-lucide="search" class="w-4 h-4"></i> Search Products</a></div>`;
     }
-    let html = `<div class="mb-4"><p class="text-sm text-gray-400">Track your special order requests and their status updates.</p></div><div class="space-y-3">`;
+    let html = `<div class="mb-4"><p class="text-sm text-gray-600">Track your special order requests and their status updates.</p></div><div class="space-y-3">`;
     data.forEach(r => {
       const badgeClass = statusColors[r.status] || statusColors.pending_review;
       const statusLabel = r.status.replace(/_/g, ' ');
       const price = r.target_price ? `${r.currency} ${Number(r.target_price).toLocaleString()}` : '—';
       const quoted = r.quoted_price ? `${r.quoted_currency} ${Number(r.quoted_price).toLocaleString()}` : null;
-      html += `<div class="glass border border-gray-800 rounded-xl p-4">
-        <div class="flex items-center gap-2 mb-2"><h4 class="text-sm font-bold text-white truncate">${escapeHtml(r.request_title)}</h4><span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${badgeClass}">${escapeHtml(statusLabel)}</span></div>
-        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400 mb-2">
+      html += `<div class="glass border border-gray-200 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2"><h4 class="text-sm font-bold text-gray-900 truncate">${escapeHtml(r.request_title)}</h4><span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${badgeClass}">${escapeHtml(statusLabel)}</span></div>
+        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 mb-2">
           <span><i data-lucide="tag" class="w-3 h-3 inline mr-1"></i>${escapeHtml(r.category || 'Uncategorized')}</span>
           <span><i data-lucide="award" class="w-3 h-3 inline mr-1"></i>${escapeHtml(r.brand || 'Any')}</span>
           <span><i data-lucide="circle-dollar-sign" class="w-3 h-3 inline mr-1"></i>${price}</span>
@@ -728,14 +728,14 @@ async function renderSpecialOrders() {
           <span><i data-lucide="calendar" class="w-3 h-3 inline mr-1"></i>${new Date(r.created_at).toLocaleDateString()}</span>
         </div>
         ${r.request_description ? `<p class="text-xs text-gray-500 mb-2">${escapeHtml(r.request_description)}</p>` : ''}
-        ${quoted ? `<p class="text-xs text-cyan-400 font-bold mb-2">Quoted Price: ${quoted} (${escapeHtml(r.payment_status)})</p>` : ''}
+        ${quoted ? `<p class="text-xs text-cyan-600 font-bold mb-2">Quoted Price: ${quoted} (${escapeHtml(r.payment_status)})</p>` : ''}
         <div class="text-xs text-gray-500"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${escapeHtml(r.delivery_full_name || '')}, ${escapeHtml(r.delivery_city || '')}, ${escapeHtml(r.delivery_country || '')}</div>
       </div>`;
     });
     html += `</div>`;
     return html;
   } catch (err) {
-    return `<div class="text-red-400 text-sm p-4">Error loading special orders: ${escapeHtml(err.message)}</div>`;
+    return `<div class="text-red-600 text-sm p-4">Error loading special orders: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -746,13 +746,13 @@ function renderTracking() {
     ${activeOrders.length === 0 ? renderEmptyState('No Active Orders', 'All your orders have been delivered.', 'check-circle', 'Browse Marketplace') : `
       <div class="space-y-4">
         ${activeOrders.map(o => `
-          <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+          <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-lg bg-gray-900 overflow-hidden ring-1 ring-blue-500/10">
+                <div class="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden ring-1 ring-blue-500/10">
                   <img src="${o.listing_image || FALLBACK_IMG}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
                 </div>
-                <div><h3 class="text-sm font-bold text-white">${o.listing_title}</h3><p class="text-xs text-gray-500 font-mono">${o.order_number}</p></div>
+                <div><h3 class="text-sm font-bold text-gray-900">${o.listing_title}</h3><p class="text-xs text-gray-500 font-mono">${o.order_number}</p></div>
               </div>
               ${statusBadge(o.status)}
             </div>
@@ -770,11 +770,11 @@ function renderTracking() {
 function renderHistory() {
   return `
     ${pageTitle('Order History', 'Your complete, permanently saved order history.')}
-    <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden slide-up">
+    <div class="glass border border-blue-200 rounded-2xl overflow-hidden slide-up">
       <div class="overflow-x-auto scrollbar-none">
         <table class="w-full">
           <thead>
-            <tr class="border-b border-blue-500/10 bg-blue-950/30">
+            <tr class="border-b border-blue-100 bg-gray-50">
               <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Order #</th>
               <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Product</th>
               <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden sm:table-cell">Date</th>
@@ -784,11 +784,11 @@ function renderHistory() {
           </thead>
           <tbody>
             ${state.orders.length === 0 ? `<tr><td colspan="5" class="text-center text-sm text-gray-500 py-10">No orders yet.</td></tr>` : state.orders.map(o => `
-              <tr class="border-b border-blue-500/5 hover:bg-blue-500/5 transition cursor-pointer" onclick="navigateTo('orders')">
-                <td class="px-4 py-3 text-xs font-mono text-blue-400">${o.order_number}</td>
-                <td class="px-4 py-3 text-xs text-white font-medium max-w-[160px] truncate">${o.listing_title}</td>
-                <td class="px-4 py-3 text-xs text-gray-400 hidden sm:table-cell">${formatDate(o.created_at)}</td>
-                <td class="px-4 py-3 text-xs text-amber-400 font-bold">${o.amount} ${o.currency}</td>
+              <tr class="border-b border-blue-100 hover:bg-blue-50 transition cursor-pointer" onclick="navigateTo('orders')">
+                <td class="px-4 py-3 text-xs font-mono text-blue-600">${o.order_number}</td>
+                <td class="px-4 py-3 text-xs text-gray-900 font-medium max-w-[160px] truncate">${o.listing_title}</td>
+                <td class="px-4 py-3 text-xs text-gray-600 hidden sm:table-cell">${formatDate(o.created_at)}</td>
+                <td class="px-4 py-3 text-xs text-amber-600 font-bold">${o.amount} ${o.currency}</td>
                 <td class="px-4 py-3">${statusBadge(o.status)}</td>
               </tr>
             `).join('')}
@@ -796,7 +796,7 @@ function renderHistory() {
         </table>
       </div>
     </div>
-    <p class="text-center text-xs text-gray-500 mt-4 flex items-center justify-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Your complete order history is permanently saved and secured.</p>
+    <p class="text-center text-xs text-gray-500 mt-4 flex items-center justify-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> Your complete order history is permanently saved and secured.</p>
   `;
 }
 
@@ -808,19 +808,19 @@ function renderCart() {
   return `
     ${pageTitle('Shopping Cart', 'Items in your shopping cart.')}
     ${cart.length === 0 ? renderEmptyState('Cart is Empty', 'Your shopping cart is empty.', 'shopping-cart', 'Browse Marketplace') : `
-      <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+      <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
         <div class="space-y-3">
           ${cart.map(id => {
             const item = window.SHOWROOM_LISTINGS?.find(l => l.property_id === id);
             if (!item) return '';
-            return `<div class="flex items-center gap-3 p-3 bg-blue-950/30 border border-blue-500/10 rounded-xl">
-              <div class="w-14 h-14 rounded-lg bg-gray-900 overflow-hidden shrink-0"><img src="${item.images?.[0] || FALLBACK_IMG}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'"></div>
-              <div class="flex-1 min-w-0"><h3 class="text-sm font-bold text-white truncate">${item.title}</h3><p class="text-xs text-amber-400 font-bold">${item.price} ${item.currency}</p></div>
-              <button onclick="removeFromCart('${item.property_id}')" class="btn-press p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            return `<div class="flex items-center gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl">
+              <div class="w-14 h-14 rounded-lg bg-gray-50 overflow-hidden shrink-0"><img src="${item.images?.[0] || FALLBACK_IMG}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'"></div>
+              <div class="flex-1 min-w-0"><h3 class="text-sm font-bold text-gray-900 truncate">${item.title}</h3><p class="text-xs text-amber-600 font-bold">${item.price} ${item.currency}</p></div>
+              <button onclick="removeFromCart('${item.property_id}')" class="btn-press p-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>`;
           }).join('')}
         </div>
-        <button onclick="clearCart()" class="btn-press w-full mt-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-bold py-2.5 rounded-xl text-xs uppercase transition relative overflow-hidden">Clear Cart</button>
+        <button onclick="clearCart()" class="btn-press w-full mt-4 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold py-2.5 rounded-xl text-xs uppercase transition relative overflow-hidden">Clear Cart</button>
       </div>
     `}
   `;
@@ -841,19 +841,19 @@ window.clearCart = () => { localStorage.removeItem('kco_cart'); renderSection('c
 function renderNotifications() {
   return `
     ${pageTitle('Notifications', 'All email notifications related to your orders.')}
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       ${state.notifications.length === 0 ? renderEmptyState('No Notifications', 'You haven\'t received any notifications yet.', 'bell-off', null) : `
         <div class="space-y-2">
           ${state.notifications.map(n => {
             const step = ORDER_STEPS.find(s => s.id === n.event_type) || ORDER_STEPS[0];
             return `
-              <div class="flex items-start gap-3 p-3 bg-blue-950/30 border border-blue-500/10 rounded-xl hover:border-blue-500/30 transition">
+              <div class="flex items-start gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl hover:border-blue-200 transition">
                 <div class="w-9 h-9 ${step.bg} rounded-xl flex items-center justify-center shrink-0"><i data-lucide="${step.icon}" class="w-4 h-4 ${step.color}"></i></div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-bold text-white truncate">${n.subject}</p>
+                  <p class="text-sm font-bold text-gray-900 truncate">${n.subject}</p>
                   <p class="text-xs text-gray-500 mt-0.5">${formatDateTime(n.created_at)}</p>
                   <div class="flex items-center gap-2 mt-1.5">
-                    <span class="text-[10px] ${n.status === 'sent' ? 'text-emerald-400' : n.status === 'failed' ? 'text-red-400' : 'text-amber-400'} font-bold uppercase">${n.status}</span>
+                    <span class="text-[10px] ${n.status === 'sent' ? 'text-emerald-600' : n.status === 'failed' ? 'text-red-600' : 'text-amber-600'} font-bold uppercase">${n.status}</span>
                     <span class="text-[10px] text-gray-600">·</span>
                     <span class="text-[10px] text-gray-500 font-mono">${n.order_number}</span>
                   </div>
@@ -873,23 +873,23 @@ function renderNotifications() {
 function renderMessages() {
   return `
     ${pageTitle('Messages', 'Your conversation with customer support.')}
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       <!-- Message thread -->
       <div id="msg-thread" class="space-y-3 mb-5 max-h-96 overflow-y-auto scrollbar-none">
         ${state.messages.length === 0 ? `<p class="text-sm text-gray-500 text-center py-8">No messages yet. Send a message to start a conversation with support.</p>` : state.messages.map(m => `
           <div class="flex ${m.from_admin ? 'justify-start' : 'justify-end'}">
-            <div class="max-w-[80%] ${m.from_admin ? 'bg-blue-950/60 border-blue-500/20' : 'bg-blue-600/20 border-blue-500/30'} border rounded-2xl px-4 py-2.5">
-              ${m.subject && !m.from_admin ? `<p class="text-xs font-bold text-blue-400 mb-1">${m.subject}</p>` : ''}
-              <p class="text-sm text-gray-200">${m.message}</p>
+            <div class="max-w-[80%] ${m.from_admin ? 'bg-gray-100 border-blue-200' : 'bg-blue-100 border-blue-200'} border rounded-2xl px-4 py-2.5">
+              ${m.subject && !m.from_admin ? `<p class="text-xs font-bold text-blue-600 mb-1">${m.subject}</p>` : ''}
+              <p class="text-sm text-gray-800">${m.message}</p>
               <p class="text-[10px] text-gray-500 mt-1">${formatDateTime(m.created_at)}</p>
             </div>
           </div>
         `).join('')}
       </div>
       <!-- Send form -->
-      <form id="msg-form" class="space-y-3 pt-4 border-t border-blue-500/10">
-        <input type="text" id="msg-subject" placeholder="Subject" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
-        <textarea id="msg-body" rows="3" placeholder="Type your message..." class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 resize-none"></textarea>
+      <form id="msg-form" class="space-y-3 pt-4 border-t border-blue-100">
+        <input type="text" id="msg-subject" placeholder="Subject" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
+        <textarea id="msg-body" rows="3" placeholder="Type your message..." class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-none"></textarea>
         <button type="submit" id="msg-send-btn" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">
           <i data-lucide="send" class="w-4 h-4"></i> Send Message
         </button>
@@ -904,10 +904,10 @@ function renderMessages() {
 function renderPayments() {
   return `
     ${pageTitle('Payment History', 'All your payment transactions and their verification status.')}
-    <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden slide-up">
+    <div class="glass border border-blue-200 rounded-2xl overflow-hidden slide-up">
       <div class="overflow-x-auto scrollbar-none">
         <table class="w-full">
-          <thead><tr class="border-b border-blue-500/10 bg-blue-950/30">
+          <thead><tr class="border-b border-blue-100 bg-gray-50">
             <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Order #</th>
             <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3 hidden sm:table-cell">Date</th>
             <th class="text-left text-[10px] font-bold uppercase text-gray-500 tracking-wide px-4 py-3">Amount</th>
@@ -916,12 +916,12 @@ function renderPayments() {
           </tr></thead>
           <tbody>
             ${state.orders.length === 0 ? `<tr><td colspan="5" class="text-center text-sm text-gray-500 py-10">No payments yet.</td></tr>` : state.orders.map(o => `
-              <tr class="border-b border-blue-500/5 hover:bg-blue-500/5 transition">
-                <td class="px-4 py-3 text-xs font-mono text-blue-400">${o.order_number}</td>
-                <td class="px-4 py-3 text-xs text-gray-400 hidden sm:table-cell">${formatDate(o.payment_date || o.created_at)}</td>
-                <td class="px-4 py-3 text-xs text-amber-400 font-bold">${o.amount} ${o.currency}</td>
+              <tr class="border-b border-blue-100 hover:bg-blue-50 transition">
+                <td class="px-4 py-3 text-xs font-mono text-blue-600">${o.order_number}</td>
+                <td class="px-4 py-3 text-xs text-gray-600 hidden sm:table-cell">${formatDate(o.payment_date || o.created_at)}</td>
+                <td class="px-4 py-3 text-xs text-amber-600 font-bold">${o.amount} ${o.currency}</td>
                 <td class="px-4 py-3">${statusBadge(o.status)}</td>
-                <td class="px-4 py-3">${o.receipt_file_path ? `<button onclick="downloadReceipt('${o.order_number}')" class="text-emerald-400 hover:text-emerald-300 transition"><i data-lucide="download" class="w-4 h-4"></i></button>` : '<span class="text-gray-600 text-xs">—</span>'}</td>
+                <td class="px-4 py-3">${o.receipt_file_path ? `<button onclick="downloadReceipt('${o.order_number}')" class="text-emerald-600 hover:text-emerald-700 transition"><i data-lucide="download" class="w-4 h-4"></i></button>` : '<span class="text-gray-600 text-xs">—</span>'}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -935,12 +935,12 @@ function renderPayments() {
    SECTION: Payment Methods
 ════════════════════════════════════════════════════════════ */
 const AVAILABLE_PAYMENT_METHODS = [
-  { type: 'manual_transfer', label: 'Manual Bank Transfer', icon: 'landmark', color: 'text-blue-400', available: true, desc: 'Transfer directly to our bank account' },
-  { type: 'atm_card', label: 'ATM / Debit Card', icon: 'credit-card', color: 'text-emerald-400', available: true, desc: 'Visa, Mastercard, Verve' },
-  { type: 'bank_transfer', label: 'Bank Transfer', icon: 'building-2', color: 'text-cyan-400', available: true, desc: 'Online banking transfer' },
-  { type: 'mobile_money', label: 'Mobile Money Transfer', icon: 'smartphone', color: 'text-blue-400', available: true, desc: 'Send money from your mobile wallet' },
-  { type: 'wallet', label: 'Wallet', icon: 'wallet', color: 'text-amber-400', available: true, desc: 'Use your Weverse wallet balance' },
-  { type: 'paypal', label: 'PayPal', icon: 'wallet', color: 'text-blue-400', available: false, desc: 'Pay with your PayPal account' },
+  { type: 'manual_transfer', label: 'Manual Bank Transfer', icon: 'landmark', color: 'text-blue-600', available: true, desc: 'Transfer directly to our bank account' },
+  { type: 'atm_card', label: 'ATM / Debit Card', icon: 'credit-card', color: 'text-emerald-600', available: true, desc: 'Visa, Mastercard, Verve' },
+  { type: 'bank_transfer', label: 'Bank Transfer', icon: 'building-2', color: 'text-cyan-600', available: true, desc: 'Online banking transfer' },
+  { type: 'mobile_money', label: 'Mobile Money Transfer', icon: 'smartphone', color: 'text-blue-600', available: true, desc: 'Send money from your mobile wallet' },
+  { type: 'wallet', label: 'Wallet', icon: 'wallet', color: 'text-amber-600', available: true, desc: 'Use your Weverse wallet balance' },
+  { type: 'paypal', label: 'PayPal', icon: 'wallet', color: 'text-blue-600', available: false, desc: 'Pay with your PayPal account' },
 ];
 
 function renderPaymentMethods() {
@@ -951,10 +951,10 @@ function renderPaymentMethods() {
     ${pageTitle('Payment Methods', 'Manage your saved payment methods and view all available options.')}
     <div class="space-y-5">
       ${hasSaved ? `
-        <div class="glass border border-blue-500/20 rounded-2xl p-4 sm:p-5 slide-up">
+        <div class="glass border border-blue-200 rounded-2xl p-4 sm:p-5 slide-up">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-white uppercase tracking-wide">Saved Payment Methods</h3>
-            <button onclick="openPaymentMethodModal()" class="btn-press inline-flex items-center gap-1.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 font-bold text-xs px-3 py-2 rounded-lg transition relative overflow-hidden">
+            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Saved Payment Methods</h3>
+            <button onclick="openPaymentMethodModal()" class="btn-press inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 font-bold text-xs px-3 py-2 rounded-lg transition relative overflow-hidden">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add New
             </button>
           </div>
@@ -966,20 +966,20 @@ function renderPaymentMethods() {
         ${renderEmptyState('No Saved Payment Methods', 'You haven\'t saved any payment methods yet. Add one to speed up checkout.', 'credit-card', 'Add Payment Method', 'openPaymentMethodModal()')}
       `}
 
-      <div class="glass border border-blue-500/20 rounded-2xl p-4 sm:p-5 slide-up">
+      <div class="glass border border-blue-200 rounded-2xl p-4 sm:p-5 slide-up">
         <div class="flex items-center gap-2 mb-4">
-          <div class="p-2 bg-blue-500/10 rounded-lg"><i data-lucide="grid-3x3" class="w-4 h-4 text-blue-400"></i></div>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Available Payment Options</h3>
+          <div class="p-2 bg-blue-50 rounded-lg"><i data-lucide="grid-3x3" class="w-4 h-4 text-blue-600"></i></div>
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Available Payment Options</h3>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           ${AVAILABLE_PAYMENT_METHODS.map(m => `
-            <div class="relative bg-blue-950/40 border ${m.available ? 'border-blue-500/20' : 'border-gray-700/40'} rounded-xl p-4 ${m.available ? '' : 'opacity-60'}">
-              ${!m.available ? '<span class="absolute top-2 right-2 bg-gray-700 text-gray-400 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full">Soon</span>' : ''}
+            <div class="relative bg-gray-50 border ${m.available ? 'border-blue-200' : 'border-gray-300/40'} rounded-xl p-4 ${m.available ? '' : 'opacity-60'}">
+              ${!m.available ? '<span class="absolute top-2 right-2 bg-gray-200 text-gray-600 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full">Soon</span>' : ''}
               <div class="flex items-center gap-3 mb-2">
-                <div class="p-2 ${m.available ? 'bg-blue-500/10' : 'bg-gray-700/20'} rounded-lg"><i data-lucide="${m.icon}" class="w-5 h-5 ${m.color}"></i></div>
+                <div class="p-2 ${m.available ? 'bg-blue-50' : 'bg-gray-100'} rounded-lg"><i data-lucide="${m.icon}" class="w-5 h-5 ${m.color}"></i></div>
                 <div>
-                  <h4 class="text-sm font-bold text-white">${m.label}</h4>
-                  ${m.available ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400"><i data-lucide="check-circle" class="w-3 h-3"></i> Available</span>' : '<span class="text-[10px] text-gray-500 font-medium">Coming Soon</span>'}
+                  <h4 class="text-sm font-bold text-gray-900">${m.label}</h4>
+                  ${m.available ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600"><i data-lucide="check-circle" class="w-3 h-3"></i> Available</span>' : '<span class="text-[10px] text-gray-500 font-medium">Coming Soon</span>'}
                 </div>
               </div>
               <p class="text-xs text-gray-500">${m.desc}</p>
@@ -992,22 +992,22 @@ function renderPaymentMethods() {
 }
 
 function renderSavedMethodCard(m) {
-  const meta = AVAILABLE_PAYMENT_METHODS.find(x => x.type === m.method_type) || { icon: 'credit-card', color: 'text-blue-400' };
+  const meta = AVAILABLE_PAYMENT_METHODS.find(x => x.type === m.method_type) || { icon: 'credit-card', color: 'text-blue-600' };
   return `
-    <div class="bg-blue-950/40 border ${m.is_default ? 'border-blue-500/50' : 'border-blue-500/15'} rounded-xl p-4 flex items-center gap-3">
-      <div class="p-2.5 bg-blue-500/10 rounded-lg shrink-0"><i data-lucide="${meta.icon}" class="w-5 h-5 ${meta.color}"></i></div>
+    <div class="bg-gray-50 border ${m.is_default ? 'border-blue-300' : 'border-blue-100'} rounded-xl p-4 flex items-center gap-3">
+      <div class="p-2.5 bg-blue-50 rounded-lg shrink-0"><i data-lucide="${meta.icon}" class="w-5 h-5 ${meta.color}"></i></div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
-          <h4 class="text-sm font-bold text-white truncate">${escapeHtml(m.label)}</h4>
-          ${m.is_default ? '<span class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border border-emerald-500/20"><i data-lucide="check" class="w-2.5 h-2.5"></i> Default</span>' : ''}
+          <h4 class="text-sm font-bold text-gray-900 truncate">${escapeHtml(m.label)}</h4>
+          ${m.is_default ? '<span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border border-emerald-200"><i data-lucide="check" class="w-2.5 h-2.5"></i> Default</span>' : ''}
         </div>
-        <p class="text-xs text-gray-400 mt-0.5 truncate">${escapeHtml(m.provider || m.method_type)} ${m.identifier ? '· ' + escapeHtml(m.identifier) : ''}</p>
+        <p class="text-xs text-gray-600 mt-0.5 truncate">${escapeHtml(m.provider || m.method_type)} ${m.identifier ? '· ' + escapeHtml(m.identifier) : ''}</p>
         ${m.account_holder ? `<p class="text-[11px] text-gray-500 mt-0.5">Account Holder: ${escapeHtml(m.account_holder)}</p>` : ''}
       </div>
       <div class="flex items-center gap-1 shrink-0">
-        ${!m.is_default ? `<button onclick="setDefaultPaymentMethod('${m.id}')" title="Set as default" class="btn-press p-2 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/40 rounded-lg transition relative overflow-hidden"><i data-lucide="star" class="w-4 h-4 text-gray-400"></i></button>` : ''}
-        <button onclick="editPaymentMethod('${m.id}')" title="Edit" class="btn-press p-2 bg-blue-900/40 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/40 rounded-lg transition relative overflow-hidden"><i data-lucide="pencil" class="w-4 h-4 text-gray-400"></i></button>
-        <button onclick="deletePaymentMethod('${m.id}')" title="Remove" class="btn-press p-2 bg-red-900/40 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 rounded-lg transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i></button>
+        ${!m.is_default ? `<button onclick="setDefaultPaymentMethod('${m.id}')" title="Set as default" class="btn-press p-2 bg-gray-100 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition relative overflow-hidden"><i data-lucide="star" class="w-4 h-4 text-gray-600"></i></button>` : ''}
+        <button onclick="editPaymentMethod('${m.id}')" title="Edit" class="btn-press p-2 bg-gray-100 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition relative overflow-hidden"><i data-lucide="pencil" class="w-4 h-4 text-gray-600"></i></button>
+        <button onclick="deletePaymentMethod('${m.id}')" title="Remove" class="btn-press p-2 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-lg transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i></button>
       </div>
     </div>
   `;
@@ -1018,37 +1018,37 @@ window.openPaymentMethodModal = function (existingId) {
   const overlay = document.createElement('div');
   overlay.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4';
   overlay.innerHTML = `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto slide-up">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-bold text-white">${existing ? 'Edit' : 'Add'} Payment Method</h3>
-        <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white text-[10px] font-bold uppercase tracking-wide">🔙 Back</button>
+        <h3 class="text-base font-bold text-gray-900">${existing ? 'Edit' : 'Add'} Payment Method</h3>
+        <button onclick="this.closest('.fixed').remove()" class="text-gray-600 hover:text-gray-900 text-[10px] font-bold uppercase tracking-wide">🔙 Back</button>
       </div>
       <form onsubmit="savePaymentMethod(event, '${existingId || ''}')" class="space-y-3">
         <div>
-          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Method Type</label>
-          <select id="pm-type" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Method Type</label>
+          <select id="pm-type" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
             ${AVAILABLE_PAYMENT_METHODS.filter(m => m.available).map(m => `<option value="${m.type}" ${existing && existing.method_type === m.type ? 'selected' : ''}>${m.label}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nickname / Label</label>
-          <input id="pm-label" type="text" required value="${existing ? escapeHtml(existing.label) : ''}" placeholder="e.g. My GTBank Account" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nickname / Label</label>
+          <input id="pm-label" type="text" required value="${existing ? escapeHtml(existing.label) : ''}" placeholder="e.g. My GTBank Account" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Provider / Bank Name</label>
-          <input id="pm-provider" type="text" value="${existing ? escapeHtml(existing.provider || '') : ''}" placeholder="e.g. GTBank, Visa, MTN Mobile Money" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Provider / Bank Name</label>
+          <input id="pm-provider" type="text" value="${existing ? escapeHtml(existing.provider || '') : ''}" placeholder="e.g. GTBank, Visa, MTN Mobile Money" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Account Holder Name</label>
-          <input id="pm-holder" type="text" value="${existing ? escapeHtml(existing.account_holder || '') : ''}" placeholder="Account holder name" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Account Holder Name</label>
+          <input id="pm-holder" type="text" value="${existing ? escapeHtml(existing.account_holder || '') : ''}" placeholder="Account holder name" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Identifier (last 4 digits / masked)</label>
-          <input id="pm-identifier" type="text" value="${existing ? escapeHtml(existing.identifier || '') : ''}" placeholder="e.g. ****1234" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Identifier (last 4 digits / masked)</label>
+          <input id="pm-identifier" type="text" value="${existing ? escapeHtml(existing.identifier || '') : ''}" placeholder="e.g. ****1234" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div class="flex items-center gap-2">
-          <input id="pm-default" type="checkbox" ${existing && existing.is_default ? 'checked' : ''} class="w-4 h-4 rounded border-blue-500/30 bg-blue-950/40 text-blue-500 focus:ring-blue-500">
-          <label for="pm-default" class="text-xs text-gray-300">Set as default payment method</label>
+          <input id="pm-default" type="checkbox" ${existing && existing.is_default ? 'checked' : ''} class="w-4 h-4 rounded border-blue-200 bg-gray-50 text-blue-500 focus:ring-blue-500">
+          <label for="pm-default" class="text-xs text-gray-700">Set as default payment method</label>
         </div>
         <button type="submit" class="btn-press w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-xl uppercase text-sm tracking-wider transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">${existing ? 'Save Changes' : 'Add Payment Method'}</button>
       </form>
@@ -1132,26 +1132,26 @@ function renderAddresses() {
       ${state.addresses.length === 0 ? renderEmptyState('No Addresses', 'You haven\'t saved any shipping addresses yet.', 'map-pin', null) : state.addresses.map(a => {
         const country = getCountryByCode(a.country_code);
         return `
-          <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+          <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
             <div class="flex items-start justify-between gap-3 mb-3">
               <div class="flex items-center gap-2">
-                <div class="p-2 bg-blue-500/10 rounded-lg"><i data-lucide="map-pin" class="w-4 h-4 text-blue-400"></i></div>
+                <div class="p-2 bg-blue-50 rounded-lg"><i data-lucide="map-pin" class="w-4 h-4 text-blue-600"></i></div>
                 <div>
-                  <h3 class="text-sm font-bold text-white">${a.label}</h3>
-                  ${a.is_default ? '<span class="text-[10px] text-emerald-400 font-bold uppercase">Default</span>' : ''}
+                  <h3 class="text-sm font-bold text-gray-900">${a.label}</h3>
+                  ${a.is_default ? '<span class="text-[10px] text-emerald-600 font-bold uppercase">Default</span>' : ''}
                 </div>
               </div>
               <div class="flex gap-2">
-                <button onclick="editAddress('${a.id}')" class="btn-press p-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-blue-400 transition relative overflow-hidden"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                <button onclick="deleteAddress('${a.id}')" class="btn-press p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-red-400 transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <button onclick="editAddress('${a.id}')" class="btn-press p-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-blue-600 transition relative overflow-hidden"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                <button onclick="deleteAddress('${a.id}')" class="btn-press p-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-red-600 transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
               </div>
             </div>
-            <div class="text-sm text-gray-300 space-y-0.5">
-              <p class="font-bold text-white">${a.full_name}</p>
+            <div class="text-sm text-gray-700 space-y-0.5">
+              <p class="font-bold text-gray-900">${a.full_name}</p>
               <p>${a.address_line1}${a.address_line2 ? ', ' + a.address_line2 : ''}</p>
               <p>${a.city}, ${a.state} ${a.postal_code}</p>
               <p>${country ? country.flag + ' ' + country.name : a.country_code}</p>
-              <p class="text-gray-400 mt-1">${a.phone}</p>
+              <p class="text-gray-600 mt-1">${a.phone}</p>
             </div>
           </div>
         `;
@@ -1164,29 +1164,29 @@ window.showAddressForm = (existing) => {
   const container = document.getElementById('address-form-container');
   const a = existing || {};
   container.innerHTML = `
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 mb-4 slide-up">
-      <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">${existing ? 'Edit Address' : 'New Shipping Address'}</h3>
+    <div class="glass border border-blue-200 rounded-2xl p-5 mb-4 slide-up">
+      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">${existing ? 'Edit Address' : 'New Shipping Address'}</h3>
       <form id="address-form" class="space-y-4">
         <input type="hidden" id="addr-id" value="${a.id || ''}">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Label</label><input type="text" id="addr-label" value="${a.label || 'Home'}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Full Name</label><input type="text" id="addr-name" value="${a.full_name || ''}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Label</label><input type="text" id="addr-label" value="${a.label || 'Home'}" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Full Name</label><input type="text" id="addr-name" value="${a.full_name || ''}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
         </div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Address Line 1</label><input type="text" id="addr-line1" value="${a.address_line1 || ''}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-        <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Address Line 2 (Optional)</label><input type="text" id="addr-line2" value="${a.address_line2 || ''}" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+        <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Address Line 1</label><input type="text" id="addr-line1" value="${a.address_line1 || ''}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+        <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Address Line 2 (Optional)</label><input type="text" id="addr-line2" value="${a.address_line2 || ''}" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">City</label><input type="text" id="addr-city" value="${a.city || ''}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">State</label><input type="text" id="addr-state" value="${a.state || ''}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Postal Code</label><input type="text" id="addr-postal" value="${a.postal_code || ''}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">City</label><input type="text" id="addr-city" value="${a.city || ''}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">State</label><input type="text" id="addr-state" value="${a.state || ''}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Postal Code</label><input type="text" id="addr-postal" value="${a.postal_code || ''}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Country</label><select id="addr-country" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">${COUNTRIES.map(c => `<option value="${c.code}" ${a.country_code === c.code ? 'selected' : ''}>${c.flag} ${c.name}</option>`).join('')}</select></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Phone</label><input type="text" id="addr-phone" value="${a.phone || ''}" required class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Country</label><select id="addr-country" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">${COUNTRIES.map(c => `<option value="${c.code}" ${a.country_code === c.code ? 'selected' : ''}>${c.flag} ${c.name}</option>`).join('')}</select></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Phone</label><input type="text" id="addr-phone" value="${a.phone || ''}" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
         </div>
-        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="addr-default" ${a.is_default ? 'checked' : ''} class="w-4 h-4 rounded border-gray-700 bg-[#0a1124] text-blue-500 focus:ring-blue-500"><span class="text-xs text-gray-400">Set as default address</span></label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="addr-default" ${a.is_default ? 'checked' : ''} class="w-4 h-4 rounded border-gray-300 bg-white text-blue-500 focus:ring-blue-500"><span class="text-xs text-gray-600">Set as default address</span></label>
         <div class="flex gap-3">
           <button type="submit" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden"><i data-lucide="save" class="w-4 h-4"></i> ${existing ? 'Update' : 'Save'} Address</button>
-          <button type="button" onclick="cancelAddressForm()" class="btn-press px-5 py-3 bg-blue-950/60 border border-blue-500/20 text-gray-400 font-bold rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">Cancel</button>
+          <button type="button" onclick="cancelAddressForm()" class="btn-press px-5 py-3 bg-gray-100 border border-blue-200 text-gray-600 font-bold rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">Cancel</button>
         </div>
       </form>
     </div>
@@ -1250,14 +1250,14 @@ function renderReceipts() {
     ${withReceipts.length === 0 ? renderEmptyState('No Receipts', 'Receipts from your payments will appear here once available.', 'file-text', null) : `
       <div class="space-y-3">
         ${withReceipts.map(o => `
-          <div class="glass border border-blue-500/20 rounded-2xl p-4 slide-up flex items-center gap-4">
-            <div class="p-3 bg-emerald-500/10 rounded-xl shrink-0"><i data-lucide="file-text" class="w-6 h-6 text-emerald-400"></i></div>
+          <div class="glass border border-blue-200 rounded-2xl p-4 slide-up flex items-center gap-4">
+            <div class="p-3 bg-emerald-50 rounded-xl shrink-0"><i data-lucide="file-text" class="w-6 h-6 text-emerald-600"></i></div>
             <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-bold text-white truncate">${o.listing_title}</h3>
+              <h3 class="text-sm font-bold text-gray-900 truncate">${o.listing_title}</h3>
               <p class="text-xs text-gray-500 font-mono">${o.order_number}</p>
-              <p class="text-xs text-amber-400 font-bold mt-0.5">${o.amount} ${o.currency}</p>
+              <p class="text-xs text-amber-600 font-bold mt-0.5">${o.amount} ${o.currency}</p>
             </div>
-            <button onclick="downloadReceipt('${o.order_number}')" class="btn-press flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400 transition relative overflow-hidden"><i data-lucide="download" class="w-4 h-4"></i> Download</button>
+            <button onclick="downloadReceipt('${o.order_number}')" class="btn-press flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-600 transition relative overflow-hidden"><i data-lucide="download" class="w-4 h-4"></i> Download</button>
           </div>
         `).join('')}
       </div>
@@ -1288,17 +1288,17 @@ function renderEmailPrefs() {
   ];
   return `
     ${pageTitle('Email Preferences', 'Choose which email notifications you want to receive.')}
-    <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
+    <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       <div class="space-y-3">
         ${prefs.map(pref => `
-          <div class="flex items-center justify-between p-4 bg-blue-950/30 border border-blue-500/10 rounded-xl">
+          <div class="flex items-center justify-between p-4 bg-gray-50 border border-blue-100 rounded-xl">
             <div class="flex items-center gap-3">
-              <div class="p-2 bg-blue-500/10 rounded-lg"><i data-lucide="${pref.icon}" class="w-4 h-4 text-blue-400"></i></div>
-              <div><p class="text-sm font-bold text-white">${pref.label}</p><p class="text-xs text-gray-500">${pref.desc}</p></div>
+              <div class="p-2 bg-blue-50 rounded-lg"><i data-lucide="${pref.icon}" class="w-4 h-4 text-blue-600"></i></div>
+              <div><p class="text-sm font-bold text-gray-900">${pref.label}</p><p class="text-xs text-gray-500">${pref.desc}</p></div>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" class="toggle sr-only" data-pref="${pref.key}" ${p[pref.key] ? 'checked' : ''}>
-              <div class="toggle-bg w-11 h-6 bg-gray-700 rounded-full relative"><div class="toggle-dot absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full"></div></div>
+              <div class="toggle-bg w-11 h-6 bg-gray-200 rounded-full relative"><div class="toggle-dot absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full"></div></div>
             </label>
           </div>
         `).join('')}
@@ -1329,30 +1329,30 @@ function renderSupport() {
   return `
     ${pageTitle('Contact Us', 'Get help with your orders and account.')}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <div class="lg:col-span-2 glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="message-square" class="w-4 h-4 text-blue-400"></i> Send a Support Request</h3>
+      <div class="lg:col-span-2 glass border border-blue-200 rounded-2xl p-5 slide-up">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="message-square" class="w-4 h-4 text-blue-600"></i> Send a Support Request</h3>
         <form id="support-form" class="space-y-4">
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Subject</label><input type="text" id="support-subject" required placeholder="How can we help?" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Order Number (Optional)</label><input type="text" id="support-order" placeholder="KCO-XXXXXX" class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"></div>
-          <div><label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Message</label><textarea id="support-message" rows="4" required placeholder="Describe your issue..." class="input-field w-full bg-[#0a1124]/80 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 resize-none"></textarea></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Subject</label><input type="text" id="support-subject" required placeholder="How can we help?" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Order Number (Optional)</label><input type="text" id="support-order" placeholder="KCO-XXXXXX" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Message</label><textarea id="support-message" rows="4" required placeholder="Describe your issue..." class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-none"></textarea></div>
           <button type="submit" id="support-submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden"><i data-lucide="send" class="w-4 h-4"></i> Submit Request</button>
         </form>
       </div>
       <div class="space-y-4">
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-3"><i data-lucide="mail" class="w-4 h-4 text-blue-400"></i> Email Us</h3>
-          <a href="mailto:support@weverseonlineshop.com" class="text-sm text-blue-400 hover:text-blue-300 transition">support@weverseonlineshop.com</a>
+        <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-3"><i data-lucide="mail" class="w-4 h-4 text-blue-600"></i> Email Us</h3>
+          <a href="mailto:support@weverseonlineshop.com" class="text-sm text-blue-600 hover:text-blue-700 transition">support@weverseonlineshop.com</a>
         </div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-3"><i data-lucide="clock" class="w-4 h-4 text-amber-400"></i> Support Hours</h3>
-          <p class="text-sm text-gray-400">Monday — Friday</p>
-          <p class="text-sm text-gray-400">9:00 AM — 6:00 PM (UTC)</p>
+        <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-3"><i data-lucide="clock" class="w-4 h-4 text-amber-600"></i> Support Hours</h3>
+          <p class="text-sm text-gray-600">Monday — Friday</p>
+          <p class="text-sm text-gray-600">9:00 AM — 6:00 PM (UTC)</p>
           <p class="text-xs text-gray-500 mt-2">Response within 24 hours</p>
         </div>
-        <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-3"><i data-lucide="message-circle" class="w-4 h-4 text-emerald-400"></i> Recent Messages</h3>
+        <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-3"><i data-lucide="message-circle" class="w-4 h-4 text-emerald-600"></i> Recent Messages</h3>
           <p class="text-xs text-gray-500">${state.messages.length} message${state.messages.length === 1 ? '' : 's'}</p>
-          <button onclick="navigateTo('messages')" class="text-xs text-blue-400 hover:text-blue-300 font-bold transition mt-1">View Messages →</button>
+          <button onclick="navigateTo('messages')" class="text-xs text-blue-600 hover:text-blue-700 font-bold transition mt-1">View Messages →</button>
         </div>
       </div>
     </div>
@@ -1377,12 +1377,12 @@ function renderHelp() {
     ${pageTitle('Help Center', 'Frequently asked questions and guides.')}
     <div class="space-y-3">
       ${faqs.map((f, i) => `
-        <div class="glass border border-blue-500/20 rounded-2xl overflow-hidden slide-up">
-          <button onclick="toggleFaq(${i})" class="w-full flex items-center justify-between p-4 text-left hover:bg-blue-500/5 transition">
-            <span class="text-sm font-bold text-white">${f.q}</span>
+        <div class="glass border border-blue-200 rounded-2xl overflow-hidden slide-up">
+          <button onclick="toggleFaq(${i})" class="w-full flex items-center justify-between p-4 text-left hover:bg-blue-50 transition">
+            <span class="text-sm font-bold text-gray-900">${f.q}</span>
             <i data-lucide="chevron-down" id="faq-icon-${i}" class="w-5 h-5 text-gray-500 shrink-0 transition-transform"></i>
           </button>
-          <div id="faq-${i}" class="hidden px-4 pb-4 text-sm text-gray-400 leading-relaxed">${f.a}</div>
+          <div id="faq-${i}" class="hidden px-4 pb-4 text-sm text-gray-600 leading-relaxed">${f.a}</div>
         </div>
       `).join('')}
     </div>
@@ -1403,54 +1403,54 @@ function renderPrivacy() {
   return `
     ${pageTitle('Privacy & Security', 'Your account security and privacy settings.')}
     <div class="space-y-5">
-      <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Security Status</h3>
+      <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> Security Status</h3>
         <div class="space-y-3">
-          <div class="flex items-center justify-between p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
-            <div class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i><span class="text-sm text-white">SSL Encryption</span></div>
-            <span class="text-xs text-emerald-400 font-bold uppercase">Active</span>
+          <div class="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <div class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i><span class="text-sm text-gray-900">SSL Encryption</span></div>
+            <span class="text-xs text-emerald-600 font-bold uppercase">Active</span>
           </div>
-          <div class="flex items-center justify-between p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
-            <div class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i><span class="text-sm text-white">Secure Authentication</span></div>
-            <span class="text-xs text-emerald-400 font-bold uppercase">Active</span>
+          <div class="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <div class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i><span class="text-sm text-gray-900">Secure Authentication</span></div>
+            <span class="text-xs text-emerald-600 font-bold uppercase">Active</span>
           </div>
-          <div class="flex items-center justify-between p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
-            <div class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i><span class="text-sm text-white">Row Level Security</span></div>
-            <span class="text-xs text-emerald-400 font-bold uppercase">Active</span>
+          <div class="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <div class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i><span class="text-sm text-gray-900">Row Level Security</span></div>
+            <span class="text-xs text-emerald-600 font-bold uppercase">Active</span>
           </div>
         </div>
       </div>
 
-      <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="lock" class="w-4 h-4 text-blue-400"></i> Account Security</h3>
+      <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="lock" class="w-4 h-4 text-blue-600"></i> Account Security</h3>
         <div class="space-y-3">
-          <button onclick="navigateTo('change-password')" class="btn-press w-full flex items-center justify-between p-3 bg-blue-950/30 border border-blue-500/10 hover:border-blue-500/30 rounded-xl transition relative overflow-hidden">
-            <div class="flex items-center gap-2"><i data-lucide="key-round" class="w-4 h-4 text-blue-400"></i><span class="text-sm text-white">Change Password</span></div>
+          <button onclick="navigateTo('change-password')" class="btn-press w-full flex items-center justify-between p-3 bg-gray-50 border border-blue-100 hover:border-blue-200 rounded-xl transition relative overflow-hidden">
+            <div class="flex items-center gap-2"><i data-lucide="key-round" class="w-4 h-4 text-blue-600"></i><span class="text-sm text-gray-900">Change Password</span></div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
           </button>
-          <button onclick="navigateTo('email-prefs')" class="btn-press w-full flex items-center justify-between p-3 bg-blue-950/30 border border-blue-500/10 hover:border-blue-500/30 rounded-xl transition relative overflow-hidden">
-            <div class="flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4 text-blue-400"></i><span class="text-sm text-white">Email Preferences</span></div>
+          <button onclick="navigateTo('email-prefs')" class="btn-press w-full flex items-center justify-between p-3 bg-gray-50 border border-blue-100 hover:border-blue-200 rounded-xl transition relative overflow-hidden">
+            <div class="flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4 text-blue-600"></i><span class="text-sm text-gray-900">Email Preferences</span></div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
           </button>
         </div>
       </div>
 
-      <div class="glass border border-blue-500/20 rounded-2xl p-5 slide-up">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="eye-off" class="w-4 h-4 text-blue-400"></i> Privacy Policy</h3>
-        <p class="text-sm text-gray-400 leading-relaxed mb-3">We take your privacy seriously. Your personal information is encrypted and never shared with third parties.</p>
-        <ul class="space-y-2 text-sm text-gray-400">
-          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> Your data is protected with SSL encryption</li>
-          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> We never share your information with third parties</li>
-          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> You control your email notification preferences</li>
-          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> Your order history is permanently and securely saved</li>
-          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> Only you can access your account data</li>
+      <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="eye-off" class="w-4 h-4 text-blue-600"></i> Privacy Policy</h3>
+        <p class="text-sm text-gray-600 leading-relaxed mb-3">We take your privacy seriously. Your personal information is encrypted and never shared with third parties.</p>
+        <ul class="space-y-2 text-sm text-gray-600">
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i> Your data is protected with SSL encryption</li>
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i> We never share your information with third parties</li>
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i> You control your email notification preferences</li>
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i> Your order history is permanently and securely saved</li>
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i> Only you can access your account data</li>
         </ul>
       </div>
 
-      <div class="glass border border-red-500/20 rounded-2xl p-5 slide-up">
-        <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i> Danger Zone</h3>
-        <p class="text-sm text-gray-400 mb-3">Sign out of your account on this device.</p>
-        <button onclick="doSignOut()" class="btn-press inline-flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-bold py-2.5 px-5 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
+      <div class="glass border border-red-200 rounded-2xl p-5 slide-up">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4"><i data-lucide="alert-triangle" class="w-4 h-4 text-red-600"></i> Danger Zone</h3>
+        <p class="text-sm text-gray-600 mb-3">Sign out of your account on this device.</p>
+        <button onclick="doSignOut()" class="btn-press inline-flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold py-2.5 px-5 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
           <i data-lucide="log-out" class="w-4 h-4"></i> Logout
         </button>
       </div>
@@ -1467,7 +1467,7 @@ async function renderWishlist() {
   return `
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-bold text-white">My Wishlist</h2>
+        <h2 class="text-lg font-bold text-gray-900">My Wishlist</h2>
         <span class="text-xs text-gray-500">${items.length} item${items.length !== 1 ? 's' : ''}</span>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1477,16 +1477,16 @@ async function renderWishlist() {
           const img = (p.images && p.images[0]) || '/fallback.svg';
           const price = typeof p.price === 'number' ? p.price : parseFloat(p.price || 0);
           return `
-            <div class="glass border border-blue-500/15 rounded-2xl overflow-hidden group">
-              <div class="relative aspect-square overflow-hidden bg-blue-950/50">
+            <div class="glass border border-blue-100 rounded-2xl overflow-hidden group">
+              <div class="relative aspect-square overflow-hidden bg-gray-50">
                 <a href="/details.html?id=${p.property_id}"><img src="${escapeHtml(img)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></a>
                 <button onclick="removeFromWishlist('${w.id}')" class="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-red-500/80 rounded-full flex items-center justify-center transition" title="Remove"><i data-lucide="heart-crack" class="w-4 h-4 text-white"></i></button>
               </div>
               <div class="p-3">
-                <a href="/details.html?id=${p.property_id}" class="text-sm text-white font-bold hover:text-blue-400 transition line-clamp-2">${escapeHtml(p.title)}</a>
+                <a href="/details.html?id=${p.property_id}" class="text-sm text-gray-900 font-bold hover:text-blue-600 transition line-clamp-2">${escapeHtml(p.title)}</a>
                 <div class="flex items-center justify-between mt-2">
-                  <span class="text-sm text-amber-400 font-bold">${p.currency || 'USD'} ${price.toLocaleString()}</span>
-                  <a href="/details.html?id=${p.property_id}" class="text-xs font-bold text-blue-400 hover:text-blue-300 transition">View</a>
+                  <span class="text-sm text-amber-600 font-bold">${p.currency || 'USD'} ${price.toLocaleString()}</span>
+                  <a href="/details.html?id=${p.property_id}" class="text-xs font-bold text-blue-600 hover:text-blue-700 transition">View</a>
                 </div>
               </div>
             </div>`;
@@ -1507,9 +1507,9 @@ window.removeFromWishlist = async (wishlistId) => {
 
 function renderEmptyState(title, desc, icon, btnLabel, btnOnclick) {
   return `
-    <div class="glass border border-blue-500/20 rounded-2xl p-10 text-center slide-up">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-500/10 rounded-2xl mb-4"><i data-lucide="${icon}" class="w-8 h-8 text-blue-400"></i></div>
-      <h3 class="text-lg font-bold text-white mb-2">${title}</h3>
+    <div class="glass border border-blue-200 rounded-2xl p-10 text-center slide-up">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-2xl mb-4"><i data-lucide="${icon}" class="w-8 h-8 text-blue-600"></i></div>
+      <h3 class="text-lg font-bold text-gray-900 mb-2">${title}</h3>
       <p class="text-sm text-gray-500 mb-6 max-w-sm mx-auto">${desc}</p>
       ${btnLabel ? (btnOnclick ? `<button onclick="${btnOnclick}" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl uppercase text-sm tracking-wider transition shadow-lg shadow-blue-600/30 relative overflow-hidden"><i data-lucide="plus" class="w-4 h-4"></i> ${btnLabel}</button>` : `<a href="/" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl uppercase text-sm tracking-wider transition shadow-lg shadow-blue-600/30 relative overflow-hidden"><i data-lucide="shopping-bag" class="w-4 h-4"></i> ${btnLabel}</a>`) : ''}
     </div>
