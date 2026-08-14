@@ -507,3 +507,48 @@ footer {
   border-color: rgba(59, 130, 246, 0.4) !important;
   color: #2563eb !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   LITTLE-BIG TEXT — subtle ~9% bump across the whole site.
+   html base 16px -> 17.5px scales every rem-based Tailwind text size
+   (and rem spacing) proportionally, so big and small text both grow
+   a little while keeping their exact hierarchy. The rules below bump
+   the arbitrary pixel sizes by the same small amount (on top of the
+   readability floor above). The search bar gets a slightly bigger
+   input text and taller tap area so it reads clearly.
+   ═══════════════════════════════════════════════════════════════ */
+html {
+  font-size: 17.5px;
+}
+
+[class~="text-[7px]"] {
+  font-size: 7.5px !important;
+}
+[class~="text-[8px]"] {
+  font-size: 11px !important;
+}
+[class~="text-[9px]"] {
+  font-size: 12px !important;
+}
+[class~="text-[10px]"] {
+  font-size: 13px !important;
+}
+[class~="text-[11px]"] {
+  font-size: 13.5px !important;
+}
+[class~="text-[13px]"] {
+  font-size: 14.5px !important;
+}
+[class~="text-[15px]"] {
+  font-size: 16.5px !important;
+}
+[class~="text-[19px]"] {
+  font-size: 21px !important;
+}
+
+/* Search bar: a little bigger — bigger input text and a taller tap area */
+#search-input {
+  font-size: 16px !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
