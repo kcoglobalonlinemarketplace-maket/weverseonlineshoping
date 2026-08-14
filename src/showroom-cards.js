@@ -183,7 +183,7 @@ const REAL_ESTATE_SECTIONS = [
     subtitle: '20 world-famous washing machines, TVs, kitchen, and smart home care appliances.',
     rows: [
       { id: 'appliances-kitchen-laundry', label: 'Kitchen, Laundry & Cold', icon: 'microwave', ids: ['KCO-002001', 'KCO-002006', 'KCO-002007', 'KCO-002009', 'KCO-002010', 'KCO-002012', 'KCO-002013', 'KCO-002014', 'KCO-002015', 'KCO-002018', 'KCO-002020'] },
-      { id: 'appliances-electronics-care', label: 'Electronics & Home Care', icon: 'sparkles', ids: ['KCO-002002', 'KCO-002003', 'KCO-002004', 'KCO-002005', 'KCO-002008', 'KCO-002011', 'KCO-002016', 'KCO-002017', 'KCO-002019'] },
+      { id: 'appliances-electronics-care', label: 'Electronics & Home Care', icon: 'cpu', ids: ['KCO-002002', 'KCO-002003', 'KCO-002004', 'KCO-002005', 'KCO-002008', 'KCO-002011', 'KCO-002016', 'KCO-002017', 'KCO-002019'] },
     ],
   },
 ];
@@ -199,7 +199,7 @@ const MARKETPLACE_SECTIONS = [
       { id: 'mp-appl-dryers', label: 'Dryers', icon: 'wind', ids: ['KCO-002014', 'KCO-003117'] },
       { id: 'mp-appl-ac', label: 'Air Conditioners', icon: 'snowflake', ids: ['KCO-003100', 'KCO-003101', 'KCO-003102'] },
       { id: 'mp-appl-fans', label: 'Fans', icon: 'fan', ids: ['KCO-003103', 'KCO-003104', 'KCO-003105'] },
-      { id: 'mp-appl-vacuums', label: 'Vacuum Cleaners', icon: 'sparkles', ids: ['KCO-002005', 'KCO-002008'] },
+      { id: 'mp-appl-vacuums', label: 'Vacuum Cleaners', icon: 'wind', ids: ['KCO-002005', 'KCO-002008'] },
       { id: 'mp-appl-dispensers', label: 'Water Dispensers', icon: 'glass-water', ids: ['KCO-003106', 'KCO-003107', 'KCO-003108'] },
       { id: 'mp-appl-heaters', label: 'Water Heaters', icon: 'flame', ids: ['KCO-003109', 'KCO-003110', 'KCO-003111'] },
       { id: 'mp-appl-irons', label: 'Irons', icon: 'zap', ids: ['KCO-003112', 'KCO-003113'] },
@@ -211,7 +211,7 @@ const MARKETPLACE_SECTIONS = [
   { id: 'mp-kids', label: 'Kids', icon: 'baby', subtitle: 'Clothing, toys, and essentials for children.', rows: [{ id: 'mp-kids-all', label: 'All Kids', icon: 'baby', ids: [] }] },
   { id: 'mp-fashion', label: 'Fashion', icon: 'shirt', subtitle: 'Trendy apparel and designer fashion for everyone.', rows: [{ id: 'mp-fashion-all', label: 'All Fashion', icon: 'shirt', ids: [] }] },
   { id: 'mp-jewelry', label: 'Jewelry', icon: 'gem', subtitle: 'Fine jewelry, watches, and luxury accessories.', rows: [{ id: 'mp-jewelry-all', label: 'All Jewelry', icon: 'gem', ids: [] }] },
-  { id: 'mp-beauty', label: 'Beauty', icon: 'sparkles', subtitle: 'Skincare, makeup, and personal care products.', rows: [{ id: 'mp-beauty-all', label: 'All Beauty', icon: 'sparkles', ids: [] }] },
+  { id: 'mp-beauty', label: 'Beauty', icon: 'flower', subtitle: 'Skincare, makeup, and personal care products.', rows: [{ id: 'mp-beauty-all', label: 'All Beauty', icon: 'flower', ids: [] }] },
   { id: 'mp-home', label: 'Home', icon: 'home', subtitle: 'Everything for your living space and home decor.', rows: [{ id: 'mp-home-all', label: 'All Home', icon: 'home', ids: [] }] },
   { id: 'mp-furniture', label: 'Furniture', icon: 'armchair', subtitle: 'Stylish furniture for every room in your home.', rows: [{ id: 'mp-furniture-all', label: 'All Furniture', icon: 'armchair', ids: [] }] },
   { id: 'mp-kitchen', label: 'Kitchen', icon: 'utensils', subtitle: 'Cookware, dining, and kitchen essentials.', rows: [{ id: 'mp-kitchen-all', label: 'All Kitchen', icon: 'utensils', ids: [] }] },
@@ -271,7 +271,7 @@ const MARKETPLACE_SECTIONS = [
   { id: 'mp-educational', label: 'Educational Supplies', icon: 'graduation-cap', subtitle: 'Learning materials and educational resources.', rows: [{ id: 'mp-educational-all', label: 'All Educational Supplies', icon: 'graduation-cap', ids: [] }] },
   { id: 'mp-funeral', label: 'Funeral & Memorial Supplies', icon: 'flower', subtitle: 'Memorial products and funeral supplies.', rows: [{ id: 'mp-funeral-all', label: 'All Funeral & Memorial', icon: 'flower', ids: [] }] },
   { id: 'mp-bicycles', label: 'Bicycles', icon: 'bike', subtitle: 'Bicycles, e-bikes, and cycling accessories.', rows: [{ id: 'mp-bicycles-all', label: 'All Bicycles', icon: 'bike', ids: [] }] },
-  { id: 'mp-future', label: 'Future Categories', icon: 'sparkles', subtitle: 'New categories coming soon to the marketplace.', rows: [{ id: 'mp-future-all', label: 'Coming Soon', icon: 'sparkles', ids: [] }] },
+  { id: 'mp-future', label: 'Future Categories', icon: 'clock', subtitle: 'New categories coming soon to the marketplace.', rows: [{ id: 'mp-future-all', label: 'Coming Soon', icon: 'clock', ids: [] }] },
 ];
 
 // ── Catalog-backed rows ────────────────────────────────────────
@@ -2013,12 +2013,12 @@ export async function initAllShowrooms() {
         MARKETPLACE_SECTIONS.unshift({
           id: 'new-arrivals',
           label: 'New Arrivals',
-          icon: 'sparkles',
+          icon: 'clock',
           subtitle: 'Latest products added to the marketplace.',
           rows: [{
             id: 'new-arrivals-all',
             label: 'Recently Added',
-            icon: 'sparkles',
+            icon: 'clock',
             ids: newArrivalsIds,
           }],
         });

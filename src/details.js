@@ -842,7 +842,7 @@ function render(listing) {
     <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
       <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Highlights</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        ${listing.highlights.map(item => `<div class="flex items-start gap-2 text-sm text-gray-700"><i data-lucide="sparkles" class="w-4 h-4 text-blue-500 mt-0.5"></i><span>${escapeHtml(item)}</span></div>`).join('')}
+        ${listing.highlights.map(item => `<div class="flex items-start gap-2 text-sm text-gray-700"><i data-lucide="badge-check" class="w-4 h-4 text-blue-500 mt-0.5"></i><span>${escapeHtml(item)}</span></div>`).join('')}
       </div>
     </div>` : '';
 
