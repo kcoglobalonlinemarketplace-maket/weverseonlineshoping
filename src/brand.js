@@ -20,7 +20,7 @@ export const W_LOGO_SVG = (cls = 'w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8') =>
 
 // Centralized one-line tagline markup — single neutral, letter-spaced line.
 export function taglineHtml() {
-  return `<span class="flex items-baseline whitespace-nowrap gap-x-[0.4em] mt-1.5 text-[9px] sm:text-[11px] font-semibold tracking-[0.1em] sm:tracking-[0.18em] uppercase leading-snug antialiased text-gray-500"><span class="brand-tagline-1">GLOBAL SHOPPING</span><span class="text-gray-400" aria-hidden="true">•</span><span class="brand-tagline-2">WORLDWIDE DELIVERY</span></span>`;
+  return `<span class="flex items-baseline whitespace-nowrap gap-x-[0.2em] mt-1.5 text-[9px] sm:text-[11px] font-bold tracking-[0.04em] sm:tracking-[0.08em] uppercase leading-snug antialiased text-gray-500"><span class="brand-tagline-1">GLOBAL SHOPPING</span><span class="text-gray-400" aria-hidden="true">•</span><span class="brand-tagline-2">WORLDWIDE DELIVERY</span></span>`;
 }
 
 const CACHE_KEY = 'weverse_brand_v1';

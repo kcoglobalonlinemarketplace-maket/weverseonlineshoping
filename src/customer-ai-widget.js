@@ -650,48 +650,7 @@ async function sendMessage() {
   }
 }
 
-// ── Proactive guidance ───────────────────────────────────────
-function proactiveNudge(key, message) {
-  if (state.proactiveShown[key]) return;
-  state.proactiveShown[key] = true;
-  if (state.open) return;
-
-  const fab = document.getElementById('kco-ai-fab');
-  if (!fab) return;
-
-  const bubble = document.createElement('div');
-  bubble.id = `kco-ai-nudge-${key}`;
-  bubble.className = 'fixed bottom-[92px] right-5 z-[59] max-w-[280px] bg-slate-800 border border-blue-500/30 rounded-xl shadow-2xl px-3.5 py-2.5 kco-ai-fade';
-  bubble.innerHTML = `
-    <div class="flex items-start gap-2">
-      <i data-lucide="message-circle" class="w-4 h-4 text-blue-400 shrink-0 mt-0.5"></i>
-      <p class="text-xs text-gray-300 leading-snug flex-1">${escapeHtml(message)}</p>
-    </div>
-    <div class="flex gap-2 mt-2">
-      <button class="text-[10px] font-semibold text-blue-400 hover:text-blue-300" onclick="document.getElementById('kco-ai-nudge-${key}').remove();window.__kcoAiOpen()">Ask Support</button>
-      <button class="text-[10px] text-gray-500 hover:text-gray-400" onclick="document.getElementById('kco-ai-nudge-${key}').remove()">Dismiss</button>
-    </div>`;
-  document.body.appendChild(bubble);
-  if (window.lucide) lucide.createIcons();
-  setTimeout(() => bubble?.remove(), 10000);
-}
-
 window.__kcoAiOpen = () => togglePanel(true);
-
-// ── Proactive context detection ──────────────────────────────
-function setupProactiveGuidance() {
-  const ctx = getPageContext();
-  const nudges = {
-    checkout: "I can help you complete your purchase. Need guidance with checkout?",
-    payment: "Before you pay, I can explain your payment options. Just ask!",
-    'sign-in': "Welcome back! Need help signing in or recovering your password?",
-    account: "I can help you set up your account. Just ask me anything!",
-    'product-details': "Have a question about this product? I'm here to help!",
-  };
-  if (nudges[ctx]) {
-    setTimeout(() => proactiveNudge(ctx, nudges[ctx]), 4000);
-  }
-}
 
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
@@ -739,7 +698,6 @@ async function init() {
     }
   });
 
-  setupProactiveGuidance();
 }
 
 if (document.readyState === 'loading') {
@@ -750,7 +708,6 @@ if (document.readyState === 'loading') {
 
 // Export for proactive use
 window.kcoCustomerAI = {
-  nudge: proactiveNudge,
   open: () => togglePanel(true),
   close: () => togglePanel(false),
   send: (text) => { const i = document.getElementById('kco-ai-input'); if (i) { i.value = text; sendMessage(); } },
