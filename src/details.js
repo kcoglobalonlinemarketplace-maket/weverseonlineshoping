@@ -1,9 +1,11 @@
-import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListings, cleanListing } from './showroom-data.js';
+import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListings, getAllListings, isDBLoaded, cleanListing } from './showroom-data.js';
+import { getCatalogCategory, getCatalogSample } from './catalog.js';
 import { getTruckById, formatTruckPrice, TRUCK_LISTINGS } from './truck-data.js';
 import { getMotorhomeById, MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { getCarById, CAR_LISTINGS } from './car-data.js';
 import { getPhoneById, PHONE_LISTINGS } from './phone-data.js';
 import { PET_LISTINGS } from './pet-data.js';
+import { renderCard } from './showroom-cards.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
@@ -141,18 +143,7 @@ function renderTruck(listing) {
 
       ${sellerBlock(listing)}
 
-      <div id="similar-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Similar Products</h3>
-        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-      </div>
-      <div id="related-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Related Products</h3>
-        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-      </div>
-      <div id="recommended-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Recommended For You</h3>
-        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-      </div>
+      ${relSectionsHtml()}
     </div>
   `;
 
@@ -326,18 +317,7 @@ function renderMotorhome(listing) {
 
       ${sellerBlock(listing)}
 
-      <div id="similar-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Similar Products</h3>
-        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-      </div>
-      <div id="related-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Related Products</h3>
-        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-      </div>
-      <div id="recommended-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Recommended For You</h3>
-        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-      </div>
+      ${relSectionsHtml()}
     </div>
   `;
 
@@ -380,7 +360,7 @@ function renderMotorhome(listing) {
     } catch (e) { /* user cancelled */ }
   });
 
-  loadRelatedSections(listing, MOTORHOME_LISTINGS);
+  loadRelatedSections(listing);
 
   if (window.lucide) lucide.createIcons();
 }
@@ -506,18 +486,7 @@ function renderCar(listing) {
 
       ${sellerBlock(listing)}
 
-      <div id="similar-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Similar Products</h3>
-        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-      </div>
-      <div id="related-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Related Products</h3>
-        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-      </div>
-      <div id="recommended-section" class="hidden mb-6">
-        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Recommended For You</h3>
-        <div class="rel-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-      </div>
+      ${relSectionsHtml()}
     </div>
   `;
 
@@ -560,7 +529,7 @@ function renderCar(listing) {
     } catch (e) { /* user cancelled */ }
   });
 
-  loadRelatedSections(listing, CAR_LISTINGS);
+  loadRelatedSections(listing);
 
   if (window.lucide) lucide.createIcons();
 }
@@ -627,12 +596,61 @@ function sellerBlock(listing) {
     </div>`;
 }
 
-function relGridCard(item) {
-  const img = (item.images && item.images[0]) || '/fallback.svg';
-  return `<a href="/details.html?id=${encodeURIComponent(item.property_id)}" class="block bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/30 transition group">
-      <div class="aspect-square overflow-hidden bg-gray-800"><img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></div>
-      <div class="p-2"><p class="text-xs text-white font-bold truncate">${escapeHtml(item.title)}</p><p class="text-xs text-blue-500 font-bold mt-1">${formatPrice(item)}</p></div>
-    </a>`;
+function relSectionsHtml() {
+  return `
+      <div id="similar-section" class="hidden mb-6">
+        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Similar Products</h3>
+        <div class="rel-grid flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory"></div>
+      </div>
+      <div id="related-section" class="hidden mb-6">
+        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Related Products</h3>
+        <div class="rel-grid flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory"></div>
+      </div>
+      <div id="recommended-section" class="hidden mb-6">
+        <h3 class="rel-title text-sm font-bold text-white uppercase tracking-wide mb-4">Recommended For You</h3>
+        <div class="rel-grid flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory"></div>
+      </div>`;
+}
+
+function buildRelatedPool(listing) {
+  const seen = new Map();
+  const add = (arr) => (arr || []).forEach(l => { if (l && l.property_id) seen.set(l.property_id, l); });
+  add(SHOWROOM_LISTINGS);
+  add(TRUCK_LISTINGS);
+  add(MOTORHOME_LISTINGS);
+  add(CAR_LISTINGS);
+  add(PHONE_LISTINGS);
+  add(PET_LISTINGS);
+  add(getAllListings());
+  const cat = getCatalogCategory(listing.category || listing.subcategory);
+  if (cat) add(getCatalogSample(cat.slug, 50));
+  return [...seen.values()].filter(l => l.property_id !== listing.property_id);
+}
+
+function relScore(a, b) {
+  let score = 0;
+  const n = s => String(s || '').trim().toLowerCase();
+  if (a.listing_type && a.listing_type === b.listing_type) score += 40;
+  if (a.category && n(a.category) === n(b.category)) score += 30;
+  if (a.subcategory && n(a.subcategory) === n(b.subcategory)) score += 20;
+  if (a.brand && n(a.brand) === n(b.brand)) score += 15;
+  if (a.breed && n(a.breed) === n(b.breed)) score += 15;
+  if (a.model && n(a.model) === n(b.model)) score += 10;
+  if (a.property_type && n(a.property_type) === n(b.property_type)) score += 15;
+  const pa = parseFloat(a.price) || 0, pb = parseFloat(b.price) || 0;
+  if (pa > 0 && pb > 0) {
+    const ratio = Math.min(pa, pb) / Math.max(pa, pb);
+    if (ratio >= 0.8) score += 10;
+    else if (ratio >= 0.6) score += 6;
+    else if (ratio >= 0.4) score += 3;
+  }
+  if (a.country_code && a.country_code === b.country_code) score += 5;
+  const wa = new Set(n(a.title).split(/[^a-z0-9]+/).filter(w => w.length > 2));
+  const wb = new Set(n(b.title).split(/[^a-z0-9]+/).filter(w => w.length > 2));
+  let overlap = 0;
+  wa.forEach(w => { if (wb.has(w)) overlap++; });
+  score += Math.min(overlap * 2, 10);
+  return score;
 }
 
 function fillRelGrid(sectionId, items) {
@@ -642,24 +660,36 @@ function fillRelGrid(sectionId, items) {
   if (!grid) return;
   if (!items.length) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
-  grid.innerHTML = items.slice(0, 4).map(relGridCard).join('');
+  grid.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  items.slice(0, 10).forEach(item => {
+    const wrap = document.createElement('div');
+    wrap.className = 'shrink-0 w-[260px] sm:w-[320px] snap-start';
+    const card = renderCard(item);
+    card.style.width = '100%';
+    wrap.appendChild(card);
+    frag.appendChild(wrap);
+  });
+  grid.appendChild(frag);
+  if (window.lucide) lucide.createIcons();
 }
 
-function loadRelatedSections(listing, pool) {
-  let poolAll;
-  if (pool) {
-    poolAll = pool.filter(t => t.property_id !== listing.property_id);
-  } else if (listing.listing_type === 'pet') {
-    poolAll = PET_LISTINGS.filter(t => t.property_id !== listing.property_id);
-  } else {
-    poolAll = TRUCK_LISTINGS.filter(t => t.property_id !== listing.property_id);
-  }
-  const similar = poolAll.filter(t => t.category === listing.category);
-  const related = poolAll.filter(t => (t.breed && t.breed === listing.breed) || (t.brand && t.brand === listing.brand));
-  const recommended = [...poolAll].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  fillRelGrid('similar-section', similar.length ? similar : recommended.slice(0, 4));
-  fillRelGrid('related-section', related.length ? related : recommended.slice(0, 4));
-  fillRelGrid('recommended-section', recommended);
+function loadRelatedSections(listing) {
+  const poolAll = buildRelatedPool(listing);
+  const scored = poolAll
+    .map(c => ({ item: c, score: relScore(listing, c) }))
+    .sort((x, y) => y.score - x.score || (y.item.rating || 0) - (x.item.rating || 0));
+  const similar = scored.filter(s => s.score >= 35).map(s => s.item);
+  const used = new Set(similar.map(s => s.property_id));
+  const related = scored.filter(s => s.score >= 15 && s.score < 35 && !used.has(s.item.property_id)).map(s => s.item);
+  const recommended = [...poolAll]
+    .filter(l => !used.has(l.property_id))
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 10);
+  const fallback = scored.filter(s => !used.has(s.item.property_id)).map(s => s.item);
+  fillRelGrid('similar-section', similar.length ? similar : fallback.slice(0, 10));
+  fillRelGrid('related-section', related.length ? related : fallback.slice(0, 10));
+  fillRelGrid('recommended-section', recommended.length ? recommended : fallback.slice(0, 10));
 }
 
 function render(listing) {
@@ -891,6 +921,8 @@ function render(listing) {
         <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">You May Also Like</h3>
         <div id="recommendations-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
       </div>
+
+      ${relSectionsHtml()}
     </div>
   `;
 
@@ -1216,7 +1248,7 @@ async function init() {
     cleanListing(phone);
     document.title = `${phone.title} | Weverse Online Shop`;
     render(phone);
-    try { loadRelatedSections(phone, PHONE_LISTINGS); } catch {}
+    try { loadRelatedSections(phone); } catch {}
     return;
   }
 
@@ -1242,9 +1274,7 @@ async function init() {
   cleanListing(listing);
   document.title = `${listing.title} | Weverse Online Shop`;
   render(listing);
-  if (listing.listing_type === 'product') {
-    try { loadRelatedSections(listing, SHOWROOM_LISTINGS.filter(l => l.listing_type === 'product')); } catch {}
-  }
+  try { loadRelatedSections(listing); } catch {}
 }
 
 init();
