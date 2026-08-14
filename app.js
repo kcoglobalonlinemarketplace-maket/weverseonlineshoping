@@ -586,7 +586,7 @@ function renderCategories(){
   const btn=document.createElement("button");
   btn.dataset.dept="all";
   btn.className="nav-dept-btn active flex items-center gap-2 shrink-0 px-4 py-2.5 rounded-xl border border-blue-500/40 bg-blue-500/10 text-blue-600 text-sm font-bold uppercase tracking-wide transition hover:bg-blue-500/20 active:scale-[0.97]";
-  btn.innerHTML='<span class="text-lg leading-none">ðŸ›’</span><span class="whitespace-nowrap">Weverse Shop List</span><i data-lucide="chevron-down" class="w-4 h-4"></i>';
+  btn.innerHTML='<span class="shrink-0 w-6 h-6 bg-black rounded-md flex items-center justify-center overflow-hidden"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" aria-hidden="true"><path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="whitespace-nowrap">Weverse Shop List</span><i data-lucide="chevron-down" class="w-4 h-4"></i>';
   btn.addEventListener("click",()=>{toggleAllPanel(btn);});
   c.appendChild(btn);
   if(window.lucide)lucide.createIcons();
@@ -681,7 +681,7 @@ function openAllPanel(btn){
   scroller.innerHTML='<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-4 pb-24">'
     +'<div class="sticky top-0 -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 pt-1 pb-3 bg-white/95 backdrop-blur-xl border-b border-gray-200 mb-4 z-10 flex items-center justify-between gap-3">'
       +'<div class="flex items-center gap-3 min-w-0">'
-        +'<span class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><span class="text-xl">ðŸ›’</span></span>'
+        +'<span class="w-11 h-11 rounded-xl bg-black flex items-center justify-center overflow-hidden shrink-0"><svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" aria-hidden="true"><path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
         +'<div class="min-w-0"><h3 class="text-base font-black text-gray-900 tracking-wide truncate">Weverse Shop List</h3><p class="text-[11px] text-gray-500 font-bold uppercase tracking-widest">Shop every category</p></div>'
       +'</div>'
       +'<div class="flex items-center gap-2 shrink-0">'

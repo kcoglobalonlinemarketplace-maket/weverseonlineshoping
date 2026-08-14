@@ -580,7 +580,7 @@ function sellerBlock(listing) {
     <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
       <div class="flex items-center gap-3 mb-4">
         <div class="shrink-0 w-11 h-11 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-gray-200">
-          <img src="/brand-logo.jpeg" alt="Weverse Online Shop" class="w-full h-full object-contain" onerror="this.onerror=null;this.style.display='none'">
+          <img src="/w-logo.svg" alt="Weverse Online Shop" class="w-full h-full object-contain" onerror="this.onerror=null;this.style.display='none'">
         </div>
         <div>
           <p class="text-sm font-bold text-gray-900">Weverse Online Shop</p>

@@ -7,7 +7,7 @@ import { supabase } from './supabase-client.js';
 export const DEFAULT_BADGE = '/verified-badge.svg';
 export const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
 export const DEFAULT_BRAND_SLOGAN = 'GLOBAL SHOPPING • WORLDWIDE DELIVERY';
-export const DEFAULT_BRAND_LOGO = '/brand-logo.jpeg';
+export const DEFAULT_BRAND_LOGO = '/w-logo.svg';
 
 // Centralized inline verified badge — identical design to the homepage badge.
 // #3b82f6 blue circle + white check. Injected beside every brand-name element.
