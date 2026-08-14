@@ -16,7 +16,7 @@ const BADGE_SVG = (cls = 'weverse-badge w-4 h-4 sm:w-[18px] sm:h-[18px] lg:w-5 l
 
 // Centralized W logo — identical to the homepage logo box.
 export const W_LOGO_SVG = (cls = 'w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8') =>
-  `<svg viewBox="0 0 24 24" class="${cls}" fill="none" aria-hidden="true"><path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#0b0f19" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  `  <svg viewBox="0 0 24 24" class="${cls}" fill="none" aria-hidden="true"><path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // Centralized one-line tagline markup — single neutral, letter-spaced line.
 export function taglineHtml() {
