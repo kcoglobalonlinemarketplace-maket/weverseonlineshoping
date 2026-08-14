@@ -1216,6 +1216,7 @@ async function init() {
     cleanListing(phone);
     document.title = `${phone.title} | Weverse Online Shop`;
     render(phone);
+    try { loadRelatedSections(phone, PHONE_LISTINGS); } catch {}
     return;
   }
 

@@ -2,7 +2,7 @@ import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListi
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
-import { PHONE_LISTINGS } from './phone-data.js';
+import { PHONE_LISTINGS, getPhoneBrandGroups } from './phone-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
@@ -528,7 +528,116 @@ function scrollRow(row, dir) {
   track.scrollBy({ left: dir * 260 * 3, behavior: 'smooth' });
 }
 
+// ── Phones brand showcase ────────────────────────────────────────
+// The Phones section shows one beautiful card per brand instead of 25
+// individual cards. Each brand card features the newest model full-body
+// as the hero, with the other models shown as a photo strip at the
+// bottom of the same card. Clicking the hero opens that brand's phones
+// in the full-screen view; clicking a strip photo goes to that phone.
+
+function renderPhoneBrandCard(group) {
+  const brand = group.brand;
+  const phones = group.phones;
+  const hero = phones[0];
+  const heroImg = hero.images?.[0] || FALLBACK_IMG;
+  const otherModels = phones.slice(1);
+
+  const prices = phones.map(p => p.price).filter(n => typeof n === 'number' && Number.isFinite(n));
+  const minPrice = prices.length ? Math.min(...prices) : 0;
+  const maxPrice = prices.length ? Math.max(...prices) : minPrice;
+  const priceRange = formatPrice({ price: minPrice, currency: 'USD' }) + (maxPrice !== minPrice ? ` – ${formatPrice({ price: maxPrice, currency: 'USD' })}` : '');
+
+  const thumbs = otherModels.map((p) => {
+    const pid = p.id || p.property_id;
+    const img = p.images?.[0] || FALLBACK_IMG;
+    return `
+      <button type="button" class="phone-thumb relative aspect-square rounded-lg overflow-hidden bg-gray-800 border border-gray-700/60 hover:border-blue-500/70 transition group/thumb" data-phone-id="${pid}" title="${p.title}">
+        <img src="${img}" alt="${p.model || p.title}" loading="lazy" decoding="async"
+             class="w-full h-full object-contain group-hover/thumb:scale-105 transition-transform duration-300"
+             onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      </button>`;
+  }).join('');
+
+  const card = document.createElement('div');
+  card.className = 'showroom-card group relative w-[300px] sm:w-[340px] shrink-0 bg-[#0f172a]/80 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 flex flex-col cursor-pointer';
+  card.dataset.phoneBrand = brand;
+
+  card.innerHTML = `
+    <div class="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-gray-800 via-gray-900 to-black">
+      <img src="${heroImg}" alt="${brand} newest phone" loading="lazy" decoding="async"
+           class="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500"
+           onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      <span class="absolute top-2 left-2 inline-flex items-center gap-1 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">
+        <i data-lucide="smartphone" class="w-3 h-3"></i>${brand}
+      </span>
+      <span class="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-gray-300 text-[10px] font-bold px-2 py-1 rounded-full">${phones.length} models</span>
+    </div>
+    <div class="p-3 flex flex-col flex-1">
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <h3 class="text-[15px] font-bold text-white leading-snug truncate">${brand} Phones</h3>
+        <span class="shrink-0 text-sm font-black text-blue-400">${priceRange}</span>
+      </div>
+      <p class="text-xs text-gray-400 truncate mb-2">${hero.title}</p>
+      <div class="grid grid-cols-4 gap-1.5 mt-auto">
+        ${thumbs}
+      </div>
+    </div>
+  `;
+
+  card.querySelectorAll('.phone-thumb').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.location.href = `/details.html?id=${btn.dataset.phoneId}`;
+    });
+  });
+
+  card.addEventListener('click', () => openAllPhonesView(brand));
+
+  return card;
+}
+
+function renderPhoneBrandsRow(rowDef) {
+  const groups = getPhoneBrandGroups();
+  const row = document.createElement('div');
+  row.className = 'showroom-row relative';
+  row.dataset.rowId = rowDef.id;
+
+  row.innerHTML = `
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-400"></i>
+        </span>
+        <h4 class="text-base font-bold text-gray-100 tracking-wide truncate">${rowDef.label}</h4>
+        <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${groups.reduce((n, g) => n + g.phones.length, 0)} Phones</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll left">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Scroll right">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+    <div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"></div>
+  `;
+
+  const track = row.querySelector('.hscroll');
+  const frag = document.createDocumentFragment();
+  groups.forEach((g) => frag.appendChild(renderPhoneBrandCard(g)));
+  track.appendChild(frag);
+
+  row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
+  row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
+
+  return row;
+}
+
 function renderRow(rowDef) {
+  if (rowDef.allPhones) {
+    return renderPhoneBrandsRow(rowDef);
+  }
   let listings;
   if (rowDef.allTrucks) {
     listings = TRUCK_LISTINGS;
@@ -536,13 +645,11 @@ function renderRow(rowDef) {
     listings = MOTORHOME_LISTINGS;
   } else if (rowDef.allCars) {
     listings = CAR_LISTINGS;
-  } else if (rowDef.allPhones) {
-    listings = PHONE_LISTINGS;
   } else {
     listings = getListingsByIds(rowDef.ids);
   }
   let catalogExtra = [];
-  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.allPhones) {
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
   }
   if (catalogExtra.length > 0) {
@@ -1043,7 +1150,7 @@ let allPhonesOverlay = null;
 let _phonesLoader = null;
 let _phonesEscBound = false;
 
-function buildAllPhonesOverlay() {
+function buildAllPhonesOverlay(brand) {
   const existing = document.getElementById('all-phones-overlay');
   if (existing) existing.remove();
   allPhonesOverlay = document.createElement('div');
@@ -1056,7 +1163,7 @@ function buildAllPhonesOverlay() {
     <div class="flex items-center gap-3 min-w-0">
       <span class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0"><i data-lucide="smartphone" class="w-5 h-5 text-blue-400"></i></span>
       <div class="min-w-0">
-        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Phones</h2>
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">${brand ? `${brand} Phones` : 'All Phones'}</h2>
         <p id="all-phones-count" class="text-[11px] text-gray-400 truncate"></p>
       </div>
     </div>
@@ -1071,7 +1178,8 @@ function buildAllPhonesOverlay() {
   allPhonesOverlay.appendChild(body);
   document.body.appendChild(allPhonesOverlay);
 
-  const phones = PHONE_LISTINGS.filter(l => l && !isCatalogListingHidden(l.property_id));
+  const phones = (brand ? PHONE_LISTINGS.filter(l => l.brand === brand) : PHONE_LISTINGS)
+    .filter(l => l && !isCatalogListingHidden(l.property_id));
   const grid = document.createElement('div');
   grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
   body.appendChild(grid);
@@ -1079,7 +1187,9 @@ function buildAllPhonesOverlay() {
   _phonesLoader = createIncrementalLoader(allPhonesOverlay, body, [{ grid, items: phones }]);
 
   const countEl = document.getElementById('all-phones-count');
-  if (countEl) countEl.textContent = `${phones.length} flagship phones · Apple, Samsung, Google, Xiaomi & OnePlus`;
+  if (countEl) countEl.textContent = brand
+    ? `${phones.length} ${brand} phones`
+    : `${phones.length} flagship phones · Apple, Samsung, Google, Xiaomi & OnePlus`;
 
   header.querySelector('.close-all-phones').addEventListener('click', closeAllPhonesView);
   allPhonesOverlay.addEventListener('click', (e) => { if (e.target === allPhonesOverlay) closeAllPhonesView(); });
@@ -1092,8 +1202,8 @@ function buildAllPhonesOverlay() {
   if (window.lucide) lucide.createIcons();
 }
 
-function openAllPhonesView() {
-  if (!allPhonesOverlay || !document.getElementById('all-phones-overlay')) buildAllPhonesOverlay();
+function openAllPhonesView(brand) {
+  buildAllPhonesOverlay(brand || '');
   if (window.lucide) lucide.createIcons();
   allPhonesOverlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
