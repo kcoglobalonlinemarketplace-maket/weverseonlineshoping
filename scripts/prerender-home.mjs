@@ -46,7 +46,11 @@ const ROW_TO_CATALOG_SLUG = {
 const HOUSE_SECTION_IDS = new Set(['local-houses', 'modern-luxury', 'commercial-land']);
 const VEHICLE_SECTION_IDS = new Set(['cars', 'trucks-buses']);
 
-// First showroom sections shown on the homepage (subset of REAL_ESTATE_SECTIONS).
+// The only showroom section baked into the HTML is the very first homepage
+// section (local-houses → affordable-homes teaser). Baking the full first
+// screen keeps the paint instant while keeping index.html small, so slow
+// mobile connections don't stall on a large HTML download. The remaining
+// sections (pets, motorhomes, cars, …) are appended by JS at load.
 const PRE_RENDER_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
@@ -56,27 +60,6 @@ const PRE_RENDER_SECTIONS = [
       { id: 'apartment-homes', label: 'Apartments', icon: 'building', ids: ['KCO-000006'] },
       { id: 'cape-cod', label: 'Cape Cod & Duplex', icon: 'house', ids: ['KCO-000003', 'KCO-000004'] },
       { id: 'beach-houses', label: 'Beach Houses', icon: 'palmtree', ids: ['KCO-000009', 'KCO-000015'] },
-    ],
-  },
-  {
-    id: 'pets', label: 'Beautiful Dogs', icon: 'paw-print',
-    subtitle: '30 gorgeous, healthy dog breeds — new beauties first, all in one line.',
-    rows: [
-      { id: 'pets-all', label: 'Beautiful Dogs', icon: 'paw-print', ids: ['KCO-003019', 'KCO-003020', 'KCO-003021', 'KCO-003022', 'KCO-003023', 'KCO-003024', 'KCO-003025', 'KCO-003026', 'KCO-003027', 'KCO-003028', 'KCO-003029', 'KCO-003030', 'KCO-003031', 'KCO-003032', 'KCO-003033', 'KCO-003001', 'KCO-003002', 'KCO-003003', 'KCO-003004', 'KCO-003005', 'KCO-003006', 'KCO-003007', 'KCO-003008', 'KCO-003009', 'KCO-003010', 'KCO-003011', 'KCO-003012', 'KCO-003013', 'KCO-003014', 'KCO-003015'] },
-    ],
-  },
-  {
-    id: 'motorhomes-boats', label: 'Motorhomes & Boats', icon: 'bus',
-    subtitle: 'Luxury motorhomes, RVs, and marine vehicles for travel and adventure.',
-    rows: [
-      { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
-    ],
-  },
-  {
-    id: 'cars', label: 'Cars', icon: 'car-front',
-    subtitle: 'Latest-model cars from trusted sellers worldwide.',
-    rows: [
-      { id: 'all-cars', label: 'All Cars', icon: 'car-front', allCars: true },
     ],
   },
 ];
@@ -323,7 +306,10 @@ function heroHtml() {
 }
 
 function buildGridHtml() {
-  const order = ['local-houses', 'pets', 'motorhomes-boats', 'cars'];
+  // Keep the pre-rendered grid to just the first section's teaser row so
+  // index.html stays small for slow connections. The rest of the sections
+  // and their view-all buttons are appended by JS in the normal order.
+  const order = ['local-houses'];
   const byId = new Map(PRE_RENDER_SECTIONS.map((s) => [s.id, s]));
   let html = '';
   for (const id of order) {
@@ -331,9 +317,6 @@ function buildGridHtml() {
     if (!section) continue;
     const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
     html += sectionHtml(section, isTeaser ? 1 : undefined);
-    if (id === 'pets') html += viewAllButton('dogs');
-    if (id === 'motorhomes-boats') html += viewAllButton('houses');
-    if (id === 'cars') html += viewAllButton('cars');
   }
   return html;
 }
