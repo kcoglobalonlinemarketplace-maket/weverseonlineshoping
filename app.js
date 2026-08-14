@@ -1094,10 +1094,24 @@ function updateShowcaseBadge(){
   b.classList.add('live-badge-in');
 }
 
+// Only the very first autoplay is deferred: on slow connections the hero
+// video (~1MB) must not compete with the page's own scripts or keep the
+// browser's loading indicator busy. It starts after the page has finished
+// loading (with a fallback timer), or immediately if the user changes slides.
+let heroVideoDeferred = true;
 function playActiveVideo(){
   if (isAiAdOverrideActive()) {
     mountAiAdOverlay();
     return;
+  }
+  if (heroVideoDeferred) {
+    heroVideoDeferred = false;
+    if (document.readyState !== 'complete') {
+      const startHeroVideo = () => playActiveVideo();
+      window.addEventListener('load', startHeroVideo, { once: true });
+      setTimeout(startHeroVideo, 3500);
+      return;
+    }
   }
   // Pause hidden videos
   const others=document.querySelectorAll(".carousel-slide.hidden-slide video");
