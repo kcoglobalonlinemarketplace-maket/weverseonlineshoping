@@ -142,14 +142,14 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
   {
     property_id: 'KCO-002011', listing_type: 'product', category: 'Home Appliances', subcategory: 'Televisions',
     title: 'Samsung QLED 8K Smart TV — Very Large Screen',
-    description: 'The Samsung QLED 8K Smart TV is a very big, very beautiful screen that changes the room it lives in. Quantum Dot technology delivers 100% color volume, the 8K AI Upscaling engine sharpens every source into near-8K detail, and the slim, frameless design lets the picture command the wall. A huge statement TV for movie nights and beyond. Stock #STK-002011.',
+    description: 'The Samsung QLED 8K Smart TV is a very big, very beautiful screen that changes the room it lives in. Quantum Dot technology delivers 100% color volume, the Neo Quantum Processor 8K sharpens every source into near-8K detail, and the slim, frameless design lets the picture command the wall. A huge statement TV for movie nights and beyond. Stock #STK-002011.',
     price: 3999, currency: 'USD', country: '', country_code: '',
     brand: 'Samsung', color: 'Black', size: 'Large Screen', material: 'Metal / Plastic',
     images: buildGallery(['7/78/Samsung_QLED_8K_1-1.webm/960px--Samsung_QLED_8K_1-1.webm.jpg']),
     rating: 4.9, rating_count: 421, favorite_count: 355,
     tags: ['New Arrival'],
     availability_status: 'In Stock', stock_quantity: 4, condition: 'New', warranty: '3-Year Warranty',
-    features: ['QLED 8K Resolution', 'Quantum Dot 100% Color Volume', '8K AI Upscaling Engine', 'Slim Frameless Design', 'Smart TV with All Apps'],
+    features: ['QLED 8K Resolution', 'Quantum Dot 100% Color Volume', 'Neo Quantum Processor 8K', 'Slim Frameless Design', 'Smart TV with All Apps'],
     highlights: ['A very big, very beautiful screen', 'Near-8K detail from any source', 'Frameless design for any room'],
   },
   {

@@ -1,4 +1,4 @@
-import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings } from './showroom-data.js';
+import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings, cleanListing } from './showroom-data.js';
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
@@ -356,6 +356,8 @@ function getCatalogListingsForRow(rowDef, existingIds) {
 
 // ── Card rendering ──
 export function renderCard(listing) {
+  cleanListing(listing);
+
   const isProperty = listing.listing_type === 'property';
   const isPet = listing.listing_type === 'pet';
   const isTruck = listing.listing_type === 'vehicle' && listing.category === 'Trucks';

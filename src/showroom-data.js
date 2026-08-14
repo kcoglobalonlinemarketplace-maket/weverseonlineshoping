@@ -1244,6 +1244,36 @@ export function flagEmoji(countryCode) {
   return String.fromCodePoint(...codePoints);
 }
 
+// Removes any AI branding, machine-generated phrases, and fake "Stock #STK-…"
+// codes from customer-visible listing text so everything reads like a real,
+// professional marketplace listing.
+export function cleanListingText(text) {
+  if (text == null) return text;
+  let s = String(text);
+  s = s.replace(/Stock\s+#?STK[-]?[\w-]*\.?/gi, '');
+  s = s.replace(/\b(?:was\s+)?(?:curated|auto-created|created)\s+by\s+admin\s+ai(?:\s+on\s+[0-9TZ:.\-]+)?[^.]*\.?\s*/gi, '');
+  s = s.replace(/\bscanned\s+by\s+[^.]*\.?\s*/gi, '');
+  s = s.replace(/\bgenerated\s+by\s+ai\s+fallback\b/gi, 'professionally prepared');
+  s = s.replace(/\b8K\s+AI[- ]?[Uu]pscaling(?:\s+[Ee]ngine)?\b/gi, 'Neo Quantum Processor 8K');
+  s = s.replace(/\bAI[- ]?(?:managed|powered|curated|created|generated|product|listing|assistant|model|image|content|scan|repair|advertisement|marketing|architecture|automation|settings|chatbot|chat|upscaling)\b/gi, '');
+  s = s.replace(/\bAdmin\s+AI\b/gi, '');
+  s = s.replace(/\bAI\b/gi, '');
+  s = s.replace(/\s{2,}/g, ' ');
+  s = s.replace(/\s+([.,;:!?])/g, '$1');
+  s = s.replace(/^\s*[,.;:]+\s*|\s*[,.;:]+\s*$/g, '');
+  return s.trim();
+}
+
+export function cleanListing(listing) {
+  if (!listing) return listing;
+  listing.title = cleanListingText(listing.title);
+  listing.description = cleanListingText(listing.description);
+  if (Array.isArray(listing.features)) listing.features = listing.features.map(cleanListingText).filter(Boolean);
+  if (Array.isArray(listing.highlights)) listing.highlights = listing.highlights.map(cleanListingText).filter(Boolean);
+  if (Array.isArray(listing.tags)) listing.tags = listing.tags.map(cleanListingText).filter(Boolean);
+  return listing;
+}
+
 // Lookup helper: find a listing by its property_id
 const LISTING_MAP = new Map(SHOWROOM_LISTINGS.map(l => [l.property_id, l]));
 

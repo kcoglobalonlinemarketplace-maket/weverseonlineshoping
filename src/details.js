@@ -1,4 +1,4 @@
-import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListings } from './showroom-data.js';
+import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListings, cleanListing } from './showroom-data.js';
 import { getTruckById, formatTruckPrice, TRUCK_LISTINGS } from './truck-data.js';
 import { getMotorhomeById, MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { getCarById, CAR_LISTINGS } from './car-data.js';
@@ -609,8 +609,8 @@ function sellerBlock(listing) {
   return `
     <div class="bg-[#0f172a]/60 border border-gray-800 rounded-xl p-5">
       <div class="flex items-center gap-3 mb-4">
-        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/20 to-amber-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-          <i data-lucide="store" class="w-5 h-5 text-blue-400"></i>
+        <div class="shrink-0 w-11 h-11 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-gray-800">
+          <img src="/brand-logo.jpeg" alt="Weverse Online Shop" class="w-full h-full object-contain" onerror="this.onerror=null;this.style.display='none'">
         </div>
         <div>
           <p class="text-sm font-bold text-white">Weverse Online Shop</p>
@@ -1188,6 +1188,7 @@ async function init() {
 
   const truck = getTruckById(id);
   if (truck) {
+    cleanListing(truck);
     document.title = `${truck.title} | Weverse Online Shop`;
     renderTruck(truck);
     return;
@@ -1195,6 +1196,7 @@ async function init() {
 
   const motorhome = getMotorhomeById(id);
   if (motorhome) {
+    cleanListing(motorhome);
     document.title = `${motorhome.title} | Weverse Online Shop`;
     renderMotorhome(motorhome);
     return;
@@ -1202,6 +1204,7 @@ async function init() {
 
   const car = getCarById(id);
   if (car) {
+    cleanListing(car);
     document.title = `${car.title} | Weverse Online Shop`;
     renderCar(car);
     return;
@@ -1226,6 +1229,7 @@ async function init() {
     document.getElementById('details-content').innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>';
     return;
   }
+  cleanListing(listing);
   document.title = `${listing.title} | Weverse Online Shop`;
   render(listing);
 }
