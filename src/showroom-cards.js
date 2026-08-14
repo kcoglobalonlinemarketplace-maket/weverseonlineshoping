@@ -109,11 +109,10 @@ const REAL_ESTATE_SECTIONS = [
     ],
   },
   {
-    id: 'pets', label: 'Pets & Dogs', icon: 'paw-print',
-    subtitle: '15 beautiful, healthy dog breeds for sale — each with its own real photos.',
+    id: 'pets', label: 'Beautiful Dogs', icon: 'paw-print',
+    subtitle: '30 gorgeous, healthy dog breeds — new beauties first, all in one line.',
     rows: [
-      { id: 'pets-popular', label: 'Popular & Lovable Breeds', icon: 'heart', ids: ['KCO-003001', 'KCO-003002', 'KCO-003003', 'KCO-003010', 'KCO-003011', 'KCO-003012', 'KCO-003013', 'KCO-003015'] },
-      { id: 'pets-strong', label: 'Strong & Loyal Breeds', icon: 'shield', ids: ['KCO-003004', 'KCO-003005', 'KCO-003006', 'KCO-003007', 'KCO-003008', 'KCO-003009', 'KCO-003014'] },
+      { id: 'pets-all', label: 'Beautiful Dogs', icon: 'paw-print', ids: ['KCO-003019', 'KCO-003020', 'KCO-003021', 'KCO-003022', 'KCO-003023', 'KCO-003024', 'KCO-003025', 'KCO-003026', 'KCO-003027', 'KCO-003028', 'KCO-003029', 'KCO-003030', 'KCO-003031', 'KCO-003032', 'KCO-003033', 'KCO-003001', 'KCO-003002', 'KCO-003003', 'KCO-003004', 'KCO-003005', 'KCO-003006', 'KCO-003007', 'KCO-003008', 'KCO-003009', 'KCO-003010', 'KCO-003011', 'KCO-003012', 'KCO-003013', 'KCO-003014', 'KCO-003015'] },
     ],
   },
   {
@@ -1022,7 +1021,103 @@ function createViewAllTrucksButton() {
   return wrap;
 }
 
-// ── Grid rendering ──
+// ── All Dogs view ───────────────────────────────────────────────
+// "View All Dogs" opens a full-screen catalog of every dog listing
+// (beautiful real photos), shown in a responsive card grid. Reuses
+// the same renderCard + loader as cars and trucks.
+let allDogsOverlay = null;
+let _dogsLoader = null;
+let _dogsEscBound = false;
+
+function collectAllDogs() {
+  const seen = new Set();
+  const out = [];
+  SHOWROOM_LISTINGS.forEach((l) => {
+    if (!l || l.listing_type !== 'pet') return;
+    const id = l.id || l.property_id;
+    if (!id || seen.has(id)) return;
+    if (isCatalogListingHidden(id)) return;
+    seen.add(id);
+    out.push(l);
+  });
+  return out;
+}
+
+function buildAllDogsOverlay() {
+  const existing = document.getElementById('all-dogs-overlay');
+  if (existing) existing.remove();
+  allDogsOverlay = document.createElement('div');
+  allDogsOverlay.id = 'all-dogs-overlay';
+  allDogsOverlay.className = 'hidden fixed inset-0 z-[80] bg-[#070b16] overflow-y-auto overscroll-contain';
+
+  const header = document.createElement('div');
+  header.className = 'sticky top-0 z-10 bg-[#0a1124]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
+  header.innerHTML = `
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0"><i data-lucide="paw-print" class="w-5 h-5 text-blue-400"></i></span>
+      <div class="min-w-0">
+        <h2 class="text-lg font-black text-white tracking-tight leading-tight">All Dogs</h2>
+        <p id="all-dogs-count" class="text-[11px] text-gray-400 truncate"></p>
+      </div>
+    </div>
+    <button class="close-all-dogs btn-press p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" aria-label="Close All Dogs"><i data-lucide="x" class="w-5 h-5"></i></button>
+  `;
+
+  const body = document.createElement('div');
+  body.id = 'all-dogs-body';
+  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
+
+  allDogsOverlay.appendChild(header);
+  allDogsOverlay.appendChild(body);
+  document.body.appendChild(allDogsOverlay);
+
+  const dogs = collectAllDogs();
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
+  body.appendChild(grid);
+
+  _dogsLoader = createIncrementalLoader(allDogsOverlay, body, [{ grid, items: dogs }]);
+
+  const countEl = document.getElementById('all-dogs-count');
+  if (countEl) countEl.textContent = `${dogs.length} beautiful dogs · healthy, happy and ready for a loving home`;
+
+  header.querySelector('.close-all-dogs').addEventListener('click', closeAllDogsView);
+  allDogsOverlay.addEventListener('click', (e) => { if (e.target === allDogsOverlay) closeAllDogsView(); });
+
+  if (!_dogsEscBound) {
+    _dogsEscBound = true;
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllDogsView(); });
+  }
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function openAllDogsView() {
+  if (!allDogsOverlay || !document.getElementById('all-dogs-overlay')) buildAllDogsOverlay();
+  if (window.lucide) lucide.createIcons();
+  allDogsOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  allDogsOverlay.scrollTop = 0;
+  if (_dogsLoader) _dogsLoader.pump();
+}
+
+function closeAllDogsView() {
+  if (!allDogsOverlay) return;
+  allDogsOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function createViewAllDogsButton() {
+  const wrap = document.createElement('div');
+  wrap.className = 'flex justify-center py-1';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'view-all-dogs-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-blue-600/30 transition active:scale-95';
+  btn.innerHTML = `View All Dogs <span class="text-lg">→ 🐶</span>`;
+  btn.addEventListener('click', openAllDogsView);
+  wrap.appendChild(btn);
+  return wrap;
+}
 function renderGrid(gridName) {
   const container = document.querySelector(`[data-showroom-grid="${gridName}"]`);
   if (!container || container.dataset.initialized) return;
@@ -1041,6 +1136,7 @@ function renderGrid(gridName) {
       if (!section) continue;
       const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
       container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
+      if (id === 'pets') container.appendChild(createViewAllDogsButton());
       if (id === 'motorhomes-boats') container.appendChild(createViewAllHousesButton());
       if (id === 'cars') container.appendChild(createViewAllCarsButton());
       if (id === 'trucks-buses') container.appendChild(createViewAllTrucksButton());
@@ -1257,8 +1353,8 @@ const CATEGORY_TO_SECTION_ROW = {
   'Food & Groceries': { section: 'mp-food', row: 'mp-food-all' },
   'Groceries': { section: 'mp-food', row: 'mp-food-all' },
   'Baby': { section: 'mp-baby', row: 'mp-baby-all' },
-  'Pets': { section: 'pets', row: 'pets-popular' },
-  'Dogs': { section: 'pets', row: 'pets-popular' },
+  'Pets': { section: 'pets', row: 'pets-all' },
+  'Dogs': { section: 'pets', row: 'pets-all' },
   'Agriculture': { section: 'mp-agriculture', row: 'mp-agriculture-all' },
   'Books': { section: 'mp-books', row: 'mp-books-all' },
   'Office': { section: 'mp-office', row: 'mp-office-all' },
@@ -1320,7 +1416,7 @@ const CATEGORY_KEYWORDS = [
   { keywords: ['sport', 'fitness', 'gym', 'athletic'], target: { section: 'mp-sports', row: 'mp-sports-all' } },
   { keywords: ['food', 'grocer'], target: { section: 'mp-food', row: 'mp-food-all' } },
   { keywords: ['baby', 'infant'], target: { section: 'mp-baby', row: 'mp-baby-all' } },
-  { keywords: ['pet', 'dog', 'cat', 'animal'], target: { section: 'pets', row: 'pets-popular' } },
+  { keywords: ['pet', 'dog', 'cat', 'animal'], target: { section: 'pets', row: 'pets-all' } },
   { keywords: ['agriculture', 'farm', 'seed'], target: { section: 'mp-agriculture', row: 'mp-agriculture-all' } },
   { keywords: ['book', 'reading'], target: { section: 'mp-books', row: 'mp-books-all' } },
   { keywords: ['office', 'stationery'], target: { section: 'mp-office', row: 'mp-office-all' } },

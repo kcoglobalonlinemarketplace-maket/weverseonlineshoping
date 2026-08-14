@@ -5,6 +5,7 @@ import { HOUSE_KITCHEN_LISTINGS } from './home-kitchen-data.js';
 import { APPLIANCE_SHOWCASE_LISTINGS } from './appliance-showcase-data.js';
 import { APPLIANCE_ESSENTIALS_LISTINGS } from './appliance-essentials-data.js';
 import { PET_LISTINGS } from './pet-data.js';
+import { NEW_DOG_LISTINGS } from './dog-data.js';
 
 const PEXELS = (id, w = 800) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
@@ -1192,6 +1193,10 @@ SHOWROOM_LISTINGS.push(...APPLIANCE_ESSENTIALS_LISTINGS);
 
 // Beautiful Pets — 15 dog breeds for sale in the "Pets & Dogs" section.
 SHOWROOM_LISTINGS.push(...PET_LISTINGS);
+
+// Beautiful Dogs — 15 extra gorgeous, healthy breeds shown at the front
+// of the "Beautiful Dogs" line.
+SHOWROOM_LISTINGS.push(...NEW_DOG_LISTINGS);
 
 // Real-world coordinates for every seeded property listing so showroom cards can
 // render a map preview and the details page map can skip geocoding lookups.
