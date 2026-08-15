@@ -3,8 +3,6 @@ import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
 import { PHONE_LISTINGS, getPhoneBrandGroups } from './phone-data.js';
-import { MEN_LISTINGS } from './men-data.js';
-import { WOMAN_LISTINGS } from './woman-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
@@ -150,20 +148,7 @@ const REAL_ESTATE_SECTIONS = [
       { id: 'all-phones', label: 'Phones', icon: 'smartphone', allPhones: true },
     ],
   },
-  {
-    id: 'men', label: 'Man', icon: 'shirt',
-    subtitle: '90 international fashion & lifestyle products — one card per category.',
-    rows: [
-      { id: 'all-men', label: 'Man', icon: 'shirt', allMen: true },
-    ],
-  },
-  {
-    id: 'woman', label: 'Woman Love 💕', icon: 'heart',
-    subtitle: '149 beautiful makeup, skincare, fashion, jewelry & lifestyle products — one card per category.',
-    rows: [
-      { id: 'all-woman', label: 'Woman Love 💕', icon: 'heart', allWomen: true },
-    ],
-  },
+
   {
     id: 'trucks-buses', label: 'Trucks & Buses', icon: 'truck',
     subtitle: 'Heavy-duty trucks and commercial transport vehicles.',
@@ -206,72 +191,7 @@ const MARKETPLACE_SECTIONS = [
       { id: 'mp-appl-purifiers', label: 'Air Purifiers', icon: 'air-vent', ids: ['KCO-003114', 'KCO-003115', 'KCO-003116'] },
     ],
   },
-  { id: 'mp-men', label: 'Men', icon: 'shirt', subtitle: '90 international fashion, footwear, grooming & tech products.', rows: [{ id: 'mp-men-all', label: 'All Men', icon: 'shirt', allMen: true }] },
-  { id: 'mp-women', label: 'Women', icon: 'heart', subtitle: '149 international makeup, skincare, fashion, jewelry, bags, shoes, home, tech & fitness products.', rows: [{ id: 'mp-women-all', label: 'All Women', icon: 'heart', allWomen: true }] },
-  { id: 'mp-kids', label: 'Kids', icon: 'baby', subtitle: 'Clothing, toys, and essentials for children.', rows: [{ id: 'mp-kids-all', label: 'All Kids', icon: 'baby', ids: [] }] },
-  { id: 'mp-fashion', label: 'Fashion', icon: 'shirt', subtitle: 'Trendy apparel and designer fashion for everyone.', rows: [{ id: 'mp-fashion-all', label: 'All Fashion', icon: 'shirt', ids: [] }] },
-  { id: 'mp-jewelry', label: 'Jewelry', icon: 'gem', subtitle: 'Fine jewelry, watches, and luxury accessories.', rows: [{ id: 'mp-jewelry-all', label: 'All Jewelry', icon: 'gem', ids: [] }] },
-  { id: 'mp-beauty', label: 'Beauty', icon: 'flower', subtitle: 'Skincare, makeup, and personal care products.', rows: [{ id: 'mp-beauty-all', label: 'All Beauty', icon: 'flower', ids: [] }] },
-  { id: 'mp-home', label: 'Home', icon: 'home', subtitle: 'Everything for your living space and home decor.', rows: [{ id: 'mp-home-all', label: 'All Home', icon: 'home', ids: [] }] },
-  { id: 'mp-furniture', label: 'Furniture', icon: 'armchair', subtitle: 'Stylish furniture for every room in your home.', rows: [{ id: 'mp-furniture-all', label: 'All Furniture', icon: 'armchair', ids: [] }] },
   { id: 'mp-kitchen', label: 'Kitchen', icon: 'utensils', subtitle: 'Cookware, dining, and kitchen essentials.', rows: [{ id: 'mp-kitchen-all', label: 'All Kitchen', icon: 'utensils', ids: [] }] },
-  { id: 'mp-home-kitchen', label: 'Home & Kitchen', icon: 'home', subtitle: 'Appliances, cookware, furniture, and essentials for every room.', rows: [
-      { id: 'mp-hk-kitchen-appliances', label: 'Kitchen Appliances', icon: 'microwave', ids: ['KCO-001001','KCO-001002','KCO-001003','KCO-001004','KCO-001005','KCO-001006','KCO-001007','KCO-001008','KCO-001009','KCO-001010','KCO-001011','KCO-001012','KCO-001013','KCO-001014','KCO-001015','KCO-001016','KCO-001017','KCO-001018','KCO-001019'] },
-      { id: 'mp-hk-cooking', label: 'Cooking', icon: 'chef-hat', ids: ['KCO-001020','KCO-001021','KCO-001022','KCO-001023','KCO-001024','KCO-001025','KCO-001026','KCO-001027','KCO-001028','KCO-001029','KCO-001030','KCO-001031','KCO-001032','KCO-001033','KCO-001034','KCO-001035','KCO-001036','KCO-001037'] },
-      { id: 'mp-hk-food-prep', label: 'Food Preparation', icon: 'blender', ids: ['KCO-001038','KCO-001039','KCO-001040','KCO-001041','KCO-001042','KCO-001043','KCO-001044','KCO-001045','KCO-001046','KCO-001047','KCO-001048','KCO-001049','KCO-001050','KCO-001051','KCO-001052','KCO-001053'] },
-      { id: 'mp-hk-refrigeration', label: 'Refrigeration', icon: 'refrigerator', ids: ['KCO-001054','KCO-001055','KCO-001056','KCO-001057','KCO-001058','KCO-001059','KCO-001060','KCO-001061','KCO-001062','KCO-001063','KCO-001064','KCO-001065'] },
-      { id: 'mp-hk-cleaning', label: 'Cleaning', icon: 'spray-can', ids: ['KCO-001066','KCO-001067','KCO-001068','KCO-001069','KCO-001070','KCO-001071','KCO-001072','KCO-001073','KCO-001074','KCO-001075','KCO-001076','KCO-001077','KCO-001078','KCO-001079','KCO-001080','KCO-001081','KCO-001082','KCO-001083'] },
-      { id: 'mp-hk-laundry', label: 'Laundry', icon: 'washing-machine', ids: ['KCO-001084','KCO-001085','KCO-001086','KCO-001087','KCO-001088','KCO-001089','KCO-001090','KCO-001091','KCO-001092','KCO-001093','KCO-001094','KCO-001095','KCO-001096','KCO-001097'] },
-      { id: 'mp-hk-furniture', label: 'Furniture', icon: 'armchair', ids: ['KCO-001098','KCO-001099','KCO-001100','KCO-001101','KCO-001102','KCO-001103','KCO-001104','KCO-001105','KCO-001106','KCO-001107','KCO-001108','KCO-001109','KCO-001110','KCO-001111','KCO-001112','KCO-001113','KCO-001114','KCO-001115','KCO-001116','KCO-001117','KCO-001118','KCO-001119'] },
-      { id: 'mp-hk-bedroom', label: 'Bedroom', icon: 'bed', ids: ['KCO-001120','KCO-001121','KCO-001122','KCO-001123','KCO-001124','KCO-001125','KCO-001126','KCO-001127','KCO-001128','KCO-001129','KCO-001130','KCO-001131','KCO-001132','KCO-001133','KCO-001134','KCO-001135'] },
-      { id: 'mp-hk-bathroom', label: 'Bathroom', icon: 'shower-head', ids: ['KCO-001136','KCO-001137','KCO-001138','KCO-001139','KCO-001140','KCO-001141','KCO-001142','KCO-001143','KCO-001144','KCO-001145','KCO-001146','KCO-001147'] },
-      { id: 'mp-hk-security', label: 'Home Security', icon: 'shield-check', ids: ['KCO-001148','KCO-001149','KCO-001150','KCO-001151','KCO-001152','KCO-001153','KCO-001154','KCO-001155','KCO-001156','KCO-001157','KCO-001158','KCO-001159','KCO-001160','KCO-001161'] },
-      { id: 'mp-hk-tools', label: 'Tools & Maintenance', icon: 'hammer', ids: ['KCO-001162','KCO-001163','KCO-001164','KCO-001165','KCO-001166','KCO-001167','KCO-001168','KCO-001169','KCO-001170','KCO-001171','KCO-001172','KCO-001173','KCO-001174','KCO-001175'] },
-      { id: 'mp-hk-org', label: 'Home Organization', icon: 'package', ids: ['KCO-001176','KCO-001177','KCO-001178','KCO-001179','KCO-001180','KCO-001181','KCO-001182','KCO-001183','KCO-001184','KCO-001185','KCO-001186','KCO-001187','KCO-001188','KCO-001189'] },
-      { id: 'mp-hk-family', label: 'Family & Baby', icon: 'baby', ids: ['KCO-001190','KCO-001191','KCO-001192','KCO-001193','KCO-001194','KCO-001195','KCO-001196','KCO-001197','KCO-001198','KCO-001199','KCO-001200'] },
-  ] },
-  { id: 'mp-electronics', label: 'Electronics', icon: 'cpu', subtitle: 'Latest electronics and gadgets for tech lovers.', rows: [{ id: 'mp-electronics-all', label: 'All Electronics', icon: 'cpu', ids: [] }] },
-  { id: 'mp-computers', label: 'Computers', icon: 'monitor', subtitle: 'Laptops, desktops, and computing accessories.', rows: [{ id: 'mp-computers-all', label: 'All Computers', icon: 'monitor', ids: [] }] },
-  { id: 'mp-gaming', label: 'Gaming', icon: 'gamepad-2', subtitle: 'Consoles, games, and gaming accessories.', rows: [{ id: 'mp-gaming-all', label: 'All Gaming', icon: 'gamepad-2', ids: [] }] },
-  { id: 'mp-sports', label: 'Sports', icon: 'dumbbell', subtitle: 'Sporting goods and fitness equipment for athletes.', rows: [{ id: 'mp-sports-all', label: 'All Sports', icon: 'dumbbell', ids: [] }] },
-  { id: 'mp-food', label: 'Food & Groceries', icon: 'shopping-basket', subtitle: 'Fresh food, groceries, and everyday essentials.', rows: [{ id: 'mp-food-all', label: 'All Food & Groceries', icon: 'shopping-basket', ids: [] }] },
-  { id: 'mp-baby', label: 'Baby', icon: 'baby', subtitle: 'Baby care products, clothing, and nursery items.', rows: [{ id: 'mp-baby-all', label: 'All Baby', icon: 'baby', ids: [] }] },
-  { id: 'mp-pets', label: 'Pets', icon: 'paw-print', subtitle: 'Pet food, supplies, and accessories for your animals.', rows: [{ id: 'mp-pets-all', label: 'All Pets', icon: 'paw-print', ids: [] }] },
-  { id: 'mp-agriculture', label: 'Agriculture', icon: 'wheat', subtitle: 'Seeds, tools, and equipment for farming.', rows: [{ id: 'mp-agriculture-all', label: 'All Agriculture', icon: 'wheat', ids: [] }] },
-  { id: 'mp-books', label: 'Books', icon: 'book-open', subtitle: 'Bestsellers, textbooks, and digital reading.', rows: [{ id: 'mp-books-all', label: 'All Books', icon: 'book-open', ids: [] }] },
-  { id: 'mp-office', label: 'Office', icon: 'briefcase', subtitle: 'Office supplies, stationery, and business essentials.', rows: [{ id: 'mp-office-all', label: 'All Office', icon: 'briefcase', ids: [] }] },
-  { id: 'mp-business', label: 'Business & Industrial', icon: 'factory', subtitle: 'Industrial equipment and business supplies.', rows: [{ id: 'mp-business-all', label: 'All Business & Industrial', icon: 'factory', ids: [] }] },
-  { id: 'mp-health', label: 'Health & Medical', icon: 'heart-pulse', subtitle: 'Health, wellness, and medical supplies.', rows: [{ id: 'mp-health-all', label: 'All Health & Medical', icon: 'heart-pulse', ids: [] }] },
-  { id: 'mp-music', label: 'Musical Instruments', icon: 'music', subtitle: 'Instruments and gear for musicians.', rows: [{ id: 'mp-music-all', label: 'All Musical Instruments', icon: 'music', ids: [] }] },
-  { id: 'mp-arts', label: 'Arts & Crafts', icon: 'palette', subtitle: 'Art supplies, crafts, and creative materials.', rows: [{ id: 'mp-arts-all', label: 'All Arts & Crafts', icon: 'palette', ids: [] }] },
-  { id: 'mp-toys', label: 'Toys & Hobbies', icon: 'toy-brick', subtitle: 'Toys, games, and hobby supplies for all ages.', rows: [{ id: 'mp-toys-all', label: 'All Toys & Hobbies', icon: 'toy-brick', ids: [] }] },
-  { id: 'mp-travel', label: 'Travel & Luggage', icon: 'plane', subtitle: 'Luggage, travel accessories, and outdoor gear.', rows: [{ id: 'mp-travel-all', label: 'All Travel & Luggage', icon: 'plane', ids: [] }] },
-  { id: 'mp-watches', label: 'Watches & Accessories', icon: 'watch', subtitle: 'Premium watches and stylish accessories.', rows: [{ id: 'mp-watches-all', label: 'All Watches & Accessories', icon: 'watch', ids: [] }] },
-  { id: 'mp-garden', label: 'Garden & Outdoor', icon: 'trees', subtitle: 'Garden tools, outdoor decor, and patio essentials.', rows: [{ id: 'mp-garden-all', label: 'All Garden & Outdoor', icon: 'trees', ids: [] }] },
-  { id: 'mp-party', label: 'Party & Event Supplies', icon: 'party-popper', subtitle: 'Decorations and supplies for celebrations.', rows: [{ id: 'mp-party-all', label: 'All Party & Event Supplies', icon: 'party-popper', ids: [] }] },
-  { id: 'mp-cameras', label: 'Cameras & Photography', icon: 'camera', subtitle: 'Cameras, lenses, and photography gear.', rows: [{ id: 'mp-cameras-all', label: 'All Cameras & Photography', icon: 'camera', ids: [] }] },
-  { id: 'mp-software', label: 'Software & Digital Products', icon: 'download', subtitle: 'Software licenses, apps, and digital downloads.', rows: [{ id: 'mp-software-all', label: 'All Software & Digital', icon: 'download', ids: [] }] },
-  { id: 'mp-collectibles', label: 'Collectibles & Memorabilia', icon: 'medal', subtitle: 'Rare collectibles and valuable memorabilia.', rows: [{ id: 'mp-collectibles-all', label: 'All Collectibles', icon: 'medal', ids: [] }] },
-  { id: 'mp-safety', label: 'Safety & Security', icon: 'shield-check', subtitle: 'Security systems and safety equipment.', rows: [{ id: 'mp-safety-all', label: 'All Safety & Security', icon: 'shield-check', ids: [] }] },
-  { id: 'mp-fitness', label: 'Fitness Equipment', icon: 'dumbbell', subtitle: 'Home gym and professional fitness equipment.', rows: [{ id: 'mp-fitness-all', label: 'All Fitness Equipment', icon: 'dumbbell', ids: [] }] },
-  { id: 'mp-camping', label: 'Camping & Hiking', icon: 'tent', subtitle: 'Outdoor gear for camping and hiking adventures.', rows: [{ id: 'mp-camping-all', label: 'All Camping & Hiking', icon: 'tent', ids: [] }] },
-  { id: 'mp-pool', label: 'Pool & Spa', icon: 'waves', subtitle: 'Pool, spa, and hot tub supplies and equipment.', rows: [{ id: 'mp-pool-all', label: 'All Pool & Spa', icon: 'waves', ids: [] }] },
-  { id: 'mp-industrial', label: 'Industrial Tools & Equipment', icon: 'hammer', subtitle: 'Professional tools and industrial machinery.', rows: [{ id: 'mp-industrial-all', label: 'All Industrial Tools', icon: 'hammer', ids: [] }] },
-  { id: 'mp-packaging', label: 'Packaging & Shipping Supplies', icon: 'package', subtitle: 'Boxes, mailers, and shipping materials.', rows: [{ id: 'mp-packaging-all', label: 'All Packaging & Shipping', icon: 'package', ids: [] }] },
-  { id: 'mp-cleaning', label: 'Cleaning Supplies', icon: 'spray-can', subtitle: 'Cleaning products and janitorial supplies.', rows: [{ id: 'mp-cleaning-all', label: 'All Cleaning Supplies', icon: 'spray-can', ids: [] }] },
-  { id: 'mp-religious', label: 'Religious & Spiritual Items', icon: 'church', subtitle: 'Religious items and spiritual products.', rows: [{ id: 'mp-religious-all', label: 'All Religious & Spiritual', icon: 'church', ids: [] }] },
-  { id: 'mp-flowers', label: 'Flowers & Gifts', icon: 'flower', subtitle: 'Fresh flowers, bouquets, and gift items.', rows: [{ id: 'mp-flowers-all', label: 'All Flowers & Gifts', icon: 'flower', ids: [] }] },
-  { id: 'mp-luxury', label: 'Luxury Goods', icon: 'crown', subtitle: 'Exclusive luxury items and premium goods.', rows: [{ id: 'mp-luxury-all', label: 'All Luxury Goods', icon: 'crown', ids: [] }] },
-  { id: 'mp-wedding', label: 'Wedding Supplies', icon: 'heart', subtitle: 'Everything for your special day.', rows: [{ id: 'mp-wedding-all', label: 'All Wedding Supplies', icon: 'heart', ids: [] }] },
-  { id: 'mp-costumes', label: 'Costumes & Cosplay', icon: 'theater', subtitle: 'Costumes, cosplay outfits, and accessories.', rows: [{ id: 'mp-costumes-all', label: 'All Costumes & Cosplay', icon: 'theater', ids: [] }] },
-  { id: 'mp-coins', label: 'Coins & Bullion', icon: 'circle-dollar-sign', subtitle: 'Gold, silver coins, and precious metal bullion.', rows: [{ id: 'mp-coins-all', label: 'All Coins & Bullion', icon: 'circle-dollar-sign', ids: [] }] },
-  { id: 'mp-fireplace', label: 'Fireplace & Heating', icon: 'flame', subtitle: 'Fireplaces, heaters, and home heating solutions.', rows: [{ id: 'mp-fireplace-all', label: 'All Fireplace & Heating', icon: 'flame', ids: [] }] },
-  { id: 'mp-marine', label: 'Marine & Boating', icon: 'sailboat', subtitle: 'Boats, marine parts, and boating accessories.', rows: [{ id: 'mp-marine-all', label: 'All Marine & Boating', icon: 'sailboat', ids: [] }] },
-  { id: 'mp-rv', label: 'RV & Camper Accessories', icon: 'bus', subtitle: 'Parts and accessories for RVs and campers.', rows: [{ id: 'mp-rv-all', label: 'All RV & Camper', icon: 'bus', ids: [] }] },
-  { id: 'mp-educational', label: 'Educational Supplies', icon: 'graduation-cap', subtitle: 'Learning materials and educational resources.', rows: [{ id: 'mp-educational-all', label: 'All Educational Supplies', icon: 'graduation-cap', ids: [] }] },
-  { id: 'mp-funeral', label: 'Funeral & Memorial Supplies', icon: 'flower', subtitle: 'Memorial products and funeral supplies.', rows: [{ id: 'mp-funeral-all', label: 'All Funeral & Memorial', icon: 'flower', ids: [] }] },
-  { id: 'mp-bicycles', label: 'Bicycles', icon: 'bike', subtitle: 'Bicycles, e-bikes, and cycling accessories.', rows: [{ id: 'mp-bicycles-all', label: 'All Bicycles', icon: 'bike', ids: [] }] },
-  { id: 'mp-future', label: 'Future Categories', icon: 'clock', subtitle: 'New categories coming soon to the marketplace.', rows: [{ id: 'mp-future-all', label: 'Coming Soon', icon: 'clock', ids: [] }] },
 ];
 
 // ── Catalog-backed rows ────────────────────────────────────────
@@ -293,57 +213,7 @@ const ROW_TO_CATALOG_SLUG = {
   'all-cars': 'cars',
   'all-trucks': 'trucks',
   'all-motorhomes': 'motorhomes',
-  // Marketplace categories
-  'mp-men-all': 'men',
-  'mp-women-all': 'women',
-  'mp-kids-all': 'kids',
-  'mp-fashion-all': 'fashion',
-  'mp-jewelry-all': 'jewelry',
-  'mp-beauty-all': 'beauty',
-  'mp-home-all': 'home',
-  'mp-furniture-all': 'furniture',
   'mp-kitchen-all': 'kitchen',
-  'mp-electronics-all': 'electronics',
-  'mp-computers-all': 'computers',
-  'mp-gaming-all': 'gaming',
-  'mp-sports-all': 'sports',
-  'mp-food-all': 'food',
-  'mp-baby-all': 'baby',
-  'mp-pets-all': 'pets',
-  'mp-agriculture-all': 'agriculture',
-  'mp-books-all': 'books',
-  'mp-office-all': 'office',
-  'mp-business-all': 'business',
-  'mp-health-all': 'health',
-  'mp-music-all': 'music',
-  'mp-arts-all': 'arts',
-  'mp-toys-all': 'toys',
-  'mp-travel-all': 'travel',
-  'mp-watches-all': 'watches',
-  'mp-garden-all': 'garden',
-  'mp-party-all': 'party',
-  'mp-cameras-all': 'cameras',
-  'mp-software-all': 'software',
-  'mp-collectibles-all': 'collectibles',
-  'mp-safety-all': 'safety',
-  'mp-fitness-all': 'fitness',
-  'mp-camping-all': 'camping',
-  'mp-pool-all': 'pool',
-  'mp-industrial-all': 'industrial',
-  'mp-packaging-all': 'packaging',
-  'mp-cleaning-all': 'cleaning',
-  'mp-religious-all': 'religious',
-  'mp-flowers-all': 'flowers',
-  'mp-luxury-all': 'luxury',
-  'mp-wedding-all': 'wedding',
-  'mp-costumes-all': 'costumes',
-  'mp-coins-all': 'coins',
-  'mp-fireplace-all': 'fireplace',
-  'mp-marine-all': 'marine',
-  'mp-rv-all': 'rv',
-  'mp-educational-all': 'educational',
-  'mp-funeral-all': 'funeral',
-  'mp-bicycles-all': 'bicycles',
 };
 
 // How many generated catalog listings to append per row (after seeds/DB).
@@ -657,87 +527,6 @@ function renderPhoneBrandsRow(rowDef) {
 }
 
 // ── Man row ─────────────────────────────────────────────────────
-// The "Man" section shows one card per category (90 products) in a
-// responsive grid, using the same product cards as the marketplace.
-function renderMenRow(rowDef) {
-  const items = MEN_LISTINGS.filter((l) => l && !isCatalogListingHidden(l.property_id));
-  const row = document.createElement('div');
-  row.className = 'showroom-row relative';
-  row.dataset.rowId = rowDef.id;
-
-  row.innerHTML = `
-    <div class="flex items-center justify-between mb-2">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-600"></i>
-        </span>
-        <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
-        <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${items.length} Categories</span>
-      </div>
-      <div class="flex items-center gap-1">
-        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i>
-        </button>
-        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
-          <i data-lucide="chevron-right" class="w-4 h-4"></i>
-        </button>
-      </div>
-    </div>
-    <div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"></div>
-  `;
-
-  const track = row.querySelector('.hscroll');
-  const frag = document.createDocumentFragment();
-  items.forEach((l) => frag.appendChild(renderCard(l)));
-  track.appendChild(frag);
-  row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
-  row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
-
-  return row;
-}
-
-// ── Woman Love row ──────────────────────────────────────────────
-// "Woman Love 💕" shows one product per category (149 items) in a single
-// clean line. Rose accent, product-first — the card is the hero, no ad
-// styling. Same one-line horizontal scroll as every other row.
-function renderWomanRow(rowDef) {
-  const items = WOMAN_LISTINGS.filter((l) => l && !isCatalogListingHidden(l.property_id));
-  const row = document.createElement('div');
-  row.className = 'showroom-row relative';
-  row.dataset.rowId = rowDef.id;
-
-  row.innerHTML = `
-    <div class="flex items-center justify-between mb-2">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <span class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
-          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-rose-400"></i>
-        </span>
-        <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
-        <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-300">${items.length} Products</span>
-      </div>
-      <div class="flex items-center gap-1">
-        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i>
-        </button>
-        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
-          <i data-lucide="chevron-right" class="w-4 h-4"></i>
-        </button>
-      </div>
-    </div>
-    <div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"></div>
-  `;
-
-  const track = row.querySelector('.hscroll');
-  const frag = document.createDocumentFragment();
-  items.forEach((l) => frag.appendChild(renderCard(l)));
-  track.appendChild(frag);
-  row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
-  row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
-
-  return row;
-}
-// Resolve the exact listings a row displays (seeds + generated catalog items).
-// Shared by renderRow and the pre-render adoption pass so both use identical data.
 function getRowListings(rowDef) {
   let listings;
   if (rowDef.allTrucks) {
@@ -762,12 +551,6 @@ function getRowListings(rowDef) {
 function renderRow(rowDef) {
   if (rowDef.allPhones) {
     return renderPhoneBrandsRow(rowDef);
-  }
-  if (rowDef.allMen) {
-    return renderMenRow(rowDef);
-  }
-  if (rowDef.allWomen) {
-    return renderWomanRow(rowDef);
   }
   const listings = getRowListings(rowDef);
   const hasItems = listings.length > 0;
@@ -823,9 +606,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allPhones ? PHONE_LISTINGS : r.allMen ? MEN_LISTINGS : r.allWomen ? WOMAN_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allPhones ? PHONE_LISTINGS : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allPhones && !r.allMen && !r.allWomen) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allPhones) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
@@ -1260,8 +1043,6 @@ function createViewAllTrucksButton() {
 // smartphone (real photos), shown in the same beautiful card grid.
 // Reuses the same renderCard + loader.
 const PHONE_SECTION_IDS = new Set(['phones']);
-const MEN_SECTION_IDS = new Set(['men']);
-const WOMAN_SECTION_IDS = new Set(['woman']);
 let allPhonesOverlay = null;
 let _phonesLoader = null;
 let _phonesEscBound = false;
@@ -1348,174 +1129,6 @@ function createViewAllPhonesButton() {
 // ── All Man view ────────────────────────────────────────────────
 // "View all Man 💕" opens a full-screen catalog of every Man product
 // (one per category, 90 items), shown in the same beautiful card grid.
-let allMenOverlay = null;
-let _menLoader = null;
-let _menEscBound = false;
-
-function buildAllMenOverlay() {
-  const existing = document.getElementById('all-men-overlay');
-  if (existing) existing.remove();
-  allMenOverlay = document.createElement('div');
-  allMenOverlay.id = 'all-men-overlay';
-  allMenOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
-
-  const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
-  header.innerHTML = `
-    <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><i data-lucide="shirt" class="w-5 h-5 text-blue-600"></i></span>
-      <div class="min-w-0">
-        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">All Man</h2>
-        <p id="all-men-count" class="text-[11px] text-gray-400 truncate"></p>
-      </div>
-    </div>
-    <button class="close-all-men btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close All Man"><i data-lucide="x" class="w-5 h-5"></i></button>
-  `;
-
-  const body = document.createElement('div');
-  body.id = 'all-men-body';
-  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
-
-  allMenOverlay.appendChild(header);
-  allMenOverlay.appendChild(body);
-  document.body.appendChild(allMenOverlay);
-
-  const items = MEN_LISTINGS.filter((l) => l && !isCatalogListingHidden(l.property_id));
-  const grid = document.createElement('div');
-  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
-  body.appendChild(grid);
-
-  _menLoader = createIncrementalLoader(allMenOverlay, body, [{ grid, items }]);
-
-  const countEl = document.getElementById('all-men-count');
-  if (countEl) countEl.textContent = `${items.length} international products · Clothing, Shoes, Accessories, Grooming, Tech & Fitness`;
-
-  header.querySelector('.close-all-men').addEventListener('click', closeAllMenView);
-  allMenOverlay.addEventListener('click', (e) => { if (e.target === allMenOverlay) closeAllMenView(); });
-
-  if (!_menEscBound) {
-    _menEscBound = true;
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllMenView(); });
-  }
-
-  if (window.lucide) lucide.createIcons();
-}
-
-function openAllMenView() {
-  buildAllMenOverlay();
-  if (window.lucide) lucide.createIcons();
-  allMenOverlay.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  allMenOverlay.scrollTop = 0;
-  if (_menLoader) _menLoader.pump();
-}
-
-function closeAllMenView() {
-  if (!allMenOverlay) return;
-  allMenOverlay.classList.add('hidden');
-  document.body.style.overflow = '';
-}
-
-function createViewAllMenButton() {
-  const wrap = document.createElement('div');
-  wrap.className = 'flex justify-center py-1';
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'view-all-men-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-blue-600/30 transition active:scale-95';
-  btn.innerHTML = `View all Man <span class="text-lg">💕</span>`;
-  btn.addEventListener('click', openAllMenView);
-  wrap.appendChild(btn);
-  return wrap;
-}
-
-// ── All Woman Love view ─────────────────────────────────────────
-// "View all Woman Love 💕" opens a full-screen catalog of every Woman
-// product (one per category, 149 items), shown in the same beautiful
-// card grid. Product-first — no people, no ad styling.
-let allWomenOverlay = null;
-let _womenLoader = null;
-let _womenEscBound = false;
-
-function buildAllWomenOverlay() {
-  const existing = document.getElementById('all-women-overlay');
-  if (existing) existing.remove();
-  allWomenOverlay = document.createElement('div');
-  allWomenOverlay.id = 'all-women-overlay';
-  allWomenOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
-
-  const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
-  header.innerHTML = `
-    <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center shrink-0"><i data-lucide="heart" class="w-5 h-5 text-rose-400"></i></span>
-      <div class="min-w-0">
-        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">Woman Love 💕</h2>
-        <p id="all-women-count" class="text-[11px] text-gray-400 truncate"></p>
-      </div>
-    </div>
-    <button class="close-all-women btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close Woman Love"><i data-lucide="x" class="w-5 h-5"></i></button>
-  `;
-
-  const body = document.createElement('div');
-  body.id = 'all-women-body';
-  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
-
-  allWomenOverlay.appendChild(header);
-  allWomenOverlay.appendChild(body);
-  document.body.appendChild(allWomenOverlay);
-
-  const items = WOMAN_LISTINGS.filter((l) => l && !isCatalogListingHidden(l.property_id));
-  const grid = document.createElement('div');
-  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
-  body.appendChild(grid);
-
-  _womenLoader = createIncrementalLoader(allWomenOverlay, body, [{ grid, items }]);
-
-  const countEl = document.getElementById('all-women-count');
-  if (countEl) countEl.textContent = `${items.length} products · Makeup, Skincare, Hair, Jewelry, Bags, Shoes, Home, Tech, Fitness & Clothing`;
-
-  header.querySelector('.close-all-women').addEventListener('click', closeAllWomenView);
-  allWomenOverlay.addEventListener('click', (e) => { if (e.target === allWomenOverlay) closeAllWomenView(); });
-
-  if (!_womenEscBound) {
-    _womenEscBound = true;
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllWomenView(); });
-  }
-
-  if (window.lucide) lucide.createIcons();
-}
-
-function openAllWomenView() {
-  buildAllWomenOverlay();
-  if (window.lucide) lucide.createIcons();
-  allWomenOverlay.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  allWomenOverlay.scrollTop = 0;
-  if (_womenLoader) _womenLoader.pump();
-}
-
-function closeAllWomenView() {
-  if (!allWomenOverlay) return;
-  allWomenOverlay.classList.add('hidden');
-  document.body.style.overflow = '';
-}
-
-function createViewAllWomenButton() {
-  const wrap = document.createElement('div');
-  wrap.className = 'flex justify-center py-1';
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'view-all-women-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-rose-600/30 transition active:scale-95';
-  btn.innerHTML = `View all Woman Love <span class="text-lg">💕</span>`;
-  btn.addEventListener('click', openAllWomenView);
-  wrap.appendChild(btn);
-  return wrap;
-}
-
-// ── All Dogs view ───────────────────────────────────────────────
-// "View All Dogs" opens a full-screen catalog of every dog listing
-// (beautiful real photos), shown in a responsive card grid. Reuses
-// the same renderCard + loader as cars and trucks.
 let allDogsOverlay = null;
 let _dogsLoader = null;
 let _dogsEscBound = false;
@@ -1634,20 +1247,18 @@ function renderGrid(gridName) {
     // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
     // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'phones', 'men', 'woman', 'trucks-buses', 'heavy-equipment']) {
+    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'phones', 'trucks-buses', 'heavy-equipment']) {
       const section = byId.get(id);
       if (!section) continue;
       const alreadyRendered = section.rows.some(r => hasRow(r.id));
       if (!alreadyRendered) {
-        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id) || MEN_SECTION_IDS.has(id) || WOMAN_SECTION_IDS.has(id);
+        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id);
         container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
       }
       if (id === 'pets' && !container.querySelector('[data-viewall="dogs"]')) container.appendChild(createViewAllDogsButton());
       if (id === 'motorhomes-boats' && !container.querySelector('[data-viewall="houses"]')) container.appendChild(createViewAllHousesButton());
       if (id === 'cars' && !container.querySelector('[data-viewall="cars"]')) container.appendChild(createViewAllCarsButton());
       if (id === 'phones') container.appendChild(createViewAllPhonesButton());
-      if (id === 'men') container.appendChild(createViewAllMenButton());
-      if (id === 'woman') container.appendChild(createViewAllWomenButton());
       if (id === 'trucks-buses') container.appendChild(createViewAllTrucksButton());
     }
     // modern-luxury & commercial-land are intentionally left off the
@@ -1898,74 +1509,14 @@ const CATEGORY_TO_SECTION_ROW = {
   'Cars': { section: 'cars', row: 'all-cars' },
   'Motorhomes': { section: 'motorhomes-boats', row: 'all-motorhomes' },
   'Trucks': { section: 'trucks-buses', row: 'all-trucks' },
-  // Marketplace categories
-  'Men': { section: 'mp-men', row: 'mp-men-all' },
-  'Women': { section: 'mp-women', row: 'mp-women-all' },
-  'Kids': { section: 'mp-kids', row: 'mp-kids-all' },
-  'Fashion': { section: 'mp-fashion', row: 'mp-fashion-all' },
-  'Jewelry': { section: 'mp-jewelry', row: 'mp-jewelry-all' },
-  'Beauty': { section: 'mp-beauty', row: 'mp-beauty-all' },
-  'Home & Garden': { section: 'mp-home', row: 'mp-home-all' },
-  'Home': { section: 'mp-home', row: 'mp-home-all' },
-  'Furniture': { section: 'mp-furniture', row: 'mp-furniture-all' },
   'Kitchen': { section: 'mp-kitchen', row: 'mp-kitchen-all' },
   'Home Appliances': { section: 'mp-appliances', row: 'mp-appl-washers' },
-  'Electronics': { section: 'mp-electronics', row: 'mp-electronics-all' },
-  'Computers': { section: 'mp-computers', row: 'mp-computers-all' },
-  'Gaming': { section: 'mp-gaming', row: 'mp-gaming-all' },
-  'Sports': { section: 'mp-sports', row: 'mp-sports-all' },
-  'Food & Groceries': { section: 'mp-food', row: 'mp-food-all' },
-  'Groceries': { section: 'mp-food', row: 'mp-food-all' },
-  'Baby': { section: 'mp-baby', row: 'mp-baby-all' },
   'Pets': { section: 'pets', row: 'pets-all' },
   'Dogs': { section: 'pets', row: 'pets-all' },
-  'Agriculture': { section: 'mp-agriculture', row: 'mp-agriculture-all' },
-  'Books': { section: 'mp-books', row: 'mp-books-all' },
-  'Office': { section: 'mp-office', row: 'mp-office-all' },
-  'Business & Industrial': { section: 'mp-business', row: 'mp-business-all' },
-  'Health': { section: 'mp-health', row: 'mp-health-all' },
-  'Music': { section: 'mp-music', row: 'mp-music-all' },
-  'Art': { section: 'mp-arts', row: 'mp-arts-all' },
-  'Arts & Crafts': { section: 'mp-arts', row: 'mp-arts-all' },
-  'Toys': { section: 'mp-toys', row: 'mp-toys-all' },
-  'Travel & Luggage': { section: 'mp-travel', row: 'mp-travel-all' },
-  'Watches & Accessories': { section: 'mp-watches', row: 'mp-watches-all' },
-  'Garden & Outdoor': { section: 'mp-garden', row: 'mp-garden-all' },
-  'Party & Event Supplies': { section: 'mp-party', row: 'mp-party-all' },
-  'Cameras & Photography': { section: 'mp-cameras', row: 'mp-cameras-all' },
-  'Software & Digital Products': { section: 'mp-software', row: 'mp-software-all' },
-  'Collectibles & Memorabilia': { section: 'mp-collectibles', row: 'mp-collectibles-all' },
-  'Safety & Security': { section: 'mp-safety', row: 'mp-safety-all' },
-  'Fitness Equipment': { section: 'mp-fitness', row: 'mp-fitness-all' },
-  'Camping & Hiking': { section: 'mp-camping', row: 'mp-camping-all' },
-  'Pool & Spa': { section: 'mp-pool', row: 'mp-pool-all' },
-  'Industrial Tools & Equipment': { section: 'mp-industrial', row: 'mp-industrial-all' },
-  'Packaging & Shipping Supplies': { section: 'mp-packaging', row: 'mp-packaging-all' },
-  'Cleaning Supplies': { section: 'mp-cleaning', row: 'mp-cleaning-all' },
-  'Religious & Spiritual Items': { section: 'mp-religious', row: 'mp-religious-all' },
-  'Flowers & Gifts': { section: 'mp-flowers', row: 'mp-flowers-all' },
-  'Luxury Goods': { section: 'mp-luxury', row: 'mp-luxury-all' },
-  'Wedding Supplies': { section: 'mp-wedding', row: 'mp-wedding-all' },
-  'Costumes & Cosplay': { section: 'mp-costumes', row: 'mp-costumes-all' },
-  'Coins & Bullion': { section: 'mp-coins', row: 'mp-coins-all' },
-  'Fireplace & Heating': { section: 'mp-fireplace', row: 'mp-fireplace-all' },
-  'Marine & Boating': { section: 'mp-marine', row: 'mp-marine-all' },
-  'RV & Camper Accessories': { section: 'mp-rv', row: 'mp-rv-all' },
-  'Educational Supplies': { section: 'mp-educational', row: 'mp-educational-all' },
-  'Funeral & Memorial Supplies': { section: 'mp-funeral', row: 'mp-funeral-all' },
-  'Bicycles': { section: 'mp-bicycles', row: 'mp-bicycles-all' },
 };
 
 // Fuzzy keyword matching for categories not found exactly
 const CATEGORY_KEYWORDS = [
-  { keywords: ['computer', 'laptop', 'desktop', 'monitor'], target: { section: 'mp-computers', row: 'mp-computers-all' } },
-  { keywords: ['electronic', 'gadget', 'tech'], target: { section: 'mp-electronics', row: 'mp-electronics-all' } },
-  { keywords: ['phone', 'smartphone', 'mobile', 'handset'], target: { section: 'mp-electronics', row: 'mp-electronics-all' } },
-  { keywords: ['fashion', 'apparel', 'clothing'], target: { section: 'mp-fashion', row: 'mp-fashion-all' } },
-  { keywords: ['jewel', 'ring', 'necklace'], target: { section: 'mp-jewelry', row: 'mp-jewelry-all' } },
-  { keywords: ['beauty', 'cosmetic', 'makeup', 'skincare'], target: { section: 'mp-beauty', row: 'mp-beauty-all' } },
-  { keywords: ['home', 'decor'], target: { section: 'mp-home', row: 'mp-home-all' } },
-  { keywords: ['furniture', 'chair', 'table', 'sofa'], target: { section: 'mp-furniture', row: 'mp-furniture-all' } },
   { keywords: ['kitchen', 'cookware', 'utensil'], target: { section: 'mp-kitchen', row: 'mp-kitchen-all' } },
   { keywords: ['washing machine', 'washer', 'laundry'], target: { section: 'mp-appliances', row: 'mp-appl-washers' } },
   { keywords: ['dryer', 'tumble'], target: { section: 'mp-appliances', row: 'mp-appl-dryers' } },
@@ -1977,23 +1528,7 @@ const CATEGORY_KEYWORDS = [
   { keywords: ['iron', 'ironing'], target: { section: 'mp-appliances', row: 'mp-appl-irons' } },
   { keywords: ['air purifier', 'air cleaner', 'hepa'], target: { section: 'mp-appliances', row: 'mp-appl-purifiers' } },
   { keywords: ['appliance'], target: { section: 'mp-appliances', row: 'mp-appl-washers' } },
-  { keywords: ['game', 'gaming', 'console'], target: { section: 'mp-gaming', row: 'mp-gaming-all' } },
-  { keywords: ['sport', 'fitness', 'gym', 'athletic'], target: { section: 'mp-sports', row: 'mp-sports-all' } },
-  { keywords: ['food', 'grocer'], target: { section: 'mp-food', row: 'mp-food-all' } },
-  { keywords: ['baby', 'infant'], target: { section: 'mp-baby', row: 'mp-baby-all' } },
   { keywords: ['pet', 'dog', 'cat', 'animal'], target: { section: 'pets', row: 'pets-all' } },
-  { keywords: ['agriculture', 'farm', 'seed'], target: { section: 'mp-agriculture', row: 'mp-agriculture-all' } },
-  { keywords: ['book', 'reading'], target: { section: 'mp-books', row: 'mp-books-all' } },
-  { keywords: ['office', 'stationery'], target: { section: 'mp-office', row: 'mp-office-all' } },
-  { keywords: ['health', 'medical', 'wellness'], target: { section: 'mp-health', row: 'mp-health-all' } },
-  { keywords: ['music', 'instrument'], target: { section: 'mp-music', row: 'mp-music-all' } },
-  { keywords: ['art', 'craft', 'painting'], target: { section: 'mp-arts', row: 'mp-arts-all' } },
-  { keywords: ['toy', 'hobby', 'game'], target: { section: 'mp-toys', row: 'mp-toys-all' } },
-  { keywords: ['travel', 'luggage', 'suitcase'], target: { section: 'mp-travel', row: 'mp-travel-all' } },
-  { keywords: ['watch', 'timepiece'], target: { section: 'mp-watches', row: 'mp-watches-all' } },
-  { keywords: ['garden', 'outdoor', 'patio'], target: { section: 'mp-garden', row: 'mp-garden-all' } },
-  { keywords: ['camera', 'photography', 'lens'], target: { section: 'mp-cameras', row: 'mp-cameras-all' } },
-  { keywords: ['software', 'digital', 'app'], target: { section: 'mp-software', row: 'mp-software-all' } },
   { keywords: ['car', 'vehicle', 'auto', 'sedan', 'suv'], target: { section: 'cars', row: 'all-cars' } },
   { keywords: ['truck', 'pickup', 'lorry'], target: { section: 'trucks-buses', row: 'all-trucks' } },
   { keywords: ['motorhome', 'camper', 'rv'], target: { section: 'motorhomes-boats', row: 'all-motorhomes' } },
@@ -2004,7 +1539,6 @@ const CATEGORY_KEYWORDS = [
   { keywords: ['farm'], target: { section: 'modern-luxury', row: 'farm-house' } },
   { keywords: ['commercial', 'retail', 'store'], target: { section: 'commercial-land', row: 'commercial' } },
   { keywords: ['hotel', 'hospitality'], target: { section: 'commercial-land', row: 'hotels' } },
-  { keywords: ['bicycle', 'bike', 'cycling'], target: { section: 'mp-bicycles', row: 'mp-bicycles-all' } },
 ];
 
 function findSectionRowForCategory(category, subcategory) {
