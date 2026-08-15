@@ -3,9 +3,23 @@ import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth-lazy.js';
-import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
+import { isCatalogListingHidden, loadHiddenCatalogIds } from './catalog-hidden-store.js';
 
 const FALLBACK_IMG = '/fallback.svg';
+
+// ── Lazy catalog ────────────────────────────────────────────────
+// The generated catalog (src/catalog.js) is the single biggest JS module
+// (~196 kB) but the homepage only needs it for generated real-estate
+// extras and the "All Houses" overlay. It is fetched in the background
+// AFTER the page has already rendered, so it never blocks first paint.
+let _catalog = null;
+let _catalogLoading = null;
+function loadCatalog() {
+  if (!_catalogLoading) {
+    _catalogLoading = import('./catalog.js').then((m) => { _catalog = m; return m; });
+  }
+  return _catalogLoading;
+}
 
 // ── Wishlist state (guest + signed-in) ──────────────────────────
 // Guests keep a local list so the heart works immediately; signed-in
@@ -184,7 +198,9 @@ function rowSeed(id) {
 function getCatalogListingsForRow(rowDef, existingIds) {
   const slug = ROW_TO_CATALOG_SLUG[rowDef.id];
   if (!slug) return [];
-  const def = getCatalogCategory(slug);
+  const c = _catalog;
+  if (!c) return [];
+  const def = c.getCatalogCategory(slug);
   if (!def) return [];
   const seen = new Set(existingIds);
   const cap = Math.min(GENERATED_PER_ROW, def.count);
@@ -192,7 +208,7 @@ function getCatalogListingsForRow(rowDef, existingIds) {
   const seed = rowSeed(rowDef.id);
   for (let i = 0; i < cap; i++) {
     const idx = (seed + i * 53) % def.count;
-    const item = generateProduct(slug, idx);
+    const item = c.generateProduct(slug, idx);
     if (item && !seen.has(item.property_id)) {
       seen.add(item.property_id);
       if (isCatalogListingHidden(item.property_id)) continue;
@@ -583,7 +599,8 @@ let allHousesOverlay = null;
 let _housesLoader = null;
 let _housesEscBound = false;
 
-function collectAllHouses() {
+async function collectAllHouses() {
+  const c = await loadCatalog();
   const seen = new Set();
   const out = [];
   const add = (l) => {
@@ -597,10 +614,10 @@ function collectAllHouses() {
   };
   SHOWROOM_LISTINGS.forEach(add);
   getDBListings().forEach(add);
-  const def = getCatalogCategory('real-estate');
+  const def = c.getCatalogCategory('real-estate');
   if (def) {
     for (let i = 0; i < def.count; i++) {
-      const item = generateProduct('real-estate', i);
+      const item = c.generateProduct('real-estate', i);
       if (item && !isCatalogListingHidden(item.property_id)) add(item);
     }
   }
@@ -619,7 +636,7 @@ function groupHousesByType(houses) {
   return order.filter(k => groups.has(k)).map(k => ({ type: k, items: groups.get(k) }));
 }
 
-function buildAllHousesOverlay() {
+async function buildAllHousesOverlay() {
   const existing = document.getElementById('all-houses-overlay');
   if (existing) existing.remove();
   allHousesOverlay = document.createElement('div');
@@ -647,7 +664,7 @@ function buildAllHousesOverlay() {
   allHousesOverlay.appendChild(body);
   document.body.appendChild(allHousesOverlay);
 
-  const houses = collectAllHouses();
+  const houses = await collectAllHouses();
   const groups = groupHousesByType(houses);
   const units = groups.map(({ type, items }) => {
     const label = /s$/i.test(type) ? type : type + 's';
@@ -686,8 +703,8 @@ function buildAllHousesOverlay() {
   if (window.lucide) lucide.createIcons();
 }
 
-function openAllHousesView() {
-  if (!allHousesOverlay || !document.getElementById('all-houses-overlay')) buildAllHousesOverlay();
+async function openAllHousesView() {
+  if (!allHousesOverlay || !document.getElementById('all-houses-overlay')) await buildAllHousesOverlay();
   if (window.lucide) lucide.createIcons();
   allHousesOverlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -954,8 +971,10 @@ function adoptPrerendered(container) {
     const track = row.querySelector('.hscroll, .grid');
     if (track) {
       track.querySelectorAll('.showroom-card').forEach(card => {
-        const listing = listings.find(l => (l.id || l.property_id) === card.dataset.id);
+        const id = card.dataset.id;
+        const listing = listings.find(l => (l.id || l.property_id) === id);
         if (listing) attachCardListeners(card, listing);
+        else if (id) attachCardListeners(card, { id, property_id: id, title: id });
       });
     }
     delete row.dataset.prerendered;
@@ -1067,7 +1086,8 @@ const DEPT_KEYWORDS = {
   everyday: ['food', 'grocer', 'pet', 'book', 'toy', 'office', 'health', 'medical', 'music', 'instrument', 'art', 'craft', 'service', 'travel', 'luggage', 'religious', 'flower', 'gift', 'party', 'wedding', 'costume', 'coin', 'funeral', 'packaging', 'safety', 'security', 'industrial', 'business', 'educational', 'collectible', 'fireplace', 'pharmacy'],
 };
 
-export function getShowroomCategoryInventory() {
+export async function getShowroomCategoryInventory() {
+  const c = await loadCatalog();
   const counts = new Map();
   const add = (cat, sub, n = 1) => {
     if (!cat) return;
@@ -1080,7 +1100,7 @@ export function getShowroomCategoryInventory() {
   [...SHOWROOM_LISTINGS, ...getDBListings()].forEach(l => add(l.category, l.subcategory));
   TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
   CAR_LISTINGS.forEach(l => add(l.category, l.subcategory));
-  getCatalogCategories().forEach(c => add(c.name, null, c.count || 0));
+  c.getCatalogCategories().forEach(cat => add(cat.name, null, cat.count || 0));
 
   // Only categories that actually appear on the homepage (real estate, cars,
   // trucks, motorhomes) are surfaced in the nav — everything else was removed.
@@ -1112,8 +1132,8 @@ export function getShowroomCategoryInventory() {
   return out;
 }
 
-export function filterShowroomByDepartment(deptId) {
-  const inventory = getShowroomCategoryInventory();
+export async function filterShowroomByDepartment(deptId) {
+  const inventory = await getShowroomCategoryInventory();
   let names = [];
   inventory.forEach(d => { if (d.id === deptId) names = d.categories.map(c => c.name); });
   filterShowroomByCategories(names.length ? names : [deptId]);
@@ -1222,10 +1242,18 @@ export async function initAllShowrooms() {
   // so the showrooms appear immediately.
   renderAllGrids();
 
+  // Load DB products + hidden-catalog rules right away. The generated
+  // catalog chunk (~200 kB) is fetched only after the browser is idle so
+  // it never competes with the initial paint or the supabase burst.
+  const dbReady = Promise.all([loadDBListings(), loadHiddenCatalogIds()]).catch(() => {});
+  const catalogReady = new Promise((resolve) => {
+    const start = () => loadCatalog().then(resolve, resolve);
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 3000 });
+    else setTimeout(start, 3000);
+  });
+
   try {
-    // Load products from the database (created by AI Admin Assistant),
-    // hidden-catalog rules, and wishlist in the background, then refresh.
-    await Promise.all([loadDBListings(), loadHiddenCatalogIds()]);
+    await dbReady;
     await syncWishlistFromDB();
     const dbListings = getDBListings();
     const seedIds = new Set(SHOWROOM_LISTINGS.map(l => l.property_id));
@@ -1251,12 +1279,14 @@ export async function initAllShowrooms() {
         }
       }
     }
-
-    // Apply DB products, hidden-catalog rules, and wishlist state.
-    renderAllGrids();
   } catch {
     // Static catalog is already visible; nothing else to do.
   }
+
+  // Refresh once both the DB products and the lazily-loaded catalog are
+  // ready, so the final grid shows DB products AND generated extras.
+  await catalogReady;
+  renderAllGrids();
 
   window.dispatchEvent(new CustomEvent('showroom-categories-ready'));
 }

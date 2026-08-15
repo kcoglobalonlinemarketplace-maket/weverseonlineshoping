@@ -572,9 +572,9 @@ let _activeCategory="All";
 let _panelDept=null;
 let _allPanel=false;
 
-function getCategoryInventory(){
+async function getCategoryInventory(){
   if(window._getShowroomCategoryInventory){
-    try{ const inv=window._getShowroomCategoryInventory(); if(inv&&inv.length)return inv; }catch(e){}
+    try{ const inv=await window._getShowroomCategoryInventory(); if(inv&&inv.length)return inv; }catch(e){}
   }
   return STATIC_DEPARTMENTS.map(d=>({id:d.id,label:d.label,icon:d.icon,color:d.color,categories:d.cats.map(c=>{const base=CATEGORIES.find(x=>x.name===c);return{name:c,count:0,subs:[],icon:base?base.icon:d.icon,color:base?base.color:d.color};})}));
 }
@@ -646,23 +646,24 @@ function closeCategoryPanel(){
   _panelDept=null;_allPanel=false;
 }
 function getAllCategoryEntries(){
-  const inv=getCategoryInventory();
-  const map=new Map();
-  inv.forEach(d=>(d.categories||[]).forEach(c=>{
-    const key=String(c.name).toLowerCase();
-    if(!map.has(key))map.set(key,{name:c.name,count:0,subs:[]});
-    const e=map.get(key);
-    e.count+=c.count||0;
-    (c.subs||[]).forEach(s=>{ if(!e.subs.includes(s))e.subs.push(s); });
-  }));
-  return [...map.values()].sort((a,b)=>b.count-a.count);
+  return getCategoryInventory().then(inv=>{
+    const map=new Map();
+    inv.forEach(d=>(d.categories||[]).forEach(c=>{
+      const key=String(c.name).toLowerCase();
+      if(!map.has(key))map.set(key,{name:c.name,count:0,subs:[]});
+      const e=map.get(key);
+      e.count+=c.count||0;
+      (c.subs||[]).forEach(s=>{ if(!e.subs.includes(s))e.subs.push(s); });
+    }));
+    return [...map.values()].sort((a,b)=>b.count-a.count);
+  });
 }
 function openAllPanel(btn){
   _allPanel=true;_panelDept=null;
   const panel=document.getElementById("category-panel");
   const scroller=document.getElementById("category-panel-scroll");
   if(!panel||!scroller)return;
-  const sorted=getAllCategoryEntries();
+  getAllCategoryEntries().then(sorted=>{
   const catCards=sorted.slice(0,40).map(c=>{
     const meta=(CATEGORIES.find(x=>x.name.toLowerCase()===String(c.name).toLowerCase()))||{icon:"shopping-bag",color:"blue"};
     const icon=meta.icon||"shopping-bag"; const color=meta.color||"blue";
@@ -705,6 +706,7 @@ function openAllPanel(btn){
   if(window.lucide)lucide.createIcons();
   document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"));
   if(btn)btn.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-600");
+  });
 }
 function toggleAllPanel(btn){
   const panel=document.getElementById("category-panel");
