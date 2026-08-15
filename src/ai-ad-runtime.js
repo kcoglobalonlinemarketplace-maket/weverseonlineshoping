@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+import { getSupabase } from './supabase-lazy.js';
 
 const ACTIVE_FIELDS = 'ai_ad_enabled,ai_ad_video_url,ai_ad_badge,ai_ad_title,ai_ad_cta_label,ai_ad_muted,ai_ad_starts_at,ai_ad_ends_at';
 const LIVE_FALLBACK_FIELDS = 'is_live,badge_text,headline,embed_url,description,stream_status,started_at,updated_at';
@@ -66,6 +66,7 @@ function loadLocalFallbackPayload() {
 
 async function loadAiAdOverride() {
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase.from('site_settings').select(ACTIVE_FIELDS).limit(1).maybeSingle();
     if (!error) {
       const payload = toPayload(data || null);
@@ -89,12 +90,12 @@ async function loadAiAdOverride() {
 
 function subscribeAiAdOverride() {
   try {
-    return supabase
+    return getSupabase().then((supabase) => supabase
       .channel('public:site_settings:ai_ad_override')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => {
         loadAiAdOverride();
       })
-      .subscribe();
+      .subscribe());
   } catch {
     return null;
   }
@@ -105,6 +106,7 @@ window._ackAiAdOverrideComplete = async () => {
   // Playback restore is handled on the frontend immediately.
   // Database auto-clear is best effort and may fail for anon users.
   try {
+    const supabase = await getSupabase();
     const { data: row } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
     if (row?.id) {
       await supabase.from('site_settings').update({ ai_ad_enabled: false, ai_ad_updated_at: new Date().toISOString() }).eq('id', row.id);

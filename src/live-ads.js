@@ -3,7 +3,7 @@
 // Every listing becomes a video advertisement: uses the listing's own video
 // if available, otherwise creates an auto-cycling image slideshow with motion
 // effects that displays the listing's title, price, and location.
-import { supabase } from './supabase-client.js';
+import { getSupabase } from './supabase-lazy.js';
 
 const BRAND = 'Weverse Online Shop';
 
@@ -63,6 +63,7 @@ function buildSlide(row) {
 
 async function fetchLiveAds(limit = 200) {
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('showroom_listings')
       .select('id, property_id, listing_type, category, title, description, price, currency, images, video, video_url, country, state, city, created_at')
@@ -82,8 +83,9 @@ async function loadLiveAds() {
   return slides;
 }
 
-function subscribeLiveAds() {
+async function subscribeLiveAds() {
   try {
+    const supabase = await getSupabase();
     const channel = supabase
       .channel('public:showroom_listings:ads')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'showroom_listings' }, () => {

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/prerender-home.mjs && vite build && node -e \"require('fs').copyFileSync('app.js','dist/app.js')\"",
+    "build": "node scripts/prerender-home.mjs && vite build && node scripts/optimize-dist.mjs && node -e \"require('fs').copyFileSync('app.js','dist/app.js')\"",
     "preview": "vite preview",
     "cap:sync": "npm run build && npx cap sync android",
     "cap:open": "npx cap open android",

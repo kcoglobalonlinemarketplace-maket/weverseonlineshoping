@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+import { getSupabase } from './supabase-lazy.js';
 
 export const LIVE_CONTROL_CACHE_KEY = 'kco_live_control_admin_v1';
 export const LIVE_PUBLIC_STATE_CACHE_KEY = 'kco_live_public_state_v1';
@@ -159,6 +159,7 @@ export function getDefaultPublicLiveState() {
 export async function loadLiveControlAdminState() {
   const fallback = readCache(LIVE_CONTROL_CACHE_KEY, getDefaultLiveControlAdminState());
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase.from('admin_live_control').select('*').limit(1).maybeSingle();
     if (error || !data) return normalizeLiveControlAdminState(fallback);
     const state = normalizeLiveControlAdminState(data);
@@ -193,6 +194,7 @@ export async function saveLiveControlAdminState(state) {
     updated_at: new Date().toISOString(),
   };
   try {
+    const supabase = await getSupabase();
     const { data: existing } = await supabase.from('admin_live_control').select('id').limit(1).maybeSingle();
     if (existing?.id) return await supabase.from('admin_live_control').update(payload).eq('id', existing.id);
     return await supabase.from('admin_live_control').insert(payload);
@@ -204,6 +206,7 @@ export async function saveLiveControlAdminState(state) {
 export async function loadPublicLiveState() {
   const fallback = readCache(LIVE_PUBLIC_STATE_CACHE_KEY, getDefaultPublicLiveState());
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase.from('public_live_state').select('*').limit(1).maybeSingle();
     if (error || !data) return { ...fallback };
     const state = normalizePublicLiveState(data);
@@ -251,6 +254,7 @@ export async function savePublicLiveState(state) {
     updated_at: new Date().toISOString(),
   };
   try {
+    const supabase = await getSupabase();
     const { data: existing } = await supabase.from('public_live_state').select('id').limit(1).maybeSingle();
     if (existing?.id) return await supabase.from('public_live_state').update(payload).eq('id', existing.id);
     return await supabase.from('public_live_state').insert(payload);

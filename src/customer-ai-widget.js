@@ -2,7 +2,7 @@
 // Premium messaging-style AI chat widget. Text + voice + image + voice notes.
 // Multilingual, proactive, separate from Admin AI.
 // Fully functional — connects to the ai-customer-assistant edge function.
-import { supabase } from './supabase-client.js';
+import { getSupabase } from './supabase-lazy.js';
 import { getLanguage, selectBestVoice, getVoiceForLanguage } from './localization.js';
 
 const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
@@ -586,6 +586,7 @@ function scrollToBottom() {
 
 // ── Send / receive ───────────────────────────────────────────
 async function getAuthHeaders() {
+  const supabase = await getSupabase();
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token || ANON_KEY;
   return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -662,6 +663,7 @@ async function init() {
 
   // Load chat history for signed-in users
   try {
+    const supabase = await getSupabase();
     const { data: session } = await supabase.auth.getSession();
     if (session?.session?.access_token) {
       const res = await fetch(AI_FUNCTION_URL, {

@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+import { getSupabase } from './supabase-lazy.js';
 
 // Shared navigation auth state — uses the real Supabase session, not localStorage.
 // Updates the header sign-in/account button, the mobile drawer user strip,
@@ -15,6 +15,7 @@ function escapeHtml(text) {
 
 async function fetchProfile(user) {
   if (!user) return null;
+  const supabase = await getSupabase();
   const { data } = await supabase
     .from('profiles')
     .select('display_name, first_name, last_name, avatar_url')
@@ -106,6 +107,7 @@ function renderNavAuth(user, profile) {
 }
 
 async function refreshNavUserState() {
+  const supabase = await getSupabase();
   const { data: { session } } = await supabase.auth.getSession();
   currentUser = session?.user || null;
   currentProfile = currentUser ? await fetchProfile(currentUser) : null;
@@ -113,6 +115,7 @@ async function refreshNavUserState() {
 }
 
 async function signOutUser() {
+  const supabase = await getSupabase();
   await supabase.auth.signOut();
   currentUser = null;
   currentProfile = null;
@@ -123,15 +126,16 @@ async function signOutUser() {
 // Listen for auth state changes so login/logout in other tabs or the auth
 // page reflect instantly. Wrapped in async IIFE to avoid the onAuthStateChange
 // deadlock documented in the bolt-database skill.
-supabase.auth.onAuthStateChange((_event, session) => {
+(async () => {
+  const supabase = await getSupabase();
+  supabase.auth.onAuthStateChange((_event, session) => {
   (async () => {
     currentUser = session?.user || null;
     currentProfile = currentUser ? await fetchProfile(currentUser) : null;
     renderNavAuth(currentUser, currentProfile);
   })();
-});
-
-// Expose globally so inline scripts (openMobileMenu, toggleMoreMenu, etc.) can call us.
+  });
+})();
 window.refreshNavUserState = refreshNavUserState;
 window.signOutUser = signOutUser;
 

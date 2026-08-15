@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+import { getSupabase } from './supabase-lazy.js';
 
 // ── Session key ────────────────────────────────────────────────
 function getSessionKey() {
@@ -93,6 +93,7 @@ export async function smartSearch(query, limit = 30, onPartialResults) {
   }
 
   return dedupe(cacheKey, async () => {
+    const supabase = await getSupabase();
     const searchQuery = expandQuery(trimmed);
     const fuzzyQuery = trimmed.toLowerCase();
 
@@ -176,7 +177,8 @@ export async function smartSearch(query, limit = 30, onPartialResults) {
 }
 
 // ── Preload related searches in background ────────────────────
-function preloadRelatedSearches(query, limit) {
+async function preloadRelatedSearches(query, limit) {
+  const supabase = await getSupabase();
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length < 2) return;
   // Preload singular/plural variant
@@ -206,6 +208,7 @@ export async function getLiveSuggestions(query, limit = 8) {
   if (cached) return cached;
 
   return dedupe(cacheKey, async () => {
+    const supabase = await getSupabase();
     const searchQuery = expandQuery(trimmed);
     const { data, error } = await supabase.rpc('smart_search_quick', {
       p_query: searchQuery, p_limit: limit,
@@ -240,6 +243,7 @@ export async function getLiveSuggestions(query, limit = 8) {
 export async function getRecentSearches(limit = 5) {
   const sessionKey = getSessionKey();
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('search_history')
       .select('query, created_at')
@@ -264,6 +268,7 @@ export async function saveRecentSearch(query) {
   const trimmed = query.trim();
   const sessionKey = getSessionKey();
   try {
+    const supabase = await getSupabase();
     supabase.from('search_history').insert({ session_key: sessionKey, query: trimmed }).then(() => {}, () => {});
   } catch {}
   const local = JSON.parse(localStorage.getItem('kco_recent_searches') || '[]');
@@ -274,13 +279,17 @@ export async function saveRecentSearch(query) {
 
 export async function clearRecentSearches() {
   const sessionKey = getSessionKey();
-  try { await supabase.from('search_history').delete().eq('session_key', sessionKey); } catch {}
+  try {
+    const supabase = await getSupabase();
+    await supabase.from('search_history').delete().eq('session_key', sessionKey);
+  } catch {}
   localStorage.removeItem('kco_recent_searches');
 }
 
 // ── Trending searches ────────────────────────────────────────
 export async function getTrendingSearches(limit = 8) {
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase.rpc('smart_search_trending', { p_limit: limit });
     if (!error && data) return data.map(d => d.query);
   } catch {}

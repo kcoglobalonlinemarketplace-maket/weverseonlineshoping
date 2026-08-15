@@ -3,7 +3,7 @@ import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
 import { PHONE_LISTINGS, getPhoneBrandGroups } from './phone-data.js';
-import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
+import { getCurrentUser, setRedirectAfterAuth } from './auth-lazy.js';
 import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
 const FALLBACK_IMG = '/fallback.svg';

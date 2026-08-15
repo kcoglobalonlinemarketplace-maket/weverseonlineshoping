@@ -1,7 +1,7 @@
 // Bridge: loads admin-created advertisements from the `promotions` table
 // and exposes them globally so the non-module app.js can merge them into
 // the hero showcase. Only active ads within their scheduled window appear.
-import { supabase } from './supabase-client.js';
+import { getSupabase } from './supabase-lazy.js';
 
 const AD_FIELDS = 'id,title,description,image_url,video_url,poster_url,link_type,link_target,ad_label,start_date,end_date,is_active,sort_order,created_at';
 const AD_LABELS = ['Featured', 'Sponsored', 'Featured Collection', 'Discover', 'Promotion'];
@@ -44,6 +44,7 @@ function buildSlide(row) {
 
 async function fetchAds() {
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('promotions')
       .select(AD_FIELDS)
@@ -64,8 +65,9 @@ async function loadAds() {
   return slides;
 }
 
-function subscribeAds() {
+async function subscribeAds() {
   try {
+    const supabase = await getSupabase();
     return supabase
       .channel('public:promotions:ads')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'promotions' }, () => {

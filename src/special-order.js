@@ -1,6 +1,6 @@
 // Special Order / Product Request module
 // Handles the full customer flow: sign-in check, request form, delivery info, review, submit to Supabase.
-import { supabase } from './supabase-client.js';
+import { getSupabase } from './supabase-lazy.js';
 
 const COUNTRY_LIST = [
   'United States','United Kingdom','Canada','Australia','Germany','France','Spain','Italy','Netherlands','Belgium',
@@ -19,6 +19,7 @@ let currentQuery = '';
 let prefilledData = null;
 
 async function getCurrentUser() {
+  const supabase = await getSupabase();
   const { data } = await supabase.auth.getUser();
   return data?.user || null;
 }
@@ -354,6 +355,7 @@ async function submitSpecialOrder() {
   };
 
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase.from('product_requests').insert(payload).select().single();
     if (error) throw error;
     if (data) {

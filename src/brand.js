@@ -1,7 +1,7 @@
 // brand.js — Auto-applies brand settings (name, logo, slogan, badge)
 // to every page without touching HTML. Loads from Supabase, caches locally.
 
-import { supabase } from './supabase-client.js';
+import { getSupabase } from './supabase-lazy.js';
 
 // Single source of truth for the verified badge — change here to update everywhere
 export const DEFAULT_BADGE = '/verified-badge.svg';
@@ -42,6 +42,7 @@ async function loadBrand() {
     }
   } catch {}
   try {
+    const supabase = await getSupabase();
     const { data } = await supabase.from('site_settings').select(
       'brand_name,brand_slogan,brand_logo,brand_badge,brand_favicon,' +
       'brand_mobile_logo,brand_header_logo,brand_footer_logo,' +
