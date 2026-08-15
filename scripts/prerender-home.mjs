@@ -50,7 +50,7 @@ const VEHICLE_SECTION_IDS = new Set(['cars', 'trucks-buses']);
 // section (local-houses → affordable-homes teaser). Baking the full first
 // screen keeps the paint instant while keeping index.html small, so slow
 // mobile connections don't stall on a large HTML download. The remaining
-// sections (pets, motorhomes, cars, …) are appended by JS at load.
+// sections (motorhomes, cars, trucks, …) are appended by JS at load.
 const PRE_RENDER_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
@@ -280,7 +280,6 @@ function sectionHtml(section, maxRows) {
 
 function viewAllButton(kind) {
   const parts = {
-    dogs: { label: 'View All Dogs <span class="text-lg">→ 🐶</span>', cls: 'view-all-dogs-btn bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-600/30' },
     houses: { label: 'View All Houses &amp; Motorhomes Worldwide <span class="text-lg">→ 🌎</span>', cls: 'view-all-houses-btn bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-600/30' },
     cars: { label: 'View all Cars <span class="text-lg">→ 🚗</span>', cls: 'view-all-cars-btn bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-600/30' },
   }[kind];

@@ -2,7 +2,6 @@ import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListi
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
-import { PHONE_LISTINGS, getPhoneBrandGroups } from './phone-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth-lazy.js';
 import { generateProduct, getCatalogCategory, getCatalogCategories, isCatalogListingHidden, loadHiddenCatalogIds } from './catalog.js';
 
@@ -110,13 +109,6 @@ const REAL_ESTATE_SECTIONS = [
     ],
   },
   {
-    id: 'pets', label: 'Beautiful Dogs', icon: 'paw-print',
-    subtitle: '30 gorgeous, healthy dog breeds — new beauties first, all in one line.',
-    rows: [
-      { id: 'pets-all', label: 'Beautiful Dogs', icon: 'paw-print', ids: ['KCO-003019', 'KCO-003020', 'KCO-003021', 'KCO-003022', 'KCO-003023', 'KCO-003024', 'KCO-003025', 'KCO-003026', 'KCO-003027', 'KCO-003028', 'KCO-003029', 'KCO-003030', 'KCO-003031', 'KCO-003032', 'KCO-003033', 'KCO-003001', 'KCO-003002', 'KCO-003003', 'KCO-003004', 'KCO-003005', 'KCO-003006', 'KCO-003007', 'KCO-003008', 'KCO-003009', 'KCO-003010', 'KCO-003011', 'KCO-003012', 'KCO-003013', 'KCO-003014', 'KCO-003015'] },
-    ],
-  },
-  {
     id: 'modern-luxury', label: 'Modern Homes & Luxury Properties', icon: 'building-2',
     subtitle: 'Contemporary villas, mansions, and new-build family homes.',
     rows: [
@@ -142,14 +134,6 @@ const REAL_ESTATE_SECTIONS = [
     ],
   },
   {
-    id: 'phones', label: 'Phones', icon: 'smartphone',
-    subtitle: '25 flagship smartphones from Apple, Samsung, Google, Xiaomi & OnePlus.',
-    rows: [
-      { id: 'all-phones', label: 'Phones', icon: 'smartphone', allPhones: true },
-    ],
-  },
-
-  {
     id: 'trucks-buses', label: 'Trucks & Buses', icon: 'truck',
     subtitle: 'Heavy-duty trucks and commercial transport vehicles.',
     rows: [
@@ -163,35 +147,6 @@ const REAL_ESTATE_SECTIONS = [
       { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
     ],
   },
-  {
-    id: 'heavy-equipment', label: 'Modern Home Appliances', icon: 'refrigerator',
-    subtitle: '20 world-famous washing machines, TVs, kitchen, and smart home care appliances.',
-    rows: [
-      { id: 'appliances-kitchen-laundry', label: 'Kitchen, Laundry & Cold', icon: 'microwave', ids: ['KCO-002001', 'KCO-002006', 'KCO-002007', 'KCO-002009', 'KCO-002010', 'KCO-002012', 'KCO-002013', 'KCO-002014', 'KCO-002015', 'KCO-002018', 'KCO-002020'] },
-      { id: 'appliances-electronics-care', label: 'Electronics & Home Care', icon: 'cpu', ids: ['KCO-002002', 'KCO-002003', 'KCO-002004', 'KCO-002005', 'KCO-002008', 'KCO-002011', 'KCO-002016', 'KCO-002017', 'KCO-002019'] },
-    ],
-  },
-];
-
-// ── Section 2: Shopping Marketplace ──
-// Every other marketplace category. Empty ids arrays show "Coming Soon".
-const MARKETPLACE_SECTIONS = [
-  {
-    id: 'mp-appliances', label: 'Home Appliances', icon: 'washing-machine',
-    subtitle: 'Modern washers, dryers, cooling, fans, water, and home care appliances.',
-    rows: [
-      { id: 'mp-appl-washers', label: 'Washing Machines', icon: 'washing-machine', ids: ['KCO-002001', 'KCO-002012'] },
-      { id: 'mp-appl-dryers', label: 'Dryers', icon: 'wind', ids: ['KCO-002014', 'KCO-003117'] },
-      { id: 'mp-appl-ac', label: 'Air Conditioners', icon: 'snowflake', ids: ['KCO-003100', 'KCO-003101', 'KCO-003102'] },
-      { id: 'mp-appl-fans', label: 'Fans', icon: 'fan', ids: ['KCO-003103', 'KCO-003104', 'KCO-003105'] },
-      { id: 'mp-appl-vacuums', label: 'Vacuum Cleaners', icon: 'wind', ids: ['KCO-002005', 'KCO-002008'] },
-      { id: 'mp-appl-dispensers', label: 'Water Dispensers', icon: 'glass-water', ids: ['KCO-003106', 'KCO-003107', 'KCO-003108'] },
-      { id: 'mp-appl-heaters', label: 'Water Heaters', icon: 'flame', ids: ['KCO-003109', 'KCO-003110', 'KCO-003111'] },
-      { id: 'mp-appl-irons', label: 'Irons', icon: 'zap', ids: ['KCO-003112', 'KCO-003113'] },
-      { id: 'mp-appl-purifiers', label: 'Air Purifiers', icon: 'air-vent', ids: ['KCO-003114', 'KCO-003115', 'KCO-003116'] },
-    ],
-  },
-  { id: 'mp-kitchen', label: 'Kitchen', icon: 'utensils', subtitle: 'Cookware, dining, and kitchen essentials.', rows: [{ id: 'mp-kitchen-all', label: 'All Kitchen', icon: 'utensils', ids: [] }] },
 ];
 
 // ── Catalog-backed rows ────────────────────────────────────────
@@ -213,7 +168,6 @@ const ROW_TO_CATALOG_SLUG = {
   'all-cars': 'cars',
   'all-trucks': 'trucks',
   'all-motorhomes': 'motorhomes',
-  'mp-kitchen-all': 'kitchen',
 };
 
 // How many generated catalog listings to append per row (after seeds/DB).
@@ -420,112 +374,6 @@ function scrollRow(row, dir) {
   track.scrollBy({ left: dir * 260 * 3, behavior: 'smooth' });
 }
 
-// ── Phones brand showcase ────────────────────────────────────────
-// The Phones section shows one beautiful card per brand instead of 25
-// individual cards. Each brand card features the newest model full-body
-// as the hero, with the other models shown as a photo strip at the
-// bottom of the same card. Clicking the hero opens that brand's phones
-// in the full-screen view; clicking a strip photo goes to that phone.
-
-function renderPhoneBrandCard(group) {
-  const brand = group.brand;
-  const phones = group.phones;
-  const hero = phones[0];
-  const heroImg = hero.images?.[0] || FALLBACK_IMG;
-  const otherModels = phones.slice(1);
-
-  const prices = phones.map(p => p.price).filter(n => typeof n === 'number' && Number.isFinite(n));
-  const minPrice = prices.length ? Math.min(...prices) : 0;
-  const maxPrice = prices.length ? Math.max(...prices) : minPrice;
-  const priceRange = formatPrice({ price: minPrice, currency: 'USD' }) + (maxPrice !== minPrice ? ` – ${formatPrice({ price: maxPrice, currency: 'USD' })}` : '');
-
-  const thumbs = otherModels.map((p) => {
-    const pid = p.id || p.property_id;
-    const img = p.images?.[0] || FALLBACK_IMG;
-    return `
-      <button type="button" class="phone-thumb relative aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 hover:border-blue-400 transition group/thumb" data-phone-id="${pid}" title="${p.title}">
-        <img src="${img}" alt="${p.model || p.title}" loading="lazy" decoding="async"
-             class="w-full h-full object-contain group-hover/thumb:scale-105 transition-transform duration-300"
-             onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-      </button>`;
-  }).join('');
-
-  const card = document.createElement('div');
-  card.className = 'showroom-card group relative w-[300px] sm:w-[340px] shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col cursor-pointer';
-  card.dataset.phoneBrand = brand;
-
-  card.innerHTML = `
-    <div class="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-gray-800 via-gray-900 to-black">
-      <img src="${heroImg}" alt="${brand} newest phone" loading="lazy" decoding="async"
-           class="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500"
-           onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-      <span class="absolute top-2 left-2 inline-flex items-center gap-1 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">
-        <i data-lucide="smartphone" class="w-3 h-3"></i>${brand}
-      </span>
-      <span class="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-gray-300 text-[10px] font-bold px-2 py-1 rounded-full">${phones.length} models</span>
-    </div>
-    <div class="p-3 flex flex-col flex-1">
-      <div class="flex items-center justify-between gap-2 mb-1">
-        <h3 class="text-[15px] font-bold text-gray-900 leading-snug truncate">${brand} Phones</h3>
-        <span class="shrink-0 text-sm font-black text-blue-600">${priceRange}</span>
-      </div>
-      <p class="text-xs text-gray-400 truncate mb-2">${hero.title}</p>
-      <div class="grid grid-cols-4 gap-1.5 mt-auto">
-        ${thumbs}
-      </div>
-    </div>
-  `;
-
-  card.querySelectorAll('.phone-thumb').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      window.location.href = `/details.html?id=${btn.dataset.phoneId}`;
-    });
-  });
-
-  card.addEventListener('click', () => openAllPhonesView(brand));
-
-  return card;
-}
-
-function renderPhoneBrandsRow(rowDef) {
-  const groups = getPhoneBrandGroups();
-  const row = document.createElement('div');
-  row.className = 'showroom-row relative';
-  row.dataset.rowId = rowDef.id;
-
-  row.innerHTML = `
-    <div class="flex items-center justify-between mb-2">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <span class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-          <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-600"></i>
-        </span>
-        <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
-        <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${groups.reduce((n, g) => n + g.phones.length, 0)} Phones</span>
-      </div>
-      <div class="flex items-center gap-1">
-        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i>
-        </button>
-        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
-          <i data-lucide="chevron-right" class="w-4 h-4"></i>
-        </button>
-      </div>
-    </div>
-    <div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"></div>
-  `;
-
-  const track = row.querySelector('.hscroll');
-  const frag = document.createDocumentFragment();
-  groups.forEach((g) => frag.appendChild(renderPhoneBrandCard(g)));
-  track.appendChild(frag);
-
-  row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
-  row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
-
-  return row;
-}
-
 // ── Man row ─────────────────────────────────────────────────────
 function getRowListings(rowDef) {
   let listings;
@@ -549,9 +397,6 @@ function getRowListings(rowDef) {
 }
 
 function renderRow(rowDef) {
-  if (rowDef.allPhones) {
-    return renderPhoneBrandsRow(rowDef);
-  }
   const listings = getRowListings(rowDef);
   const hasItems = listings.length > 0;
   const isGrid = rowDef.layout === 'grid';
@@ -606,9 +451,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allPhones ? PHONE_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allPhones) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
@@ -1038,190 +883,7 @@ function createViewAllTrucksButton() {
   return wrap;
 }
 
-// ── All Phones view ─────────────────────────────────────────────
-// "View all Phones" opens a full-screen catalog of every flagship
-// smartphone (real photos), shown in the same beautiful card grid.
-// Reuses the same renderCard + loader.
-const PHONE_SECTION_IDS = new Set(['phones']);
-let allPhonesOverlay = null;
-let _phonesLoader = null;
-let _phonesEscBound = false;
-
-function buildAllPhonesOverlay(brand) {
-  const existing = document.getElementById('all-phones-overlay');
-  if (existing) existing.remove();
-  allPhonesOverlay = document.createElement('div');
-  allPhonesOverlay.id = 'all-phones-overlay';
-  allPhonesOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
-
-  const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
-  header.innerHTML = `
-    <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><i data-lucide="smartphone" class="w-5 h-5 text-blue-600"></i></span>
-      <div class="min-w-0">
-        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">${brand ? `${brand} Phones` : 'All Phones'}</h2>
-        <p id="all-phones-count" class="text-[11px] text-gray-400 truncate"></p>
-      </div>
-    </div>
-    <button class="close-all-phones btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close All Phones"><i data-lucide="x" class="w-5 h-5"></i></button>
-  `;
-
-  const body = document.createElement('div');
-  body.id = 'all-phones-body';
-  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
-
-  allPhonesOverlay.appendChild(header);
-  allPhonesOverlay.appendChild(body);
-  document.body.appendChild(allPhonesOverlay);
-
-  const phones = (brand ? PHONE_LISTINGS.filter(l => l.brand === brand) : PHONE_LISTINGS)
-    .filter(l => l && !isCatalogListingHidden(l.property_id));
-  const grid = document.createElement('div');
-  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
-  body.appendChild(grid);
-
-  _phonesLoader = createIncrementalLoader(allPhonesOverlay, body, [{ grid, items: phones }]);
-
-  const countEl = document.getElementById('all-phones-count');
-  if (countEl) countEl.textContent = brand
-    ? `${phones.length} ${brand} phones`
-    : `${phones.length} flagship phones · Apple, Samsung, Google, Xiaomi & OnePlus`;
-
-  header.querySelector('.close-all-phones').addEventListener('click', closeAllPhonesView);
-  allPhonesOverlay.addEventListener('click', (e) => { if (e.target === allPhonesOverlay) closeAllPhonesView(); });
-
-  if (!_phonesEscBound) {
-    _phonesEscBound = true;
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllPhonesView(); });
-  }
-
-  if (window.lucide) lucide.createIcons();
-}
-
-function openAllPhonesView(brand) {
-  buildAllPhonesOverlay(brand || '');
-  if (window.lucide) lucide.createIcons();
-  allPhonesOverlay.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  allPhonesOverlay.scrollTop = 0;
-  if (_phonesLoader) _phonesLoader.pump();
-}
-
-function closeAllPhonesView() {
-  if (!allPhonesOverlay) return;
-  allPhonesOverlay.classList.add('hidden');
-  document.body.style.overflow = '';
-}
-
-function createViewAllPhonesButton() {
-  const wrap = document.createElement('div');
-  wrap.className = 'flex justify-center py-1';
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'view-all-phones-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-blue-600/30 transition active:scale-95';
-  btn.innerHTML = `View all Phones <span class="text-lg">→ 📱</span>`;
-  btn.addEventListener('click', openAllPhonesView);
-  wrap.appendChild(btn);
-  return wrap;
-}
-
-// ── All Man view ────────────────────────────────────────────────
-// "View all Man 💕" opens a full-screen catalog of every Man product
-// (one per category, 90 items), shown in the same beautiful card grid.
-let allDogsOverlay = null;
-let _dogsLoader = null;
-let _dogsEscBound = false;
-
-function collectAllDogs() {
-  const seen = new Set();
-  const out = [];
-  SHOWROOM_LISTINGS.forEach((l) => {
-    if (!l || l.listing_type !== 'pet') return;
-    const id = l.id || l.property_id;
-    if (!id || seen.has(id)) return;
-    if (isCatalogListingHidden(id)) return;
-    seen.add(id);
-    out.push(l);
-  });
-  return out;
-}
-
-function buildAllDogsOverlay() {
-  const existing = document.getElementById('all-dogs-overlay');
-  if (existing) existing.remove();
-  allDogsOverlay = document.createElement('div');
-  allDogsOverlay.id = 'all-dogs-overlay';
-  allDogsOverlay.className = 'hidden fixed inset-0 z-[80] bg-white overflow-y-auto overscroll-contain';
-
-  const header = document.createElement('div');
-  header.className = 'sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3';
-  header.innerHTML = `
-    <div class="flex items-center gap-3 min-w-0">
-      <span class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><i data-lucide="paw-print" class="w-5 h-5 text-blue-600"></i></span>
-      <div class="min-w-0">
-        <h2 class="text-lg font-black text-gray-900 tracking-tight leading-tight">All Dogs</h2>
-        <p id="all-dogs-count" class="text-[11px] text-gray-400 truncate"></p>
-      </div>
-    </div>
-    <button class="close-all-dogs btn-press p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Close All Dogs"><i data-lucide="x" class="w-5 h-5"></i></button>
-  `;
-
-  const body = document.createElement('div');
-  body.id = 'all-dogs-body';
-  body.className = 'px-4 sm:px-6 lg:px-8 py-5 space-y-6';
-
-  allDogsOverlay.appendChild(header);
-  allDogsOverlay.appendChild(body);
-  document.body.appendChild(allDogsOverlay);
-
-  const dogs = collectAllDogs();
-  const grid = document.createElement('div');
-  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
-  body.appendChild(grid);
-
-  _dogsLoader = createIncrementalLoader(allDogsOverlay, body, [{ grid, items: dogs }]);
-
-  const countEl = document.getElementById('all-dogs-count');
-  if (countEl) countEl.textContent = `${dogs.length} beautiful dogs · healthy, happy and ready for a loving home`;
-
-  header.querySelector('.close-all-dogs').addEventListener('click', closeAllDogsView);
-  allDogsOverlay.addEventListener('click', (e) => { if (e.target === allDogsOverlay) closeAllDogsView(); });
-
-  if (!_dogsEscBound) {
-    _dogsEscBound = true;
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllDogsView(); });
-  }
-
-  if (window.lucide) lucide.createIcons();
-}
-
-function openAllDogsView() {
-  if (!allDogsOverlay || !document.getElementById('all-dogs-overlay')) buildAllDogsOverlay();
-  if (window.lucide) lucide.createIcons();
-  allDogsOverlay.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  allDogsOverlay.scrollTop = 0;
-  if (_dogsLoader) _dogsLoader.pump();
-}
-
-function closeAllDogsView() {
-  if (!allDogsOverlay) return;
-  allDogsOverlay.classList.add('hidden');
-  document.body.style.overflow = '';
-}
-
-function createViewAllDogsButton() {
-  const wrap = document.createElement('div');
-  wrap.className = 'flex justify-center py-1';
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'view-all-dogs-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-blue-600/30 transition active:scale-95';
-  btn.innerHTML = `View All Dogs <span class="text-lg">→ 🐶</span>`;
-  btn.addEventListener('click', openAllDogsView);
-  wrap.appendChild(btn);
-  return wrap;
-}
+// ── Grid renderer ───────────────────────────────────────────────
 function renderGrid(gridName) {
   const container = document.querySelector(`[data-showroom-grid="${gridName}"]`);
   if (!container || container.dataset.initialized) return;
@@ -1240,25 +902,23 @@ function renderGrid(gridName) {
   }
   const hasRow = (id) => preRenderedRowIds.has(id);
 
-  const sections = gridName === 'real-estate' ? REAL_ESTATE_SECTIONS : MARKETPLACE_SECTIONS;
-  const accent = gridName === 'real-estate' ? 'blue' : 'emerald';
+  const sections = REAL_ESTATE_SECTIONS;
+  const accent = 'blue';
 
   if (gridName === 'real-estate') {
     // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
     // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'pets', 'motorhomes-boats', 'cars', 'phones', 'trucks-buses', 'heavy-equipment']) {
+    for (const id of ['local-houses', 'motorhomes-boats', 'cars', 'trucks-buses']) {
       const section = byId.get(id);
       if (!section) continue;
       const alreadyRendered = section.rows.some(r => hasRow(r.id));
       if (!alreadyRendered) {
-        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || PHONE_SECTION_IDS.has(id);
+        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
         container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
       }
-      if (id === 'pets' && !container.querySelector('[data-viewall="dogs"]')) container.appendChild(createViewAllDogsButton());
       if (id === 'motorhomes-boats' && !container.querySelector('[data-viewall="houses"]')) container.appendChild(createViewAllHousesButton());
       if (id === 'cars' && !container.querySelector('[data-viewall="cars"]')) container.appendChild(createViewAllCarsButton());
-      if (id === 'phones') container.appendChild(createViewAllPhonesButton());
       if (id === 'trucks-buses') container.appendChild(createViewAllTrucksButton());
     }
     // modern-luxury & commercial-land are intentionally left off the
@@ -1273,9 +933,9 @@ function renderGrid(gridName) {
   adoptPrerendered(container);
 }
 
-// Find a row definition by its id across both showroom sections.
+// Find a row definition by its id across the showroom sections.
 function findRowDef(id) {
-  for (const s of [...REAL_ESTATE_SECTIONS, ...MARKETPLACE_SECTIONS]) {
+  for (const s of REAL_ESTATE_SECTIONS) {
     for (const r of s.rows) if (r.id === id) return r;
   }
   return null;
@@ -1305,8 +965,7 @@ function adoptPrerendered(container) {
     const kind = wrap.dataset.viewall;
     const btn = wrap.querySelector('button');
     if (!btn) return;
-    if (kind === 'dogs') btn.addEventListener('click', openAllDogsView);
-    else if (kind === 'houses') btn.addEventListener('click', openAllHousesView);
+    if (kind === 'houses') btn.addEventListener('click', openAllHousesView);
     else if (kind === 'cars') btn.addEventListener('click', openAllCarsView);
     delete wrap.dataset.prerendered;
   });
@@ -1335,8 +994,7 @@ function renderAllGrids() {
       // Render the above-the-fold grid immediately so the page paints fast.
       run();
     } else if (window.requestIdleCallback) {
-      // Defer the heavier marketplace grid to idle time so it never blocks
-      // first paint. requestIdleCallback falls back gracefully on old devices.
+      // Defer any remaining grid to idle time so it never blocks first paint.
       requestIdleCallback(run, { timeout: 2000 });
     } else {
       setTimeout(run, 0);
@@ -1346,7 +1004,7 @@ function renderAllGrids() {
 
 // ── Category filtering ──
 function collectAllRows() {
-  return [...REAL_ESTATE_SECTIONS, ...MARKETPLACE_SECTIONS]
+  return REAL_ESTATE_SECTIONS
     .flatMap(s => s.rows.map(r => ({ section: s, row: r })));
 }
 
@@ -1371,24 +1029,18 @@ function categoryMatches(catName, sectionLabel, rowLabel) {
 }
 
 export function filterShowroomByCategory(categoryName) {
-  const realEstateGrid = document.querySelector('[data-showroom-grid="real-estate"]');
-  const marketplaceGrid = document.querySelector('[data-showroom-grid="marketplace"]');
+  const grid = document.querySelector('[data-showroom-grid="real-estate"]');
+  if (!grid) return;
   const allRows = collectAllRows();
   allRows.forEach(({ section, row }) => {
-    const gridName = REAL_ESTATE_SECTIONS.includes(section) ? 'real-estate' : 'marketplace';
-    const grid = gridName === 'real-estate' ? realEstateGrid : marketplaceGrid;
-    if (!grid) return;
     const rowEl = grid.querySelector(`[data-row-id="${row.id}"]`);
     if (!rowEl) return;
     const match = categoryMatches(categoryName, section.label, row.label);
     rowEl.style.display = match ? '' : 'none';
   });
-  [realEstateGrid, marketplaceGrid].forEach(grid => {
-    if (!grid) return;
-    grid.querySelectorAll('.showroom-section').forEach(sec => {
-      const visibleRows = sec.querySelectorAll('.showroom-row:not([style*="display: none"])');
-      sec.style.display = visibleRows.length > 0 ? '' : 'none';
-    });
+  grid.querySelectorAll('.showroom-section').forEach(sec => {
+    const visibleRows = sec.querySelectorAll('.showroom-row:not([style*="display: none"])');
+    sec.style.display = visibleRows.length > 0 ? '' : 'none';
   });
 }
 
@@ -1428,8 +1080,15 @@ export function getShowroomCategoryInventory() {
   [...SHOWROOM_LISTINGS, ...getDBListings()].forEach(l => add(l.category, l.subcategory));
   TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
   CAR_LISTINGS.forEach(l => add(l.category, l.subcategory));
-  PHONE_LISTINGS.forEach(l => add(l.category, l.subcategory));
   getCatalogCategories().forEach(c => add(c.name, null, c.count || 0));
+
+  // Only categories that actually appear on the homepage (real estate, cars,
+  // trucks, motorhomes) are surfaced in the nav — everything else was removed.
+  const keptLabels = REAL_ESTATE_SECTIONS.map(s => s.label);
+  counts.forEach((entry, name) => {
+    const matchesKept = keptLabels.some(label => categoryMatches(name, label, ''));
+    if (!matchesKept) counts.delete(name);
+  });
 
   // Display order
   const deptIds = ['fashion', 'electronics', 'home', 'vehicles', 'realestate', 'sports', 'everyday'];
@@ -1461,25 +1120,19 @@ export function filterShowroomByDepartment(deptId) {
 }
 
 export function filterShowroomByCategories(names) {
-  const realEstateGrid = document.querySelector('[data-showroom-grid="real-estate"]');
-  const marketplaceGrid = document.querySelector('[data-showroom-grid="marketplace"]');
+  const grid = document.querySelector('[data-showroom-grid="real-estate"]');
+  if (!grid) return;
   const allRows = collectAllRows();
   const list = (names || []).map(n => String(n).toLowerCase()).filter(Boolean);
   allRows.forEach(({ section, row }) => {
-    const gridName = REAL_ESTATE_SECTIONS.includes(section) ? 'real-estate' : 'marketplace';
-    const grid = gridName === 'real-estate' ? realEstateGrid : marketplaceGrid;
-    if (!grid) return;
     const rowEl = grid.querySelector(`[data-row-id="${row.id}"]`);
     if (!rowEl) return;
     const match = list.length === 0 || list.some(n => categoryMatches(n, section.label, row.label));
     rowEl.style.display = match ? '' : 'none';
   });
-  [realEstateGrid, marketplaceGrid].forEach(grid => {
-    if (!grid) return;
-    grid.querySelectorAll('.showroom-section').forEach(sec => {
-      const visibleRows = sec.querySelectorAll('.showroom-row:not([style*="display: none"])');
-      sec.style.display = visibleRows.length > 0 ? '' : 'none';
-    });
+  grid.querySelectorAll('.showroom-section').forEach(sec => {
+    const visibleRows = sec.querySelectorAll('.showroom-row:not([style*="display: none"])');
+    sec.style.display = visibleRows.length > 0 ? '' : 'none';
   });
 }
 
@@ -1509,26 +1162,10 @@ const CATEGORY_TO_SECTION_ROW = {
   'Cars': { section: 'cars', row: 'all-cars' },
   'Motorhomes': { section: 'motorhomes-boats', row: 'all-motorhomes' },
   'Trucks': { section: 'trucks-buses', row: 'all-trucks' },
-  'Kitchen': { section: 'mp-kitchen', row: 'mp-kitchen-all' },
-  'Home Appliances': { section: 'mp-appliances', row: 'mp-appl-washers' },
-  'Pets': { section: 'pets', row: 'pets-all' },
-  'Dogs': { section: 'pets', row: 'pets-all' },
 };
 
 // Fuzzy keyword matching for categories not found exactly
 const CATEGORY_KEYWORDS = [
-  { keywords: ['kitchen', 'cookware', 'utensil'], target: { section: 'mp-kitchen', row: 'mp-kitchen-all' } },
-  { keywords: ['washing machine', 'washer', 'laundry'], target: { section: 'mp-appliances', row: 'mp-appl-washers' } },
-  { keywords: ['dryer', 'tumble'], target: { section: 'mp-appliances', row: 'mp-appl-dryers' } },
-  { keywords: ['air condition', 'air conditioning', 'cooling unit'], target: { section: 'mp-appliances', row: 'mp-appl-ac' } },
-  { keywords: ['fan'], target: { section: 'mp-appliances', row: 'mp-appl-fans' } },
-  { keywords: ['vacuum', 'vacuum cleaner', 'robot vacuum'], target: { section: 'mp-appliances', row: 'mp-appl-vacuums' } },
-  { keywords: ['water dispenser', 'water cooler'], target: { section: 'mp-appliances', row: 'mp-appl-dispensers' } },
-  { keywords: ['water heater', 'geyser', 'boiler'], target: { section: 'mp-appliances', row: 'mp-appl-heaters' } },
-  { keywords: ['iron', 'ironing'], target: { section: 'mp-appliances', row: 'mp-appl-irons' } },
-  { keywords: ['air purifier', 'air cleaner', 'hepa'], target: { section: 'mp-appliances', row: 'mp-appl-purifiers' } },
-  { keywords: ['appliance'], target: { section: 'mp-appliances', row: 'mp-appl-washers' } },
-  { keywords: ['pet', 'dog', 'cat', 'animal'], target: { section: 'pets', row: 'pets-all' } },
   { keywords: ['car', 'vehicle', 'auto', 'sedan', 'suv'], target: { section: 'cars', row: 'all-cars' } },
   { keywords: ['truck', 'pickup', 'lorry'], target: { section: 'trucks-buses', row: 'all-trucks' } },
   { keywords: ['motorhome', 'camper', 'rv'], target: { section: 'motorhomes-boats', row: 'all-motorhomes' } },
@@ -1566,7 +1203,7 @@ function findSectionRowForCategory(category, subcategory) {
 }
 
 function findSectionAndRowById(id) {
-  for (const section of [...REAL_ESTATE_SECTIONS, ...MARKETPLACE_SECTIONS]) {
+  for (const section of REAL_ESTATE_SECTIONS) {
     for (const row of section.rows) {
       if (row.ids && row.ids.includes(id)) {
         return { sectionId: section.id, rowId: row.id };
@@ -1581,8 +1218,8 @@ export async function initAllShowrooms() {
   injectWishStyles();
 
   // Paint the static catalog instantly — no network wait. Every seed
-  // listing (200 home & kitchen, houses, trucks, catalog) is already in
-  // the bundle, so the showrooms appear immediately.
+  // listing (houses, trucks, cars, catalog) is already in the bundle,
+  // so the showrooms appear immediately.
   renderAllGrids();
 
   try {
@@ -1597,47 +1234,21 @@ export async function initAllShowrooms() {
     if (dbOnly.length > 0 && !_dbSectionAdded) {
       _dbSectionAdded = true;
 
-      // Distribute each DB product into its correct category section
-      const newArrivalsIds = [];
+      // Distribute each DB product into its correct category section.
+      // Products that don't map to a kept section (real estate, cars,
+      // trucks, motorhomes) are simply skipped.
       for (const listing of dbOnly) {
         const target = findSectionRowForCategory(listing.category, listing.subcategory);
-        let placed = false;
-        if (target) {
-          // Find the section and row in the section definitions
-          const allSections = [...REAL_ESTATE_SECTIONS, ...MARKETPLACE_SECTIONS];
-          const section = allSections.find(s => s.id === target.section);
-          if (section) {
-            const row = section.rows.find(r => r.id === target.row);
-            if (row) {
-              // row.ids may be undefined for "all trucks" type rows
-              if (!row.ids) row.ids = [];
-              if (!row.ids.includes(listing.property_id)) {
-                row.ids.push(listing.property_id);
-              }
-              placed = true;
-            }
-          }
+        if (!target) continue;
+        const section = REAL_ESTATE_SECTIONS.find(s => s.id === target.section);
+        if (!section) continue;
+        const row = section.rows.find(r => r.id === target.row);
+        if (!row) continue;
+        // row.ids may be undefined for "all trucks" type rows
+        if (!row.ids) row.ids = [];
+        if (!row.ids.includes(listing.property_id)) {
+          row.ids.push(listing.property_id);
         }
-        // If we couldn't place it in a category, add it to New Arrivals
-        if (!placed) {
-          newArrivalsIds.push(listing.property_id);
-        }
-      }
-
-      // Add "New Arrivals" section for uncategorised products
-      if (newArrivalsIds.length > 0) {
-        MARKETPLACE_SECTIONS.unshift({
-          id: 'new-arrivals',
-          label: 'New Arrivals',
-          icon: 'clock',
-          subtitle: 'Latest products added to the marketplace.',
-          rows: [{
-            id: 'new-arrivals-all',
-            label: 'Recently Added',
-            icon: 'clock',
-            ids: newArrivalsIds,
-          }],
-        });
       }
     }
 
