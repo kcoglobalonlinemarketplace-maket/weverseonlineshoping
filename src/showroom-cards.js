@@ -1,7 +1,6 @@
 import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings, cleanListing } from './showroom-data.js';
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
-import { CAR_LISTINGS } from './car-data.js';
 import { PRODUCT_LISTINGS } from './products-data.js';
 import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth-lazy.js';
@@ -14,6 +13,18 @@ const FALLBACK_IMG = '/fallback.svg';
 // shop stays tidy (10 per line) while every downloaded image is shown.
 const ALL_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
 const PRODUCTS_PER_ROW = 10;
+
+// Owner's own downloaded car images — shown in the bright homepage Cars
+// line (replaces the old stock car cards). Trucks & motorhomes stay in
+// their own sections.
+const NEW_CARS = [
+  'KCO-PX0015', 'KCO-PX0018', 'KCO-PX0019', 'KCO-PX0058', 'KCO-PX0061',
+  'KCO-PX0085', 'KCO-PX0104', 'KCO-PX0236', 'KCO-PX0630', 'KCO-PX0637',
+  'KCO-PX0638', 'KCO-PX0658', 'KCO-PX0659', 'KCO-PX0664', 'KCO-PX0666',
+  'KCO-PX0669', 'KCO-PX0670', 'KCO-PX0673', 'KCO-PX0676', 'KCO-PX0685',
+  'KCO-PX0690', 'KCO-PX0691', 'KCO-PX0698', 'KCO-PX0701', 'KCO-PX0730',
+  'KCO-PX0743',
+].map(id => PRODUCT_EXTRA_LISTINGS.find(l => l.property_id === id)).filter(Boolean);
 const PRODUCT_ROWS = [];
 for (let i = 0; i < ALL_PRODUCTS.length; i += PRODUCTS_PER_ROW) {
   const end = Math.min(i + PRODUCTS_PER_ROW, ALL_PRODUCTS.length);
@@ -162,9 +173,9 @@ const REAL_ESTATE_SECTIONS = [
   },
   {
     id: 'cars', label: 'Cars', icon: 'car-front',
-    subtitle: 'Latest-model cars from trusted sellers worldwide.',
+    subtitle: 'Brand new car arrivals — bright, shiny and ready to drive home.',
     rows: [
-      { id: 'all-cars', label: 'All Cars', icon: 'car-front', allCars: true },
+      { id: 'all-cars', label: 'New Cars', icon: 'car-front', allCars: true },
     ],
   },
   {
@@ -425,7 +436,7 @@ function getRowListings(rowDef) {
   } else if (rowDef.allMotorhomes) {
     listings = MOTORHOME_LISTINGS;
   } else if (rowDef.allCars) {
-    listings = CAR_LISTINGS;
+    listings = NEW_CARS;
   } else if (rowDef.allProducts) {
     listings = rowDef.productRange ? ALL_PRODUCTS.slice(rowDef.productRange[0], rowDef.productRange[1]) : ALL_PRODUCTS;
   } else {
@@ -496,7 +507,7 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? NEW_CARS : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
     count += base.length;
     if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
@@ -509,11 +520,20 @@ function renderSection(section, accentColor, maxRows) {
   const sec = document.createElement('div');
   sec.className = 'showroom-section space-y-3';
 
-  const accentText = 'text-blue-300';
-  const accentBorder = 'border-blue-500/30';
-  const accentBg = 'bg-blue-500/10';
-  const glow = '0 0 22px rgba(59,130,246,0.25)';
+  const isCars = section.id === 'cars';
+  const accentText = isCars ? 'text-amber-300' : 'text-blue-300';
+  const accentBorder = isCars ? 'border-amber-400/40' : 'border-blue-500/30';
+  const accentBg = isCars ? 'bg-amber-400/15' : 'bg-blue-500/10';
+  const glow = isCars ? '0 0 26px rgba(251,191,36,0.35)' : '0 0 22px rgba(59,130,246,0.25)';
+  const gradient = isCars ? 'from-amber-100 via-white to-orange-200' : 'from-blue-200 via-white to-blue-300';
   const itemCount = countSectionItems(section);
+
+  if (isCars) {
+    sec.style.background = 'linear-gradient(180deg, rgba(255,245,215,0.55) 0%, rgba(255,255,255,0) 55%)';
+    sec.style.borderRadius = '1.25rem';
+    sec.style.padding = '0.25rem 0.5rem 0.5rem';
+    sec.style.boxShadow = 'inset 0 0 40px rgba(251,191,36,0.10)';
+  }
 
   const header = document.createElement('div');
   header.className = 'relative pt-2 pb-3';
@@ -524,13 +544,13 @@ function renderSection(section, accentColor, maxRows) {
       </div>
       <div class="flex-1 min-w-0">
         <h3 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
-          <span class="bg-gradient-to-r from-blue-200 via-white to-blue-300 bg-clip-text text-transparent">${section.label}</span>
+          <span class="bg-gradient-to-r ${gradient} bg-clip-text text-transparent">${section.label}</span>
         </h3>
         <p class="text-gray-400 text-xs sm:text-[13px] leading-tight mt-1 truncate">${section.subtitle}</p>
       </div>
       <span class="hidden sm:inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border ${accentBorder} ${accentBg} ${accentText}">${itemCount} Items</span>
     </div>
-    <div class="mt-3 h-px bg-gradient-to-r from-blue-500/40 via-gray-700/40 to-transparent"></div>
+    <div class="mt-3 h-px bg-gradient-to-r ${isCars ? 'from-amber-400/60 via-orange-300/40' : 'from-blue-500/40 via-gray-700/40'} to-transparent"></div>
   `;
   sec.appendChild(header);
 
@@ -789,7 +809,7 @@ function buildAllCarsOverlay() {
   allCarsOverlay.appendChild(body);
   document.body.appendChild(allCarsOverlay);
 
-  const cars = CAR_LISTINGS.filter(l => l && !isCatalogListingHidden(l.property_id));
+  const cars = NEW_CARS.filter(l => l && !isCatalogListingHidden(l.property_id));
   const grid = document.createElement('div');
   grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
   body.appendChild(grid);
@@ -1119,7 +1139,6 @@ export async function getShowroomCategoryInventory() {
   };
   [...SHOWROOM_LISTINGS, ...getDBListings()].forEach(l => add(l.category, l.subcategory));
   TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
-  CAR_LISTINGS.forEach(l => add(l.category, l.subcategory));
   PRODUCT_LISTINGS.forEach(l => add(l.category, l.subcategory));
   PRODUCT_EXTRA_LISTINGS.forEach(l => add(l.category, l.subcategory));
 
