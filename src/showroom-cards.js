@@ -35,9 +35,31 @@ const NEW_CARS = [
   'KCO-PX0690', 'KCO-PX0691', 'KCO-PX0698', 'KCO-PX0701', 'KCO-PX0730',
   'KCO-PX0743',
 ].map(id => PRODUCT_EXTRA_LISTINGS.find(l => l.property_id === id)).filter(Boolean);
+// ── Gathered type lines ─────────────────────────────────────────
+// Everything of the same type lives in ONE line: all cars together,
+// all homes together, all washing machines together, all trucks
+// together, all motorhomes together. No type is scattered or repeated.
+const byCategory = (cat) => ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === cat);
+const WASHING_RE = /\b(washer|washing|laundry|launder|dryer)\b/i;
+const ALL_WASHING_MACHINES = ALL_PRODUCTS.filter(l => WASHING_RE.test(l.title || ''));
+const WASHING_IDS = new Set(ALL_WASHING_MACHINES.map(l => l.property_id || l.id));
+const _gatheredIds = new Set();
+const pick = (list) => list.filter(l => {
+  const id = l.property_id || l.id;
+  if (!id || WASHING_IDS.has(id) || _gatheredIds.has(id)) return false;
+  _gatheredIds.add(id);
+  return true;
+});
+const ALL_HOUSES = pick([...NEW_HOUSES, ...byCategory('Houses & Real Estate')]);
+const ALL_CARS = pick([...NEW_CARS, ...byCategory('Cars & Vehicles')]);
+const ALL_TRUCKS = pick([...TRUCK_LISTINGS, ...byCategory('Trucks')]);
+const ALL_MOTORHOMES = pick([...MOTORHOME_LISTINGS, ...byCategory('Motorhomes')]);
+
 // Every owner product is shown grouped by category, so each category is one
 // clean horizontal line (all cars together, all houses together, all kitchen
-// items together, etc.) — never mixed into arbitrary 10-card rows.
+// items together, etc.) — never mixed into arbitrary 10-card rows. Categories
+// that already have a dedicated gathered line (cars, houses, trucks,
+// motorhomes) and washing-machine items are excluded so nothing repeats.
 const PRODUCT_CATEGORY_ORDER = [
   'Houses & Real Estate', 'Cars & Vehicles', 'Trucks', 'Motorhomes',
   'Kitchen & Appliances', 'Home Appliances & Cleaning', 'Jewelry', 'Watches',
@@ -69,7 +91,13 @@ function buildCategoryRows(products) {
     .filter(r => (byCat.get(r.productCategory) || []).length);
 }
 
-const PRODUCT_ROWS = buildCategoryRows(ALL_PRODUCTS);
+const PRODUCT_ROWS = buildCategoryRows(
+  ALL_PRODUCTS.filter(l => {
+    const c = l.category || 'New Arrivals';
+    const id = l.property_id || l.id;
+    return !['Houses & Real Estate', 'Cars & Vehicles', 'Trucks', 'Motorhomes'].includes(c) && !WASHING_IDS.has(id);
+  })
+);
 
 // ── Lazy catalog ────────────────────────────────────────────────
 // The generated catalog (src/catalog.js) is the single biggest JS module
@@ -206,6 +234,13 @@ const REAL_ESTATE_SECTIONS = [
     subtitle: 'Brand new car arrivals — bright, shiny and ready to drive home.',
     rows: [
       { id: 'all-cars', label: 'New Cars', icon: 'car-front', allCars: true },
+    ],
+  },
+  {
+    id: 'washing-machines', label: 'Washing Machines', icon: 'washing-machine',
+    subtitle: 'Every washer, dryer and laundry item, gathered in one bright line.',
+    rows: [
+      { id: 'all-washing-machines', label: 'Washing Machines', icon: 'washing-machine', allWashingMachines: true },
     ],
   },
   {
@@ -462,13 +497,15 @@ function scrollRow(row, dir) {
 function getRowListings(rowDef) {
   let listings;
   if (rowDef.allTrucks) {
-    listings = TRUCK_LISTINGS;
+    listings = ALL_TRUCKS;
   } else if (rowDef.allMotorhomes) {
-    listings = MOTORHOME_LISTINGS;
+    listings = ALL_MOTORHOMES;
   } else if (rowDef.allCars) {
-    listings = NEW_CARS;
+    listings = ALL_CARS;
   } else if (rowDef.newHouses) {
-    listings = NEW_HOUSES;
+    listings = ALL_HOUSES;
+  } else if (rowDef.allWashingMachines) {
+    listings = ALL_WASHING_MACHINES;
   } else if (rowDef.productCategory) {
     listings = ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === rowDef.productCategory);
   } else if (rowDef.allProducts) {
@@ -477,7 +514,7 @@ function getRowListings(rowDef) {
     listings = getListingsByIds(rowDef.ids);
   }
   let catalogExtra = [];
-  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.newHouses && !rowDef.allProducts && !rowDef.productCategory) {
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.newHouses && !rowDef.allProducts && !rowDef.productCategory && !rowDef.allWashingMachines) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
   }
   if (catalogExtra.length > 0) {
@@ -541,9 +578,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? NEW_CARS : r.newHouses ? NEW_HOUSES : r.productCategory ? ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === r.productCategory) : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
+    const base = r.allTrucks ? ALL_TRUCKS : r.allMotorhomes ? ALL_MOTORHOMES : r.allCars ? ALL_CARS : r.newHouses ? ALL_HOUSES : r.allWashingMachines ? ALL_WASHING_MACHINES : r.productCategory ? ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === r.productCategory) : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts && !r.productCategory) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts && !r.productCategory && !r.allWashingMachines) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
@@ -843,7 +880,7 @@ function buildAllCarsOverlay() {
   allCarsOverlay.appendChild(body);
   document.body.appendChild(allCarsOverlay);
 
-  const cars = NEW_CARS.filter(l => l && !isCatalogListingHidden(l.property_id));
+  const cars = ALL_CARS.filter(l => l && !isCatalogListingHidden(l.property_id));
   const grid = document.createElement('div');
   grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
   body.appendChild(grid);
@@ -927,7 +964,7 @@ function buildAllTrucksOverlay() {
   allTrucksOverlay.appendChild(body);
   document.body.appendChild(allTrucksOverlay);
 
-  const trucks = TRUCK_LISTINGS.filter(l => l && !isCatalogListingHidden(l.property_id));
+  const trucks = ALL_TRUCKS.filter(l => l && !isCatalogListingHidden(l.property_id));
   const grid = document.createElement('div');
   grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
   body.appendChild(grid);
@@ -964,7 +1001,7 @@ function closeAllTrucksView() {
 }
 
 function createViewAllTrucksButton() {
-  const total = TRUCK_LISTINGS.filter(l => l && !isCatalogListingHidden(l.property_id)).length;
+  const total = ALL_TRUCKS.filter(l => l && !isCatalogListingHidden(l.property_id)).length;
   const wrap = document.createElement('div');
   wrap.className = 'flex justify-center py-1';
   const btn = document.createElement('button');
@@ -999,10 +1036,10 @@ function renderGrid(gridName) {
   const accent = 'blue';
 
   if (gridName === 'real-estate') {
-    // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
-    // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
+    // Compact homepage: 1 line houses, 1 line cars, 1 line washing
+    // machines, 1 line trucks, 1 line motorhomes, then products.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'motorhomes-boats', 'cars', 'trucks-buses', 'products']) {
+    for (const id of ['local-houses', 'cars', 'washing-machines', 'trucks-buses', 'motorhomes-boats', 'products']) {
       const section = byId.get(id);
       if (!section) continue;
       const alreadyRendered = section.rows.some(r => hasRow(r.id));

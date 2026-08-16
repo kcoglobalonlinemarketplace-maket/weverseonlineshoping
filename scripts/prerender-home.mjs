@@ -23,12 +23,14 @@ globalThis.localStorage = {
   clear: () => store.clear(),
 };
 
-const { formatPrice, formatTruckPrice, getListingsByIds, cleanListing } = await import(
+const { formatPrice, formatTruckPrice, getListingsByIds, cleanListing, SHOWROOM_LISTINGS } = await import(
   fileUrl(path.join(ROOT, 'src/showroom-data.js'))
 );
 const { TRUCK_LISTINGS } = await import(fileUrl(path.join(ROOT, 'src/truck-data.js')));
 const { MOTORHOME_LISTINGS } = await import(fileUrl(path.join(ROOT, 'src/motorhome-data.js')));
 const { CAR_LISTINGS } = await import(fileUrl(path.join(ROOT, 'src/car-data.js')));
+const { PRODUCT_LISTINGS } = await import(fileUrl(path.join(ROOT, 'src/products-data.js')));
+const { PRODUCT_EXTRA_LISTINGS } = await import(fileUrl(path.join(ROOT, 'src/products-extra.js')));
 const { generateProduct, getCatalogCategory, isCatalogListingHidden } = await import(
   fileUrl(path.join(ROOT, 'src/catalog.js'))
 );
@@ -36,30 +38,66 @@ const { generateProduct, getCatalogCategory, isCatalogListingHidden } = await im
 const FALLBACK_IMG = '/fallback.svg';
 const GENERATED_PER_ROW = 0;
 
+const ALL_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
+
+const NEW_HOUSES = [
+  'KCO-000001',   // the first/kept house
+  'KCO-PX0111',   // Pima Canyon Apartments
+  'KCO-PX0720',   // Modern House for Rent
+  'KCO-PX0722',   // It's a beautiful day to hang a sold sign
+  'KCO-PX0726',   // Pittsburg, KS Homes for Sale
+].map(id => SHOWROOM_LISTINGS.find(l => l.property_id === id) || ALL_PRODUCTS.find(l => l.property_id === id)).filter(Boolean);
+
+const NEW_CARS = [
+  'KCO-PX0015', 'KCO-PX0018', 'KCO-PX0019', 'KCO-PX0058', 'KCO-PX0061',
+  'KCO-PX0085', 'KCO-PX0104', 'KCO-PX0236', 'KCO-PX0630', 'KCO-PX0637',
+  'KCO-PX0638', 'KCO-PX0658', 'KCO-PX0659', 'KCO-PX0664', 'KCO-PX0666',
+  'KCO-PX0669', 'KCO-PX0670', 'KCO-PX0673', 'KCO-PX0676', 'KCO-PX0685',
+  'KCO-PX0690', 'KCO-PX0691', 'KCO-PX0698', 'KCO-PX0701', 'KCO-PX0730',
+  'KCO-PX0743',
+].map(id => ALL_PRODUCTS.find(l => l.property_id === id)).filter(Boolean);
+
+// Mirrors the gathered type lines in src/showroom-cards.js so the baked
+// homepage HTML matches the runtime render exactly.
+const byCategory = (cat) => ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === cat);
+const WASHING_RE = /\b(washer|washing|laundry|launder|dryer)\b/i;
+const ALL_WASHING_MACHINES = ALL_PRODUCTS.filter(l => WASHING_RE.test(l.title || ''));
+const WASHING_IDS = new Set(ALL_WASHING_MACHINES.map(l => l.property_id || l.id));
+const _gatheredIds = new Set();
+const pick = (list) => list.filter(l => {
+  const id = l.property_id || l.id;
+  if (!id || WASHING_IDS.has(id) || _gatheredIds.has(id)) return false;
+  _gatheredIds.add(id);
+  return true;
+});
+const ALL_HOUSES = pick([...NEW_HOUSES, ...byCategory('Houses & Real Estate')]);
+const ALL_CARS = pick([...NEW_CARS, ...byCategory('Cars & Vehicles')]);
+const ALL_TRUCKS = pick([...TRUCK_LISTINGS, ...byCategory('Trucks')]);
+const ALL_MOTORHOMES = pick([...MOTORHOME_LISTINGS, ...byCategory('Motorhomes')]);
+
 const ROW_TO_CATALOG_SLUG = {
   'affordable-homes': 'real-estate',
   'apartment-homes': 'real-estate',
   'cape-cod': 'real-estate',
   'beach-houses': 'real-estate',
+  'new-houses': 'real-estate',
 };
 
 const HOUSE_SECTION_IDS = new Set(['local-houses', 'modern-luxury', 'commercial-land']);
 const VEHICLE_SECTION_IDS = new Set(['cars', 'trucks-buses']);
 
 // The only showroom section baked into the HTML is the very first homepage
-// section (local-houses → affordable-homes teaser). Baking the full first
+// section (local-houses → the gathered Houses line). Baking the full first
 // screen keeps the paint instant while keeping index.html small, so slow
 // mobile connections don't stall on a large HTML download. The remaining
-// sections (motorhomes, cars, trucks, …) are appended by JS at load.
+// sections (cars, washing machines, trucks, motorhomes, products, …) are
+// appended by JS at load.
 const PRE_RENDER_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Affordable homes, apartments, and land for sale or rent near you.',
+    subtitle: 'Homes for sale or rent — the first house plus your new arrivals, in one bright line.',
     rows: [
-      { id: 'affordable-homes', label: 'Affordable Homes', icon: 'home', ids: ['KCO-000001', 'KCO-000013', 'KCO-000016'] },
-      { id: 'apartment-homes', label: 'Apartments', icon: 'building', ids: ['KCO-000006'] },
-      { id: 'cape-cod', label: 'Cape Cod & Duplex', icon: 'house', ids: ['KCO-000003', 'KCO-000004'] },
-      { id: 'beach-houses', label: 'Beach Houses', icon: 'palmtree', ids: ['KCO-000009', 'KCO-000015'] },
+      { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
   },
 ];
@@ -93,12 +131,14 @@ function getCatalogListingsForRow(rowDef, existingIds) {
 
 function getRowListings(rowDef) {
   let listings;
-  if (rowDef.allTrucks) listings = TRUCK_LISTINGS;
-  else if (rowDef.allMotorhomes) listings = MOTORHOME_LISTINGS;
-  else if (rowDef.allCars) listings = CAR_LISTINGS;
+  if (rowDef.allTrucks) listings = ALL_TRUCKS;
+  else if (rowDef.allMotorhomes) listings = ALL_MOTORHOMES;
+  else if (rowDef.allCars) listings = ALL_CARS;
+  else if (rowDef.newHouses) listings = ALL_HOUSES;
+  else if (rowDef.allWashingMachines) listings = ALL_WASHING_MACHINES;
   else listings = getListingsByIds(rowDef.ids);
   let catalogExtra = [];
-  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars) {
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.newHouses && !rowDef.allWashingMachines) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map((l) => l.property_id));
   }
   if (catalogExtra.length > 0) listings = [...listings, ...catalogExtra];
@@ -246,9 +286,9 @@ function rowHtml(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? ALL_TRUCKS : r.allMotorhomes ? ALL_MOTORHOMES : r.allCars ? ALL_CARS : r.newHouses ? ALL_HOUSES : r.allWashingMachines ? ALL_WASHING_MACHINES : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.newHouses && !r.allWashingMachines) {
       count += getCatalogListingsForRow(r, base.map((l) => l.property_id)).length;
     }
   });
