@@ -12,7 +12,6 @@ const FALLBACK_IMG = '/fallback.svg';
 // Every owner product appears in rows of exactly 10 cards each so the
 // shop stays tidy (10 per line) while every downloaded image is shown.
 const ALL_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
-const PRODUCTS_PER_ROW = 10;
 
 // Owner's own downloaded house/apartment photos — shown in the bright
 // homepage Houses line, alongside the very first (kept) house. The other
@@ -36,18 +35,41 @@ const NEW_CARS = [
   'KCO-PX0690', 'KCO-PX0691', 'KCO-PX0698', 'KCO-PX0701', 'KCO-PX0730',
   'KCO-PX0743',
 ].map(id => PRODUCT_EXTRA_LISTINGS.find(l => l.property_id === id)).filter(Boolean);
-const PRODUCT_ROWS = [];
-for (let i = 0; i < ALL_PRODUCTS.length; i += PRODUCTS_PER_ROW) {
-  const end = Math.min(i + PRODUCTS_PER_ROW, ALL_PRODUCTS.length);
-  const rowNum = Math.floor(i / PRODUCTS_PER_ROW) + 1;
-  PRODUCT_ROWS.push({
-    id: `products-${rowNum}`,
-    label: rowNum === 1 ? 'All Products' : `Products ${rowNum}`,
-    icon: 'package',
-    allProducts: true,
-    productRange: [i, end],
+// Every owner product is shown grouped by category, so each category is one
+// clean horizontal line (all cars together, all houses together, all kitchen
+// items together, etc.) — never mixed into arbitrary 10-card rows.
+const PRODUCT_CATEGORY_ORDER = [
+  'Houses & Real Estate', 'Cars & Vehicles', 'Trucks', 'Motorhomes',
+  'Kitchen & Appliances', 'Home Appliances & Cleaning', 'Jewelry', 'Watches',
+  'Fashion & Shoes', 'Babies & Kids', 'Electronics', 'Tools & Hardware',
+  'Beauty & Personal Care', 'Home Decor & Storage', 'New Arrivals',
+];
+const PRODUCT_CAT_ICON = {
+  'Houses & Real Estate': 'home', 'Cars & Vehicles': 'car-front', 'Trucks': 'truck',
+  'Motorhomes': 'bus', 'Kitchen & Appliances': 'chef-hat', 'Home Appliances & Cleaning': 'washing-machine',
+  'Jewelry': 'gem', 'Watches': 'watch', 'Fashion & Shoes': 'shirt', 'Babies & Kids': 'baby',
+  'Electronics': 'smartphone', 'Tools & Hardware': 'wrench', 'Beauty & Personal Care': 'sparkles',
+  'Home Decor & Storage': 'lamp', 'New Arrivals': 'package',
+};
+function productCatSlug(c) { return String(c).toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+function buildCategoryRows(products) {
+  const byCat = new Map();
+  for (const l of products) {
+    const c = l.category || 'New Arrivals';
+    if (!byCat.has(c)) byCat.set(c, []);
+    byCat.get(c).push(l.property_id || l.id);
+  }
+  const order = [...byCat.keys()].sort((a, b) => {
+    const ia = PRODUCT_CATEGORY_ORDER.indexOf(a);
+    const ib = PRODUCT_CATEGORY_ORDER.indexOf(b);
+    return (ia === -1 ? PRODUCT_CATEGORY_ORDER.length : ia) - (ib === -1 ? PRODUCT_CATEGORY_ORDER.length : ib);
   });
+  return order
+    .map(c => ({ id: `products-${productCatSlug(c)}`, label: c, icon: PRODUCT_CAT_ICON[c] || 'package', productCategory: c }))
+    .filter(r => (byCat.get(r.productCategory) || []).length);
 }
+
+const PRODUCT_ROWS = buildCategoryRows(ALL_PRODUCTS);
 
 // ── Lazy catalog ────────────────────────────────────────────────
 // The generated catalog (src/catalog.js) is the single biggest JS module
@@ -447,13 +469,15 @@ function getRowListings(rowDef) {
     listings = NEW_CARS;
   } else if (rowDef.newHouses) {
     listings = NEW_HOUSES;
+  } else if (rowDef.productCategory) {
+    listings = ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === rowDef.productCategory);
   } else if (rowDef.allProducts) {
     listings = rowDef.productRange ? ALL_PRODUCTS.slice(rowDef.productRange[0], rowDef.productRange[1]) : ALL_PRODUCTS;
   } else {
     listings = getListingsByIds(rowDef.ids);
   }
   let catalogExtra = [];
-  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.newHouses && !rowDef.allProducts) {
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.newHouses && !rowDef.allProducts && !rowDef.productCategory) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
   }
   if (catalogExtra.length > 0) {
@@ -517,9 +541,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? NEW_CARS : r.newHouses ? NEW_HOUSES : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? NEW_CARS : r.newHouses ? NEW_HOUSES : r.productCategory ? ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === r.productCategory) : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts && !r.productCategory) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
