@@ -6,8 +6,15 @@ import { getTruckById } from './truck-data.js';
 import { getMotorhomeById } from './motorhome-data.js';
 import { getCarById } from './car-data.js';
 import { getPhoneById } from './phone-data.js';
+import { PRODUCT_LISTINGS } from './products-data.js';
+import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { detectCurrency, getCountryByCode, COUNTRIES, SUPPORTED_CURRENCIES } from './country-data.js';
 import { buildFallbackNotice, getManualPaymentAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
+
+const PRODUCT_LOOKUP = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
+function findProductById(id) {
+  return PRODUCT_LOOKUP.find(l => l.property_id === id) || null;
+}
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -152,7 +159,7 @@ async function init() {
   // Load listing from URL param or cart
   const listingId = params.get('id');
   if (listingId) {
-    state.listing = findListingById(listingId) || getTruckById(listingId) || getMotorhomeById(listingId) || getCarById(listingId) || getPhoneById(listingId);
+    state.listing = findListingById(listingId) || getTruckById(listingId) || getMotorhomeById(listingId) || getCarById(listingId) || getPhoneById(listingId) || findProductById(listingId);
     if (!state.listing) {
       const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
         import('./catalog.js'),
@@ -178,7 +185,7 @@ async function init() {
     ]);
     await loadHiddenCatalogIds();
     state.cartItems = cart.map(id => {
-      const l = listings.find(x => x.property_id === id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id) || generateListingById(id);
+      const l = listings.find(x => x.property_id === id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id) || findProductById(id) || generateListingById(id);
       return l ? { listing: l, quantity: 1 } : null;
     }).filter(Boolean);
     if (state.cartItems.length === 0) {

@@ -3,6 +3,8 @@ import { getTruckById } from './truck-data.js';
 import { getMotorhomeById } from './motorhome-data.js';
 import { getCarById } from './car-data.js';
 import { getPhoneById } from './phone-data.js';
+import { PRODUCT_LISTINGS } from './products-data.js';
+import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { getCurrentUser } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
@@ -10,6 +12,10 @@ import { detectCurrency, getCountryByCode, SUPPORTED_CURRENCIES } from './countr
 import { buildFallbackNotice, getManualPaymentAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
 
 const FALLBACK_IMG = '/fallback.svg';
+const PRODUCT_LOOKUP = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
+function findProductById(id) {
+  return PRODUCT_LOOKUP.find(l => l.property_id === id) || null;
+}
 let paymentSettings = null;
 let manualPaymentAccounts = [];
 let manualPaymentInstructions = '';
@@ -680,7 +686,7 @@ async function init() {
   if (!user && !isGuest) { window.location.href = '/'; return; }
 
   const id = getListingId();
-  let listing = findListingById(id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id);
+  let listing = findListingById(id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id) || findProductById(id);
   if (!listing) {
     const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
       import('./catalog.js'),

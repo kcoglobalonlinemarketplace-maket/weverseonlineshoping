@@ -5,6 +5,8 @@ import { getMotorhomeById, MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { getCarById, CAR_LISTINGS } from './car-data.js';
 import { getPhoneById, PHONE_LISTINGS } from './phone-data.js';
 import { PET_LISTINGS } from './pet-data.js';
+import { PRODUCT_LISTINGS } from './products-data.js';
+import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { renderCard } from './showroom-cards.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
@@ -18,6 +20,11 @@ function safeImages(imgs) { return (Array.isArray(imgs) && imgs.length > 0) ? im
 function getListingId() {
   const params = new URLSearchParams(window.location.search);
   return params.get('id');
+}
+
+const ALL_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
+function findProductById(id) {
+  return ALL_PRODUCTS.find(l => l.property_id === id) || null;
 }
 
 function renderTruck(listing) {
@@ -621,6 +628,8 @@ function buildRelatedPool(listing) {
   add(CAR_LISTINGS);
   add(PHONE_LISTINGS);
   add(PET_LISTINGS);
+  add(PRODUCT_LISTINGS);
+  add(PRODUCT_EXTRA_LISTINGS);
   add(getAllListings());
   const cat = getCatalogCategory(listing.category || listing.subcategory);
   if (cat) add(getCatalogSample(cat.slug, 50));
@@ -1249,6 +1258,15 @@ async function init() {
     document.title = `${phone.title} | Weverse Online Shop`;
     render(phone);
     try { loadRelatedSections(phone); } catch {}
+    return;
+  }
+
+  const product = findProductById(id);
+  if (product) {
+    cleanListing(product);
+    document.title = `${product.title} | Weverse Online Shop`;
+    render(product);
+    try { loadRelatedSections(product); } catch {}
     return;
   }
 
