@@ -2,6 +2,7 @@ import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListi
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
+import { PRODUCT_LISTINGS } from './products-data.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth-lazy.js';
 import { isCatalogListingHidden, loadHiddenCatalogIds } from './catalog-hidden-store.js';
 
@@ -159,6 +160,13 @@ const REAL_ESTATE_SECTIONS = [
     subtitle: 'Luxury motorhomes and RVs for travel and adventure.',
     rows: [
       { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
+    ],
+  },
+  {
+    id: 'products', label: 'Products', icon: 'package',
+    subtitle: 'Premium shop products — jewelry, watches, fashion and more.',
+    rows: [
+      { id: 'all-products', label: 'All Products', icon: 'package', allProducts: true },
     ],
   },
 ];
@@ -401,11 +409,13 @@ function getRowListings(rowDef) {
     listings = MOTORHOME_LISTINGS;
   } else if (rowDef.allCars) {
     listings = CAR_LISTINGS;
+  } else if (rowDef.allProducts) {
+    listings = PRODUCT_LISTINGS;
   } else {
     listings = getListingsByIds(rowDef.ids);
   }
   let catalogExtra = [];
-  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars) {
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.allProducts) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
   }
   if (catalogExtra.length > 0) {
@@ -469,9 +479,9 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allProducts ? PRODUCT_LISTINGS : getListingsByIds(r.ids);
     count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars) {
+    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
     }
   });
@@ -920,12 +930,12 @@ function renderGrid(gridName) {
     // Compact homepage: 1 line houses, 1 line motorhomes + CTA, then
     // 1 line cars, 1 line trucks + CTA, then remaining sections in full.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'motorhomes-boats', 'cars', 'trucks-buses']) {
+    for (const id of ['local-houses', 'motorhomes-boats', 'cars', 'trucks-buses', 'products']) {
       const section = byId.get(id);
       if (!section) continue;
       const alreadyRendered = section.rows.some(r => hasRow(r.id));
       if (!alreadyRendered) {
-        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
+        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || id === 'products';
         container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
       }
       if (id === 'motorhomes-boats' && !container.querySelector('[data-viewall="houses"]')) container.appendChild(createViewAllHousesButton());
@@ -1093,12 +1103,15 @@ export async function getShowroomCategoryInventory() {
   [...SHOWROOM_LISTINGS, ...getDBListings()].forEach(l => add(l.category, l.subcategory));
   TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
   CAR_LISTINGS.forEach(l => add(l.category, l.subcategory));
+  PRODUCT_LISTINGS.forEach(l => add(l.category, l.subcategory));
 
   // Only categories that actually appear on the homepage (real estate, cars,
-  // trucks, motorhomes) are surfaced in the nav — everything else was removed.
+  // trucks, motorhomes, products) are surfaced in the nav.
   const keptLabels = REAL_ESTATE_SECTIONS.map(s => s.label);
+  const productLabels = PRODUCT_LISTINGS.map(l => l.category);
   counts.forEach((entry, name) => {
-    const matchesKept = keptLabels.some(label => categoryMatches(name, label, ''));
+    const matchesKept = keptLabels.some(label => categoryMatches(name, label, ''))
+      || productLabels.some(label => categoryMatches(name, label, ''));
     if (!matchesKept) counts.delete(name);
   });
 
