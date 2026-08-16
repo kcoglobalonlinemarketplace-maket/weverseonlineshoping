@@ -22653,5 +22653,285 @@ export const PRODUCT_EXTRA_LISTINGS = [
       "Fast Worldwide Delivery",
       "Quality Guaranteed"
     ]
-  }
+  },
+{
+  "property_id": "KCO-PX0810",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "2000 Chevrolet Silverado 1500",
+  "description": "2000 Chevrolet Silverado 1500 - Chevrolet vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "Chevrolet",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0848.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+},
+{
+  "property_id": "KCO-PX0811",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "2004 Chevrolet Corvette",
+  "description": "2004 Chevrolet Corvette - Chevrolet vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "Chevrolet",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0849.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+},
+{
+  "property_id": "KCO-PX0812",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "2004 Pontiac GTO",
+  "description": "2004 Pontiac GTO - Pontiac vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "Pontiac",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0850.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+},
+{
+  "property_id": "KCO-PX0813",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "2012 Chevrolet Corvette",
+  "description": "2012 Chevrolet Corvette - Chevrolet vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "Chevrolet",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0851.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+},
+{
+  "property_id": "KCO-PX0814",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "2016 GMC",
+  "description": "2016 GMC - GMC vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "GMC",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0852.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+},
+{
+  "property_id": "KCO-PX0815",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "2026 Chevrolet Silverado 3500HD Work Truck",
+  "description": "2026 Chevrolet Silverado 3500HD Work Truck - Chevrolet vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "Chevrolet",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0853.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+},
+{
+  "property_id": "KCO-PX0816",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "2026 Ford F-450 Super Duty XL",
+  "description": "2026 Ford F-450 Super Duty XL - Ford vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "Ford",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0854.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+},
+{
+  "property_id": "KCO-PX0817",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "Cadillac 21 Luxury Car",
+  "description": "Cadillac 21 Luxury Car - Cadillac vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "Cadillac",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0855.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+},
+{
+  "property_id": "KCO-PX0818",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "Lexus NX 450h+ Luxury SUV",
+  "description": "Lexus NX 450h+ Luxury SUV - Lexus vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "Lexus",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0856.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+},
+{
+  "property_id": "KCO-PX0819",
+  "listing_type": "product",
+  "category": "Cars & Vehicles",
+  "subcategory": "New Arrival",
+  "title": "2019 Chevrolet Silverado 1500",
+  "description": "2019 Chevrolet Silverado 1500 - Chevrolet vehicle at Weverse Online Shop. Quality checked, priced for fast worldwide delivery.",
+  "price": 12000,
+  "currency": "USD",
+  "brand": "Chevrolet",
+  "condition": "New",
+  "color": "Black",
+  "availability_status": "In Stock",
+  "stock_quantity": 1,
+  "listing_status": "sale",
+  "images": [
+    "/products/p0857.jpg"
+  ],
+  "rating": 4.5,
+  "rating_count": 5,
+  "favorite_count": 3,
+  "features": [
+    "New Arrival",
+    "Brand Name Vehicle",
+    "Fast Worldwide Delivery",
+    "Quality Guaranteed"
+  ]
+}
 ];
