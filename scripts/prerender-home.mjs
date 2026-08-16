@@ -294,14 +294,11 @@ function viewAllButton(kind) {
 // (only homes, trucks, motorhomes and cars are shown at the top).
 function heroHtml() {
   const V = 'https://videos.pexels.com/video-files/';
-  const BRAND = 'Weverse Online Shop';
-  const slide = { video: V + '4324104/4324104-sd_640_360_24fps.mp4', badge: 'Delivery Fleet', titles: { en: BRAND + ' \u2013 Delivery Trucks & Last-Mile' }, descs: { en: 'From warehouse to doorstep \u2014 fleet management, courier services, and last-mile delivery worldwide.' } };
+  const slide = { video: V + '4324104/4324104-sd_640_360_24fps.mp4' };
   return `<div class="carousel-slide active-slide" id="slide-0">
   <video class="hero-video" muted loop playsinline webkit-playsinline preload="metadata" data-src="${slide.video}" style="width:100%;height:100%;object-fit:cover;object-position:center"></video>
   <div class="absolute inset-0 z-10 flex flex-col justify-end items-center text-center p-6 sm:p-10 pb-16">
-    <span class="inline-block bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2 fade-in-up delay-1">${slide.badge}</span>
-    <h2 id="slide-title-0" class="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-2 drop-shadow-2xl fade-in-up delay-2">${slide.titles.en}</h2>
-    <p id="slide-desc-0" class="max-w-xl text-white/85 text-xs sm:text-sm mb-4 leading-relaxed fade-in-up delay-2">${slide.descs.en}</p>
+    <h2 id="slide-title-0" class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-widest text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]"></h2>
   </div>
 </div>`;
 }

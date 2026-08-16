@@ -396,6 +396,16 @@ const CAROUSEL_SLIDES = [
   return isHome || isTruck || isMotorhome || isCar;
 });
 
+// The single word shown over each hero slide: Home, Truck, Motorhome or Car.
+// No long titles, descriptions or badges — just the category name.
+function carouselCategoryName(slide) {
+  const text = [slide.badge, slide.titles && slide.titles.en, slide.descs && slide.descs.en].filter(Boolean).join(' ').toLowerCase();
+  if (/\b(house|houses|homes|apartment|apartments|villa|villas|condo|condominium|townhouse|townhouses|bungalow|mansion|mansions|penthouse|duplex|resort|resorts|hotels?|estates?|property|real estate|commercial buildings?|office buildings?|shopping malls?|vacation home|waterfront home|farm house|land for sale)\b/.test(text)) return 'Home';
+  if (/\b(trucks?|pickup|delivery trucks?|last-mile)\b/.test(text)) return 'Truck';
+  if (/\b(motorhomes?|campers?|rvs?|trailers?|fifth-wheel|mobile home|caravan)\b/.test(text)) return 'Motorhome';
+  return 'Car';
+}
+
 // ---- STATE ----
 let currentSlide = 0, carouselTimer = null, currentLang = "en", currentCountry = "US";
 let voiceRecognition = null, isListening = false;
@@ -551,10 +561,20 @@ function dedupSlides(arr, seen) {
 
 // Build the showcase: admin advertisements (by sort order) first, then
 // live marketplace listings, then the default brand collection as fallback.
+// Only Home, Truck, Motorhome and Car slides are ever shown — anything else
+// (fashion, electronics, food, boats, …) is dropped.
+function isAllowedHeroSlide(s) {
+  const text = [s.badge, s.titles && s.titles.en, s.descs && s.descs.en, s.category].filter(Boolean).join(' ').toLowerCase();
+  const isHome = /\b(house|houses|homes|apartment|apartments|villa|villas|condo|condominium|townhouse|townhouses|bungalow|mansion|mansions|penthouse|duplex|resort|resorts|hotels?|estates?|property|real estate|commercial buildings?|office buildings?|shopping malls?|vacation home|waterfront home|farm house|land for sale)\b/.test(text);
+  const isTruck = /\b(trucks?|pickup|delivery trucks?|last-mile)\b/.test(text);
+  const isMotorhome = /\b(motorhomes?|campers?|rvs?|trailers?|fifth-wheel|mobile home|caravan)\b/.test(text);
+  const isCar = /\b(cars?|sedans?|suvs?|coupes?|hatchbacks?|convertibles?|hypercars?|supercars?|electric vehicles?|hybrid vehicles?|vans?|minivans?|autos?|concept cars?|sports car)\b/.test(text);
+  return isHome || isTruck || isMotorhome || isCar;
+}
 function mergeAdSlides(){
   const seen = new Set();
-  const ads = (window._ads || adminAdSlides).filter(Boolean);
-  const live = (window._liveAdSlides || liveAdSlides).filter(Boolean);
+  const ads = (window._ads || adminAdSlides).filter(Boolean).filter(isAllowedHeroSlide);
+  const live = (window._liveAdSlides || liveAdSlides).filter(Boolean).filter(isAllowedHeroSlide);
   const priority = dedupSlides([...ads, ...live], seen);
   activeCarouselSlides = priority.length ? [...priority, ...dedupSlides(CAROUSEL_SLIDES, seen)] : CAROUSEL_SLIDES;
 }
@@ -1030,10 +1050,7 @@ function renderCarousel(){
     }
     el.innerHTML=mediaHtml+
       '<div class="absolute inset-0 z-10 flex flex-col justify-end items-center text-center p-6 sm:p-10 pb-16">'+
-      '<span class="inline-block bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2 fade-in-up delay-1">'+escHtml(cleanAdLabel(slide.badge)||'Featured')+'</span>'+
-      '<h2 id="slide-title-'+idx+'" class="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-2 drop-shadow-2xl fade-in-up delay-2"></h2>'+
-      '<p id="slide-desc-'+idx+'" class="max-w-xl text-white/85 text-xs sm:text-sm mb-4 leading-relaxed fade-in-up delay-2"></p>'+
-      slideCtaHtml(slide,idx)+
+      '<h2 id="slide-title-'+idx+'" class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-widest text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]"></h2>'+
       '</div>';
     sc.appendChild(el);
   });
@@ -1043,14 +1060,9 @@ function renderCarousel(){
 }
 
 function updateCarouselLanguage(){
-  const copy=AD_COPY[currentLang]||AD_COPY.en;
   activeCarouselSlides.forEach((slide,idx)=>{
     const t=document.getElementById("slide-title-"+idx);
-    const d=document.getElementById("slide-desc-"+idx);
-    const c=document.getElementById("slide-cta-"+idx);
-    if(t)t.textContent=cleanAdLabel(slide.titles[currentLang]||slide.titles.en);
-    if(d)d.textContent=(slide.descs&&(slide.descs[currentLang]||slide.descs.en))||'';
-    if(c)c.textContent=slideCtaLabel(slide,copy);
+    if(t)t.textContent=carouselCategoryName(slide);
   });
   updateBadgeLanguage();
 }
