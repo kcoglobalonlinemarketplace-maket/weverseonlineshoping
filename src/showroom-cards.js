@@ -206,7 +206,7 @@ async function toggleWishlist(listing, btn) {
 const REAL_ESTATE_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Homes for sale or rent — the first house plus your new arrivals, in one bright line.',
+    subtitle: 'Homes for sale or rent — scroll down to see every one, one by one.',
     rows: [
       { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
@@ -231,14 +231,14 @@ const REAL_ESTATE_SECTIONS = [
   },
   {
     id: 'cars', label: 'Cars', icon: 'car-front',
-    subtitle: 'Brand new car arrivals — bright, shiny and ready to drive home.',
+    subtitle: 'Brand new car arrivals — bright, shiny and ready to drive home. Scroll to see them all.',
     rows: [
       { id: 'all-cars', label: 'New Cars', icon: 'car-front', allCars: true },
     ],
   },
   {
     id: 'washing-machines', label: 'Washing Machines', icon: 'washing-machine',
-    subtitle: 'Every washer, dryer and laundry item, gathered in one bright line.',
+    subtitle: 'Every washer, dryer and laundry item, gathered in one long scroll.',
     rows: [
       { id: 'all-washing-machines', label: 'Washing Machines', icon: 'washing-machine', allWashingMachines: true },
     ],
@@ -252,7 +252,7 @@ const REAL_ESTATE_SECTIONS = [
   },
   {
     id: 'motorhomes-boats', label: 'Motorhomes', icon: 'bus',
-    subtitle: 'Luxury motorhomes and RVs for travel and adventure.',
+    subtitle: 'Luxury motorhomes and RVs for travel and adventure — one after another below.',
     rows: [
       { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
     ],
@@ -322,7 +322,10 @@ function getCatalogListingsForRow(rowDef, existingIds) {
 }
 
 // ── Card rendering ──
-export function renderCard(listing) {
+// Shared computed pieces used by both the compact card (grids) and the
+// full-width feed card (vertical one-by-one showroom). Kept in one place so
+// the two layouts always stay consistent.
+function cardParts(listing) {
   cleanListing(listing);
 
   const isProperty = listing.listing_type === 'property';
@@ -387,27 +390,36 @@ export function renderCard(listing) {
       </div>`;
   }
 
+  return {
+    isProperty, isPet, isTruck, isMotorhome, isCar,
+    listingId, cover, price, statusBadge,
+    locationHtml, specsHtml, ratingStars, mapPreviewHtml,
+  };
+}
+
+export function renderCard(listing) {
+  const p = cardParts(listing);
   const card = document.createElement('div');
   card.className = 'showroom-card group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col cursor-pointer';
-  card.dataset.id = listingId;
+  card.dataset.id = p.listingId;
 
   const wishSaved = isSaved(listing);
 
   card.innerHTML = `
     <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
-      <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
+      <img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-      ${statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>` : ''}
-      ${badgesHtml}
+      ${p.statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${p.statusBadge}</span>` : ''}
+      ${p.badgesHtml || ''}
     </div>
     <div class="p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5 line-clamp-2">${listing.title}</h3>
-      ${locationHtml}
-      ${specsHtml}
+      ${p.locationHtml}
+      ${p.specsHtml}
       <div class="flex items-center justify-between mt-auto pt-2">
-        <span class="text-lg font-black text-blue-600">${price}</span>
-        ${ratingStars}
+        <span class="text-lg font-black text-blue-600">${p.price}</span>
+        ${p.ratingStars}
       </div>
       <div class="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-gray-100">
         <button class="share-btn shrink-0 w-8 h-8 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
@@ -417,12 +429,66 @@ export function renderCard(listing) {
             <i data-lucide="heart" class="w-4 h-4 ${wishSaved ? 'fill-red-500 text-red-500' : ''}"></i>
           </button>
         </div>
-      ${mapPreviewHtml}
+      ${p.mapPreviewHtml}
       <div class="flex gap-2 mt-2.5">
         <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
           <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
         </button>
         <button class="details-btn flex-1 min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
+          <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  attachCardListeners(card, listing);
+
+  return card;
+}
+
+// Full-width "feed" card for the vertical one-by-one showroom: large image on
+// the left (top on mobile), details on the right, generous padding. Reads like
+// a magazine feed as the page scrolls straight down.
+export function renderFeedCard(listing) {
+  const p = cardParts(listing);
+  const card = document.createElement('div');
+  card.className = 'showroom-card showroom-feed-card group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 flex flex-col sm:flex-row cursor-pointer';
+  card.dataset.id = p.listingId;
+
+  const wishSaved = isSaved(listing);
+
+  card.innerHTML = `
+    <div class="relative shrink-0 sm:w-[42%] lg:w-[38%] xl:w-[34%] aspect-[16/10] sm:aspect-auto sm:min-h-[280px] overflow-hidden bg-gray-100">
+      <img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
+           class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+           onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${p.statusBadge ? `<span class="absolute top-2.5 left-2.5 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${p.statusBadge}</span>` : ''}
+      <span class="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <i data-lucide="expand" class="w-3.5 h-3.5"></i> View
+      </span>
+    </div>
+    <div class="flex-1 p-4 sm:p-5 lg:p-6 flex flex-col min-w-0">
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 leading-snug mb-1.5 line-clamp-2 group-hover:text-blue-700 transition-colors">${listing.title}</h3>
+      ${p.locationHtml}
+      ${p.specsHtml}
+      <div class="flex items-center justify-between gap-3 mt-auto pt-2">
+        <span class="text-xl sm:text-2xl font-black text-blue-600">${p.price}</span>
+        ${p.ratingStars}
+      </div>
+      ${p.mapPreviewHtml}
+      <div class="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-gray-100 justify-end">
+        <button class="share-btn shrink-0 w-9 h-9 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 rounded-xl transition flex items-center justify-center" title="Share product" aria-label="Share product">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+        </button>
+        <button class="wishlist-btn ${wishSaved ? 'saved bg-red-500/20 text-red-400 border border-red-500/40' : ''} shrink-0 w-9 h-9 bg-gray-100 hover:bg-red-50 hover:text-red-500 text-gray-500 rounded-xl transition flex items-center justify-center" title="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}" aria-label="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}">
+          <i data-lucide="heart" class="w-4 h-4 ${wishSaved ? 'fill-red-500 text-red-500' : ''}"></i>
+        </button>
+      </div>
+      <div class="flex gap-2 mt-2.5">
+        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/25">
+          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
+        </button>
+        <button class="details-btn flex-1 min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
           <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
         </button>
       </div>
@@ -487,11 +553,6 @@ function showToast(msg) {
 }
 
 // ── Row rendering ──
-function scrollRow(row, dir) {
-  const track = row.querySelector('.hscroll');
-  if (!track) return;
-  track.scrollBy({ left: dir * 260 * 3, behavior: 'smooth' });
-}
 
 // ── Man row ─────────────────────────────────────────────────────
 function getRowListings(rowDef) {
@@ -542,32 +603,21 @@ function renderRow(rowDef) {
         <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
         ${hasItems && isGrid ? `<span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${listings.length} Items</span>` : ''}
       </div>
-      <div class="flex items-center gap-1 ${hasItems && !isGrid ? '' : 'hidden'}">
-        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i>
-        </button>
-        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
-          <i data-lucide="chevron-right" class="w-4 h-4"></i>
-        </button>
-      </div>
     </div>
-    <div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1'}"></div>
+    <div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'showroom-feed flex flex-col gap-4 sm:gap-5'}"></div>
   `;
 
-  const track = row.querySelector(isGrid ? '.grid' : '.hscroll');
+  const track = row.querySelector(isGrid ? '.grid' : '.showroom-feed');
 
   if (hasItems) {
     const frag = document.createDocumentFragment();
-    listings.forEach(listing => frag.appendChild(renderCard(listing)));
+    listings.forEach(listing => frag.appendChild(isGrid ? renderCard(listing) : renderFeedCard(listing)));
     track.appendChild(frag);
   } else {
     track.innerHTML = `<div class="flex items-center justify-center w-full py-6">
       <span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-300 rounded-xl px-5 py-3">Coming Soon</span>
     </div>`;
   }
-
-  row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
-  row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
 
   return row;
 }
@@ -672,7 +722,7 @@ function createIncrementalLoader(scroller, body, units) {
     const unit = units[gi];
     const end = Math.min(ii + OVERLAY_CHUNK_SIZE, unit.items.length);
     const frag = document.createDocumentFragment();
-    for (let k = ii; k < end; k++) frag.appendChild(renderCard(unit.items[k]));
+    for (let k = ii; k < end; k++) frag.appendChild(renderFeedCard(unit.items[k]));
     unit.grid.appendChild(frag);
     ii = end;
     if (ii >= unit.items.length) { gi++; ii = 0; }
@@ -792,7 +842,7 @@ async function buildAllHousesOverlay() {
       <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${items.length} Properties</span>
     `;
     const grid = document.createElement('div');
-    grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
+    grid.className = 'showroom-feed flex flex-col gap-4 sm:gap-5';
     sec.appendChild(head);
     sec.appendChild(grid);
     body.appendChild(sec);
@@ -882,7 +932,7 @@ function buildAllCarsOverlay() {
 
   const cars = ALL_CARS.filter(l => l && !isCatalogListingHidden(l.property_id));
   const grid = document.createElement('div');
-  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
+  grid.className = 'showroom-feed flex flex-col gap-4 sm:gap-5';
   body.appendChild(grid);
 
   _carsLoader = createIncrementalLoader(allCarsOverlay, body, [{ grid, items: cars }]);
@@ -966,7 +1016,7 @@ function buildAllTrucksOverlay() {
 
   const trucks = ALL_TRUCKS.filter(l => l && !isCatalogListingHidden(l.property_id));
   const grid = document.createElement('div');
-  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 items-stretch';
+  grid.className = 'showroom-feed flex flex-col gap-4 sm:gap-5';
   body.appendChild(grid);
 
   _trucksLoader = createIncrementalLoader(allTrucksOverlay, body, [{ grid, items: trucks }]);
@@ -1078,10 +1128,8 @@ function adoptPrerendered(container) {
   container.querySelectorAll('.showroom-row[data-prerendered]').forEach(row => {
     const rowDef = findRowDef(row.dataset.rowId);
     if (!rowDef) return;
-    row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
-    row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
     const listings = getRowListings(rowDef);
-    const track = row.querySelector('.hscroll, .grid');
+    const track = row.querySelector('.showroom-feed, .grid');
     if (track) {
       track.querySelectorAll('.showroom-card').forEach(card => {
         const id = card.dataset.id;
@@ -1107,21 +1155,9 @@ function adoptPrerendered(container) {
 // position so a background refresh never makes the page jump.
 function renderAllGrids() {
   const grids = document.querySelectorAll('[data-showroom-grid]');
-  const scrollState = new Map();
-  grids.forEach(g => {
-    const rows = [];
-    g.querySelectorAll('.hscroll').forEach(el => rows.push({ el, left: el.scrollLeft }));
-    scrollState.set(g, rows);
-    delete g.dataset.initialized;
-  });
   grids.forEach((g, i) => {
     const name = g.dataset.showroomGrid;
-    const run = () => {
-      renderGrid(name);
-      const fresh = g.querySelectorAll('.hscroll');
-      const rows = scrollState.get(g) || [];
-      rows.forEach((row, j) => { if (fresh[j]) fresh[j].scrollLeft = row.left; });
-    };
+    const run = () => renderGrid(name);
     if (i === 0) {
       // Render the above-the-fold grid immediately so the page paints fast.
       run();

@@ -95,7 +95,7 @@ const VEHICLE_SECTION_IDS = new Set(['cars', 'trucks-buses']);
 const PRE_RENDER_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Homes for sale or rent — the first house plus your new arrivals, in one bright line.',
+    subtitle: 'Homes for sale or rent — scroll down to see every one, one by one.',
     rows: [
       { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
@@ -247,6 +247,105 @@ function cardHtml(listing) {
   </div>`;
 }
 
+// full-width feed card markup identical to renderFeedCard in showroom-cards.js.
+function feedCardHtml(listing) {
+  cleanListing(listing);
+
+  const isProperty = listing.listing_type === 'property';
+  const isPet = listing.listing_type === 'pet';
+  const isTruck = listing.listing_type === 'vehicle' && listing.category === 'Trucks';
+  const isMotorhome = listing.listing_type === 'vehicle' && listing.category === 'Motorhomes';
+  const isCar = listing.listing_type === 'vehicle' && listing.category === 'Cars';
+  const listingId = listing.id || listing.property_id;
+  const cover = listing.images?.[0] || FALLBACK_IMG;
+  const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
+  const statusBadge = listing.listing_type === 'product' ? 'New' : (isProperty || isPet ? 'For Sale' : '');
+
+  const hasRealReviews = (listing.rating_count || 0) > 0;
+  const aiEstimatedRating = listing.is_ai_generated && !hasRealReviews ? 4.5 : 0;
+  const displayRating = hasRealReviews ? listing.rating : aiEstimatedRating;
+  const reviewCount = listing.review_count || listing.rating_count || 0;
+
+  let locationHtml = '';
+  if (isProperty) {
+    const flag = flagEmoji(listing.country_code);
+    const parts = [listing.city, listing.state].filter(Boolean);
+    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="map" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${flag} ${parts.join(', ') || listing.country}</span></div>`;
+  } else if (isPet) {
+    const flag = flagEmoji(listing.country_code);
+    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="paw-print" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${flag} ${listing.country}</span></div>`;
+  }
+
+  let specsHtml = '';
+  if (isProperty) {
+    const specs = [];
+    if (listing.bedrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i>${listing.bedrooms}</span>`);
+    if (listing.bathrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${listing.bathrooms}</span>`);
+    if (listing.land_size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${listing.land_size}</span>`);
+    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
+  } else if (isTruck || isMotorhome || isCar) {
+    const specs = [];
+    specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${listing.model_year}</span>`);
+    specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="gauge" class="w-3.5 h-3.5"></i>${listing.mileage}</span>`);
+    if (isMotorhome) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="moon" class="w-3.5 h-3.5"></i>Sleeps ${listing.sleeping_capacity}</span>`);
+    if (isCar) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="fuel" class="w-3.5 h-3.5"></i>${listing.fuel_type}</span>`);
+    if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
+  }
+
+  let ratingStars = '';
+  if (displayRating > 0) {
+    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
+  }
+
+  let mapPreviewHtml = '';
+  if (isProperty && listing.latitude && listing.longitude) {
+    const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${listing.latitude},${listing.longitude}&zoom=13&size=600x160&markers=${listing.latitude},${listing.longitude},color-red&maptype=mapnik`;
+    mapPreviewHtml = `
+      <div class="relative mt-2.5 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+        <img src="${mapUrl}" alt="Map location for ${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null;this.style.display='none'">
+        <span class="absolute top-1 left-1 bg-black/70 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1"><i data-lucide="map" class="w-3 h-3"></i>Map · ${listing.city || listing.town || ''}</span>
+      </div>`;
+  }
+
+  return `<div class="showroom-card showroom-feed-card group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 flex flex-col sm:flex-row cursor-pointer" data-id="${listingId}">
+    <div class="relative shrink-0 sm:w-[42%] lg:w-[38%] xl:w-[34%] aspect-[16/10] sm:aspect-auto sm:min-h-[280px] overflow-hidden bg-gray-100">
+      <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
+           class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+           onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${statusBadge ? `<span class="absolute top-2.5 left-2.5 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${statusBadge}</span>` : ''}
+      <span class="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <i data-lucide="expand" class="w-3.5 h-3.5"></i> View
+      </span>
+    </div>
+    <div class="flex-1 p-4 sm:p-5 lg:p-6 flex flex-col min-w-0">
+      <h3 class="text-base sm:text-lg font-bold text-gray-900 leading-snug mb-1.5 line-clamp-2 group-hover:text-blue-700 transition-colors">${listing.title}</h3>
+      ${locationHtml}
+      ${specsHtml}
+      <div class="flex items-center justify-between gap-3 mt-auto pt-2">
+        <span class="text-xl sm:text-2xl font-black text-blue-600">${price}</span>
+        ${ratingStars}
+      </div>
+      ${mapPreviewHtml}
+      <div class="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-gray-100 justify-end">
+        <button class="share-btn shrink-0 w-9 h-9 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 rounded-xl transition flex items-center justify-center" title="Share product" aria-label="Share product">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+        </button>
+        <button class="wishlist-btn shrink-0 w-9 h-9 bg-gray-100 hover:bg-red-50 hover:text-red-500 text-gray-500 rounded-xl transition flex items-center justify-center" title="Add to wishlist" aria-label="Add to wishlist">
+          <i data-lucide="heart" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="flex gap-2 mt-2.5">
+        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/25">
+          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
+        </button>
+        <button class="details-btn flex-1 min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
+          <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
 // row markup identical to renderRow in src/showroom-cards.js.
 function rowHtml(rowDef) {
   const listings = getRowListings(rowDef);
@@ -262,21 +361,13 @@ function rowHtml(rowDef) {
         <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
         ${hasItems && isGrid ? `<span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${listings.length} Items</span>` : ''}
       </div>
-      <div class="flex items-center gap-1 ${hasItems && !isGrid ? '' : 'hidden'}">
-        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i>
-        </button>
-        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
-          <i data-lucide="chevron-right" class="w-4 h-4"></i>
-        </button>
-      </div>
     </div>`;
 
   let track;
   if (hasItems) {
-    track = `<div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1'}">${listings.map(cardHtml).join('')}</div>`;
+    track = `<div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'showroom-feed flex flex-col gap-4 sm:gap-5'}">${listings.map(isGrid ? cardHtml : feedCardHtml).join('')}</div>`;
   } else {
-    track = `<div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1'}"><div class="flex items-center justify-center w-full py-6"><span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-300 rounded-xl px-5 py-3">Coming Soon</span></div></div>`;
+    track = `<div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'showroom-feed flex flex-col gap-4 sm:gap-5'}"><div class="flex items-center justify-center w-full py-6"><span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-300 rounded-xl px-5 py-3">Coming Soon</span></div></div>`;
   }
 
   return `<div class="showroom-row relative" data-row-id="${rowDef.id}"${isGrid ? ' data-layout="grid"' : ''} data-prerendered="1">${header}${track}</div>`;
