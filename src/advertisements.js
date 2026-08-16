@@ -14,12 +14,23 @@ function inSchedule(row) {
   return true;
 }
 
+function isRelevantAd(row) {
+  const title = (row.title || '').trim().toLowerCase();
+  const desc = (row.description || '').trim().toLowerCase();
+  const isHome = title.includes('home') || desc.includes('home');
+  const isTruck = title.includes('truck') || desc.includes('truck');
+  const isMotorhome = title.includes('motorhome') || title.includes('motor home') || desc.includes('motorhome') || desc.includes('motor home');
+  const isCar = title.includes('car') || title.includes('vehicle') || desc.includes('car') || desc.includes('vehicle');
+  return isHome || isTruck || isMotorhome || isCar;
+}
+
 function buildSlide(row) {
   if (!row || !inSchedule(row)) return null;
+  if (!isRelevantAd(row)) return null;
   const image = (row.image_url || '').trim() || null;
-  const video = (row.video_url || '').trim() || null;
+  const video = null;
   const poster = (row.poster_url || '').trim() || null;
-  if (!image && !video) return null;
+  if (!image) return null;
   const title = (row.title || 'Marketplace Promotion').trim();
   const desc = (row.description || '').trim();
   const label = AD_LABELS.includes(row.ad_label) ? row.ad_label : 'Featured';
