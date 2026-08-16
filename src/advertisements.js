@@ -17,15 +17,13 @@ function inSchedule(row) {
 function isRelevantAd(row) {
   const title = (row.title || '').trim().toLowerCase();
   const desc = (row.description || '').trim().toLowerCase();
-  const homeKeywords = ['home', 'house', 'apartment', 'villa', 'cottage', 'condo', 'townhouse', 'bungalow'];
-  const truckKeywords = ['truck', 'trucks', 'pickup', 'delivery', 'freight'];
-  const motorhomeKeywords = ['motorhome', 'motor home', 'rv', 'recreational vehicle', 'camper', 'campervan'];
-  const carKeywords = ['car', 'cars', 'vehicle', 'vehicles', 'sedan', 'suv', 'coupe', 'hatchback'];
-  const isHome = homeKeywords.some(k => title.includes(k) || desc.includes(k));
-  const isTruck = truckKeywords.some(k => title.includes(k) || desc.includes(k));
-  const isMotorhome = motorhomeKeywords.some(k => title.includes(k) || desc.includes(k));
-  const isCar = carKeywords.some(k => title.includes(k) || desc.includes(k));
-  return isHome || isTruck || isMotorhome || isCar;
+  const isHome = ['home', 'house', 'apartment', 'villa', 'cottage', 'condo', 'townhouse', 'bungalow'].some(k => title.includes(k) || desc.includes(k));
+  const isTruck = ['truck', 'trucks', 'pickup', 'delivery', 'freight'].some(k => title.includes(k) || desc.includes(k));
+  const isMotorhome = ['motorhome', 'motor home', 'rv', 'recreational vehicle', 'camper', 'campervan'].some(k => title.includes(k) || desc.includes(k));
+  const isCar = ['car', 'cars', 'vehicle', 'vehicles', 'sedan', 'suv', 'coupe', 'hatchback'].some(k => title.includes(k) || desc.includes(k));
+  // Explicitly exclude kitchen and similar room categories
+  const excludesKitchen = !['kitchen', 'cooking', 'culinary'].some(k => title.includes(k) || desc.includes(k));
+  return (isHome || isTruck || isMotorhome || isCar) && excludesKitchen;
 }
 
 function buildSlide(row) {
