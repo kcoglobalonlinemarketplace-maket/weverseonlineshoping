@@ -148,15 +148,15 @@ const REAL_ESTATE_SECTIONS = [
     ],
   },
   {
-    id: 'trucks-buses', label: 'Trucks & Buses', icon: 'truck',
+    id: 'trucks-buses', label: 'Trucks', icon: 'truck',
     subtitle: 'Heavy-duty trucks and commercial transport vehicles.',
     rows: [
       { id: 'all-trucks', label: 'All Trucks', icon: 'truck', allTrucks: true },
     ],
   },
   {
-    id: 'motorhomes-boats', label: 'Motorhomes & Boats', icon: 'bus',
-    subtitle: 'Luxury motorhomes, RVs, and marine vehicles for travel and adventure.',
+    id: 'motorhomes-boats', label: 'Motorhomes', icon: 'bus',
+    subtitle: 'Luxury motorhomes and RVs for travel and adventure.',
     rows: [
       { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
     ],
@@ -185,7 +185,9 @@ const ROW_TO_CATALOG_SLUG = {
 };
 
 // How many generated catalog listings to append per row (after seeds/DB).
-const GENERATED_PER_ROW = 10;
+// Set to 0 — generated/AI extras are disabled so the homepage never loads
+// the 235kB catalog module and stays fast on Android phones.
+const GENERATED_PER_ROW = 0;
 
 // Tiny deterministic seed so different rows in the same category
 // surface different generated items instead of repeating the same set.
@@ -600,7 +602,6 @@ let _housesLoader = null;
 let _housesEscBound = false;
 
 async function collectAllHouses() {
-  const c = await loadCatalog();
   const seen = new Set();
   const out = [];
   const add = (l) => {
@@ -614,13 +615,6 @@ async function collectAllHouses() {
   };
   SHOWROOM_LISTINGS.forEach(add);
   getDBListings().forEach(add);
-  const def = c.getCatalogCategory('real-estate');
-  if (def) {
-    for (let i = 0; i < def.count; i++) {
-      const item = c.generateProduct('real-estate', i);
-      if (item && !isCatalogListingHidden(item.property_id)) add(item);
-    }
-  }
   MOTORHOME_LISTINGS.forEach(add);
   return out;
 }
@@ -1087,7 +1081,6 @@ const DEPT_KEYWORDS = {
 };
 
 export async function getShowroomCategoryInventory() {
-  const c = await loadCatalog();
   const counts = new Map();
   const add = (cat, sub, n = 1) => {
     if (!cat) return;
@@ -1100,7 +1093,6 @@ export async function getShowroomCategoryInventory() {
   [...SHOWROOM_LISTINGS, ...getDBListings()].forEach(l => add(l.category, l.subcategory));
   TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
   CAR_LISTINGS.forEach(l => add(l.category, l.subcategory));
-  c.getCatalogCategories().forEach(cat => add(cat.name, null, cat.count || 0));
 
   // Only categories that actually appear on the homepage (real estate, cars,
   // trucks, motorhomes) are surfaced in the nav — everything else was removed.
@@ -1243,14 +1235,9 @@ export async function initAllShowrooms() {
   renderAllGrids();
 
   // Load DB products + hidden-catalog rules right away. The generated
-  // catalog chunk (~200 kB) is fetched only after the browser is idle so
-  // it never competes with the initial paint or the supabase burst.
+  // catalog chunk is never fetched on the homepage (GENERATED_PER_ROW = 0),
+  // so nothing extra competes with the initial paint or the supabase burst.
   const dbReady = Promise.all([loadDBListings(), loadHiddenCatalogIds()]).catch(() => {});
-  const catalogReady = new Promise((resolve) => {
-    const start = () => loadCatalog().then(resolve, resolve);
-    if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 3000 });
-    else setTimeout(start, 3000);
-  });
 
   try {
     await dbReady;
@@ -1283,9 +1270,7 @@ export async function initAllShowrooms() {
     // Static catalog is already visible; nothing else to do.
   }
 
-  // Refresh once both the DB products and the lazily-loaded catalog are
-  // ready, so the final grid shows DB products AND generated extras.
-  await catalogReady;
+  // Refresh once the DB products are ready, so the final grid shows them.
   renderAllGrids();
 
   window.dispatchEvent(new CustomEvent('showroom-categories-ready'));

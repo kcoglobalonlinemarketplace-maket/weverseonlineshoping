@@ -382,7 +382,19 @@ const CAROUSEL_SLIDES = [
   {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.15_PM.jpeg",badge:"Concept Cars",titles:{en:BRAND+" \u2013 Concept & Future Vehicles"},descs:{en:"Visionary concept cars and future mobility solutions pushing the boundaries of design."}},
   {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.16_PM.jpeg",badge:"Auto Financing",titles:{en:BRAND+" \u2013 Auto Finance & Leasing"},descs:{en:"Flexible auto financing and leasing options designed to get you behind the wheel sooner."}},
   {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.17_PM_(1).jpeg",badge:"Global Auto Trade",titles:{en:BRAND+" \u2013 Global Auto Trade & Export"},descs:{en:"Seamless global auto trade and export services connecting buyers and sellers across continents."}},
-];
+]
+// The top hero carousel only advertises the four categories that exist in
+// the showroom: Homes (real estate), Trucks, Motorhomes and Cars. Every
+// other slide (fashion, electronics, food, logistics, boats, aviation, …)
+// is dropped so the carousel never shows content that isn't for sale.
+.filter((s) => {
+  const text = [s.badge, s.titles && s.titles.en, s.descs && s.descs.en].filter(Boolean).join(' ').toLowerCase();
+  const isHome = /\b(house|houses|homes|apartment|apartments|villa|villas|condo|condominium|townhouse|townhouses|bungalow|mansion|mansions|penthouse|duplex|resort|resorts|hotels?|estates?|property|real estate|commercial buildings?|office buildings?|shopping malls?|vacation home|waterfront home|farm house|land for sale)\b/.test(text);
+  const isTruck = /\b(trucks?|pickup|delivery trucks?|last-mile)\b/.test(text);
+  const isMotorhome = /\b(motorhomes?|campers?|rvs?|trailers?|fifth-wheel|mobile home|caravan)\b/.test(text);
+  const isCar = /\b(cars?|sedans?|suvs?|coupes?|hatchbacks?|convertibles?|hypercars?|supercars?|electric vehicles?|hybrid vehicles?|vans?|minivans?|autos?|concept cars?|sports car)\b/.test(text);
+  return isHome || isTruck || isMotorhome || isCar;
+});
 
 // ---- STATE ----
 let currentSlide = 0, carouselTimer = null, currentLang = "en", currentCountry = "US";
@@ -1055,9 +1067,10 @@ window.addEventListener('ads-updated', (e) => {
   renderCarousel();
 });
 
-window.addEventListener('ai-ad-override-updated', (e) => {
-  applyAiAdOverride(e.detail || null);
-});
+// AI-generated video advertisement override is permanently disabled.
+// The runtime module (src/ai-ad-runtime.js) was removed, so no
+// ai-ad-override-updated event is ever dispatched and no AI video can
+// play over the hero carousel.
 
 function initLiveAds(){
   if(window._loadLiveAds){

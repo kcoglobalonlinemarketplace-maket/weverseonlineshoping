@@ -34,7 +34,7 @@ const { generateProduct, getCatalogCategory, isCatalogListingHidden } = await im
 );
 
 const FALLBACK_IMG = '/fallback.svg';
-const GENERATED_PER_ROW = 10;
+const GENERATED_PER_ROW = 0;
 
 const ROW_TO_CATALOG_SLUG = {
   'affordable-homes': 'real-estate',
@@ -290,10 +290,12 @@ function viewAllButton(kind) {
 }
 
 // Hero slide 0 — identical to the first slide renderCarousel builds.
+// Must match the first slide that survives the homepage filter in app.js
+// (only homes, trucks, motorhomes and cars are shown at the top).
 function heroHtml() {
   const V = 'https://videos.pexels.com/video-files/';
   const BRAND = 'Weverse Online Shop';
-  const slide = { video: V + '6618332/6618332-sd_640_360_24fps.mp4', badge: 'Global Logistics', titles: { en: BRAND + ' \u2013 Global Logistics & Shipping' }, descs: { en: 'DHL, FedEx, UPS & Aramex \u2014 delivering across 200+ countries with cargo ships, aircraft, and distribution hubs.' } };
+  const slide = { video: V + '4324104/4324104-sd_640_360_24fps.mp4', badge: 'Delivery Fleet', titles: { en: BRAND + ' \u2013 Delivery Trucks & Last-Mile' }, descs: { en: 'From warehouse to doorstep \u2014 fleet management, courier services, and last-mile delivery worldwide.' } };
   return `<div class="carousel-slide active-slide" id="slide-0">
   <video class="hero-video" muted loop playsinline webkit-playsinline preload="metadata" data-src="${slide.video}" style="width:100%;height:100%;object-fit:cover;object-position:center"></video>
   <div class="absolute inset-0 z-10 flex flex-col justify-end items-center text-center p-6 sm:p-10 pb-16">
