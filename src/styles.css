@@ -415,7 +415,49 @@ body {
   box-shadow: 0 12px 26px rgba(37, 99, 235, 0.15) !important;
 }
 
+/* View mode picker: blue card, thick white text */
+.view-mode-option {
+  cursor: pointer;
+  outline: none;
+}
+.view-mode-option:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+.view-mode-option .view-mode-dot {
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.view-mode-option.view-mode-active {
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.6), 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+.view-mode-option.view-mode-active .view-mode-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+.view-mode-option.view-mode-active .view-mode-radio {
+  background: #2563eb;
+  border-color: #ffffff;
+}
+
 /* Vertical one-by-one feed cards — full-width, image left / content right */
+#all-houses-body .hscroll .showroom-card,
+#all-cars-body .hscroll .showroom-card,
+#all-trucks-body .hscroll .showroom-card {
+  width: 290px;
+  min-width: 290px;
+}
+@media (min-width: 640px) {
+  #all-houses-body .hscroll .showroom-card,
+  #all-cars-body .hscroll .showroom-card,
+  #all-trucks-body .hscroll .showroom-card {
+    width: 360px;
+    min-width: 360px;
+  }
+}
 .showroom-feed-card {
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
 }

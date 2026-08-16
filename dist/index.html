@@ -117,8 +117,12 @@
     #more-menu-panel .more-icon.text-violet-400{color:#7c3aed}
     #more-menu-panel .more-icon.text-amber-400{color:#d97706}
     #more-menu-panel .more-icon.text-red-400{color:#dc2626}
+    .hscroll{scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+    .hscroll>*{scroll-snap-align:start}
     .showroom-feed .showroom-card{width:100%;min-width:0}
     .showroom-row[data-layout="grid"] .showroom-card{width:100%;min-width:0}
+    .showroom-row[data-layout="line"] .showroom-card{width:290px;min-width:290px}@media(min-width:640px){.showroom-row[data-layout="line"] .showroom-card{width:360px;min-width:360px}}
+    .showroom-row[data-layout="line"] .hscroll .showroom-card{width:290px;min-width:290px}@media(min-width:640px){.showroom-row[data-layout="line"] .hscroll .showroom-card{width:360px;min-width:360px}}
     .delay-1{animation-delay:.1s;opacity:0}
     .delay-2{animation-delay:.3s;opacity:0}
     .delay-3{animation-delay:.5s;opacity:0}
@@ -144,18 +148,18 @@
     "sameAs": ["https://weverseonlineshop.com"]
   }
   </script>
-  <script type="module" crossorigin src="/assets/main-YcgT7zuj.js"></script>
+  <script type="module" crossorigin src="/assets/main-CbK5T_Pn.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/supabase-lazy-BQT6Mc9B.js">
-  <link rel="modulepreload" crossorigin href="/assets/localization-BNDVqMLO.js">
+  <link rel="modulepreload" crossorigin href="/assets/localization-xJ9bkI3X.js">
   <link rel="modulepreload" crossorigin href="/assets/showroom-data-D4FAe61E.js" fetchpriority="low">
   <link rel="modulepreload" crossorigin href="/assets/products-extra-DYXPKBE8.js">
   <link rel="modulepreload" crossorigin href="/assets/catalog-hidden-store-A7rGgF0I.js">
-  <link rel="modulepreload" crossorigin href="/assets/showroom-cards-CbRPa1Ch.js">
+  <link rel="modulepreload" crossorigin href="/assets/showroom-cards-CfBWOk7y.js">
   <link rel="modulepreload" crossorigin href="/assets/native-bridge-B8Ogoih_.js">
-  <link rel="modulepreload" crossorigin href="/assets/localization-bootstrap-BUbyTPdf.js">
+  <link rel="modulepreload" crossorigin href="/assets/localization-bootstrap-CdJjhIsR.js">
   <link rel="modulepreload" crossorigin href="/assets/live-control-store-CGSEVqid.js">
   <link rel="modulepreload" crossorigin href="/assets/brand-QZwsptsl.js">
-  <link rel="stylesheet" crossorigin href="/assets/localization-CQNAnxgi.css" fetchpriority="high">
+  <link rel="stylesheet" crossorigin href="/assets/localization-DMDIAO27.css" fetchpriority="high">
 </head>
 <body class="bg-white text-gray-900 font-sans antialiased selection:bg-blue-500 selection:text-white min-h-screen overflow-x-hidden">
 
@@ -812,15 +816,28 @@
         <p class="text-gray-600 text-xs sm:text-[13px] max-w-xl mx-auto leading-relaxed tracking-wide">Discover premium products from around the globe — trusted sellers, secure payments, and fast worldwide delivery.</p>
       </div>
 
-      <!-- Scroll hint: every product shows one by one as you scroll down -->
-      <div class="flex justify-center pb-1 pt-1">
-        <div class="inline-flex items-center gap-2.5 px-4 sm:px-5 py-2 rounded-full border border-blue-200 bg-blue-50/70 text-blue-700 text-xs sm:text-[13px] font-bold tracking-wide shadow-sm">
-          <span class="relative flex h-2.5 w-2.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-          </span>
-          <span>Scroll down — every product shows here one by one</span>
-          <i data-lucide="chevron-down" class="w-4 h-4 animate-bounce"></i>
+      <!-- View mode picker: blue card, thick white text -->
+      <div id="view-mode-picker" class="max-w-3xl mx-auto pb-2 pt-1" role="radiogroup" aria-label="How do you want to view products?">
+        <div class="rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 border border-blue-400/60 shadow-lg shadow-blue-700/30 p-4 sm:p-5">
+          <p class="text-center text-lg sm:text-xl font-black text-white tracking-tight mb-3 drop-shadow-sm">How do you want to view products?</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button type="button" data-view-mode="feed" role="radio" aria-checked="true"
+              class="view-mode-option flex flex-col items-start gap-1 rounded-xl border-2 border-white/70 bg-white/10 hover:bg-white/20 active:scale-[0.99] transition px-4 py-3 text-left">
+              <span class="flex items-center gap-2.5 w-full">
+                <span class="view-mode-radio shrink-0 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center"><span class="view-mode-dot w-2.5 h-2.5 rounded-full bg-white"></span></span>
+                <span class="text-base font-extrabold text-white tracking-wide">One by One</span>
+              </span>
+              <span class="text-[11px] sm:text-xs font-semibold text-blue-50/95 leading-snug pl-[34px]">See one product at a time. Scroll down to see the next product.</span>
+            </button>
+            <button type="button" data-view-mode="line" role="radio" aria-checked="false"
+              class="view-mode-option flex flex-col items-start gap-1 rounded-xl border-2 border-white/40 bg-white/5 hover:bg-white/15 active:scale-[0.99] transition px-4 py-3 text-left">
+              <span class="flex items-center gap-2.5 w-full">
+                <span class="view-mode-radio shrink-0 w-5 h-5 rounded-full border-2 border-white/80 flex items-center justify-center"><span class="view-mode-dot w-2.5 h-2.5 rounded-full bg-white"></span></span>
+                <span class="text-base font-extrabold text-white tracking-wide">By Line</span>
+              </span>
+              <span class="text-[11px] sm:text-xs font-semibold text-blue-50/95 leading-snug pl-[34px]">See multiple products in one line. Scroll sideways to see more products.</span>
+            </button>
+          </div>
         </div>
       </div>
 

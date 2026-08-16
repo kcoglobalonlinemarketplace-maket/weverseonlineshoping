@@ -8,6 +8,59 @@ import { isCatalogListingHidden, loadHiddenCatalogIds } from './catalog-hidden-s
 
 const FALLBACK_IMG = '/fallback.svg';
 
+// ── View mode ──────────────────────────────────────────────────
+// The showroom can show every product one by one (vertical feed) or in
+// horizontal lines (sideways scroll). The choice is stored so it sticks.
+const VIEW_MODE_KEY = 'kco_showroom_view_mode';
+let viewMode = 'feed'; // 'feed' (one by one) | 'line' (by line)
+
+function readSavedViewMode() {
+  try { return localStorage.getItem(VIEW_MODE_KEY) === 'line' ? 'line' : 'feed'; } catch { return 'feed'; }
+}
+viewMode = readSavedViewMode();
+
+const isLineMode = () => viewMode === 'line';
+const overlayCard = (l) => (isLineMode() ? renderCard(l) : renderFeedCard(l));
+const overlayContainerClass = () => (isLineMode() ? 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1' : 'showroom-feed flex flex-col gap-4 sm:gap-5');
+
+export function setShowroomViewMode(mode) {
+  viewMode = (mode === 'line') ? 'line' : 'feed';
+  try { localStorage.setItem(VIEW_MODE_KEY, viewMode); } catch {}
+  document.querySelectorAll('[data-showroom-grid]').forEach(g => {
+    delete g.dataset.initialized;
+    delete g.dataset.prerendered;
+    g.innerHTML = '';
+  });
+  renderAllGrids();
+  if (window.lucide) lucide.createIcons();
+  updateViewModePicker();
+}
+
+function updateViewModePicker() {
+  const picker = document.getElementById('view-mode-picker');
+  if (!picker) return;
+  picker.querySelectorAll('[data-view-mode]').forEach(btn => {
+    const active = btn.dataset.viewMode === viewMode;
+    btn.classList.toggle('view-mode-active', active);
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+}
+
+function wireViewModePicker() {
+  const picker = document.getElementById('view-mode-picker');
+  if (!picker) return;
+  picker.querySelectorAll('[data-view-mode]').forEach(btn => {
+    btn.addEventListener('click', () => setShowroomViewMode(btn.dataset.viewMode));
+  });
+  updateViewModePicker();
+}
+
+function scrollRow(row, dir) {
+  const track = row.querySelector('.hscroll');
+  if (!track) return;
+  track.scrollBy({ left: dir * 260 * 3, behavior: 'smooth' });
+}
+
 // ── Products ───────────────────────────────────────────────────
 // Every owner product appears in rows of exactly 10 cards each so the
 // shop stays tidy (10 per line) while every downloaded image is shown.
@@ -588,11 +641,13 @@ function renderRow(rowDef) {
   const listings = getRowListings(rowDef);
   const hasItems = listings.length > 0;
   const isGrid = rowDef.layout === 'grid';
+  const lineMode = isLineMode() && !isGrid;
 
   const row = document.createElement('div');
   row.className = 'showroom-row relative';
   row.dataset.rowId = rowDef.id;
   if (isGrid) row.dataset.layout = 'grid';
+  if (lineMode) row.dataset.layout = 'line';
 
   row.innerHTML = `
     <div class="flex items-center justify-between mb-2">
@@ -601,23 +656,34 @@ function renderRow(rowDef) {
           <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-600"></i>
         </span>
         <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
-        ${hasItems && isGrid ? `<span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${listings.length} Items</span>` : ''}
+        ${hasItems ? `<span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${listings.length} Items</span>` : ''}
+      </div>
+      <div class="flex items-center gap-1 ${hasItems && lineMode ? '' : 'hidden'}">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
       </div>
     </div>
-    <div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'showroom-feed flex flex-col gap-4 sm:gap-5'}"></div>
+    <div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : lineMode ? 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1' : 'showroom-feed flex flex-col gap-4 sm:gap-5'}"></div>
   `;
 
-  const track = row.querySelector(isGrid ? '.grid' : '.showroom-feed');
+  const track = row.querySelector(isGrid ? '.grid' : lineMode ? '.hscroll' : '.showroom-feed');
 
   if (hasItems) {
     const frag = document.createDocumentFragment();
-    listings.forEach(listing => frag.appendChild(isGrid ? renderCard(listing) : renderFeedCard(listing)));
+    listings.forEach(listing => frag.appendChild(isGrid ? renderCard(listing) : lineMode ? renderCard(listing) : renderFeedCard(listing)));
     track.appendChild(frag);
   } else {
     track.innerHTML = `<div class="flex items-center justify-center w-full py-6">
       <span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-300 rounded-xl px-5 py-3">Coming Soon</span>
     </div>`;
   }
+
+  row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
+  row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
 
   return row;
 }
@@ -722,7 +788,7 @@ function createIncrementalLoader(scroller, body, units) {
     const unit = units[gi];
     const end = Math.min(ii + OVERLAY_CHUNK_SIZE, unit.items.length);
     const frag = document.createDocumentFragment();
-    for (let k = ii; k < end; k++) frag.appendChild(renderFeedCard(unit.items[k]));
+    for (let k = ii; k < end; k++) frag.appendChild(overlayCard(unit.items[k]));
     unit.grid.appendChild(frag);
     ii = end;
     if (ii >= unit.items.length) { gi++; ii = 0; }
@@ -842,7 +908,7 @@ async function buildAllHousesOverlay() {
       <span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${items.length} Properties</span>
     `;
     const grid = document.createElement('div');
-    grid.className = 'showroom-feed flex flex-col gap-4 sm:gap-5';
+    grid.className = overlayContainerClass();
     sec.appendChild(head);
     sec.appendChild(grid);
     body.appendChild(sec);
@@ -932,7 +998,7 @@ function buildAllCarsOverlay() {
 
   const cars = ALL_CARS.filter(l => l && !isCatalogListingHidden(l.property_id));
   const grid = document.createElement('div');
-  grid.className = 'showroom-feed flex flex-col gap-4 sm:gap-5';
+  grid.className = overlayContainerClass();
   body.appendChild(grid);
 
   _carsLoader = createIncrementalLoader(allCarsOverlay, body, [{ grid, items: cars }]);
@@ -1016,7 +1082,7 @@ function buildAllTrucksOverlay() {
 
   const trucks = ALL_TRUCKS.filter(l => l && !isCatalogListingHidden(l.property_id));
   const grid = document.createElement('div');
-  grid.className = 'showroom-feed flex flex-col gap-4 sm:gap-5';
+  grid.className = overlayContainerClass();
   body.appendChild(grid);
 
   _trucksLoader = createIncrementalLoader(allTrucksOverlay, body, [{ grid, items: trucks }]);
@@ -1155,6 +1221,14 @@ function adoptPrerendered(container) {
 // position so a background refresh never makes the page jump.
 function renderAllGrids() {
   const grids = document.querySelectorAll('[data-showroom-grid]');
+  if (isLineMode()) {
+    // The baked static HTML is the one-by-one feed; when the saved mode is
+    // "By Line" we must replace it, not adopt it.
+    grids.forEach(g => {
+      delete g.dataset.prerendered;
+      g.innerHTML = '';
+    });
+  }
   grids.forEach((g, i) => {
     const name = g.dataset.showroomGrid;
     const run = () => renderGrid(name);
@@ -1386,6 +1460,7 @@ function findSectionAndRowById(id) {
 export async function initAllShowrooms() {
   loadLocalWishlist();
   injectWishStyles();
+  wireViewModePicker();
 
   // Paint the static catalog instantly — no network wait. Every seed
   // listing (houses, trucks, cars, catalog) is already in the bundle,
