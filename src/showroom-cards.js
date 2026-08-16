@@ -940,12 +940,13 @@ function closeAllTrucksView() {
 }
 
 function createViewAllTrucksButton() {
+  const total = TRUCK_LISTINGS.filter(l => l && !isCatalogListingHidden(l.property_id)).length;
   const wrap = document.createElement('div');
   wrap.className = 'flex justify-center py-1';
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'view-all-trucks-btn btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-base font-extrabold tracking-wide shadow-lg shadow-amber-600/30 transition active:scale-95';
-  btn.innerHTML = `View all Trucks <span class="text-lg">→ 🚚</span>`;
+  btn.innerHTML = `See More Trucks <span class="inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">${total}</span> <span class="text-lg">→ 🚚</span>`;
   btn.addEventListener('click', openAllTrucksView);
   wrap.appendChild(btn);
   return wrap;
