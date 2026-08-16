@@ -3,10 +3,29 @@ import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { CAR_LISTINGS } from './car-data.js';
 import { PRODUCT_LISTINGS } from './products-data.js';
+import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth-lazy.js';
 import { isCatalogListingHidden, loadHiddenCatalogIds } from './catalog-hidden-store.js';
 
 const FALLBACK_IMG = '/fallback.svg';
+
+// ── Products ───────────────────────────────────────────────────
+// Every owner product appears in rows of exactly 10 cards each so the
+// shop stays tidy (10 per line) while every downloaded image is shown.
+const ALL_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
+const PRODUCTS_PER_ROW = 10;
+const PRODUCT_ROWS = [];
+for (let i = 0; i < ALL_PRODUCTS.length; i += PRODUCTS_PER_ROW) {
+  const end = Math.min(i + PRODUCTS_PER_ROW, ALL_PRODUCTS.length);
+  const rowNum = Math.floor(i / PRODUCTS_PER_ROW) + 1;
+  PRODUCT_ROWS.push({
+    id: `products-${rowNum}`,
+    label: rowNum === 1 ? 'All Products' : `Products ${rowNum}`,
+    icon: 'package',
+    allProducts: true,
+    productRange: [i, end],
+  });
+}
 
 // ── Lazy catalog ────────────────────────────────────────────────
 // The generated catalog (src/catalog.js) is the single biggest JS module
@@ -165,9 +184,7 @@ const REAL_ESTATE_SECTIONS = [
   {
     id: 'products', label: 'Products', icon: 'package',
     subtitle: 'Premium shop products — jewelry, watches, fashion and more.',
-    rows: [
-      { id: 'all-products', label: 'All Products', icon: 'package', allProducts: true },
-    ],
+    rows: PRODUCT_ROWS,
   },
 ];
 
@@ -410,7 +427,7 @@ function getRowListings(rowDef) {
   } else if (rowDef.allCars) {
     listings = CAR_LISTINGS;
   } else if (rowDef.allProducts) {
-    listings = PRODUCT_LISTINGS;
+    listings = rowDef.productRange ? ALL_PRODUCTS.slice(rowDef.productRange[0], rowDef.productRange[1]) : ALL_PRODUCTS;
   } else {
     listings = getListingsByIds(rowDef.ids);
   }
@@ -479,7 +496,7 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allProducts ? PRODUCT_LISTINGS : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? CAR_LISTINGS : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
     count += base.length;
     if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
@@ -935,7 +952,7 @@ function renderGrid(gridName) {
       if (!section) continue;
       const alreadyRendered = section.rows.some(r => hasRow(r.id));
       if (!alreadyRendered) {
-        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id) || id === 'products';
+        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
         container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
       }
       if (id === 'motorhomes-boats' && !container.querySelector('[data-viewall="houses"]')) container.appendChild(createViewAllHousesButton());
@@ -1104,11 +1121,12 @@ export async function getShowroomCategoryInventory() {
   TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
   CAR_LISTINGS.forEach(l => add(l.category, l.subcategory));
   PRODUCT_LISTINGS.forEach(l => add(l.category, l.subcategory));
+  PRODUCT_EXTRA_LISTINGS.forEach(l => add(l.category, l.subcategory));
 
   // Only categories that actually appear on the homepage (real estate, cars,
   // trucks, motorhomes, products) are surfaced in the nav.
   const keptLabels = REAL_ESTATE_SECTIONS.map(s => s.label);
-  const productLabels = PRODUCT_LISTINGS.map(l => l.category);
+  const productLabels = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS].map(l => l.category);
   counts.forEach((entry, name) => {
     const matchesKept = keptLabels.some(label => categoryMatches(name, label, ''))
       || productLabels.some(label => categoryMatches(name, label, ''));
