@@ -14,6 +14,17 @@ const FALLBACK_IMG = '/fallback.svg';
 const ALL_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
 const PRODUCTS_PER_ROW = 10;
 
+// Owner's own downloaded house/apartment photos — shown in the bright
+// homepage Houses line, alongside the very first (kept) house. The other
+// old houses stay in code (All Houses overlay) but off the front.
+const NEW_HOUSES = [
+  'KCO-000001',   // the first/kept house
+  'KCO-PX0111',   // Pima Canyon Apartments
+  'KCO-PX0720',   // Modern House for Rent
+  'KCO-PX0722',   // It's a beautiful day to hang a sold sign
+  'KCO-PX0726',   // Pittsburg, KS Homes for Sale
+].map(id => SHOWROOM_LISTINGS.find(l => l.property_id === id) || PRODUCT_EXTRA_LISTINGS.find(l => l.property_id === id)).filter(Boolean);
+
 // Owner's own downloaded car images — shown in the bright homepage Cars
 // line (replaces the old stock car cards). Trucks & motorhomes stay in
 // their own sections.
@@ -145,12 +156,9 @@ async function toggleWishlist(listing, btn) {
 const REAL_ESTATE_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Affordable homes, apartments, and land for sale or rent near you.',
+    subtitle: 'Homes for sale or rent — the first house plus your new arrivals, in one bright line.',
     rows: [
-      { id: 'affordable-homes', label: 'Affordable Homes', icon: 'home', ids: ['KCO-000001', 'KCO-000013', 'KCO-000016'] },
-      { id: 'apartment-homes', label: 'Apartments', icon: 'building', ids: ['KCO-000006'] },
-      { id: 'cape-cod', label: 'Cape Cod & Duplex', icon: 'house', ids: ['KCO-000003', 'KCO-000004'] },
-      { id: 'beach-houses', label: 'Beach Houses', icon: 'palmtree', ids: ['KCO-000009', 'KCO-000015'] },
+      { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
   },
   {
@@ -437,13 +445,15 @@ function getRowListings(rowDef) {
     listings = MOTORHOME_LISTINGS;
   } else if (rowDef.allCars) {
     listings = NEW_CARS;
+  } else if (rowDef.newHouses) {
+    listings = NEW_HOUSES;
   } else if (rowDef.allProducts) {
     listings = rowDef.productRange ? ALL_PRODUCTS.slice(rowDef.productRange[0], rowDef.productRange[1]) : ALL_PRODUCTS;
   } else {
     listings = getListingsByIds(rowDef.ids);
   }
   let catalogExtra = [];
-  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.allProducts) {
+  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.newHouses && !rowDef.allProducts) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
   }
   if (catalogExtra.length > 0) {
@@ -507,7 +517,7 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? NEW_CARS : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
+    const base = r.allTrucks ? TRUCK_LISTINGS : r.allMotorhomes ? MOTORHOME_LISTINGS : r.allCars ? NEW_CARS : r.newHouses ? NEW_HOUSES : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
     count += base.length;
     if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
@@ -520,7 +530,7 @@ function renderSection(section, accentColor, maxRows) {
   const sec = document.createElement('div');
   sec.className = 'showroom-section space-y-3';
 
-  const isCars = section.id === 'cars';
+  const isCars = section.id === 'cars' || section.id === 'local-houses';
   const accentText = isCars ? 'text-amber-300' : 'text-blue-300';
   const accentBorder = isCars ? 'border-amber-400/40' : 'border-blue-500/30';
   const accentBg = isCars ? 'bg-amber-400/15' : 'bg-blue-500/10';
