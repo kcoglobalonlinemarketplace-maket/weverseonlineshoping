@@ -17,10 +17,14 @@ function inSchedule(row) {
 function isRelevantAd(row) {
   const title = (row.title || '').trim().toLowerCase();
   const desc = (row.description || '').trim().toLowerCase();
-  const isHome = title.includes('home') || desc.includes('home');
-  const isTruck = title.includes('truck') || desc.includes('truck');
-  const isMotorhome = title.includes('motorhome') || title.includes('motor home') || desc.includes('motorhome') || desc.includes('motor home');
-  const isCar = title.includes('car') || title.includes('vehicle') || desc.includes('car') || desc.includes('vehicle');
+  const homeKeywords = ['home', 'house', 'apartment', 'villa', 'cottage', 'condo', 'townhouse', 'bungalow'];
+  const truckKeywords = ['truck', 'trucks', 'pickup', 'delivery', 'freight'];
+  const motorhomeKeywords = ['motorhome', 'motor home', 'rv', 'recreational vehicle', 'camper', 'campervan'];
+  const carKeywords = ['car', 'cars', 'vehicle', 'vehicles', 'sedan', 'suv', 'coupe', 'hatchback'];
+  const isHome = homeKeywords.some(k => title.includes(k) || desc.includes(k));
+  const isTruck = truckKeywords.some(k => title.includes(k) || desc.includes(k));
+  const isMotorhome = motorhomeKeywords.some(k => title.includes(k) || desc.includes(k));
+  const isCar = carKeywords.some(k => title.includes(k) || desc.includes(k));
   return isHome || isTruck || isMotorhome || isCar;
 }
 
