@@ -297,8 +297,11 @@ function heroHtml() {
   const slide = { video: V + '4324104/4324104-sd_640_360_24fps.mp4' };
   return `<div class="carousel-slide active-slide" id="slide-0">
   <video class="hero-video" muted loop playsinline webkit-playsinline preload="metadata" data-src="${slide.video}" style="width:100%;height:100%;object-fit:cover;object-position:center"></video>
-  <div class="absolute inset-0 z-10 flex flex-col justify-end items-center text-center p-6 sm:p-10 pb-16">
-    <h2 id="slide-title-0" class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-widest text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]"></h2>
+  <div class="absolute inset-0 z-10 flex items-center justify-center text-center p-6 sm:p-10">
+    <div class="glass-hero-panel">
+      <h2 id="slide-title-0" class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]">Weverse Online Shop</h2>
+      <p class="mt-3 text-base sm:text-lg font-extrabold text-amber-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">Delivering worldwide 🚛🚒</p>
+    </div>
   </div>
 </div>`;
 }
