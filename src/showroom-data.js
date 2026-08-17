@@ -503,7 +503,15 @@ export async function loadDBListings() {
       .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
-    const source = error ? listLocalShowroomListings().filter(row => row.is_active !== false) : (data || []);
+    // Always merge database rows with the local fallback store so products that
+    // were saved locally (while the database was unavailable) still show up on
+    // the store. Database rows win on duplicate IDs.
+    const rows = (error ? [] : (data || []));
+    const dbIds = new Set(rows.map(row => row.property_id));
+    for (const row of listLocalShowroomListings().filter(item => item.is_active !== false)) {
+      if (row && row.property_id && !dbIds.has(row.property_id)) { dbIds.add(row.property_id); rows.push(row); }
+    }
+    const source = rows;
     _dbListings = source.map(row => ({
       ...row,
       images: Array.isArray(row.images) ? row.images : [],

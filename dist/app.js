@@ -409,7 +409,6 @@ function carouselCategoryName(slide) {
 // ---- STATE ----
 let currentSlide = 0, carouselTimer = null, currentLang = "en", currentCountry = "US";
 let voiceRecognition = null, isListening = false;
-let liveAdSlides = [];
 let adminAdSlides = [];
 let activeCarouselSlides = CAROUSEL_SLIDES;
 let aiAdOverride = null;
@@ -574,8 +573,7 @@ function isAllowedHeroSlide(s) {
 function mergeAdSlides(){
   const seen = new Set();
   const ads = (window._ads || adminAdSlides).filter(Boolean).filter(isAllowedHeroSlide);
-  const live = (window._liveAdSlides || liveAdSlides).filter(Boolean).filter(isAllowedHeroSlide);
-  const priority = dedupSlides([...ads, ...live], seen);
+  const priority = dedupSlides(ads, seen);
   activeCarouselSlides = priority.length ? [...priority, ...dedupSlides(CAROUSEL_SLIDES, seen)] : CAROUSEL_SLIDES;
 }
 
@@ -1070,12 +1068,6 @@ function updateCarouselLanguage(){
   updateBadgeLanguage();
 }
 
-window.addEventListener('live-ads-updated', (e) => {
-  liveAdSlides = e.detail || [];
-  mergeAdSlides();
-  renderCarousel();
-});
-
 window.addEventListener('ads-updated', (e) => {
   adminAdSlides = e.detail || [];
   mergeAdSlides();
@@ -1087,11 +1079,7 @@ window.addEventListener('ads-updated', (e) => {
 // ai-ad-override-updated event is ever dispatched and no AI video can
 // play over the hero carousel.
 
-function initLiveAds(){
-  if(window._loadLiveAds){
-    window._loadLiveAds().then(slides => { liveAdSlides=slides||[]; mergeAdSlides(); renderCarousel(); });
-    window._subscribeLiveAds && window._subscribeLiveAds();
-  }
+function initAds(){
   if(window._loadAds){
     window._loadAds().then(slides => { adminAdSlides=slides||[]; mergeAdSlides(); renderCarousel(); });
     window._subscribeAds && window._subscribeAds();
@@ -1492,7 +1480,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   renderCarousel();updateClock();updateBadgeLanguage();
   lucide.createIcons();setInterval(updateClock,1000);
   initLiveLocation();
-  initLiveAds();
+  initAds();
 });
 // Re-render the category nav once the live showroom data (DB products,
 // generated catalog, trucks) is loaded so new categories appear automatically.
