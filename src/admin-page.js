@@ -2481,7 +2481,7 @@ window.runProductImageAnalysis = async function(auto = false) {
       setProductAiStatus('AI image scanning is unavailable. Image scanning needs a vision-capable provider (Google Gemini, Groq, OpenRouter, or Hugging Face) with an API key in AI Settings — or Ollama running locally.', 'warn');
       return;
     }
-    const updated = applyAiAnalysisToForm(result, category, !auto);
+    const updated = applyAiAnalysisToForm(result, category, true);
     const provider = result._aiProvider ? ` (${result._aiProvider})` : '';
     setProductAiStatus(`AI scanned your image${images.length > 1 ? 's' : ''} and filled the form${provider}. Review the fields, then press Publish.`, 'ok');
     if (!auto) {
@@ -4756,8 +4756,14 @@ Rules:
       try {
         const local = await this._tryLocalOllamaVision(prompt, images);
         if (local) return local;
+      } catch { /* ignore — try browser vision */ }
+      // 3) Browser-side vision using the admin's saved provider keys directly
+      //    (works even if the Supabase edge function is not deployed).
+      try {
+        const browserVision = await this._tryBrowserGeminiVision(prompt, images) || await this._tryBrowserOpenAIVision(prompt, images);
+        if (browserVision) return browserVision;
       } catch { /* ignore — try text-only */ }
-      // 3) Text-only fallback using the category context (never invents image facts)
+      // 4) Text-only fallback using the category context (never invents image facts)
       const extra = `\n\n(No image analysis is available right now. The product is currently categorized as "${context.category || 'Unknown'}"${context.existingTitle ? ` and titled "${context.existingTitle}"` : ''}. Base your content on that plus general knowledge of typical products in this category. Do not invent specific specs or prices you cannot know.)`;
       const res = await this.chat([{ role: 'user', content: prompt + extra }], { maxTokens: 4000 });
       return extractJsonFromAiText(res.text);
@@ -4830,6 +4836,82 @@ Rules:
           ? { ...parsed, _aiProvider: 'Ollama (Local)', _aiModel: model }
           : { description: text, _aiProvider: 'Ollama (Local)', _aiModel: model };
       } catch { /* try next local model */ }
+    }
+    return null;
+  },
+
+  // ── BROWSER-SIDE VISION FALLBACK ──
+  // If the Supabase edge function is not deployed (or returns an error), the
+  // admin browser already loaded the provider keys from ai_settings, so we can
+  // call a vision-capable provider directly from the browser as a fallback.
+
+  // Gemini (free tier supports vision well)
+  async _tryBrowserGeminiVision(prompt, images) {
+    const cfg = await this.getConfig();
+    const apiKey = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
+    if (!apiKey) return null;
+    const models = [cfg.gemini_vision_model || cfg.gemini_model, 'gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash'].filter(Boolean);
+    for (const model of models) {
+      try {
+        const parts = [{ text: prompt }];
+        for (const url of images.slice(0, 4)) {
+          const match = String(url).match(/^data:([^;,]+)[;,]base64,(.+)$/s);
+          if (!match) continue;
+          parts.push({ inlineData: { mimeType: match[1].trim(), data: match[2].trim() } });
+        }
+        if (parts.length < 2) return null;
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+          }),
+          signal: AbortSignal.timeout(90000),
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const text = (data?.candidates?.[0]?.content?.parts || []).map(p => p?.text || '').join('\n').trim();
+        if (!text) continue;
+        const parsed = extractJsonFromAiText(text);
+        if (parsed) return { ...parsed, _aiProvider: 'Gemini (browser)', _aiModel: model };
+      } catch { /* try next model */ }
+    }
+    return null;
+  },
+
+  // OpenAI-compatible vision providers (Groq, OpenRouter, Hugging Face)
+  async _tryBrowserOpenAIVision(prompt, images) {
+    const cfg = await this.getConfig();
+    const candidates = [
+      { key: cfg.groq_key, model: cfg.groq_vision_model || cfg.groq_model || 'llama-3.2-11b-vision-preview', endpoint: 'https://api.groq.com/openai/v1/chat/completions', name: 'Groq' },
+      { key: cfg.openrouter_key, model: cfg.openrouter_vision_model || cfg.openrouter_model || 'google/gemini-2.5-flash', endpoint: 'https://openrouter.ai/api/v1/chat/completions', name: 'OpenRouter' },
+      { key: cfg.hf_key, model: cfg.hf_vision_model || cfg.hf_model || 'Qwen/Qwen2.5-VL-72B-Instruct', endpoint: 'https://router.huggingface.co/v1/chat/completions', name: 'Hugging Face' },
+    ];
+    const content = [
+      { type: 'text', text: prompt },
+      ...images.slice(0, 4).map(url => ({ type: 'image_url', image_url: { url } })),
+    ];
+    for (const cand of candidates) {
+      const apiKey = String(cand.key || '').trim();
+      if (!apiKey) continue;
+      try {
+        const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` };
+        if (cand.name === 'OpenRouter') { headers['HTTP-Referer'] = window.location.origin; headers['X-Title'] = 'Weverse Admin AI'; }
+        const res = await fetch(cand.endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ model: cand.model, messages: [{ role: 'user', content }], temperature: 0.3, max_tokens: 4096 }),
+          signal: AbortSignal.timeout(90000),
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const text = String(data?.choices?.[0]?.message?.content || '').trim();
+        if (!text) continue;
+        const parsed = extractJsonFromAiText(text);
+        if (parsed) return { ...parsed, _aiProvider: `${cand.name} (browser)`, _aiModel: cand.model };
+      } catch { /* try next provider */ }
     }
     return null;
   },
