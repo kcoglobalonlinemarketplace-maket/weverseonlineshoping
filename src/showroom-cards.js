@@ -68,6 +68,14 @@ function scrollRow(row, dir) {
 // shop stays tidy (10 per line) while every downloaded image is shown.
 const ALL_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
 
+// Saved admin edits (database or local fallback) always win over the
+// hardcoded catalog, so the showroom instantly reflects whatever you save.
+function liveListing(listing) {
+  if (!listing) return listing;
+  const db = getDBListings().find(d => d.property_id === listing.property_id);
+  return db || listing;
+}
+
 // Owner's own downloaded house/apartment photos — shown in the bright
 // homepage Houses line, alongside the very first (kept) house. The other
 // old houses stay in code (All Houses overlay) but off the front.
@@ -468,6 +476,7 @@ function cardParts(listing) {
 }
 
 export function renderCard(listing) {
+  listing = liveListing(listing);
   const p = cardParts(listing);
   const card = document.createElement('div');
   card.className = 'showroom-card group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col cursor-pointer';
@@ -520,6 +529,7 @@ export function renderCard(listing) {
 // the left (top on mobile), details on the right, generous padding. Reads like
 // a magazine feed as the page scrolls straight down.
 export function renderFeedCard(listing) {
+  listing = liveListing(listing);
   const p = cardParts(listing);
   const card = document.createElement('div');
   card.className = 'showroom-card showroom-feed-card group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 flex flex-col sm:flex-row cursor-pointer';
@@ -1546,6 +1556,14 @@ export async function initAllShowrooms() {
   }
 
   // Refresh once the DB products are ready, so the final grid shows them.
+  // Hard rebuild: clear the initialized/pre-rendered flags so every card is
+  // re-created from the LIVE database/local data — anything you saved in the
+  // admin (title, price, images, publish state) appears on the showroom here.
+  document.querySelectorAll('[data-showroom-grid]').forEach(g => {
+    delete g.dataset.initialized;
+    delete g.dataset.prerendered;
+    g.innerHTML = '';
+  });
   renderAllGrids();
 
   window.dispatchEvent(new CustomEvent('showroom-categories-ready'));

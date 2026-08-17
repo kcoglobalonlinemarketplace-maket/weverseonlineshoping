@@ -1683,38 +1683,60 @@ window.quickEditProduct = async function(pid) {
   const result = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
   const data = (window._productsData || []).find(item => item.property_id === pid) || result.data;
   if (!data) return showToast('Product not found', 'error');
+  const imgs = Array.isArray(data.images) ? data.images : [];
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-base font-black text-white">Quick Edit Product</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
+          <h3 class="text-xl font-black text-white">Quick Edit Product</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">Back</button>
         </div>
-        <form onsubmit="saveQuickEditProduct(event,'${data.property_id}')" class="space-y-3">
+        <form onsubmit="saveQuickEditProduct(event,'${data.property_id}')" class="space-y-4">
           <div><label class="lbl">Title</label><input name="title" class="input-field" value="${esc(data.title || '')}"></div>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-2 gap-3">
             <div><label class="lbl">Price</label><input type="number" step="0.01" name="price" class="input-field" value="${esc(data.price || 0)}"></div>
             <div><label class="lbl">Stock</label><input type="number" name="stock_quantity" class="input-field" value="${esc(data.stock_quantity ?? '')}" placeholder="Unlimited"></div>
           </div>
           <div><label class="lbl">Availability</label><select name="availability_status" class="input-field">${['In Stock', 'Out of Stock', 'Pre-order', 'Limited Stock', 'Archived'].map(v => `<option value="${v}" ${data.availability_status === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
-          <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10"><span class="text-xs text-gray-300">Featured</span><input type="checkbox" name="is_featured" ${data.is_featured ? 'checked' : ''} class="accent-blue-500"></div>
-          <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10"><span class="text-xs text-gray-300">Published</span><input type="checkbox" name="is_active" ${data.is_active ? 'checked' : ''} class="accent-blue-500"></div>
-          <button type="submit" class="btn-press w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold">Save Quick Edit</button>
+          <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10"><span class="text-sm text-gray-300">Featured</span><input type="checkbox" name="is_featured" ${data.is_featured ? 'checked' : ''} class="accent-blue-500 w-5 h-5"></div>
+          <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10"><span class="text-sm text-gray-300">Published</span><input type="checkbox" name="is_active" ${data.is_active ? 'checked' : ''} class="accent-blue-500 w-5 h-5"></div>
+          <div>
+            <label class="lbl">Gallery Images (up to 24)</label>
+            <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
+              <i data-lucide="image-plus" class="w-10 h-10 text-blue-400 mx-auto mb-2"></i>
+              <p class="text-base font-bold text-gray-300">Tap to add photos (up to 24)</p>
+              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP. First image is the cover.</p>
+              <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
+            </div>
+            <div id="image-preview" class="flex flex-wrap gap-2.5 mt-3">
+              ${imgs.map((url, i) => imageThumbHtml(url, i)).join('')}
+            </div>
+            <div id="image-url-inputs">${imgs.map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}</div>
+            <p id="gallery-counter" class="text-sm mt-1 font-bold text-gray-400"></p>
+          </div>
+          <button type="submit" class="btn-press w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-base font-bold">Save Quick Edit</button>
         </form>
       </div>
     </div>`);
+  setupDropZone();
+  setupImageSortable();
+  rebuildImageInputs();
+  updateGalleryCounter();
+  if (window.lucide) lucide.createIcons();
 };
 
 window.saveQuickEditProduct = async function(e, pid) {
   e.preventDefault();
   const fd = new FormData(e.target);
+  const imgs = [...document.querySelectorAll('#image-preview .img-thumb img')].map(i => i.getAttribute('src')).filter(s => s && !String(s).startsWith('blob:'));
   const patch = {
     title: fd.get('title') || 'Untitled Product',
     price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(fd.get('price')) || 0)),
     stock_quantity: fd.get('stock_quantity') === '' ? null : parseInt(fd.get('stock_quantity'), 10),
     availability_status: fd.get('availability_status') || 'In Stock',
     is_featured: fd.get('is_featured') === 'on',
-    is_active: fd.get('is_active') === 'on',
+    is_active: fd.get('is_active') === 'on' || imgs.length >= 24,
+    images: imgs,
   };
   const full = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === pid));
   const { error } = await supabase.from('showroom_listings').upsert({ ...full, ...patch, property_id: pid }, { onConflict: 'property_id' });
@@ -1728,7 +1750,7 @@ window.saveQuickEditProduct = async function(e, pid) {
     patchLocalShowroomListing(pid, patch);
     showToast('Quick edit saved locally', 'info');
   } else {
-    showToast('Quick edit saved');
+    showToast(patch.is_active ? 'Saved & published — your showroom shows it now' : 'Quick edit saved (draft)');
   }
   closeModal();
   renderProducts();
@@ -3027,7 +3049,7 @@ window.saveProduct = async function(e, category, existingId) {
           return;
         }
       }
-      showToast(isDraft ? 'Draft saved!' : `Product updated — ${Object.keys(changes).length} change(s) saved.`);
+      showToast(isDraft ? 'Draft saved!' : `Saved & published — your showroom shows it now (${Object.keys(changes).length} change${Object.keys(changes).length > 1 ? 's' : ''}).`);
     } else {
       // ── NEW PRODUCT → FULL VALIDATION + FULL SAVE ─────────────────
       const requiredImageCount = parseInt(data.required_image_count || '0', 10) || (AUTOMOTIVE_CATEGORIES.includes(category) ? 24 : 0);
@@ -3077,7 +3099,7 @@ window.saveProduct = async function(e, category, existingId) {
           return;
         }
       }
-      showToast(isDraft ? 'Draft saved!' : 'Product published!');
+      showToast(isDraft ? 'Draft saved!' : 'Published! Your showroom shows this product now.');
     }
     try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
     closeProductFormModal();
