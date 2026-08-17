@@ -233,34 +233,37 @@ function cardHtml(listing) {
       <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-      ${statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>` : ''}
+      ${statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${statusBadge}</span>` : ''}
       ${discountBadge}
       <div class="absolute top-2 right-2 flex flex-col gap-1.5">
-        <button class="share-btn shrink-0 w-7 h-7 bg-white/90 hover:bg-white text-gray-500 hover:text-blue-600 rounded-full shadow-sm transition flex items-center justify-center" title="Share product" aria-label="Share product">
+        <button class="share-btn shrink-0 w-9 h-9 bg-white/90 hover:bg-white text-gray-500 hover:text-blue-600 rounded-full shadow-sm transition flex items-center justify-center" title="Share product" aria-label="Share product">
           <i data-lucide="share-2" class="w-4 h-4"></i>
         </button>
-        <button class="wishlist-btn shrink-0 w-7 h-7 bg-white/90 hover:bg-white text-gray-500 hover:text-red-500 rounded-full shadow-sm transition flex items-center justify-center" title="Add to wishlist" aria-label="Add to wishlist">
+        <button class="wishlist-btn shrink-0 w-9 h-9 bg-white/90 hover:bg-white text-gray-500 hover:text-red-500 rounded-full shadow-sm transition flex items-center justify-center" title="Add to wishlist" aria-label="Add to wishlist">
           <i data-lucide="heart" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
-    <div class="p-3 flex flex-col flex-1">
-      <h3 class="text-[13px] font-bold text-gray-900 leading-snug mb-1 line-clamp-2">${listing.title}</h3>
+    <div class="p-3.5 sm:p-4 flex flex-col flex-1">
+      <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">${listing.title}</h3>
       ${ratingStars}
-      <div class="flex items-baseline flex-wrap gap-x-1.5 gap-y-0.5 mt-1">
-        <span class="text-[15px] font-black text-blue-600">${price}</span>
+      <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
+        <span class="text-lg font-black text-blue-600">${price}</span>
         ${originalPriceHtml}
       </div>
       ${locationHtml}
       ${specsHtml}
-      <div class="flex gap-1.5 mt-2 pt-2 border-t border-gray-100">
-        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-[11px] font-bold py-2 rounded-lg transition flex items-center justify-center gap-1">
-          <i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i> <span class="truncate">Buy</span>
+      <div class="flex gap-2 mt-2.5 pt-2.5 border-t border-gray-100">
+        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/25">
+          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy</span>
         </button>
-        <button class="cart-btn flex-1 min-w-0 bg-gray-50 hover:bg-blue-50 active:scale-95 text-gray-700 hover:text-blue-700 text-[11px] font-bold py-2 rounded-lg transition flex items-center justify-center gap-1 border border-gray-200 hover:border-blue-300">
-          <i data-lucide="shopping-cart" class="w-3.5 h-3.5 shrink-0"></i> <span class="truncate">Cart</span>
+        <button class="cart-btn flex-1 min-w-0 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 hover:text-emerald-800 text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 border border-emerald-300 hover:border-emerald-400">
+          <i data-lucide="shopping-cart" class="w-4 h-4 shrink-0"></i> <span class="truncate">Cart</span>
         </button>
       </div>
+      <button class="details-btn mt-2 w-full min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
+        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+      </button>
     </div>
   </div>`;
 }
@@ -486,11 +489,11 @@ function main() {
   html = html.replace(/<!--PRERENDER:grid-->[\s\S]*?<!--\/PRERENDER:grid-->/g, '');
   // Collapse the emptied containers back to their pristine empty form.
   html = html.replace(/(<div id="carousel-slides" class="relative w-full h-full">)\s*(<\/div>)/, '$1$2');
-  html = html.replace(/(<div data-showroom-grid="real-estate" class="px-4 sm:px-6 lg:px-8 py-3\.5 space-y-4")(\s+data-prerendered="true")?>[\s\S]*?<\/div>/, (m, g1) => g1 + '></div>');
+  html = html.replace(/(<div data-showroom-grid="real-estate" class="px-2 sm:px-6 lg:px-8 py-3\.5 space-y-4")(\s+data-prerendered="true")?>[\s\S]*?<\/div>/, (m, g1) => g1 + '></div>');
 
   const carouselMatch = html.match(/<div id="carousel-slides" class="relative w-full h-full"><\/div>/);
   if (!carouselMatch) throw new Error('carousel-slides container not found in index.html');
-  const gridMatch = html.match(/<div data-showroom-grid="real-estate" class="px-4 sm:px-6 lg:px-8 py-3\.5 space-y-4"><\/div>/);
+  const gridMatch = html.match(/<div data-showroom-grid="real-estate" class="px-2 sm:px-6 lg:px-8 py-3\.5 space-y-4"><\/div>/);
   if (!gridMatch) throw new Error('real-estate grid container not found in index.html');
 
   const carouselBlock = `<!--PRERENDER:carousel-->\n        ${carouselHtml}\n      <!--/PRERENDER:carousel-->`;
@@ -500,7 +503,7 @@ function main() {
     .replace(carouselMatch[0], `<div id="carousel-slides" class="relative w-full h-full">\n        ${carouselBlock}\n      </div>`)
     .replace(
       gridMatch[0],
-      `<div data-showroom-grid="real-estate" class="px-4 sm:px-6 lg:px-8 py-3.5 space-y-4" data-prerendered="true">\n        ${gridBlock}\n      </div>`
+      `<div data-showroom-grid="real-estate" class="px-2 sm:px-6 lg:px-8 py-3.5 space-y-4" data-prerendered="true">\n        ${gridBlock}\n      </div>`
     );
 
   fs.writeFileSync(INDEX_HTML, html, 'utf8');

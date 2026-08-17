@@ -411,10 +411,10 @@ function cardParts(listing) {
   if (isProperty) {
     const flag = flagEmoji(listing.country_code);
     const parts = [listing.city, listing.state].filter(Boolean);
-    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="map" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${flag} ${parts.join(', ') || listing.country}</span></div>`;
+    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5"><i data-lucide="map" class="w-3.5 h-3.5 shrink-0"></i><span>${flag} ${parts.join(', ') || listing.country}</span></div>`;
   } else if (isPet) {
     const flag = flagEmoji(listing.country_code);
-    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="paw-print" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${flag} ${listing.country}</span></div>`;
+    locationHtml = `<div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5"><i data-lucide="paw-print" class="w-3.5 h-3.5 shrink-0"></i><span>${flag} ${listing.country}</span></div>`;
   }
 
   let specsHtml = '';
@@ -489,34 +489,37 @@ export function renderCard(listing) {
       <img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-      ${p.statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${p.statusBadge}</span>` : ''}
+      ${p.statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${p.statusBadge}</span>` : ''}
       ${p.discountBadge}
       <div class="absolute top-2 right-2 flex flex-col gap-1.5">
-        <button class="share-btn shrink-0 w-7 h-7 bg-white/90 hover:bg-white text-gray-500 hover:text-blue-600 rounded-full shadow-sm transition flex items-center justify-center" title="Share product" aria-label="Share product">
+        <button class="share-btn shrink-0 w-9 h-9 bg-white/90 hover:bg-white text-gray-500 hover:text-blue-600 rounded-full shadow-sm transition flex items-center justify-center" title="Share product" aria-label="Share product">
           <i data-lucide="share-2" class="w-4 h-4"></i>
         </button>
-        <button class="wishlist-btn ${wishSaved ? 'saved bg-red-500/15 text-red-500 border border-red-500/40' : ''} shrink-0 w-7 h-7 bg-white/90 hover:bg-white text-gray-500 hover:text-red-500 rounded-full shadow-sm transition flex items-center justify-center" title="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}" aria-label="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}">
+        <button class="wishlist-btn ${wishSaved ? 'saved bg-red-500/15 text-red-500 border border-red-500/40' : ''} shrink-0 w-9 h-9 bg-white/90 hover:bg-white text-gray-500 hover:text-red-500 rounded-full shadow-sm transition flex items-center justify-center" title="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}" aria-label="${wishSaved ? 'Remove from wishlist' : 'Add to wishlist'}">
           <i data-lucide="heart" class="w-4 h-4 ${wishSaved ? 'fill-red-500 text-red-500' : ''}"></i>
         </button>
       </div>
     </div>
-    <div class="p-3 flex flex-col flex-1">
-      <h3 class="text-[13px] font-bold text-gray-900 leading-snug mb-1 line-clamp-2">${listing.title}</h3>
+    <div class="p-3.5 sm:p-4 flex flex-col flex-1">
+      <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">${listing.title}</h3>
       ${p.ratingStars}
-      <div class="flex items-baseline flex-wrap gap-x-1.5 gap-y-0.5 mt-1">
-        <span class="text-[15px] font-black text-blue-600">${p.price}</span>
+      <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
+        <span class="text-lg font-black text-blue-600">${p.price}</span>
         ${p.originalPriceHtml}
       </div>
       ${p.locationHtml}
       ${p.specsHtml}
-      <div class="flex gap-1.5 mt-2 pt-2 border-t border-gray-100">
-        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-[11px] font-bold py-2 rounded-lg transition flex items-center justify-center gap-1">
-          <i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i> <span class="truncate">Buy</span>
+      <div class="flex gap-2 mt-2.5 pt-2.5 border-t border-gray-100">
+        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/25">
+          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy</span>
         </button>
-        <button class="cart-btn flex-1 min-w-0 bg-gray-50 hover:bg-blue-50 active:scale-95 text-gray-700 hover:text-blue-700 text-[11px] font-bold py-2 rounded-lg transition flex items-center justify-center gap-1 border border-gray-200 hover:border-blue-300">
-          <i data-lucide="shopping-cart" class="w-3.5 h-3.5 shrink-0"></i> <span class="truncate">Cart</span>
+        <button class="cart-btn flex-1 min-w-0 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 hover:text-emerald-800 text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 border border-emerald-300 hover:border-emerald-400">
+          <i data-lucide="shopping-cart" class="w-4 h-4 shrink-0"></i> <span class="truncate">Cart</span>
         </button>
       </div>
+      <button class="details-btn mt-2 w-full min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
+        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+      </button>
     </div>
   `;
 
