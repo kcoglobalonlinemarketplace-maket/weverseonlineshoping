@@ -1153,9 +1153,14 @@ async function renderProducts() {
               <h2 class="text-2xl font-black text-white mt-1">Professional Product Showroom</h2>
               <p class="text-xs text-gray-400 mt-1">Unlimited products, smooth infinite scrolling layout, and clean auto-aligned cards.</p>
             </div>
-            <button onclick="showAddProductStep1()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-black px-6 py-3.5 rounded-2xl transition shadow-xl shadow-blue-700/25">
-              <i data-lucide="plus" class="w-5 h-5"></i> Add Product
-            </button>
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <button onclick="showAddProductStep1()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-black px-6 py-3.5 rounded-2xl transition shadow-xl shadow-blue-700/25">
+                <i data-lucide="plus" class="w-5 h-5"></i> Add Product
+              </button>
+              <button onclick="clearAllProducts()" class="btn-press flex items-center justify-center gap-2 bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition" title="Delete every product from the manager & database. Your showroom catalog stays.">
+                <i data-lucide="trash-2" class="w-5 h-5"></i> Clear All Products
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1725,6 +1730,23 @@ window.deleteProduct = async function(pid) {
   renderProducts();
 };
 
+// Delete EVERY product in the Product Manager (and the database) at once.
+// Runs with the logged-in admin session (the database only lets admins delete),
+// then clears the browser's local fallback store so the manager shows exactly
+// the showroom catalog and nothing old remains.
+window.clearAllProducts = async function() {
+  const total = (window._productsData || []).length;
+  if (!confirm(`Delete ALL ${total} product(s) from the Product Manager and the database now?\n\nThis is permanent and cannot be undone. Your built-in showroom catalog will stay.`)) return;
+  const { error } = await supabase.from('showroom_listings').delete().neq('property_id', '__none__');
+  if (error) {
+    if (isRlsDenied(error)) return showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+    return showToast('Clear failed: ' + error.message, 'error');
+  }
+  try { localStorage.removeItem('kco_local_showroom_listings_v1'); } catch {}
+  showToast('All products deleted. The manager now shows your showroom catalog.');
+  renderProducts();
+};
+
 window.openProductMoreActions = function(pid) {
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -2182,7 +2204,8 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
               ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
             </div>
-            <p class="text-[10px] text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover • Vehicle templates require 24 images</p>
+            <p class="text-[10px] text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover • Upload up to 24 gallery images</p>
+            <p id="gallery-counter" class="text-[10px] mt-1 font-bold text-gray-400"></p>
             <div id="image-url-inputs">
               ${(existingData.images || []).map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}
             </div>
@@ -2551,6 +2574,7 @@ function appendGeneratedThumb(url) {
   preview.appendChild(div.firstElementChild);
   rebuildImageInputs();
   updateCoverBadge();
+  updateGalleryCounter();
   const box = document.getElementById('pf-ai-generated');
   if (box) {
     const t = document.createElement('div');
@@ -2615,6 +2639,7 @@ async function processImageFiles(files) {
     }
   }
   updateCoverBadge();
+  updateGalleryCounter();
   if (window.lucide) lucide.createIcons();
   scheduleAutoProductAnalysis();
 }
@@ -2639,6 +2664,7 @@ window.removeImage = function(index) {
   if (items[index]) items[index].remove();
   rebuildImageInputs();
   updateCoverBadge();
+  updateGalleryCounter();
 };
 
 // Replace an existing image at a given index with a newly uploaded file.
@@ -2656,6 +2682,7 @@ window.replaceImage = async function(index, input) {
   if (img) img.src = url;
   rebuildImageInputs();
   updateCoverBadge();
+  updateGalleryCounter();
   showToast('Image replaced. Save changes to apply.', 'info');
 };
 
@@ -2688,6 +2715,22 @@ function updateCoverBadge() {
     t.classList.toggle('cover-img', i === 0);
     t.title = i === 0 ? 'Cover Image' : `Image ${i + 1}`;
   });
+}
+
+// Show how many of the 24 gallery slots are filled. Once 24 images are
+// uploaded the product is marked to publish automatically on save.
+function updateGalleryCounter() {
+  const preview = document.getElementById('image-preview');
+  const counter = document.getElementById('gallery-counter');
+  if (!preview || !counter) return;
+  const count = preview.querySelectorAll('.img-thumb').length;
+  const full = count >= 24;
+  counter.textContent = full
+    ? '✓ ' + count + ' / 24 images — this product will auto-publish on save'
+    : count + ' / 24 images' + (count >= 12 ? ' — almost there, keep going for a full gallery' : '');
+  counter.className = 'text-[10px] mt-1 font-bold ' + (full ? 'text-emerald-300' : 'text-gray-400');
+  const active = document.querySelector('#product-form [name="is_active"]');
+  if (full && active && !active.checked) active.checked = true;
 }
 
 function productAutoSaveKey(category, existingId) {
@@ -2735,6 +2778,7 @@ function restoreProductFormSnapshot(form, snapshot) {
       preview.innerHTML = snapshot.images.map((url, i) => imageThumbHtml(url, i)).join('');
       rebuildImageInputs();
       updateCoverBadge();
+      updateGalleryCounter();
     }
   }
   return true;
@@ -2844,6 +2888,7 @@ function setupProductFormExperience(category, existingId) {
   });
 
   updateProductReviewPanel();
+  updateGalleryCounter();
 }
 
 window.saveProduct = async function(e, category, existingId) {
@@ -2929,7 +2974,8 @@ window.saveProduct = async function(e, category, existingId) {
 
       const feat = data.is_featured === 'on';
       if (!!base.is_featured !== feat) changes.is_featured = feat;
-      const act = isDraft ? false : data.is_active === 'on';
+      // A complete 24-image gallery auto-publishes the product.
+      const act = isDraft ? false : (data.is_active === 'on' || (data.images || []).length >= 24);
       if (!!base.is_active !== act) changes.is_active = act;
 
       const spec = buildSpecifications(data);
@@ -2973,7 +3019,7 @@ window.saveProduct = async function(e, category, existingId) {
         product_location: '',
         latitude: null,
         longitude: null,
-        is_active: isDraft ? false : data.is_active === 'on',
+        is_active: isDraft ? false : (data.is_active === 'on' || (data.images || []).length >= 24),
         is_featured: data.is_featured === 'on',
         brand: data.brand || null,
         color: data.color || null,
