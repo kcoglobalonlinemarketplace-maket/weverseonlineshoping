@@ -1270,7 +1270,10 @@ async function init() {
     return;
   }
 
-  let listing = SHOWROOM_LISTINGS.find(l => l.property_id === id);
+  // Load the live database FIRST so admin edits (title, price, images,
+  // publish state) always win over the built-in catalog on the details page.
+  await loadDBListings();
+  let listing = findListingById(id);
   if (!listing) {
     // Deterministic catalog listings (KCO-XX-NNNN) resolve instantly.
     const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
@@ -1279,11 +1282,6 @@ async function init() {
     ]);
     await loadHiddenCatalogIds();
     listing = generateListingById(id);
-  }
-  if (!listing) {
-    // Try loading from the database (AI-created products)
-    await loadDBListings();
-    listing = findListingById(id);
   }
   if (!listing) {
     document.getElementById('details-content').innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>';

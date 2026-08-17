@@ -159,6 +159,7 @@ async function init() {
   // Load listing from URL param or cart
   const listingId = params.get('id');
   if (listingId) {
+    await loadDBListings();
     state.listing = findListingById(listingId) || getTruckById(listingId) || getMotorhomeById(listingId) || getCarById(listingId) || getPhoneById(listingId) || findProductById(listingId);
     if (!state.listing) {
       const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
@@ -169,7 +170,6 @@ async function init() {
       state.listing = generateListingById(listingId);
     }
     if (!state.listing) {
-      await loadDBListings();
       state.listing = findListingById(listingId);
     }
     if (!state.listing) { root.innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>'; return; }

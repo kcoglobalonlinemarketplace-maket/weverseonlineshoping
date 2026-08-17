@@ -2905,17 +2905,22 @@ function setupProductFormExperience(category, existingId) {
   const autoSaveKey = productAutoSaveKey(category, existingId);
   const note = document.getElementById('product-autosave-note');
 
-  try {
-    const raw = localStorage.getItem(autoSaveKey);
-    if (raw) {
-      const snapshot = JSON.parse(raw);
-      const restored = restoreProductFormSnapshot(form, snapshot);
-      if (restored && note) {
-        note.textContent = 'Autosave restored from your last session.';
-        note.classList.remove('hidden');
+  // In edit mode the live database is the source of truth: restoring a stale
+  // autosave here would resurrect images/fields you already deleted and saved.
+  // Only auto-restore crash recovery for NEW (never-saved) products.
+  if (!existingId) {
+    try {
+      const raw = localStorage.getItem(autoSaveKey);
+      if (raw) {
+        const snapshot = JSON.parse(raw);
+        const restored = restoreProductFormSnapshot(form, snapshot);
+        if (restored && note) {
+          note.textContent = 'Autosave restored from your last session.';
+          note.classList.remove('hidden');
+        }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   const autosave = () => {
     try {
@@ -3036,6 +3041,7 @@ window.saveProduct = async function(e, category, existingId) {
 
       if (Object.keys(changes).length === 0) {
         showToast('No changes detected — nothing was saved.', 'info');
+        try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
         if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
         return;
       }
@@ -3103,6 +3109,7 @@ window.saveProduct = async function(e, category, existingId) {
     }
     try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
     closeProductFormModal();
+    renderProducts();
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = publishLabel; }

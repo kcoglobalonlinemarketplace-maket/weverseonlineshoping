@@ -686,6 +686,7 @@ async function init() {
   if (!user && !isGuest) { window.location.href = '/'; return; }
 
   const id = getListingId();
+  await loadDBListings();
   let listing = findListingById(id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id) || findProductById(id);
   if (!listing) {
     const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
@@ -696,7 +697,6 @@ async function init() {
     listing = generateListingById(id);
   }
   if (!listing) {
-    await loadDBListings();
     listing = findListingById(id);
   }
   if (!listing) {
