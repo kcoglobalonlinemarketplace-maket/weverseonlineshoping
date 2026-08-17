@@ -2455,7 +2455,7 @@ function scheduleAutoProductAnalysis() {
   window._pfAiTimer = setTimeout(() => {
     const form = document.getElementById('product-form');
     if (!form || form.dataset.aiBusy === '1') return;
-    const hasImages = [...form.querySelectorAll('input[name="images"]')].some(i => i.value && !String(i.value).startsWith('blob:'));
+    const hasImages = [...form.querySelectorAll('input[name="images"]')].some(i => String(i.value || '').trim() !== '');
     if (hasImages) {
       setProductAiStatus('AI detected new images — analyzing automatically…');
       runProductImageAnalysis(true);
@@ -2468,7 +2468,7 @@ window.runProductImageAnalysis = async function(auto = false) {
   if (!form) return;
   if (form.dataset.aiBusy === '1') return;
   const category = form.dataset.category || '';
-  const images = [...form.querySelectorAll('input[name="images"]')].map(i => i.value).filter(u => u && !String(u).startsWith('blob:'));
+  const images = [...form.querySelectorAll('input[name="images"]')].map(i => String(i.value || '').trim()).filter(Boolean);
   if (!images.length) {
     if (!auto) setProductAiStatus('Upload at least one image first, then AI can analyze it.', 'warn');
     return;
@@ -2478,14 +2478,19 @@ window.runProductImageAnalysis = async function(auto = false) {
   try {
     const result = await aiClient.analyzeImages(images, { category, existingTitle: form.querySelector('[name="title"]')?.value || '' });
     if (!result) {
-      setProductAiStatus('AI analysis unavailable — add a Gemini, Groq, or OpenRouter API key in AI Settings (or install Ollama locally).', 'warn');
+      setProductAiStatus('AI image scanning is unavailable. Image scanning needs a vision-capable provider (Google Gemini, Groq, OpenRouter, or Hugging Face) with an API key in AI Settings — or Ollama running locally.', 'warn');
       return;
     }
-    applyAiAnalysisToForm(result, category);
-    setProductAiStatus('AI analysis complete. The fields were auto-filled — review them and save.', 'ok');
-    if (!auto) showToast('AI analyzed your images and filled the listing.', 'success');
+    const updated = applyAiAnalysisToForm(result, category, !auto);
+    const provider = result._aiProvider ? ` (${result._aiProvider})` : '';
+    setProductAiStatus(`AI scanned your image${images.length > 1 ? 's' : ''} and filled the form${provider}. Review the fields, then press Publish.`, 'ok');
+    if (!auto) {
+      showToast(updated
+        ? `AI analyzed your image${images.length > 1 ? 's' : ''} and filled ${updated} field(s).`
+        : 'AI analyzed your images — no new fields to fill.', 'success');
+    }
   } catch (err) {
-    setProductAiStatus('AI analysis failed: ' + (err.message || err), 'error');
+    setProductAiStatus('AI analysis failed: ' + (err.message || err) + ' — make sure a vision-capable AI provider (Gemini, Groq, OpenRouter, Hugging Face) is configured in AI Settings, or Ollama runs locally.', 'error');
     if (!auto) showToast('AI analysis failed: ' + (err.message || err), 'error');
   } finally {
     form.dataset.aiBusy = '0';
@@ -2493,20 +2498,27 @@ window.runProductImageAnalysis = async function(auto = false) {
   }
 };
 
-function applyAiAnalysisToForm(result, category) {
+function applyAiAnalysisToForm(result, category, force = false) {
   const form = document.getElementById('product-form');
-  if (!form || !result) return;
+  if (!form || !result) return 0;
+  let filled = 0;
   const setIfEmpty = (name, value) => {
     if (value == null || String(value).trim() === '') return;
     const field = form.querySelector(`[name="${name}"]`);
     if (!field) return;
-    if (!String(field.value || '').trim()) field.value = value;
+    if (force || !String(field.value || '').trim()) {
+      if (String(field.value || '').trim() !== String(value).trim()) filled += 1;
+      field.value = value;
+    }
   };
   const setArrayIfEmpty = (name, arr) => {
     if (!Array.isArray(arr) || !arr.length) return;
     const field = form.querySelector(`[name="${name}"]`);
     if (!field) return;
-    if (!String(field.value || '').trim()) field.value = arr.join(', ');
+    if (force || !String(field.value || '').trim()) {
+      if (String(field.value || '').trim() !== arr.join(', ')) filled += 1;
+      field.value = arr.join(', ');
+    }
   };
   setIfEmpty('title', result.title);
   setIfEmpty('description', result.description);
@@ -2519,15 +2531,28 @@ function applyAiAnalysisToForm(result, category) {
   setIfEmpty('storage', result.storage);
   setIfEmpty('ram', result.ram);
   setIfEmpty('processor', result.processor);
-  if (!String(form.querySelector('[name="condition"]')?.value || '').trim()) setIfEmpty('condition', result.condition);
+  setIfEmpty('display', result.display);
+  setIfEmpty('graphics', result.graphics);
+  setIfEmpty('os', result.os);
+  setIfEmpty('type', result.type);
+  setIfEmpty('gender', result.gender);
+  setIfEmpty('movement', result.movement);
+  setIfEmpty('case_material', result.case_material);
+  setIfEmpty('water_resistance', result.water_resistance);
+  setIfEmpty('voltage', result.voltage);
+  setIfEmpty('gemstone', result.gemstone);
+  setIfEmpty('platform', result.platform);
+  if (force || !String(form.querySelector('[name="condition"]')?.value || '').trim()) setIfEmpty('condition', result.condition);
   setArrayIfEmpty('features_text', result.features);
   setArrayIfEmpty('highlights_text', result.highlights);
   setArrayIfEmpty('seo_keywords_text', result.seo_keywords);
 
   const spec = result.specifications || {};
-  ['engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year'].forEach(k => {
+  ['engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type'].forEach(k => {
     if (spec[k] != null && String(spec[k]).trim() !== '') setIfEmpty(k, spec[k]);
   });
+  const year = result.model_year || result.year || spec.model_year || spec.year || (result.specifications ? result.specifications.year : null);
+  if (year != null && String(year).trim() !== '') setIfEmpty('model_year', year);
   if (Array.isArray(spec.safety_features)) setArrayIfEmpty('safety_features', spec.safety_features);
 
   const detected = result.category ? String(result.category).trim() : '';
@@ -2542,6 +2567,7 @@ function applyAiAnalysisToForm(result, category) {
   }
   if (window.lucide) lucide.createIcons();
   updateProductReviewPanel();
+  return filled;
 }
 
 window.switchProductFormCategory = function(newCategory) {
@@ -4692,8 +4718,13 @@ Return a single valid JSON object (no markdown, no extra text) with these keys:
 - description (string): a detailed, persuasive 2-4 sentence description.
 - category (string): the best category from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other.
 - subcategory (string)
-- brand, model, color, condition (strings; condition from: New, Refurbished, Used - Like New, Used - Good, Used - Fair)
-- material, size, storage, ram, processor (strings, only if relevant)
+- brand (string): ALWAYS the brand — read the name/badge/emblem/logo printed on the product or box if visible; otherwise identify the make from the design and badge shape. Never leave this empty when the image shows a branded product.
+- model (string): ALWAYS the exact model name/number printed on the product or box when visible; otherwise your best professional identification from the design.
+- year (string or null): ALWAYS the model/manufacturing year — read the printed year/serial if visible, otherwise give your best professional estimate from the design era. Only null for items with no meaningful year.
+- model_year (string or null): same as year when the product has a model year.
+- color (string): ALWAYS the dominant color of the item.
+- condition (string; from: New, Refurbished, Used - Like New, Used - Good, Used - Fair)
+- material, size, storage, ram, processor, display (strings, only if relevant)
 - features (array of strings)
 - highlights (array of strings)
 - seo_keywords (array of strings)
@@ -4701,7 +4732,7 @@ Return a single valid JSON object (no markdown, no extra text) with these keys:
 - detected_name (string): a short plain-language label of the product, e.g. "white sneakers".
 
 Rules:
-- Only include keys you can actually observe or reasonably infer from the photo(s). NEVER invent exact specs (price, storage size, RAM, horsepower, year, serial numbers) that are not visible or printed on the product.
+- Only include keys you can actually observe or reasonably infer from the photo(s). NEVER invent exact specs (price, storage size, RAM, horsepower, serial numbers) that are not visible or printed on the product. Brand, model and year are ALWAYS required and must be your best professional identification even when not perfectly readable.
 - Respond with valid JSON only.`;
 
     const images = [];
