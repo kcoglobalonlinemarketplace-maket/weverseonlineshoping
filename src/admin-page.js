@@ -5,6 +5,10 @@ import { GLOBAL_PRICE_MAX, GLOBAL_PRICE_MIN, buildCatalogDraft, getDefaultCurren
 import { getLocalShowroomListingById, listLocalShowroomListings, patchLocalShowroomListing, upsertLocalShowroomListing } from './local-showroom-store.js';
 import { getFlagEmojiFromCountryCode, getManualPaymentAccounts, getPaymentInstructions, loadPaymentSettingsCache, savePaymentSettingsCache } from './payment-settings.js';
 import { SHOWROOM_LISTINGS } from './showroom-data.js';
+import { PRODUCT_LISTINGS } from './products-data.js';
+import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
+import { TRUCK_LISTINGS } from './truck-data.js';
+import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { generateProduct, getCatalogCategories, getCatalogCategory, getHiddenCatalogIds, loadHiddenCatalogIds, resetHiddenCatalogIds, saveCatalogHidden } from './catalog.js';
 
 // ══════════════════════════════════════════════════════════
@@ -1102,6 +1106,13 @@ async function renderProducts() {
         if (!seen.has(p.property_id)) { seen.add(p.property_id); items.push(p); }
       }
     }
+    // Every product the public showroom displays also lives here in the
+    // Product Manager: the owner's own downloaded catalog, the hand-made
+    // product listings, trucks and motorhomes. DB/local/seed win on IDs.
+    const SHOWROOM_STATIC_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS, ...TRUCK_LISTINGS, ...MOTORHOME_LISTINGS];
+    for (const p of SHOWROOM_STATIC_PRODUCTS) {
+      if (p && p.property_id && p.listing_type !== 'property' && !seen.has(p.property_id)) { seen.add(p.property_id); items.push(p); }
+    }
     items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     const categories = [...new Set(items.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     const tags = [...new Set(items.flatMap(p => Array.isArray(p.tags) ? p.tags : []).filter(Boolean))].sort((a, b) => a.localeCompare(b));
@@ -1232,6 +1243,7 @@ async function renderProducts() {
 
 <div class="space-y-4">
           <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 items-stretch"></div>
+          <div id="products-more" class="flex justify-center pt-1"></div>
           <div id="products-table-wrap" class="hidden overflow-x-auto scrollbar-thin rounded-2xl border border-blue-500/15">
             <table class="w-full dt">
               <thead><tr>
@@ -1246,6 +1258,7 @@ async function renderProducts() {
       </div>`;
 
     window._productsData = items;
+    window._productsCardLimit = 60;
     renderProductsShowroomGrid(items);
     filterProducts();
     updateBulkBar();
@@ -1368,12 +1381,28 @@ function renderProductsShowroomGrid(items) {
   const empty = document.getElementById('products-empty');
   const count = document.getElementById('products-result-count');
   if (!grid) return;
-  grid.innerHTML = items.map(productCard).join('');
+  const limit = window._productsCardLimit || 60;
+  const shown = items.slice(0, limit);
+  grid.innerHTML = shown.map(productCard).join('');
   if (count) count.textContent = String(items.length);
+  const more = document.getElementById('products-more');
+  if (more) {
+    const remaining = items.length - shown.length;
+    if (remaining > 0) {
+      more.innerHTML = `<button onclick="loadMoreProducts()" class="btn-press px-8 py-4 rounded-2xl text-base font-black bg-blue-500/15 text-blue-200 hover:bg-blue-500/25 border border-blue-500/25 transition">Show ${Math.min(60, remaining)} more (${remaining} left)</button>`;
+    } else {
+      more.innerHTML = items.length > 60 ? '<span class="text-sm text-gray-500">All products shown</span>' : '';
+    }
+  }
   if (empty) empty.classList.toggle('hidden', items.length > 0);
   updateBulkBar();
   if (window.lucide) lucide.createIcons();
 }
+
+window.loadMoreProducts = function() {
+  window._productsCardLimit = (window._productsCardLimit || 60) + 60;
+  filterProducts(true);
+};
 
 function renderProductsTable(items) {
   const tbody = document.getElementById('products-table-body');
@@ -1436,7 +1465,7 @@ window.setProductView = function(view) {
   if (empty) empty.classList.toggle('hidden', items.length > 0);
 };
 
-window.filterProducts = function() {
+window.filterProducts = function(skipLimitReset) {
   const f = window._productFilters || {};
   f.search = (document.getElementById('prod-search')?.value || '').trim().toLowerCase();
   f.category = document.getElementById('prod-cat-filter')?.value || '';
@@ -1457,6 +1486,7 @@ window.filterProducts = function() {
   });
 
 const sorted = sortProductItems(filtered, f.sort);
+  if (!skipLimitReset) window._productsCardLimit = 60;
   renderProductsShowroomGrid(sorted);
   if (window._productView === 'table') renderProductsTable(sorted);
 };
@@ -3061,7 +3091,7 @@ window.editProduct = async function(pid) {
   const { data, error } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
   let resolved = error ? null : data;
   if (!resolved) resolved = getLocalShowroomListingById(pid);
-  if (!resolved) resolved = (Array.isArray(SHOWROOM_LISTINGS) ? SHOWROOM_LISTINGS.find(l => l.property_id === pid) : null) || null;
+  if (!resolved) resolved = (window._productsData || []).find(l => l.property_id === pid) || null;
   if (!resolved) return showToast('Product not found', 'error');
   showAddProductStep2(resolved.category || 'Other', resolved);
 };
