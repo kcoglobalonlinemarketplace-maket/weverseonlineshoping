@@ -800,9 +800,9 @@ function renderSuggestionDropdown(dd,results){
   dd.innerHTML=results.map(function(r){
     const t=escapeHtmlAttr(r.title||"");
     const c=r.category?escapeHtmlAttr(r.category):"";
-    const thumb=r.thumbnail?'<img src="'+escapeHtmlAttr(r.thumbnail)+'" class="w-8 h-8 rounded object-cover shrink-0" onerror="this.style.display=\'none\'">':'<div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-4 h-4 text-gray-400"></i></div>';
-    const price=r.price!=null?'<span class="text-xs font-bold text-blue-600 ml-auto">'+(r.currency||"USD")+" "+Number(r.price).toLocaleString()+"</span>":"";
-    return '<button onclick="selectSuggestion(\''+t.replace(/'/g,"\\'")+'\')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition flex items-center gap-2.5 border-b border-gray-100 last:border-0">'+thumb+'<div class="flex-1 min-w-0"><p class="truncate font-medium">'+t+"</p>"+(c?'<p class="text-[10px] text-gray-500 truncate">'+c+"</p>":"")+"</div>"+price+"</button>";
+    const thumb=r.thumbnail?'<img src="'+escapeHtmlAttr(r.thumbnail)+'" class="w-11 h-11 rounded-lg object-cover shrink-0" onerror="this.style.display=\'none\'">':'<div class="w-11 h-11 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-5 h-5 text-gray-400"></i></div>';
+    const price=r.price!=null?'<span class="text-sm font-bold text-blue-600 ml-auto">'+(r.currency||"USD")+" "+Number(r.price).toLocaleString()+"</span>":"";
+    return '<button onclick="selectSuggestion(\''+t.replace(/'/g,"\\'")+'\')" class="w-full text-left px-4 py-3.5 text-[15px] text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition flex items-center gap-3 border-b border-gray-100 last:border-0">'+thumb+'<div class="flex-1 min-w-0"><p class="truncate font-semibold">'+t+"</p>"+(c?'<p class="text-xs text-gray-500 truncate">'+c+"</p>":"")+"</div>"+price+"</button>";
   }).join("");
   lucide.createIcons();dd.classList.remove("hidden");
 }
@@ -818,7 +818,6 @@ function executeSearch(){
   if(_searching)return;
   _searching=true;
   const myToken=++_searchToken;
-  showToast("Searching: "+q);
   showSearchResultsLoading(q);
   if(window._smartSearch){
     let marketplaceRendered=false;

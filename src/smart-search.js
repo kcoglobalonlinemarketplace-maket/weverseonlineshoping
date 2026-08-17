@@ -80,6 +80,98 @@ function expandQuery(query) {
   return [...new Set(expanded)].join(' ');
 }
 
+// ── Local catalog search ─────────────────────────────────────────
+// The marketplace RPC only searches database rows, but most of the
+// showroom is the built-in catalog (products, trucks, motorhomes, homes),
+// so we also search it locally and merge the matches. This makes search
+// feel instant and complete — every product on the site is findable.
+let _catalogIndex = null;
+let _catalogIndexPromise = null;
+
+function catalogHaystack(p) {
+  return [
+    p.title || '', p.brand || '', p.category || '', p.subcategory || '',
+    Array.isArray(p.features) ? p.features.join(' ') : '',
+    Array.isArray(p.tags) ? p.tags.join(' ') : '',
+    (p.description || '').slice(0, 300),
+  ].join(' ').toLowerCase();
+}
+
+function getCatalogIndex() {
+  if (_catalogIndex) return Promise.resolve(_catalogIndex);
+  if (_catalogIndexPromise) return _catalogIndexPromise;
+  _catalogIndexPromise = Promise.all([
+    import('./showroom-data.js'),
+    import('./products-data.js'),
+    import('./products-extra.js'),
+    import('./truck-data.js'),
+    import('./motorhome-data.js'),
+  ]).then(([sd, pd, pe, td, md]) => {
+    _catalogIndex = [...(sd.SHOWROOM_LISTINGS || []), ...(pd.PRODUCT_LISTINGS || []), ...(pe.PRODUCT_EXTRA_LISTINGS || []), ...(td.TRUCK_LISTINGS || []), ...(md.MOTORHOME_LISTINGS || [])]
+      .filter(p => p && p.property_id)
+      .map(p => ({ p, hay: catalogHaystack(p) }));
+    return _catalogIndex;
+  }).catch(() => { _catalogIndex = []; return _catalogIndex; });
+  return _catalogIndexPromise;
+}
+
+// Warm up the catalog index in the background so the first search/suggestion
+// feels instant instead of waiting for the large data chunks to download.
+export function preloadCatalogIndex() {
+  getCatalogIndex().catch(() => {});
+}
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
+function toCatalogResult(p) {
+  const images = Array.isArray(p.images) ? p.images : [];
+  return {
+    listing_id: p.property_id,
+    property_id: p.property_id,
+    title: p.title || 'Untitled',
+    brand: p.brand,
+    description: p.description,
+    category: p.category,
+    subcategory: p.subcategory,
+    images,
+    thumbnail: images[0] || null,
+    price: Number(p.price) || 0,
+    currency: p.currency || 'USD',
+    entity_type: p.listing_type || 'product',
+    is_special_order: false,
+  };
+}
+
+function localCatalogSearch(query, limit) {
+  if (!_catalogIndex || _catalogIndex.length === 0) return [];
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const words = q.split(/\s+/).filter(Boolean);
+  const scored = [];
+  for (const { p, hay } of _catalogIndex) {
+    const title = (p.title || '').toLowerCase();
+    const matchTitle = title.includes(q);
+    const matchAny = hay.includes(q);
+    const allWords = words.every(w => title.includes(w) || hay.includes(w));
+    const someWords = words.some(w => title.includes(w) || hay.includes(w));
+    let s = 0;
+    if (title === q) s += 200;
+    if (title.startsWith(q)) s += 150;
+    if (matchTitle) s += 100;
+    if (matchAny) s += 60;
+    if (allWords) s += 50;
+    else if (someWords) s += 25;
+    if (s > 0) scored.push({ s, r: toCatalogResult(p) });
+  }
+  scored.sort((a, b) => b.s - a.s);
+  return scored.slice(0, limit).map(x => x.r);
+}
+
 // ── Core search: fast marketplace + background supplier ──────
 export async function smartSearch(query, limit = 30, onPartialResults) {
   if (!query || query.trim().length < 1) return { results: [], count: 0, marketplaceCount: 0, supplierCount: 0 };
@@ -97,6 +189,15 @@ export async function smartSearch(query, limit = 30, onPartialResults) {
     const searchQuery = expandQuery(trimmed);
     const fuzzyQuery = trimmed.toLowerCase();
 
+    // INSTANT built-in catalog matches — rendered immediately while the
+    // database query is still in flight, so typing feels instant.
+    getCatalogIndex().then(() => {
+      const instant = localCatalogSearch(trimmed, limit);
+      if (instant.length > 0 && onPartialResults) {
+        onPartialResults(instant, { count: instant.length, marketplaceCount: instant.length, supplierCount: 0 });
+      }
+    }).catch(() => {});
+
     // Single fast RPC call: FTS + fuzzy + partial combined
     const { data: marketplaceResults, error } = await supabase.rpc('smart_search_quick', {
       p_query: searchQuery, p_limit: limit,
@@ -105,6 +206,15 @@ export async function smartSearch(query, limit = 30, onPartialResults) {
     let results = [];
     if (!error && marketplaceResults && marketplaceResults.length > 0) {
       results = marketplaceResults;
+    }
+
+    // Merge built-in catalog matches (site products not stored in the DB).
+    // Database rows win on duplicate ids.
+    await getCatalogIndex().catch(() => {});
+    const local = localCatalogSearch(trimmed, limit);
+    const seenIds = new Set(results.map(r => r.property_id || r.listing_id));
+    for (const r of local) {
+      if (!seenIds.has(r.property_id)) { seenIds.add(r.property_id); results.push(r); }
     }
 
     // Deliver marketplace results immediately if callback provided
@@ -166,6 +276,7 @@ export async function smartSearch(query, limit = 30, onPartialResults) {
       count: results.length + supplierResults.length,
       marketplaceCount: results.length,
       supplierCount: supplierResults.length,
+      _final: true,
     };
     cacheSet(cacheKey, result);
 
@@ -210,23 +321,12 @@ export async function getLiveSuggestions(query, limit = 8) {
   return dedupe(cacheKey, async () => {
     const supabase = await getSupabase();
     const searchQuery = expandQuery(trimmed);
-    const { data, error } = await supabase.rpc('smart_search_quick', {
-      p_query: searchQuery, p_limit: limit,
-    });
 
-    let results = [];
-    if (!error && data && data.length > 0) {
-      results = data;
-    } else {
-      // Fallback to fuzzy
-      const { data: fuzzyData } = await supabase.rpc('smart_search_fuzzy', {
-        p_query: trimmed.toLowerCase(), p_limit: limit,
-      });
-      if (fuzzyData) results = fuzzyData;
-    }
-
-    const mapped = results.map(r => ({
-      id: r.listing_id,
+    // Merge built-in catalog suggestions first so every site product is
+    // suggestable even if the database RPC is slow or empty.
+    await getCatalogIndex().catch(() => {});
+    const mapped = localCatalogSearch(trimmed, limit).map(r => ({
+      id: r.property_id,
       title: r.title,
       category: r.category,
       price: r.price,
@@ -234,6 +334,39 @@ export async function getLiveSuggestions(query, limit = 8) {
       entity_type: r.entity_type,
       thumbnail: r.thumbnail,
     }));
+    const seenIds = new Set(mapped.map(m => m.id || m.title));
+
+    // Database suggestions via RPC, but never block on a slow DB — local
+    // catalog results are already ready.
+    const rpc = await withTimeout(supabase.rpc('smart_search_quick', {
+      p_query: searchQuery, p_limit: limit,
+    }), 2000);
+
+    let results = [];
+    if (rpc && !rpc.error && rpc.data && rpc.data.length > 0) {
+      results = rpc.data;
+    } else if (rpc && rpc.error) {
+      // Fallback to fuzzy
+      const fuzzy = await withTimeout(supabase.rpc('smart_search_fuzzy', {
+        p_query: trimmed.toLowerCase(), p_limit: limit,
+      }), 1500);
+      if (fuzzy && fuzzy.data) results = fuzzy.data;
+    }
+
+    for (const r of results) {
+      if (!seenIds.has(r.listing_id) && !seenIds.has(r.title)) {
+        seenIds.add(r.listing_id);
+        mapped.push({
+          id: r.listing_id,
+          title: r.title,
+          category: r.category,
+          price: r.price,
+          currency: r.currency,
+          entity_type: r.entity_type,
+          thumbnail: r.thumbnail,
+        });
+      }
+    }
     cacheSet(cacheKey, mapped);
     return mapped;
   });
