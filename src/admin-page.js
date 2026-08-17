@@ -151,13 +151,13 @@ function openModal(html) { document.getElementById('modal-container').innerHTML 
 
 function statCard(label, value, icon, color, sub = '') {
   const c = { blue: 'bg-blue-500/10 text-blue-400 border-blue-500/15', amber: 'bg-amber-500/10 text-amber-400 border-amber-500/15', emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15', red: 'bg-red-500/10 text-red-400 border-red-500/15', violet: 'bg-violet-500/10 text-violet-400 border-violet-500/15', blue: 'bg-blue-500/10 text-blue-400 border-blue-500/15' };
-  return `<div class="stat-card glass-soft border border-blue-500/15 rounded-2xl p-4">
+  return `<div class="stat-card glass-soft border border-blue-500/15 rounded-3xl p-5">
     <div class="flex items-start justify-between mb-3">
-      <div class="p-2 ${c[color] || c.blue} rounded-xl border"><i data-lucide="${icon}" class="w-4 h-4"></i></div>
+      <div class="p-3 ${c[color] || c.blue} rounded-2xl border"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
     </div>
-    <p class="text-2xl font-black text-white">${esc(value)}</p>
-    <p class="text-[11px] text-gray-500 uppercase tracking-wide mt-0.5 font-bold">${esc(label)}</p>
-    ${sub ? `<p class="text-[10px] text-gray-600 mt-1">${esc(sub)}</p>` : ''}
+    <p class="text-3xl font-black text-white">${esc(value)}</p>
+    <p class="text-xs text-gray-500 uppercase tracking-wide mt-1 font-bold">${esc(label)}</p>
+    ${sub ? `<p class="text-xs text-gray-600 mt-1">${esc(sub)}</p>` : ''}
   </div>`;
 }
 
@@ -1141,17 +1141,17 @@ async function renderProducts() {
                 <i data-lucide="send" class="w-5 h-5"></i>
               </button>
             </div>
-            <p class="text-[10px] text-gray-500 pt-2">Full permission over the whole showroom — it checks how your cards look before it publishes, and it always writes the complete brand, model, year and details of what you upload so customers feel comfortable.</p>
+            <p class="text-xs text-gray-500 pt-2">Full permission over the whole showroom — it checks how your cards look before it publishes, and it always writes the complete brand, model, year and details of what you upload so customers feel comfortable.</p>
           </div>
           <input id="general-ai-embed-image" type="file" accept="image/*" multiple class="hidden" onchange="generalAiChatImagePicked(this)">
         </div>
 
-        <div class="glass-soft border border-blue-500/20 rounded-2xl p-4 sm:p-5">
+        <div class="glass-soft border border-blue-500/20 rounded-2xl p-5 sm:p-6">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-300/80">Product Showroom</p>
-              <h2 class="text-2xl font-black text-white mt-1">Professional Product Showroom</h2>
-              <p class="text-xs text-gray-400 mt-1">Unlimited products, smooth infinite scrolling layout, and clean auto-aligned cards.</p>
+              <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-300/80">Product Showroom</p>
+              <h2 class="text-3xl font-black text-white mt-1">Professional Product Showroom</h2>
+              <p class="text-sm text-gray-400 mt-1">Unlimited products, smooth infinite scrolling layout, and clean auto-aligned cards.</p>
             </div>
             <div class="flex items-center gap-2.5 flex-wrap">
               <button onclick="showAddProductStep1()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-black px-6 py-3.5 rounded-2xl transition shadow-xl shadow-blue-700/25">
@@ -1208,30 +1208,30 @@ async function renderProducts() {
             </select>
           </div>
 
-<div class="flex flex-wrap items-center gap-2">
-            <button onclick="toggleSelectAllProducts(true)" class="btn-press px-3 py-1.5 text-xs font-bold rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-300 hover:bg-blue-500/15 transition">Select Visible</button>
-            <button onclick="toggleSelectAllProducts(false)" class="btn-press px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-500/20 bg-gray-500/10 text-gray-300 hover:bg-gray-500/15 transition">Clear Selection</button>
-            <button onclick="resetProductFilters()" class="btn-press px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-500/20 bg-transparent text-gray-300 hover:bg-white/5 transition">Reset Filters</button>
+<div class="flex flex-wrap items-center gap-2.5">
+            <button onclick="toggleSelectAllProducts(true)" class="btn-press px-4 py-2.5 text-sm font-bold rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-300 hover:bg-blue-500/15 transition">Select Visible</button>
+            <button onclick="toggleSelectAllProducts(false)" class="btn-press px-4 py-2.5 text-sm font-bold rounded-xl border border-gray-500/20 bg-gray-500/10 text-gray-300 hover:bg-gray-500/15 transition">Clear Selection</button>
+            <button onclick="resetProductFilters()" class="btn-press px-4 py-2.5 text-sm font-bold rounded-xl border border-gray-500/20 bg-transparent text-gray-300 hover:bg-white/5 transition">Reset Filters</button>
             <div class="ml-auto flex items-center gap-1.5">
-              <span class="text-[11px] text-gray-400">View:</span>
-<button onclick="setProductView('card')" id="view-card-btn" class="view-toggle ${!window._productView || window._productView==='card' ? 'active' : ''}"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Cards</button>
-              <button onclick="setProductView('table')" id="view-table-btn" class="view-toggle ${window._productView==='table' ? 'active' : ''}"><i data-lucide="table" class="w-3.5 h-3.5"></i> Table</button>
+              <span class="text-sm text-gray-400">View:</span>
+<button onclick="setProductView('card')" id="view-card-btn" class="view-toggle ${!window._productView || window._productView==='card' ? 'active' : ''}"><i data-lucide="layout-grid" class="w-4 h-4"></i> Cards</button>
+              <button onclick="setProductView('table')" id="view-table-btn" class="view-toggle ${window._productView==='table' ? 'active' : ''}"><i data-lucide="table" class="w-4 h-4"></i> Table</button>
             </div>
-            <span class="text-[11px] text-gray-400 ml-2"><span id="products-result-count">0</span> shown</span>
+            <span class="text-sm text-gray-400 ml-2"><span id="products-result-count">0</span> shown</span>
           </div>
         </div>
 
-        <div id="bulk-actions" class="hidden items-center gap-2.5 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-          <span id="bulk-count" class="text-xs font-bold text-blue-300">0 selected</span>
-          <button onclick="bulkToggleActive(true)" class="btn-press text-xs font-bold text-emerald-300 hover:text-emerald-200 px-3 py-1.5 rounded-lg bg-emerald-500/15 transition">Publish</button>
-          <button onclick="bulkToggleActive(false)" class="btn-press text-xs font-bold text-amber-300 hover:text-amber-200 px-3 py-1.5 rounded-lg bg-amber-500/15 transition">Unpublish</button>
-          <button onclick="bulkDuplicateProducts()" class="btn-press text-xs font-bold text-gray-200 hover:text-white px-3 py-1.5 rounded-lg bg-white/10 transition">Duplicate</button>
-          <button onclick="bulkArchive()" class="btn-press text-xs font-bold text-red-300 hover:text-red-200 px-3 py-1.5 rounded-lg bg-red-500/15 transition">Archive</button>
-          <button onclick="bulkDeleteProducts()" class="btn-press text-xs font-bold text-red-200 hover:text-white px-3 py-1.5 rounded-lg bg-red-600/20 transition">Delete</button>
+        <div id="bulk-actions" class="hidden items-center gap-2.5 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+          <span id="bulk-count" class="text-sm font-bold text-blue-300">0 selected</span>
+          <button onclick="bulkToggleActive(true)" class="btn-press text-sm font-bold text-emerald-300 hover:text-emerald-200 px-4 py-2.5 rounded-xl bg-emerald-500/15 transition">Publish</button>
+          <button onclick="bulkToggleActive(false)" class="btn-press text-sm font-bold text-amber-300 hover:text-amber-200 px-4 py-2.5 rounded-xl bg-amber-500/15 transition">Unpublish</button>
+          <button onclick="bulkDuplicateProducts()" class="btn-press text-sm font-bold text-gray-200 hover:text-white px-4 py-2.5 rounded-xl bg-white/10 transition">Duplicate</button>
+          <button onclick="bulkArchive()" class="btn-press text-sm font-bold text-red-300 hover:text-red-200 px-4 py-2.5 rounded-xl bg-red-500/15 transition">Archive</button>
+          <button onclick="bulkDeleteProducts()" class="btn-press text-sm font-bold text-red-200 hover:text-white px-4 py-2.5 rounded-xl bg-red-600/20 transition">Delete</button>
         </div>
 
 <div class="space-y-4">
-          <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 items-stretch"></div>
+          <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 items-stretch"></div>
           <div id="products-table-wrap" class="hidden overflow-x-auto scrollbar-thin rounded-2xl border border-blue-500/15">
             <table class="w-full dt">
               <thead><tr>
@@ -1303,51 +1303,51 @@ function productCard(product) {
     ? 'bg-amber-500/15 text-amber-200 hover:bg-amber-500/25'
     : 'bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25';
 
-  return `<article data-id="${product.property_id}" data-cat="${esc(product.category || '')}" data-status="${status}" data-featured="${isFeatured ? 'featured' : 'standard'}" class="prod-card glass-soft border ${selected ? 'border-blue-400/60' : 'border-blue-500/15'} rounded-2xl p-3.5 flex flex-col gap-3 transition hover:border-blue-400/35">
-    <div class="flex items-start gap-3">
-      <input type="checkbox" class="prod-check accent-blue-500 mt-1" value="${product.property_id}" ${selected ? 'checked' : ''} onchange="toggleProductSelection('${product.property_id}', this.checked)">
-      <div class="relative w-20 h-20 rounded-xl overflow-hidden border border-blue-500/20 shrink-0 bg-[#0b1124]">
+  return `<article data-id="${product.property_id}" data-cat="${esc(product.category || '')}" data-status="${status}" data-featured="${isFeatured ? 'featured' : 'standard'}" onclick="editProduct('${product.property_id}')" title="Tap anywhere to edit this product" class="prod-card glass-soft border ${selected ? 'border-blue-400/60' : 'border-blue-500/15'} rounded-3xl p-5 flex flex-col gap-4 transition hover:border-blue-400/40 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer select-none active:scale-[.99]">
+    <div class="flex items-start gap-4">
+      <input type="checkbox" class="prod-check accent-blue-500 w-5 h-5 mt-1 shrink-0" value="${product.property_id}" ${selected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleProductSelection('${product.property_id}', this.checked)">
+      <div class="relative w-24 h-24 rounded-2xl overflow-hidden border border-blue-500/20 shrink-0 bg-[#0b1124]">
         <img src="${esc(img)}" alt="${esc(product.title || 'Product')}" class="w-full h-full object-cover" onerror="this.src='/fallback.svg'">
-        ${isFeatured ? '<span class="absolute top-1 left-1 text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-400 text-[#111827]">Featured</span>' : ''}
+        ${isFeatured ? '<span class="absolute top-1.5 left-1.5 text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-400 text-[#111827]">Featured</span>' : ''}
       </div>
       <div class="min-w-0 flex-1">
-        <h3 class="text-sm font-black text-white leading-snug line-clamp-2">${esc(product.title || 'Untitled Product')}</h3>
-        <p class="text-[10px] text-gray-500 font-mono mt-0.5">SKU: ${esc(productSku(product))}</p>
-        <div class="mt-1.5 flex items-center gap-1.5 flex-wrap">
+        <h3 class="text-lg font-black text-white leading-snug line-clamp-2">${esc(product.title || 'Untitled Product')}</h3>
+        <p class="text-xs text-gray-500 font-mono mt-1">SKU: ${esc(productSku(product))}</p>
+        <div class="mt-2 flex items-center gap-2 flex-wrap">
           ${statusBadge}
           <span class="badge bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/20">${esc(product.category || 'Uncategorized')}</span>
         </div>
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-2 text-[11px]">
-      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Price</span><p class="text-emerald-300 font-black">$${parseProductPrice(product.price).toLocaleString()}</p></div>
-      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Discount</span><p class="text-amber-300 font-bold">${esc(productDiscountText(product))}</p></div>
-      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Stock</span><p class="text-gray-200 font-bold">${product.stock_quantity != null ? esc(product.stock_quantity) : 'Unlimited'}</p></div>
-      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Brand</span><p class="text-gray-200 font-bold truncate">${esc(product.brand || 'N/A')}</p></div>
-      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Views</span><p class="text-blue-300 font-bold">${productViews(product).toLocaleString()}</p></div>
-      <div class="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5"><span class="text-gray-400">Sales</span><p class="text-cyan-300 font-bold">${productSales(product).toLocaleString()}</p></div>
+    <div class="grid grid-cols-2 gap-2.5 text-sm">
+      <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Price</span><p class="text-emerald-300 font-black text-base">$${parseProductPrice(product.price).toLocaleString()}</p></div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Discount</span><p class="text-amber-300 font-bold">${esc(productDiscountText(product))}</p></div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Stock</span><p class="text-gray-200 font-bold">${product.stock_quantity != null ? esc(product.stock_quantity) : 'Unlimited'}</p></div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Brand</span><p class="text-gray-200 font-bold truncate">${esc(product.brand || 'N/A')}</p></div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Views</span><p class="text-blue-300 font-bold">${productViews(product).toLocaleString()}</p></div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Sales</span><p class="text-cyan-300 font-bold">${productSales(product).toLocaleString()}</p></div>
     </div>
 
-    <div class="flex items-center justify-between text-[10px] text-gray-500 border-t border-blue-500/10 pt-2.5">
+    <div class="flex items-center justify-between text-xs text-gray-500 border-t border-blue-500/10 pt-3">
       <span>Date Added: ${esc(dateAdded)}</span>
       <span>${(product.images || []).length} images</span>
     </div>
 
-    <div class="flex flex-wrap gap-1.5 mt-auto">
-      <button onclick="editProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-blue-500/15 text-blue-200 hover:bg-blue-500/25 transition">Edit</button>
-      <button onclick="openProductAiAssistant('${product.property_id}','products')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-fuchsia-500/15 text-fuchsia-200 hover:bg-fuchsia-500/25 transition">AI Assistant</button>
-      <button onclick="quickEditProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 transition">Quick Edit</button>
-      <button onclick="previewProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-sky-500/15 text-sky-200 hover:bg-sky-500/25 transition">Preview</button>
-      <button onclick="duplicateProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white/10 text-gray-200 hover:bg-white/20 transition">Duplicate</button>
-      <button onclick="${publishFn}" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold ${publishClass} transition">${publishLabel}</button>
-      <button onclick="archiveProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-red-500/15 text-red-200 hover:bg-red-500/25 transition">Archive</button>
-      <button onclick="shareProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-violet-500/15 text-violet-200 hover:bg-violet-500/25 transition">Share</button>
-      <button onclick="deleteProduct('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-rose-600/15 text-rose-200 hover:bg-rose-600/25 transition">Delete</button>
-      <button onclick="openProductMoreActions('${product.property_id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-gray-600/20 text-gray-200 hover:bg-gray-600/35 transition">More Actions</button>
+    <div class="flex flex-wrap gap-2 mt-auto">
+      <button onclick="event.stopPropagation();editProduct('${product.property_id}')" class="btn-press flex-1 min-w-[9.5rem] px-5 py-3.5 rounded-2xl text-sm font-black bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white transition shadow-lg shadow-blue-600/15">Edit Product</button>
+      <button onclick="event.stopPropagation();openProductAiAssistant('${product.property_id}','products')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-fuchsia-500/15 text-fuchsia-200 hover:bg-fuchsia-500/25 transition">AI Assistant</button>
+      <button onclick="event.stopPropagation();quickEditProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 transition">Quick Edit</button>
+      <button onclick="event.stopPropagation();previewProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-sky-500/15 text-sky-200 hover:bg-sky-500/25 transition">Preview</button>
+      <button onclick="event.stopPropagation();${publishFn}" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold ${publishClass} transition">${publishLabel}</button>
+      <button onclick="event.stopPropagation();duplicateProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-white/10 text-gray-200 hover:bg-white/20 transition">Duplicate</button>
+      <button onclick="event.stopPropagation();archiveProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-red-500/15 text-red-200 hover:bg-red-500/25 transition">Archive</button>
+      <button onclick="event.stopPropagation();shareProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-violet-500/15 text-violet-200 hover:bg-violet-500/25 transition">Share</button>
+      <button onclick="event.stopPropagation();deleteProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-rose-600/15 text-rose-200 hover:bg-rose-600/25 transition">Delete</button>
+      <button onclick="event.stopPropagation();openProductMoreActions('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-gray-600/20 text-gray-200 hover:bg-gray-600/35 transition">More</button>
     </div>
 
-    ${tags.length ? `<div class="flex flex-wrap gap-1">${tags.slice(0, 6).map(tag => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-200">${esc(tag)}</span>`).join('')}</div>` : '<div class="text-[10px] text-gray-500">No tags</div>'}
+    ${tags.length ? `<div class="flex flex-wrap gap-1.5">${tags.slice(0, 6).map(tag => `<span class="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-200">${esc(tag)}</span>`).join('')}</div>` : '<div class="text-xs text-gray-500">No tags</div>'}
   </article>`;
 }
 
@@ -2131,11 +2131,11 @@ window.showAddProductStep1 = function() {
           <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
           <input id="product-category-search" type="search" class="input-field pl-9" placeholder="Search category..." oninput="filterProductCategoryChoices(this.value)">
         </div>
-        <div id="product-category-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto scrollbar-thin pr-1">
+        <div id="product-category-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-96 overflow-y-auto scrollbar-thin pr-1">
           ${PRODUCT_CATEGORIES.map(c => `
-            <button data-category="${esc(c).toLowerCase()}" onclick="showAddProductStep2('${c.replace(/'/g, "\\'")}')" class="btn-press flex items-center gap-2 p-3 glass-soft border border-blue-500/15 hover:border-blue-500/40 rounded-xl transition text-left">
-              <i data-lucide="tag" class="w-4 h-4 text-blue-400 shrink-0"></i>
-              <span class="text-xs font-semibold text-gray-200">${esc(c)}</span>
+            <button data-category="${esc(c).toLowerCase()}" onclick="showAddProductStep2('${c.replace(/'/g, "\\'")}')" class="btn-press flex items-center gap-3 p-4 glass-soft border border-blue-500/15 hover:border-blue-500/40 rounded-2xl transition text-left">
+              <i data-lucide="tag" class="w-5 h-5 text-blue-400 shrink-0"></i>
+              <span class="text-sm font-semibold text-gray-200">${esc(c)}</span>
             </button>`).join('')}
         </div>
       </div>
@@ -2157,89 +2157,89 @@ window.showAddProductStep2 = function(category, existingData = {}) {
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeProductFormModal()">
       <div class="modal-box wide">
-        <div class="flex items-center justify-between gap-3 mb-5">
+        <div class="flex items-center justify-between gap-3 mb-6">
           <div class="min-w-0">
-            <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Product — ${esc(category)}</h3>
-            <p class="text-xs text-gray-500 mt-0.5 truncate">${isEdit ? `Editing: ${esc(existingData.property_id)}` : 'Fill in the product details below'}</p>
+            <h3 class="text-2xl font-black text-white">${isEdit ? 'Edit Product' : 'Add Product'} — ${esc(category)}</h3>
+            <p class="text-sm text-gray-500 mt-1 truncate">${isEdit ? `Editing: ${esc(existingData.property_id)}` : 'Fill in the product details below'}</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            ${isEdit ? `<button type="button" onclick="closeProductFormModal()" class="btn-press px-3 py-1.5 rounded-lg text-[11px] font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Product Manager</button>` : `<button type="button" onclick="showAddProductStep1()" class="btn-press px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5" title="Change category"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Category</button>`}
-            <button type="button" onclick="closeProductFormModal()" class="btn-press px-2.5 h-8 flex items-center justify-center rounded-lg text-[10px] font-bold uppercase tracking-wide text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Close (X) — return to Product Manager">
-              🔙 Back
+            ${isEdit ? `<button type="button" onclick="closeProductFormModal()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Product Manager</button>` : `<button type="button" onclick="showAddProductStep1()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5" title="Change category"><i data-lucide="arrow-left" class="w-4 h-4"></i> Category</button>`}
+            <button type="button" onclick="closeProductFormModal()" class="btn-press px-4 h-11 flex items-center justify-center rounded-xl text-sm font-bold uppercase tracking-wide text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Close (X) — return to Product Manager">
+              Back
             </button>
           </div>
         </div>
 
-        <form id="product-form" onsubmit="saveProduct(event,'${esc(category)}','${isEdit ? existingData.property_id : ''}')" class="space-y-4">
-          <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-3">
+        <form id="product-form" onsubmit="saveProduct(event,'${esc(category)}','${isEdit ? existingData.property_id : ''}')" class="space-y-6">
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="text-xs font-bold text-white uppercase tracking-wide">Global Catalog Autofill</p>
-                <p class="text-[11px] text-gray-500 mt-1">Pick a template, country, and currency to auto-build the listing title, description, and metadata.</p>
+                <p class="text-sm font-bold text-white uppercase tracking-wide">Global Catalog Autofill</p>
+                <p class="text-sm text-gray-500 mt-1">Pick a template, country, and currency to auto-build the listing title, description, and metadata.</p>
               </div>
-              <button type="button" onclick="applyProductCatalogTemplate('${esc(category)}')" class="btn-press px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded-xl transition">Refresh Template</button>
+              <button type="button" onclick="applyProductCatalogTemplate('${esc(category)}')" class="btn-press px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition">Refresh Template</button>
             </div>
             <div class="form-grid form-grid-2">
               <div class="sm:col-span-2"><label class="lbl">Catalog Template</label><select class="input-field" name="catalog_template_id" id="pf-catalog_template_id" onchange="applyProductCatalogTemplate('${esc(category)}')"><option value="">Choose a template...</option>${productTemplates.map(template => `<option value="${template.id}">${esc(template.label)} - ${esc(template.subcategory || template.category)}</option>`).join('')}</select></div>
               <div class="sm:col-span-2"><label class="lbl">Currency</label><select class="input-field" name="currency" id="pf-currency" onchange="applyProductCatalogTemplate('${esc(category)}')">${renderCurrencyOptions(selectedCurrency)}</select></div>
             </div>
-            <p id="pf-image-requirement" class="hidden text-[11px] text-amber-300"></p>
+            <p id="pf-image-requirement" class="hidden text-sm text-amber-300"></p>
             <input type="hidden" name="required_image_count" id="pf-required_image_count" value="">
           </div>
 
-          <div id="product-autosave-note" class="hidden p-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-[11px] text-emerald-200"></div>
+          <div id="product-autosave-note" class="hidden p-4 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-sm text-emerald-200"></div>
 
           <!-- Step 1: Image Upload -->
-          <div class="space-y-2">
+          <div class="space-y-3">
             <div class="flex items-center justify-between">
               <label class="lbl !mb-0">Step 1: Upload Product Images</label>
-              <span class="text-[10px] text-gray-500">Upload one or multiple images before publishing</span>
+              <span class="text-sm text-gray-500">Upload one or multiple images before publishing</span>
             </div>
             <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
-              <i data-lucide="image-plus" class="w-8 h-8 text-blue-400 mx-auto mb-2"></i>
-              <p class="text-xs font-bold text-gray-300">Click or drag & drop images here</p>
-              <p class="text-[11px] text-gray-500 mt-1">PNG, JPG, WEBP up to 5MB each. First image = cover.</p>
+              <i data-lucide="image-plus" class="w-12 h-12 text-blue-400 mx-auto mb-3"></i>
+              <p class="text-lg font-bold text-gray-300">Click or drag & drop images here</p>
+              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP up to 5MB each. First image = cover.</p>
               <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
             </div>
-            <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
+            <div id="image-preview" class="flex flex-wrap gap-2.5 mt-3">
               ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
             </div>
-            <p class="text-[10px] text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover • Upload up to 24 gallery images</p>
-            <p id="gallery-counter" class="text-[10px] mt-1 font-bold text-gray-400"></p>
+            <p class="text-sm text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover • Upload up to 24 gallery images</p>
+            <p id="gallery-counter" class="text-sm mt-1 font-bold text-gray-400"></p>
             <div id="image-url-inputs">
               ${(existingData.images || []).map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}
             </div>
           </div>
 
           <!-- AI Auto-Listing: analyze images + expand gallery -->
-          <div class="glass-soft border border-fuchsia-500/20 rounded-2xl p-4">
-            <div class="flex items-start justify-between gap-3 mb-2">
+          <div class="glass-soft border border-fuchsia-500/20 rounded-2xl p-5">
+            <div class="flex items-start justify-between gap-3 mb-3">
               <div>
-                <p class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-fuchsia-400"></i> AI Auto-Listing</p>
-                <p class="text-[10px] text-gray-500 mt-0.5">AI looks at your photos, identifies the product, writes the title / description / specifications, detects the category, and can expand the gallery to 24 realistic images.</p>
+                <p class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5 text-fuchsia-400"></i> AI Auto-Listing</p>
+                <p class="text-sm text-gray-500 mt-1">AI looks at your photos, identifies the product, writes the title / description / specifications, detects the category, and can expand the gallery to 24 realistic images.</p>
               </div>
               <span id="pf-ai-badge" class="badge bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/25 hidden shrink-0"><i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Working…</span>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <button type="button" onclick="runProductImageAnalysis()" class="btn-press px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-[11px] font-bold rounded-xl transition flex items-center gap-1.5">
-                <i data-lucide="scan-face" class="w-3.5 h-3.5"></i> AI Analyze & Auto-Fill
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button type="button" onclick="runProductImageAnalysis()" class="btn-press px-5 py-3.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-sm font-bold rounded-xl transition flex items-center gap-2">
+                <i data-lucide="scan-face" class="w-4 h-4"></i> AI Analyze & Auto-Fill
               </button>
-              <select id="pf-ai-expand-count" class="input-field !w-24 !py-2 text-[11px]" title="How many AI images to generate">
+              <select id="pf-ai-expand-count" class="input-field !w-28 !py-3 text-sm" title="How many AI images to generate">
                 <option value="12">12 images</option>
                 <option value="18">18 images</option>
                 <option value="24" selected>24 images</option>
               </select>
-              <button type="button" onclick="expandProductGalleryAi()" class="btn-press px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold rounded-xl transition flex items-center gap-1.5">
-                <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> AI Expand Images
+              <button type="button" onclick="expandProductGalleryAi()" class="btn-press px-5 py-3.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl transition flex items-center gap-2">
+                <i data-lucide="wand-2" class="w-4 h-4"></i> AI Expand Images
               </button>
             </div>
-            <p id="pf-ai-status" class="text-[10px] text-gray-500 mt-2"></p>
-            <div id="pf-ai-detected" class="hidden mt-2"></div>
-            <div id="pf-ai-generated" class="flex flex-wrap gap-2 mt-2"></div>
+            <p id="pf-ai-status" class="text-sm text-gray-500 mt-3"></p>
+            <div id="pf-ai-detected" class="hidden mt-3"></div>
+            <div id="pf-ai-generated" class="flex flex-wrap gap-2 mt-3"></div>
           </div>
 
           <!-- Step 2: Product Details -->
-          <div class="text-[11px] text-blue-200 font-bold uppercase tracking-wide">Step 2: Product Details</div>
+          <div class="text-sm text-blue-200 font-bold uppercase tracking-wide">Step 2: Product Details</div>
           <div class="form-grid form-grid-2">
             ${renderProductFieldsForm(category, existingData, isEdit)}
           </div>
@@ -2254,11 +2254,11 @@ window.showAddProductStep2 = function(category, existingData = {}) {
           <!-- Tags / Badges -->
           <div>
             <label class="lbl">Product Tags / Badges</label>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2.5">
               ${['New Arrival', 'Best Seller', 'Hot Deal', 'Featured', 'Limited Stock'].map(tag => `
-                <label class="flex items-center gap-1.5 cursor-pointer">
-                  <input type="checkbox" name="tags" value="${tag}" ${(existingData.tags || []).includes(tag) ? 'checked' : ''} class="accent-blue-500">
-                  <span class="text-xs text-gray-300">${tag}</span>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" name="tags" value="${tag}" ${(existingData.tags || []).includes(tag) ? 'checked' : ''} class="accent-blue-500 w-5 h-5">
+                  <span class="text-sm text-gray-300">${tag}</span>
                 </label>`).join('')}
             </div>
           </div>
@@ -2271,17 +2271,17 @@ window.showAddProductStep2 = function(category, existingData = {}) {
                 ${['In Stock', 'Out of Stock', 'Pre-order', 'Limited Stock'].map(s => `<option value="${s}" ${existingData.availability_status === s ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
             </div>
-            <div class="p-3 glass-soft border border-blue-500/15 rounded-xl">
-              <p class="text-xs font-bold text-white">Global Price Range</p>
-              <p class="text-[11px] text-gray-500 mt-1">Allowed price range is ${GLOBAL_PRICE_MIN} to ${GLOBAL_PRICE_MAX} in the selected currency.</p>
+            <div class="p-4 glass-soft border border-blue-500/15 rounded-2xl">
+              <p class="text-sm font-bold text-white">Global Price Range</p>
+              <p class="text-sm text-gray-500 mt-1">Allowed price range is ${GLOBAL_PRICE_MIN} to ${GLOBAL_PRICE_MAX} in the selected currency.</p>
             </div>
           </div>
 
           <!-- Featured -->
-          <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
+          <div class="flex items-center justify-between p-4 glass-soft border border-blue-500/15 rounded-2xl">
             <div>
-              <p class="text-xs font-bold text-white">Featured Product</p>
-              <p class="text-[11px] text-gray-500">Show in featured sections</p>
+              <p class="text-sm font-bold text-white">Featured Product</p>
+              <p class="text-sm text-gray-500">Show in featured sections</p>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" name="is_featured" ${existingData.is_featured ? 'checked' : ''}>
@@ -2290,10 +2290,10 @@ window.showAddProductStep2 = function(category, existingData = {}) {
           </div>
 
           <!-- Active -->
-          <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
+          <div class="flex items-center justify-between p-4 glass-soft border border-blue-500/15 rounded-2xl">
             <div>
-              <p class="text-xs font-bold text-white">Published / Active</p>
-              <p class="text-[11px] text-gray-500">Visible to customers on the website</p>
+              <p class="text-sm font-bold text-white">Published / Active</p>
+              <p class="text-sm text-gray-500">Visible to customers on the website</p>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" name="is_active" ${isEdit ? (existingData.is_active ? 'checked' : '') : 'checked'}>
@@ -2301,19 +2301,19 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             </label>
           </div>
 
-          <div class="glass-soft border border-blue-500/15 rounded-xl p-3" id="product-review-panel">
-            <p class="text-xs font-bold text-white">Quick Review Before Publish</p>
-            <div class="text-[11px] text-gray-400 mt-1" id="product-review-content">Fill in product details to preview your publish summary.</div>
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-4" id="product-review-panel">
+            <p class="text-sm font-bold text-white">Quick Review Before Publish</p>
+            <div class="text-sm text-gray-400 mt-1" id="product-review-content">Fill in product details to preview your publish summary.</div>
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button type="button" onclick="previewProductDraft()" class="btn-press px-4 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 rounded-xl text-sm transition">
+            <button type="button" onclick="previewProductDraft()" class="btn-press px-6 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-4 rounded-2xl text-base transition">
               Live Preview
             </button>
-            <button type="submit" name="action" value="publish" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-blue-600/15">
+            <button type="submit" name="action" value="publish" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-4 rounded-2xl text-base transition shadow-lg shadow-blue-600/15">
               ${isEdit ? 'One-Click Publish Changes' : 'One-Click Publish Product'}
             </button>
-            <button type="submit" name="action" value="draft" class="btn-press px-5 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
+            <button type="submit" name="action" value="draft" class="btn-press px-7 bg-gray-800 hover:bg-gray-700 text-white font-bold py-4 rounded-2xl text-base transition">
               Save Draft
             </button>
           </div>
@@ -2728,7 +2728,7 @@ function updateGalleryCounter() {
   counter.textContent = full
     ? '✓ ' + count + ' / 24 images — this product will auto-publish on save'
     : count + ' / 24 images' + (count >= 12 ? ' — almost there, keep going for a full gallery' : '');
-  counter.className = 'text-[10px] mt-1 font-bold ' + (full ? 'text-emerald-300' : 'text-gray-400');
+  counter.className = 'text-sm mt-1 font-bold ' + (full ? 'text-emerald-300' : 'text-gray-400');
   const active = document.querySelector('#product-form [name="is_active"]');
   if (full && active && !active.checked) active.checked = true;
 }
