@@ -220,6 +220,46 @@ body {
   color: #ffffff !important;
 }
 
+/* Colored gradient surfaces: keep white text (buttons etc.) */
+[class*="from-blue-"][class*="text-white"],
+[class*="to-blue-"][class*="text-white"],
+[class*="from-emerald-"][class*="text-white"],
+[class*="to-emerald-"][class*="text-white"],
+[class*="from-green-"][class*="text-white"],
+[class*="to-green-"][class*="text-white"],
+[class*="from-red-"][class*="text-white"],
+[class*="to-red-"][class*="text-white"],
+[class*="from-rose-"][class*="text-white"],
+[class*="to-rose-"][class*="text-white"],
+[class*="from-amber-"][class*="text-white"],
+[class*="to-amber-"][class*="text-white"],
+[class*="from-orange-"][class*="text-white"],
+[class*="to-orange-"][class*="text-white"],
+[class*="from-yellow-"][class*="text-white"],
+[class*="to-yellow-"][class*="text-white"],
+[class*="from-violet-"][class*="text-white"],
+[class*="to-violet-"][class*="text-white"],
+[class*="from-purple-"][class*="text-white"],
+[class*="to-purple-"][class*="text-white"],
+[class*="from-pink-"][class*="text-white"],
+[class*="to-pink-"][class*="text-white"],
+[class*="from-cyan-"][class*="text-white"],
+[class*="to-cyan-"][class*="text-white"],
+[class*="from-sky-"][class*="text-white"],
+[class*="to-sky-"][class*="text-white"],
+[class*="from-teal-"][class*="text-white"],
+[class*="to-teal-"][class*="text-white"],
+[class*="from-indigo-"][class*="text-white"],
+[class*="to-indigo-"][class*="text-white"],
+[class*="from-lime-"][class*="text-white"],
+[class*="to-lime-"][class*="text-white"],
+[class*="from-fuchsia-"][class*="text-white"],
+[class*="to-fuchsia-"][class*="text-white"],
+[class*="from-black-"][class*="text-white"],
+[class*="to-black-"][class*="text-white"] {
+  color: #ffffff !important;
+}
+
 /* 4. Gray / slate text scale (dark enough to read on white) */
 [class~="text-gray-100"] { color: #0f172a !important; }
 [class~="text-gray-200"] { color: #1e293b !important; }
@@ -267,6 +307,46 @@ body {
 [class*="text-orange-400"] { color: #ea580c !important; }
 [class*="text-lime-400"] { color: #65a30d !important; }
 [class*="fill-amber-400"] { fill: #f59e0b !important; }
+
+/* 5b. Admin-only: force the remaining light text dark so every write-up
+   is readable on the white admin background — Products Manager included.
+   Scoped to body bg-[#070b16], which ONLY admin pages use, so public
+   pages keep their existing lighter accent look. Covers the 200-level
+   shades and the 300-levels that aren't remapped above (opacity variants
+   like text-blue-300/80 are caught by these substring matches too). */
+body[class*="bg-[#070b16]"] [class*="text-blue-200"] { color: #1d4ed8 !important; }
+body[class*="bg-[#070b16]"] [class*="text-sky-200"] { color: #0369a1 !important; }
+body[class*="bg-[#070b16]"] [class*="text-cyan-200"] { color: #0e7490 !important; }
+body[class*="bg-[#070b16]"] [class*="text-emerald-200"] { color: #047857 !important; }
+body[class*="bg-[#070b16]"] [class*="text-green-200"] { color: #15803d !important; }
+body[class*="bg-[#070b16]"] [class*="text-teal-200"] { color: #0f766e !important; }
+body[class*="bg-[#070b16]"] [class*="text-amber-200"] { color: #b45309 !important; }
+body[class*="bg-[#070b16]"] [class*="text-yellow-200"] { color: #a16207 !important; }
+body[class*="bg-[#070b16]"] [class*="text-orange-200"] { color: #c2410c !important; }
+body[class*="bg-[#070b16]"] [class*="text-red-200"] { color: #b91c1c !important; }
+body[class*="bg-[#070b16]"] [class*="text-rose-200"] { color: #be123c !important; }
+body[class*="bg-[#070b16]"] [class*="text-pink-200"] { color: #be185d !important; }
+body[class*="bg-[#070b16]"] [class*="text-violet-200"] { color: #6d28d9 !important; }
+body[class*="bg-[#070b16]"] [class*="text-purple-200"] { color: #9333ea !important; }
+body[class*="bg-[#070b16]"] [class*="text-indigo-200"] { color: #4338ca !important; }
+body[class*="bg-[#070b16]"] [class*="text-fuchsia-200"] { color: #a21caf !important; }
+body[class*="bg-[#070b16]"] [class*="text-slate-200"] { color: #1e293b !important; }
+body[class*="bg-[#070b16]"] [class*="text-zinc-200"] { color: #1e293b !important; }
+body[class*="bg-[#070b16]"] [class*="text-neutral-200"] { color: #1e293b !important; }
+/* 300-level accents not remapped globally (admin.html only had them inline) */
+body[class*="bg-[#070b16]"] [class*="text-violet-300"] { color: #6d28d9 !important; }
+body[class*="bg-[#070b16]"] [class*="text-purple-300"] { color: #9333ea !important; }
+body[class*="bg-[#070b16]"] [class*="text-fuchsia-300"] { color: #c026d3 !important; }
+body[class*="bg-[#070b16]"] [class*="text-pink-300"] { color: #db2777 !important; }
+body[class*="bg-[#070b16]"] [class*="text-rose-300"] { color: #e11d48 !important; }
+body[class*="bg-[#070b16]"] [class*="text-teal-300"] { color: #0d9488 !important; }
+body[class*="bg-[#070b16]"] [class*="text-orange-300"] { color: #ea580c !important; }
+/* Text inside now-light-tinted blue panels must go dark too (higher
+   specificity than the global blue-surface white-text exception, which
+   wins the source-order tie in the built CSS). */
+body[class*="bg-[#070b16]"] [class*="bg-blue-950/"] [class*="text-white"],
+body[class*="bg-[#070b16]"] [class*="bg-blue-950/"] [class*="text-gray-100"],
+body[class*="bg-[#070b16]"] [class*="bg-[#030712]"] [class*="text-white"] { color: #0f172a !important; }
 
 /* 6. Borders -> light dividers */
 [class*="border-gray-800"],
