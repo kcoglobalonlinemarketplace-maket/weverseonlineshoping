@@ -151,6 +151,22 @@ function flagEmoji(countryCode) {
   return String.fromCodePoint(...codePoints);
 }
 
+// discount markup identical to cardParts in src/showroom-cards.js.
+function discountParts(listing, isTruck) {
+  let discountBadge = '';
+  let originalPriceHtml = '';
+  const discountPct = parseFloat(listing.discount_percent ?? listing.discount ?? 0);
+  if (Number.isFinite(discountPct) && discountPct > 0 && discountPct < 100) {
+    const pct = Math.round(discountPct);
+    let originalNum = parseFloat(listing.compare_at_price ?? listing.original_price);
+    if (!Number.isFinite(originalNum) || originalNum <= 0) originalNum = listing.price / (1 - discountPct / 100);
+    const fmtNum = (n) => (isTruck ? formatTruckPrice({ ...listing, price: n }) : formatPrice({ ...listing, price: n }));
+    discountBadge = `<span class="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-md shadow-red-500/30">-${pct}%</span>`;
+    originalPriceHtml = `<span class="text-xs text-gray-400 line-through">${fmtNum(originalNum)}</span>`;
+  }
+  return { discountBadge, originalPriceHtml };
+}
+
 // card markup identical to renderCard in src/showroom-cards.js (no listeners).
 function cardHtml(listing) {
   cleanListing(listing);
@@ -164,6 +180,7 @@ function cardHtml(listing) {
   const cover = listing.images?.[0] || FALLBACK_IMG;
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
   const statusBadge = listing.listing_type === 'product' ? 'New' : (isProperty || isPet ? 'For Sale' : '');
+  const { discountBadge, originalPriceHtml } = discountParts(listing, isTruck);
 
   const hasRealReviews = (listing.rating_count || 0) > 0;
   const aiEstimatedRating = listing.is_ai_generated && !hasRealReviews ? 4.5 : 0;
@@ -217,30 +234,31 @@ function cardHtml(listing) {
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
       ${statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full">${statusBadge}</span>` : ''}
-    </div>
-    <div class="p-4 flex flex-col flex-1">
-      <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5 line-clamp-2">${listing.title}</h3>
-      ${locationHtml}
-      ${specsHtml}
-      <div class="flex items-center justify-between mt-auto pt-2">
-        <span class="text-lg font-black text-blue-600">${price}</span>
-        ${ratingStars}
-      </div>
-      <div class="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-gray-100">
-        <button class="share-btn shrink-0 w-8 h-8 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 rounded-lg transition flex items-center justify-center" title="Share product" aria-label="Share product">
+      ${discountBadge}
+      <div class="absolute top-2 right-2 flex flex-col gap-1.5">
+        <button class="share-btn shrink-0 w-7 h-7 bg-white/90 hover:bg-white text-gray-500 hover:text-blue-600 rounded-full shadow-sm transition flex items-center justify-center" title="Share product" aria-label="Share product">
           <i data-lucide="share-2" class="w-4 h-4"></i>
         </button>
-        <button class="wishlist-btn shrink-0 w-8 h-8 bg-gray-100 hover:bg-red-50 hover:text-red-500 text-gray-500 rounded-lg transition flex items-center justify-center" title="Add to wishlist" aria-label="Add to wishlist">
+        <button class="wishlist-btn shrink-0 w-7 h-7 bg-white/90 hover:bg-white text-gray-500 hover:text-red-500 rounded-full shadow-sm transition flex items-center justify-center" title="Add to wishlist" aria-label="Add to wishlist">
           <i data-lucide="heart" class="w-4 h-4"></i>
         </button>
       </div>
-      ${mapPreviewHtml}
-      <div class="flex gap-2 mt-2.5">
-        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5">
-          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
+    </div>
+    <div class="p-3 flex flex-col flex-1">
+      <h3 class="text-[13px] font-bold text-gray-900 leading-snug mb-1 line-clamp-2">${listing.title}</h3>
+      ${ratingStars}
+      <div class="flex items-baseline flex-wrap gap-x-1.5 gap-y-0.5 mt-1">
+        <span class="text-[15px] font-black text-blue-600">${price}</span>
+        ${originalPriceHtml}
+      </div>
+      ${locationHtml}
+      ${specsHtml}
+      <div class="flex gap-1.5 mt-2 pt-2 border-t border-gray-100">
+        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-[11px] font-bold py-2 rounded-lg transition flex items-center justify-center gap-1">
+          <i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i> <span class="truncate">Buy</span>
         </button>
-        <button class="details-btn flex-1 min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3 rounded-lg transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
-          <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+        <button class="cart-btn flex-1 min-w-0 bg-gray-50 hover:bg-blue-50 active:scale-95 text-gray-700 hover:text-blue-700 text-[11px] font-bold py-2 rounded-lg transition flex items-center justify-center gap-1 border border-gray-200 hover:border-blue-300">
+          <i data-lucide="shopping-cart" class="w-3.5 h-3.5 shrink-0"></i> <span class="truncate">Cart</span>
         </button>
       </div>
     </div>
@@ -260,6 +278,7 @@ function feedCardHtml(listing) {
   const cover = listing.images?.[0] || FALLBACK_IMG;
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
   const statusBadge = listing.listing_type === 'product' ? 'New' : (isProperty || isPet ? 'For Sale' : '');
+  const { discountBadge, originalPriceHtml } = discountParts(listing, isTruck);
 
   const hasRealReviews = (listing.rating_count || 0) > 0;
   const aiEstimatedRating = listing.is_ai_generated && !hasRealReviews ? 4.5 : 0;
@@ -313,6 +332,7 @@ function feedCardHtml(listing) {
            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
       ${statusBadge ? `<span class="absolute top-2.5 left-2.5 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${statusBadge}</span>` : ''}
+      ${discountBadge}
       <span class="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <i data-lucide="expand" class="w-3.5 h-3.5"></i> View
       </span>
@@ -322,7 +342,7 @@ function feedCardHtml(listing) {
       ${locationHtml}
       ${specsHtml}
       <div class="flex items-center justify-between gap-3 mt-auto pt-2">
-        <span class="text-xl sm:text-2xl font-black text-blue-600">${price}</span>
+        <span class="flex items-baseline flex-wrap gap-x-2"><span class="text-xl sm:text-2xl font-black text-blue-600">${price}</span>${originalPriceHtml}</span>
         ${ratingStars}
       </div>
       ${mapPreviewHtml}
@@ -337,6 +357,9 @@ function feedCardHtml(listing) {
       <div class="flex gap-2 mt-2.5">
         <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/25">
           <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
+        </button>
+        <button class="cart-btn flex-1 min-w-0 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 hover:text-emerald-800 text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-emerald-300 hover:border-emerald-400">
+          <i data-lucide="shopping-cart" class="w-4 h-4 shrink-0"></i> <span class="truncate">Add to Cart</span>
         </button>
         <button class="details-btn flex-1 min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
           <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
