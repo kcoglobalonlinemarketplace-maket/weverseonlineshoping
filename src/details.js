@@ -17,6 +17,110 @@ const FALLBACK_IMG = '/fallback.svg';
 function safeRating(r) { return (typeof r === 'number' && !isNaN(r)) ? r.toFixed(1) : '0.0'; }
 function safeImages(imgs) { return (Array.isArray(imgs) && imgs.length > 0) ? imgs : [FALLBACK_IMG]; }
 
+// ── Professional app-style building blocks ─────────────────────
+// Shared pieces used across every details page renderer so the whole
+// page reads like a real global marketplace app — big, alive, truthful.
+function ratingStars(rating, cls = 'w-4 h-4') {
+  const r = Math.round(Number(rating) || 0);
+  return [1, 2, 3, 4, 5].map(i =>
+    `<i data-lucide="star" class="${cls} ${i <= r ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`
+  ).join('');
+}
+
+function sectionHeader(icon, title, tone = 'blue') {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-600',
+    amber: 'bg-amber-50 text-amber-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+    violet: 'bg-violet-50 text-violet-600',
+    rose: 'bg-rose-50 text-rose-600',
+  };
+  const c = tones[tone] || tones.blue;
+  return `
+    <div class="flex items-center gap-2.5 mb-4">
+      <div class="shrink-0 w-10 h-10 rounded-xl ${c} flex items-center justify-center"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
+      <h3 class="text-lg font-black text-gray-900 tracking-tight">${title}</h3>
+    </div>`;
+}
+
+function specTile(s) {
+  return `
+    <div class="bg-gray-50 border border-gray-100 rounded-xl p-3.5">
+      <div class="flex items-center gap-1.5 text-gray-500 text-xs mb-1.5"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
+      <div class="text-gray-900 font-bold text-[15px] leading-snug">${escapeHtml(s.value)}</div>
+    </div>`;
+}
+
+function specsPanel(title, icon, specs, tone = 'blue') {
+  if (!specs || !specs.length) return '';
+  return `
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${sectionHeader(icon, title, tone)}
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        ${specs.map(specTile).join('')}
+      </div>
+    </div>`;
+}
+
+function featuresGrid(features) {
+  if (!features || !features.length) return '';
+  return `
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${sectionHeader('sparkles', 'Features & Amenities', 'emerald')}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        ${features.map(f => `
+          <div class="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-xl px-3.5 py-2.5">
+            <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5"></i></span>
+            <span class="text-[15px] text-gray-800 font-medium">${escapeHtml(f)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function highlightsGrid(highlights) {
+  if (!highlights || !highlights.length) return '';
+  return `
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${sectionHeader('star', 'Highlights', 'amber')}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        ${highlights.map(item => `
+          <div class="flex items-start gap-2.5 bg-amber-50/60 border border-amber-100 rounded-xl px-3.5 py-2.5">
+            <i data-lucide="badge-check" class="w-4 h-4 text-amber-500 mt-0.5 shrink-0"></i>
+            <span class="text-[15px] text-gray-800 font-medium">${escapeHtml(item)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function descriptionBlockHtml(text) {
+  return `
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${sectionHeader('file-text', 'Description', 'blue')}
+      <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed">${escapeHtml(text || '')}</p>
+    </div>`;
+}
+
+function reviewsSummaryHtml(listing) {
+  const r = Number(listing.rating) || 0;
+  const count = listing.rating_count || listing.review_count || 0;
+  return `
+    <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+      <div class="flex items-center gap-3">
+        <div class="text-4xl font-black text-gray-900">${r > 0 ? r.toFixed(1) : 'New'}</div>
+        <div>
+          <div class="flex gap-0.5">${ratingStars(r, 'w-5 h-5')}</div>
+          <div class="text-xs text-gray-500 mt-0.5">${count > 0 ? count.toLocaleString() + ' buyer ratings' : 'Be the first to review this item'}</div>
+        </div>
+      </div>
+      <div class="hidden sm:block w-px h-10 bg-gray-200"></div>
+      <div class="flex flex-wrap gap-2">
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Listing</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-full"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Secure Checkout</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-full"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Fast Worldwide Delivery</span>
+      </div>
+    </div>`;
+}
+
 function getListingId() {
   const params = new URLSearchParams(window.location.search);
   return params.get('id');
@@ -61,21 +165,11 @@ function renderTruck(listing) {
     { icon: 'tag', label: 'Stock Number', value: listing.stock_number },
   ].filter(s => s.value != null && s.value !== '' && s.value !== 'N/A');
 
-  const featuresBlock = listing.features?.length ? `
-    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Features</h3>
-      <div class="flex flex-wrap gap-2">
-        ${listing.features.map(f => `<span class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full border border-gray-300">${escapeHtml(f)}</span>`).join('')}
-      </div>
-    </div>` : '';
+  const featuresBlock = featuresGrid(listing.features);
 
   const ratingsBlock = `
-    <div class="flex items-center gap-4 mb-6">
-      <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-600"></i>
-        <span class="text-lg font-bold text-gray-900">${safeRating(listing.rating)}</span>
-        <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
-      </div>
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${reviewsSummaryHtml(listing)}
     </div>`;
 
   root.innerHTML = `
@@ -128,23 +222,10 @@ function renderTruck(listing) {
       </div>
 
       <!-- Description -->
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Description</h3>
-        <p class="text-gray-600 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
-      </div>
+      ${descriptionBlockHtml(listing.description)}
 
       <!-- Truck Information -->
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Truck Information</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          ${specs.map(s => `
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
+      ${specsPanel('Truck Information', 'truck', specs, 'amber')}
 
       ${featuresBlock}
 
@@ -235,21 +316,11 @@ function renderMotorhome(listing) {
     { icon: 'tag', label: 'Stock Number', value: listing.stock_number },
   ].filter(s => s.value != null && s.value !== '' && s.value !== 'N/A');
 
-  const featuresBlock = listing.features?.length ? `
-    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Features</h3>
-      <div class="flex flex-wrap gap-2">
-        ${listing.features.map(f => `<span class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full border border-gray-300">${escapeHtml(f)}</span>`).join('')}
-      </div>
-    </div>` : '';
+  const featuresBlock = featuresGrid(listing.features);
 
   const ratingsBlock = `
-    <div class="flex items-center gap-4 mb-6">
-      <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-600"></i>
-        <span class="text-lg font-bold text-gray-900">${safeRating(listing.rating)}</span>
-        <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
-      </div>
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${reviewsSummaryHtml(listing)}
     </div>`;
 
   root.innerHTML = `
@@ -302,23 +373,10 @@ function renderMotorhome(listing) {
       </div>
 
       <!-- Description -->
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Description</h3>
-        <p class="text-gray-600 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
-      </div>
+      ${descriptionBlockHtml(listing.description)}
 
       <!-- Motorhome Information -->
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Motorhome Information</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          ${specs.map(s => `
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
+      ${specsPanel('Motorhome Information', 'bus', specs, 'violet')}
 
       ${featuresBlock}
 
@@ -404,21 +462,11 @@ function renderCar(listing) {
     { icon: 'tag', label: 'Stock Number', value: listing.stock_number },
   ].filter(s => s.value != null && s.value !== '' && s.value !== 'N/A');
 
-  const featuresBlock = listing.features?.length ? `
-    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Features</h3>
-      <div class="flex flex-wrap gap-2">
-        ${listing.features.map(f => `<span class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full border border-gray-300">${escapeHtml(f)}</span>`).join('')}
-      </div>
-    </div>` : '';
+  const featuresBlock = featuresGrid(listing.features);
 
   const ratingsBlock = `
-    <div class="flex items-center gap-4 mb-6">
-      <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-600"></i>
-        <span class="text-lg font-bold text-gray-900">${safeRating(listing.rating)}</span>
-        <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
-      </div>
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${reviewsSummaryHtml(listing)}
     </div>`;
 
   root.innerHTML = `
@@ -471,23 +519,10 @@ function renderCar(listing) {
       </div>
 
       <!-- Description -->
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Description</h3>
-        <p class="text-gray-600 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
-      </div>
+      ${descriptionBlockHtml(listing.description)}
 
       <!-- Car Information -->
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Car Information</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          ${specs.map(s => `
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
+      ${specsPanel('Car Information', 'car', specs, 'amber')}
 
       ${featuresBlock}
 
@@ -584,21 +619,25 @@ function sellerBlock(listing) {
   const isAgent = listing.listing_type === 'property';
   const base = `/contact.html?listing=${encodeURIComponent(listing.property_id || '')}`;
   return `
-    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+    <div class="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
       <div class="flex items-center gap-3 mb-4">
-        <div class="shrink-0 w-11 h-11 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-gray-200">
+        <div class="shrink-0 w-12 h-12 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-gray-200 shadow-sm">
           <img src="/w-logo.svg" alt="Weverse Online Shop" class="w-full h-full object-contain" onerror="this.onerror=null;this.style.display='none'">
         </div>
-        <div>
-          <p class="text-sm font-bold text-gray-900">Weverse Online Shop</p>
-          <p class="text-xs text-emerald-600 flex items-center gap-1"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Seller</p>
+        <div class="min-w-0">
+          <p class="text-[15px] font-black text-gray-900 flex items-center gap-1.5">Weverse Online Shop <i data-lucide="badge-check" class="w-4 h-4 fill-blue-600 text-white"></i></p>
+          <p class="text-xs text-gray-500">${isAgent ? 'Professional agent for this listing' : 'Trusted marketplace seller'}</p>
         </div>
       </div>
-      <p class="text-xs text-gray-500">${isAgent ? 'Professional agent for this listing' : 'Trusted marketplace seller'} on Weverse Online Shop</p>
-      <p class="text-xs text-gray-600 mt-2 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i> Secure checkout · Authentic listings</p>
-      <div class="flex gap-2 mt-4">
-        <a href="${base}" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs text-center transition">Contact Seller</a>
-        <a href="${base}&subject=Enquiry" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2.5 rounded-xl text-xs text-center transition">Send Message</a>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-full"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Secure Checkout</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-full"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Fast Worldwide Delivery</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2.5 py-1.5 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Authentic Listings</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-full"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Easy Returns</span>
+      </div>
+      <div class="flex gap-2">
+        <a href="${base}" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl text-sm text-center transition">Contact Seller</a>
+        <a href="${base}&subject=Enquiry" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 rounded-xl text-sm text-center transition">Send Message</a>
       </div>
     </div>`;
 }
@@ -708,6 +747,18 @@ function render(listing) {
   const flag = flagEmoji(listing.country_code);
   const idLabel = listing.listing_type === 'product' ? 'Product ID' : isProperty ? 'Property ID' : 'Listing ID';
 
+  const discountPct = parseFloat(listing.discount_percent ?? listing.discount ?? 0);
+  let originalPriceHtml = '';
+  let discountBadge = '';
+  if (Number.isFinite(discountPct) && discountPct > 0 && discountPct < 100) {
+    const pct = Math.round(discountPct);
+    let originalNum = parseFloat(listing.compare_at_price ?? listing.original_price);
+    if (!Number.isFinite(originalNum) || originalNum <= 0) originalNum = listing.price / (1 - discountPct / 100);
+    originalPriceHtml = `<span class="text-lg text-gray-400 line-through font-medium">${formatPrice({ ...listing, price: originalNum })}</span>`;
+    discountBadge = `<span class="inline-flex items-center gap-1 text-xs font-black text-white bg-red-500 px-2 py-1 rounded-full">-${pct}% OFF</span>`;
+  }
+  const availabilityStatus = listing.availability_status || (listing.listing_type === 'product' ? 'In Stock' : 'Available');
+
   const imgs2 = safeImages(listing.images);
   const galleryThumbs = imgs2.map((img, i) =>
     `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
@@ -724,13 +775,13 @@ function render(listing) {
       { icon: 'navigation', label: 'Town / Local Area', value: listing.town },
     ].filter(item => item.value);
     locationBlock = `
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Location</h3>
+      <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+        ${sectionHeader('map-pin', 'Location', 'rose')}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           ${locItems.map(item => `
-            <div class="flex items-center gap-2.5 text-sm">
-              <div class="p-2 bg-gray-100 rounded-lg"><i data-lucide="${item.icon}" class="w-4 h-4 text-blue-500"></i></div>
-              <div><div class="text-gray-500 text-xs">${item.label}</div><div class="text-gray-800 font-medium">${item.value}</div></div>
+            <div class="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
+              <div class="p-2.5 bg-white border border-gray-100 rounded-lg"><i data-lucide="${item.icon}" class="w-4 h-4 text-blue-500"></i></div>
+              <div><div class="text-gray-500 text-xs">${item.label}</div><div class="text-gray-900 font-bold text-[15px]">${item.value}</div></div>
             </div>
           `).join('')}
         </div>
@@ -751,18 +802,7 @@ function render(listing) {
       { icon: 'calendar', label: 'Year Built', value: listing.year_built },
       { icon: 'tag', label: 'Status', value: listing.listing_status === 'rent' ? 'For Rent' : 'For Sale' },
     ].filter(s => s.value != null && s.value !== '');
-    specsBlock = `
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Property Information</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          ${specs.map(s => `
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>`;
+    specsBlock = specsPanel('Property Information', 'home', specs);
   } else if (listing.category === 'Motorhomes') {
     const specs = [
       { icon: 'factory', label: 'Brand', value: listing.brand },
@@ -780,18 +820,7 @@ function render(listing) {
       { icon: 'utensils', label: 'Kitchen', value: listing.kitchen },
       { icon: 'droplet', label: 'Water Tank', value: listing.water_tank },
     ].filter(s => s.value != null && s.value !== '');
-    specsBlock = `
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Vehicle Information</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          ${specs.map(s => `
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>`;
+    specsBlock = specsPanel('Vehicle Information', 'bus', specs, 'violet');
   } else if (listing.listing_type === 'product') {
     const specs = [
       { icon: 'factory', label: 'Brand', value: listing.brand },
@@ -803,18 +832,7 @@ function render(listing) {
       { icon: 'shield-check', label: 'Warranty', value: listing.warranty },
       { icon: 'package-check', label: 'Availability', value: listing.availability_status },
     ].filter(s => s.value != null && s.value !== '');
-    specsBlock = `
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Product Information</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          ${specs.map(s => `
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>`;
+    specsBlock = specsPanel('Product Information', 'package', specs);
   } else if (listing.listing_type === 'pet') {
     const specs = [
       { icon: 'paw-print', label: 'Breed', value: listing.breed },
@@ -825,43 +843,16 @@ function render(listing) {
       { icon: 'globe', label: 'Origin', value: `${flagEmoji(listing.country_code)} ${listing.country}` },
       { icon: 'badge-check', label: 'Health', value: listing.condition },
     ].filter(s => s.value != null && s.value !== '');
-    specsBlock = `
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Pet Information</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          ${specs.map(s => `
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-1.5 text-gray-500 text-xs"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-              <div class="text-gray-800 font-medium text-sm">${escapeHtml(s.value)}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>`;
+    specsBlock = specsPanel('Pet Information', 'paw-print', specs, 'amber');
   }
 
-  const featuresBlock = listing.features?.length ? `
-    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Features & Amenities</h3>
-      <div class="flex flex-wrap gap-2">
-        ${listing.features.map(f => `<span class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full border border-gray-300">${escapeHtml(f)}</span>`).join('')}
-      </div>
-    </div>` : '';
+  const featuresBlock = featuresGrid(listing.features);
 
-  const highlightsBlock = listing.highlights?.length ? `
-    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-      <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Highlights</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        ${listing.highlights.map(item => `<div class="flex items-start gap-2 text-sm text-gray-700"><i data-lucide="badge-check" class="w-4 h-4 text-blue-500 mt-0.5"></i><span>${escapeHtml(item)}</span></div>`).join('')}
-      </div>
-    </div>` : '';
+  const highlightsBlock = highlightsGrid(listing.highlights);
 
   const ratingsBlock = `
-    <div class="flex items-center gap-4 mb-6">
-      <div class="flex items-center gap-1.5">
-        <i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-600"></i>
-        <span class="text-lg font-bold text-gray-900">${safeRating(listing.rating)}</span>
-        <span class="text-gray-500 text-sm">(${listing.rating_count || 0} ratings)</span>
-      </div>
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${reviewsSummaryHtml(listing)}
     </div>`;
 
   root.innerHTML = `
@@ -874,14 +865,30 @@ function render(listing) {
         <span class="text-gray-700 truncate">${escapeHtml(listing.title)}</span>
       </div>
 
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">${idLabel}: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.property_id)}</span></p>
+      <div class="mb-5">
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
+        <div class="flex flex-wrap items-center gap-2 mt-2.5">
+          <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified</span>
+          <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full"><i data-lucide="box" class="w-3.5 h-3.5"></i> ${idLabel}: <span class="font-mono">${escapeHtml(listing.property_id)}</span></span>
+          <span class="inline-flex items-center gap-1 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">${listing.listing_status === 'rent' ? 'For Rent' : 'For Sale'}</span>
         </div>
-        <div class="text-right shrink-0">
-          <div class="text-3xl font-black text-blue-500">${price}</div>
-          <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${listing.listing_status === 'rent' ? 'For Rent' : 'For Sale'}</span>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-blue-50 via-white to-white border border-blue-100 rounded-2xl p-5 mb-6">
+        <div>
+          <div class="flex items-baseline flex-wrap gap-2">
+            <span class="text-4xl font-black text-blue-600">${price}</span>
+            ${originalPriceHtml}
+          </div>
+          <div class="flex items-center gap-2 mt-1.5">
+            ${discountBadge}
+            <span class="text-sm text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="package-check" class="w-4 h-4"></i> ${availabilityStatus}</span>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1.5 text-sm">
+          <span class="inline-flex items-center gap-1.5 text-gray-600"><i data-lucide="truck" class="w-4 h-4 text-blue-500"></i> Free worldwide shipping</span>
+          <span class="inline-flex items-center gap-1.5 text-gray-600"><i data-lucide="rotate-ccw" class="w-4 h-4 text-blue-500"></i> Easy returns within 14 days</span>
+          <span class="inline-flex items-center gap-1.5 text-gray-600"><i data-lucide="lock" class="w-4 h-4 text-blue-500"></i> Secure payment protection</span>
         </div>
       </div>
 
@@ -897,9 +904,8 @@ function render(listing) {
 
       ${actionGridHtml(listing)}
 
-      <div id="listing-details" class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Description</h3>
-        <p class="text-gray-600 text-sm leading-relaxed">${escapeHtml(listing.description || '')}</p>
+      <div id="listing-details">
+        ${descriptionBlockHtml(listing.description)}
       </div>
 
       ${locationBlock}
@@ -907,21 +913,21 @@ function render(listing) {
       ${featuresBlock}
       ${highlightsBlock}
 
-      <div id="reviews-section" class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Customer Reviews</h3>
-        <div id="reviews-list"><p class="text-gray-500 text-sm">Loading reviews...</p></div>
-        <div id="review-form-wrapper" class="mt-4 pt-4 border-t border-gray-200">
-          <h4 class="text-sm font-bold text-gray-900 mb-3">Write a Review</h4>
+      <div id="reviews-section" class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+        ${sectionHeader('message-square-star', 'Customer Reviews', 'amber')}
+        <div id="reviews-list"><div class="text-gray-500 text-sm py-4">Loading reviews...</div></div>
+        <div id="review-form-wrapper" class="mt-5 pt-5 border-t border-gray-100">
+          <h4 class="text-[15px] font-black text-gray-900 mb-3 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-500"></i> Write a Review</h4>
           <div id="review-login-msg" class="text-xs text-gray-500 hidden">Please <a href="/auth.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}" class="text-blue-500 hover:underline">sign in</a> to write a review.</div>
           <form id="review-form" class="space-y-3">
             <div class="flex items-center gap-2">
               <label class="text-xs text-gray-600 font-bold uppercase">Rating</label>
               <div id="star-rating" class="flex gap-1">
-                ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-600 hover:text-blue-500 transition"></i></button>`).join('')}
+                ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-300 hover:text-amber-400 transition"></i></button>`).join('')}
               </div>
             </div>
-            <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></textarea>
-            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-5 rounded-xl text-sm transition">Submit Review</button>
+            <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-[15px] text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></textarea>
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">Submit Review</button>
           </form>
         </div>
       </div>
@@ -1167,17 +1173,24 @@ async function loadReviews(listing) {
     container.innerHTML = '<p class="text-gray-500 text-sm">No reviews yet. Be the first to review this product!</p>';
     return;
   }
-  container.innerHTML = reviews.map(r => `
-    <div class="border-b border-gray-200 pb-3 mb-3 last:border-0">
-      <div class="flex items-center gap-2 mb-1">
-        <div class="flex gap-0.5">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= r.rating ? 'fill-amber-400 text-amber-600' : 'text-gray-600'}"></i>`).join('')}</div>
-        <span class="text-xs text-gray-600 font-bold">${escapeHtml(r.profiles?.full_name || 'Anonymous')}</span>
-        <span class="text-xs text-gray-600">${new Date(r.created_at).toLocaleDateString()}</span>
-        ${r.is_verified_purchase ? '<span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Verified Purchase</span>' : ''}
+  container.innerHTML = reviews.map(r => {
+    const nm = r.profiles?.full_name || 'Anonymous';
+    const initial = escapeHtml(nm.trim().charAt(0).toUpperCase() || 'A');
+    return `
+    <div class="flex gap-3 py-4 border-b border-gray-100 last:border-0">
+      <div class="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-black uppercase shadow-sm">${initial}</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm font-bold text-gray-900">${escapeHtml(nm)}</span>
+          ${r.is_verified_purchase ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"><i data-lucide="badge-check" class="w-3 h-3"></i> Verified Purchase</span>' : ''}
+          <span class="text-xs text-gray-400">${new Date(r.created_at).toLocaleDateString()}</span>
+        </div>
+        <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
+        <p class="text-[15px] text-gray-700 leading-relaxed mt-1.5">${escapeHtml(r.review_text || '')}</p>
+        ${r.vendor_response ? `<div class="mt-2.5 bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-gray-600"><span class="font-bold text-gray-800 flex items-center gap-1.5"><i data-lucide="badge-check" class="w-3.5 h-3.5 text-blue-500"></i> Seller Response</span><p class="mt-1">${escapeHtml(r.vendor_response)}</p></div>` : ''}
       </div>
-      <p class="text-sm text-gray-700">${escapeHtml(r.review_text || '')}</p>
-      ${r.vendor_response ? `<div class="mt-2 bg-gray-100 rounded-lg p-2 text-xs text-gray-600"><strong class="text-gray-700">Seller response:</strong> ${escapeHtml(r.vendor_response)}</div>` : ''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
   if (window.lucide) lucide.createIcons();
 }
 
