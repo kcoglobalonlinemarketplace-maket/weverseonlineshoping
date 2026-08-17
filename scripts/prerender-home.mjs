@@ -95,7 +95,7 @@ const VEHICLE_SECTION_IDS = new Set(['cars', 'trucks-buses']);
 const PRE_RENDER_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Homes for sale or rent — scroll down to see every one, one by one.',
+    subtitle: 'Homes for sale or rent — scroll down to see them all, two at a time.',
     rows: [
       { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
@@ -373,7 +373,7 @@ function feedCardHtml(listing) {
 function rowHtml(rowDef) {
   const listings = getRowListings(rowDef);
   const hasItems = listings.length > 0;
-  const isGrid = rowDef.layout === 'grid';
+  const isGrid = true;
 
   let header = `
     <div class="flex items-center justify-between mb-2">

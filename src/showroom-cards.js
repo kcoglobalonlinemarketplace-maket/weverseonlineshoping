@@ -22,8 +22,8 @@ viewMode = readSavedViewMode();
 
 const isLineMode = () => viewMode === 'line';
 const isGridMode = () => viewMode === 'grid';
-const overlayCard = (l) => (isLineMode() ? renderCard(l) : renderFeedCard(l));
-const overlayContainerClass = () => (isLineMode() ? 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1' : 'showroom-feed flex flex-col gap-4 sm:gap-5');
+const overlayCard = (l) => renderCard(l);
+const overlayContainerClass = () => (isLineMode() ? 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4');
 
 export function setShowroomViewMode(mode) {
   viewMode = (mode === 'line') ? 'line' : (mode === 'feed') ? 'feed' : 'grid';
@@ -269,7 +269,7 @@ async function toggleWishlist(listing, btn) {
 const REAL_ESTATE_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Homes for sale or rent — scroll down to see every one, one by one.',
+    subtitle: 'Homes for sale or rent — scroll down to see them all, two at a time.',
     rows: [
       { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
@@ -315,7 +315,7 @@ const REAL_ESTATE_SECTIONS = [
   },
   {
     id: 'motorhomes-boats', label: 'Motorhomes', icon: 'bus',
-    subtitle: 'Luxury motorhomes and RVs for travel and adventure — one after another below.',
+    subtitle: 'Luxury motorhomes and RVs for travel and adventure — scroll down to see them all.',
     rows: [
       { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
     ],
@@ -687,12 +687,10 @@ function getRowListings(rowDef) {
 function renderRow(rowDef) {
   const listings = getRowListings(rowDef);
   const hasItems = listings.length > 0;
-  // Normal products (and washing machines) always use the compact 2-column
-  // grid in grid mode so customers scroll down to browse; houses, cars,
-  // trucks and motorhomes keep their larger feed card instead.
-  const isGrid = viewMode === 'grid'
-    ? Boolean(rowDef.layout === 'grid' || rowDef.productCategory || rowDef.allWashingMachines || rowDef.allProducts)
-    : rowDef.layout === 'grid';
+  // Every section (houses, cars, trucks, motorhomes, products) uses the
+  // compact 2-column grid in grid mode so customers scroll down to browse
+  // and always see 2 products side by side on a phone.
+  const isGrid = viewMode === 'grid' || rowDef.layout === 'grid';
   const lineMode = isLineMode() && !isGrid;
 
   const row = document.createElement('div');
