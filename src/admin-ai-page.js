@@ -1552,7 +1552,7 @@ async function runLocalProductAndDeployAutomation(text) {
   };
 }
 
-// ── Native Repair & Build engine (100% free, no n8n) ─────────
+// ── Native Repair & Build engine (100% free) ─────────
 const NATIVE_SCAN_PAGES = ['index.html', 'details.html', 'auth.html', 'payment.html', 'account.html', 'checkout.html', 'about.html', 'contact.html'];
 
 function isRepairRequest(text) {
@@ -1643,7 +1643,7 @@ async function runNativeRepairAndBuild(text) {
     ? scanResults.map((r) => `- ${r.page}: ${r.issue}`).join('\n')
     : 'No issues found in the scanned pages.';
 
-  const content = `✅ **Native Repair & Build scan complete (free, no n8n needed)**
+  const content = `✅ **Native Repair & Build scan complete (free)**
 
 I scanned ${pagesChecked.length} page(s) locally: ${pagesChecked.join(', ') || 'none'}.
 
@@ -1767,7 +1767,7 @@ window.sendMessage = async () => {
   }
 
   try {
-    // Native autonomous repair & build: fully free, no n8n dependency.
+    // Native autonomous repair & build: fully free.
     const nativeRepairRun = await runNativeRepairAndBuild(text);
     if (nativeRepairRun) {
       removeTypingIndicator();
