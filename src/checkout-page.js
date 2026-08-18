@@ -100,6 +100,17 @@ function fmtMoney(amount, currency) {
   return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 }
 
+// Discount price with the real (original) price crossed out through the middle
+// when a discount is active — matches the showroom/details display.
+function priceCellHtml(listing) {
+  const pay = fmtMoney(listing.price, listing.currency || 'USD');
+  const real = parseFloat(listing.real_price);
+  if (Number.isFinite(real) && real > 0 && real > parseFloat(listing.price)) {
+    return `<span class="price-strike line-through text-gray-400 mr-1 text-xs">${fmtMoney(real, listing.currency || 'USD')}</span><span class="text-amber-600 font-bold">${pay}</span>`;
+  }
+  return pay;
+}
+
 function copyToClipboard(text) {
   const fb = () => { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(t); };
   if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(() => fb()); else fb();
@@ -184,9 +195,12 @@ async function init() {
       import('./catalog-hidden-store.js'),
     ]);
     await loadHiddenCatalogIds();
-    state.cartItems = cart.map(id => {
+    state.cartItems = cart.map(entry => {
+      const id = typeof entry === 'string' ? entry : (entry && entry.id);
+      if (!id) return null;
+      const qty = (entry && typeof entry === 'object' && entry.qty) ? Math.max(1, parseInt(entry.qty, 10) || 1) : 1;
       const l = listings.find(x => x.property_id === id) || getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id) || findProductById(id) || generateListingById(id);
-      return l ? { listing: l, quantity: 1 } : null;
+      return l ? { listing: l, quantity: qty } : null;
     }).filter(Boolean);
     if (state.cartItems.length === 0) {
       root.innerHTML = renderEmptyCart();
@@ -326,7 +340,7 @@ function renderStep1() {
               <div class="flex-1 min-w-0">
                 <h4 class="text-sm font-bold text-gray-900 truncate">${item.listing.title}</h4>
                 <p class="text-xs text-gray-500">${item.listing.property_id}</p>
-                <p class="text-sm font-bold text-amber-600 mt-1">${formatPrice(item.listing)}</p>
+                <p class="text-sm font-bold text-amber-600 mt-1">${priceCellHtml(item.listing)}</p>
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <button onclick="changeQty(${i}, -1)" class="w-9 h-9 bg-gray-100 hover:bg-blue-100 border border-blue-200 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center"><i data-lucide="minus" class="w-4 h-4"></i></button>
@@ -642,11 +656,31 @@ function attachHandlers() {}
 
 window.changeQty = (i, delta) => {
   state.cartItems[i].quantity = Math.max(1, state.cartItems[i].quantity + delta);
+  // Keep the shared cart in sync (qty-aware format).
+  try {
+    const cart = JSON.parse(localStorage.getItem('kco_cart') || '[]');
+    if (!Array.isArray(cart)) return render();
+    const id = state.cartItems[i].listing.property_id;
+    const entry = cart.find(c => (typeof c === 'string' ? c : c && c.id) === id);
+    if (entry && typeof entry === 'object' && entry.id) entry.qty = state.cartItems[i].quantity;
+    localStorage.setItem('kco_cart', JSON.stringify(cart));
+    window.dispatchEvent(new CustomEvent('kco-cart-changed'));
+  } catch (e) {}
   render();
 };
 
 window.removeCartItem = (i) => {
+  const id = state.cartItems[i].listing.property_id;
   state.cartItems.splice(i, 1);
+  // Remove from the shared cart too.
+  try {
+    const cart = JSON.parse(localStorage.getItem('kco_cart') || '[]');
+    if (Array.isArray(cart)) {
+      const next = cart.filter(c => (typeof c === 'string' ? c : c && c.id) !== id);
+      localStorage.setItem('kco_cart', JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('kco-cart-changed'));
+    }
+  } catch (e) {}
   if (state.cartItems.length === 0) {
     document.getElementById('checkout-root').innerHTML = renderEmptyCart();
     if (window.lucide) lucide.createIcons();

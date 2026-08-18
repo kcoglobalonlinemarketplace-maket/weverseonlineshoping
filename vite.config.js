@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
           payment: resolve(__dirname, 'payment.html'),
           account: resolve(__dirname, 'account.html'),
           checkout: resolve(__dirname, 'checkout.html'),
+          cart: resolve(__dirname, 'cart.html'),
           adminShipping: resolve(__dirname, 'admin-shipping.html'),
           about: resolve(__dirname, 'about.html'),
           team: resolve(__dirname, 'team.html'),

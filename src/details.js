@@ -11,6 +11,7 @@ import { renderCard } from './showroom-cards.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
+import { addToCart as cartAddToCart } from './cart.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -66,7 +67,7 @@ function featuresGrid(features) {
   if (!features || !features.length) return '';
   return `
     <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
-      ${sectionHeader('sparkles', 'Features & Amenities', 'emerald')}
+      ${sectionHeader('list-checks', 'Features & Amenities', 'emerald')}
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         ${features.map(f => `
           <div class="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-xl px-3.5 py-2.5">
@@ -747,14 +748,16 @@ function render(listing) {
   const flag = flagEmoji(listing.country_code);
   const idLabel = listing.listing_type === 'product' ? 'Product ID' : isProperty ? 'Property ID' : 'Listing ID';
 
-  const discountPct = parseFloat(listing.discount_percent ?? listing.discount ?? 0);
+  // Real Price (crossed out through the middle) + Discount Price (what customers
+  // pay). real_price is the source of truth; legacy compare_at_price /
+  // original_price are honored as fallbacks for older listings.
   let originalPriceHtml = '';
   let discountBadge = '';
-  if (Number.isFinite(discountPct) && discountPct > 0 && discountPct < 100) {
-    const pct = Math.round(discountPct);
-    let originalNum = parseFloat(listing.compare_at_price ?? listing.original_price);
-    if (!Number.isFinite(originalNum) || originalNum <= 0) originalNum = listing.price / (1 - discountPct / 100);
-    originalPriceHtml = `<span class="text-lg text-gray-400 line-through font-medium">${formatPrice({ ...listing, price: originalNum })}</span>`;
+  let realNum = parseFloat(listing.real_price);
+  if (!Number.isFinite(realNum) || realNum <= 0) realNum = parseFloat(listing.compare_at_price ?? listing.original_price);
+  if (Number.isFinite(realNum) && realNum > 0 && realNum > parseFloat(listing.price)) {
+    const pct = Math.round((1 - parseFloat(listing.price) / realNum) * 100);
+    originalPriceHtml = `<span class="text-lg text-gray-400 price-strike line-through font-medium">${formatPrice({ ...listing, price: realNum })}</span>`;
     discountBadge = `<span class="inline-flex items-center gap-1 text-xs font-black text-white bg-red-500 px-2 py-1 rounded-full">-${pct}% OFF</span>`;
   }
   const availabilityStatus = listing.availability_status || (listing.listing_type === 'product' ? 'In Stock' : 'Available');
@@ -877,8 +880,8 @@ function render(listing) {
       <div class="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-blue-50 via-white to-white border border-blue-100 rounded-2xl p-5 mb-6">
         <div>
           <div class="flex items-baseline flex-wrap gap-2">
-            <span class="text-4xl font-black text-blue-600">${price}</span>
             ${originalPriceHtml}
+            <span class="text-4xl font-black text-blue-600">${price}</span>
           </div>
           <div class="flex items-center gap-2 mt-1.5">
             ${discountBadge}
@@ -988,11 +991,7 @@ function render(listing) {
   const addCartBtn = document.getElementById('add-cart-btn');
   if (addCartBtn) {
     addCartBtn.addEventListener('click', () => {
-      let cart = JSON.parse(localStorage.getItem('kco_cart') || '[]');
-      if (!cart.includes(listing.property_id)) {
-        cart.push(listing.property_id);
-        localStorage.setItem('kco_cart', JSON.stringify(cart));
-      }
+      cartAddToCart(listing.property_id, 1);
       addCartBtn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Added to Cart';
       if (window.lucide) lucide.createIcons();
       setTimeout(() => {

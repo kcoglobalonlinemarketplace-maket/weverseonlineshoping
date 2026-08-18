@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Shopping Cart | Weverse Online Shop</title>
+  <meta name="description" content="Review the items in your shopping cart before checking out.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@0.460.0" defer></script>
+</head>
+<body class="bg-white text-gray-900 font-sans antialiased min-h-screen">
+  <header class="fixed top-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button onclick="history.back()" class="p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Back">
+          <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <a href="/" class="flex items-center gap-2 no-underline">
+          <div class="shrink-0 w-9 h-9 bg-black rounded-xl flex items-center justify-center overflow-hidden">
+            <svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" aria-hidden="true"><path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="brand-name text-lg font-black tracking-wider text-gray-900 whitespace-nowrap">Weverse Online Shop</span>
+          <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" aria-label="Verified" role="img" data-weverse-badge="true"><circle cx="12" cy="12" r="11" fill="#3b82f6"/><path d="M10.8 15.6 7.4 12.2l1.5-1.5 1.9 1.9 3.9-3.9 1.5 1.5-5.4 5.4z" fill="#fff"/></svg>
+        </a>
+      </div>
+      <a href="/" class="text-xs text-gray-600 hover:text-gray-900 transition flex items-center gap-1.5"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Continue Shopping</a>
+    </div>
+  </header>
+
+  <main class="pt-16 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
+    <div id="cart-content" class="min-h-[400px]">
+      <div class="flex items-center justify-center py-20">
+        <div class="flex items-center gap-3 text-gray-500 text-sm">
+          <i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-600"></i>
+          Loading cart...
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-[100] transform translate-y-20 opacity-0 bg-gray-900 border border-blue-500/30 text-white px-5 py-3 rounded-xl shadow-xl text-xs flex items-center gap-2 font-medium transition-all duration-300 pointer-events-none">
+    <i data-lucide="info" class="w-4 h-4 text-blue-600"></i><span id="toast-msg">Action</span>
+  </div>
+
+  <script type="module" src="/src/cart-page.js"></script>
+  <script type="module" src="/src/native-bridge.js"></script>
+  <script type="module" src="/src/localization-bootstrap.js"></script>
+  <script src="/back-button.js" defer></script>
+  <script type="module" src="/src/brand.js"></script>
+</body>
+</html>

@@ -810,17 +810,20 @@ function renderCart() {
     ${cart.length === 0 ? renderEmptyState('Cart is Empty', 'Your shopping cart is empty.', 'shopping-cart', 'Browse Marketplace') : `
       <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
         <div class="space-y-3">
-          ${cart.map(id => {
+          ${cart.map(entry => {
+            const id = typeof entry === 'string' ? entry : (entry && entry.id);
+            const qty = (entry && typeof entry === 'object' && entry.qty) ? Math.max(1, parseInt(entry.qty, 10) || 1) : 1;
             const item = window.SHOWROOM_LISTINGS?.find(l => l.property_id === id);
             if (!item) return '';
             return `<div class="flex items-center gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl">
               <div class="w-14 h-14 rounded-lg bg-gray-50 overflow-hidden shrink-0"><img src="${item.images?.[0] || FALLBACK_IMG}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'"></div>
-              <div class="flex-1 min-w-0"><h3 class="text-sm font-bold text-gray-900 truncate">${item.title}</h3><p class="text-xs text-amber-600 font-bold">${item.price} ${item.currency}</p></div>
-              <button onclick="removeFromCart('${item.property_id}')" class="btn-press p-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              <div class="flex-1 min-w-0"><h3 class="text-sm font-bold text-gray-900 truncate">${item.title}</h3><p class="text-xs text-amber-600 font-bold">${item.price} ${item.currency}${qty > 1 ? ` × ${qty}` : ''}</p></div>
+              <button onclick="removeFromCart('${id}')" class="btn-press p-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>`;
           }).join('')}
         </div>
-        <button onclick="clearCart()" class="btn-press w-full mt-4 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold py-2.5 rounded-xl text-xs uppercase transition relative overflow-hidden">Clear Cart</button>
+        <a href="/cart.html" class="btn-press w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition relative overflow-hidden flex items-center justify-center gap-2">Open Cart</a>
+        <button onclick="clearCart()" class="btn-press w-full mt-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold py-2.5 rounded-xl text-xs uppercase transition relative overflow-hidden">Clear Cart</button>
       </div>
     `}
   `;
@@ -828,12 +831,13 @@ function renderCart() {
 
 window.removeFromCart = (id) => {
   let cart = JSON.parse(localStorage.getItem('kco_cart') || '[]');
-  cart = cart.filter(c => c !== id);
+  cart = cart.filter(c => (typeof c === 'string' ? c : c && c.id) !== id);
   localStorage.setItem('kco_cart', JSON.stringify(cart));
+  window.dispatchEvent(new CustomEvent('kco-cart-changed'));
   renderSection('cart');
   showToast('Removed from cart.');
 };
-window.clearCart = () => { localStorage.removeItem('kco_cart'); renderSection('cart'); showToast('Cart cleared.'); };
+window.clearCart = () => { localStorage.removeItem('kco_cart'); window.dispatchEvent(new CustomEvent('kco-cart-changed')); renderSection('cart'); showToast('Cart cleared.'); };
 
 /* ════════════════════════════════════════════════════════════
    SECTION: Notifications

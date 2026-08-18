@@ -1029,9 +1029,24 @@ function normalizeProductTags(product) {
 }
 
 function productDiscountText(product) {
+  const pay = parseProductPrice(product.price);
+  const real = parseFloat(product.real_price);
+  if (Number.isFinite(real) && real > 0 && real > pay) return `${Math.round((1 - pay / real) * 100)}% OFF`;
   const pct = parseFloat(product.discount_percent ?? product.discount ?? 0);
   if (Number.isFinite(pct) && pct > 0) return `${Math.round(pct)}% OFF`;
   return 'No discount';
+}
+
+// Render the discount price with the real price crossed out above it. Used in
+// the admin product card so admins see exactly what customers see.
+function realPriceHtml(product) {
+  const pay = parseProductPrice(product.price);
+  const real = parseFloat(product.real_price);
+  const base = `$${pay.toLocaleString()}`;
+  if (Number.isFinite(real) && real > 0 && real > pay) {
+    return `<span class="block text-xs text-gray-400 price-strike line-through">$${real.toLocaleString()}</span><span class="text-emerald-300 font-black">$${pay.toLocaleString()}</span>`;
+  }
+  return base;
 }
 
 function productStatusText(product) {
@@ -1083,7 +1098,12 @@ function productCard(product) {
     </div>
 
     <div class="grid grid-cols-2 gap-2.5 text-sm">
-      <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Price</span><p class="text-emerald-300 font-black text-base">$${parseProductPrice(product.price).toLocaleString()}</p></div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5">
+        <span class="text-gray-400 text-xs">Price</span>
+        <p class="text-emerald-300 font-black text-base">
+          ${realPriceHtml(product)}
+        </p>
+      </div>
       <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Discount</span><p class="text-amber-300 font-bold">${esc(productDiscountText(product))}</p></div>
       <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Stock</span><p class="text-gray-200 font-bold">${product.stock_quantity != null ? esc(product.stock_quantity) : 'Unlimited'}</p></div>
       <div class="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5"><span class="text-gray-400 text-xs">Brand</span><p class="text-gray-200 font-bold truncate">${esc(product.brand || 'N/A')}</p></div>
@@ -1176,7 +1196,18 @@ function renderProductsTable(items) {
             </div>
           </td>
           <td><span class="text-xs text-gray-300">${esc(p.category || 'Uncategorized')}</span></td>
-          <td><span class="text-xs font-bold text-emerald-400">$${parseProductPrice(p.price).toLocaleString()}</span></td>
+          <td>
+            <div class="text-xs">
+              ${(() => {
+                const pay = parseProductPrice(p.price);
+                const real = parseFloat(p.real_price);
+                if (Number.isFinite(real) && real > 0 && real > pay) {
+                  return `<span class="text-[10px] text-gray-500 price-strike line-through block">$${real.toLocaleString()}</span><span class="font-bold text-emerald-400">$${pay.toLocaleString()}</span>`;
+                }
+                return `<span class="font-bold text-emerald-400">$${pay.toLocaleString()}</span>`;
+              })()}
+            </div>
+          </td>
           <td><span class="text-xs text-gray-300">${p.stock_quantity != null ? esc(p.stock_quantity) : 'Unlimited'}</span></td>
           <td>${badge(status === 'archived' ? 'inactive' : (status === 'active' ? 'active' : 'inactive'))}</td>
           <td><span class="text-xs text-gray-500">${fmtDate(p.created_at)}</span></td>
@@ -1441,8 +1472,8 @@ window.quickEditProduct = async function(pid) {
         <form onsubmit="saveQuickEditProduct(event,'${data.property_id}')" class="space-y-4">
           <div><label class="lbl">Title</label><input name="title" class="input-field" value="${esc(data.title || '')}"></div>
           <div class="grid grid-cols-2 gap-3">
-            <div><label class="lbl">Price</label><input type="number" step="0.01" name="price" class="input-field" value="${esc(data.price || 0)}"></div>
-            <div><label class="lbl">Stock</label><input type="number" name="stock_quantity" class="input-field" value="${esc(data.stock_quantity ?? '')}" placeholder="Unlimited"></div>
+            <div><label class="lbl">Real Price</label><input type="number" step="0.01" name="real_price" class="input-field" value="${esc(data.real_price ?? data.specifications?.real_price ?? '')}" placeholder="Original price (crossed out)"></div>
+            <div><label class="lbl">Discount Price</label><input type="number" step="0.01" name="price" class="input-field" value="${esc(data.price || 0)}" placeholder="Price customers pay"></div>
           </div>
           <div><label class="lbl">Availability</label><select name="availability_status" class="input-field">${['In Stock', 'Out of Stock', 'Pre-order', 'Limited Stock', 'Archived'].map(v => `<option value="${v}" ${data.availability_status === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
           <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10"><span class="text-sm text-gray-300">Featured</span><input type="checkbox" name="is_featured" ${data.is_featured ? 'checked' : ''} class="accent-blue-500 w-5 h-5"></div>
@@ -1485,7 +1516,12 @@ window.saveQuickEditProduct = async function(e, pid) {
     is_active: fd.get('is_active') === 'on' || imgs.length >= 24,
     images: imgs,
   };
+  const realRaw = String(fd.get('real_price') || '').trim();
+  const realNum = realRaw === '' ? null : parseFloat(realRaw);
+  if (realNum != null && !Number.isFinite(realNum)) { showToast('Real Price must be a number.', 'error'); return; }
   const full = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === pid));
+  const baseSpecs = (full.specifications && typeof full.specifications === 'object') ? full.specifications : {};
+  patch.specifications = { ...baseSpecs, real_price: realNum != null && realNum > 0 ? Math.round(realNum) : null };
   const { error } = await supabase.from('showroom_listings').upsert({ ...full, ...patch, property_id: pid }, { onConflict: 'property_id' });
   if (error) {
     if (isRlsDenied(error)) {
@@ -1754,6 +1790,20 @@ AUTOMOTIVE_CATEGORIES.forEach(k => CAT_FIELDS[k] = [
   { key: 'warranty', label: 'Warranty', type: 'text' },
   { key: 'description', label: 'Description', type: 'textarea', span: 2 },
 ]);
+
+// Every product gets two editable price fields: "Real Price" (the original,
+// higher price that is crossed out on the store) and "Discount Price" (what the
+// customer actually pays). This injects the real_price field right after each
+// price field in every category config, and relabels price as Discount Price.
+for (const key of Object.keys(CAT_FIELDS)) {
+  CAT_FIELDS[key] = CAT_FIELDS[key].flatMap(f => {
+    if (f.key !== 'price') return [f];
+    return [
+      { key: 'real_price', label: 'Real Price (USD) — crossed out when a discount is active', type: 'number', placeholder: 'e.g. 250000 — original price before discount' },
+      { ...f, label: 'Discount Price (USD) — the price customers pay', placeholder: 'e.g. 200000 — the price customers actually pay' },
+    ];
+  });
+}
 
 function renderCountryOptions(selectedCode = '') {
   return COUNTRIES.map(country => `<option value="${country.code}" ${selectedCode === country.code ? 'selected' : ''}>${country.flag} ${country.name}</option>`).join('');
@@ -2111,6 +2161,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
   setupDropZone();
   setupImageSortable();
   configurePriceField('pf-price');
+  configurePriceField('pf-real_price');
   applyCatalogDraftToProductForm(category, 'pricing');
   document.getElementById('pf-price')?.addEventListener('input', () => applyCatalogDraftToProductForm(category, 'pricing'));
   setupProductFormExperience(category, existingData.property_id || '');
@@ -2348,6 +2399,7 @@ function updateProductReviewPanel() {
   const title = form.querySelector('[name="title"]')?.value || 'Untitled Product';
   const brand = form.querySelector('[name="brand"]')?.value || 'N/A';
   const price = parseFloat(form.querySelector('[name="price"]')?.value || '0') || 0;
+  const realPrice = parseFloat(form.querySelector('[name="real_price"]')?.value || '0') || 0;
   const stockRaw = form.querySelector('[name="stock_quantity"]')?.value;
   const stock = stockRaw === '' || stockRaw == null ? 'Unlimited' : stockRaw;
   const category = state.section === 'products' ? (document.querySelector('#product-form')?.dataset?.category || '') : '';
@@ -2358,7 +2410,7 @@ function updateProductReviewPanel() {
     <div class="grid grid-cols-2 gap-2">
       <div><span class="text-gray-500">Title</span><p class="text-white font-semibold">${esc(title)}</p></div>
       <div><span class="text-gray-500">Brand</span><p class="text-white font-semibold">${esc(brand)}</p></div>
-      <div><span class="text-gray-500">Price</span><p class="text-emerald-300 font-semibold">$${price.toLocaleString()}</p></div>
+      <div><span class="text-gray-500">Price</span><p class="text-emerald-300 font-semibold">${realPrice > price ? `<span class="line-through text-gray-500 mr-1">$${realPrice.toLocaleString()}</span>` : ''}$${price.toLocaleString()}</p></div>
       <div><span class="text-gray-500">Stock</span><p class="text-white font-semibold">${esc(stock)}</p></div>
       <div><span class="text-gray-500">Images</span><p class="text-white font-semibold">${imageCount}</p></div>
       <div><span class="text-gray-500">Status</span><p class="${isActive ? 'text-emerald-300' : 'text-amber-300'} font-semibold">${isActive ? 'Published' : 'Draft / Hidden'}</p></div>
@@ -2376,6 +2428,7 @@ window.previewProductDraft = function() {
   const desc = form.querySelector('[name="description"]')?.value || 'No description yet.';
   const brand = form.querySelector('[name="brand"]')?.value || 'N/A';
   const price = parseFloat(form.querySelector('[name="price"]')?.value || '0') || 0;
+  const realPrice = parseFloat(form.querySelector('[name="real_price"]')?.value || '0') || 0;
   const category = form.dataset.category || 'Product';
   const stock = form.querySelector('[name="stock_quantity"]')?.value || 'Unlimited';
   const isActive = form.querySelector('[name="is_active"]')?.checked;
@@ -2393,7 +2446,7 @@ window.previewProductDraft = function() {
             <div class="flex items-center gap-2">${badge(isActive ? 'active' : 'inactive')}<span class="badge bg-blue-500/10 text-blue-300 border-blue-500/20">${esc(category)}</span></div>
             <p class="text-sm text-gray-400">${esc(desc)}</p>
             <div class="grid grid-cols-2 gap-2 text-xs">
-              <div class="glass-soft border border-blue-500/15 rounded-lg p-2"><span class="text-gray-500">Price</span><p class="text-emerald-300 font-black">$${price.toLocaleString()}</p></div>
+              <div class="glass-soft border border-blue-500/15 rounded-lg p-2"><span class="text-gray-500">Price</span><p class="text-emerald-300 font-black">${realPrice > price ? `<span class="text-xs line-through text-gray-500 mr-1">$${realPrice.toLocaleString()}</span>` : ''}$${price.toLocaleString()}</p></div>
               <div class="glass-soft border border-blue-500/15 rounded-lg p-2"><span class="text-gray-500">Stock</span><p class="text-gray-200 font-bold">${esc(stock)}</p></div>
               <div class="glass-soft border border-blue-500/15 rounded-lg p-2 col-span-2"><span class="text-gray-500">Brand</span><p class="text-gray-200 font-bold">${esc(brand)}</p></div>
             </div>
@@ -2602,15 +2655,28 @@ function applyScanToProductForm(result) {
   set('gender', specs.gender);
   set('platform', specs.platform);
 
-  // Estimated market price from stage 3 — always placed into the Price field
-  // and left fully editable. No auto-save, no auto-publish.
+  // Estimated market prices from stage 3 — the REAL price always goes into the
+  // Real Price field (crossed out on the store), and the suggested discount
+  // price goes into the Discount Price field (what customers pay). If no
+  // discount was suggested, the real price is used for both. Fully editable —
+  // no auto-save, no auto-publish.
   const priceField = document.querySelector('#product-form [name="price"]');
+  const realPriceField = document.querySelector('#product-form [name="real_price"]');
   const estPrice = price ? Number(price.estimated_price) : NaN;
-  if (priceField && Number.isFinite(estPrice) && estPrice > 0) {
-    const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 0;
-    const max = Number.isFinite(Number(GLOBAL_PRICE_MAX)) ? Number(GLOBAL_PRICE_MAX) : 999999999;
-    priceField.value = String(Math.max(min, Math.min(max, Math.round(estPrice))));
-    filled.push('price');
+  const estDiscount = price ? Number(price.suggested_discount_price) : NaN;
+  const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 0;
+  const max = Number.isFinite(Number(GLOBAL_PRICE_MAX)) ? Number(GLOBAL_PRICE_MAX) : 999999999;
+  const clamp = (n) => Math.max(min, Math.min(max, Math.round(n)));
+  if (Number.isFinite(estPrice) && estPrice > 0) {
+    if (realPriceField) {
+      realPriceField.value = String(clamp(estPrice));
+      filled.push('real_price');
+    }
+    const discount = Number.isFinite(estDiscount) && estDiscount > 0 && estDiscount < estPrice ? estDiscount : estPrice;
+    if (priceField) {
+      priceField.value = String(clamp(discount));
+      filled.push('price');
+    }
   }
 
   updateProductReviewPanel();
@@ -2668,7 +2734,7 @@ window.scanProductWithAI = async function() {
     const out = applyScanToProductForm(result);
     const filledArr = out.filled;
 
-    let msg = `${esc(idLabel)} — ${filledArr.length} field${filledArr.length > 1 ? 's' : ''} ready for you (including the detailed description and a suggested price). Review and edit everything, then press SAVE / UPDATE.`;
+    let msg = `${esc(idLabel)} — ${filledArr.length} field${filledArr.length > 1 ? 's' : ''} ready for you (including the detailed description and suggested Real + Discount prices). Review and edit everything, then press SAVE / UPDATE.`;
     if (identification.year_estimated) msg += ' Confirm the model year before saving.';
     setStatus(msg, 'text-emerald-300');
 
@@ -2712,10 +2778,15 @@ window.saveProduct = async function(e, category, existingId) {
     const normalizeComma = (raw) => normalizeCommaList(raw);
 
     const buildSpecifications = (src) => {
-      const specKeys = ['model', 'storage', 'ram', 'processor', 'display', 'material', 'gender', 'platform', 'voltage', 'engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year', 'seating_capacity', 'doors'];
+      const specKeys = ['model', 'storage', 'ram', 'processor', 'display', 'material', 'gender', 'platform', 'voltage', 'engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year', 'seating_capacity', 'doors', 'real_price'];
       const spec = {};
       for (const k of specKeys) {
         const v = src[k];
+        if (k === 'real_price') {
+          const n = (v != null && String(v).trim() !== '') ? parseFloat(v) : null;
+          spec[k] = (n != null && Number.isFinite(n) && n > 0) ? Math.round(n) : null;
+          continue;
+        }
         spec[k] = (v != null && String(v).trim() !== '') ? v : null;
       }
       if (src.safety_features) {
@@ -2866,6 +2937,9 @@ window.editProduct = async function(pid) {
   if (!resolved) resolved = getLocalShowroomListingById(pid);
   if (!resolved) resolved = (window._productsData || []).find(l => l.property_id === pid) || null;
   if (!resolved) return showToast('Product not found', 'error');
+  if (resolved.specifications && typeof resolved.specifications === 'object') {
+    resolved = { ...resolved, ...resolved.specifications };
+  }
   showAddProductStep2(resolved.category || 'Other', resolved);
 };
 
@@ -4310,7 +4384,7 @@ Return ONE valid JSON object (no markdown):
   async estimateProductPrice(imageUrls, identification, specs = {}, context = {}) {
     const id = identification || {};
     const sp = specs || {};
-    const prompt = `STAGE 3 — ESTIMATE THE CURRENT MARKET SELLING PRICE.
+    const prompt = `STAGE 3 — ESTIMATE THE REAL MARKET PRICE AND A PROMOTIONAL DISCOUNT PRICE.
 The exact product below was identified from the photos in STAGE 1, and its standard specifications were completed in STAGE 2.
 
 IDENTIFIED PRODUCT:
@@ -4333,17 +4407,21 @@ KNOWN SPECIFICATIONS:
 
 Estimate the reasonable CURRENT MARKET SELLING PRICE (in USD) for THIS EXACT identified product — the price a real buyer would realistically pay for it today, in the condition shown in the photo. Use reliable current market data for that exact brand + model + year + condition + trim.
 
+Then suggest a promotional DISCOUNT PRICE: a compelling sale price BELOW the real price (typically 5-20% off) that the customer would actually pay, to make the listing attractive. If a discount does not make sense for this product, set suggested_discount_price to null.
+
 HARD RULES:
 - ONLY price the exact product identified above. A Toyota photo must get a TOYOTA price, an iPhone photo an iPhone price, a Gucci bag a Gucci bag price. NEVER use the price of a different brand or model.
 - Base the price on the identified product's real market value: for a car use current market value of that model/year/condition (consider trim, engine, mileage, condition); for a house/property use typical values for the identified property type and location when visible; for a bag use the market price of that brand/model/type/condition; for a phone use the current market price of that model/storage/condition.
 - If the exact value cannot be determined, give the best reasonable market estimate — never 0, never a random invented number, and never a price for a different product.
-- Never include currency symbols or commas in the number; estimated_price must be a plain number (e.g. 24500).
+- Never include currency symbols or commas in the numbers; both prices must be plain numbers (e.g. 24500).
 - Never return a price range as the main value.
+- suggested_discount_price must be strictly LESS than estimated_price, or null when no discount applies.
 
 Return ONE valid JSON object (no markdown):
 {
   "currency": "USD",
-  "estimated_price": number (the best current market selling price for this exact product),
+  "estimated_price": number (the real market price of this exact product),
+  "suggested_discount_price": number|null (the promotional price the customer pays, below the real price),
   "price_range_min": number|null,
   "price_range_max": number|null,
   "confidence": "high" | "medium" | "low",

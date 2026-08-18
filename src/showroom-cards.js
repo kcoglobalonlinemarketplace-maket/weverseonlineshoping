@@ -5,6 +5,7 @@ import { PRODUCT_LISTINGS } from './products-data.js';
 import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth-lazy.js';
 import { isCatalogListingHidden, loadHiddenCatalogIds } from './catalog-hidden-store.js';
+import { addToCart as cartAddToCart } from './cart.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -401,10 +402,9 @@ function cardParts(listing) {
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
   const statusBadge = listing.listing_type === 'product' ? 'New' : ((isProperty || isPet) ? 'For Sale' : '');
 
-  // AI-generated rating: show estimated rating with "AI" label when no real reviews exist
+  // Real ratings only — never show fake or estimated ratings.
   const hasRealReviews = (listing.rating_count || 0) > 0;
-  const aiEstimatedRating = listing.is_ai_generated && !hasRealReviews ? 4.5 : 0;
-  const displayRating = hasRealReviews ? listing.rating : aiEstimatedRating;
+  const displayRating = hasRealReviews ? Number(listing.rating) || 0 : 0;
   const reviewCount = listing.review_count || listing.rating_count || 0;
 
   let locationHtml = '';
@@ -433,27 +433,30 @@ function cardParts(listing) {
     if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
   }
 
-  // Rating display: real reviews take priority, estimate shown without label
+  // Rating display: only real ratings from actual buyer reviews are shown.
+  // Clicking the stars opens the product's details page (with the interactive
+  // rating widget + real buyer reviews).
   let ratingStars = '';
   if (displayRating > 0) {
-    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
+    ratingStars = `<a href="/details.html?id=${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
   }
 
   // Product badges (New Arrival, Best Seller, etc.)
   const badgesHtml = '';
 
-  // Discount badge + original (was) price, shown when the listing carries a
-  // discount (discount_percent / discount / compare_at_price / original_price).
+  // Discount display: Real Price (crossed out through the middle) + Discount
+  // Price (what customers pay). The Real Price comes from the listing's
+  // real_price field; legacy compare_at_price / original_price / discount_percent
+  // are honored as fallbacks for older listings.
   let discountBadge = '';
   let originalPriceHtml = '';
-  const discountPct = parseFloat(listing.discount_percent ?? listing.discount ?? 0);
-  if (Number.isFinite(discountPct) && discountPct > 0 && discountPct < 100) {
-    const pct = Math.round(discountPct);
-    let originalNum = parseFloat(listing.compare_at_price ?? listing.original_price);
-    if (!Number.isFinite(originalNum) || originalNum <= 0) originalNum = listing.price / (1 - discountPct / 100);
+  let realNum = parseFloat(listing.real_price);
+  if (!Number.isFinite(realNum) || realNum <= 0) realNum = parseFloat(listing.compare_at_price ?? listing.original_price);
+  if (Number.isFinite(realNum) && realNum > 0 && realNum > parseFloat(listing.price)) {
+    const pct = Math.round((1 - parseFloat(listing.price) / realNum) * 100);
     const fmtNum = (n) => (isTruck ? formatTruckPrice({ ...listing, price: n }) : formatPrice({ ...listing, price: n }));
     discountBadge = `<span class="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-md shadow-red-500/30">-${pct}%</span>`;
-    originalPriceHtml = `<span class="text-xs text-gray-400 line-through">${fmtNum(originalNum)}</span>`;
+    originalPriceHtml = `<span class="text-xs text-gray-400 price-strike line-through">${fmtNum(realNum)}</span>`;
   }
 
   // Map preview strip for property cards (rendered from listing coordinates).
@@ -504,8 +507,8 @@ export function renderCard(listing) {
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">${listing.title}</h3>
       ${p.ratingStars}
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">${p.price}</span>
         ${p.originalPriceHtml}
+        <span class="text-lg font-black text-blue-600">${p.price}</span>
       </div>
       ${p.locationHtml}
       ${p.specsHtml}
@@ -556,7 +559,7 @@ export function renderFeedCard(listing) {
       ${p.locationHtml}
       ${p.specsHtml}
       <div class="flex items-center justify-between gap-3 mt-auto pt-2">
-        <span class="flex items-baseline flex-wrap gap-x-2"><span class="text-xl sm:text-2xl font-black text-blue-600">${p.price}</span>${p.originalPriceHtml}</span>
+        <span class="flex items-baseline flex-wrap gap-x-2">${p.originalPriceHtml}<span class="text-xl sm:text-2xl font-black text-blue-600">${p.price}</span></span>
         ${p.ratingStars}
       </div>
       ${p.mapPreviewHtml}
@@ -611,18 +614,11 @@ async function handleBuyNow(listing) {
   }
 }
 
-// Add the listing to the on-device cart (same kco_cart store the details page
-// and checkout read from). Duplicate adds are ignored.
+// Add the listing to the on-device cart (same kco_cart store the details page,
+// cart page and checkout read from). Duplicate adds increase the quantity.
 function addToCart(listing) {
   const id = listing.property_id || listing.id;
-  try {
-    let cart = JSON.parse(localStorage.getItem('kco_cart') || '[]');
-    if (!Array.isArray(cart)) cart = [];
-    if (!cart.includes(id)) {
-      cart.push(id);
-      localStorage.setItem('kco_cart', JSON.stringify(cart));
-    }
-  } catch { /* noop */ }
+  cartAddToCart(id, 1);
   showToast('Added to cart');
 }
 

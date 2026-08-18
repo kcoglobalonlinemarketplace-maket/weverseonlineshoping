@@ -155,14 +155,13 @@ function flagEmoji(countryCode) {
 function discountParts(listing, isTruck) {
   let discountBadge = '';
   let originalPriceHtml = '';
-  const discountPct = parseFloat(listing.discount_percent ?? listing.discount ?? 0);
-  if (Number.isFinite(discountPct) && discountPct > 0 && discountPct < 100) {
-    const pct = Math.round(discountPct);
-    let originalNum = parseFloat(listing.compare_at_price ?? listing.original_price);
-    if (!Number.isFinite(originalNum) || originalNum <= 0) originalNum = listing.price / (1 - discountPct / 100);
+  let realNum = parseFloat(listing.real_price);
+  if (!Number.isFinite(realNum) || realNum <= 0) realNum = parseFloat(listing.compare_at_price ?? listing.original_price);
+  if (Number.isFinite(realNum) && realNum > 0 && realNum > parseFloat(listing.price)) {
+    const pct = Math.round((1 - parseFloat(listing.price) / realNum) * 100);
     const fmtNum = (n) => (isTruck ? formatTruckPrice({ ...listing, price: n }) : formatPrice({ ...listing, price: n }));
     discountBadge = `<span class="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-md shadow-red-500/30">-${pct}%</span>`;
-    originalPriceHtml = `<span class="text-xs text-gray-400 line-through">${fmtNum(originalNum)}</span>`;
+    originalPriceHtml = `<span class="text-xs text-gray-400 price-strike line-through">${fmtNum(realNum)}</span>`;
   }
   return { discountBadge, originalPriceHtml };
 }
@@ -183,8 +182,7 @@ function cardHtml(listing) {
   const { discountBadge, originalPriceHtml } = discountParts(listing, isTruck);
 
   const hasRealReviews = (listing.rating_count || 0) > 0;
-  const aiEstimatedRating = listing.is_ai_generated && !hasRealReviews ? 4.5 : 0;
-  const displayRating = hasRealReviews ? listing.rating : aiEstimatedRating;
+  const displayRating = hasRealReviews ? Number(listing.rating) || 0 : 0;
   const reviewCount = listing.review_count || listing.rating_count || 0;
 
   let locationHtml = '';
@@ -215,7 +213,7 @@ function cardHtml(listing) {
 
   let ratingStars = '';
   if (displayRating > 0) {
-    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
+    ratingStars = `<a href="/details.html?id=${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
   }
 
   let mapPreviewHtml = '';
@@ -248,8 +246,8 @@ function cardHtml(listing) {
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">${listing.title}</h3>
       ${ratingStars}
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">${price}</span>
         ${originalPriceHtml}
+        <span class="text-lg font-black text-blue-600">${price}</span>
       </div>
       ${locationHtml}
       ${specsHtml}
@@ -284,8 +282,7 @@ function feedCardHtml(listing) {
   const { discountBadge, originalPriceHtml } = discountParts(listing, isTruck);
 
   const hasRealReviews = (listing.rating_count || 0) > 0;
-  const aiEstimatedRating = listing.is_ai_generated && !hasRealReviews ? 4.5 : 0;
-  const displayRating = hasRealReviews ? listing.rating : aiEstimatedRating;
+  const displayRating = hasRealReviews ? Number(listing.rating) || 0 : 0;
   const reviewCount = listing.review_count || listing.rating_count || 0;
 
   let locationHtml = '';
@@ -316,7 +313,7 @@ function feedCardHtml(listing) {
 
   let ratingStars = '';
   if (displayRating > 0) {
-    ratingStars = `<div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></div>`;
+    ratingStars = `<a href="/details.html?id=${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
   }
 
   let mapPreviewHtml = '';
@@ -345,7 +342,7 @@ function feedCardHtml(listing) {
       ${locationHtml}
       ${specsHtml}
       <div class="flex items-center justify-between gap-3 mt-auto pt-2">
-        <span class="flex items-baseline flex-wrap gap-x-2"><span class="text-xl sm:text-2xl font-black text-blue-600">${price}</span>${originalPriceHtml}</span>
+        <span class="flex items-baseline flex-wrap gap-x-2">${originalPriceHtml}<span class="text-xl sm:text-2xl font-black text-blue-600">${price}</span></span>
         ${ratingStars}
       </div>
       ${mapPreviewHtml}

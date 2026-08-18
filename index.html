@@ -202,14 +202,14 @@
           </a>
         </div>
 
-        <!-- Right: account shortcut -->
+        <!-- Right: cart shortcut -->
         <div class="shrink-0 flex items-center gap-2">
-          <!-- Cart / quick-access icon -->
-          <button onclick="openAuthModal()"
-                  class="w-9 h-9 hidden sm:flex items-center justify-center rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-gray-900"
-                  aria-label="My account">
-            <i data-lucide="user-circle" class="w-5 h-5"></i>
-          </button>
+          <a href="/cart.html"
+             class="relative w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 active:scale-95 transition text-gray-500 hover:text-gray-900"
+             aria-label="Shopping Cart">
+            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+            <span id="hdr-cart-count" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center leading-none shadow-sm"></span>
+          </a>
         </div>
       </div>
 
@@ -363,7 +363,7 @@
 
         <p class="more-label">My Shopping</p>
         <a href="/account.html" class="more-row" onclick="closeMoreMenu()"><i data-lucide="package" class="more-icon text-emerald-400"></i>My Orders</a>
-        <a href="/account.html" class="more-row" onclick="closeMoreMenu()"><i data-lucide="shopping-cart" class="more-icon text-blue-400"></i>Shopping Cart</a>
+        <a href="/cart.html" class="more-row" onclick="closeMoreMenu()"><i data-lucide="shopping-cart" class="more-icon text-blue-400"></i>Shopping Cart</a>
         <a href="/account.html" class="more-row" onclick="closeMoreMenu()"><i data-lucide="map-pin" class="more-icon text-blue-400"></i>Shipping Addresses</a>
         <a href="/payment.html" class="more-row" onclick="closeMoreMenu()"><i data-lucide="credit-card" class="more-icon text-green-400"></i>Payment Methods</a>
         <a href="/account.html" class="more-row" onclick="closeMoreMenu()"><i data-lucide="wallet" class="more-icon text-yellow-400"></i>Wallet</a>
@@ -495,7 +495,7 @@
             <span class="menu-icon bg-emerald-500/15 border-emerald-500/25"><i data-lucide="package" class="w-4 h-4 text-emerald-400"></i></span>
             My Orders
           </a>
-          <a href="/account.html" class="menu-row" onclick="closeMobileMenu()">
+          <a href="/cart.html" class="menu-row" onclick="closeMobileMenu()">
             <span class="menu-icon bg-blue-500/15 border-blue-500/25"><i data-lucide="shopping-cart" class="w-4 h-4 text-blue-400"></i></span>
             Shopping Cart
           </a>
@@ -882,8 +882,8 @@
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Cozy Starter Home with Updated Kitchen</h3>
       
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$20,000</span>
         
+        <span class="text-lg font-black text-blue-600">$20,000</span>
       </div>
       <div class="flex items-center gap-1 text-gray-400 text-xs mb-1.5 truncate"><i data-lucide="map" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">🇺🇸 Columbus, Ohio</span></div>
       <div class="flex items-center gap-2 text-gray-400 text-xs mb-2"><span class="flex items-center gap-0.5"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i>2</span><span class="flex items-center gap-0.5"><i data-lucide="bath" class="w-3.5 h-3.5"></i>1</span><span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>0.15 acres</span></div>
@@ -917,10 +917,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Pima Canyon Apartments</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10475" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -954,10 +954,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Modern House for Rent – Bright and Spacious Family Living</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11084" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -991,10 +991,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">It's a Beautiful Day to Hang a Sold Sign…</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11086" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1028,10 +1028,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Pittsburg, Ks Homes for Sale & Real Estate Realtor Com®</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11090" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1065,10 +1065,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Modern Home Décor Ideas 🏡 Transform Your Space with Style</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10470" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1102,10 +1102,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Home Loans Archives</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10473" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1139,10 +1139,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Home Decor Bathroom Setting</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10483" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1176,10 +1176,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Inspirações De Combinações De Roupas Do Homem Aranha, De 2 Anos a 7</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10582" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1213,10 +1213,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">10 Best Air Conditioners for Renters (august 2026)</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10671" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1250,10 +1250,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Pet Friendly Must Haves for a Tidy Home with Furry Friends!🐾 Communa</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10715" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1287,10 +1287,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Atilla Home Towel</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10725" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1324,10 +1324,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">10 Things You Should Always Be on the Lookout for at Stores Like</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10740" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1361,10 +1361,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Cleaning Items Home Goods</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10757" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1398,10 +1398,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Detachable Water Bucket Holder with Faucet, Easy to Install, Can Hold</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10770" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1435,10 +1435,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Modern Home Water Dispenser Hack 💧</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10772" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1472,10 +1472,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">1pc Shell Soap Box, Creative Soap Box, Wall Mounted Drainage No Drill</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10779" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1509,10 +1509,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">2 in 1 Portable Toothbrush Case with Rinse Cup, Convenient for Family</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10783" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1546,10 +1546,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">4pcs Reusable Washable Flat Mop Pads, Large Small Size, Won't Scratch</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10788" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1583,10 +1583,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Best Air Purifier for Home 2026 Top Air Purifiers for Allergies, Dust</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10833" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1620,10 +1620,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Homemade Storage Jars😻</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10854" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1657,10 +1657,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Ceramic Butter Dish with Bamboo Lid Butter Spreader Holder Butter</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10857" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1694,10 +1694,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Homemade Storage Jars😻 (1)</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10865" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1731,10 +1731,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Refrigerator Organizer Multifunctional Storage Box Pantry Home 2 Pack</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10880" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1768,10 +1768,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Homegoods Store 52 Back to Campus</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10943" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1805,10 +1805,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Homegoods Store 52 Back to Campus (1)</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10951" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1842,10 +1842,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Junkie's Home & Decor Picks on</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10952" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1879,10 +1879,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Home Mat</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10968" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1916,10 +1916,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">1pc Bathroom Wall Mounted Sanitary Pad Tissue Paper Dispenser Box</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10969" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1953,10 +1953,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Home Decor Minimalist</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10981" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -1990,10 +1990,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">1pc 5 Slot Toothbrush Holder with Lid, Self Adhesive Wall Toothbrush</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10990" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2027,10 +2027,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Collapsible Electric Heated Foot Spa with 16 Massage Rollers &</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10992" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2064,10 +2064,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Bird in Bag Set of 30 Blue Jasmine Scented Toilet Floor Cleaning</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W10993" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2101,10 +2101,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">⚡️ 2020 Chevrolet Silverado 1500 for Sale at New…</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11009" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2138,10 +2138,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">🌩️ 2021 Chevrolet Silverado 1500 for Sale at New…</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11010" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2175,10 +2175,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Shasta Class C Rv Motorhome 16 Hubcaps Wheelcovers 2012 2000 2001 All</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11057" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2212,10 +2212,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Entegra Newmar Class a Rv Motorhome Magne Shade Windshield Sunshade</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11061" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2249,10 +2249,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Shop All New & Used Rvs for Sale Camping World</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11066" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2286,10 +2286,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">2021 26′ Freelander 26dsf for Sale in Clarkston, Washington</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11067" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2323,10 +2323,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">2024 Dynamax Corp 28ss Super C Motorhome</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11079" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2360,10 +2360,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">2026 Nexus Verrado 33s Super C Motorhome</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11080" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2397,10 +2397,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Ultimate Guide to Real Estate Marketing Products and Perfect Closing G</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11085" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2434,10 +2434,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">How to Withdraw From Escrow</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11089" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2471,10 +2471,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">16 100ft Smart Rgb Ic Led Light Strip 24v Waterproof Multi Color</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11124" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2508,10 +2508,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">1pc Earth & Galaxy Projection Lamp + 13pcs Films High Definition</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11131" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2545,10 +2545,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Ananbros Remote Baby Night Light with Timer Music, Star Night Light</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11142" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2582,10 +2582,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Pet Friendly Must Haves for a Tidy Home with Furry Friends!🐾 Communa</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11147" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2619,10 +2619,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Tozsoranlar Hər Bir Ev Üçün Mütləq Lazımdır Və Sizə Təmizlik Edərkən</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11157" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2656,10 +2656,10 @@
     </div>
     <div class="p-3.5 sm:p-4 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">Breville Returns Kettles Stock Pallets Grade B Buy Appliances</h3>
-      <div class="flex items-center gap-0.5 text-xs"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></div>
+      <a href="/details.html?id=W11159" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">4.5</span><span class="text-gray-500">(5)</span></a>
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-        <span class="text-lg font-black text-blue-600">$180,000</span>
         
+        <span class="text-lg font-black text-blue-600">$180,000</span>
       </div>
       
       
@@ -2951,5 +2951,37 @@
   <script type="module" src="/src/lazy-idle.js"></script>
   <script src="/back-button.js" defer></script>
   <script type="module" src="/src/brand.js"></script>
+  <script>
+    // Cart count badge on the header cart icon. Reads the shared kco_cart store
+    // (any format: legacy string ids or {id, qty}) and refreshes on every change.
+    (function () {
+      var badge = document.getElementById('hdr-cart-count');
+      if (!badge) return;
+      function updateCartBadge() {
+        var count = 0;
+        try {
+          var raw = JSON.parse(localStorage.getItem('kco_cart') || '[]');
+          if (Array.isArray(raw)) {
+            for (var i = 0; i < raw.length; i++) {
+              var it = raw[i];
+              count += (it && typeof it === 'object' && it.qty) ? Math.max(1, parseInt(it.qty, 10) || 1) : 1;
+            }
+          }
+        } catch (e) {}
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : String(count);
+          badge.classList.remove('hidden');
+          badge.classList.add('flex');
+        } else {
+          badge.textContent = '0';
+          badge.classList.add('hidden');
+          badge.classList.remove('flex');
+        }
+      }
+      window.addEventListener('kco-cart-changed', updateCartBadge);
+      document.addEventListener('DOMContentLoaded', updateCartBadge);
+      updateCartBadge();
+    })();
+  </script>
 </body>
 </html>

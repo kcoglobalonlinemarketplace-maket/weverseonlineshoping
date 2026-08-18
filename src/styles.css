@@ -686,3 +686,11 @@ html {
   padding-top: 0.75rem !important;
   padding-bottom: 0.75rem !important;
 }
+
+/* Real Price strikethrough — a clear horizontal line drawn DIRECTLY THROUGH
+   the middle/body of the real (original) price text, never underneath it. */
+.price-strike {
+  text-decoration: line-through !important;
+  text-decoration-thickness: 2px !important;
+  text-decoration-color: #ef4444 !important;
+}
