@@ -31,10 +31,6 @@ let state = {
     note: 'The preview refreshes automatically after the AI creates a product, listing, property, or brand update.',
   },
   lastPreviewItem: null,
-  automationCenterEnabled: false,
-  repairRunning: false,
-  automationTesting: false,
-  automationRunning: false,
   autoPipelineRunning: false,
 };
 
@@ -44,40 +40,6 @@ function formatBytes(bytes) {
   const exp = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   const value = bytes / (1024 ** exp);
   return `${value.toFixed(value >= 10 || exp === 0 ? 0 : 1)} ${units[exp]}`;
-}
-
-function setAutomationButtonsState() {
-  const repairBtn = document.getElementById('automation-repair-btn');
-  const testBtn = document.getElementById('automation-test-btn');
-  const runBtn = document.getElementById('automation-run-btn');
-  const enabled = state.automationCenterEnabled === true;
-  if (repairBtn) {
-    repairBtn.disabled = !enabled || state.repairRunning;
-    repairBtn.classList.toggle('opacity-40', !enabled || state.repairRunning);
-    repairBtn.classList.toggle('cursor-not-allowed', !enabled || state.repairRunning);
-  }
-  if (testBtn) {
-    testBtn.disabled = !enabled || state.automationTesting;
-    testBtn.classList.toggle('opacity-40', !enabled || state.automationTesting);
-    testBtn.classList.toggle('cursor-not-allowed', !enabled || state.automationTesting);
-  }
-  if (runBtn) {
-    runBtn.disabled = !enabled || state.automationRunning;
-    runBtn.classList.toggle('opacity-40', !enabled || state.automationRunning);
-    runBtn.classList.toggle('cursor-not-allowed', !enabled || state.automationRunning);
-  }
-}
-
-function renderAutomationCenterMeta() {
-  const badge = document.getElementById('automation-center-badge');
-  const status = document.getElementById('automation-center-status');
-  if (badge) badge.classList.toggle('hidden', state.automationCenterEnabled !== true);
-  if (status) {
-    status.textContent = state.automationCenterEnabled
-      ? 'Automation Center: ON (n8n)'
-      : 'Automation Center: OFF (enable in AI Settings)';
-  }
-  setAutomationButtonsState();
 }
 
 function isHouseRelatedText(text) {
@@ -207,7 +169,7 @@ function buildClarifyingReply(text) {
   if (/(brand|logo|image)/i.test(message) && !state.pendingUploads.length && !getCachedBrandImage()) {
     return 'I can do that autonomously, but I need the image first. Upload the logo or brand image here, and I will apply it automatically across the site without further questions.';
   }
-  return 'I am in **fully autonomous mode** — I will scan the site and apply the fix myself right now, without asking for more details, and with no n8n dependency.';
+  return 'I am in **fully autonomous mode** — I will scan the site and apply the fix myself right now, without asking for more details,.';
 }
 
 function renderPendingUploads() {
@@ -873,7 +835,7 @@ async function runAutoImagePipeline() {
       };
     }
 
-    // 1) Gemini + other AI providers scan the photo and fill the fields.
+    // 1) Gemini scans the photo and fills the fields.
     let scan = null;
     let scanProvider = 'unavailable';
     try {
@@ -1713,21 +1675,6 @@ async function getAuthHeaders() {
   };
 }
 
-async function loadAutomationCenterState() {
-  try {
-    const { data, error } = await supabase
-      .from('ai_settings')
-      .select('automation_center_enabled')
-      .limit(1)
-      .maybeSingle();
-    if (error) throw error;
-    state.automationCenterEnabled = data?.automation_center_enabled === true;
-  } catch {
-    state.automationCenterEnabled = false;
-  }
-  renderAutomationCenterMeta();
-}
-
 function applyDeveloperModeUI() {
   const indicator = document.getElementById('dev-mode-indicator');
   const toggle = document.getElementById('dev-mode-toggle');
@@ -1945,7 +1892,7 @@ window.sendMessage = async () => {
         setTimeout(() => {
           const scanMsg = {
             role: 'assistant',
-            content: '🔍 I can scan the site myself to find and fix the issue. Say **"scan and fix the site"** and I will inspect the pages, detect broken elements, and apply the fix directly — no n8n needed.',
+            content: '🔍 I can scan the site myself to find and fix the issue. Say **"scan and fix the site"** and I will inspect the pages, detect broken elements, and apply the fix directly.',
           };
           state.history.push(scanMsg);
           renderMessage(scanMsg);
@@ -1992,152 +1939,6 @@ window.sendMessage = async () => {
 window.quickAction = (text) => {
   document.getElementById('chat-input').value = text;
   sendMessage();
-};
-
-window.testAutomationCenter = async () => {
-  if (state.automationTesting) return;
-  state.automationTesting = true;
-  setAutomationButtonsState();
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(AI_FUNCTION_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ action: 'test_automation_center', developer_mode: state.developerMode }),
-    });
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok || data.success === false) {
-      const detail = Array.isArray(data?.checks)
-        ? data.checks.map((c) => `${c.assistant}: ${c.ok ? 'OK' : `FAIL (${c.detail})`}`).join('\n')
-        : (data.error || `HTTP ${res.status}`);
-      const msg = { role: 'assistant', content: `⚠️ **Automation Center test failed**\n\n${detail}` };
-      state.history.push(msg);
-      renderMessage(msg);
-      showToast('Automation test failed.');
-      return;
-    }
-
-    const checks = Array.isArray(data.checks) ? data.checks : [];
-    const summary = checks.map((c) => `- ${c.assistant}: ${c.ok ? 'OK' : `FAIL (${c.detail})`}`).join('\n');
-    const msg = { role: 'assistant', content: `✅ **Automation Center test complete**\n\n${summary || 'All assistant checks passed.'}` };
-    state.history.push(msg);
-    renderMessage(msg);
-    showToast('Automation Center is healthy.');
-  } catch (err) {
-    const msg = { role: 'assistant', content: `⚠️ **Automation Center test error:** ${err.message}` };
-    state.history.push(msg);
-    renderMessage(msg);
-    showToast('Automation test error.');
-  } finally {
-    state.automationTesting = false;
-    setAutomationButtonsState();
-  }
-};
-
-window.runAutomationPipeline = async () => {
-  if (state.automationRunning) return;
-  const input = document.getElementById('chat-input');
-  const message = String(input?.value || '').trim() || 'new_product_pipeline';
-  state.automationRunning = true;
-  setAutomationButtonsState();
-  renderTypingIndicator();
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(AI_FUNCTION_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        action: 'run_automation_pipeline',
-        message,
-        developer_mode: state.developerMode,
-        history: state.history.slice(-20).map((h) => ({ role: h.role, content: h.content })),
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    removeTypingIndicator();
-
-    if (!res.ok || data.success === false) {
-      const detail = Array.isArray(data?.steps)
-        ? data.steps.map((s) => `${s.assistant}: ${s.ok ? 'OK' : `FAIL (${s.detail})`}`).join('\n')
-        : (data.error || `HTTP ${res.status}`);
-      const msg = { role: 'assistant', content: `⚠️ **Automation pipeline failed**\n\n${detail}` };
-      state.history.push(msg);
-      renderMessage(msg);
-      showToast('Pipeline failed.');
-      return;
-    }
-
-    const steps = Array.isArray(data.steps) ? data.steps : [];
-    const summary = steps.map((s) => `- ${s.assistant}: ${s.ok ? 'OK' : `FAIL (${s.detail})`}`).join('\n');
-    const msg = { role: 'assistant', content: `✅ **Automation pipeline completed**\n\n${data.response || ''}\n\n${summary}`.trim() };
-    state.history.push(msg);
-    renderMessage(msg);
-    showToast('Pipeline completed.');
-  } catch (err) {
-    removeTypingIndicator();
-    const msg = { role: 'assistant', content: `⚠️ **Automation pipeline error:** ${err.message}` };
-    state.history.push(msg);
-    renderMessage(msg);
-    showToast('Pipeline error.');
-  } finally {
-    state.automationRunning = false;
-    setAutomationButtonsState();
-  }
-};
-
-window.runRepairScan = async () => {
-  if (state.repairRunning) return;
-  state.repairRunning = true;
-  setAutomationButtonsState();
-  renderTypingIndicator();
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(AI_FUNCTION_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        action: 'run_repair_scan',
-        target_url: window.location.origin || 'https://weverseonlineshop.com',
-        include_auto_fix: true,
-        developer_mode: state.developerMode,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    removeTypingIndicator();
-
-    if (!res.ok || data.success === false) {
-      const msg = {
-        role: 'assistant',
-        content: `⚠️ **AI Repair scan failed**\n\n${data.error || `HTTP ${res.status}`}`,
-        tool_results: data.tool_results || [],
-      };
-      state.history.push(msg);
-      renderMessage(msg);
-      showToast('Repair scan failed.');
-      return;
-    }
-
-    const unresolved = Array.isArray(data.unresolved_issues) ? data.unresolved_issues.length : 0;
-    const fixed = Array.isArray(data.auto_fixes_applied) ? data.auto_fixes_applied.length : 0;
-    const header = data.notification_required
-      ? '⚠️ **AI Repair scan completed with escalations**'
-      : '✅ **AI Repair scan completed successfully**';
-    const content = `${header}\n\n${data.response || ''}\n\n- Safe fixes applied: ${fixed}\n- Unresolved issues: ${unresolved}\n- Manual notification required: ${data.notification_required ? 'Yes' : 'No'}`;
-    const msg = { role: 'assistant', content, tool_results: data.tool_results || [] };
-    state.history.push(msg);
-    renderMessage(msg);
-    showToast(data.notification_required ? 'Repair scan done with escalations.' : 'Repair scan done.');
-  } catch (err) {
-    removeTypingIndicator();
-    const msg = { role: 'assistant', content: `⚠️ **AI Repair scan error:** ${err.message}` };
-    state.history.push(msg);
-    renderMessage(msg);
-    showToast('Repair scan error.');
-  } finally {
-    state.repairRunning = false;
-    setAutomationButtonsState();
-  }
 };
 
 window.previewStorefrontHome = () => {
@@ -2238,7 +2039,7 @@ function renderWelcome() {
   const welcome = {
     role: 'assistant',
     content: state.developerMode
-? `Hello! I'm your **Free Autonomous Developer Agent** — a full self-sufficient build & repair assistant for Weverse Online Shop.\n\nI have the same abilities as the n8n AI Assistant, but I run **100% free and completely independent of n8n** using Gemini, Groq, OpenRouter, and Hugging Face.\n\nI can do everything autonomously:\n\n- **Scan & fix the site** — "Scan and fix the site"\n- **Read any file** — "Show me the code in src/auth.js"\n- **Find bugs** — "Why is the payment page throwing an error?"\n- **Explain the architecture** — "How does the app connect to the backend?"\n- **Edit code** — "Fix the bug in the checkout flow"\n- **Create files** — "Create a new component for the product gallery"\n- **Add products / houses** — "Add a new product"\n- **Deploy** — "Deploy the site"\n\n**Fully autonomous mode is active.** When you report a problem, I directly find the location and fix it myself — without asking questions, and without depending on n8n. This applies to every connected free AI provider (Gemini, Groq, OpenRouter, Hugging Face).\n\nWhat would you like to build or fix?`
+? `Hello! I'm your **Free Autonomous Developer Agent** — a full self-sufficient build & repair assistant for Weverse Online Shop.\n\nI can scan, fix, and build your site **100% free** using Google Gemini.\n\nI can do everything autonomously:\n\n- **Scan & fix the site** — "Scan and fix the site"\n- **Read any file** — "Show me the code in src/auth.js"\n- **Find bugs** — "Why is the payment page throwing an error?"\n- **Explain the architecture** — "How does the app connect to the backend?"\n- **Edit code** — "Fix the bug in the checkout flow"\n- **Create files** — "Create a new component for the product gallery"\n- **Add products / houses** — "Add a new product"\n- **Deploy** — "Deploy the site"\n\n**Fully autonomous mode is active.** When you report a problem, I directly find the location and fix it myself — without asking questions. This applies to my connected AI provider (Google Gemini).\n\nWhat would you like to build or fix?`
 : `Hello! I'm your Admin & Developer AI, powered by Google Gemini.\n\nI can help you manage your marketplace and develop your project:\n\n**Marketplace Management:**\n- Add, edit, and delete products\n- View and manage orders\n- Check analytics and revenue\n- Manage customers\n- View and resolve customer escalations\n- Update AI settings\n- Trigger deployments\n\n**Developer Mode (toggle above):**\n- Read and analyze your entire codebase\n- Create, edit, and delete files\n- Run commands like npm build\n- Check git status and diffs\n- Install packages\n- Debug and fix bugs\n- Build new features\n\nWhat would you like to do?`,
   };
   renderMessage(welcome);
@@ -2319,7 +2120,7 @@ async function init() {
   state.isAdmin = true;
   // Autonomous build/fix mode: developer mode is always ON so the AI can
   // read, edit, build, and fix the website directly. This applies to every
-  // connected free AI provider (Gemini, Groq, OpenRouter, Hugging Face).
+  // connected AI provider (Google Gemini).
   state.developerMode = true;
   state.autoDeveloperMode = true;
   applyDeveloperModeUI();
@@ -2371,7 +2172,6 @@ async function init() {
 
   // Load usage stats
   loadUsageStats();
-  loadAutomationCenterState();
 
   // Input handling
   const input = document.getElementById('chat-input');
@@ -2394,7 +2194,6 @@ async function init() {
   input.style.height = '56px';
   renderPendingUploads();
   setPreviewForHome();
-  renderAutomationCenterMeta();
   input.focus();
 }
 

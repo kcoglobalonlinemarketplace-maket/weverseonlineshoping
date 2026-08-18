@@ -16,7 +16,6 @@ import { generateProduct, getCatalogCategories, getCatalogCategory, getHiddenCat
 // ══════════════════════════════════════════════════════════
 
 const ADMIN_EMAIL = 'weverseonlineshop@gmail.com';
-const AI_AD_LOCAL_FALLBACK_KEY = 'kco_ai_ad_override_fallback_v1';
 const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
 const DEFAULT_BRAND_SLOGAN = 'GLOBAL SHOPPING • WORLDWIDE DELIVERY';
 
@@ -44,10 +43,8 @@ const NAV = [
   ]},
 { group: 'Configuration', items: [
     { id: 'ai', label: 'AI Assistant',      icon: 'sparkles' },
-    { id: 'n8n', label: 'n8n Automation',    icon: 'workflow' },
     { id: 'payment-settings', label: 'Payment Settings',  icon: 'credit-card' },
     { id: 'ai-settings', label: 'AI Settings',        icon: 'bot' },
-    { id: 'ai-marketing', label: 'AI Marketing Studio', icon: 'sparkles' },
     { id: 'homepage-branding', label: 'Homepage Branding', icon: 'image' },
     { id: 'brand',        label: 'Brand Manager',      icon: 'palette' },
     { id: 'content',     label: 'Content Manager',    icon: 'file-text' },
@@ -68,9 +65,7 @@ const PAGE_TITLES = {
   orders: 'Orders Manager', customers: 'Customers Manager', reviews: 'Reviews Manager',
 messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement Manager',
   'ai-settings': 'AI Settings', content: 'Content Manager',
-  n8n: 'n8n Automation',
   ai: 'AI Assistant',
-  'ai-marketing': 'AI Marketing Studio',
   'homepage-branding': 'Homepage Branding',
   brand: 'Brand Manager',
   'payment-settings': 'Payment Settings',
@@ -200,9 +195,7 @@ window.navigate = function(section) {
     orders: renderOrders, customers: renderCustomers, reviews: renderReviews,
     messages: renderMessages, coupons: renderCoupons, ads: renderAds,
     notifications: renderNotifications, ai: renderAiAssistant,
-    n8n: renderN8n,
     'ai-settings': renderAiSettings,
-    'ai-marketing': renderAiMarketingStudio,
     'homepage-branding': renderHomepageBrandingManager,
     content: renderContent, seo: renderSeo, email: renderEmail,
     analytics: renderAnalytics, security: renderSecurity, activity: renderActivity,
@@ -237,28 +230,6 @@ async function renderAiAssistant() {
   if (window.lucide) lucide.createIcons();
 }
 
-
-async function renderN8n() {
-  const content = document.getElementById('content');
-  if (!content) return;
-  content.innerHTML = `
-    <div class="space-y-4 fade-in">
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h2 class="text-xl font-black text-white">n8n Automation</h2>
-          <p class="text-xs text-gray-500 mt-1">Configure webhooks, automation center, and AI assistant triggers.</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <a href="/admin-n8n.html" target="_blank" rel="noopener" class="btn-press px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition">Open Fullscreen</a>
-        </div>
-      </div>
-
-      <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
-        <iframe src="/admin-n8n.html" title="n8n Automation" class="w-full" style="height: calc(100vh - 230px); min-height: 680px; border: 0;"></iframe>
-      </div>
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-}
 
 window.openSidebar = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.remove('hidden'); };
 window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.add('hidden'); };
@@ -3686,39 +3657,19 @@ async function renderAds() {
 window.renderAds = renderAds;
 
 // ══════════════════════════════════════════════════════════
-//  11. AI SETTINGS  — 20 FREE coding AI providers
+// ══════════════════════════════════════════════════════════
+//  11. AI SETTINGS  — GOOGLE GEMINI ONLY
 // ══════════════════════════════════════════════════════════
 
 const ALL_AI_PROVIDERS = [
-  // ── BATCH 1 (original 10) ──────────────────────────────
-  { id:'gemini',      name:'Google Gemini',         tag:'FREE',  color:'blue',    icon:'sparkles',   kf:'gemini_key',      ph:'AIzaSy…',      signup:'https://aistudio.google.com/apikey',                        models:['gemini-3-flash-preview','gemini-3.1-flash-lite-preview'],                                                                mf:'gemini_model',      dm:'gemini-3-flash-preview',              desc:'Google\'s best free AI. Great for coding, writing apps & websites.',                                free_tier:'15 req/min · 1M tokens/day — Free forever' },
-  { id:'groq',        name:'Groq (Llama 3.3)',       tag:'FREE',  color:'blue',  icon:'zap',        kf:'groq_key',        ph:'gsk_…',        signup:'https://console.groq.com/keys',                             models:['llama-3.3-70b-versatile','llama-3.1-8b-instant','mixtral-8x7b-32768','gemma2-9b-it'],                                          mf:'groq_model',        dm:'llama-3.3-70b-versatile',           desc:'Fastest free AI inference. Runs Llama 3.3 & Mixtral. Excellent for coding.',                       free_tier:'30 req/min · 6,000 req/day free' },
-  { id:'deepseek',    name:'DeepSeek Coder',         tag:'FREE',  color:'cyan',    icon:'search',     kf:'deepseek_key',    ph:'sk-…',         signup:'https://platform.deepseek.com/api_keys',                    models:['deepseek-coder','deepseek-chat','deepseek-reasoner'],                                                                         mf:'deepseek_model',    dm:'deepseek-coder',                    desc:'Top-ranked coding AI. DeepSeek Coder beats GPT-4 on code benchmarks.',                             free_tier:'$5 free credit on signup' },
-  { id:'mistral',     name:'Mistral / Codestral',    tag:'FREE',  color:'violet',  icon:'wind',       kf:'mistral_key',     ph:'…key',         signup:'https://console.mistral.ai/api-keys',                       models:['codestral-latest','mistral-small-latest','open-mistral-7b','open-mixtral-8x7b'],                                               mf:'mistral_model',     dm:'codestral-latest',                  desc:'Codestral is purpose-built for code. Free for open-source projects.',                              free_tier:'Free tier · Codestral free for open-source' },
-  { id:'cohere',      name:'Cohere',                 tag:'FREE',  color:'emerald', icon:'cpu',        kf:'cohere_key',      ph:'…key',         signup:'https://dashboard.cohere.com/api-keys',                     models:['command-r-plus','command-r','command-light'],                                                                                mf:'cohere_model',      dm:'command-r',                         desc:'Free trial API. Great for chat, code, and text generation.',                                       free_tier:'Free trial · No credit card needed' },
-  { id:'huggingface', name:'Hugging Face',           tag:'FREE',  color:'amber',   icon:'box',        kf:'hf_key',          ph:'hf_…',         signup:'https://huggingface.co/settings/tokens',                    models:['Qwen/Qwen2.5-Coder-32B-Instruct','meta-llama/Meta-Llama-3-8B-Instruct','mistralai/Mistral-7B-Instruct-v0.3'],               mf:'hf_model',          dm:'Qwen/Qwen2.5-Coder-32B-Instruct',   desc:'500k+ open-source models free. Qwen 2.5 Coder is top-ranked for code.',                            free_tier:'Free Inference API on open models' },
-  { id:'together',    name:'Together AI',            tag:'FREE',  color:'pink',    icon:'users',      kf:'together_key',    ph:'…key',         signup:'https://api.together.ai/settings/api-keys',                 models:['Qwen/Qwen2.5-Coder-32B-Instruct','meta-llama/Llama-3.3-70B-Instruct-Turbo','deepseek-ai/DeepSeek-V3'],                      mf:'together_model',    dm:'Qwen/Qwen2.5-Coder-32B-Instruct',   desc:'$5 free credit. Runs DeepSeek V3 and Qwen 2.5 Coder at high speed.',                               free_tier:'$5 free credit on signup' },
-  { id:'openrouter',  name:'OpenRouter',             tag:'FREE',  color:'rose',    icon:'git-branch', kf:'openrouter_key',  ph:'sk-or-…',      signup:'https://openrouter.ai/keys',                                models:['google/gemini-2.0-flash-exp:free','meta-llama/llama-3.3-70b-instruct:free','deepseek/deepseek-chat:free','qwen/qwen-2.5-coder-32b-instruct:free'], mf:'openrouter_model', dm:'google/gemini-2.0-flash-exp:free', desc:'Routes to ALL AI providers. Has 100% free ":free" models including Gemini & Llama.',              free_tier:'Many completely FREE models with :free tag' },
-  { id:'cerebras',    name:'Cerebras',               tag:'FREE',  color:'teal',    icon:'brain',      kf:'cerebras_key',    ph:'csk-…',        signup:'https://cloud.cerebras.ai/',                                models:['llama3.3-70b','llama3.1-70b','llama3.1-8b'],                                                                                 mf:'cerebras_model',    dm:'llama3.3-70b',                      desc:'World\'s fastest AI (2000+ tokens/sec). Free tier with Llama 3.3.',                                free_tier:'Free tier · 60 req/min' },
-  { id:'fireworks',   name:'Fireworks AI',           tag:'FREE',  color:'red',     icon:'flame',      kf:'fireworks_key',   ph:'fw_…',         signup:'https://fireworks.ai/api-keys',                             models:['accounts/fireworks/models/qwen2p5-coder-32b-instruct','accounts/fireworks/models/llama-v3p3-70b-instruct','accounts/fireworks/models/deepseek-v3'], mf:'fireworks_model', dm:'accounts/fireworks/models/qwen2p5-coder-32b-instruct', desc:'$1 free credit/month. DeepSeek V3, Qwen Coder, Llama 3.3 at ultra-fast speed.', free_tier:'$1 free credit every month' },
-  // ── BATCH 2 (new 10) ───────────────────────────────────
-  { id:'github',      name:'GitHub Models',          tag:'FREE',  color:'gray',    icon:'github',     kf:'github_key',      ph:'ghp_…',        signup:'https://github.com/marketplace/models',                     models:['meta-llama/Llama-3.3-70B-Instruct','mistral-ai/Mistral-7B-Instruct-v0.3','openai/gpt-4o','microsoft/Phi-3-mini-4k-instruct'], mf:'github_model',      dm:'meta-llama/Llama-3.3-70B-Instruct', desc:'FREE with a GitHub account. Access Llama, Mistral, GPT-4o and Phi via your GitHub token.',          free_tier:'Completely FREE with any GitHub account' },
-  { id:'cloudflare',  name:'Cloudflare Workers AI',  tag:'FREE',  color:'blue',  icon:'cloud',      kf:'cloudflare_key',  ph:'…token',       signup:'https://dash.cloudflare.com/profile/api-tokens',            models:['@cf/meta/llama-3.3-70b-instruct','@cf/deepseek-ai/deepseek-r1-distill-llama-70b','@hf/thebloke/codellama-7b-instruct-awq'],   mf:'cloudflare_model',  dm:'@cf/meta/llama-3.3-70b-instruct',   desc:'FREE 10,000 req/day. Runs Llama, CodeLlama, DeepSeek R1 on Cloudflare\'s global edge network.',    free_tier:'10,000 requests/day FREE forever' },
-  { id:'sambanova',   name:'SambaNova Cloud',        tag:'FREE',  color:'violet',  icon:'server',     kf:'sambanova_key',   ph:'…key',         signup:'https://cloud.sambanova.ai/',                               models:['Meta-Llama-3.3-70B-Instruct','Meta-Llama-3.1-405B-Instruct','Meta-Llama-3.2-3B-Instruct'],                                   mf:'sambanova_model',   dm:'Meta-Llama-3.3-70B-Instruct',       desc:'FREE fastest Llama 405B inference in the world. Purpose-built AI chips for maximum speed.',        free_tier:'Free tier with Llama 3.1 405B' },
-  { id:'hyperbolic',  name:'Hyperbolic',             tag:'FREE',  color:'cyan',    icon:'activity',   kf:'hyperbolic_key',  ph:'…key',         signup:'https://app.hyperbolic.xyz/settings',                       models:['deepseek-ai/DeepSeek-V3','Qwen/Qwen2.5-Coder-32B-Instruct','meta-llama/Llama-3.3-70B-Instruct'],                             mf:'hyperbolic_model',  dm:'Qwen/Qwen2.5-Coder-32B-Instruct',   desc:'$10 FREE credit on signup. Run DeepSeek V3 and Qwen 2.5 Coder at competitive speed.',              free_tier:'$10 free credit on signup' },
-  { id:'novita',      name:'Novita AI',              tag:'FREE',  color:'emerald', icon:'layers',     kf:'novita_key',      ph:'…key',         signup:'https://novita.ai/settings#key-management',                 models:['qwen/qwen2.5-coder-32b-instruct','meta-llama/llama-3.3-70b-instruct','deepseek/deepseek-v3'],                                 mf:'novita_model',      dm:'qwen/qwen2.5-coder-32b-instruct',   desc:'Free credits on signup. Runs Qwen Coder, DeepSeek V3, Llama 3.3 at affordable prices.',           free_tier:'Free credits on signup' },
-  { id:'perplexity',  name:'Perplexity AI',          tag:'FREE',  color:'blue',    icon:'search-code',kf:'perplexity_key',  ph:'pplx-…',       signup:'https://www.perplexity.ai/settings/api',                    models:['llama-3.1-sonar-small-128k-online','llama-3.1-sonar-large-128k-online','llama-3.1-8b-instruct'],                              mf:'perplexity_model',  dm:'llama-3.1-sonar-small-128k-online', desc:'Online AI with real-time web search. Sonar model can search the web to answer coding questions.',  free_tier:'Free tier available · $5 starting credit' },
-  { id:'replicate',   name:'Replicate',              tag:'FREE',  color:'amber',   icon:'repeat',     kf:'replicate_key',   ph:'r8_…',         signup:'https://replicate.com/account/api-tokens',                  models:['meta/codellama-70b-instruct','meta/llama-3.3-70b-instruct','deepseek-ai/deepseek-coder-v2'],                                  mf:'replicate_model',   dm:'meta/codellama-70b-instruct',       desc:'$0.50 free credit. Thousands of open-source AI models including specialized coding models.',        free_tier:'$0.50 free credit · No card for many models' },
-  { id:'ai21',        name:'AI21 Labs (Jamba)',       tag:'FREE',  color:'pink',    icon:'wand-2',     kf:'ai21_key',        ph:'…key',         signup:'https://studio.ai21.com/account/api-key',                   models:['jamba-1.5-large','jamba-1.5-mini','j2-ultra','j2-mid'],                                                                      mf:'ai21_model',        dm:'jamba-1.5-mini',                    desc:'Free tier with Jamba 1.5. Long context (256K tokens) model good for analyzing large codebases.',   free_tier:'Free tier · No credit card required' },
-  { id:'lepton',      name:'Lepton AI',              tag:'FREE',  color:'teal',    icon:'atom',       kf:'lepton_key',      ph:'…key',         signup:'https://www.lepton.ai/login',                               models:['llama3-3-70b','deepseek-v3','qwen2-5-coder-32b-instruct','mistral-7b'],                                                       mf:'lepton_model',      dm:'qwen2-5-coder-32b-instruct',        desc:'Free credits. Runs Qwen Coder, DeepSeek V3, Llama 3.3 with fast inference.',                       free_tier:'Free credits on signup' },
-  { id:'ollama',      name:'Ollama (Local)',          tag:'FREE',  color:'gray',    icon:'monitor',    kf:'ollama_url',      ph:'http://localhost:11434', signup:'https://ollama.ai/download',                       models:['codellama:13b','qwen2.5-coder:7b','deepseek-coder:6.7b','llama3.3:70b','phi3:mini'],                                        mf:'ollama_model',      dm:'qwen2.5-coder:7b',                  desc:'100% FREE — runs entirely on YOUR computer. No API key needed. No internet. No limits. Install Ollama app.', free_tier:'100% FREE forever — runs locally offline' },
+  { id:'gemini', name:'Google Gemini', tag:'FREE', color:'blue', icon:'sparkles', kf:'gemini_key', ph:'AIzaSy…', signup:'https://aistudio.google.com/apikey', models:['gemini-3-flash-preview','gemini-3.1-flash-lite-preview'], mf:'gemini_model', dm:'gemini-3-flash-preview', desc:'Google\'s best free AI. Great for coding, writing apps & websites.', free_tier:'15 req/min · 1M tokens/day — Free forever' },
 ];
 
 const AI_CLR = {
-  border: {blue:'border-blue-500/50',blue:'border-blue-500/50',cyan:'border-cyan-500/50',violet:'border-violet-500/50',emerald:'border-emerald-500/50',amber:'border-amber-500/50',pink:'border-pink-500/50',rose:'border-rose-500/50',teal:'border-teal-500/50',red:'border-red-500/50',gray:'border-gray-500/50'},
-  bg:     {blue:'bg-blue-500/8',blue:'bg-blue-500/8',cyan:'bg-cyan-500/8',violet:'bg-violet-500/8',emerald:'bg-emerald-500/8',amber:'bg-amber-500/8',pink:'bg-pink-500/8',rose:'bg-rose-500/8',teal:'bg-teal-500/8',red:'bg-red-500/8',gray:'bg-gray-500/8'},
-  text:   {blue:'text-blue-400',blue:'text-blue-400',cyan:'text-cyan-400',violet:'text-violet-400',emerald:'text-emerald-400',amber:'text-amber-400',pink:'text-pink-400',rose:'text-rose-400',teal:'text-teal-400',red:'text-red-400',gray:'text-gray-400'},
-  badge:  {blue:'bg-blue-500/15 text-blue-300',blue:'bg-blue-500/15 text-blue-300',cyan:'bg-cyan-500/15 text-cyan-300',violet:'bg-violet-500/15 text-violet-300',emerald:'bg-emerald-500/15 text-emerald-300',amber:'bg-amber-500/15 text-amber-300',pink:'bg-pink-500/15 text-pink-300',rose:'bg-rose-500/15 text-rose-300',teal:'bg-teal-500/15 text-teal-300',red:'bg-red-500/15 text-red-300',gray:'bg-gray-500/15 text-gray-300'},
+  border: {blue:'border-blue-500/50'},
+  bg:     {blue:'bg-blue-500/8'},
+  text:   {blue:'text-blue-400'},
+  badge:  {blue:'bg-blue-500/15 text-blue-300'},
 };
 
 async function renderAiSettings() {
@@ -3727,9 +3678,6 @@ async function renderAiSettings() {
     const { data: settings } = await supabase.from('ai_settings').select('*').limit(1).maybeSingle();
     const s = settings || {};
     const activeId = s.active_provider || 'gemini';
-
-    const batch1 = ALL_AI_PROVIDERS.slice(0, 10);
-    const batch2 = ALL_AI_PROVIDERS.slice(10);
 
     function providerCard(p) {
       const isActive = activeId === p.id;
@@ -3758,13 +3706,13 @@ async function renderAiSettings() {
           <p class="text-[11px] text-gray-400 leading-relaxed">${esc(p.desc)}</p>
           <div>
             <div class="flex items-center justify-between mb-1">
-              <label class="lbl mb-0">${p.id==='ollama' ? 'Ollama Server URL' : 'API Key'}</label>
+              <label class="lbl mb-0">API Key</label>
               <a href="${p.signup}" target="_blank" rel="noopener" class="text-[10px] font-bold ${AI_CLR.text[p.color]} hover:underline flex items-center gap-0.5">
-                <i data-lucide="external-link" class="w-3 h-3"></i>${p.id==='ollama' ? 'Install Ollama' : 'Get Free Key'}
+                <i data-lucide="external-link" class="w-3 h-3"></i>Get Free Key
               </a>
             </div>
             <div class="relative">
-              <input type="${p.id==='ollama'?'text':'password'}" class="input-field pr-16 text-xs" name="${p.kf}"
+              <input type="password" class="input-field pr-16 text-xs" name="${p.kf}"
                 placeholder="${savedKey ? '••••'+savedKey.slice(-4) : p.ph}">
               ${savedKey ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
             </div>
@@ -3786,34 +3734,28 @@ async function renderAiSettings() {
             <button onclick="showAiStatusModal()" class="btn-press flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
               <i data-lucide="activity" class="w-3.5 h-3.5"></i> Live Status & Test
             </button>
-            <span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs px-3 py-1">20 Free Providers</span>
+            <span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs px-3 py-1">Gemini Free</span>
           </div>
         </div>
 
         <div class="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-xs text-emerald-300 flex items-start gap-3">
           <i data-lucide="gift" class="w-5 h-5 shrink-0 text-emerald-400 mt-0.5"></i>
           <div>
-            <p class="font-black mb-0.5">All 20 providers have FREE tiers — no payment required to start!</p>
-            <p class="text-emerald-400/70">Click "Get Free Key" → sign up on their website → paste key below → Save. Keys are stored securely in your database. Select one as your active provider.</p>
+            <p class="font-black mb-0.5">Google Gemini has a FREE tier — no payment required to start!</p>
+            <p class="text-emerald-400/70">Click "Get Free Key" → sign up at Google AI Studio → paste key below → Save. The key is stored securely in your database.</p>
           </div>
         </div>
 
         <form id="ai-form" onsubmit="saveAiSettings(event)" class="space-y-5">
 
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-4">
-            <h3 class="text-sm font-black text-white mb-3 flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-blue-400"></i> Batch 1 — Original 10 Free AI Providers</h3>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${batch1.map(providerCard).join('')}</div>
-          </div>
-
-          <div class="glass-soft border border-violet-500/15 rounded-2xl p-4">
-            <h3 class="text-sm font-black text-white mb-3 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-violet-400"></i> Batch 2 — 10 More Free AI Providers</h3>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${batch2.map(providerCard).join('')}</div>
+            <h3 class="text-sm font-black text-white mb-3 flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-blue-400"></i> Google Gemini</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${ALL_AI_PROVIDERS.map(providerCard).join('')}</div>
           </div>
 
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
             <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Feature Toggles</h3>
             ${[
-              {key:'customer_ai_enabled', label:'Customer AI Chatbot',    desc:'Customers can chat with AI on your website',    val:s.customer_ai_enabled},
               {key:'product_ai_enabled',  label:'AI Product Creation',    desc:'AI auto-fills product descriptions',             val:s.product_ai_enabled!==false},
               {key:'ai_code_assist',      label:'AI Code Assistant',      desc:'AI helps build and edit your website code',      val:s.ai_code_assist!==false},
               {key:'ai_moderation',       label:'AI Content Moderation',  desc:'Auto-approve/reject customer reviews using AI', val:s.ai_moderation},
@@ -3825,7 +3767,7 @@ async function renderAiSettings() {
           </div>
 
           <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition">
-            💾 Save All AI Settings
+            💾 Save AI Settings
           </button>
         </form>
       </div>`;
@@ -3851,13 +3793,12 @@ window.saveAiSettings = async function(e) {
 
   const payload = {
     active_provider: data.active_provider || 'gemini',
-    customer_ai_enabled: data.customer_ai_enabled === 'on',
     product_ai_enabled:  data.product_ai_enabled  === 'on',
     ai_code_assist:      data.ai_code_assist       === 'on',
     ai_moderation:       data.ai_moderation        === 'on',
   };
 
-  // Collect key + model for every provider — only save if user typed a new non-masked value
+  // Collect key + model — only save if user typed a new non-masked value
   ALL_AI_PROVIDERS.forEach(p => {
     if (data[p.mf]) payload[p.mf] = data[p.mf];
     const v = (data[p.kf] || '').trim();
@@ -3866,35 +3807,23 @@ window.saveAiSettings = async function(e) {
 
   // Also mirror gemini_key → gemini_api_key for backwards compat
   if (payload.gemini_key) payload.gemini_api_key = payload.gemini_key;
-  if (payload.openai_key) payload.openai_api_key = payload.openai_key;
 
   try {
-    // Get the existing row id (the table uses UUID, not integer)
     const { data: existing } = await supabase.from('ai_settings').select('id').limit(1).maybeSingle();
-
     let error;
     if (existing?.id) {
-      // Row exists → UPDATE it
       ({ error } = await supabase.from('ai_settings').update(payload).eq('id', existing.id));
     } else {
-      // No row yet → INSERT one
       ({ error } = await supabase.from('ai_settings').insert(payload));
     }
-
     if (error) {
-      // Show the real error so we can debug
       showToast('Save failed: ' + error.message, 'error');
       console.error('[AI Save]', error);
       return;
     }
-
-    // Reload the live AI client cache
     await aiClient.reload();
-    showToast('✅ AI settings saved! Keys are active and auto-switch is ON.', 'success');
-
-    // Refresh the page so the "✓ Saved" indicators update
+    showToast('✅ AI settings saved!', 'success');
     setTimeout(() => renderAiSettings(), 600);
-
   } catch (err) {
     showToast('Unexpected error: ' + err.message, 'error');
     console.error('[AI Save]', err);
@@ -3902,13 +3831,11 @@ window.saveAiSettings = async function(e) {
 };
 
 // ══════════════════════════════════════════════════════════
-//  AI AUTO-SWITCH CLIENT
-//  Reads saved keys from DB, tries each provider in order,
-//  automatically skips to next when a provider is rate-limited
-//  or returns an error. Cooldown tracked in localStorage.
+//  GEMINI AI CLIENT
+//  Reads the saved Gemini key from the DB. Browser calls go straight
+//  to Google Gemini; chat/vision can also go through the Supabase
+//  edge function so the key never leaves the server.
 // ══════════════════════════════════════════════════════════
-const AI_COOLDOWN_KEY = 'kco_ai_cooldowns';
-const AI_COOLDOWN_MS  = 60 * 1000; // 1 minute cooldown after rate limit
 
 const aiClient = {
   _cfg: null,
@@ -3916,9 +3843,7 @@ const aiClient = {
   async reload() {
     const { data, error } = await supabase.from('ai_settings').select('*').limit(1).maybeSingle();
     if (error) { console.warn('[aiClient] Could not load settings:', error.message); this._cfg = {}; return; }
-    // Normalise: support both old column names (openai_api_key) and new (openai_key)
     const cfg = data || {};
-    if (!cfg.openai_key && cfg.openai_api_key) cfg.openai_key = cfg.openai_api_key;
     if (!cfg.gemini_key && cfg.gemini_api_key) cfg.gemini_key = cfg.gemini_api_key;
     this._cfg = cfg;
   },
@@ -3928,253 +3853,25 @@ const aiClient = {
     return this._cfg;
   },
 
-  // Returns providers sorted: active provider first, then others that have a key
-  async getOrderedProviders() {
+  // Gemini chat via the edge function (server-side, key stays secure).
+  async chat(messages, { maxTokens = 2000 } = {}) {
     const cfg = await this.getConfig();
-    const activeId = cfg.active_provider || 'gemini';
-    const cooldowns = this._getCooldowns();
-    const now = Date.now();
-
-    // Build list: active first, then others with saved keys, skip cooled-down ones
-    const withKey = ALL_AI_PROVIDERS.filter(p => cfg[p.kf] && cfg[p.kf].trim());
-    const active  = withKey.filter(p => p.id === activeId);
-    const others  = withKey.filter(p => p.id !== activeId);
-    const ordered = [...active, ...others];
-
-    // Sort: cooled-down go to end
-    return ordered.sort((a, b) => {
-      const aCool = (cooldowns[a.id] || 0) > now ? 1 : 0;
-      const bCool = (cooldowns[b.id] || 0) > now ? 1 : 0;
-      return aCool - bCool;
-    });
-  },
-
-  _getCooldowns() {
-    try { return JSON.parse(localStorage.getItem(AI_COOLDOWN_KEY) || '{}'); } catch { return {}; }
-  },
-
-  _setCooldown(providerId) {
-    const c = this._getCooldowns();
-    c[providerId] = Date.now() + AI_COOLDOWN_MS;
-    localStorage.setItem(AI_COOLDOWN_KEY, JSON.stringify(c));
-  },
-
-  _clearCooldown(providerId) {
-    const c = this._getCooldowns();
-    delete c[providerId];
-    localStorage.setItem(AI_COOLDOWN_KEY, JSON.stringify(c));
-  },
-
-  // Build the actual HTTP request for each provider
-  _buildRequest(provider, cfg, messages, maxTokens) {
-    const key   = cfg[provider.kf];
-    const model = cfg[provider.mf] || provider.dm;
-
-    switch (provider.id) {
-      case 'gemini': {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-        const body = { contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })) };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json' }, body, parse: d => d.candidates?.[0]?.content?.parts?.[0]?.text || '' };
-      }
-      case 'groq': {
-        const url = 'https://api.groq.com/openai/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'deepseek': {
-        const url = 'https://api.deepseek.com/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'mistral': {
-        const url = 'https://api.mistral.ai/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'cohere': {
-        const url = 'https://api.cohere.com/v2/chat';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.message?.content?.[0]?.text || d.text || '' };
-      }
-      case 'huggingface': {
-        const url = `https://api-inference.huggingface.co/models/${model}/v1/chat/completions`;
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'together': {
-        const url = 'https://api.together.xyz/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'openrouter': {
-        const url = 'https://openrouter.ai/api/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, 'HTTP-Referer': window.location.origin }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'cerebras': {
-        const url = 'https://api.cerebras.ai/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'fireworks': {
-        const url = 'https://api.fireworks.ai/inference/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'github': {
-        const url = 'https://models.inference.ai.azure.com/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'cloudflare': {
-        // key = accountId|token  (user pastes both separated by |)
-        const [accountId, token] = (key || '').split('|');
-        const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
-        const body = { messages };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || key}` }, body, parse: d => d.result?.response || '' };
-      }
-      case 'sambanova': {
-        const url = 'https://api.sambanova.ai/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'hyperbolic': {
-        const url = 'https://api.hyperbolic.xyz/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'novita': {
-        const url = 'https://api.novita.ai/v3/openai/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'perplexity': {
-        const url = 'https://api.perplexity.ai/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'replicate': {
-        // Use Replicate's OpenAI-compatible endpoint
-        const url = 'https://openai-compat.replicate.com/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'ai21': {
-        const url = 'https://api.ai21.com/studio/v1/chat/completions';
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'lepton': {
-        const url = `https://${model.replace(/[^a-z0-9-]/g,'')}.lepton.run/api/v1/chat/completions`;
-        const body = { model, messages, max_tokens: maxTokens };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body, parse: d => d.choices?.[0]?.message?.content || '' };
-      }
-      case 'ollama': {
-        // key field is actually the server URL for Ollama
-        const baseUrl = (key || 'http://localhost:11434').replace(/\/$/, '');
-        const url = `${baseUrl}/api/chat`;
-        const body = { model, messages, stream: false };
-        return { url, method: 'POST', headers: { 'Content-Type': 'application/json' }, body, parse: d => d.message?.content || '' };
-      }
-      default:
-        return null;
+    if (!String(cfg.gemini_key || '').trim()) {
+      throw new Error('No AI provider configured. Go to AI Settings and add your Gemini API key.');
     }
-  },
-
-  // ── MAIN CALL: tries providers in order, auto-switches on error ──
-  async chat(messages, { maxTokens = 2000, onProviderSwitch = null } = {}) {
-    const providers = await this.getOrderedProviders();
-    const cfg = await this.getConfig();
-    const cooldowns = this._getCooldowns();
-    const now = Date.now();
-
-    if (providers.length === 0) {
-      throw new Error('No AI providers configured. Go to AI Settings and add at least one API key.');
+    const last = messages[messages.length - 1];
+    const body = {
+      action: 'chat',
+      message: String(last?.content || '').trim(),
+      history: messages.slice(0, -1).map(m => ({ role: m.role, content: String(m.content || '') })),
+      provider_override: 'gemini',
+      max_tokens: maxTokens,
+    };
+    const res = await this._callEdge(body);
+    if (res && res.response) {
+      return { text: res.response, provider: 'Google Gemini', model: res.model || cfg.gemini_model };
     }
-
-    let lastError = null;
-    for (const provider of providers) {
-      // Skip if still in cooldown
-      if ((cooldowns[provider.id] || 0) > now) {
-        const remaining = Math.ceil(((cooldowns[provider.id] || 0) - now) / 1000);
-        console.log(`[AI] Skipping ${provider.name} — rate limited for ${remaining}s more`);
-        continue;
-      }
-
-      // Ollama is local (no API key) so it is called directly from the browser.
-      if (provider.id === 'ollama') {
-        const req = this._buildRequest(provider, cfg, messages, maxTokens);
-        if (!req) continue;
-        try {
-          if (onProviderSwitch) onProviderSwitch(provider.name);
-          const res = await fetch(req.url, {
-            method: req.method,
-            headers: req.headers,
-            body: JSON.stringify(req.body),
-            signal: AbortSignal.timeout(60000),
-          });
-          if (res.status === 429 || res.status === 503) {
-            this._setCooldown(provider.id);
-            console.warn(`[AI] ${provider.name} rate limited (${res.status}), switching to next provider…`);
-            lastError = new Error(`${provider.name} rate limited`);
-            continue;
-          }
-          if (!res.ok) {
-            const errBody = await res.text().catch(() => '');
-            lastError = new Error(`${provider.name} error ${res.status}: ${errBody.slice(0, 100)}`);
-            console.warn(`[AI] ${provider.name} failed:`, lastError.message);
-            continue;
-          }
-          const data = await res.json();
-          const text = req.parse(data);
-          if (!text) { lastError = new Error(`${provider.name} returned empty response`); continue; }
-          this._clearCooldown(provider.id);
-          console.log(`[AI] ✓ Response from ${provider.name}`);
-          return { text, provider: provider.name, model: cfg[provider.mf] || provider.dm };
-        } catch (err) {
-          if (err.name === 'TimeoutError') { this._setCooldown(provider.id); lastError = new Error(`${provider.name} timed out`); }
-          else lastError = err;
-          console.warn(`[AI] ${provider.name} exception:`, err.message);
-        }
-        continue;
-      }
-
-      // Cloud providers go through the Supabase edge function so their API keys
-      // never appear in the browser's network requests.
-      try {
-        if (onProviderSwitch) onProviderSwitch(provider.name);
-        const last = messages[messages.length - 1];
-        const body = {
-          action: 'chat',
-          message: String(last?.content || '').trim(),
-          history: messages.slice(0, -1).map(m => ({ role: m.role, content: String(m.content || '') })),
-          provider_override: provider.id,
-          max_tokens: maxTokens,
-        };
-        const res = await this._callEdge(body);
-        if (res && res.response) {
-          this._clearCooldown(provider.id);
-          console.log(`[AI] ✓ Response from ${provider.name} (via edge function)`);
-          return { text: res.response, provider: provider.name, model: res.model || cfg[provider.mf] || provider.dm };
-        }
-        const msg = String(res?.error || 'empty response');
-        const low = msg.toLowerCase();
-        if (low.includes('429') || low.includes('rate limit') || low.includes('quota')) {
-          this._setCooldown(provider.id);
-          console.warn(`[AI] ${provider.name} rate limited (${msg.slice(0, 80)}), switching to next provider…`);
-          lastError = new Error(`${provider.name} rate limited`);
-        } else {
-          lastError = new Error(`${provider.name} error: ${msg.slice(0, 200)}`);
-          console.warn(`[AI] ${provider.name} failed:`, lastError.message);
-        }
-      } catch (err) {
-        if (err.name === 'TimeoutError') { this._setCooldown(provider.id); lastError = new Error(`${provider.name} timed out`); }
-        else lastError = err;
-        console.warn(`[AI] ${provider.name} exception:`, err.message);
-      }
-    }
-
-    throw new Error(lastError?.message || 'All AI providers failed or are rate limited. Add more API keys in AI Settings.');
+    throw new Error(String(res?.error || 'Gemini is unavailable.'));
   },
 
   // Convenience: single-turn prompt
@@ -4182,26 +3879,20 @@ const aiClient = {
     return this.chat([{ role: 'user', content: text }], opts);
   },
 
-  // Get status of all providers (for the status widget)
+  // Get status (for the status widget)
   async getStatus() {
     const cfg = await this.getConfig();
-    const cooldowns = this._getCooldowns();
-    const now = Date.now();
     return ALL_AI_PROVIDERS.map(p => ({
       id: p.id, name: p.name, color: p.color,
       hasKey: !!(cfg[p.kf]?.trim()),
       isActive: cfg.active_provider === p.id,
-      cooldownUntil: cooldowns[p.id] || 0,
-      isCoolingDown: (cooldowns[p.id] || 0) > now,
-      remainingSec: Math.max(0, Math.ceil(((cooldowns[p.id] || 0) - now) / 1000)),
+      isCoolingDown: false,
+      remainingSec: 0,
     }));
   },
 
-  // ── VISION: analyze uploaded product images (server-side cloud providers) ──
-  // Returns a parsed JSON object { title, description, category, subcategory,
-  // brand, model, color, condition, features[], highlights[], seo_keywords[],
-  // specifications{} } or null when vision is unavailable. API keys stay
-  // server-side — the browser only sends image data and a prompt.
+  // ── VISION: analyze uploaded product images via Gemini ──
+  // Returns a parsed JSON object or null when vision is unavailable.
   async analyzeImages(imageUrls, context = {}) {
     const prompt = `You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded product photo(s) and identify exactly what the product is — the REAL brand, model and year that actually appear in the photos, never a guessed one.
 
@@ -4242,15 +3933,13 @@ Rules:
     }
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
-    // 1) FAST PATH: browser-side vision straight to the provider. The admin's
-    //    keys are already loaded from ai_settings, so this skips the slow server
-    //    chain and gives a quick result (a couple of seconds).
+    // 1) FAST PATH: browser-side Gemini vision (key already loaded).
     try {
-      const fast = await this._tryBrowserGeminiVision(prompt, images) || await this._tryBrowserOpenAIVision(prompt, images);
+      const fast = await this._tryBrowserGeminiVision(prompt, images);
       if (fast) return fast;
     } catch { /* fall through to server vision */ }
 
-    // 2) Server-side vision via the edge function (cloud providers, keys stay server-side)
+    // 2) Server-side Gemini vision via the edge function (key stays server-side)
     try {
       const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: 4096 });
       if (res && res.success && res.text) {
@@ -4259,21 +3948,14 @@ Rules:
         throw new Error('The AI returned no valid analysis for these images.');
       }
       throw new Error((res && res.error) || 'Vision service unavailable.');
-    } catch { /* fall through to local */ }
+    } catch { /* no vision */ }
 
-    // 3) Local Ollama vision (browser → localhost; no API key, fully offline)
-    try {
-      const local = await this._tryLocalOllamaVision(prompt, images);
-      if (local) return local;
-    } catch { /* no local vision */ }
-
-    // 4) No vision at all: NEVER fall back to a text-only model here — it cannot
-    //    see the photo and would just invent a fake product (e.g. always "Mercedes-Benz
-    //    S-Class"). Return null so the UI shows a clear message instead of fake data.
+    // 3) No vision at all: NEVER fall back to a text-only model here — it cannot
+    //    see the photo and would just invent a fake product. Return null.
     return null;
   },
 
-  // POST to the Supabase edge function so provider API keys never leave the server.
+  // POST to the Supabase edge function so the Gemini key never leaves the server.
   async _callEdge(body) {
     let token = '';
     try { token = (await supabase.auth.getSession())?.data?.session?.access_token || ''; } catch {}
@@ -4311,44 +3993,7 @@ Rules:
     } finally { URL.revokeObjectURL(objectUrl); }
   },
 
-  // Local Ollama vision via the browser → localhost (no API key, fully offline).
-  async _tryLocalOllamaVision(prompt, images) {
-    const cfg = await this.getConfig();
-    const baseUrl = String(cfg.ollama_url || 'http://localhost:11434').replace(/\/$/, '');
-    const models = [cfg.ollama_model, 'llava', 'llama3.2-vision', 'moondream'].filter(Boolean);
-    for (const model of models) {
-      try {
-        const res = await fetch(`${baseUrl}/api/generate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model,
-            prompt,
-            images: images.map(d => String(d).split(',')[1] || d),
-            stream: false,
-            options: { temperature: 0.3, num_predict: 4096 },
-          }),
-          signal: AbortSignal.timeout(120000),
-        });
-        if (!res.ok) continue;
-        const data = await res.json();
-        const text = String(data?.response || '').trim();
-        if (!text) continue;
-        const parsed = extractJsonFromAiText(text);
-        return parsed
-          ? { ...parsed, _aiProvider: 'Ollama (Local)', _aiModel: model }
-          : { description: text, _aiProvider: 'Ollama (Local)', _aiModel: model };
-      } catch { /* try next local model */ }
-    }
-    return null;
-  },
-
-  // ── BROWSER-SIDE VISION FALLBACK ──
-  // If the Supabase edge function is not deployed (or returns an error), the
-  // admin browser already loaded the provider keys from ai_settings, so we can
-  // call a vision-capable provider directly from the browser as a fallback.
-
-  // Gemini (free tier supports vision well)
+  // Gemini vision straight from the browser (free tier supports vision).
   async _tryBrowserGeminiVision(prompt, images) {
     const cfg = await this.getConfig();
     const apiKey = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
@@ -4383,139 +4028,6 @@ Rules:
     }
     return null;
   },
-
-  // OpenAI-compatible vision providers (Groq, OpenRouter, Hugging Face)
-  async _tryBrowserOpenAIVision(prompt, images) {
-    const cfg = await this.getConfig();
-    const candidates = [
-      { key: cfg.groq_key, model: cfg.groq_vision_model || cfg.groq_model || 'llama-3.2-11b-vision-preview', endpoint: 'https://api.groq.com/openai/v1/chat/completions', name: 'Groq' },
-      { key: cfg.openrouter_key, model: cfg.openrouter_vision_model || cfg.openrouter_model || 'google/gemini-2.5-flash', endpoint: 'https://openrouter.ai/api/v1/chat/completions', name: 'OpenRouter' },
-      { key: cfg.hf_key, model: cfg.hf_vision_model || cfg.hf_model || 'Qwen/Qwen2.5-VL-72B-Instruct', endpoint: 'https://router.huggingface.co/v1/chat/completions', name: 'Hugging Face' },
-      { key: cfg.openai_key || cfg.openai_api_key, model: cfg.openai_vision_model || cfg.openai_model || 'gpt-4o-mini', endpoint: 'https://api.openai.com/v1/chat/completions', name: 'OpenAI' },
-    ];
-    const content = [
-      { type: 'text', text: prompt },
-      ...images.slice(0, 3).map(url => ({ type: 'image_url', image_url: { url } })),
-    ];
-    for (const cand of candidates) {
-      const apiKey = String(cand.key || '').trim();
-      if (!apiKey) continue;
-      try {
-        const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` };
-        if (cand.name === 'OpenRouter') { headers['HTTP-Referer'] = window.location.origin; headers['X-Title'] = 'Weverse Admin AI'; }
-        const res = await fetch(cand.endpoint, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ model: cand.model, messages: [{ role: 'user', content }], temperature: 0.2, max_tokens: 4096 }),
-          signal: AbortSignal.timeout(40000),
-        });
-        if (!res.ok) continue;
-        const data = await res.json();
-        const text = String(data?.choices?.[0]?.message?.content || '').trim();
-        if (!text) continue;
-        const parsed = extractJsonFromAiText(text);
-        if (parsed) return { ...parsed, _aiProvider: `${cand.name} (browser)`, _aiModel: cand.model };
-      } catch { /* try next provider */ }
-    }
-    return null;
-  },
-
-  // ── IMAGE GENERATION: expand a product into realistic angle photos ──
-  // Cloud generation runs server-side (Gemini image models) so the API key
-  // never touches the browser. Falls back to local ComfyUI, then Ollama.
-  // Returns an array of data-URLs.
-  async generateImages(prompt, referenceUrl, count = 1) {
-    let refData = null;
-    if (referenceUrl) {
-      try { refData = await this._fetchImageAsDataUrl(referenceUrl); } catch { /* reference optional */ }
-    }
-    try {
-      const res = await this._callEdge({ action: 'generate_images', prompt, reference_url: refData, count: count || 1 });
-      if (res && res.success && Array.isArray(res.images) && res.images.length) return res.images;
-      throw new Error((res && res.error) || 'Image generation service unavailable.');
-    } catch (err) {
-      try {
-        const comfy = await this._tryLocalComfyUI(prompt);
-        if (comfy && comfy.length) return comfy;
-      } catch { /* ignore */ }
-      try {
-        const local = await this._tryLocalOllamaImage(prompt);
-        if (local && local.length) return local;
-      } catch { /* ignore */ }
-      throw new Error(`AI image generation failed: ${err.message || err}. Add a Google Gemini API key in AI Settings, or configure local ComfyUI/Ollama.`);
-    }
-  },
-
-  // Local image generation via ComfyUI (browser → localhost).
-  // Uses the saved workflow JSON; the prompt is injected into the input node.
-  async _tryLocalComfyUI(prompt) {
-    const cfg = await this.getConfig();
-    const workflowRaw = String(cfg.comfyui_workflow || '').trim();
-    if (!workflowRaw) return null;
-    let workflow;
-    try { workflow = JSON.parse(workflowRaw); } catch { return null; }
-    const baseUrl = String(cfg.comfyui_url || 'http://127.0.0.1:8188').replace(/\/$/, '');
-    const inputNode = String(cfg.comfyui_input_node || 'image');
-    const outputNode = String(cfg.comfyui_output_node || 'image');
-    const input = workflow[inputNode] || Object.values(workflow)[0];
-    if (!input) return null;
-    input.inputs = { ...(input.inputs || {}), text: prompt };
-    const clientId = `web-${Date.now()}`;
-    const res = await fetch(`${baseUrl}/prompt`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: workflow, client_id: clientId }),
-      signal: AbortSignal.timeout(60000),
-    });
-    if (!res.ok) return null;
-    const { prompt_id } = await res.json();
-    if (!prompt_id) return null;
-    // Poll /history until the output node emits images.
-    const deadline = Date.now() + 180000;
-    while (Date.now() < deadline) {
-      await new Promise(r => setTimeout(r, 1000));
-      try {
-        const hres = await fetch(`${baseUrl}/history/${prompt_id}`, { signal: AbortSignal.timeout(10000) });
-        if (!hres.ok) continue;
-        const history = await hres.json();
-        const entry = history[prompt_id];
-        if (!entry) continue;
-        const outputs = Object.values(entry.outputs || {});
-        const images = outputs.flatMap(o => Array.isArray(o.images) ? o.images : []);
-        if (images.length) {
-          return Promise.all(images.slice(0, 4).map(async (img) => {
-            const ires = await fetch(`${baseUrl}/view?filename=${encodeURIComponent(img.filename)}&subfolder=${encodeURIComponent(img.subfolder || '')}&type=${encodeURIComponent(img.type || 'output')}`, { signal: AbortSignal.timeout(30000) });
-            if (!ires.ok) return null;
-            const blob = await ires.blob();
-            return await blobToBase64(blob).then(b64 => `data:${blob.type || 'image/png'};base64,${b64}`);
-          })).then(list => list.filter(Boolean));
-        }
-      } catch { /* keep polling */ }
-    }
-    return null;
-  },
-
-  // Best-effort local image generation via Ollama (browser → localhost).
-  async _tryLocalOllamaImage(prompt) {
-    const cfg = await this.getConfig();
-    const baseUrl = String(cfg.ollama_url || 'http://localhost:11434').replace(/\/$/, '');
-    const models = [cfg.ollama_image_model || cfg.ollama_model, 'llava'].filter(Boolean);
-    for (const model of models) {
-      try {
-        const res = await fetch(`${baseUrl}/api/generate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, prompt, stream: false, options: { num_predict: 512 } }),
-          signal: AbortSignal.timeout(120000),
-        });
-        if (!res.ok) continue;
-        const data = await res.json();
-        const imgB64 = String(data?.images?.[0] || '').trim();
-        if (imgB64) return [`data:image/png;base64,${imgB64}`];
-      } catch { /* try next local model */ }
-    }
-    return null;
-  },
 };
 
 function blobToBase64(blob) {
@@ -4536,7 +4048,7 @@ function blobToBase64(blob) {
 // Expose globally so other parts of the app can call aiClient.chat(...)
 window.aiClient = aiClient;
 
-// ── AI Status Widget (shows which provider is active/cooled-down) ──
+// ── AI Status Widget (Gemini) ──
 window.showAiStatusModal = async function() {
   const statuses = await aiClient.getStatus();
   const configured = statuses.filter(s => s.hasKey);
@@ -4549,18 +4061,17 @@ window.showAiStatusModal = async function() {
         </div>
         <div class="mb-4 p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300">
           ${configured.length === 0
-            ? '⚠ No keys configured. Go to AI Settings and add at least one API key.'
-            : `${configured.length} provider${configured.length>1?'s':''} configured. Auto-switch is <strong class="text-emerald-400">ON</strong> — will skip rate-limited providers automatically.`}
+            ? '⚠ No key configured. Go to AI Settings and add your Google Gemini API key.'
+            : 'Google Gemini is configured and ready.'}
         </div>
         <div class="space-y-2">
           ${statuses.map(s => `
             <div class="flex items-center gap-3 p-2.5 glass-soft border ${s.hasKey ? 'border-blue-500/15' : 'border-gray-800'} rounded-xl opacity-${s.hasKey ? '100' : '40'}">
-              <span class="w-2.5 h-2.5 rounded-full shrink-0 ${s.isCoolingDown ? 'bg-red-500' : s.hasKey ? 'bg-emerald-400' : 'bg-gray-600'}"></span>
+              <span class="w-2.5 h-2.5 rounded-full shrink-0 ${s.hasKey ? 'bg-emerald-400' : 'bg-gray-600'}"></span>
               <span class="text-xs font-bold text-white flex-1">${esc(s.name)}</span>
               ${s.isActive ? '<span class="text-[9px] font-black text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full">ACTIVE</span>' : ''}
               ${!s.hasKey ? '<span class="text-[9px] text-gray-600">No key</span>' : ''}
-              ${s.isCoolingDown ? `<span class="text-[9px] text-red-400 font-bold">Rate limited — ${s.remainingSec}s</span>` : ''}
-              ${s.hasKey && !s.isCoolingDown ? '<span class="text-[9px] text-emerald-400">Ready ✓</span>' : ''}
+              ${s.hasKey ? '<span class="text-[9px] text-emerald-400">Ready ✓</span>' : ''}
             </div>`).join('')}
         </div>
         <div class="mt-4 p-3 bg-gray-900 rounded-xl">
@@ -4583,11 +4094,9 @@ window.testAiCall = async function() {
   if (!input) return;
   const output = document.getElementById('ai-test-output');
   output.classList.remove('hidden');
-  output.textContent = '⏳ Trying providers…';
+  output.textContent = '⏳ Asking Gemini…';
   try {
-    const result = await aiClient.prompt(input, {
-      onProviderSwitch: (name) => { output.textContent = `⚡ Using: ${name}…`; },
-    });
+    const result = await aiClient.prompt(input);
     output.textContent = `✓ [${result.provider} · ${result.model}]\n\n${result.text}`;
   } catch (err) {
     output.textContent = `❌ ${err.message}`;
@@ -4607,491 +4116,6 @@ function extractJsonFromAiText(text) {
   catch { return null; }
 }
 
-
-// ══════════════════════════════════════════════════════════
-//  12. AI MARKETING STUDIO
-// ══════════════════════════════════════════════════════════
-const AI_AD_VIDEO_PROVIDERS = [
-  { id: 'flow', name: 'Flow' },
-  { id: 'veo', name: 'Veo' },
-  { id: 'luma', name: 'Luma' },
-  { id: 'runway', name: 'Runway' },
-  { id: 'pika', name: 'Pika' },
-  { id: 'kling', name: 'Kling' },
-  { id: 'hailuo', name: 'Hailuo' },
-  { id: 'pixverse', name: 'PixVerse' },
-  { id: 'hedra', name: 'Hedra' },
-  { id: 'heygen', name: 'HeyGen' },
-  { id: 'tavus', name: 'Tavus' },
-];
-
-const AI_AD_GOALS = [
-  'Product launch',
-  'Seasonal sale',
-  'Brand awareness',
-  'Lead generation',
-  'Live stream conversion',
-  'Retargeting',
-];
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function getAiAdProviderConfig(savedProviders = []) {
-  const byId = new Map(toArray(savedProviders).map((p) => [p.id, p]));
-  return AI_AD_VIDEO_PROVIDERS.map((provider) => {
-    const saved = byId.get(provider.id) || {};
-    return {
-      id: provider.id,
-      name: provider.name,
-      enabled: !!saved.enabled,
-      apiKey: saved.apiKey || '',
-      model: saved.model || '',
-      baseUrl: saved.baseUrl || '',
-    };
-  });
-}
-
-async function saveAiSettingsPatch(patch) {
-  const { data: existing } = await supabase.from('ai_settings').select('id').limit(1).maybeSingle();
-  let error;
-  if (existing?.id) {
-    ({ error } = await supabase.from('ai_settings').update(patch).eq('id', existing.id));
-  } else {
-    ({ error } = await supabase.from('ai_settings').insert(patch));
-  }
-  if (error) throw error;
-}
-
-async function appendAiAdHistory(entry) {
-  const { data: current } = await supabase.from('ai_settings').select('ai_ad_generation_history').limit(1).maybeSingle();
-  const history = [entry, ...toArray(current?.ai_ad_generation_history)].slice(0, 120);
-  await saveAiSettingsPatch({ ai_ad_generation_history: history });
-}
-
-async function saveSiteSettingsPatch(patch) {
-  try {
-    const { data: existing, error: loadError } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
-    if (loadError) throw loadError;
-
-    let error;
-    if (existing?.id) {
-      ({ error } = await supabase.from('site_settings').update(patch).eq('id', existing.id));
-    } else {
-      ({ error } = await supabase.from('site_settings').insert(patch));
-    }
-    if (error) throw error;
-    return;
-  } catch {}
-
-  // Fallback path for environments where site_settings has not been migrated.
-  const meta = {
-    mode: 'ai_ad',
-    startsAt: patch.ai_ad_starts_at || null,
-    endsAt: patch.ai_ad_ends_at || null,
-    ctaLabel: patch.ai_ad_cta_label || 'Shop Now',
-    muted: patch.ai_ad_muted !== false,
-  };
-  const fallbackPayload = {
-    is_live: !!patch.ai_ad_enabled,
-    badge_text: patch.ai_ad_badge || 'AI Advertisement',
-    headline: patch.ai_ad_title || '',
-    embed_url: patch.ai_ad_video_url || '',
-    description: `AI_AD_META:${JSON.stringify(meta)}`,
-    stream_status: patch.ai_ad_enabled ? 'ai_ad' : 'offline',
-    started_at: patch.ai_ad_starts_at || null,
-    updated_at: new Date().toISOString(),
-  };
-  try {
-    const { data: fallbackExisting } = await supabase.from('public_live_state').select('id').limit(1).maybeSingle();
-    let fallbackError;
-    if (fallbackExisting?.id) {
-      ({ error: fallbackError } = await supabase.from('public_live_state').update(fallbackPayload).eq('id', fallbackExisting.id));
-    } else {
-      ({ error: fallbackError } = await supabase.from('public_live_state').insert(fallbackPayload));
-    }
-    if (!fallbackError) return;
-  } catch {}
-
-  // Last-resort local fallback so activation still works if DB schema is unavailable.
-  try {
-    localStorage.setItem(AI_AD_LOCAL_FALLBACK_KEY, JSON.stringify({
-      ai_ad_enabled: !!patch.ai_ad_enabled,
-      ai_ad_video_url: patch.ai_ad_video_url || '',
-      ai_ad_badge: patch.ai_ad_badge || 'AI Advertisement',
-      ai_ad_title: patch.ai_ad_title || '',
-      ai_ad_cta_label: patch.ai_ad_cta_label || 'Shop Now',
-      ai_ad_muted: patch.ai_ad_muted !== false,
-      ai_ad_starts_at: patch.ai_ad_starts_at || null,
-      ai_ad_ends_at: patch.ai_ad_ends_at || null,
-      ai_ad_duration_seconds: patch.ai_ad_duration_seconds || 30,
-      ai_ad_updated_at: new Date().toISOString(),
-    }));
-  } catch {}
-}
-
-function readAiMetaDescription(value) {
-  if (!value || typeof value !== 'string') return null;
-  if (!value.startsWith('AI_AD_META:')) return null;
-  try {
-    return JSON.parse(value.slice('AI_AD_META:'.length));
-  } catch {
-    return null;
-  }
-}
-
-async function loadAiMarketingSiteState() {
-  try {
-    const { data, error } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
-    if (!error && data) return data;
-  } catch {}
-
-  try {
-    const { data, error } = await supabase.from('public_live_state').select('*').limit(1).maybeSingle();
-    if (error || !data) throw new Error('public_live_state unavailable');
-    const meta = readAiMetaDescription(data.description);
-    const startsAt = meta?.startsAt || data.started_at || null;
-    const endsAt = meta?.endsAt || null;
-    return {
-      ai_ad_enabled: !!data.is_live && data.stream_status === 'ai_ad' && !!data.embed_url,
-      ai_ad_video_url: data.embed_url || '',
-      ai_ad_badge: data.badge_text || 'AI Advertisement',
-      ai_ad_title: data.headline || '',
-      ai_ad_cta_label: meta?.ctaLabel || 'Shop Now',
-      ai_ad_muted: meta?.muted !== false,
-      ai_ad_starts_at: startsAt,
-      ai_ad_ends_at: endsAt,
-      ai_ad_duration_seconds: endsAt && startsAt ? Math.max(5, Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 1000)) : 30,
-    };
-  } catch {
-    try {
-      const raw = localStorage.getItem(AI_AD_LOCAL_FALLBACK_KEY);
-      const localState = raw ? JSON.parse(raw) : null;
-      return localState && typeof localState === 'object' ? localState : {};
-    } catch {
-      return {};
-    }
-  }
-}
-
-async function renderAiMarketingStudio() {
-  const content = document.getElementById('content');
-  if (!content) return;
-  try {
-    const [{ data: aiSettings }, siteSettings] = await Promise.all([
-      supabase.from('ai_settings').select('*').limit(1).maybeSingle(),
-      loadAiMarketingSiteState(),
-    ]);
-
-    const ai = aiSettings || {};
-    const site = siteSettings || {};
-    const providers = getAiAdProviderConfig(ai.ai_ad_video_providers);
-    const history = toArray(ai.ai_ad_generation_history)
-      .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-      .slice(0, 12);
-    const activeNow = !!site.ai_ad_enabled && !!site.ai_ad_video_url && (!site.ai_ad_ends_at || new Date(site.ai_ad_ends_at).getTime() > Date.now());
-
-    content.innerHTML = `
-      <div class="space-y-6 fade-in">
-        <div class="flex items-start justify-between flex-wrap gap-3">
-          <div>
-            <h2 class="text-xl font-black text-white">AI Marketing Studio</h2>
-            <p class="text-xs text-gray-500 mt-1">AI Advertisement Generator with live ad-slot takeover and automatic restore when campaign ends.</p>
-          </div>
-          ${activeNow
-            ? `<button onclick="deactivateAiAdvertisement()" class="btn-press bg-red-600/90 hover:bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5"><i data-lucide="square" class="w-3.5 h-3.5"></i>Stop Active AI Ad</button>`
-            : '<span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">No active AI ad</span>'}
-        </div>
-
-        <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl text-xs text-blue-200">
-          <p class="font-bold mb-1">How this works in real playback</p>
-          <p>When an AI campaign is active, the homepage pauses normal carousel ads, plays the AI video, and resumes normal ads after finish or end-time. Video generation happens through your configured providers and keys.</p>
-        </div>
-
-        <form id="ai-ad-provider-form" onsubmit="saveAiAdProviders(event)" class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="key-round" class="w-4 h-4 text-blue-400"></i>API Management</h3>
-            <button type="submit" class="btn-press bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">Save Provider Keys</button>
-          </div>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            ${providers.map((p) => `
-              <div class="glass-soft border border-blue-500/10 rounded-xl p-3 space-y-2">
-                <div class="flex items-center justify-between">
-                  <p class="text-xs font-bold text-white">${esc(p.name)}</p>
-                  <label class="flex items-center gap-1.5 text-[11px] text-gray-400">
-                    <input type="checkbox" name="provider_${p.id}_enabled" ${p.enabled ? 'checked' : ''}>
-                    Enabled
-                  </label>
-                </div>
-                <div>
-                  <label class="lbl">API Key</label>
-                  <input type="password" class="input-field text-xs" name="provider_${p.id}_api_key" placeholder="${p.apiKey ? 'Saved key - leave blank to keep' : 'Paste API key'}">
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label class="lbl">Model</label>
-                    <input type="text" class="input-field text-xs" name="provider_${p.id}_model" value="${esc(p.model)}" placeholder="Optional model name">
-                  </div>
-                  <div>
-                    <label class="lbl">Base URL</label>
-                    <input type="url" class="input-field text-xs" name="provider_${p.id}_base_url" value="${esc(p.baseUrl)}" placeholder="Optional custom API URL">
-                  </div>
-                </div>
-              </div>`).join('')}
-          </div>
-        </form>
-
-        <form id="ai-ad-generator-form" onsubmit="activateAiAdvertisement(event)" class="glass-soft border border-violet-500/20 rounded-2xl p-5 space-y-4">
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="clapperboard" class="w-4 h-4 text-violet-400"></i>AI Advertisement Generator</h3>
-            <button type="button" onclick="generateAiAdScript()" class="btn-press bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">Generate Script with AI</button>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <div>
-              <label class="lbl">Campaign Goal</label>
-              <select id="ai-ad-goal" class="input-field text-xs" name="goal">
-                ${AI_AD_GOALS.map((goal) => `<option value="${esc(goal)}">${esc(goal)}</option>`).join('')}
-              </select>
-            </div>
-            <div>
-              <label class="lbl">Provider Used for Video</label>
-              <select id="ai-ad-provider" class="input-field text-xs" name="provider_id">
-                ${providers.map((p) => `<option value="${p.id}" ${p.enabled ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="lbl">Offer / Brief</label>
-            <textarea id="ai-ad-brief" class="input-field text-xs" name="brief" rows="3" placeholder="Describe product, offer, target audience, and style."></textarea>
-          </div>
-
-          <div>
-            <label class="lbl">Generated Script</label>
-            <textarea id="ai-ad-script" class="input-field text-xs" name="script" rows="6" placeholder="Click Generate Script with AI, then edit if needed.">${esc(history[0]?.script || '')}</textarea>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <div>
-              <label class="lbl">AI Video URL</label>
-              <input id="ai-ad-video-url" type="url" class="input-field text-xs" name="video_url" placeholder="https://...mp4" value="${esc(activeNow ? site.ai_ad_video_url || '' : '')}" required>
-            </div>
-            <div>
-              <label class="lbl">Playback Duration (seconds)</label>
-              <input id="ai-ad-duration" type="number" class="input-field text-xs" name="duration_seconds" min="5" max="900" value="${esc(String(site.ai_ad_duration_seconds || 30))}" required>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <div>
-              <label class="lbl">Badge</label>
-              <input id="ai-ad-badge" type="text" class="input-field text-xs" name="badge" value="${esc(site.ai_ad_badge || 'AI Advertisement')}" placeholder="AI Advertisement">
-            </div>
-            <div>
-              <label class="lbl">Headline</label>
-              <input id="ai-ad-title" type="text" class="input-field text-xs" name="title" value="${esc(site.ai_ad_title || '')}" placeholder="Campaign headline">
-            </div>
-            <div>
-              <label class="lbl">CTA Label</label>
-              <input id="ai-ad-cta" type="text" class="input-field text-xs" name="cta_label" value="${esc(site.ai_ad_cta_label || 'Shop Now')}" placeholder="Shop Now">
-            </div>
-          </div>
-
-          <label class="flex items-center gap-2 text-xs text-gray-400">
-            <input type="checkbox" name="muted" ${site.ai_ad_muted !== false ? 'checked' : ''}>
-            Play AI ad muted (recommended for autoplay)
-          </label>
-
-          <button type="submit" class="btn-press w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-bold py-3 rounded-xl text-sm transition">Activate AI Advertisement</button>
-        </form>
-
-        <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
-          <div class="p-4 border-b border-blue-500/10 flex items-center justify-between">
-            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-blue-400"></i>Recent AI Ad Jobs</h3>
-            <span class="text-xs text-gray-500">${history.length} entries</span>
-          </div>
-          <div class="overflow-x-auto scrollbar-thin">
-            <table class="w-full dt">
-              <thead><tr><th>Time</th><th>Goal</th><th>Provider</th><th>Status</th><th>Video</th></tr></thead>
-              <tbody>
-                ${history.length === 0
-                  ? '<tr><td colspan="5" class="text-center text-gray-500 py-8">No AI ad jobs yet.</td></tr>'
-                  : history.map((job) => `
-                    <tr>
-                      <td><span class="text-xs text-gray-400">${esc(fmtDT(job.created_at))}</span></td>
-                      <td><span class="text-xs text-white">${esc(job.goal || 'General')}</span></td>
-                      <td><span class="text-xs text-gray-300">${esc(job.provider_name || job.provider_id || 'N/A')}</span></td>
-                      <td>${badge(job.status || 'active')}</td>
-                      <td>${job.video_url ? `<a href="${job.video_url}" target="_blank" rel="noopener" class="text-xs text-blue-400 hover:underline">Open</a>` : '<span class="text-xs text-gray-600">N/A</span>'}</td>
-                    </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>`;
-    if (window.lucide) lucide.createIcons();
-  } catch (err) {
-    content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`;
-  }
-}
-
-window.saveAiAdProviders = async function(e) {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const data = Object.fromEntries(fd.entries());
-  try {
-    const { data: current } = await supabase.from('ai_settings').select('ai_ad_video_providers').limit(1).maybeSingle();
-    const existing = getAiAdProviderConfig(current?.ai_ad_video_providers);
-    const existingMap = new Map(existing.map((p) => [p.id, p]));
-    const providers = AI_AD_VIDEO_PROVIDERS.map((provider) => {
-      const id = provider.id;
-      const prev = existingMap.get(id) || {};
-      const typedKey = String(data[`provider_${id}_api_key`] || '').trim();
-      return {
-        id,
-        name: provider.name,
-        enabled: fd.get(`provider_${id}_enabled`) === 'on',
-        apiKey: typedKey || prev.apiKey || '',
-        model: String(data[`provider_${id}_model`] || '').trim(),
-        baseUrl: String(data[`provider_${id}_base_url`] || '').trim(),
-      };
-    });
-
-    await saveAiSettingsPatch({ ai_ad_video_providers: providers });
-    showToast('AI advertisement provider settings saved.', 'success');
-    renderAiMarketingStudio();
-  } catch (err) {
-    showToast('Failed to save providers: ' + err.message, 'error');
-  }
-};
-
-window.generateAiAdScript = async function() {
-  const brief = document.getElementById('ai-ad-brief')?.value?.trim();
-  const goal = document.getElementById('ai-ad-goal')?.value || 'Product launch';
-  const providerSelect = document.getElementById('ai-ad-provider');
-  const scriptEl = document.getElementById('ai-ad-script');
-
-  if (!brief) {
-    showToast('Enter campaign brief first.', 'error');
-    return;
-  }
-  if (!scriptEl) return;
-
-  scriptEl.value = 'Generating script...';
-  try {
-    const prompt = [
-      'Create a short video advertisement script for an ecommerce marketplace.',
-      `Goal: ${goal}`,
-      `Brief: ${brief}`,
-      'Return only plain text in this exact structure:',
-      'Headline:',
-      'Voiceover:',
-      'On-screen text:',
-      'CTA:',
-    ].join('\n');
-
-    const result = await aiClient.prompt(prompt, {
-      onProviderSwitch: (name) => {
-        scriptEl.value = `Generating with ${name}...`;
-      },
-    });
-
-    scriptEl.value = result.text || '';
-    await appendAiAdHistory({
-      created_at: new Date().toISOString(),
-      goal,
-      brief,
-      provider_name: result.provider,
-      provider_id: providerSelect?.value || '',
-      status: 'script_generated',
-      script: result.text || '',
-      video_url: null,
-    });
-    showToast(`Script generated with ${result.provider}.`, 'success');
-  } catch (err) {
-    scriptEl.value = '';
-    showToast('Script generation failed: ' + err.message, 'error');
-  }
-};
-
-window.activateAiAdvertisement = async function(e) {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const goal = String(fd.get('goal') || 'Product launch');
-  const providerId = String(fd.get('provider_id') || '');
-  const providerName = AI_AD_VIDEO_PROVIDERS.find((p) => p.id === providerId)?.name || providerId;
-  const brief = String(fd.get('brief') || '').trim();
-  const script = String(fd.get('script') || '').trim();
-  const videoUrl = String(fd.get('video_url') || '').trim();
-  const duration = Math.max(5, Math.min(900, parseInt(String(fd.get('duration_seconds') || '30'), 10) || 30));
-  const now = Date.now();
-  const startsAt = new Date(now).toISOString();
-  const endsAt = new Date(now + duration * 1000).toISOString();
-
-  if (!videoUrl) {
-    showToast('Video URL is required.', 'error');
-    return;
-  }
-
-  try {
-    const payload = {
-      ai_ad_enabled: true,
-      ai_ad_video_url: videoUrl,
-      ai_ad_badge: String(fd.get('badge') || 'AI Advertisement').trim() || 'AI Advertisement',
-      ai_ad_title: String(fd.get('title') || '').trim(),
-      ai_ad_cta_label: String(fd.get('cta_label') || 'Shop Now').trim() || 'Shop Now',
-      ai_ad_duration_seconds: duration,
-      ai_ad_muted: fd.get('muted') === 'on',
-      ai_ad_provider_id: providerId,
-      ai_ad_starts_at: startsAt,
-      ai_ad_ends_at: endsAt,
-      ai_ad_updated_at: new Date().toISOString(),
-    };
-
-    await saveSiteSettingsPatch(payload);
-
-    await appendAiAdHistory({
-      created_at: startsAt,
-      goal,
-      brief,
-      provider_name: providerName,
-      provider_id: providerId,
-      status: 'active',
-      script,
-      video_url: videoUrl,
-      ends_at: endsAt,
-    });
-
-    showToast('AI advertisement activated. Homepage will switch to AI video now.', 'success');
-    renderAiMarketingStudio();
-  } catch (err) {
-    showToast('Failed to activate AI advertisement: ' + err.message, 'error');
-  }
-};
-
-window.deactivateAiAdvertisement = async function() {
-  try {
-    await saveSiteSettingsPatch({
-      ai_ad_enabled: false,
-      ai_ad_updated_at: new Date().toISOString(),
-    });
-    await appendAiAdHistory({
-      created_at: new Date().toISOString(),
-      goal: 'Manual stop',
-      provider_name: 'Admin',
-      provider_id: 'manual',
-      status: 'inactive',
-      script: '',
-      video_url: null,
-    });
-    showToast('AI advertisement stopped.', 'success');
-    renderAiMarketingStudio();
-  } catch (err) {
-    showToast('Failed to stop AI advertisement: ' + err.message, 'error');
-  }
-};
 
 // ══════════════════════════════════════════════════════════
 //  12. CONTENT MANAGER
@@ -6827,7 +5851,6 @@ async function renderPublish() {
               <p>VITE_STRIPE_PUBLIC_KEY=<span class="text-amber-400">pk_test_…</span></p>
               <p class="text-gray-600 mt-2"># AI (server-side only — Edge Functions)</p>
               <p>GEMINI_API_KEY=<span class="text-emerald-400">AIzaSy…</span></p>
-              <p>GROQ_API_KEY=<span class="text-emerald-400">gsk_…</span></p>
             </div>
           </div>
 
@@ -7386,4 +6409,4 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
-
+
