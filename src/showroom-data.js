@@ -495,6 +495,22 @@ let _dbLoading = null;
 export function getDBListings() { return _dbListings; }
 export function isDBLoaded() { return _dbLoaded; }
 
+// Hard ceiling on how long a database fetch may take. If Supabase is slow or
+// unreachable the page must still render from seed data instead of hanging on
+// "Loading property details..." forever. On timeout we resolve with what we have
+// (seeds) and treat the DB as loaded so callers move on.
+const DB_FETCH_TIMEOUT_MS = 6000;
+
+function withTimeout(promise, ms) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve('__timeout__'), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      () => { clearTimeout(timer); resolve('__timeout__'); }
+    );
+  });
+}
+
 // Single shared in-flight request: if the homepage, promo pool, cards, and the
 // details page all ask for listings at once, they reuse ONE fetch instead of
 // hammering Supabase N times. This is what makes the details page open fast.
@@ -505,15 +521,20 @@ export function loadDBListings() {
     try {
       const { supabase } = await import('./supabase-client.js');
       const { listLocalShowroomListings } = await import('./local-showroom-store.js');
-      const { data, error } = await supabase
-        .from('showroom_listings')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const result = await withTimeout(
+        supabase
+          .from('showroom_listings')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false }),
+        DB_FETCH_TIMEOUT_MS
+      );
+      const data = result === '__timeout__' ? null : result.data;
+      const error = result === '__timeout__' ? null : result.error;
       // Always merge database rows with the local fallback store so products that
       // were saved locally (while the database was unavailable) still show up on
       // the store. Database rows win on duplicate IDs.
-      const rows = (error ? [] : (data || []));
+      const rows = (error || result === '__timeout__' ? [] : (data || []));
       const dbIds = new Set(rows.map(row => row.property_id));
       for (const row of listLocalShowroomListings().filter(item => item.is_active !== false)) {
         if (row && row.property_id && !dbIds.has(row.property_id)) { dbIds.add(row.property_id); rows.push(row); }

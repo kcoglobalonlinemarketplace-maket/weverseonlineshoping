@@ -1,5 +1,6 @@
 import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListings, getAllListings, isDBLoaded, cleanListing } from './showroom-data.js';
-import { getCatalogCategory, getCatalogSample } from './catalog.js';
+import { getCatalogCategory, getCatalogSample, generateListingById } from './catalog.js';
+import { loadHiddenCatalogIds, isCatalogListingHidden } from './catalog-hidden-store.js';
 import { getTruckById, formatTruckPrice, TRUCK_LISTINGS } from './truck-data.js';
 import { getMotorhomeById, MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { getCarById, CAR_LISTINGS } from './car-data.js';
@@ -1022,8 +1023,9 @@ function render(listing) {
   }
 
   let specsBlock = '';
+  let specs = [];
   if (isProperty) {
-    const specs = [
+    specs = [
       { icon: 'bed-double', label: 'Bedrooms', value: listing.bedrooms },
       { icon: 'bath', label: 'Bathrooms', value: listing.bathrooms },
       { icon: 'building', label: 'Building Size', value: listing.building_size },
@@ -1036,7 +1038,7 @@ function render(listing) {
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = specsPanel('Property Information', 'home', specs);
   } else if (listing.category === 'Motorhomes') {
-    const specs = [
+    specs = [
       { icon: 'factory', label: 'Brand', value: listing.brand },
       { icon: 'car', label: 'Model', value: listing.model },
       { icon: 'calendar', label: 'Year', value: listing.model_year },
@@ -1054,7 +1056,7 @@ function render(listing) {
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = specsPanel('Vehicle Information', 'bus', specs, 'violet');
   } else if (listing.listing_type === 'product') {
-    const specs = [
+    specs = [
       { icon: 'factory', label: 'Brand', value: listing.brand },
       { icon: 'tag', label: 'Subcategory', value: listing.subcategory },
       { icon: 'palette', label: 'Colour', value: listing.color },
@@ -1066,7 +1068,7 @@ function render(listing) {
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = specsPanel('Product Information', 'package', specs);
   } else if (listing.listing_type === 'pet') {
-    const specs = [
+    specs = [
       { icon: 'paw-print', label: 'Breed', value: listing.breed },
       { icon: 'calendar', label: 'Age', value: listing.age },
       { icon: 'users', label: 'Gender', value: listing.gender },
@@ -1134,7 +1136,7 @@ function render(listing) {
       ${actionGridHtml(listing)}
 
       <div id="listing-details">
-        ${detailsAccordions(listing, specs, features, highlights, locationBlock)}
+        ${detailsAccordions(listing, specs, listing.features, listing.highlights, locationBlock)}
       </div>
 
       <div id="recommendations-section" class="hidden">
@@ -1578,19 +1580,24 @@ async function init() {
     return;
   }
 
-  // Fast path — render the built-in listing INSTANTLY (no network wait) so the
-  // page never sits on "Loading property details...". The live database rows
-  // are fetched in the background and, when present, re-render over the static
-  // version so admin edits (title, price, images, publish state) still win.
+  const notFound = () => {
+    document.getElementById('details-content').innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>';
+  };
+
+  // ── Instant path — NO network, NO waiting ────────────────────────────────
+  // Every listing type renders synchronously from in-memory data:
+  //   • built-in specialists (trucks/motorhomes/cars/phones/products)
+  //   • seed showroom listings (W10000–W10027) via findListingById
+  //   • deterministic catalog listings (W-XX-NNNN) via generateListingById
   const staticSource = () =>
-    getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id) || findProductById(id);
+    getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id) ||
+    findProductById(id) || findListingById(id) || generateListingById(id);
 
   const renderListing = (l) => {
     cleanListing(l);
     document.title = `${l.title} | Weverse Online Shop`;
     // Built-in trucks/motorhomes/cars keep their specialist renderers (which
-    // load related sections internally); any live database listing (and
-    // phones/products/properties) use the main renderer + related sections.
+    // load related sections internally); everything else uses the main renderer.
     if (l === getTruckById(id)) renderTruck(l);
     else if (l === getMotorhomeById(id)) renderMotorhome(l);
     else if (l === getCarById(id)) renderCar(l);
@@ -1600,17 +1607,25 @@ async function init() {
   const staticListing = staticSource();
   if (staticListing) {
     renderListing(staticListing);
-    // Hydrate with live DB data in the background (single shared fetch).
+    // Hydrate with live DB data in the background (single shared, timed fetch).
+    // Admin edits (title, price, images, publish state) still win when present.
     loadDBListings().then(() => {
-      const live = findListingById(id);
-      if (live && live.property_id === id) {
-        try { renderListing(live); } catch {}
-      }
+      // If another admin hid this generated catalog listing while the local
+      // cache was stale, remove it from view once the DB-hidden list is known.
+      loadHiddenCatalogIds().then(() => {
+        if (isCatalogListingHidden(id)) { notFound(); return; }
+        const live = findListingById(id);
+        if (live && live.property_id === id) {
+          try { renderListing(live); } catch {}
+        }
+      });
     });
     return;
   }
 
-  // No built-in listing — resolve from the live database (properties are DB-only).
+  // ── Slow path — only for listings NOT in any local source ────────────────
+  // (e.g. DB-only properties created in the admin). The fetch is timed so it
+  // can never hang the page on "Loading property details...".
   await loadDBListings();
   const live = findListingById(id);
   if (live) {
@@ -1627,15 +1642,13 @@ async function init() {
     return;
   }
 
-  // Deterministic catalog listings (W-XX-NNNN) resolve instantly.
-  const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
-    import('./catalog.js'),
-    import('./catalog-hidden-store.js'),
-  ]);
+  // Final fallback: re-check the hidden-catalog list loaded from the DB, then
+  // the deterministic catalog generator (it may know ids the fast path's local
+  // cache hasn't marked loaded yet).
   await loadHiddenCatalogIds();
   const listing = generateListingById(id);
   if (!listing) {
-    document.getElementById('details-content').innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>';
+    notFound();
     return;
   }
   cleanListing(listing);
@@ -1644,4 +1657,24 @@ async function init() {
   try { loadRelatedSections(listing); } catch {}
 }
 
-init();
+// Global safety net: whatever happens during startup (a slow/hanging network
+// fetch, a renderer exception, anything), the page must NEVER sit on "Loading
+// property details..." — replace the placeholder immediately with a real
+// message so the user is never stuck on a blank loading screen.
+const root = document.getElementById('details-content');
+const loadingHtml = root ? root.innerHTML : '';
+let _fallbackShown = false;
+function failSafe(err) {
+  if (err) { try { console.error('[details] init failed:', err && (err.stack || err.message || err)); } catch {} }
+  if (_fallbackShown) return;
+  _fallbackShown = true;
+  try {
+    const el = document.getElementById('details-content');
+    if (!el) return;
+    if (el.innerHTML !== loadingHtml || el.querySelector('.fade-in, #reviews-section')) return;
+    el.innerHTML = '<div class="text-center py-20 text-gray-500">We couldn\u2019t load this listing right now. Please check your connection and try again.</div>';
+  } catch {}
+}
+window.setTimeout(failSafe, 12000);
+
+init().catch(failSafe);
