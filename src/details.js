@@ -102,24 +102,79 @@ function descriptionBlockHtml(text) {
     </div>`;
 }
 
-function reviewsSummaryHtml(listing) {
-  const r = Number(listing.rating) || 0;
-  const count = listing.rating_count || listing.review_count || 0;
+function reviewItemHtml(r) {
+  const nm = r.name || r.profiles?.full_name || 'Anonymous';
+  const initial = escapeHtml(nm.trim().charAt(0).toUpperCase() || 'A');
+  const loc = r.location ? `<span class="text-xs text-gray-400">&middot; ${escapeHtml(r.location)}</span>` : '';
+  const title = r.title ? `<p class="text-sm font-bold text-gray-900 mt-1">${escapeHtml(r.title)}</p>` : '';
+  const photo = r.review_photo ? `<div class="mt-2.5"><img src="${escapeHtml(r.review_photo)}" alt="Customer photo" class="w-28 h-28 object-cover rounded-xl border border-gray-100" loading="lazy" onerror="this.style.display='none'"></div>` : '';
   return `
-    <div class="flex flex-wrap items-center gap-4 sm:gap-6">
-      <div class="flex items-center gap-3">
-        <div class="text-4xl font-black text-gray-900">${r > 0 ? r.toFixed(1) : 'New'}</div>
-        <div>
-          <div class="flex gap-0.5">${ratingStars(r, 'w-5 h-5')}</div>
-          <div class="text-xs text-gray-500 mt-0.5">${count > 0 ? count.toLocaleString() + ' buyer ratings' : 'Be the first to review this item'}</div>
+    <div class="flex gap-3 py-4 border-b border-gray-100 last:border-0">
+      <div class="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-black uppercase shadow-sm">${initial}</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm font-bold text-gray-900">${escapeHtml(nm)}</span>${loc}
+          ${r.verified ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"><i data-lucide="badge-check" class="w-3 h-3"></i> Verified Purchase</span>' : ''}
+          <span class="text-xs text-gray-400">${new Date(r.date || r.created_at).toLocaleDateString()}</span>
         </div>
+        <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= (r.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
+        ${title}
+        <p class="text-[15px] text-gray-700 leading-relaxed mt-1.5">${escapeHtml(r.text || r.comment || '')}</p>
+        ${photo}
       </div>
-      <div class="hidden sm:block w-px h-10 bg-gray-200"></div>
-      <div class="flex flex-wrap gap-2">
-        <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Listing</span>
-        <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-full"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Secure Checkout</span>
-        <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-full"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Fast Worldwide Delivery</span>
+    </div>`;
+}
+
+// Full Customer Reviews section: live summary, 5→1 breakdown bars, real + seed
+// review list, and the write-a-review form. Keyed by the PUBLIC property_id so
+// reviews for one product can never leak onto another product's page.
+function reviewsSectionHtml(listing) {
+  const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+  return `
+    <div id="reviews-section" class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${sectionHeader('message-square-star', 'Customer Reviews', 'amber')}
+      <div id="reviews-summary" class="mb-1"><div class="text-gray-500 text-sm py-3">Loading ratings…</div></div>
+      <div id="reviews-breakdown" class="mb-3"></div>
+      <div id="reviews-list"><div class="text-gray-500 text-sm py-4">Loading reviews…</div></div>
+      <div id="review-form-wrapper" class="mt-5 pt-5 border-t border-gray-100">
+        <h4 class="text-[15px] font-black text-gray-900 mb-3 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-500"></i> Write a Review</h4>
+        <div id="review-login-msg" class="text-xs text-gray-500 hidden">Please <a href="/auth.html?redirect=${redirect}" class="text-blue-500 hover:underline">sign in</a> to write a review.</div>
+        <form id="review-form" class="space-y-3">
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-gray-600 font-bold uppercase">Rating</label>
+            <div id="star-rating" class="flex gap-1">
+              ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-300 hover:text-amber-400 transition"></i></button>`).join('')}
+            </div>
+          </div>
+          <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-[15px] text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></textarea>
+          <div class="flex items-center gap-3">
+            <label for="review-photo-input" class="inline-flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 cursor-pointer hover:border-blue-300 hover:bg-blue-50/40 transition">
+              <i data-lucide="camera" class="w-4 h-4 text-blue-500"></i> Add a photo
+            </label>
+            <input id="review-photo-input" type="file" accept="image/*" class="hidden">
+            <div id="review-photo-preview" class="flex items-center gap-2"></div>
+          </div>
+          <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">Submit Review</button>
+          <div id="review-submit-msg" class="text-xs text-emerald-600 font-bold hidden"><i data-lucide="check-circle" class="w-3.5 h-3.5 inline"></i> Thank you! Your review is now live.</div>
+        </form>
       </div>
+    </div>`;
+}
+
+function ratingsBreakdownHtml(listing, breakdown, total) {
+  const max = Math.max(1, total);
+  return `
+    <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-6 gap-y-1 items-center bg-gray-50/70 border border-gray-100 rounded-2xl p-4">
+      ${[5,4,3,2,1].map(s => {
+        const n = breakdown[s] || 0;
+        const pct = Math.round((n / max) * 100);
+        return `
+        <div class="flex items-center gap-1.5 text-xs text-gray-500 font-medium"><i data-lucide="star" class="w-3 h-3 ${s <= 5 ? 'fill-amber-400 text-amber-400' : ''}"></i>${s}</div>
+        <div class="flex items-center gap-2">
+          <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-amber-400 rounded-full" style="width:${pct}%"></div></div>
+          <span class="text-[11px] text-gray-500 w-8 text-right tabular-nums">${n.toLocaleString()}</span>
+        </div>`;
+      }).join('')}
     </div>`;
 }
 
@@ -169,10 +224,7 @@ function renderTruck(listing) {
 
   const featuresBlock = featuresGrid(listing.features);
 
-  const ratingsBlock = `
-    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
-      ${reviewsSummaryHtml(listing)}
-    </div>`;
+  const ratingsBlock = reviewsSectionHtml(listing);
 
   root.innerHTML = `
     <div class="fade-in">
@@ -278,6 +330,9 @@ function renderTruck(listing) {
 
   loadRelatedSections(listing);
 
+  setupReviewForm(listing);
+  loadReviews(listing);
+
   if (window.lucide) lucide.createIcons();
 }
 
@@ -320,10 +375,7 @@ function renderMotorhome(listing) {
 
   const featuresBlock = featuresGrid(listing.features);
 
-  const ratingsBlock = `
-    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
-      ${reviewsSummaryHtml(listing)}
-    </div>`;
+  const ratingsBlock = reviewsSectionHtml(listing);
 
   root.innerHTML = `
     <div class="fade-in">
@@ -429,6 +481,9 @@ function renderMotorhome(listing) {
 
   loadRelatedSections(listing);
 
+  setupReviewForm(listing);
+  loadReviews(listing);
+
   if (window.lucide) lucide.createIcons();
 }
 
@@ -466,10 +521,7 @@ function renderCar(listing) {
 
   const featuresBlock = featuresGrid(listing.features);
 
-  const ratingsBlock = `
-    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
-      ${reviewsSummaryHtml(listing)}
-    </div>`;
+  const ratingsBlock = reviewsSectionHtml(listing);
 
   root.innerHTML = `
     <div class="fade-in">
@@ -574,6 +626,9 @@ function renderCar(listing) {
   });
 
   loadRelatedSections(listing);
+
+  setupReviewForm(listing);
+  loadReviews(listing);
 
   if (window.lucide) lucide.createIcons();
 }
@@ -854,10 +909,7 @@ function render(listing) {
 
   const highlightsBlock = highlightsGrid(listing.highlights);
 
-  const ratingsBlock = `
-    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
-      ${reviewsSummaryHtml(listing)}
-    </div>`;
+  const ratingsBlock = reviewsSectionHtml(listing);
 
   root.innerHTML = `
     <div class="fade-in">
@@ -916,25 +968,6 @@ function render(listing) {
       ${specsBlock}
       ${featuresBlock}
       ${highlightsBlock}
-
-      <div id="reviews-section" class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
-        ${sectionHeader('message-square-star', 'Customer Reviews', 'amber')}
-        <div id="reviews-list"><div class="text-gray-500 text-sm py-4">Loading reviews...</div></div>
-        <div id="review-form-wrapper" class="mt-5 pt-5 border-t border-gray-100">
-          <h4 class="text-[15px] font-black text-gray-900 mb-3 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-500"></i> Write a Review</h4>
-          <div id="review-login-msg" class="text-xs text-gray-500 hidden">Please <a href="/auth.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}" class="text-blue-500 hover:underline">sign in</a> to write a review.</div>
-          <form id="review-form" class="space-y-3">
-            <div class="flex items-center gap-2">
-              <label class="text-xs text-gray-600 font-bold uppercase">Rating</label>
-              <div id="star-rating" class="flex gap-1">
-                ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-300 hover:text-amber-400 transition"></i></button>`).join('')}
-              </div>
-            </div>
-            <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-[15px] text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></textarea>
-            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">Submit Review</button>
-          </form>
-        </div>
-      </div>
 
       <div id="recommendations-section" class="hidden">
         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">You May Also Like</h3>
@@ -1113,84 +1146,165 @@ async function setupWishlistButton(listing) {
 async function setupReviewForm(listing) {
   const form = document.getElementById('review-form');
   const loginMsg = document.getElementById('review-login-msg');
+  if (!form) return;
   const user = await getCurrentUser();
   if (!user) {
     form.classList.add('hidden');
-    loginMsg.classList.remove('hidden');
+    if (loginMsg) loginMsg.classList.remove('hidden');
     return;
   }
+
   document.querySelectorAll('.star-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       selectedRating = parseInt(btn.dataset.rating, 10);
       document.querySelectorAll('.star-btn').forEach((b, i) => {
         const icon = b.querySelector('i');
         if (i < selectedRating) {
-          icon.classList.add('fill-blue-500','text-blue-500');
-          icon.classList.remove('text-gray-600');
+          icon.classList.add('fill-amber-400','text-amber-400');
+          icon.classList.remove('text-gray-300');
         } else {
-          icon.classList.remove('fill-blue-500','text-blue-500');
-          icon.classList.add('text-gray-600');
+          icon.classList.remove('fill-amber-400','text-amber-400');
+          icon.classList.add('text-gray-300');
         }
       });
     });
   });
+
+  const photoInput = document.getElementById('review-photo-input');
+  const photoPreview = document.getElementById('review-photo-preview');
+  let photoFile = null;
+  if (photoInput) {
+    photoInput.addEventListener('change', () => {
+      photoFile = photoInput.files && photoInput.files[0];
+      if (!photoPreview) return;
+      photoPreview.innerHTML = '';
+      if (photoFile) {
+        const url = URL.createObjectURL(photoFile);
+        photoPreview.innerHTML = `<span class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1"><img src="${url}" alt="" class="w-5 h-5 rounded object-cover">${escapeHtml(photoFile.name)}</span>`;
+      }
+    });
+  }
+
+  const msg = document.getElementById('review-submit-msg');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const text = document.getElementById('review-text').value.trim();
     if (!selectedRating) { alert('Please select a rating.'); return; }
     if (!text) { alert('Please write a review.'); return; }
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalLabel = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="inline-block animate-spin">⏳</span> Submitting…';
+
+    let reviewPhoto = null;
+    if (photoFile) {
+      const ext = (photoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const path = `${user.id}/${Date.now()}_${String(Math.random()).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('review-photos').upload(path, photoFile, {
+        contentType: photoFile.type || 'image/jpeg',
+        cacheControl: '3600',
+        upsert: false,
+      });
+      if (upErr) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalLabel;
+        alert('Could not upload photo: ' + upErr.message);
+        return;
+      }
+      const { data: pub } = supabase.storage.from('review-photos').getPublicUrl(path);
+      reviewPhoto = pub?.publicUrl || null;
+    }
+
     const { error } = await supabase.from('product_reviews').insert({
-      listing_id: listing.id,
+      listing_id: listing.id || null,
+      property_id: listing.property_id || listing.id || '',
       user_id: user.id,
       rating: selectedRating,
-      review_text: text,
-      is_approved: false,
+      comment: text,
+      review_photo: reviewPhoto,
+      is_approved: true,
     });
+
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalLabel;
     if (error) { alert('Error: ' + error.message); return; }
+
     document.getElementById('review-text').value = '';
     selectedRating = 0;
+    photoFile = null;
+    if (photoInput) photoInput.value = '';
+    if (photoPreview) photoPreview.innerHTML = '';
     document.querySelectorAll('.star-btn').forEach(b => {
       const icon = b.querySelector('i');
-      icon.classList.remove('fill-blue-500','text-blue-500');
-      icon.classList.add('text-gray-600');
+      icon.classList.remove('fill-amber-400','text-amber-400');
+      icon.classList.add('text-gray-300');
     });
-    alert('Review submitted! It will appear after admin approval.');
+    if (msg) {
+      msg.classList.remove('hidden');
+      setTimeout(() => { if (msg) msg.classList.add('hidden'); }, 4000);
+    }
     loadReviews(listing);
   });
 }
 
 async function loadReviews(listing) {
-  const container = document.getElementById('reviews-list');
-  if (!container || !listing.id) return;
-  const { data: reviews, error } = await supabase
-    .from('product_reviews')
-    .select('*, profiles(full_name)')
-    .eq('listing_id', listing.id)
-    .eq('is_approved', true)
-    .order('created_at', { ascending: false });
-  if (error) { container.innerHTML = '<p class="text-gray-500 text-sm">Unable to load reviews.</p>'; return; }
-  if (!reviews || reviews.length === 0) {
-    container.innerHTML = '<p class="text-gray-500 text-sm">No reviews yet. Be the first to review this product!</p>';
-    return;
+  const listEl = document.getElementById('reviews-list');
+  const summaryEl = document.getElementById('reviews-summary');
+  const breakdownEl = document.getElementById('reviews-breakdown');
+  if (!listEl) return;
+
+  const seed = generateSeedReviews(listing);
+  const breakdown = { 5: seed.breakdown[5] || 0, 4: seed.breakdown[4] || 0, 3: seed.breakdown[3] || 0, 2: seed.breakdown[2] || 0, 1: seed.breakdown[1] || 0 };
+  let total = Math.max(Number(seed.total) || 0, seed.reviews.length);
+  const dbReviews = [];
+  const pid = listing.property_id || listing.id || '';
+
+  if (pid) {
+    const { data: reviews, error } = await supabase
+      .from('product_reviews')
+      .select('*, profiles(full_name)')
+      .eq('property_id', pid)
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false });
+    if (!error && reviews) {
+      for (const r of reviews) {
+        dbReviews.push({ ...r, name: r.profiles?.full_name || 'Anonymous', verified: r.is_verified_purchase });
+        const s = Math.min(5, Math.max(1, Math.round(Number(r.rating) || 0)));
+        breakdown[s]++;
+        total++;
+      }
+    }
   }
-  container.innerHTML = reviews.map(r => {
-    const nm = r.profiles?.full_name || 'Anonymous';
-    const initial = escapeHtml(nm.trim().charAt(0).toUpperCase() || 'A');
-    return `
-    <div class="flex gap-3 py-4 border-b border-gray-100 last:border-0">
-      <div class="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-black uppercase shadow-sm">${initial}</div>
-      <div class="min-w-0 flex-1">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm font-bold text-gray-900">${escapeHtml(nm)}</span>
-          ${r.is_verified_purchase ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"><i data-lucide="badge-check" class="w-3 h-3"></i> Verified Purchase</span>' : ''}
-          <span class="text-xs text-gray-400">${new Date(r.created_at).toLocaleDateString()}</span>
+
+  const rating = seed.computedRating || Number(listing.rating) || 0;
+  const displayCount = Math.max(total, 0);
+  const summary = Number(rating);
+  const summaryHtml = `
+    <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+      <div class="flex items-center gap-3">
+        <div class="text-4xl font-black text-gray-900">${summary > 0 ? summary.toFixed(1) : 'New'}</div>
+        <div>
+          <div class="flex gap-0.5">${ratingStars(summary, 'w-5 h-5')}</div>
+          <div class="text-xs text-gray-500 mt-0.5">${displayCount > 0 ? displayCount.toLocaleString() + ' buyer ratings' : 'Be the first to review this item'}</div>
         </div>
-        <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
-        <p class="text-[15px] text-gray-700 leading-relaxed mt-1.5">${escapeHtml(r.review_text || '')}</p>
-        ${r.vendor_response ? `<div class="mt-2.5 bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-gray-600"><span class="font-bold text-gray-800 flex items-center gap-1.5"><i data-lucide="badge-check" class="w-3.5 h-3.5 text-blue-500"></i> Seller Response</span><p class="mt-1">${escapeHtml(r.vendor_response)}</p></div>` : ''}
+      </div>
+      <div class="hidden sm:block w-px h-10 bg-gray-200"></div>
+      <div class="flex flex-wrap gap-2">
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Listing</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-full"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Secure Checkout</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-full"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Fast Worldwide Delivery</span>
       </div>
     </div>`;
-  }).join('');
+  if (summaryEl) summaryEl.innerHTML = summaryHtml;
+  if (breakdownEl) breakdownEl.innerHTML = ratingsBreakdownHtml(listing, breakdown, displayCount);
+
+  const all = [...dbReviews, ...seed.reviews];
+  if (!all.length) {
+    listEl.innerHTML = '<p class="text-gray-500 text-sm py-2">No reviews yet. Be the first to review this product!</p>';
+  } else {
+    listEl.innerHTML = all.map(reviewItemHtml).join('');
+  }
   if (window.lucide) lucide.createIcons();
 }
 
