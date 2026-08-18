@@ -694,3 +694,13 @@ html {
   text-decoration-thickness: 2px !important;
   text-decoration-color: #ef4444 !important;
 }
+
+/* Homepage bottom: hide scrollbars on the horizontal product rails while
+   keeping touch/mouse scrolling smooth. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
