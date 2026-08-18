@@ -4711,16 +4711,23 @@ const aiClient = {
   // specifications{} } or null when vision is unavailable. API keys stay
   // server-side — the browser only sends image data and a prompt.
   async analyzeImages(imageUrls, context = {}) {
-    const prompt = `You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded product photo(s) and identify exactly what the product is.
+    const prompt = `You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded product photo(s) and identify exactly what the product is — the REAL brand, model and year that actually appear in the photos, never a guessed one.
+
+IDENTIFY THE REAL BRAND & MODEL (most important):
+- Find the brand badge, emblem, logo, nameplate or label in the photo and read its exact letters and symbols, character by character.
+- For vehicles, cross-check the badge against the design: grille shape, headlight and taillight design, body lines, wheels, interior and steering wheel. A BMW grille/kidney badge, Mercedes three-pointed star, Audi four rings, Toyota, Honda, Ford, Tesla, etc. are visually distinct — match what you actually see.
+- Use the EXACT brand name that is printed on the product. NEVER swap it for a different brand (e.g. never call a BMW a Mercedes-Benz, never call an iPhone a Samsung).
+- If the exact model number is printed (e.g. "X5", "C300", "iPhone 15 Pro Max", "MacBook Pro"), use that exact text.
+- The year must come from a visible printed date/serial when present; otherwise give your best estimate from the design era and never invent a specific year you cannot support.
 
 Return a single valid JSON object (no markdown, no extra text) with these keys:
-- title (string): a real, professional marketplace product title that matches the actual item (brand + model/type + key feature + category). Never use placeholders like "AI Product" or "Premium Item".
+- title (string): a real, professional marketplace product title that matches the actual item (real brand + real model/type + key feature + category). Never use placeholders like "AI Product" or "Premium Item".
 - description (string): a detailed, persuasive 2-4 sentence description.
 - category (string): the best category from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other.
 - subcategory (string)
-- brand (string): ALWAYS the brand — read the name/badge/emblem/logo printed on the product or box if visible; otherwise identify the make from the design and badge shape. Never leave this empty when the image shows a branded product.
-- model (string): ALWAYS the exact model name/number printed on the product or box when visible; otherwise your best professional identification from the design.
-- year (string or null): ALWAYS the model/manufacturing year — read the printed year/serial if visible, otherwise give your best professional estimate from the design era. Only null for items with no meaningful year.
+- brand (string): the EXACT brand name that appears on the product or badge — read the logo/emblem/nameplate and use that name. If none is readable, identify the make from the design and badge shape.
+- model (string): the EXACT model name/number printed on the product or box when visible; otherwise your best professional identification from the design.
+- year (string or null): the real model/manufacturing year — read the printed year/serial if visible, otherwise your best estimate from the design era. Only null for items with no meaningful year.
 - model_year (string or null): same as year when the product has a model year.
 - color (string): ALWAYS the dominant color of the item.
 - condition (string; from: New, Refurbished, Used - Like New, Used - Good, Used - Fair)
@@ -4732,11 +4739,12 @@ Return a single valid JSON object (no markdown, no extra text) with these keys:
 - detected_name (string): a short plain-language label of the product, e.g. "white sneakers".
 
 Rules:
-- Only include keys you can actually observe or reasonably infer from the photo(s). NEVER invent exact specs (price, storage size, RAM, horsepower, serial numbers) that are not visible or printed on the product. Brand, model and year are ALWAYS required and must be your best professional identification even when not perfectly readable.
+- ACCURACY OVER GUESSES: Only state a brand/model/year you can actually see or confidently identify from the design. If you cannot identify the exact model, give the brand and a general body type (e.g. "BMW SUV") instead of inventing a specific model.
+- NEVER invent exact specs (price, storage size, RAM, horsepower, serial numbers) that are not visible or printed on the product.
 - Respond with valid JSON only.`;
 
     const images = [];
-    for (const url of (imageUrls || []).slice(0, 2)) {
+    for (const url of (imageUrls || []).slice(0, 3)) {
       const dataUrl = await this._fetchImageAsDataUrl(url, 1024);
       if (dataUrl) images.push(dataUrl);
     }
@@ -4857,7 +4865,7 @@ Rules:
     for (const model of models) {
       try {
         const parts = [{ text: prompt }];
-        for (const url of images.slice(0, 2)) {
+        for (const url of images.slice(0, 3)) {
           const match = String(url).match(/^data:([^;,]+)[;,]base64,(.+)$/s);
           if (!match) continue;
           parts.push({ inlineData: { mimeType: match[1].trim(), data: match[2].trim() } });
@@ -4894,7 +4902,7 @@ Rules:
     ];
     const content = [
       { type: 'text', text: prompt },
-      ...images.slice(0, 2).map(url => ({ type: 'image_url', image_url: { url } })),
+      ...images.slice(0, 3).map(url => ({ type: 'image_url', image_url: { url } })),
     ];
     for (const cand of candidates) {
       const apiKey = String(cand.key || '').trim();
