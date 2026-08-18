@@ -514,6 +514,11 @@ export async function loadDBListings() {
     const source = rows;
     _dbListings = source.map(row => ({
       ...row,
+      // Vehicle/product specs are stored in the `specifications` JSONB column
+      // (model_year, engine, transmission, seating_capacity, doors, etc.).
+      // Flatten them to top-level so the showroom/details pages can read them
+      // the same way they read the hardcoded seed data.
+      ...(row.specifications && typeof row.specifications === 'object' ? row.specifications : {}),
       images: Array.isArray(row.images) ? row.images : [],
       features: Array.isArray(row.features) ? row.features : [],
       highlights: Array.isArray(row.highlights) ? row.highlights : [],

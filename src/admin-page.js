@@ -2782,7 +2782,13 @@ window.saveProduct = async function(e, category, existingId) {
       };
       const changes = {};
 
-      ['title', 'description', 'currency', 'subcategory', 'brand', 'color', 'size', 'condition', 'warranty', 'availability_status', 'model_year', 'body_type', 'mileage', 'engine', 'horsepower', 'transmission', 'drive_type', 'fuel_type', 'seating_capacity', 'doors'].forEach((key) => {
+      // NOTE: vehicle/spec fields (model_year, body_type, mileage, engine,
+      // horsepower, transmission, drive_type, fuel_type, seating_capacity,
+      // doors, safety_features) are NOT top-level columns on showroom_listings —
+      // they live in the `specifications` JSONB column (see buildSpecifications
+      // below). Writing them top-level makes the upsert fail with "column does
+      // not exist", so they must never be added to `changes`.
+      ['title', 'description', 'currency', 'subcategory', 'brand', 'color', 'size', 'condition', 'warranty', 'availability_status'].forEach((key) => {
         if (!eq(data[key], base[key])) changes[key] = (data[key] == null || data[key] === '') ? null : data[key];
       });
 
