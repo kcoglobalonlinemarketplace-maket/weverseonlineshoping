@@ -1295,7 +1295,7 @@ async function init() {
     return;
   }
 
-  // Deterministic catalog listings (KCO-XX-NNNN) resolve instantly.
+  // Deterministic catalog listings (W-XX-NNNN) resolve instantly.
   const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
     import('./catalog.js'),
     import('./catalog-hidden-store.js'),

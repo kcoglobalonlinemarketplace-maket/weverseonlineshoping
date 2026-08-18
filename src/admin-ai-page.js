@@ -117,8 +117,8 @@ function setPreviewForListing(item, note) {
 
 function parseCreatedTitleFromContent(content) {
   const text = normalizeText(content);
-  const match = text.match(/\*\*([^*]+)\*\*\s*\((KCO-[^)]+)\)/i)
-    || text.match(/created\s+\*\*([^*]+)\*\*\s+as\s+\*\*(KCO-[^*]+)\*\*/i)
+  const match = text.match(/\*\*([^*]+)\*\*\s*\((W-[^)]+)\)/i)
+    || text.match(/created\s+\*\*([^*]+)\*\*\s+as\s+\*\*(W-[^*]+)\*\*/i)
     || text.match(/created\s+\*\*([^*]+)\*\*/i);
   return match?.[1] ? normalizeText(match[1]) : '';
 }
@@ -1236,7 +1236,7 @@ function scrollToBottom() {
 function generateProductId() {
   const tail = String(Date.now()).slice(-6);
   const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `KCO-${tail}${rand}`;
+  return `W-${tail}${rand}`;
 }
 
 // Professional title derivation — never falls back to "AI Product"/"AI Curated".

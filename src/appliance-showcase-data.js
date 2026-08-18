@@ -10,7 +10,7 @@ function buildGallery(paths) {
 
 export const APPLIANCE_SHOWCASE_LISTINGS = [
   {
-    property_id: 'KCO-002001', listing_type: 'product', category: 'Home Appliances', subcategory: 'Washing Machines',
+    property_id: 'W10228', listing_type: 'product', category: 'Home Appliances', subcategory: 'Washing Machines',
     title: 'Samsung EcoBubble Front-Load Washer — 9kg',
     description: 'The Samsung EcoBubble front-load washer mixes detergent with water and air before it hits your clothes, so you get deep, gentle cleaning even in cold water. The digital inverter motor runs quietly and efficiently, and the AddWash door lets you drop in forgotten items mid-cycle. A brand-new 9kg front-loader finished in white with a large clear porthole. Stock #STK-002001.',
     price: 899, currency: 'USD', country: '', country_code: '',
@@ -23,7 +23,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Deep clean even in cold water', 'Drop in forgotten items mid-cycle', 'Quiet, efficient inverter motor'],
   },
   {
-    property_id: 'KCO-002002', listing_type: 'product', category: 'Home Appliances', subcategory: 'Laptops',
+    property_id: 'W10229', listing_type: 'product', category: 'Home Appliances', subcategory: 'Laptops',
     title: 'Dell Alienware m15 Gaming Laptop — 2019',
     description: 'The Dell Alienware m15 is a premium gaming laptop in a slim, legrified aluminum-and-fiber chassis. A 15.6-inch FHD 144Hz display, 9th-generation Intel Core i7 processor, NVIDIA GeForce RTX graphics, and 16GB of RAM deliver smooth, high-fidelity gaming on the go. Stock #STK-002002.',
     price: 1799, currency: 'USD', country: '', country_code: '',
@@ -36,7 +36,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Smooth high-fidelity gaming', 'Premium slim metal chassis', 'Full-RGB per-key lighting'],
   },
   {
-    property_id: 'KCO-002003', listing_type: 'product', category: 'Home Appliances', subcategory: 'Televisions',
+    property_id: 'W10230', listing_type: 'product', category: 'Home Appliances', subcategory: 'Televisions',
     title: 'LG OLED 55-inch 4K Smart TV',
     description: 'The LG OLED 55-inch 4K Smart TV delivers the perfect black and infinite contrast that only self-lit OLED pixels can. The α9 Intelligent Processor upscales everything to stunning 4K, while webOS smart TV puts all your streaming apps one click away. A big, clean, gorgeous screen built around a sleek metal frame. Stock #STK-002003.',
     price: 1299, currency: 'USD', country: '', country_code: '',
@@ -49,7 +49,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Perfect black & infinite contrast', 'Stunning 4K upscaling', 'All streaming apps built in'],
   },
   {
-    property_id: 'KCO-002004', listing_type: 'product', category: 'Home Appliances', subcategory: 'Luggage',
+    property_id: 'W10231', listing_type: 'product', category: 'Home Appliances', subcategory: 'Luggage',
     title: 'RIMOWA Original Cabin Suitcase',
     description: 'The RIMOWA Original Cabin is the icon that has traveled the world since 1950. Its grooved aluminum shell is featherlight yet unbelievably strong, with flexible corners and two smooth multi-wheel rollers. A premium cabin-size suitcase that turns every trip into a statement. Stock #STK-002004.',
     price: 1650, currency: 'USD', country: '', country_code: '',
@@ -62,7 +62,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Lightweight yet incredibly strong', 'Cabin-size carry-on', 'Iconic design since 1950'],
   },
   {
-    property_id: 'KCO-002005', listing_type: 'product', category: 'Home Appliances', subcategory: 'Robot Vacuums',
+    property_id: 'W10232', listing_type: 'product', category: 'Home Appliances', subcategory: 'Robot Vacuums',
     title: 'iRobot Roomba 785 Robot Vacuum',
     description: 'The iRobot Roomba 785 cleans your floors on its own, using a full suite of sensors to navigate around furniture and under beds. Its three-stage cleaning system lifts dirt, dust, and pet hair from carpets and hard floors, then it returns to its dock to recharge. A brand-new robot vacuum in glossy black. Stock #STK-002005.',
     price: 499, currency: 'USD', country: '', country_code: '',
@@ -75,7 +75,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Cleans while you are away', 'Lifts embedded pet hair', 'Returns home to recharge'],
   },
   {
-    property_id: 'KCO-002006', listing_type: 'product', category: 'Home Appliances', subcategory: 'Stand Mixers',
+    property_id: 'W10233', listing_type: 'product', category: 'Home Appliances', subcategory: 'Stand Mixers',
     title: 'KitchenAid Artisan 5-Quart Stand Mixer',
     description: 'The KitchenAid Artisan 5-quart stand mixer is the heart of the modern kitchen. Its legendary planetary mixing action circles the bowl as it turns, folding batters and kneading dough with the motor that does the work for you. Shown here in a range of iconic colors to match any kitchen. Stock #STK-002006.',
     price: 449, currency: 'USD', country: '', country_code: '',
@@ -88,7 +88,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Legendary planetary mixing', 'Handles stiff bread dough', 'Iconic colors for any kitchen'],
   },
   {
-    property_id: 'KCO-002007', listing_type: 'product', category: 'Home Appliances', subcategory: 'Espresso Machines',
+    property_id: 'W10234', listing_type: 'product', category: 'Home Appliances', subcategory: 'Espresso Machines',
     title: "De'Longhi Magnifica Automatic Espresso Machine",
     description: "The De'Longhi Magnifica grinds fresh beans and pulls café-quality espresso at the touch of a button. A built-in conical burr grinder, milk frother, and one-touch drinks deliver authentic Italian coffee without the barista skills. Finished in brushed stainless steel, it looks as good as it brews. Stock #STK-002007.",
     price: 799, currency: 'USD', country: '', country_code: '',
@@ -101,7 +101,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Fresh beans, fresh cup every time', 'Café-quality espresso at home', 'Self-cleaning brew unit'],
   },
   {
-    property_id: 'KCO-002008', listing_type: 'product', category: 'Home Appliances', subcategory: 'Cordless Vacuums',
+    property_id: 'W10235', listing_type: 'product', category: 'Home Appliances', subcategory: 'Cordless Vacuums',
     title: 'Dyson Cyclone V10 Absolute Cordless Vacuum',
     description: 'The Dyson Cyclone V10 Absolute delivers powerful, cord-free cleaning with the strongest suction of the V-series line. A lightweight digital motor, 14 cyclones, and a whole-machine filtration system capture microscopic dust, while the 40-minute runtime and convertible handheld design handle floors to ceilings. Stock #STK-002008.',
     price: 599, currency: 'USD', country: '', country_code: '',
@@ -114,7 +114,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Cord-free deep cleaning', 'Captures microscopic dust', 'Easily converts to handheld'],
   },
   {
-    property_id: 'KCO-002009', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Fryers',
+    property_id: 'W10236', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Fryers',
     title: 'Ninja Foodi MAX Health Grill & Air Fryer',
     description: 'The Ninja Foodi MAX Health Grill & Air Fryer grills, air-fries, roasts, bakes, and dehydrates in one countertop machine. Cyclonic Air Fry technology cooks food crisp with up to 75% less fat than deep frying, while the ceramic grill plate sears real grill marks. Stock #STK-002009.',
     price: 279, currency: 'USD', country: '', country_code: '',
@@ -127,7 +127,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Crisp results with less fat', 'Real grill marks at home', 'Six functions in one machine'],
   },
   {
-    property_id: 'KCO-002010', listing_type: 'product', category: 'Home Appliances', subcategory: 'Refrigerators',
+    property_id: 'W10237', listing_type: 'product', category: 'Home Appliances', subcategory: 'Refrigerators',
     title: 'Samsung French Door Refrigerator — Family Hub',
     description: 'The Samsung French Door refrigerator pairs a premium stainless exterior with Family Hub smart features. A built-in touchscreen manages groceries, mirrors your calendar, and streams music, while Twin Cooling keeps food fresher for longer. A brand-new full-size French door refrigerator. Stock #STK-002010.',
     price: 3499, currency: 'USD', country: '', country_code: '',
@@ -140,7 +140,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Manages groceries & family life', 'Keeps food fresher for longer', 'Premium stainless finish'],
   },
   {
-    property_id: 'KCO-002011', listing_type: 'product', category: 'Home Appliances', subcategory: 'Televisions',
+    property_id: 'W10238', listing_type: 'product', category: 'Home Appliances', subcategory: 'Televisions',
     title: 'Samsung QLED 8K Smart TV — Very Large Screen',
     description: 'The Samsung QLED 8K Smart TV is a very big, very beautiful screen that changes the room it lives in. Quantum Dot technology delivers 100% color volume, the Neo Quantum Processor 8K sharpens every source into near-8K detail, and the slim, frameless design lets the picture command the wall. A huge statement TV for movie nights and beyond. Stock #STK-002011.',
     price: 3999, currency: 'USD', country: '', country_code: '',
@@ -153,7 +153,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['A very big, very beautiful screen', 'Near-8K detail from any source', 'Frameless design for any room'],
   },
   {
-    property_id: 'KCO-002012', listing_type: 'product', category: 'Home Appliances', subcategory: 'Washing Machines',
+    property_id: 'W10239', listing_type: 'product', category: 'Home Appliances', subcategory: 'Washing Machines',
     title: 'LG Front-Load Washing Machine — F1402FDS',
     description: 'The LG F1402FDS front-load washer pairs a beautifully clean white finish with advanced Direct Drive technology for powerful, whisper-quiet washing. The 6-Motion DD cycles care for every fabric type, while the sleek control panel and large porthole make it a centerpiece in any modern laundry. Brand-new and ready for daily life. Stock #STK-002012.',
     price: 949, currency: 'USD', country: '', country_code: '',
@@ -166,7 +166,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Beautiful clean white finish', 'Powerful yet whisper-quiet', 'Gentle care for every fabric'],
   },
   {
-    property_id: 'KCO-002013', listing_type: 'product', category: 'Home Appliances', subcategory: 'Dishwashers',
+    property_id: 'W10240', listing_type: 'product', category: 'Home Appliances', subcategory: 'Dishwashers',
     title: 'KitchenAid Stainless Steel Dishwasher',
     description: 'The KitchenAid dishwasher in brushed stainless steel brings pro-grade washing to your kitchen. Fold-down tines and a flexible rack layout swallow plates, pots, and tall glasses, while the steam-enhanced cycle leaves dishes sparkling clean. A beautiful, built-in dishwasher with a quiet-close door. Stock #STK-002013.',
     price: 1199, currency: 'USD', country: '', country_code: '',
@@ -179,7 +179,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Pro-grade sparkling clean', 'Flexible loading for any dishes', 'Beautiful brushed stainless finish'],
   },
   {
-    property_id: 'KCO-002014', listing_type: 'product', category: 'Home Appliances', subcategory: 'Dryers',
+    property_id: 'W10241', listing_type: 'product', category: 'Home Appliances', subcategory: 'Dryers',
     title: 'Whirlpool Cabrio Electric Dryer',
     description: 'The Whirlpool Cabrio dryer is a big, beautifully finished electric dryer with an extra-large drum. Wrinkle Shield and sensor drying protect your clothes while the wide chrome-trimmed door and bright interior make loading and unloading effortless. Brand-new, in classic white. Stock #STK-002014.',
     price: 799, currency: 'USD', country: '', country_code: '',
@@ -192,7 +192,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Big drum for big loads', 'Sensor drying protects clothes', 'Beautifully finished classic white'],
   },
   {
-    property_id: 'KCO-002015', listing_type: 'product', category: 'Home Appliances', subcategory: 'Refrigerators',
+    property_id: 'W10242', listing_type: 'product', category: 'Home Appliances', subcategory: 'Refrigerators',
     title: 'Samsung French Door Refrigerator — RF60J9030WZ',
     description: 'The Samsung RF60J9030WZ is a tall, beautifully sculpted French door refrigerator in a premium stainless finish. Twin Cooling keeps food fresher for longer, and the wide, well-organized interior fits a family shop with ease. A brand-new flagship fridge that anchors a modern kitchen. Stock #STK-002015.',
     price: 3299, currency: 'USD', country: '', country_code: '',
@@ -205,7 +205,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Tall, beautifully sculpted design', 'Keeps food fresher for longer', 'Fits a whole family shop'],
   },
   {
-    property_id: 'KCO-002016', listing_type: 'product', category: 'Home Appliances', subcategory: 'Hair Care',
+    property_id: 'W10243', listing_type: 'product', category: 'Home Appliances', subcategory: 'Hair Care',
     title: 'Dyson Supersonic Hair Dryer',
     description: 'The Dyson Supersonic is the beautiful, iconic hair dryer that changed the category. Its small digital motor spins up to 110,000rpm, and the intelligent heat control measures temperature 20 times a second to protect hair from heat damage. Fast drying, ultra-quiet, and unmistakably Dyson. Stock #STK-002016.',
     price: 429, currency: 'USD', country: '', country_code: '',
@@ -218,7 +218,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Iconic, beautiful design', 'Protects hair from heat damage', 'Fast, ultra-quiet drying'],
   },
   {
-    property_id: 'KCO-002017', listing_type: 'product', category: 'Home Appliances', subcategory: 'Coffee Machines',
+    property_id: 'W10244', listing_type: 'product', category: 'Home Appliances', subcategory: 'Coffee Machines',
     title: 'Nespresso Vertuo Pop Coffee Machine',
     description: 'The Nespresso Vertuo Pop is a small, gorgeous coffee machine in a mint green finish that brightens any counter. Centrifusion brewing spins capsules to extract perfect espresso and coffee in five cup sizes — one touch, one perfect cup every time. Brand-new with the matching Vertuo capsule range. Stock #STK-002017.',
     price: 199, currency: 'USD', country: '', country_code: '',
@@ -231,7 +231,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Beautiful mint green finish', 'One touch, one perfect cup', 'Compact fit for any counter'],
   },
   {
-    property_id: 'KCO-002018', listing_type: 'product', category: 'Home Appliances', subcategory: 'Blenders',
+    property_id: 'W10245', listing_type: 'product', category: 'Home Appliances', subcategory: 'Blenders',
     title: 'Vitamix 5200 Classic Blender',
     description: 'The Vitamix 5200 Classic is the beautifully engineered blender trusted by kitchens worldwide. Its 2HP motor and laser-cut stainless blades blend smoothies, soups, and nut butters to silky perfection, while the tall 64-ounce jar and variable speed dial give you complete control. A brand-new, endlessly powerful classic. Stock #STK-002018.',
     price: 449, currency: 'USD', country: '', country_code: '',
@@ -244,7 +244,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Silky smooth every time', 'Trusted by kitchens worldwide', 'Unstoppable blending power'],
   },
   {
-    property_id: 'KCO-002019', listing_type: 'product', category: 'Home Appliances', subcategory: 'Speakers',
+    property_id: 'W10246', listing_type: 'product', category: 'Home Appliances', subcategory: 'Speakers',
     title: 'Sonos PLAY 5 Wireless Speaker',
     description: 'The Sonos PLAY 5 is a beautiful, powerful wireless speaker that fills a room with rich, true-to-life sound. Five class-D digital amplifiers drive a custom acoustic architecture, and it plays Spotify, AirPlay, and everything else across the whole house. A gorgeous modern speaker for music lovers. Stock #STK-002019.',
     price: 549, currency: 'USD', country: '', country_code: '',
@@ -257,7 +257,7 @@ export const APPLIANCE_SHOWCASE_LISTINGS = [
     highlights: ['Rich, true-to-life sound', 'Beautiful modern design', 'Fills any room with music'],
   },
   {
-    property_id: 'KCO-002020', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Fryers',
+    property_id: 'W10247', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Fryers',
     title: 'Clickon Digital Air Fryer — Large Capacity',
     description: 'The Clickon digital air fryer crisps, roasts, and bakes with up to 85% less oil than deep frying. A large-capacity basket, digital touchscreen, and 8 presets make weeknight cooking easy and healthy, all in a sleek matte-black design that looks great on the counter. Brand-new, boxed. Stock #STK-002020.',
     price: 159, currency: 'USD', country: '', country_code: '',

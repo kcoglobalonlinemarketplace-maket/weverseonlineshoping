@@ -89,7 +89,7 @@ function fmtMoney(n, cur = 'USD') {
 }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'; }
 function fmtDT(d) { return d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
-function genId() { return 'KCO-' + String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0'); }
+function genId() { return 'W-' + String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0'); }
 
 // Whitelist of showroom_listings columns known to exist in the live DB.
 // Used to sanitize upsert payloads so seed/local objects (which may carry

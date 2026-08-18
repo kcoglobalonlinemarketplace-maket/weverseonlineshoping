@@ -9,7 +9,7 @@ export const MEN_LISTINGS = [];
 
 function M(subcategory, brand, title, price, color, size, material, imgIds, description, features, rating, ratingCount) {
   MEN_LISTINGS.push({
-    property_id: 'KCO-M' + String(MEN_LISTINGS.length + 1).padStart(4, '0'),
+    property_id: 'W-M' + String(MEN_LISTINGS.length + 1).padStart(4, '0'),
     listing_type: 'product',
     category: 'Man',
     subcategory,

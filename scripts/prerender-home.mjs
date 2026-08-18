@@ -41,20 +41,20 @@ const GENERATED_PER_ROW = 0;
 const ALL_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
 
 const NEW_HOUSES = [
-  'KCO-000001',   // the first/kept house
-  'KCO-PX0111',   // Pima Canyon Apartments
-  'KCO-PX0720',   // Modern House for Rent
-  'KCO-PX0722',   // It's a beautiful day to hang a sold sign
-  'KCO-PX0726',   // Pittsburg, KS Homes for Sale
+  'W10000',   // the first/kept house
+  'W10475',   // Pima Canyon Apartments
+  'W11084',   // Modern House for Rent
+  'W11086',   // It's a beautiful day to hang a sold sign
+  'W11090',   // Pittsburg, KS Homes for Sale
 ].map(id => SHOWROOM_LISTINGS.find(l => l.property_id === id) || ALL_PRODUCTS.find(l => l.property_id === id)).filter(Boolean);
 
 const NEW_CARS = [
-  'KCO-PX0015', 'KCO-PX0018', 'KCO-PX0019', 'KCO-PX0058', 'KCO-PX0061',
-  'KCO-PX0085', 'KCO-PX0104', 'KCO-PX0236', 'KCO-PX0630', 'KCO-PX0637',
-  'KCO-PX0638', 'KCO-PX0658', 'KCO-PX0659', 'KCO-PX0664', 'KCO-PX0666',
-  'KCO-PX0669', 'KCO-PX0670', 'KCO-PX0673', 'KCO-PX0676', 'KCO-PX0685',
-  'KCO-PX0690', 'KCO-PX0691', 'KCO-PX0698', 'KCO-PX0701', 'KCO-PX0730',
-  'KCO-PX0743',
+  'W10379', 'W10382', 'W10383', 'W10422', 'W10425',
+  'W10449', 'W10468', 'W10600', 'W10994', 'W11001',
+  'W11002', 'W11022', 'W11023', 'W11028', 'W11030',
+  'W11033', 'W11034', 'W11037', 'W11040', 'W11049',
+  'W11054', 'W11055', 'W11062', 'W11065', 'W11094',
+  'W11107',
 ].map(id => ALL_PRODUCTS.find(l => l.property_id === id)).filter(Boolean);
 
 // Mirrors the gathered type lines in src/showroom-cards.js so the baked

@@ -1,6 +1,6 @@
 {
   "appId": "com.kcoglobalonlinemarket.app",
-  "appName": "KCO Global Marketplace",
+  "appName": "Weverse Online Shop",
   "webDir": "dist",
   "android": {
     "allowMixedContent": false,

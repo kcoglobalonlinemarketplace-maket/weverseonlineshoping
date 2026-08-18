@@ -39,7 +39,7 @@ export const SHOWROOM_LISTINGS = [
 
   // 1. Affordable starter home
   {
-    property_id: 'KCO-000001', listing_type: 'property', category: 'Real Estate',
+    property_id: 'W10000', listing_type: 'property', category: 'Real Estate',
     title: 'Cozy Starter Home with Updated Kitchen',
     description: 'Perfect first home for a small family or couple starting out. This charming one-story house features a renovated kitchen with modern appliances, hardwood floors throughout, and a private backyard. The living room gets plenty of natural light through large windows. Located on a quiet street close to schools and a community park. Recently repainted exterior and a new roof installed two years ago. An excellent value in a growing neighborhood.',
     price: 20000, currency: 'USD', country: 'United States', country_code: 'US',
@@ -51,7 +51,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 2. Suburban two-storey family home
   {
-    property_id: 'KCO-000002', listing_type: 'property', category: 'Real Estate',
+    property_id: 'W10001', listing_type: 'property', category: 'Real Estate',
     title: 'Spacious Two-Storey Family Home with Garage',
     description: 'A well-maintained two-storey family home in a friendly suburban neighborhood. The main floor features an open living and dining area, a practical kitchen with breakfast bar, and a half bath. Upstairs offers three comfortable bedrooms and a full bathroom. The finished basement provides extra living space or a home office. Two-car attached garage and a level backyard perfect for kids. Walk to elementary school and local shops.',
     price: 40000, currency: 'USD', country: 'United States', country_code: 'US',
@@ -63,7 +63,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 3. Cape Cod style home
   {
-    property_id: 'KCO-000003', listing_type: 'property', category: 'Real Estate',
+    property_id: 'W10002', listing_type: 'property', category: 'Real Estate',
     title: 'Classic Cape Cod with Black Shutters',
     description: 'A timeless Cape Cod-style home with white clapboard siding and classic black shutters. The cozy living room features a wood-burning fireplace and built-in bookshelves. The kitchen has been updated with granite countertops and stainless steel appliances. Two bedrooms on the main level and a finished attic space used as a third bedroom or office. A picket fence and mature landscaping give this home excellent curb appeal. Located in an established neighborhood close to downtown.',
     price: 20000, currency: 'USD', country: 'United States', country_code: 'US',
@@ -75,7 +75,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 4. Duplex / two-family
   {
-    property_id: 'KCO-000004', listing_type: 'property', category: 'Real Estate',
+    property_id: 'W10003', listing_type: 'property', category: 'Real Estate',
     title: 'Income-Producing Duplex — Live in One, Rent the Other',
     description: 'A solid two-family duplex offering excellent income potential. Each unit has two bedrooms, one bathroom, a living room, and a kitchen. Separate utilities and private entrances for each unit. The property has been well-maintained with updated electrical and a five-year-old roof. Both units are currently rented with reliable tenants. A great investment opportunity or house-hack setup for an owner-occupant. Conveniently located near public transit and shopping.',
     price: 40000, currency: 'USD', country: 'Canada', country_code: 'CA',
@@ -87,7 +87,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 5. Renovated ranch house
   {
-    property_id: 'KCO-000005', listing_type: 'property', category: 'Real Estate',
+    property_id: 'W10004', listing_type: 'property', category: 'Real Estate',
     title: 'Fully Renovated Ranch House on Quiet Cul-de-Sac',
     description: 'A beautifully renovated single-story ranch home on a desirable cul-de-sac. The renovation opened up the floor plan, creating a seamless flow between the living room, dining area, and kitchen. New kitchen includes soft-close cabinets, quartz countertops, and a tile backsplash. Both bathrooms have been completely updated. New flooring, fresh paint, and updated lighting throughout. The large backyard has a new patio and fire pit area. Move-in ready with nothing to do.',
     price: 40000, currency: 'USD', country: 'United States', country_code: 'US',
@@ -99,7 +99,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 6. Mid-range apartment for rent
   {
-    property_id: 'KCO-000006', listing_type: 'property', category: 'Apartments',
+    property_id: 'W10005', listing_type: 'property', category: 'Apartments',
     title: 'Bright Two-Bedroom Apartment Near Riverfront',
     description: 'A bright and airy two-bedroom apartment on the third floor of a well-managed building. The open-concept kitchen features modern appliances and a breakfast bar. Large windows in the living room offer pleasant city views. Both bedrooms are generously sized with good closet space. Building amenities include 24/7 concierge, fitness center, and rooftop terrace. Steps from the riverfront promenade, cafes, and public transit. Perfect for professionals seeking urban convenience.',
     price: 1450, price_period: 'month', currency: 'USD', country: 'United Kingdom', country_code: 'GB',
@@ -111,7 +111,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 7. Affordable villa
   {
-    property_id: 'KCO-000007', listing_type: 'property', category: 'Villas',
+    property_id: 'W10006', listing_type: 'property', category: 'Villas',
     title: 'Modern Villa with Garden and Terrace',
     description: 'A contemporary villa offering comfortable family living at an accessible price point. The ground floor features an open-plan living and dining area with direct garden access. The kitchen is fully fitted with quality appliances. Upstairs, three bedrooms share a family bathroom, and the master has an en-suite. A covered terrace overlooks the landscaped garden with a lawn area. Located in a family-friendly development with shared playground and walking paths.',
     price: 40000, currency: 'USD', country: 'Spain', country_code: 'ES',
@@ -123,7 +123,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 8. Mid-range mansion
   {
-    property_id: 'KCO-000008', listing_type: 'property', category: 'Mansions',
+    property_id: 'W10007', listing_type: 'property', category: 'Mansions',
     title: 'Grand Estate with Private Gardens and Pool',
     description: 'An impressive estate set on 1.5 acres of manicured grounds. The grand foyer leads to a formal living room with high ceilings and a fireplace. The gourmet kitchen features professional-grade appliances and a large island. The master suite includes a sitting area and spa-like bathroom. Additional amenities include a home gym, game room, and climate-controlled wine storage. The outdoor oasis includes a pool, spa, and outdoor kitchen. A rare offering in a prestigious neighborhood.',
     price: 60000, currency: 'USD', country: 'France', country_code: 'FR',
@@ -135,7 +135,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 9. Beach house for rent
   {
-    property_id: 'KCO-000009', listing_type: 'property', category: 'Beach Houses',
+    property_id: 'W10008', listing_type: 'property', category: 'Beach Houses',
     title: 'Beachfront Cottage with Ocean Views',
     description: 'A charming beachfront cottage with direct ocean access and stunning sea views. The open living area flows to a large deck perfect for entertaining or relaxing to the sound of waves. The kitchen features coastal-inspired cabinetry and stainless steel appliances. Two bedrooms and one bathroom with a walk-in shower. Steps from a pristine sandy beach and a short walk to local cafes. A turnkey coastal retreat with strong vacation rental potential.',
     price: 2200, price_period: 'month', currency: 'USD', country: 'Australia', country_code: 'AU',
@@ -147,7 +147,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 10. Luxury condominium
   {
-    property_id: 'KCO-000010', listing_type: 'property', category: 'Luxury Condominiums',
+    property_id: 'W10009', listing_type: 'property', category: 'Luxury Condominiums',
     title: 'Skyline Condo with Floor-to-Ceiling Windows',
     description: 'An ultra-modern luxury condominium on the 35th floor with breathtaking skyline views. The residence features an open floor plan, designer kitchen with quartz countertops, and spa-like bathrooms. Building amenities include a sky lounge, indoor pool, fitness center, and 24-hour valet. Steps from fine dining, luxury shopping, and the business district. A premier address for the discerning urbanite seeking a lock-and-leave lifestyle.',
     price: 4200, price_period: 'month', currency: 'USD', country: 'United Arab Emirates', country_code: 'AE',
@@ -159,7 +159,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 11. Farmhouse with acreage
   {
-    property_id: 'KCO-000011', listing_type: 'property', category: 'Farm Houses',
+    property_id: 'W10010', listing_type: 'property', category: 'Farm Houses',
     title: 'Restored Farmhouse with 5 Acres and Barn',
     description: 'A beautifully restored 19th-century farmhouse on 5 acres of pastoral land. The home retains its original charm with exposed beams and stone fireplaces while offering modern comforts. The property includes a restored barn suitable for equestrian use, a chicken coop, and established vegetable gardens. Peaceful country living with easy access to the nearby town. Ideal for a hobby farm, equestrian setup, or those seeking space and tranquility.',
     price: 40000, currency: 'USD', country: 'Canada', country_code: 'CA',
@@ -171,7 +171,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 12. Commercial building
   {
-    property_id: 'KCO-000012', listing_type: 'property', category: 'Commercial Buildings',
+    property_id: 'W10011', listing_type: 'property', category: 'Commercial Buildings',
     title: 'Prime Retail Building on High-Traffic Avenue',
     description: 'A strategically located commercial building on a high-traffic avenue with excellent visibility. The ground floor offers 2,500 sqft of retail space with large storefront windows. The upper floor features modern office space with a separate entrance. Ample parking for 20 vehicles and excellent signage opportunities. Strong rental history with a long-term tenant. A solid investment in a growing commercial corridor.',
     price: 60000, currency: 'USD', country: 'Germany', country_code: 'DE',
@@ -183,7 +183,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 13. Affordable suburban home
   {
-    property_id: 'KCO-000013', listing_type: 'property', category: 'Real Estate',
+    property_id: 'W10012', listing_type: 'property', category: 'Real Estate',
     title: 'Affordable Brick Home with Large Backyard',
     description: 'A solid brick home offering great value for a growing family. The main floor has a comfortable living room, formal dining room, and a practical kitchen with plenty of cabinet space. Three bedrooms upstairs with a shared full bathroom. The large fenced backyard is perfect for children and pets, with a storage shed and room for a garden. Attached single garage and a long driveway for extra parking. Located in an established neighborhood near parks and schools.',
     price: 20000, currency: 'USD', country: 'United States', country_code: 'US',
@@ -195,7 +195,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 14. Hotel
   {
-    property_id: 'KCO-000014', listing_type: 'property', category: 'Hotels',
+    property_id: 'W10013', listing_type: 'property', category: 'Hotels',
     title: 'Boutique Hotel Near Historic City Center',
     description: 'A charming 24-room boutique hotel steps from the historic city center. Each room is uniquely decorated with local art and premium furnishings. The property features a restaurant, bar, courtyard garden, and rooftop terrace. Strong occupancy rates and excellent reviews across all platforms. Turnkey operation with trained staff and established booking systems. A rare opportunity in a top tourist destination.',
     price: 60000, currency: 'USD', country: 'Italy', country_code: 'IT',
@@ -207,7 +207,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 15. Beach house for sale
   {
-    property_id: 'KCO-000015', listing_type: 'property', category: 'Beach Houses',
+    property_id: 'W10014', listing_type: 'property', category: 'Beach Houses',
     title: 'Modern Beach House with Wraparound Deck',
     description: 'A modern beach house designed for indoor-outdoor coastal living. The open living area features vaulted ceilings and large windows capturing ocean views. The kitchen has been updated with coastal-inspired finishes and stainless steel appliances. Three bedrooms including a master suite with a private balcony. The wraparound deck is perfect for entertaining, with stairs leading directly to the beach. Hurricane-rated windows and a new roof provide peace of mind.',
     price: 60000, currency: 'USD', country: 'Australia', country_code: 'AU',
@@ -219,7 +219,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 16. Affordable apartment for sale
   {
-    property_id: 'KCO-000016', listing_type: 'property', category: 'Apartments',
+    property_id: 'W10015', listing_type: 'property', category: 'Apartments',
     title: 'Studio Apartment in Vibrant Arts District',
     description: 'A stylish studio apartment in the vibrant arts district, perfect for first-time buyers or investors. The unit features an efficient layout with a modern kitchenette, updated bathroom, and a private balcony. The building offers a communal rooftop garden and secure bike storage. Walk to galleries, cafes, and public transit. Strong rental demand in this up-and-coming neighborhood makes it an excellent investment.',
     price: 20000, currency: 'USD', country: 'Netherlands', country_code: 'NL',
@@ -232,7 +232,7 @@ export const SHOWROOM_LISTINGS = [
 
   // === VEHICLES (4 listings) ===
   {
-    property_id: 'KCO-000017', listing_type: 'vehicle', category: 'Cars',
+    property_id: 'W10016', listing_type: 'vehicle', category: 'Cars',
     title: 'Mercedes-Benz S-Class 2024 — Premium Sedan',
     description: 'The 2024 Mercedes-Benz S-Class represents the pinnacle of luxury sedans. This flagship model features a 3.0L inline-6 turbo engine with EQ Boost delivering 429 horsepower. The cabin offers executive rear seating with massage, heated and ventilated Nappa leather seats, and a rear-seat entertainment system. The MBUX infotainment system includes a 12.8-inch OLED touchscreen with voice control. Advanced safety features include adaptive cruise control, lane-keeping assist, and a 360-degree camera. Immaculate condition with low mileage and full service history.',
     price: 20000, currency: 'USD', country: '', country_code: '',
@@ -243,7 +243,7 @@ export const SHOWROOM_LISTINGS = [
     features: ['3.0L Inline-6 Turbo', '429 HP', 'Nappa Leather', 'MBUX System', 'Adaptive Cruise', '360 Camera', 'Panoramic Roof', 'Low Mileage'],
   },
   {
-    property_id: 'KCO-000018', listing_type: 'vehicle', category: 'Cars',
+    property_id: 'W10017', listing_type: 'vehicle', category: 'Cars',
     title: 'Mercedes-Benz GLE 450 2025 — Luxury SUV',
     description: 'The 2025 Mercedes-Benz GLE 450 combines SUV capability with luxury refinement. Powered by a 3.0L inline-6 turbo engine with EQ Boost producing 375 horsepower and 4MATIC all-wheel drive. The spacious interior features MB-Tex upholstery, a 12.3-inch digital dashboard, and a Burmester sound system. Seven-seat configuration with power-folding third row. Includes trailer hitch, air suspension, and off-road driving modes. One owner, pristine condition, factory warranty active.',
     price: 20000, currency: 'USD', country: '', country_code: '',
@@ -258,7 +258,7 @@ export const SHOWROOM_LISTINGS = [
 
   // 21. United States — Affordable Craftsman Bungalow
   {
-    property_id: 'KCO-000021', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10018', listing_type: 'property', category: 'International Homes',
     title: 'Craftsman Bungalow with Covered Porch in Portland',
     description: 'A charming 1928 Craftsman bungalow in the heart of Portland\'s Alberta Arts District. This lovingly maintained home features original hardwood floors, built-in bookshelves, and a wood-burning fireplace. The renovated kitchen opens to a cozy dining nook with garden views. Two main-floor bedrooms share a fully updated bathroom, with a third bedroom and second bathroom upstairs. The covered front porch is perfect for morning coffee, and the fenced backyard includes raised garden beds and a detached one-car garage. Walk to cafes, galleries, and weekly farmers market.',
     price: 20000, currency: 'USD', country: 'United States', country_code: 'US',
@@ -272,7 +272,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 22. Canada — Mid-range Victorian Heritage Home
   {
-    property_id: 'KCO-000022', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10019', listing_type: 'property', category: 'International Homes',
     title: 'Restored Victorian Heritage Home in Vancouver',
     description: 'A grand 1905 Victorian heritage home on a tree-lined street in Vancouver\'s Kitsilano neighbourhood. This meticulously restored home retains its original woodwork, stained glass windows, and ornate fireplaces while offering modern comforts. The main floor features a formal parlour, dining room, and a renovated chef\'s kitchen with butler\'s pantry. Four bedrooms across the upper two floors, including a master suite with sitting area. The landscaped garden includes a patio and detached two-car garage. Steps from Kitsilano Beach and West 4th Avenue shopping.',
     price: 40000, currency: 'USD', country: 'Canada', country_code: 'CA',
@@ -286,7 +286,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 23. United Kingdom — Affordable Victorian Terraced House
   {
-    property_id: 'KCO-000023', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10020', listing_type: 'property', category: 'International Homes',
     title: 'Victorian Terraced House Near Manchester City Centre',
     description: 'A characterful 1895 Victorian terraced house in the popular Chorlton area of Manchester. This home has been thoughtfully updated while preserving period features including sash windows, high ceilings, and cast-iron fireplaces. The ground floor offers a bay-windowed living room, a separate dining room, and a modern galley kitchen leading to a compact rear courtyard garden. Two double bedrooms upstairs share a contemporary family bathroom. Excellent transport links with the Metrolink tram a three-minute walk away. Ideal for first-time buyers or as a city base.',
     price: 20000, currency: 'USD', country: 'United Kingdom', country_code: 'GB',
@@ -300,7 +300,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 24. Australia — Mid-range Contemporary Family Home
   {
-    property_id: 'KCO-000024', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10021', listing_type: 'property', category: 'International Homes',
     title: 'Contemporary Family Home with Alfresco Dining in Melbourne',
     description: 'A modern 2015 family home in Melbourne\'s thriving eastern suburb of Box Hill. The open-plan living and dining area flows seamlessly to an alfresco entertaining zone with a built-in BBQ and paved patio. The kitchen features stone benchtops, a walk-in pantry, and premium stainless steel appliances. Four bedrooms include a master retreat with walk-in robe and en-suite. Ducted air conditioning, solar panels, and a double remote garage with internal access. Walking distance to Box Hill Central shopping, top-rated schools, and parklands.',
     price: 60000, currency: 'USD', country: 'Australia', country_code: 'AU',
@@ -314,7 +314,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 25. Germany — Mid-range Modern Apartment
   {
-    property_id: 'KCO-000025', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10022', listing_type: 'property', category: 'International Homes',
     title: 'Modern Energy-Efficient Apartment in Berlin Mitte',
     description: 'A sleek 2018 apartment in a boutique energy-efficient development in Berlin\'s sought-after Mitte district. The residence features underfloor heating throughout, floor-to-ceiling windows with electric blinds, and a high-spec built-in kitchen with integrated appliances. Three bedrooms and two bathrooms, including an en-suite master. The private balcony overlooks a quiet inner courtyard. Building amenities include a lift, bicycle storage room, and a communal rooftop garden. Two minutes from the Rosenthaler Platz U-Bahn station and surrounded by galleries, restaurants, and shops.',
     price: 60000, currency: 'USD', country: 'Germany', country_code: 'DE',
@@ -328,7 +328,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 26. France — Luxury Château
   {
-    property_id: 'KCO-000026', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10023', listing_type: 'property', category: 'International Homes',
     title: '18th-Century Château with Vineyard Views in Provence',
     description: 'A magnificent 1780 château set on 4.5 acres of manicured grounds in the heart of Provence. The grand entrance hall leads to formal reception rooms with original marble fireplaces, tall French windows, and parquet de chêne flooring. The gourmet kitchen opens to a shaded dining terrace overlooking the swimming pool and formal gardens. Eight bedrooms and six bathrooms across three floors, including a master wing with dressing room and private salon. The wine cellar is carved into the natural rock. Staff quarters and a helipad complete this exceptional estate. Thirty minutes from Avignon TGV station.',
     price: 60000, currency: 'USD', country: 'France', country_code: 'FR',
@@ -342,7 +342,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 27. Italy — Mid-range Tuscan Farmhouse
   {
-    property_id: 'KCO-000027', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10024', listing_type: 'property', category: 'International Homes',
     title: 'Restored Tuscan Farmhouse with Olive Grove',
     description: 'A beautifully restored 1850 stone farmhouse nestled among 2.5 acres of olive groves in the Tuscan countryside near San Casciano. The home retains its authentic character with exposed chestnut beams, terracotta tile floors, and a wood-fired bread oven in the garden. The ground floor has a farmhouse kitchen with a stone sink, a dining room with fireplace, and a sitting room. Four bedrooms and three bathrooms, including a master with en-suite. The infinity-edge swimming pool overlooks rolling vineyards and the Chianti hills. An outdoor kitchen and dining area make this perfect for entertaining. Forty-five minutes from Florence.',
     price: 40000, currency: 'USD', country: 'Italy', country_code: 'IT',
@@ -356,7 +356,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 28. Spain — Affordable Apartment
   {
-    property_id: 'KCO-000028', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10025', listing_type: 'property', category: 'International Homes',
     title: 'Apartment with Catalan Vault Ceiling in Barcelona Gothic Quarter',
     description: 'A distinctive apartment in Barcelona\'s Gothic Quarter, featuring original Catalan vault ceilings and exposed brick walls. The 750 sqft layout includes a bright living area with a small balcony overlooking a historic lane, a compact but fully equipped kitchen, and two comfortable bedrooms sharing one bathroom. The building has a restored lift and a communal rooftop terrace with city views. Steps from Las Ramblas, the Boqueria market, and Barcelona Cathedral. An excellent entry point into one of Europe\'s most vibrant neighbourhoods.',
     price: 20000, currency: 'USD', country: 'Spain', country_code: 'ES',
@@ -370,7 +370,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 29. Switzerland — Luxury Alpine Chalet
   {
-    property_id: 'KCO-000029', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10026', listing_type: 'property', category: 'International Homes',
     title: 'Alpine Chalet with Matterhorn Views in Zermatt',
     description: 'An architect-designed 2020 chalet in the car-free alpine resort of Zermatt, offering uninterrupted views of the Matterhorn. The great room features floor-to-ceiling windows, a double-height stone fireplace, and an open chef\'s kitchen with Gaggenau appliances. Six en-suite bedrooms across three levels, each with mountain views. The lower level includes a wellness area with sauna, steam room, and a ski room with boot warmers. Underfloor heating throughout, triple-glazed windows, and a smart home system. A triple garage is accessible via the underground car park tunnel. A rare offering in one of the world\'s premier ski destinations.',
     price: 60000, currency: 'USD', country: 'Switzerland', country_code: 'CH',
@@ -384,7 +384,7 @@ export const SHOWROOM_LISTINGS = [
   },
   // 30. Sweden — Affordable Scandinavian Cabin
   {
-    property_id: 'KCO-000030', listing_type: 'property', category: 'International Homes',
+    property_id: 'W10027', listing_type: 'property', category: 'International Homes',
     title: 'Waterfront Scandinavian Cabin in Stockholm Archipelago',
     description: 'A contemporary 2010 Scandinavian cabin on the Stockholm archipelago island of Vaxholm. The open-plan living area features a wood-burning stove, large picture windows, and a designer kitchen with island. Three bedrooms and two bathrooms, with the master opening directly onto the deck. The 0.5-acre plot includes a private dock, a traditional wood-fired sauna by the water\'s edge, and mature pine forest surrounding the property. Triple-glazed windows and superior insulation ensure year-round comfort. A 30-minute ferry from Stockholm city centre. The perfect year-round retreat for nature lovers.',
     price: 40000, currency: 'USD', country: 'Sweden', country_code: 'SE',
@@ -402,32 +402,32 @@ export const SHOWROOM_LISTINGS = [
 // Real-world coordinates for every seeded property listing so showroom cards can
 // render a map preview and the details page map can skip geocoding lookups.
 const PROPERTY_COORDS = {
-  'KCO-000001': [40.0330, -83.1583],  // Hilliard, OH
-  'KCO-000002': [30.5083, -97.6789],  // Round Rock, TX
-  'KCO-000003': [42.2529, -71.0023],  // Quincy, MA
-  'KCO-000004': [43.7765, -79.2317],  // Scarborough, ON
-  'KCO-000005': [35.1168, -80.7237],  // Matthews, NC
-  'KCO-000006': [51.5051, -0.0196],   // Canary Wharf, London
-  'KCO-000007': [36.4840, -4.9904],   // San Pedro de Alcántara, Marbella
-  'KCO-000008': [48.8844, 2.2691],    // Neuilly-sur-Seine, Paris
-  'KCO-000009': [-28.0890, 153.4533], // Burleigh Heads, Gold Coast
-  'KCO-000010': [25.1972, 55.2744],   // Downtown Dubai
-  'KCO-000011': [45.2269, -75.6831],  // Manotick, Ottawa
-  'KCO-000012': [48.1615, 11.5780],   // Schwabing, Munich
-  'KCO-000013': [39.9556, -86.0139],  // Fishers, IN
-  'KCO-000014': [43.7666, 11.2478],   // Oltrarno, Florence
-  'KCO-000015': [-28.0027, 153.4309], // Surfers Paradise
-  'KCO-000016': [52.3744, 4.8821],    // Jordaan, Amsterdam
-  'KCO-000021': [45.5615, -122.6501], // Alberta Arts District, Portland
-  'KCO-000022': [49.2643, -123.1542], // Kitsilano, Vancouver
-  'KCO-000023': [53.4431, -2.2729],   // Chorlton, Manchester
-  'KCO-000024': [-37.8188, 145.1252], // Box Hill, Melbourne
-  'KCO-000025': [52.5200, 13.4050],   // Berlin Mitte
-  'KCO-000026': [43.7891, 4.8317],    // Saint-Rémy-de-Provence
-  'KCO-000027': [43.6586, 11.1855],   // San Casciano in Val di Pesa
-  'KCO-000028': [41.3831, 2.1767],    // Gothic Quarter, Barcelona
-  'KCO-000029': [46.0207, 7.7491],    // Winkelmatten, Zermatt
-  'KCO-000030': [59.4022, 18.3533],   // Vaxholm
+  'W10000': [40.0330, -83.1583],  // Hilliard, OH
+  'W10001': [30.5083, -97.6789],  // Round Rock, TX
+  'W10002': [42.2529, -71.0023],  // Quincy, MA
+  'W10003': [43.7765, -79.2317],  // Scarborough, ON
+  'W10004': [35.1168, -80.7237],  // Matthews, NC
+  'W10005': [51.5051, -0.0196],   // Canary Wharf, London
+  'W10006': [36.4840, -4.9904],   // San Pedro de Alcántara, Marbella
+  'W10007': [48.8844, 2.2691],    // Neuilly-sur-Seine, Paris
+  'W10008': [-28.0890, 153.4533], // Burleigh Heads, Gold Coast
+  'W10009': [25.1972, 55.2744],   // Downtown Dubai
+  'W10010': [45.2269, -75.6831],  // Manotick, Ottawa
+  'W10011': [48.1615, 11.5780],   // Schwabing, Munich
+  'W10012': [39.9556, -86.0139],  // Fishers, IN
+  'W10013': [43.7666, 11.2478],   // Oltrarno, Florence
+  'W10014': [-28.0027, 153.4309], // Surfers Paradise
+  'W10015': [52.3744, 4.8821],    // Jordaan, Amsterdam
+  'W10018': [45.5615, -122.6501], // Alberta Arts District, Portland
+  'W10019': [49.2643, -123.1542], // Kitsilano, Vancouver
+  'W10020': [53.4431, -2.2729],   // Chorlton, Manchester
+  'W10021': [-37.8188, 145.1252], // Box Hill, Melbourne
+  'W10022': [52.5200, 13.4050],   // Berlin Mitte
+  'W10023': [43.7891, 4.8317],    // Saint-Rémy-de-Provence
+  'W10024': [43.6586, 11.1855],   // San Casciano in Val di Pesa
+  'W10025': [41.3831, 2.1767],    // Gothic Quarter, Barcelona
+  'W10026': [46.0207, 7.7491],    // Winkelmatten, Zermatt
+  'W10027': [59.4022, 18.3533],   // Vaxholm
 };
 for (const l of SHOWROOM_LISTINGS) {
   const c = PROPERTY_COORDS[l.property_id];

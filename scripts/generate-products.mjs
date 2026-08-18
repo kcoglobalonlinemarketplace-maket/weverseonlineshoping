@@ -92,7 +92,7 @@ for (const item of NEW) {
   }
   title = title.charAt(0).toUpperCase() + title.slice(1);
   const { cat, price } = classify(title, ocr);
-  const pid = 'KCO-PX' + String(idx).padStart(4, '0');
+  const pid = 'W-PX' + String(idx).padStart(4, '0');
   out.push({
     property_id: pid,
     listing_type: 'product',

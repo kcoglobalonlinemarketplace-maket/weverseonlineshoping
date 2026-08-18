@@ -24,7 +24,7 @@ function normalizeModel(settings: Record<string, unknown>, developerMode = false
 function genPropertyId() {
   const tail = String(Date.now()).slice(-6);
   const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `KCO-${tail}${rand}`;
+  return `W-${tail}${rand}`;
 }
 
 // Professional-looking marketplace stats so every AI card looks established and trusted:

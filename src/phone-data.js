@@ -11,7 +11,7 @@ function buildGallery(paths) {
 
 export const PHONE_LISTINGS = [
   {
-    property_id: 'KCO-P0001', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10326', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Apple iPhone 12 Pro Max 128GB Pacific Blue',
     description: 'The Apple iPhone 12 Pro Max is a premium flagship smartphone with a 6.7-inch Super Retina XDR OLED display and a triple 12MP Pro camera system. Powered by the A14 Bionic chip with 5G connectivity, it delivers outstanding performance, battery life, and professional-grade photography in a beautiful Pacific Blue finish.',
     price: 649, currency: 'USD',
@@ -25,7 +25,7 @@ export const PHONE_LISTINGS = [
     rating: 4.7, rating_count: 18, favorite_count: 9,
   },
   {
-    property_id: 'KCO-P0002', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10327', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Apple iPhone 13 Pro Max 256GB Graphite',
     description: 'The Apple iPhone 13 Pro Max pairs a 6.7-inch ProMotion Super Retina XDR display with the A15 Bionic chip and a pro-grade triple 12MP camera system. Cinematic mode, sensor-shift stabilization, and all-day battery life make it one of the most complete smartphones ever made.',
     price: 799, currency: 'USD',
@@ -39,7 +39,7 @@ export const PHONE_LISTINGS = [
     rating: 4.8, rating_count: 21, favorite_count: 11,
   },
   {
-    property_id: 'KCO-P0003', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10328', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Apple iPhone 14 Pro Max 256GB Deep Purple',
     description: 'The Apple iPhone 14 Pro Max introduces the Dynamic Island, an always-on display, and the powerful A16 Bionic chip. Its 48MP Pro camera system with a 6.7-inch Super Retina XDR OLED screen delivers stunning photos, videos, and all-day performance in the iconic Deep Purple finish.',
     price: 899, currency: 'USD',
@@ -53,7 +53,7 @@ export const PHONE_LISTINGS = [
     rating: 4.8, rating_count: 24, favorite_count: 13,
   },
   {
-    property_id: 'KCO-P0004', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10329', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Apple iPhone 15 Pro Max 256GB Natural Titanium',
     description: 'The Apple iPhone 15 Pro Max is built with aerospace-grade titanium and powered by the A17 Pro chip. A 48MP main camera, periscope 5x optical zoom, USB-C, and the 6.7-inch Super Retina XDR display make it the ultimate flagship in a stunning Natural Titanium finish.',
     price: 999, currency: 'USD',
@@ -67,7 +67,7 @@ export const PHONE_LISTINGS = [
     rating: 4.9, rating_count: 26, favorite_count: 15,
   },
   {
-    property_id: 'KCO-P0005', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10330', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Apple iPhone 16 Pro Max 256GB Natural Titanium',
     description: 'The Apple iPhone 16 Pro Max is the newest and most advanced iPhone ever, powered by the A18 Pro chip with a 6.9-inch Super Retina XDR display and an all-new Camera Control button. Professional 48MP Fusion camera, 4K 120fps video, and extraordinary battery life in Natural Titanium.',
     price: 1199, currency: 'USD',
@@ -81,7 +81,7 @@ export const PHONE_LISTINGS = [
     rating: 4.9, rating_count: 30, favorite_count: 18,
   },
   {
-    property_id: 'KCO-P0006', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10331', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Samsung Galaxy S21 Ultra 128GB Phantom Black',
     description: 'The Samsung Galaxy S21 Ultra is a true flagship with a 6.8-inch Dynamic AMOLED 2X 120Hz display and a 108MP quad camera with 100x Space Zoom. Powered by the Exynos 2100 with 5G, S Pen support, and a massive battery, it is built for photographers and power users.',
     price: 599, currency: 'USD',
@@ -95,7 +95,7 @@ export const PHONE_LISTINGS = [
     rating: 4.7, rating_count: 19, favorite_count: 10,
   },
   {
-    property_id: 'KCO-P0007', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10332', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Samsung Galaxy S22 Ultra 256GB Phantom Black',
     description: 'The Samsung Galaxy S22 Ultra combines a stunning 6.8-inch Dynamic AMOLED 2X display, a 108MP camera with Nightography, and a built-in S Pen. Powered by the Snapdragon 8 Gen 1 with 5G, it is the ultimate all-in-one flagship for productivity and creative photography.',
     price: 699, currency: 'USD',
@@ -109,7 +109,7 @@ export const PHONE_LISTINGS = [
     rating: 4.7, rating_count: 20, favorite_count: 11,
   },
   {
-    property_id: 'KCO-P0008', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10333', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Samsung Galaxy S23 Ultra 512GB Lavender',
     description: 'The Samsung Galaxy S23 Ultra features a 6.8-inch Dynamic AMOLED 2X display, a 200MP camera system, and a built-in S Pen. The Snapdragon 8 Gen 2 for Galaxy delivers flagship power, while the stunning Lavender finish and all-day battery make it a standout premium smartphone.',
     price: 899, currency: 'USD',
@@ -123,7 +123,7 @@ export const PHONE_LISTINGS = [
     rating: 4.8, rating_count: 23, favorite_count: 14,
   },
   {
-    property_id: 'KCO-P0009', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10334', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Samsung Galaxy S24 Ultra 256GB Titanium Gray',
     description: 'The Samsung Galaxy S24 Ultra is the ultimate AI-powered flagship with a 6.8-inch Dynamic AMOLED 2X display and a 200MP camera. Galaxy AI, a titanium frame, and the Snapdragon 8 Gen 3 for Galaxy combine for brilliant photos, seamless productivity, and pro-level gaming.',
     price: 999, currency: 'USD',
@@ -137,7 +137,7 @@ export const PHONE_LISTINGS = [
     rating: 4.8, rating_count: 25, favorite_count: 16,
   },
   {
-    property_id: 'KCO-P0010', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10335', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Samsung Galaxy S25 Ultra 256GB Titanium Silverblue',
     description: 'The Samsung Galaxy S25 Ultra is the newest flagship with a 6.9-inch Dynamic AMOLED 2X display, a 200MP camera, and the Snapdragon 8 Elite for Galaxy. Advanced Galaxy AI, an ultra-durable titanium body, and S Pen support make it the most powerful Galaxy ever.',
     price: 1099, currency: 'USD',
@@ -151,7 +151,7 @@ export const PHONE_LISTINGS = [
     rating: 4.9, rating_count: 28, favorite_count: 17,
   },
   {
-    property_id: 'KCO-P0011', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10336', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Google Pixel 6 Pro 128GB Stormy Black',
     description: 'The Google Pixel 6 Pro is powered by Google Tensor, the first chip designed by Google. A 6.7-inch LTPO AMOLED display, the signature camera bar with a 50MP main sensor, and Magic Eraser make it a photography powerhouse in a distinctive Stormy Black design.',
     price: 499, currency: 'USD',
@@ -165,7 +165,7 @@ export const PHONE_LISTINGS = [
     rating: 4.6, rating_count: 17, favorite_count: 9,
   },
   {
-    property_id: 'KCO-P0012', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10337', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Google Pixel 7 Pro 128GB Obsidian',
     description: 'The Google Pixel 7 Pro pairs the Google Tensor G2 chip with a 6.7-inch QHD+ LTPO AMOLED display and a 50MP triple camera system with 5x optical zoom. Best-in-class computational photography, Face Unlock, and clean Android in a polished Obsidian finish.',
     price: 599, currency: 'USD',
@@ -179,7 +179,7 @@ export const PHONE_LISTINGS = [
     rating: 4.6, rating_count: 18, favorite_count: 10,
   },
   {
-    property_id: 'KCO-P0013', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10338', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Google Pixel 8 Pro 128GB Obsidian',
     description: 'The Google Pixel 8 Pro is powered by the Google Tensor G3 with the brightest display ever on a Pixel. A 50MP triple camera with advanced AI editing, Video Boost, and 7 years of software updates make it the smartest and most capable Pixel to date.',
     price: 799, currency: 'USD',
@@ -193,7 +193,7 @@ export const PHONE_LISTINGS = [
     rating: 4.8, rating_count: 22, favorite_count: 12,
   },
   {
-    property_id: 'KCO-P0014', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10339', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Google Pixel 9 Pro 128GB Obsidian',
     description: 'The Google Pixel 9 Pro is powered by Google Tensor G4 and built for the era of Gemini AI. A 6.3-inch Super Actua display, 50MP triple camera with pro controls, and 7 years of updates deliver a compact flagship with outstanding photography and intelligence.',
     price: 899, currency: 'USD',
@@ -207,7 +207,7 @@ export const PHONE_LISTINGS = [
     rating: 4.8, rating_count: 24, favorite_count: 13,
   },
   {
-    property_id: 'KCO-P0015', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10340', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Google Pixel 9 Pro XL 128GB Hazel',
     description: 'The Google Pixel 9 Pro XL is the largest flagship Pixel with a 6.8-inch Super Actua display and a 50MP triple camera. Powered by Tensor G4 with Gemini AI, a 4,700mAh battery, and 7 years of updates, it is the ultimate all-round Pixel experience.',
     price: 999, currency: 'USD',
@@ -221,7 +221,7 @@ export const PHONE_LISTINGS = [
     rating: 4.8, rating_count: 25, favorite_count: 14,
   },
   {
-    property_id: 'KCO-P0016', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10341', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Xiaomi 12 128GB Gray',
     description: 'The Xiaomi 12 is a compact flagship with a 6.28-inch AMOLED 120Hz display and a 50MP triple camera tuned with Leica optics. Powered by the Snapdragon 8 Gen 1 with 5G and 67W fast charging, it offers premium performance in a comfortable one-handed design.',
     price: 449, currency: 'USD',
@@ -235,7 +235,7 @@ export const PHONE_LISTINGS = [
     rating: 4.5, rating_count: 14, favorite_count: 7,
   },
   {
-    property_id: 'KCO-P0017', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10342', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Xiaomi 13 128GB Black',
     description: 'The Xiaomi 13 pairs a 6.36-inch AMOLED 120Hz display with the Snapdragon 8 Gen 2 and a 50MP Leica-tuned triple camera. Premium build, IP68 water resistance, and fast wireless charging make it a refined compact flagship in elegant Black.',
     price: 549, currency: 'USD',
@@ -249,7 +249,7 @@ export const PHONE_LISTINGS = [
     rating: 4.6, rating_count: 16, favorite_count: 8,
   },
   {
-    property_id: 'KCO-P0018', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10343', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Xiaomi 14T Pro 256GB Titanium Black',
     description: 'The Xiaomi 14T Pro is a flagship featuring a 6.67-inch AMOLED 144Hz display and a 50MP triple camera co-engineered with Leica. Powered by the MediaTek Dimensity 9300+ with 5G, it delivers flagship imaging, fast 120W charging, and cutting-edge performance.',
     price: 649, currency: 'USD',
@@ -263,7 +263,7 @@ export const PHONE_LISTINGS = [
     rating: 4.7, rating_count: 19, favorite_count: 10,
   },
   {
-    property_id: 'KCO-P0019', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10344', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Xiaomi 15 256GB Black',
     description: 'The Xiaomi 15 is the latest compact flagship with a 6.36-inch AMOLED 120Hz display and a 50MP Leica triple camera. The Snapdragon 8 Elite, 90W HyperCharge, and a premium glass-and-metal body make it one of the most complete small phones of its generation.',
     price: 749, currency: 'USD',
@@ -277,7 +277,7 @@ export const PHONE_LISTINGS = [
     rating: 4.7, rating_count: 20, favorite_count: 11,
   },
   {
-    property_id: 'KCO-P0020', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10345', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'Xiaomi 15 Pro 256GB Silver',
     description: 'The Xiaomi 15 Pro is a premium flagship with a 6.73-inch AMOLED 120Hz LTPO display and a 50MP triple camera featuring a periscope telephoto. The Snapdragon 8 Elite, 90W charging, and an aerospace-grade titanium frame deliver top-tier performance and photography.',
     price: 849, currency: 'USD',
@@ -291,7 +291,7 @@ export const PHONE_LISTINGS = [
     rating: 4.7, rating_count: 21, favorite_count: 12,
   },
   {
-    property_id: 'KCO-P0021', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10346', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'OnePlus 9 Pro 128GB Morning Mist',
     description: 'The OnePlus 9 Pro features a 6.7-inch LTPO AMOLED 120Hz display and a Hasselblad-tuned 48MP quad camera. The Snapdragon 888, 65W Warp Charge, and a premium frosted-glass design deliver flagship speed and pro-grade imaging in Morning Mist.',
     price: 499, currency: 'USD',
@@ -305,7 +305,7 @@ export const PHONE_LISTINGS = [
     rating: 4.6, rating_count: 15, favorite_count: 8,
   },
   {
-    property_id: 'KCO-P0022', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10347', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'OnePlus 12R 128GB Iron Gray',
     description: 'The OnePlus 12R (OnePlus Ace 3) is a flagship killer with a 6.78-inch AMOLED 120Hz ProXDR display and a 50MP Sony IMX890 camera. The Snapdragon 8 Gen 2, 5,500mAh battery, and 100W SUPERVOOC charging make it an outstanding value in a sleek Iron Gray body.',
     price: 549, currency: 'USD',
@@ -319,7 +319,7 @@ export const PHONE_LISTINGS = [
     rating: 4.6, rating_count: 17, favorite_count: 9,
   },
   {
-    property_id: 'KCO-P0023', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10348', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'OnePlus 13R 128GB Astral Trail',
     description: 'The OnePlus 13R is powered by the Snapdragon 8 Gen 3 with a 6.78-inch AMOLED 120Hz display and a 50MP triple camera with OIS. Its 6,000mAh battery, 80W SUPERVOOC charging, and metal-glass build make it a premium all-rounder in the sleek Astral Trail finish.',
     price: 599, currency: 'USD',
@@ -333,7 +333,7 @@ export const PHONE_LISTINGS = [
     rating: 4.7, rating_count: 18, favorite_count: 10,
   },
   {
-    property_id: 'KCO-P0024', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10349', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'OnePlus 13 256GB Black',
     description: 'The OnePlus 13 is the newest flagship with a 6.82-inch ProXDR AMOLED 120Hz display and a Hasselblad-tuned 50MP triple camera with dual periscope zoom. The Snapdragon 8 Elite, 6,000mAh battery, and 100W SUPERVOOC charging make it a true performance champion.',
     price: 799, currency: 'USD',
@@ -347,7 +347,7 @@ export const PHONE_LISTINGS = [
     rating: 4.8, rating_count: 22, favorite_count: 13,
   },
   {
-    property_id: 'KCO-P0025', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
+    property_id: 'W10350', listing_type: 'product', category: 'Phones', subcategory: 'Smartphones',
     title: 'OnePlus Nord 5 128GB Gray',
     description: 'The OnePlus Nord 5 is a stylish mid-range smartphone with a 6.67-inch AMOLED 120Hz display and a 50MP Sony camera with OIS. The Snapdragon 7 Gen 3, 5,000mAh battery, and 80W SUPERVOOC charging deliver smooth all-day performance in a slim modern design.',
     price: 499, currency: 'USD',

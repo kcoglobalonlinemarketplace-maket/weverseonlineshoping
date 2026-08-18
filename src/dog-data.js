@@ -4,7 +4,7 @@
 
 export const NEW_DOG_LISTINGS = [
   {
-    property_id: 'KCO-003019', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10263', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Golden Retriever',
     description: 'A stunning, show-quality Golden Retriever with a thick glossy golden coat and the warmest, friendliest smile in the dog world. Golden Retrievers are one of the most beloved family breeds — gentle, patient, and endlessly loyal. This handsome boy has a healthy, well-fed build, a beautifully groomed coat, and loves everyone he meets. Fully vaccinated, microchipped, and vet checked.',
     price: 1700, currency: 'USD', country: 'United States', country_code: 'US',
@@ -17,7 +17,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['America\'s favorite family dog', 'Glossy, well-groomed golden coat', 'Gentle, patient and loyal'],
   },
   {
-    property_id: 'KCO-003020', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10264', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Labrador Retriever',
     description: 'A gorgeous, robust chocolate Labrador Retriever with a smooth glossy coat, a big happy grin, and a sturdy healthy build. Labs are friendly, energetic, and famously great with families — the most popular dog breed in the world. This boy is well-fed, well-groomed, and full of love. Fully vaccinated, microchipped, and vet checked.',
     price: 1100, currency: 'USD', country: 'United Kingdom', country_code: 'GB',
@@ -30,7 +30,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['The world\'s most popular breed', 'Chunky, healthy, happy Labrador', 'Fantastic family companion'],
   },
   {
-    property_id: 'KCO-003021', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10265', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Siberian Husky',
     description: 'A breathtaking Siberian Husky with piercing ice-blue and brown eyes and a thick, luxurious double coat. Huskies are striking, playful, and full of personality — with the face of a wolf and the heart of a teddy bear. This beauty is healthy, well-fed, and impeccably groomed. Fully vaccinated, microchipped, and vet checked.',
     price: 1400, currency: 'USD', country: 'Russia', country_code: 'RU',
@@ -43,7 +43,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Mesmerizing ice-blue eyes', 'Thick, plush, healthy coat', 'Playful wolf-like beauty'],
   },
   {
-    property_id: 'KCO-003022', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10266', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Samoyed',
     description: 'A magnificent snow-white Samoyed with a huge, fluffy smile — the famous "Sammy smile" — and the softest cloud-like coat in the canine world. Samoyeds are gentle, cheerful, and famously beautiful, always looking perfectly groomed and absolutely adorable. This girl is healthy, happy, and extremely well cared for. Fully vaccinated, microchipped, and vet checked.',
     price: 1900, currency: 'USD', country: 'Russia', country_code: 'RU',
@@ -56,7 +56,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Gorgeous fluffy white coat', 'Famous "Sammy smile"', 'Cheerful and affectionate'],
   },
   {
-    property_id: 'KCO-003023', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10267', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Bernese Mountain Dog',
     description: 'A handsome, large Bernese Mountain Dog with a stunning tri-color coat of jet black, rich rust, and snowy white. Big, fluffy, and wonderfully calm, the Bernese is a true gentle giant that adores its family. This beauty is well-fed, beautifully groomed, and in perfect health. Fully vaccinated, microchipped, and vet checked.',
     price: 1800, currency: 'USD', country: 'Switzerland', country_code: 'CH',
@@ -69,7 +69,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Breathtaking tri-color coat', 'Big, fluffy and majestic', 'Calm and devoted to family'],
   },
   {
-    property_id: 'KCO-003024', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10268', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'German Shepherd',
     description: 'A noble, athletic German Shepherd with a rich tan-and-black coat, alert golden eyes, and a proud confident stance. German Shepherds are intelligent, brave, and fiercely loyal — one of the most striking breeds in the world. This handsome boy is healthy, well-trained, and beautifully groomed. Fully vaccinated, microchipped, and vet checked.',
     price: 1200, currency: 'USD', country: 'Germany', country_code: 'DE',
@@ -82,7 +82,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Noble, intelligent, and loyal', 'Striking tan-and-black coat', 'Beautifully trained companion'],
   },
   {
-    property_id: 'KCO-003025', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10269', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Saint Bernard',
     description: 'A giant, gentle Saint Bernard with a soft red-and-white coat, soulful eyes, and a wonderfully sweet face. One of the largest and most affectionate breeds, the Saint Bernard is a fluffy teddy bear of a dog that lives to cuddle. This gentle giant is healthy, well-fed, and impeccably cared for. Fully vaccinated, microchipped, and vet checked.',
     price: 1600, currency: 'USD', country: 'Switzerland', country_code: 'CH',
@@ -95,7 +95,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['A giant, cuddly gentle soul', 'Soft, plush, well-groomed coat', 'Famous rescue-hero breed'],
   },
   {
-    property_id: 'KCO-003026', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10270', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Alaskan Malamute',
     description: 'A majestic Alaskan Malamute with a thick silver-and-white double coat and the strong, noble face of an Arctic wolf-dog. Malamutes are powerful, fluffy, and incredibly beautiful — built for cold weather and full of affection for their humans. This stunning boy is healthy, well-groomed, and full of life. Fully vaccinated, microchipped, and vet checked.',
     price: 1500, currency: 'USD', country: 'United States', country_code: 'US',
@@ -108,7 +108,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Stunning wolf-like beauty', 'Thick, fluffy, healthy coat', 'Powerful yet affectionate'],
   },
   {
-    property_id: 'KCO-003027', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10271', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Chow Chow',
     description: 'A regal, lion-like Chow Chow with a glorious, thick plush coat and the most beautiful fluffy ruff imaginable. Chows are dignified, loyal, and impossibly cute — looking like walking teddy bears with their proud manes. This stunning girl is healthy, beautifully groomed, and wonderfully calm. Fully vaccinated, microchipped, and vet checked.',
     price: 1450, currency: 'USD', country: 'China', country_code: 'CN',
@@ -121,7 +121,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Gorgeous lion-like mane', 'Fluffy walking teddy bear', 'Calm and dignified nature'],
   },
   {
-    property_id: 'KCO-003028', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10272', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Shiba Inu',
     description: 'An adorable, fox-like Shiba Inu with a fluffy curled tail, cream-colored plush coat, and the most charming little smile. Shibas are the most popular breed in Japan — spirited, clean, and unbelievably cute. This sweet girl is healthy, well-fed, and impeccably groomed. Fully vaccinated, microchipped, and vet checked.',
     price: 1300, currency: 'USD', country: 'Japan', country_code: 'JP',
@@ -134,7 +134,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Japan\'s most beloved breed', 'Adorable fox-like charm', 'Fluffy, clean and healthy'],
   },
   {
-    property_id: 'KCO-003029', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10273', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'French Bulldog',
     description: 'A darling, chunky French Bulldog with huge bat ears, a squishy wrinkled face, and the most lovable stocky little body. Frenchies are famous for their clownish charm, big personalities, and total devotion to their humans. This little chunk is healthy, well-fed, and impossibly cute. Fully vaccinated, microchipped, and vet checked.',
     price: 2100, currency: 'USD', country: 'France', country_code: 'FR',
@@ -147,7 +147,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Squishy, chunky little sweetheart', 'Huge personality in a small body', 'Totally devoted companion'],
   },
   {
-    property_id: 'KCO-003030', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10274', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Newfoundland',
     description: 'A magnificent, bear-like Newfoundland with a thick black water-resistant coat and the sweetest, most gentle face. Newfoundlands are massive, fluffy, and famous as gentle giants — patient with kids and born to be family dogs. This big beautiful boy is healthy, well-groomed, and full of love. Fully vaccinated, microchipped, and vet checked.',
     price: 1750, currency: 'USD', country: 'Canada', country_code: 'CA',
@@ -160,7 +160,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Massive, fluffy and majestic', 'Bear-like gentle giant', 'Wonderful with children'],
   },
   {
-    property_id: 'KCO-003031', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10275', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Australian Shepherd',
     description: 'A gorgeous blue-merle Australian Shepherd with striking marbled gray-and-black coat, one icy-blue eye, and a thick fluffy tail. Aussies are brilliant, energetic, and absolutely stunning — one of the most photographed breeds in the world. This beauty is healthy, well-groomed, and overflowing with charm. Fully vaccinated, microchipped, and vet checked.',
     price: 1350, currency: 'USD', country: 'United States', country_code: 'US',
@@ -173,7 +173,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Breathtaking blue-merle coat', 'Striking icy-blue eyes', 'Smart, playful and gorgeous'],
   },
   {
-    property_id: 'KCO-003032', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10276', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Rottweiler',
     description: 'A powerful, handsome Rottweiler with a gleaming black-and-tan coat, a broad confident chest, and a calm, noble expression. Rottweilers are strong, loyal, and incredibly protective — with a heart as big as their muscular build. This beauty is healthy, well-trained, and beautifully groomed. Fully vaccinated, microchipped, and vet checked.',
     price: 1250, currency: 'USD', country: 'Germany', country_code: 'DE',
@@ -186,7 +186,7 @@ export const NEW_DOG_LISTINGS = [
     highlights: ['Powerful and strikingly handsome', 'Strong, loyal protector', 'Calm, noble temperament'],
   },
   {
-    property_id: 'KCO-003033', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10277', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Great Pyrenees',
     description: 'A breathtaking, cloud-white Great Pyrenees with a thick double coat, a noble calm face, and a gentle giant\'s heart. One of the most beautiful large breeds, the Great Pyrenees looks like a walking snowdrift and loves its family with quiet devotion. This magnificent girl is healthy, fluffy, and impeccably groomed. Fully vaccinated, microchipped, and vet checked.',
     price: 1550, currency: 'USD', country: 'France', country_code: 'FR',

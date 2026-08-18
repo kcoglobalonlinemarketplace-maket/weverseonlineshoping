@@ -9,7 +9,7 @@ export const WOMAN_LISTINGS = [];
 
 function W(subcategory, brand, title, price, color, size, material, imgIds, description, features, rating, ratingCount) {
   WOMAN_LISTINGS.push({
-    property_id: 'KCO-W' + String(WOMAN_LISTINGS.length + 1).padStart(4, '0'),
+    property_id: 'W-W' + String(WOMAN_LISTINGS.length + 1).padStart(4, '0'),
     listing_type: 'product',
     category: 'Woman',
     subcategory,

@@ -165,7 +165,7 @@ function getStoredCountry() {
 function generateOrderNumber() {
   const ts = Date.now().toString(36).toUpperCase().slice(-6);
   const rnd = Math.random().toString(36).toUpperCase().slice(2, 6);
-  return `KCO-${ts}${rnd}`;
+  return `W-${ts}${rnd}`;
 }
 
 function copyToClipboard(text, btnEl) {

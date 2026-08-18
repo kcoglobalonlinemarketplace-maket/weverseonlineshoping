@@ -11,7 +11,7 @@ function gallery(...paths) {
 
 export const PRODUCT_LISTINGS = [
   {
-    property_id: 'KCO-PR001', listing_type: 'product', category: 'Jewelry', subcategory: 'Rings',
+    property_id: 'W10351', listing_type: 'product', category: 'Jewelry', subcategory: 'Rings',
     title: '1ct Genuine Diamond Gold Ring',
     description: 'A stunning genuine diamond ring set in solid gold. This elegant piece features a brilliant-cut diamond with secure four-prong setting, polished gold band, and a comfortable everyday fit. Perfect for engagements, anniversaries, or a statement of timeless style. Comes in premium gift packaging.',
     price: 898, currency: 'USD',
@@ -22,7 +22,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Genuine Diamond', '1cttw', 'Solid Gold', 'Premium Gift Box', 'Hypoallergenic'],
   },
   {
-    property_id: 'KCO-PR002', listing_type: 'product', category: 'Jewelry', subcategory: 'Bangles',
+    property_id: 'W10352', listing_type: 'product', category: 'Jewelry', subcategory: 'Bangles',
     title: 'NYH 3-in-1 Bold Ball Gold Bangle',
     description: 'A bold and beautiful gold bangle featuring a striking ball design. The 3-in-1 styling lets you wear it alone or stack it for a fuller look. Crafted with a durable gold finish that resists tarnish, this bangle adds luxury to any outfit.',
     price: 250, currency: 'USD',
@@ -33,7 +33,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Bold Ball Design', 'Gold Finish', 'Tarnish Resistant', '3-in-1 Stackable'],
   },
   {
-    property_id: 'KCO-PR003', listing_type: 'product', category: 'Watches', subcategory: 'Luxury Watches',
+    property_id: 'W10353', listing_type: 'product', category: 'Watches', subcategory: 'Luxury Watches',
     title: 'Rolex Luxury Watch',
     description: 'A premium luxury wristwatch in the iconic Rolex style. Featuring a precision automatic movement, scratch-resistant crystal, stainless steel case, and timeless classic design. A refined timepiece that complements both formal and casual attire.',
     price: 2500, currency: 'USD',
@@ -44,7 +44,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Automatic Movement', 'Scratch-Resistant Crystal', 'Stainless Steel', 'Water Resistant', 'Classic Design'],
   },
   {
-    property_id: 'KCO-PR004', listing_type: 'product', category: 'Phone Accessories', subcategory: 'iPhone Cases',
+    property_id: 'W10354', listing_type: 'product', category: 'Phone Accessories', subcategory: 'iPhone Cases',
     title: 'King/Queen Crown Gold Design iPhone Case',
     description: 'A customizable gold crown design case for all iPhone models. Featuring luxurious gold embroidery with a regal king and queen crown motif, this case adds premium style while providing durable all-around protection for your phone.',
     price: 59, currency: 'USD',
@@ -55,7 +55,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Fits iPhone 11-16 Series', 'Gold Crown Design', 'Gold Embroidery', 'Customizable', 'Shock Protection'],
   },
   {
-    property_id: 'KCO-PR005', listing_type: 'product', category: 'Phones', subcategory: 'Luxury Phones',
+    property_id: 'W10355', listing_type: 'product', category: 'Phones', subcategory: 'Luxury Phones',
     title: 'Exclusive Goldgenie Custom iPhone Gift',
     description: 'An exclusive Goldgenie custom gift edition iPhone finished in premium gold. This bespoke luxury phone makes an unforgettable gift for those who appreciate the finer things. Includes premium presentation packaging.',
     price: 1500, currency: 'USD',
@@ -66,7 +66,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Custom Gold Finish', 'Bespoke Edition', 'Premium Packaging', 'One-of-a-Kind Gift'],
   },
   {
-    property_id: 'KCO-PR006', listing_type: 'product', category: 'Fashion', subcategory: 'Shoes',
+    property_id: 'W10356', listing_type: 'product', category: 'Fashion', subcategory: 'Shoes',
     title: 'Classic Premium Shoes',
     description: 'A stylish and comfortable pair of premium shoes designed for everyday wear. Built with quality materials, cushioned insoles, and a durable outsole for all-day comfort and lasting style.',
     price: 85, currency: 'USD',
@@ -77,7 +77,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Cushioned Insole', 'Durable Outsole', 'Quality Materials', 'Everyday Comfort'],
   },
   {
-    property_id: 'KCO-PR007', listing_type: 'product', category: 'Fashion', subcategory: 'Shoes',
+    property_id: 'W10357', listing_type: 'product', category: 'Fashion', subcategory: 'Shoes',
     title: 'Elegant Flats',
     description: 'Elegant and versatile flat shoes that pair perfectly with both casual and dressy outfits. Designed with a comfortable footbed and a timeless silhouette for all-day grace and ease.',
     price: 65, currency: 'USD',
@@ -88,7 +88,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Comfortable Footbed', 'Timeless Silhouette', 'Versatile Style', 'Lightweight'],
   },
   {
-    property_id: 'KCO-PR008', listing_type: 'product', category: 'Fashion', subcategory: 'Designer',
+    property_id: 'W10358', listing_type: 'product', category: 'Fashion', subcategory: 'Designer',
     title: 'Paris Brand Designer Piece',
     description: 'A premium designer piece carrying the Paris brand name. Crafted with attention to detail and a fashionable finish, this item brings a touch of Parisian elegance to your wardrobe.',
     price: 120, currency: 'USD',
@@ -99,7 +99,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Designer Brand', 'Parisian Style', 'Quality Finish', 'Limited Stock'],
   },
   {
-    property_id: 'KCO-PR009', listing_type: 'product', category: 'Fashion', subcategory: 'Designer',
+    property_id: 'W10359', listing_type: 'product', category: 'Fashion', subcategory: 'Designer',
     title: 'Ayesha OOZO Signature Collection',
     description: 'A signature fashion piece from the Ayesha OOZO collection. Made with premium materials and a modern design, this item stands out with its distinctive branding and quality craftsmanship.',
     price: 95, currency: 'USD',
@@ -110,7 +110,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Signature Brand', 'Premium Materials', 'Modern Design', 'Quality Craftsmanship'],
   },
   {
-    property_id: 'KCO-PR010', listing_type: 'product', category: 'Fashion', subcategory: 'Designer',
+    property_id: 'W10360', listing_type: 'product', category: 'Fashion', subcategory: 'Designer',
     title: 'KBKS Fashion Piece',
     description: 'A distinctive fashion piece from the KBKS line. Featuring clean styling and durable construction, this item delivers contemporary appeal and everyday versatility.',
     price: 75, currency: 'USD',
@@ -121,7 +121,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Clean Styling', 'Durable Construction', 'Contemporary Design', 'Versatile'],
   },
   {
-    property_id: 'KCO-PR011', listing_type: 'product', category: 'Fashion', subcategory: 'Style',
+    property_id: 'W10361', listing_type: 'product', category: 'Fashion', subcategory: 'Style',
     title: 'Aesthetic Style Collection',
     description: 'An aesthetic fashion collection piece curated for those who love clean, trendy style. A versatile addition that elevates your everyday look with effortless charm.',
     price: 89, currency: 'USD',
@@ -132,7 +132,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Aesthetic Design', 'Trendy Style', 'Versatile Wear', 'Quality Fabric'],
   },
   {
-    property_id: 'KCO-PR012', listing_type: 'product', category: 'Fashion', subcategory: 'Style',
+    property_id: 'W10362', listing_type: 'product', category: 'Fashion', subcategory: 'Style',
     title: 'Chase Up Plus Value Fashion Item',
     description: 'A fashion item that delivers both style and value. Designed with a modern look and made from quality materials, it is a smart choice for everyday wear.',
     price: 99, currency: 'USD',
@@ -143,7 +143,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Great Value', 'Modern Look', 'Quality Materials', 'Everyday Wear'],
   },
   {
-    property_id: 'KCO-PR013', listing_type: 'product', category: 'Fashion', subcategory: 'Style',
+    property_id: 'W10363', listing_type: 'product', category: 'Fashion', subcategory: 'Style',
     title: 'Every Fashion & Design Collection',
     description: 'A versatile fashion and design piece that fits every taste. Thoughtfully crafted with premium materials and a clean finish, it pairs well with any outfit.',
     price: 105, currency: 'USD',
@@ -154,7 +154,7 @@ export const PRODUCT_LISTINGS = [
     features: ['Premium Materials', 'Clean Finish', 'Fits Any Outfit', 'Quality Craftsmanship'],
   },
   {
-    property_id: 'KCO-PR014', listing_type: 'product', category: 'Fashion', subcategory: 'Style',
+    property_id: 'W10364', listing_type: 'product', category: 'Fashion', subcategory: 'Style',
     title: 'Sunday Collection Piece',
     description: 'A relaxed and stylish Sunday collection piece made for effortless wear. Comfortable, breathable, and crafted with quality materials for a polished look.',
     price: 88, currency: 'USD',

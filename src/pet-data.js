@@ -6,7 +6,7 @@ const WMO = (p) => `https://upload.wikimedia.org/wikipedia/commons/${p}`;
 
 export const PET_LISTINGS = [
   {
-    property_id: 'KCO-003001', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10248', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Poodle',
     description: 'A beautiful red Standard Poodle with an elegant, non-shedding hypoallergenic coat. This bright and affectionate companion is fully vaccinated, microchipped, and health-checked by a certified vet. Poodles are among the most intelligent dog breeds and love learning tricks, joining walks, and curling up beside their family. Ready to meet her new forever home.',
     price: 1850, currency: 'USD', country: 'France', country_code: 'FR',
@@ -19,7 +19,7 @@ export const PET_LISTINGS = [
     highlights: ['Non-shedding hypoallergenic coat', 'One of the most intelligent breeds', 'Great with families and children'],
   },
   {
-    property_id: 'KCO-003002', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10249', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Beagle',
     description: 'A cheerful, happy-go-lucky Beagle puppy with the classic tricolor coat and those big soulful eyes. Beagles are gentle, sociable, and wonderful with children and other pets. This little boy is playful, full of energy, and already learning basic obedience. Fully vaccinated, microchipped, and vet checked.',
     price: 850, currency: 'USD', country: 'United Kingdom', country_code: 'GB',
@@ -32,7 +32,7 @@ export const PET_LISTINGS = [
     highlights: ['Gentle and great with kids', 'Sociable with other pets', 'Playful family companion'],
   },
   {
-    property_id: 'KCO-003003', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10250', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Shih Tzu',
     description: 'A sweet, cuddly Shih Tzu with a soft white-and-brown coat and a warm, affectionate personality. Shih Tzus were bred to be companion dogs, and this little girl lives up to that — always happy to sit on your lap or follow you around the house. Fully vaccinated, microchipped, and groomed regularly.',
     price: 1100, currency: 'USD', country: 'China', country_code: 'CN',
@@ -45,7 +45,7 @@ export const PET_LISTINGS = [
     highlights: ['Affectionate lap companion', 'Ideal for apartment living', 'Devoted to its family'],
   },
   {
-    property_id: 'KCO-003004', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10251', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Boxer',
     description: 'A handsome fawn Boxer puppy with a strong, athletic build and a goofy, lovable grin. Boxers are loyal, playful, and endlessly protective of their families, yet gentle with children. This boy is confident, eager to please, and thrives with an active household. Fully vaccinated, microchipped, and vet checked.',
     price: 950, currency: 'USD', country: 'Germany', country_code: 'DE',
@@ -58,7 +58,7 @@ export const PET_LISTINGS = [
     highlights: ['Loyal and protective', 'Excellent with children', 'Full of playful energy'],
   },
   {
-    property_id: 'KCO-003005', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10252', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Cane Corso',
     description: 'A majestic Italian Cane Corso with a powerful, dignified presence and a loyal heart. Known as the guardian of the family, the Cane Corso is calm, confident, and deeply devoted to its owners. This young male is well socialized, obedient, and has a calm temperament. Fully vaccinated, microchipped, and health checked.',
     price: 1650, currency: 'USD', country: 'Italy', country_code: 'IT',
@@ -71,7 +71,7 @@ export const PET_LISTINGS = [
     highlights: ['Noble guardian of the family', 'Calm and obedient temperament', 'Deeply loyal to its owners'],
   },
   {
-    property_id: 'KCO-003006', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10253', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Border Collie',
     description: 'A bright-eyed black-and-white Border Collie — the world\'s most intelligent dog breed. This girl is incredibly smart, agile, and eager to learn; she picks up new commands in minutes and adores outdoor adventures. She would thrive in an active home that loves long walks and training games. Fully vaccinated, microchipped, and vet checked.',
     price: 900, currency: 'USD', country: 'United Kingdom', country_code: 'GB',
@@ -84,7 +84,7 @@ export const PET_LISTINGS = [
     highlights: ['World\'s most intelligent breed', 'Learns commands in minutes', 'Perfect active companion'],
   },
   {
-    property_id: 'KCO-003007', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10254', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Dalmatian',
     description: 'A striking show-quality Dalmatian with the classic white coat and jet-black spots. Dalmatians are athletic, elegant, and endlessly loyal companions that love to run and play. This young male has a gentle, friendly temperament and gets along wonderfully with people. Fully vaccinated, microchipped, and vet checked.',
     price: 1250, currency: 'USD', country: 'Croatia', country_code: 'HR',
@@ -97,7 +97,7 @@ export const PET_LISTINGS = [
     highlights: ['Iconic spotted coat', 'Athletic running companion', 'Gentle and sociable nature'],
   },
   {
-    property_id: 'KCO-003008', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10255', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'English Bulldog',
     description: 'A charming English Bulldog puppy with that unmistakable wrinkled face and comical, laid-back attitude. Bulldogs are loyal, gentle, and famously great with children — the perfect family companion. This girl loves cozy naps as much as short, playful walks. Fully vaccinated, microchipped, and vet checked.',
     price: 1800, currency: 'USD', country: 'United Kingdom', country_code: 'GB',
@@ -110,7 +110,7 @@ export const PET_LISTINGS = [
     highlights: ['Famous gentle temperament', 'Fantastic with kids', 'Easygoing family companion'],
   },
   {
-    property_id: 'KCO-003009', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10256', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Akita',
     description: 'A proud and regal Akita Inu with a thick red-and-white double coat and the quiet confidence of a born guardian. Akitas are loyal, courageous, and form deep bonds with their family. This young male is well trained, socialized, and wonderfully calm indoors. Fully vaccinated, microchipped, and vet checked.',
     price: 1500, currency: 'USD', country: 'Japan', country_code: 'JP',
@@ -123,7 +123,7 @@ export const PET_LISTINGS = [
     highlights: ['Courageous and loyal guardian', 'Calm and dignified indoors', 'Deep devotion to family'],
   },
   {
-    property_id: 'KCO-003010', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10257', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Welsh Corgi',
     description: 'A delightful Pembroke Welsh Corgi with the famous foxy face, big upright ears, and those adorable short legs. Corgis are smart, cheerful, and surprisingly athletic — full of personality and always happy to be the center of attention. This girl is affectionate with everyone she meets. Fully vaccinated, microchipped, and vet checked.',
     price: 1300, currency: 'USD', country: 'United Kingdom', country_code: 'GB',
@@ -136,7 +136,7 @@ export const PET_LISTINGS = [
     highlights: ['Famous foxy Corgi look', 'Smart and full of personality', 'Loyal and affectionate'],
   },
   {
-    property_id: 'KCO-003011', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10258', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Chihuahua',
     description: 'A tiny, big-hearted Chihuahua with a fawn coat and a huge personality in a pocket-sized body. Chihuahuas are devoted, brave, and make the perfect lap companion for any home — big or small. This little girl is confident, sweet, and loves to be carried around. Fully vaccinated, microchipped, and vet checked.',
     price: 750, currency: 'USD', country: 'Mexico', country_code: 'MX',
@@ -149,7 +149,7 @@ export const PET_LISTINGS = [
     highlights: ['Pocket-sized sweetheart', 'Brave and devoted', 'Ideal for small homes'],
   },
   {
-    property_id: 'KCO-003012', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10259', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Pomeranian',
     description: 'A fluffy orange Pomeranian with a big personality and an even bigger heart. Pomeranians are lively, intelligent, and incredibly affectionate — always excited to see you and happy to show off. This little boy has a gorgeous plush double coat and a confident strut. Fully vaccinated, microchipped, and vet checked.',
     price: 950, currency: 'USD', country: 'Germany', country_code: 'DE',
@@ -162,7 +162,7 @@ export const PET_LISTINGS = [
     highlights: ['Gorgeous fluffy coat', 'Lively and affectionate', 'Perfect little companion'],
   },
   {
-    property_id: 'KCO-003013', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10260', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Papillon',
     description: 'An elegant Papillon with butterfly-like ears, a white-and-brown coat, and a bright, cheerful disposition. Papillons are playful, intelligent little dogs that are surprisingly athletic and love to learn. This sweet girl is social, gentle, and a joy to have around the house. Fully vaccinated, microchipped, and vet checked.',
     price: 800, currency: 'USD', country: 'Belgium', country_code: 'BE',
@@ -175,7 +175,7 @@ export const PET_LISTINGS = [
     highlights: ['Signature butterfly ears', 'Bright and eager to learn', 'Gentle family companion'],
   },
   {
-    property_id: 'KCO-003014', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10261', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Bloodhound',
     description: 'A noble black-and-tan Bloodhound with those famous droopy ears and one of the most powerful noses in the dog world. Bloodhounds are gentle, calm, and famously good-natured, with an incredible tracking instinct. This young male is affectionate and wonderfully patient. Fully vaccinated, microchipped, and vet checked.',
     price: 1200, currency: 'USD', country: 'Belgium', country_code: 'BE',
@@ -188,7 +188,7 @@ export const PET_LISTINGS = [
     highlights: ['Remarkable tracking instinct', 'Gentle, patient temperament', 'Loyal and good-natured'],
   },
   {
-    property_id: 'KCO-003015', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
+    property_id: 'W10262', listing_type: 'pet', category: 'Pets', subcategory: 'Dogs',
     title: 'Greyhound',
     description: 'A sleek, elegant brindle Greyhound with the sleekest silhouette in the canine world — and a surprisingly gentle, calm nature indoors. Greyhounds are fast on the track and famously laid-back couch companions at home. This lovely girl is sweet, quiet, and adores people. Fully vaccinated, microchipped, and vet checked.',
     price: 1400, currency: 'USD', country: 'United Kingdom', country_code: 'GB',

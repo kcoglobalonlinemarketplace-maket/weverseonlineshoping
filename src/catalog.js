@@ -9,8 +9,8 @@
 //   * Nothing is materialised at load time — products are built lazily, a page
 //     at a time, so the site stays fast even with "thousands per category".
 //
-// ID scheme: KCO-XX-NNNN  where XX is a short category code (e.g. KCO-EL-0042).
-// Existing seed IDs (KCO-000001 … KCO-000105) never collide with these.
+// ID scheme: W-XX-NNNN  where XX is a short category code (e.g. W-EL-0042).
+// Existing seed IDs (W10000 … W11213) never collide with these.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { getHiddenCatalogIds, isCatalogListingHidden, isHiddenCatalogLoaded, loadHiddenCatalogIds, saveCatalogHidden, resetHiddenCatalogIds } from './catalog-hidden-store.js';
@@ -1228,12 +1228,12 @@ export function getCatalogCategories() {
 export function catalogIdFor(category, idx) {
   const def = getCatalogCategory(category);
   if (!def) return null;
-  return 'KCO-' + def.code + '-' + String(idx).padStart(4, '0');
+  return 'W-' + def.code + '-' + String(idx).padStart(4, '0');
 }
 
 function parseCatalogId(id) {
   if (typeof id !== 'string') return null;
-  const m = /^KCO-([A-Z]{2})-(\d+)$/.exec(id);
+  const m = /^W-([A-Z]{2})-(\d+)$/.exec(id);
   if (!m) return null;
   return { code: m[1], idx: parseInt(m[2], 10) };
 }
@@ -1537,7 +1537,7 @@ function generateVehicle(def, idx) {
 }
 
 // ── Resolver used by details/checkout/payment pages ───────────────────────
-// Turns a "KCO-XX-NNNN" catalog id back into its deterministic listing so
+// Turns a "W-XX-NNNN" catalog id back into its deterministic listing so
 // catalog cards are fully clickable end-to-end. Hidden listings resolve to
 // null so they cannot be reached directly either.
 export function generateListingById(id) {

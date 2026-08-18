@@ -11,7 +11,7 @@ function buildGallery(paths) {
 
 export const APPLIANCE_ESSENTIALS_LISTINGS = [
   {
-    property_id: 'KCO-003100', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Conditioners',
+    property_id: 'W10278', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Conditioners',
     title: 'Frigidaire 5,500 BTU Window Air Conditioner',
     description: 'The Frigidaire window air conditioner cools a small room quickly and quietly with a simple mechanical dial and energy-saving mode. Its washable filter traps dust and allergens, keeping the air you breathe cleaner while the cool air flows. A brand-new compact window unit, finished in clean white. Stock #STK-003100.',
     price: 239, currency: 'USD', country: '', country_code: '',
@@ -24,7 +24,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Cools a small room fast', 'Simple, reliable controls', 'Washable, reusable filter'],
   },
   {
-    property_id: 'KCO-003101', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Conditioners',
+    property_id: 'W10279', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Conditioners',
     title: 'CasaAir Compact Window AC Unit',
     description: 'The CasaAir compact window air conditioner brings cool, dry comfort to small bedrooms and offices. A lightweight frame, adjustable louvers, and quiet operation make it an easy, beautiful addition to any window. Brand-new and boxed, ready to cool your space. Stock #STK-003101.',
     price: 199, currency: 'USD', country: '', country_code: '',
@@ -37,7 +37,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Cool comfort for small rooms', 'Lightweight and easy to mount', 'Clean white finish'],
   },
   {
-    property_id: 'KCO-003102', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Conditioners',
+    property_id: 'W10280', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Conditioners',
     title: 'AeroCool Wall-Mounted Cooling Unit',
     description: 'The AeroCool wall-mounted air conditioner delivers strong, even cooling for medium rooms with a slim profile that blends into any wall. Multiple fan speeds, adjustable airflow, and a remote-friendly design keep your space perfectly comfortable all summer. Brand-new and boxed. Stock #STK-003102.',
     price: 329, currency: 'USD', country: '', country_code: '',
@@ -50,7 +50,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Strong, even room cooling', 'Slim profile on any wall', 'Comfortable all-summer performance'],
   },
   {
-    property_id: 'KCO-003103', listing_type: 'product', category: 'Home Appliances', subcategory: 'Fans',
+    property_id: 'W10281', listing_type: 'product', category: 'Home Appliances', subcategory: 'Fans',
     title: 'Dayton Pedestal Fan — Adjustable Height',
     description: 'The Dayton pedestal fan moves serious air with three speed settings and a fully adjustable height and tilt. Its heavy, stable base keeps it steady at full power, and the protective grille makes it safe in any home. A classic, beautiful pedestal fan in black. Stock #STK-003103.',
     price: 79, currency: 'USD', country: '', country_code: '',
@@ -63,7 +63,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Powerful airflow', 'Adjustable to any room', 'Stable and easy to move'],
   },
   {
-    property_id: 'KCO-003104', listing_type: 'product', category: 'Home Appliances', subcategory: 'Fans',
+    property_id: 'W10282', listing_type: 'product', category: 'Home Appliances', subcategory: 'Fans',
     title: 'Holmes Tower Fan — Slim Oscillating',
     description: 'The Holmes tower fan delivers smooth, whisper-quiet airflow through a slim, modern tower that tucks neatly into any corner. Oscillation spreads cool air across the whole room, and the LED touch controls make it effortless to use. Brand-new, in black. Stock #STK-003104.',
     price: 69, currency: 'USD', country: '', country_code: '',
@@ -76,7 +76,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Whole-room airflow', 'Beautiful slim tower', 'Near-silent operation'],
   },
   {
-    property_id: 'KCO-003105', listing_type: 'product', category: 'Home Appliances', subcategory: 'Fans',
+    property_id: 'W10283', listing_type: 'product', category: 'Home Appliances', subcategory: 'Fans',
     title: 'Lasko High-Velocity Tower Fan',
     description: 'The Lasko tower fan combines high-velocity performance with a striking slim design and digital controls. A remote control, programmable timer, and auto-off make it a joy to use, while the quiet-motor design keeps your room calm. Brand-new, boxed. Stock #STK-003105.',
     price: 89, currency: 'USD', country: '', country_code: '',
@@ -89,7 +89,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Powerful yet quiet', 'Remote control convenience', 'Striking modern design'],
   },
   {
-    property_id: 'KCO-003106', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Dispensers',
+    property_id: 'W10284', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Dispensers',
     title: 'Clickon Hot & Cold Water Dispenser',
     description: 'The Clickon water dispenser serves hot, cold, and room-temperature water at the touch of a button. A top-loading design for bottled water, a child-safety tap lock, and a compact footprint make it perfect for kitchens and offices. Brand-new and boxed. Stock #STK-003106.',
     price: 149, currency: 'USD', country: '', country_code: '',
@@ -102,7 +102,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Instant hot or cold water', 'Safe for families', 'Fits any counter or office'],
   },
   {
-    property_id: 'KCO-003107', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Dispensers',
+    property_id: 'W10285', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Dispensers',
     title: 'Aqua Clara Freestanding Water Dispenser',
     description: 'The Aqua Clara freestanding water dispenser brings hotel-style convenience home with a stainless-steel touch and separate taps for hot and cold water. Its tall, elegant silhouette looks great in the kitchen while keeping everyone hydrated. Brand-new and boxed. Stock #STK-003107.',
     price: 179, currency: 'USD', country: '', country_code: '',
@@ -115,7 +115,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Hotel-style convenience at home', 'Elegant tall silhouette', 'Always ready hot or cold water'],
   },
   {
-    property_id: 'KCO-003108', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Dispensers',
+    property_id: 'W10286', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Dispensers',
     title: 'HydroPure Bottle-Top Water Cooler',
     description: 'The HydroPure bottle-top water cooler fits a standard 5-gallon bottle for clean, refreshing water anywhere — kitchen, office, or gym. Simple push taps, a spill-proof drip tray, and a tidy compact design keep hydration effortless. Brand-new and boxed. Stock #STK-003108.',
     price: 99, currency: 'USD', country: '', country_code: '',
@@ -128,7 +128,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Fresh water anywhere', 'Simple and spill-proof', 'Lightweight and portable'],
   },
   {
-    property_id: 'KCO-003109', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Heaters',
+    property_id: 'W10287', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Heaters',
     title: 'Paloma Tankless Gas Water Heater',
     description: 'The Paloma tankless gas water heater delivers endless hot water on demand while saving space and energy. A compact wall-mounted design fires up only when you need hot water, so you never run out mid-shower. Brand-new and boxed. Stock #STK-003109.',
     price: 649, currency: 'USD', country: '', country_code: '',
@@ -141,7 +141,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Never run out of hot water', 'Saves wall and floor space', 'Heats water only when needed'],
   },
   {
-    property_id: 'KCO-003110', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Heaters',
+    property_id: 'W10288', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Heaters',
     title: 'Noritz Tankless Water Heating System',
     description: 'The Noritz tankless water heating system supplies hot water for multiple bathrooms at once with a sleek, space-saving wall unit. Its condensing technology squeezes extra heat from the flue gas for impressive efficiency. Brand-new and boxed. Stock #STK-003110.',
     price: 899, currency: 'USD', country: '', country_code: '',
@@ -154,7 +154,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Hot water for the whole house', 'Impressive energy efficiency', 'Compact, beautiful wall unit'],
   },
   {
-    property_id: 'KCO-003111', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Heaters',
+    property_id: 'W10289', listing_type: 'product', category: 'Home Appliances', subcategory: 'Water Heaters',
     title: 'Rheem Storage Water Heater — 40 Gallon',
     description: 'The Rheem 40-gallon storage water heater is a dependable workhorse with a heavy-duty glass-lined tank and an easy-set thermostat dial. It keeps a full tank of hot water ready for showers, laundry, and dishes. Brand-new, in classic white. Stock #STK-003111.',
     price: 549, currency: 'USD', country: '', country_code: '',
@@ -167,7 +167,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Full tank always ready', 'Simple, dependable design', 'Built to last for years'],
   },
   {
-    property_id: 'KCO-003112', listing_type: 'product', category: 'Home Appliances', subcategory: 'Irons',
+    property_id: 'W10290', listing_type: 'product', category: 'Home Appliances', subcategory: 'Irons',
     title: 'SteamPro Ceramic Soleplate Steam Iron',
     description: 'The SteamPro steam iron glides over fabrics with a smooth ceramic soleplate and a powerful steam burst for stubborn creases. A precision tip, comfortable handle, and variable steam control make ironing fast and effortless. Brand-new, in white. Stock #STK-003112.',
     price: 49, currency: 'USD', country: '', country_code: '',
@@ -180,7 +180,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Glides smoothly over fabrics', 'Removes stubborn creases', 'Fast, effortless ironing'],
   },
   {
-    property_id: 'KCO-003113', listing_type: 'product', category: 'Home Appliances', subcategory: 'Irons',
+    property_id: 'W10291', listing_type: 'product', category: 'Home Appliances', subcategory: 'Irons',
     title: 'PressLine Electric Steam Iron',
     description: 'The PressLine electric steam iron combines a durable non-stick soleplate with adjustable heat dials for every fabric type. Even heat distribution and a built-in spray deliver crisp, professional-looking results. Brand-new and boxed. Stock #STK-003113.',
     price: 39, currency: 'USD', country: '', country_code: '',
@@ -193,7 +193,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Crisp professional results', 'Gentle on every fabric', 'Light and easy to use'],
   },
   {
-    property_id: 'KCO-003114', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Purifiers',
+    property_id: 'W10292', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Purifiers',
     title: 'Levoit Core 300 HEPA Air Purifier',
     description: 'The Levoit Core 300 air purifier captures dust, pollen, smoke, and pet dander with a true HEPA filter and a quiet 3-stage filtration system. In just minutes it freshens a 219 sq ft room, with a sleep mode that whispers. Brand-new, in white. Stock #STK-003114.',
     price: 119, currency: 'USD', country: '', country_code: '',
@@ -206,7 +206,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Captures 99.97% of particles', 'Quiet enough for the bedroom', 'Fresh air in minutes'],
   },
   {
-    property_id: 'KCO-003115', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Purifiers',
+    property_id: 'W10293', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Purifiers',
     title: 'Levoit LV-H133 Large-Room Air Purifier',
     description: 'The Levoit LV-H133 air purifier tackles large rooms with high-precision sensing and a powerful 3-stage HEPA system. Auto mode adjusts speed to the air quality around it, so your home stays clean and comfortable all day. Brand-new and boxed. Stock #STK-003115.',
     price: 249, currency: 'USD', country: '', country_code: '',
@@ -219,7 +219,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Clean air for big spaces', 'Adjusts itself to air quality', 'Quiet comfort all day'],
   },
   {
-    property_id: 'KCO-003116', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Purifiers',
+    property_id: 'W10294', listing_type: 'product', category: 'Home Appliances', subcategory: 'Air Purifiers',
     title: 'Xiaomi Smart Air Purifier 2S',
     description: 'The Xiaomi Smart Air Purifier 2S pairs a sleek cylindrical design with a laser particle sensor and smart app control. It removes 99.97% of PM2.5 and dust while the OLED display shows real-time air quality. Brand-new and boxed. Stock #STK-003116.',
     price: 159, currency: 'USD', country: '', country_code: '',
@@ -232,7 +232,7 @@ export const APPLIANCE_ESSENTIALS_LISTINGS = [
     highlights: ['Real-time air quality on screen', 'Controls from your phone', 'Sleek modern cylinder'],
   },
   {
-    property_id: 'KCO-003117', listing_type: 'product', category: 'Home Appliances', subcategory: 'Dryers',
+    property_id: 'W10295', listing_type: 'product', category: 'Home Appliances', subcategory: 'Dryers',
     title: 'Electrolux T3190 Tumble Dryer',
     description: 'The Electrolux T3190 tumble dryer makes laundry day effortless with a generous drum and sensor drying that protects your clothes from over-heating. Simple controls and a large door make loading and unloading easy. Brand-new, in classic white. Stock #STK-003117.',
     price: 749, currency: 'USD', country: '', country_code: '',
