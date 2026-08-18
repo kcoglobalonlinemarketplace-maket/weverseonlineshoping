@@ -2478,7 +2478,8 @@ window.runProductImageAnalysis = async function(auto = false) {
   try {
     const result = await aiClient.analyzeImages(images, { category, existingTitle: form.querySelector('[name="title"]')?.value || '' });
     if (!result) {
-      setProductAiStatus('AI image scanning is unavailable. Image scanning needs a vision-capable provider (Google Gemini, Groq, OpenRouter, or Hugging Face) with an API key in AI Settings — or Ollama running locally.', 'warn');
+      setProductAiStatus('I could not scan the image — no vision provider is working. Image scanning needs a real API key for Google Gemini, Groq, OpenRouter, Hugging Face, or OpenAI in Admin → AI Settings (a free Google Gemini key at aistudio.google.com/apikey works best). Until then I cannot see the photo, so I will not guess.', 'warn');
+      if (!auto) showToast('Could not scan the image. Add a Google Gemini API key in AI Settings so the AI can see the photo.', 'error');
       return;
     }
     const updated = applyAiAnalysisToForm(result, category, true);
@@ -4773,12 +4774,12 @@ Rules:
     try {
       const local = await this._tryLocalOllamaVision(prompt, images);
       if (local) return local;
-    } catch { /* fall through to text-only */ }
+    } catch { /* no local vision */ }
 
-    // 4) Text-only fallback using the category context (never invents image facts)
-    const extra = `\n\n(No image analysis is available right now. The product is currently categorized as "${context.category || 'Unknown'}"${context.existingTitle ? ` and titled "${context.existingTitle}"` : ''}. Base your content on that plus general knowledge of typical products in this category. Do not invent specific specs or prices you cannot know.)`;
-    const res = await this.chat([{ role: 'user', content: prompt + extra }], { maxTokens: 4000 });
-    return extractJsonFromAiText(res.text);
+    // 4) No vision at all: NEVER fall back to a text-only model here — it cannot
+    //    see the photo and would just invent a fake product (e.g. always "Mercedes-Benz
+    //    S-Class"). Return null so the UI shows a clear message instead of fake data.
+    return null;
   },
 
   // POST to the Supabase edge function so provider API keys never leave the server.
@@ -4899,6 +4900,7 @@ Rules:
       { key: cfg.groq_key, model: cfg.groq_vision_model || cfg.groq_model || 'llama-3.2-11b-vision-preview', endpoint: 'https://api.groq.com/openai/v1/chat/completions', name: 'Groq' },
       { key: cfg.openrouter_key, model: cfg.openrouter_vision_model || cfg.openrouter_model || 'google/gemini-2.5-flash', endpoint: 'https://openrouter.ai/api/v1/chat/completions', name: 'OpenRouter' },
       { key: cfg.hf_key, model: cfg.hf_vision_model || cfg.hf_model || 'Qwen/Qwen2.5-VL-72B-Instruct', endpoint: 'https://router.huggingface.co/v1/chat/completions', name: 'Hugging Face' },
+      { key: cfg.openai_key || cfg.openai_api_key, model: cfg.openai_vision_model || cfg.openai_model || 'gpt-4o-mini', endpoint: 'https://api.openai.com/v1/chat/completions', name: 'OpenAI' },
     ];
     const content = [
       { type: 'text', text: prompt },
