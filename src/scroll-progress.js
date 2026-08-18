@@ -18,6 +18,7 @@
   rail.setAttribute('role', 'scrollbar');
   rail.setAttribute('aria-label', 'Scroll progress — tap to jump to top or down the page');
   rail.innerHTML = `
+    <div id="scroll-progress-track"></div>
     <div id="scroll-progress-fill"></div>
     <button type="button" id="scroll-progress-top" aria-label="Back to top">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 14l6-6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -29,17 +30,17 @@
   let dragging = false;
 
   const css = `
-    #scroll-progress-rail{position:fixed;top:88px;right:4px;bottom:88px;width:5px;z-index:60;touch-action:none}
-    #scroll-progress-fill{position:absolute;top:0;left:0;width:100%;height:0;background:#2563eb;border-radius:999px;box-shadow:0 0 10px rgba(37,99,235,.55)}
-    #scroll-progress-top{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid #e2e8f0;background:#ffffff;color:#2563eb;box-shadow:0 4px 14px rgba(2,8,30,.18);cursor:pointer;transition:transform .15s ease,color .15s ease}
-    #scroll-progress-top:hover{color:#1d4ed8;transform:translateX(-50%) scale(1.08)}
-    #scroll-progress-top:active{transform:translateX(-50%) scale(.94)}
-    #scroll-progress-top svg{width:15px;height:15px;pointer-events:none}
-    @media (max-width:640px){
-      #scroll-progress-rail{top:104px;right:2px;bottom:104px;width:4px}
-    }
+    #scroll-progress-rail{position:fixed;top:120px;right:6px;bottom:120px;width:14px;z-index:60;touch-action:none;display:flex;justify-content:center}
+    #scroll-progress-track{position:absolute;top:0;bottom:0;width:8px;border-radius:999px;background:rgba(148,163,184,.35);border:1px solid rgba(148,163,184,.45);box-shadow:0 1px 3px rgba(2,8,30,.12)}
+    #scroll-progress-fill{position:absolute;top:0;left:50%;transform:translateX(-50%);width:8px;height:0;background:linear-gradient(180deg,#3b82f6,#2563eb);border-radius:999px;box-shadow:0 0 12px rgba(37,99,235,.7)}
+    #scroll-progress-top{position:absolute;top:-52px;left:50%;transform:translateX(-50%);width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid #bfdbfe;background:#ffffff;color:#2563eb;box-shadow:0 6px 18px rgba(2,8,30,.22);cursor:pointer;transition:transform .15s ease,color .15s ease,opacity .2s ease;opacity:0}
+    #scroll-progress-top:hover{color:#1d4ed8;transform:translateX(-50%) scale(1.06)}
+    #scroll-progress-top:active{transform:translateX(-50%) scale(.92)}
+    #scroll-progress-top svg{width:22px;height:22px;pointer-events:none}
     @media (min-width:641px){
-      #scroll-progress-rail{right:6px;width:5px}
+      #scroll-progress-rail{right:10px;width:16px}
+      #scroll-progress-track{width:10px}
+      #scroll-progress-fill{width:10px}
     }`;
   const style = document.createElement('style');
   style.textContent = css;

@@ -58,10 +58,13 @@ function specsPanel(title, icon, specs, tone = 'blue') {
   return `
     <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
       ${sectionHeader(icon, title, tone)}
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        ${specs.map(specTile).join('')}
-      </div>
+      ${specsGridHtml(specs)}
     </div>`;
+}
+
+function specsGridHtml(specs) {
+  if (!specs || !specs.length) return '';
+  return `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">${specs.map(specTile).join('')}</div>`;
 }
 
 function featuresGrid(features) {
@@ -69,14 +72,19 @@ function featuresGrid(features) {
   return `
     <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
       ${sectionHeader('list-checks', 'Features & Amenities', 'emerald')}
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      ${featuresListHtml(features)}
+    </div>`;
+}
+
+function featuresListHtml(features) {
+  if (!features || !features.length) return '';
+  return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         ${features.map(f => `
           <div class="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-xl px-3.5 py-2.5">
             <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5"></i></span>
             <span class="text-[15px] text-gray-800 font-medium">${escapeHtml(f)}</span>
           </div>`).join('')}
-      </div>
-    </div>`;
+      </div>`;
 }
 
 function highlightsGrid(highlights) {
@@ -84,14 +92,19 @@ function highlightsGrid(highlights) {
   return `
     <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
       ${sectionHeader('star', 'Highlights', 'amber')}
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      ${highlightsListHtml(highlights)}
+    </div>`;
+}
+
+function highlightsListHtml(highlights) {
+  if (!highlights || !highlights.length) return '';
+  return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         ${highlights.map(item => `
           <div class="flex items-start gap-2.5 bg-amber-50/60 border border-amber-100 rounded-xl px-3.5 py-2.5">
             <i data-lucide="badge-check" class="w-4 h-4 text-amber-500 mt-0.5 shrink-0"></i>
             <span class="text-[15px] text-gray-800 font-medium">${escapeHtml(item)}</span>
           </div>`).join('')}
-      </div>
-    </div>`;
+      </div>`;
 }
 
 function descriptionBlockHtml(text) {
@@ -100,6 +113,162 @@ function descriptionBlockHtml(text) {
       ${sectionHeader('file-text', 'Description', 'blue')}
       <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed">${escapeHtml(text || '')}</p>
     </div>`;
+}
+
+/* ── Accordion sections on the product page ────────────────────────────────
+   Each section has a tap header with a ▼/▲ arrow (chevron rotates when the
+   panel opens). Every section shows DIFFERENT content:
+     • Product Details        → description + highlights + features
+     • Specifications         → the spec grid
+     • Shipping Information   → the shop's real shipping policy
+     • Return & Refund Policy → the shop's real refund policy
+     • Frequently Asked Questions → FAQ list with a "Show more" button that
+       reveals additional questions.
+*/
+function accordionItem(id, icon, title, contentHtml, open = false, tone = 'blue') {
+  const tones = { blue: 'bg-blue-50 text-blue-600', amber: 'bg-amber-50 text-amber-600', emerald: 'bg-emerald-50 text-emerald-600', violet: 'bg-violet-50 text-violet-600', rose: 'bg-rose-50 text-rose-600' };
+  const c = tones[tone] || tones.blue;
+  return `
+    <div class="bg-white border border-gray-200 rounded-2xl mb-3 overflow-hidden shadow-sm">
+      <button type="button" data-acc="${id}" class="w-full flex items-center justify-between gap-3 p-4 sm:p-5 text-left hover:bg-gray-50 transition active:bg-gray-100">
+        <span class="flex items-center gap-3 min-w-0">
+          <span class="shrink-0 w-10 h-10 rounded-xl ${c} flex items-center justify-center"><i data-lucide="${icon}" class="w-5 h-5"></i></span>
+          <span class="text-[15px] sm:text-base font-black text-gray-900 tracking-tight">${title}</span>
+        </span>
+        <span data-acc-icon="${id}" class="shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center transition-transform duration-300 ${open ? 'rotate-180' : ''}">
+          <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500"></i>
+        </span>
+      </button>
+      <div data-acc-body="${id}" class="px-4 sm:px-5 pb-5 ${open ? '' : 'hidden'}">
+        ${contentHtml}
+      </div>
+    </div>`;
+}
+
+window.toggleAccordion = (id) => {
+  const body = document.querySelector(`[data-acc-body="${id}"]`);
+  const icon = document.querySelector(`[data-acc-icon="${id}"]`);
+  if (!body || !icon) return;
+  body.classList.toggle('hidden');
+  icon.classList.toggle('rotate-180');
+};
+
+function shippingInfoContent() {
+  return `
+    <div class="space-y-3 text-[15px] text-gray-700 leading-relaxed">
+      <p class="flex items-start gap-2.5"><i data-lucide="truck" class="w-5 h-5 text-blue-500 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">Shipping methods.</strong> Standard delivery is <strong>free worldwide</strong> (3–7 business days). Express (2–4 business days, $25) and Priority (1–2 business days, $50) are available at checkout.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="package" class="w-5 h-5 text-blue-500 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">Courier partners.</strong> We ship with trusted international couriers — DHL, FedEx, UPS and EMS. Every shipment gets a tracking number.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="clock" class="w-5 h-5 text-blue-500 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">Processing time.</strong> Orders are processed within 1–2 business days after payment confirmation. Bank-transfer orders are processed once the receipt is verified.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="globe" class="w-5 h-5 text-blue-500 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">International delivery.</strong> We ship to over 200 countries. Customs duties and import taxes may apply and are the buyer's responsibility.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="search-check" class="w-5 h-5 text-blue-500 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">Tracking.</strong> You'll receive a shipping confirmation email with your tracking number. You can also track orders from your account dashboard.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="badge-help" class="w-5 h-5 text-blue-500 mt-0.5 shrink-0"></i><span>Questions? <a href="/shipping-policy.html" class="text-blue-600 font-bold hover:underline">Read the full Shipping Policy</a>.</span></p>
+    </div>`;
+}
+
+function refundPolicyContent() {
+  return `
+    <div class="space-y-3 text-[15px] text-gray-700 leading-relaxed">
+      <p class="flex items-start gap-2.5"><i data-lucide="rotate-ccw" class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">14-day easy returns.</strong> Items may be returned within 14 days of delivery. Refund requests must be submitted within 30 days of the order date.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="calendar-x" class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">Cancellation before shipment.</strong> Cancel before your order ships and a full refund is issued within 5–7 business days.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="package-x" class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">Damaged or defective.</strong> If your item arrives damaged, contact us within 7 days with photos — we arrange a replacement or full refund, including return shipping.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="package-search" class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">Non-delivery.</strong> If your order doesn't arrive within the estimated window plus 14 days, we investigate with the carrier and refund or resend at no cost.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="wallet" class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">Refund processing.</strong> Approved refunds are processed within 5–7 business days. Card refunds take 5–10 business days to appear, bank transfers 7–14, mobile money 3–5.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="circle-slash" class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0"></i><span><strong class="text-gray-900">Non-refundable.</strong> Final-sale items, digital products, and items used or damaged by the customer are not eligible for refunds.</span></p>
+      <p class="flex items-start gap-2.5"><i data-lucide="badge-help" class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0"></i><span>Questions? <a href="/refund-policy.html" class="text-blue-600 font-bold hover:underline">Read the full Return &amp; Refund Policy</a>.</span></p>
+    </div>`;
+}
+
+function faqContent() {
+  const visible = [
+    { q: 'How do I track my order?', a: 'Once your order ships you\'ll get a confirmation email with your tracking number. You can also track it anytime from your account dashboard under Shipping & Delivery.' },
+    { q: 'Is shipping really free worldwide?', a: 'Yes. Standard shipping to any country is free on every order. Express and Priority upgrades are available at checkout if you need it sooner.' },
+    { q: 'How long does delivery take?', a: 'Standard delivery takes 3–7 business days. Express takes 2–4 business days and Priority 1–2 business days. Processing adds 1–2 business days after payment is confirmed.' },
+    { q: 'How do returns work?', a: 'Items can be returned within 14 days of delivery. Refund requests must be submitted within 30 days of the order date — see the Return &amp; Refund Policy section above.' },
+  ];
+  const extra = [
+    { q: 'Is my payment secure?', a: 'Yes. All payments are processed over SSL-encrypted connections through certified payment gateways. Your payment details are never stored on our servers in plain text.' },
+    { q: 'Can I cancel my order before it ships?', a: 'Absolutely. Cancel before shipment and a full refund is issued within 5–7 business days to your original payment method.' },
+    { q: 'What if my item arrives damaged?', a: 'Contact us within 7 days of delivery with photos and a description. We\'ll arrange a replacement or a full refund — including return shipping costs.' },
+    { q: 'How do I contact customer support?', a: 'Email us at support@weverseonlineshop.com or use the Contact page. Our team reviews every message within 48 hours.' },
+    { q: 'Do you ship to my country?', a: 'We ship to over 200 countries worldwide. Customs duties and import taxes, where applicable, are the buyer\'s responsibility.' },
+    { q: 'How do I request a refund?', a: 'Email support@weverseonlineshop.com with your order number, the reason, and any supporting documentation. Approved refunds are processed within 5–7 business days.' },
+  ];
+  const item = (f) => `
+    <div class="border border-gray-100 rounded-xl overflow-hidden">
+      <button type="button" data-acc="faq" class="faq-q w-full flex items-center justify-between gap-3 p-3.5 text-left hover:bg-gray-50 transition">
+        <span class="text-[14px] font-bold text-gray-900">${escapeHtml(f.q)}</span>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-300"></i>
+      </button>
+      <div class="faq-a hidden px-3.5 pb-3.5 text-sm text-gray-600 leading-relaxed">${escapeHtml(f.a)}</div>
+    </div>`;
+  return `
+    <div class="space-y-2">
+      ${visible.map(item).join('')}
+      <div class="faq-extra hidden space-y-2">${extra.map(item).join('')}</div>
+      <button type="button" id="faq-show-more" class="mt-2 w-full inline-flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-blue-600 font-bold py-2.5 rounded-xl text-sm transition">
+        Show more questions <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>
+    </div>`;
+}
+
+function detailsAccordions(listing, specs, features, highlights, locationContent) {
+  const productDetails = `
+    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed">${escapeHtml(listing.description || '')}</p>
+    ${locationContent || ''}
+    ${highlightsListHtml(highlights)}
+    ${featuresListHtml(features)}`;
+  return `
+    ${accordionItem('acc-details', 'file-text', 'Product Details', productDetails, true, 'blue')}
+    ${accordionItem('acc-specs', 'settings-2', 'Specifications', specsGridHtml(specs) || '<p class="text-sm text-gray-500">No specifications available for this listing.</p>', true, 'violet')}
+    ${accordionItem('acc-shipping', 'truck', 'Shipping Information', shippingInfoContent(), false, 'emerald')}
+    ${accordionItem('acc-refund', 'rotate-ccw', 'Return &amp; Refund Policy', refundPolicyContent(), false, 'rose')}
+    ${accordionItem('acc-faq', 'circle-help', 'Frequently Asked Questions', faqContent(), false, 'amber')}`;
+}
+
+// Wire up the accordion headers (▼/▲ toggles) and the FAQ "Show more" button.
+// Uses event delegation so it works no matter which renderer created the DOM.
+function setupAccordions() {
+  const root = document.getElementById('details-content');
+  if (!root) return;
+  root.querySelectorAll('[data-acc]').forEach(btn => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.acc;
+      const body = root.querySelector(`[data-acc-body="${id}"]`);
+      const icon = root.querySelector(`[data-acc-icon="${id}"]`);
+      if (!body || !icon) return;
+      body.classList.toggle('hidden');
+      icon.classList.toggle('rotate-180');
+      if (window.lucide) lucide.createIcons();
+    });
+  });
+  root.querySelectorAll('.faq-q').forEach(btn => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      const icon = btn.querySelector('i, svg');
+      const ans = btn.nextElementSibling;
+      if (!ans) return;
+      ans.classList.toggle('hidden');
+      if (icon) icon.classList.toggle('rotate-180');
+    });
+  });
+  const showMore = root.querySelector('#faq-show-more');
+  if (showMore && !showMore.dataset.bound) {
+    showMore.dataset.bound = '1';
+    showMore.addEventListener('click', () => {
+      const extra = root.querySelector('.faq-extra');
+      if (!extra) return;
+      extra.classList.toggle('hidden');
+      const icon = showMore.querySelector('i, svg');
+      if (icon) icon.classList.toggle('rotate-180');
+      showMore.innerHTML = extra.classList.contains('hidden')
+        ? 'Show more questions <i data-lucide="chevron-down" class="w-4 h-4"></i>'
+        : 'Show fewer questions <i data-lucide="chevron-up" class="w-4 h-4"></i>';
+      if (window.lucide) lucide.createIcons();
+    });
+  }
 }
 
 function reviewItemHtml(r) {
@@ -275,12 +444,7 @@ function renderTruck(listing) {
       </div>
 
       <!-- Description -->
-      ${descriptionBlockHtml(listing.description)}
-
-      <!-- Truck Information -->
-      ${specsPanel('Truck Information', 'truck', specs, 'amber')}
-
-      ${featuresBlock}
+      ${detailsAccordions(listing, specs, listing.features, null, null)}
 
       ${sellerBlock(listing)}
 
@@ -332,6 +496,7 @@ function renderTruck(listing) {
   setupReviewForm(listing);
   loadReviews(listing);
 
+  setupAccordions();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -426,12 +591,7 @@ function renderMotorhome(listing) {
       </div>
 
       <!-- Description -->
-      ${descriptionBlockHtml(listing.description)}
-
-      <!-- Motorhome Information -->
-      ${specsPanel('Motorhome Information', 'bus', specs, 'violet')}
-
-      ${featuresBlock}
+      ${detailsAccordions(listing, specs, listing.features, null, null)}
 
       ${sellerBlock(listing)}
 
@@ -483,6 +643,7 @@ function renderMotorhome(listing) {
   setupReviewForm(listing);
   loadReviews(listing);
 
+  setupAccordions();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -572,12 +733,7 @@ function renderCar(listing) {
       </div>
 
       <!-- Description -->
-      ${descriptionBlockHtml(listing.description)}
-
-      <!-- Car Information -->
-      ${specsPanel('Car Information', 'car', specs, 'amber')}
-
-      ${featuresBlock}
+      ${detailsAccordions(listing, specs, listing.features, null, null)}
 
       ${sellerBlock(listing)}
 
@@ -629,6 +785,7 @@ function renderCar(listing) {
   setupReviewForm(listing);
   loadReviews(listing);
 
+  setupAccordions();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -833,7 +990,7 @@ function render(listing) {
       { icon: 'navigation', label: 'Town / Local Area', value: listing.town },
     ].filter(item => item.value);
     locationBlock = `
-      <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      <div class="mt-4">
         ${sectionHeader('map-pin', 'Location', 'rose')}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           ${locItems.map(item => `
@@ -960,13 +1117,8 @@ function render(listing) {
       ${actionGridHtml(listing)}
 
       <div id="listing-details">
-        ${descriptionBlockHtml(listing.description)}
+        ${detailsAccordions(listing, specs, features, highlights, locationBlock)}
       </div>
-
-      ${locationBlock}
-      ${specsBlock}
-      ${featuresBlock}
-      ${highlightsBlock}
 
       <div id="recommendations-section" class="hidden">
         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">You May Also Like</h3>
@@ -1039,6 +1191,7 @@ function render(listing) {
   loadReviews(listing);
   loadRecommendations(listing);
 
+  setupAccordions();
   if (window.lucide) lucide.createIcons();
 
   trackEvent('view_item', { item_id: listing.property_id, item_name: listing.title, value: parseFloat(listing.price) || 0, currency: listing.currency || 'USD' });
