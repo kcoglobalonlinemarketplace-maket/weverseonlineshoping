@@ -4736,13 +4736,21 @@ Rules:
 - Respond with valid JSON only.`;
 
     const images = [];
-    for (const url of (imageUrls || []).slice(0, 4)) {
-      const dataUrl = await this._fetchImageAsDataUrl(url);
+    for (const url of (imageUrls || []).slice(0, 2)) {
+      const dataUrl = await this._fetchImageAsDataUrl(url, 1024);
       if (dataUrl) images.push(dataUrl);
     }
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
-    // 1) Server-side vision: cloud providers with automatic 429/rate-limit fallback
+    // 1) FAST PATH: browser-side vision straight to the provider. The admin's
+    //    keys are already loaded from ai_settings, so this skips the slow server
+    //    chain and gives a quick result (a couple of seconds).
+    try {
+      const fast = await this._tryBrowserGeminiVision(prompt, images) || await this._tryBrowserOpenAIVision(prompt, images);
+      if (fast) return fast;
+    } catch { /* fall through to server vision */ }
+
+    // 2) Server-side vision via the edge function (cloud providers, keys stay server-side)
     try {
       const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: 4096 });
       if (res && res.success && res.text) {
@@ -4751,23 +4759,18 @@ Rules:
         throw new Error('The AI returned no valid analysis for these images.');
       }
       throw new Error((res && res.error) || 'Vision service unavailable.');
-    } catch (err) {
-      // 2) Local Ollama vision (browser → localhost; no API key, fully offline)
-      try {
-        const local = await this._tryLocalOllamaVision(prompt, images);
-        if (local) return local;
-      } catch { /* ignore — try browser vision */ }
-      // 3) Browser-side vision using the admin's saved provider keys directly
-      //    (works even if the Supabase edge function is not deployed).
-      try {
-        const browserVision = await this._tryBrowserGeminiVision(prompt, images) || await this._tryBrowserOpenAIVision(prompt, images);
-        if (browserVision) return browserVision;
-      } catch { /* ignore — try text-only */ }
-      // 4) Text-only fallback using the category context (never invents image facts)
-      const extra = `\n\n(No image analysis is available right now. The product is currently categorized as "${context.category || 'Unknown'}"${context.existingTitle ? ` and titled "${context.existingTitle}"` : ''}. Base your content on that plus general knowledge of typical products in this category. Do not invent specific specs or prices you cannot know.)`;
-      const res = await this.chat([{ role: 'user', content: prompt + extra }], { maxTokens: 4000 });
-      return extractJsonFromAiText(res.text);
-    }
+    } catch { /* fall through to local */ }
+
+    // 3) Local Ollama vision (browser → localhost; no API key, fully offline)
+    try {
+      const local = await this._tryLocalOllamaVision(prompt, images);
+      if (local) return local;
+    } catch { /* fall through to text-only */ }
+
+    // 4) Text-only fallback using the category context (never invents image facts)
+    const extra = `\n\n(No image analysis is available right now. The product is currently categorized as "${context.category || 'Unknown'}"${context.existingTitle ? ` and titled "${context.existingTitle}"` : ''}. Base your content on that plus general knowledge of typical products in this category. Do not invent specific specs or prices you cannot know.)`;
+    const res = await this.chat([{ role: 'user', content: prompt + extra }], { maxTokens: 4000 });
+    return extractJsonFromAiText(res.text);
   },
 
   // POST to the Supabase edge function so provider API keys never leave the server.
@@ -4784,12 +4787,12 @@ Rules:
   },
 
   // Fetch an image URL and return a compressed data URL (keeps edge payloads small).
-  async _fetchImageAsDataUrl(url) {
+  async _fetchImageAsDataUrl(url, dim = 1200) {
     try {
       const blob = await fetch(url).then(r => r.blob());
       if (!blob || !blob.size) return null;
       if (blob.size < 1_800_000) return `data:${blob.type || 'image/jpeg'};base64,${await blobToBase64(blob)}`;
-      return await this._downscaleImage(blob, 1200);
+      return await this._downscaleImage(blob, dim);
     } catch { return null; }
   },
 
@@ -4850,11 +4853,11 @@ Rules:
     const cfg = await this.getConfig();
     const apiKey = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!apiKey) return null;
-    const models = [cfg.gemini_vision_model || cfg.gemini_model, 'gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash'].filter(Boolean);
+    const models = [cfg.gemini_vision_model || cfg.gemini_model, 'gemini-2.5-flash', 'gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview'].filter(Boolean);
     for (const model of models) {
       try {
         const parts = [{ text: prompt }];
-        for (const url of images.slice(0, 4)) {
+        for (const url of images.slice(0, 2)) {
           const match = String(url).match(/^data:([^;,]+)[;,]base64,(.+)$/s);
           if (!match) continue;
           parts.push({ inlineData: { mimeType: match[1].trim(), data: match[2].trim() } });
@@ -4866,9 +4869,9 @@ Rules:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+            generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
           }),
-          signal: AbortSignal.timeout(90000),
+          signal: AbortSignal.timeout(40000),
         });
         if (!res.ok) continue;
         const data = await res.json();
@@ -4891,7 +4894,7 @@ Rules:
     ];
     const content = [
       { type: 'text', text: prompt },
-      ...images.slice(0, 4).map(url => ({ type: 'image_url', image_url: { url } })),
+      ...images.slice(0, 2).map(url => ({ type: 'image_url', image_url: { url } })),
     ];
     for (const cand of candidates) {
       const apiKey = String(cand.key || '').trim();
@@ -4902,8 +4905,8 @@ Rules:
         const res = await fetch(cand.endpoint, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ model: cand.model, messages: [{ role: 'user', content }], temperature: 0.3, max_tokens: 4096 }),
-          signal: AbortSignal.timeout(90000),
+          body: JSON.stringify({ model: cand.model, messages: [{ role: 'user', content }], temperature: 0.2, max_tokens: 4096 }),
+          signal: AbortSignal.timeout(40000),
         });
         if (!res.ok) continue;
         const data = await res.json();
