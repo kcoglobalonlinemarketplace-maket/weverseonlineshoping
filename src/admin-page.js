@@ -4,6 +4,7 @@ import { ALL_CURRENCIES } from './localization.js';
 import { GLOBAL_PRICE_MAX, GLOBAL_PRICE_MIN, buildCatalogDraft, getDefaultCurrencyForCountry, getTemplatesForCategory } from './global-product-catalog.js';
 import { getLocalShowroomListingById, listLocalShowroomListings, patchLocalShowroomListing, upsertLocalShowroomListing } from './local-showroom-store.js';
 import { getFlagEmojiFromCountryCode, getManualPaymentAccounts, getPaymentInstructions, loadPaymentSettingsCache, savePaymentSettingsCache } from './payment-settings.js';
+import { tryLocalBrowserVision } from './ai-local-vision.js';
 import { SHOWROOM_LISTINGS } from './showroom-data.js';
 import { PRODUCT_LISTINGS } from './products-data.js';
 import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
@@ -2484,10 +2485,11 @@ window.runProductImageAnalysis = async function(auto = false) {
     }
     const updated = applyAiAnalysisToForm(result, category, true);
     const provider = result._aiProvider ? ` (${result._aiProvider})` : '';
-    setProductAiStatus(`AI scanned your image${images.length > 1 ? 's' : ''} and filled the form${provider}. Review the fields, then press Publish.`, 'ok');
+    const lowConf = result._aiLowConfidence ? ' My free in-browser AI is basic, so please double-check the brand/model before publishing.' : '';
+    setProductAiStatus(`AI scanned your image${images.length > 1 ? 's' : ''} and filled the form${provider}. Review the fields, then press Publish.${lowConf}`, 'ok');
     if (!auto) {
       showToast(updated
-        ? `AI analyzed your image${images.length > 1 ? 's' : ''} and filled ${updated} field(s).`
+        ? `AI analyzed your image${images.length > 1 ? 's' : ''} and filled ${updated} field(s).${lowConf}`
         : 'AI analyzed your images — no new fields to fill.', 'success');
     }
   } catch (err) {
@@ -4937,49 +4939,9 @@ Rules:
     return null;
   },
 
-  // 100% FREE, keyless, in-browser vision: runs a small vision-language model
-  // (SmolVLM) directly in the admin's browser via Transformers.js (ONNX/WebGPU).
-  // No API key, no install, no data leaves the computer. The first run downloads
-  // the model (~350MB–1GB, cached after that); afterwards it works fully offline.
+  // 100% FREE, keyless, in-browser vision (shared engine, see ai-local-vision.js).
   async _tryBrowserLocalVision(prompt, images) {
-    try {
-      const mod = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0');
-      const pipeline = mod?.pipeline;
-      if (typeof pipeline !== 'function') return null;
-      try { mod.env.allowLocalModels = false; } catch { /* optional */ }
-
-      const attempts = [
-        { device: 'webgpu', dtype: 'fp32' },
-        { device: 'wasm', dtype: 'q8' },
-        { device: 'wasm', dtype: 'fp32' },
-      ];
-      let pipe = null;
-      for (const opts of attempts) {
-        if (opts.device === 'webgpu') {
-          try { if (!navigator.gpu || !(await navigator.gpu.requestAdapter())) continue; } catch { continue; }
-        }
-        try {
-          pipe = await pipeline('image-text-to-text', 'HuggingFaceTB/SmolVLM-256M-Instruct', opts);
-          break;
-        } catch { /* try next backend */ }
-      }
-      if (!pipe) return null;
-
-      const content = [
-        { type: 'text', text: prompt },
-        ...images.slice(0, 1).map(url => ({ type: 'image', image: url })),
-      ];
-      const out = await pipe(
-        [{ role: 'user', content }],
-        { max_new_tokens: 600, do_sample: false, temperature: 0.2 }
-      );
-      const text = String(out?.[0]?.generated_text || '').trim();
-      if (!text) return null;
-      const parsed = extractJsonFromAiText(text);
-      return parsed
-        ? { ...parsed, _aiProvider: 'Free local AI (browser)', _aiModel: 'SmolVLM-256M-Instruct' }
-        : { description: text, _aiProvider: 'Free local AI (browser)', _aiModel: 'SmolVLM-256M-Instruct' };
-    } catch { return null; }
+    return tryLocalBrowserVision(prompt, images);
   },
 
   // ── IMAGE GENERATION: expand a product into realistic angle photos ──
