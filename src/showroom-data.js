@@ -490,51 +490,62 @@ export function getListingsByIds(ids) {
 
 let _dbListings = [];
 let _dbLoaded = false;
+let _dbLoading = null;
 
 export function getDBListings() { return _dbListings; }
 export function isDBLoaded() { return _dbLoaded; }
 
-export async function loadDBListings() {
-  try {
-    const { supabase } = await import('./supabase-client.js');
-    const { listLocalShowroomListings } = await import('./local-showroom-store.js');
-    const { data, error } = await supabase
-      .from('showroom_listings')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
-    // Always merge database rows with the local fallback store so products that
-    // were saved locally (while the database was unavailable) still show up on
-    // the store. Database rows win on duplicate IDs.
-    const rows = (error ? [] : (data || []));
-    const dbIds = new Set(rows.map(row => row.property_id));
-    for (const row of listLocalShowroomListings().filter(item => item.is_active !== false)) {
-      if (row && row.property_id && !dbIds.has(row.property_id)) { dbIds.add(row.property_id); rows.push(row); }
+// Single shared in-flight request: if the homepage, promo pool, cards, and the
+// details page all ask for listings at once, they reuse ONE fetch instead of
+// hammering Supabase N times. This is what makes the details page open fast.
+export function loadDBListings() {
+  if (_dbLoaded) return Promise.resolve(_dbListings);
+  if (_dbLoading) return _dbLoading;
+  _dbLoading = (async () => {
+    try {
+      const { supabase } = await import('./supabase-client.js');
+      const { listLocalShowroomListings } = await import('./local-showroom-store.js');
+      const { data, error } = await supabase
+        .from('showroom_listings')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      // Always merge database rows with the local fallback store so products that
+      // were saved locally (while the database was unavailable) still show up on
+      // the store. Database rows win on duplicate IDs.
+      const rows = (error ? [] : (data || []));
+      const dbIds = new Set(rows.map(row => row.property_id));
+      for (const row of listLocalShowroomListings().filter(item => item.is_active !== false)) {
+        if (row && row.property_id && !dbIds.has(row.property_id)) { dbIds.add(row.property_id); rows.push(row); }
+      }
+      const source = rows;
+      _dbListings = source.map(row => ({
+        ...row,
+        // Vehicle/product specs are stored in the `specifications` JSONB column
+        // (model_year, engine, transmission, seating_capacity, doors, etc.).
+        // Flatten them to top-level so the showroom/details pages can read them
+        // the same way they read the hardcoded seed data.
+        ...(row.specifications && typeof row.specifications === 'object' ? row.specifications : {}),
+        images: Array.isArray(row.images) ? row.images : [],
+        features: Array.isArray(row.features) ? row.features : [],
+        highlights: Array.isArray(row.highlights) ? row.highlights : [],
+        rating: Number(row.rating) || 0,
+        rating_count: row.rating_count || 0,
+        favorite_count: row.favorite_count || 0,
+        price: Number(row.price) || 0,
+      }));
+      // Merge into the listing map (DB entries take priority on duplicate IDs)
+      for (const l of _dbListings) LISTING_MAP.set(l.property_id, l);
+      _dbLoaded = true;
+      return _dbListings;
+    } catch {
+      _dbLoaded = true;
+      return [];
+    } finally {
+      _dbLoading = null;
     }
-    const source = rows;
-    _dbListings = source.map(row => ({
-      ...row,
-      // Vehicle/product specs are stored in the `specifications` JSONB column
-      // (model_year, engine, transmission, seating_capacity, doors, etc.).
-      // Flatten them to top-level so the showroom/details pages can read them
-      // the same way they read the hardcoded seed data.
-      ...(row.specifications && typeof row.specifications === 'object' ? row.specifications : {}),
-      images: Array.isArray(row.images) ? row.images : [],
-      features: Array.isArray(row.features) ? row.features : [],
-      highlights: Array.isArray(row.highlights) ? row.highlights : [],
-      rating: Number(row.rating) || 0,
-      rating_count: row.rating_count || 0,
-      favorite_count: row.favorite_count || 0,
-      price: Number(row.price) || 0,
-    }));
-    // Merge into the listing map (DB entries take priority on duplicate IDs)
-    for (const l of _dbListings) LISTING_MAP.set(l.property_id, l);
-    _dbLoaded = true;
-    return _dbListings;
-  } catch {
-    _dbLoaded = true;
-    return [];
-  }
+  })();
+  return _dbLoading;
 }
 
 // Return ALL listings: hardcoded + database, deduplicated by property_id.

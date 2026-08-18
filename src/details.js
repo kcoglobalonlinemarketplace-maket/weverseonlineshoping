@@ -6,7 +6,8 @@ import { getCarById, CAR_LISTINGS } from './car-data.js';
 import { getPhoneById, PHONE_LISTINGS } from './phone-data.js';
 import { PET_LISTINGS } from './pet-data.js';
 import { PRODUCT_LISTINGS } from './products-data.js';
-import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
+// products-extra.js is ~636 KB — loaded LAZILY (dynamic import) so the details
+// page doesn't block on it for properties/cars/etc.
 import { renderCard } from './showroom-cards.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
@@ -351,9 +352,25 @@ function getListingId() {
   return params.get('id');
 }
 
-const ALL_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
+const ALL_PRODUCTS = [...PRODUCT_LISTINGS];
 function findProductById(id) {
   return ALL_PRODUCTS.find(l => l.property_id === id) || null;
+}
+
+// Lazy-loaded ~636 KB extra product catalog. Only fetched when the built-in
+// product list + live DB don't already contain the requested id.
+let _extraProductsPromise = null;
+function loadExtraProducts() {
+  if (!_extraProductsPromise) {
+    _extraProductsPromise = import('./products-extra.js')
+      .then(m => {
+        const extra = m.PRODUCT_EXTRA_LISTINGS || [];
+        for (const l of extra) if (!ALL_PRODUCTS.some(x => x.property_id === l.property_id)) ALL_PRODUCTS.push(l);
+        return ALL_PRODUCTS;
+      })
+      .catch(() => ALL_PRODUCTS);
+  }
+  return _extraProductsPromise;
 }
 
 function renderTruck(listing) {
@@ -881,7 +898,7 @@ function buildRelatedPool(listing) {
   add(PHONE_LISTINGS);
   add(PET_LISTINGS);
   add(PRODUCT_LISTINGS);
-  add(PRODUCT_EXTRA_LISTINGS);
+  add(ALL_PRODUCTS); // includes lazily-loaded extra products when available
   add(getAllListings());
   const cat = getCatalogCategory(listing.category || listing.subcategory);
   if (cat) add(getCatalogSample(cat.slug, 50));
@@ -1561,57 +1578,52 @@ async function init() {
     return;
   }
 
-  // Load the live database FIRST so admin edits (title, price, images,
-  // publish state) always win over the built-in catalog on the details page.
+  // Fast path — render the built-in listing INSTANTLY (no network wait) so the
+  // page never sits on "Loading property details...". The live database rows
+  // are fetched in the background and, when present, re-render over the static
+  // version so admin edits (title, price, images, publish state) still win.
+  const staticSource = () =>
+    getTruckById(id) || getMotorhomeById(id) || getCarById(id) || getPhoneById(id) || findProductById(id);
+
+  const renderListing = (l) => {
+    cleanListing(l);
+    document.title = `${l.title} | Weverse Online Shop`;
+    // Built-in trucks/motorhomes/cars keep their specialist renderers (which
+    // load related sections internally); any live database listing (and
+    // phones/products/properties) use the main renderer + related sections.
+    if (l === getTruckById(id)) renderTruck(l);
+    else if (l === getMotorhomeById(id)) renderMotorhome(l);
+    else if (l === getCarById(id)) renderCar(l);
+    else { render(l); try { loadRelatedSections(l); } catch {} }
+  };
+
+  const staticListing = staticSource();
+  if (staticListing) {
+    renderListing(staticListing);
+    // Hydrate with live DB data in the background (single shared fetch).
+    loadDBListings().then(() => {
+      const live = findListingById(id);
+      if (live && live.property_id === id) {
+        try { renderListing(live); } catch {}
+      }
+    });
+    return;
+  }
+
+  // No built-in listing — resolve from the live database (properties are DB-only).
   await loadDBListings();
   const live = findListingById(id);
   if (live) {
-    cleanListing(live);
-    document.title = `${live.title} | Weverse Online Shop`;
-    render(live);
-    try { loadRelatedSections(live); } catch {}
+    renderListing(live);
     return;
   }
 
-  const truck = getTruckById(id);
-  if (truck) {
-    cleanListing(truck);
-    document.title = `${truck.title} | Weverse Online Shop`;
-    renderTruck(truck);
-    return;
-  }
-
-  const motorhome = getMotorhomeById(id);
-  if (motorhome) {
-    cleanListing(motorhome);
-    document.title = `${motorhome.title} | Weverse Online Shop`;
-    renderMotorhome(motorhome);
-    return;
-  }
-
-  const car = getCarById(id);
-  if (car) {
-    cleanListing(car);
-    document.title = `${car.title} | Weverse Online Shop`;
-    renderCar(car);
-    return;
-  }
-
-  const phone = getPhoneById(id);
-  if (phone) {
-    cleanListing(phone);
-    document.title = `${phone.title} | Weverse Online Shop`;
-    render(phone);
-    try { loadRelatedSections(phone); } catch {}
-    return;
-  }
-
-  const product = findProductById(id);
-  if (product) {
-    cleanListing(product);
-    document.title = `${product.title} | Weverse Online Shop`;
-    render(product);
-    try { loadRelatedSections(product); } catch {}
+  // The big extra-product catalog (~636 KB) is lazy: only fetched here, and only
+  // if the id wasn't in the built-in list or the database.
+  await loadExtraProducts();
+  const extraProduct = findProductById(id);
+  if (extraProduct) {
+    renderListing(extraProduct);
     return;
   }
 
