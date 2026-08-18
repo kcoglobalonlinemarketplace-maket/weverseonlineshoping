@@ -3,15 +3,27 @@
 -- Run this in Supabase SQL editor (owner/admin). Safe to re-run.
 -- ──────────────────────────────────────────────────────────────
 
--- 1. Customers may submit reviews on products they can view.
---    New reviews start hidden (is_approved = false) until an admin approves.
+-- 0. Reviews are keyed by the PUBLIC Product ID (property_id) so the same
+--    system works for catalog, seed and database products, and a review for
+--    Product A can never appear on Product B. Also support review photos and
+--    the Verified Purchase badge (only set for real approved orders).
+ALTER TABLE public.product_reviews
+  ADD COLUMN IF NOT EXISTS property_id text,
+  ADD COLUMN IF NOT EXISTS review_photo text,
+  ADD COLUMN IF NOT EXISTS is_verified_purchase boolean NOT NULL DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_product_reviews_property ON public.product_reviews(property_id);
+
+-- 1. Customers may submit reviews on any product they can view.
+--    Reviews go live immediately (is_approved = true) keyed by Product ID.
 DROP POLICY IF EXISTS "customer_insert_reviews" ON public.product_reviews;
 CREATE POLICY "customer_insert_reviews" ON public.product_reviews FOR INSERT
   TO authenticated
   WITH CHECK (
     user_id = auth.uid()
-    AND is_approved = false
+    AND is_approved = true
     AND rating BETWEEN 1 AND 5
+    AND property_id IS NOT NULL
   );
 
 -- 2. Customers may delete only their own reviews.
@@ -59,10 +71,39 @@ CREATE POLICY "admin_delete_product_faqs" ON public.product_faqs FOR DELETE
 
 CREATE INDEX IF NOT EXISTS idx_product_faqs_listing ON public.product_faqs(listing_id);
 
--- 5. Verify purchases badge: only orders paid & verified grant it.
+-- 6. Review photos: public bucket, owner can upload to their own folder.
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('review-photos', 'review-photos', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "review_photos_public_read" ON storage.objects;
+CREATE POLICY "review_photos_public_read"
+  ON storage.objects FOR SELECT
+  TO anon, authenticated
+  USING (bucket_id = 'review-photos');
+
+DROP POLICY IF EXISTS "review_photos_owner_insert" ON storage.objects;
+CREATE POLICY "review_photos_owner_insert"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'review-photos'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+DROP POLICY IF EXISTS "review_photos_owner_delete" ON storage.objects;
+CREATE POLICY "review_photos_owner_delete"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'review-photos'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- 7. Verify purchases badge: only orders paid & verified grant it.
 --    The checkout writes payment_receipts rows on success; listing_id there is
---    the property_id (text), while product_reviews.listing_id is the internal
---    uuid. This helper backfills is_verified_purchase for approved orders.
+--    the property_id (text). This helper backfills is_verified_purchase for
+--    approved orders, keyed by the review's property_id.
 CREATE OR REPLACE FUNCTION public.mark_verified_purchases()
 RETURNS void
 LANGUAGE sql
@@ -74,9 +115,8 @@ AS $$
     AND r.user_id IS NOT NULL
     AND EXISTS (
       SELECT 1 FROM public.payment_receipts p
-      JOIN public.showroom_listings sl ON sl.property_id = p.listing_id
       WHERE p.user_id = r.user_id
         AND p.status = 'approved'
-        AND sl.id = r.listing_id
+        AND p.listing_id = r.property_id
     );
 $$;

@@ -12,6 +12,7 @@ import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
 import { addToCart as cartAddToCart } from './cart.js';
+import { generateSeedReviews } from './seed-reviews.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 

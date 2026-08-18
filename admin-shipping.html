@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
@@ -84,5 +84,10 @@
   <script type="module" src="/src/admin-shipping-page.js"></script>
   <script src="/back-button.js" defer></script>
   <script type="module" src="/src/brand.js"></script>
+  <!-- APP PROMOTION BANNER + LIVE PRODUCT PROMOTIONS -->
+  <div id="app-promo-banner"></div>
+  <div id="live-promo-alerts" class="fixed bottom-4 right-4 z-50 w-[340px] max-w-[90vw] space-y-3 pointer-events-none" aria-live="polite"></div>
+  <script type="module" src="/src/app-promo-banner.js"></script>
+  <script type="module" src="/src/live-promo-alerts.js"></script>
 </body>
 </html>

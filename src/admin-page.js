@@ -3448,7 +3448,7 @@ function reviewCard(r) {
           <span class="text-xs text-gray-500">${fmtDate(r.created_at)}</span>
           ${!r.is_approved ? `<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">Pending Approval</span>` : `<span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Approved</span>`}
         </div>
-        <p class="text-sm text-gray-200 leading-relaxed">${esc(r.review_text || '—')}</p>
+        <p class="text-sm text-gray-200 leading-relaxed">${esc(r.comment || r.review_text || '—')}</p>
         <p class="text-[11px] text-blue-400 mt-1.5">On: ${esc(r.showroom_listings?.title || r.listing_id)}</p>
       </div>
       <div class="flex gap-1 shrink-0">
@@ -4598,8 +4598,34 @@ function extractJsonFromAiText(text) {
 async function renderContent() {
   const content = document.getElementById('content');
   try {
-    const { data: settings } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+    const [{ data: settings }, promoPool] = await Promise.all([
+      supabase.from('site_settings').select('*').limit(1).maybeSingle(),
+      loadAdminPromoPool(),
+    ]);
     const s = settings || {};
+    const promoIds = new Set(Array.isArray(s.live_promo_product_ids) ? s.live_promo_product_ids : []);
+    const promoPicker = promoPool.length
+      ? `
+        <div class="mt-4">
+          <label class="lbl">Which products appear in the Live Promotions (Featured Product Alerts)?</label>
+          <p class="text-[11px] text-gray-400 mb-2">Leave all unchecked to let the store pick real products automatically.</p>
+          <input id="promo-picker-search" type="search" class="input-field mb-2" placeholder="Search products to choose…" oninput="filterPromoPicker(this.value)">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-1.5 max-h-72 overflow-y-auto pr-1" id="promo-picker-list">
+            ${promoPool.map(p => {
+              const id = p.property_id || p.id;
+              const checked = promoIds.has(id) ? 'checked' : '';
+              return `<label class="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:border-blue-400/40 transition" data-promo-search="${esc((p.title || p.name || '') + ' ' + (p.category || ''))}">
+                <input type="checkbox" name="live_promo_product_ids" value="${esc(id)}" ${checked} class="accent-blue-500 w-4 h-4">
+                <span class="min-w-0"><span class="block text-xs font-bold text-white truncate">${esc(p.title || p.name || id)}</span><span class="block text-[10px] text-gray-400">${esc(p.category || p.listing_type || '')} · ${esc(id)}</span></span>
+              </label>`;
+            }).join('')}
+          </div>
+          <div class="flex gap-2 mt-2">
+            <button type="button" onclick="selectAllPromoPicks()" class="text-[11px] font-bold text-blue-400 hover:text-blue-300 transition">Select all</button>
+            <button type="button" onclick="clearAllPromoPicks()" class="text-[11px] font-bold text-gray-400 hover:text-gray-200 transition">Clear all</button>
+          </div>
+        </div>`
+      : '';
     content.innerHTML = `
       <div class="space-y-6 fade-in">
         <h2 class="text-xl font-black text-white">Website Content Manager</h2>
@@ -4628,18 +4654,30 @@ async function renderContent() {
               { key: 'youtube_url', label: 'YouTube URL', type: 'url', placeholder: 'https://youtube.com/…' },
               { key: 'tiktok_url', label: 'TikTok URL', type: 'url', placeholder: 'https://tiktok.com/…' },
             ]},
+            { section: 'Mobile App Promotion Banner', fields: [
+              { key: 'app_banner_enabled', label: 'Show the App Promotion banner at the bottom of every page', type: 'checkbox' },
+              { key: 'app_banner_headline', label: 'Banner Headline', type: 'text', placeholder: 'Discover More with the Weverse Online Shop App' },
+              { key: 'app_play_store_url', label: 'Google Play Store URL (real app listing — leave empty while unpublished)', type: 'url', placeholder: 'https://play.google.com/store/apps/details?id=…' },
+            ]},
+            { section: 'Live Product Promotions (Featured Product Alerts)', fields: [
+              { key: 'live_promo_enabled', label: 'Show Live Product Promotions (small alerts at the bottom corner)', type: 'checkbox' },
+              { key: 'live_promo_first_delay_seconds', label: 'First alert after (seconds)', type: 'number', placeholder: '12' },
+              { key: 'live_promo_interval_seconds', label: 'Delay between alerts (seconds)', type: 'number', placeholder: '60' },
+            ], extra: promoPicker },
           ].map(sec => `
             <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
               <h3 class="text-sm font-black text-white mb-4">${sec.section}</h3>
               <div class="form-grid form-grid-2">
                 ${sec.fields.map(f => `
-                  <div ${f.type === 'textarea' ? 'class="sm:col-span-2"' : ''}>
-                    <label class="lbl">${f.label}</label>
-                    ${f.type === 'textarea'
-                      ? `<textarea class="input-field" name="${f.key}" placeholder="${esc(f.placeholder)}" rows="2">${esc(s[f.key] || '')}</textarea>`
-                      : `<input type="${f.type}" class="input-field" name="${f.key}" value="${esc(s[f.key] || '')}" placeholder="${esc(f.placeholder)}">`}
+                  <div ${f.type === 'textarea' ? 'class="sm:col-span-2"' : f.type === 'checkbox' ? 'class="sm:col-span-2"' : ''}>
+                    ${f.type === 'checkbox'
+                      ? `<label class="flex items-center gap-2.5 cursor-pointer"><input type="checkbox" name="${f.key}" class="accent-blue-500 w-4 h-4" ${s[f.key] ? 'checked' : ''}><span class="text-sm text-gray-300">${f.label}</span></label>`
+                      : f.type === 'textarea'
+                        ? `<label class="lbl">${f.label}</label><textarea class="input-field" name="${f.key}" placeholder="${esc(f.placeholder)}" rows="2">${esc(s[f.key] || '')}</textarea>`
+                        : `<label class="lbl">${f.label}</label><input type="${f.type}" class="input-field" name="${f.key}" value="${esc(s[f.key] || '')}" placeholder="${esc(f.placeholder || '')}">`}
                   </div>`).join('')}
               </div>
+              ${sec.extra || ''}
             </div>`).join('')}
           <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Content Settings</button>
         </form>
@@ -4648,10 +4686,51 @@ async function renderContent() {
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
 
+// Real product pool for the promo picker (same sources as the live banner).
+async function loadAdminPromoPool() {
+  const seen = new Set();
+  const items = [];
+  const add = (list) => {
+    for (const p of (list || [])) {
+      const id = p && (p.property_id || p.id);
+      if (id && !seen.has(id)) { seen.add(id); items.push(p); }
+    }
+  };
+  try {
+    const { data } = await supabase.from('showroom_listings').select('property_id,title,name,category,listing_type,images,is_active').order('created_at', { ascending: false }).limit(500);
+    add(data);
+  } catch { /* continue */ }
+  add(listLocalShowroomListings());
+  add(SHOWROOM_LISTINGS);
+  add(PRODUCT_LISTINGS);
+  add(PRODUCT_EXTRA_LISTINGS);
+  add(TRUCK_LISTINGS);
+  add(MOTORHOME_LISTINGS);
+  return items.slice(0, 250);
+}
+
+window.filterPromoPicker = function(q) {
+  const list = document.getElementById('promo-picker-list');
+  if (!list) return;
+  const term = (q || '').trim().toLowerCase();
+  list.querySelectorAll('[data-promo-search]').forEach(label => {
+    label.style.display = !term || label.dataset.promoSearch.toLowerCase().includes(term) ? '' : 'none';
+  });
+};
+window.selectAllPromoPicks = function() {
+  document.querySelectorAll('#promo-picker-list input[name="live_promo_product_ids"]').forEach(el => { el.checked = true; });
+};
+window.clearAllPromoPicks = function() {
+  document.querySelectorAll('#promo-picker-list input[name="live_promo_product_ids"]').forEach(el => { el.checked = false; });
+};
+
 window.saveContent = async function(e) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const data = Object.fromEntries(fd.entries());
+  const promoIds = Array.from(new Set(fd.getAll('live_promo_product_ids').map(v => String(v).trim()).filter(Boolean)));
+  if (promoIds.length) data.live_promo_product_ids = promoIds;
+  else data.live_promo_product_ids = [];
   const { error } = await supabase.from('site_settings').upsert({ id: 1, ...data });
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Content settings saved!');

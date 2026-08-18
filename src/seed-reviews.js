@@ -98,7 +98,8 @@ export function generateSeedReviews(listing, opts = {}) {
   const rating = Math.min(5, Math.max(1, Number(listing.rating) || 0));
   const count = Number(listing.rating_count || listing.review_count || 0);
   const total = Math.max(count > 0 ? count : 0, 0);
-  const show = Math.max(6, Math.min(12, Math.floor(total / 18) || 8));
+  // 4 or 5 seeded reviewers per product, stable per product.
+  const show = (hashString(id) % 2 === 0) ? 5 : 4;
 
   // Distribute stars so the weighted average lands near the product rating.
   const target = rating || 4.5;
