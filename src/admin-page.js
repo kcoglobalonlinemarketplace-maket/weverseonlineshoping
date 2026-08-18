@@ -1744,6 +1744,8 @@ AUTOMOTIVE_CATEGORIES.forEach(k => CAT_FIELDS[k] = [
   { key: 'transmission', label: 'Transmission', type: 'select', options: ['Automatic', 'Manual', 'CVT', 'Dual-Clutch', 'Semi-Automatic', 'Electric (Single Speed)'] },
   { key: 'drive_type', label: 'Drive Type', type: 'select', options: ['FWD', 'RWD', 'AWD', '4WD'] },
   { key: 'fuel_type', label: 'Fuel Type', type: 'select', options: ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-in Hybrid', 'LPG', 'Bio-diesel'] },
+  { key: 'seating_capacity', label: 'Seating Capacity', type: 'text', placeholder: 'e.g. 5 seats' },
+  { key: 'doors', label: 'Number of Doors', type: 'text', placeholder: 'e.g. 4' },
   { key: 'safety_features', label: 'Safety Features (comma separated)', type: 'text', placeholder: 'ABS, Airbags, Lane Assist, Traction Control…' },
   { key: 'color', label: 'Color', type: 'text' },
   { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'], required: true },
@@ -2022,6 +2024,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
               </button>
             </div>
             <p id="scan-ai-status" class="hidden text-sm mt-3 font-medium"></p>
+            <div id="scan-ai-report" class="hidden mt-3"></div>
           </div>
 
           <!-- Step 2: Product Details -->
@@ -2456,18 +2459,38 @@ function setupProductFormExperience(category, existingId) {
 // it only runs when you press the button: Upload → WAIT → SCAN → AI fills
 // the form → review → SAVE/UPDATE.
 //
+// Two stages, in order:
+//   1) IDENTIFY the exact product from the photo (never swap brands).
+//   2) COMPLETE standard specifications ONLY for that identified product
+//      (engine, transmission, fuel, drive, horsepower, seats, doors, etc.).
+// Each filled field is tagged with its source: from image / spec lookup /
+// estimated — and everything stays manually editable before save.
+//
 // Provider is modular: register a new provider in AI_PRODUCT_SCANNER.PROVIDERS
 // and switch AI_PRODUCT_SCANNER.activeProvider. Each provider only needs a
-// scan(images, context) method that returns structured product JSON.
+// scan(images, context) method that returns
+// { identification, specs, sources }.
+const SCAN_CONDITION_OPTIONS = ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'];
+const SCAN_BODY_OPTIONS = ['Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Wagon', 'Pickup', 'Van', 'Truck', 'Sports Car', 'Luxury Sedan', 'Motorcycle', 'Yacht', 'Other'];
+const SCAN_TRANSMISSION_OPTIONS = ['Automatic', 'Manual', 'CVT', 'Dual-Clutch', 'Semi-Automatic', 'Electric (Single Speed)'];
+const SCAN_FUEL_OPTIONS = ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-in Hybrid', 'LPG', 'Bio-diesel'];
+const SCAN_DRIVE_OPTIONS = ['FWD', 'RWD', 'AWD', '4WD'];
+
 const AI_PRODUCT_SCANNER = {
   activeProvider: 'gemini',
   maxImages: 5,
   PROVIDERS: {
     gemini: {
       label: 'Google Gemini (Free Tier)',
-      // Reuses the Gemini key already saved in AI Settings. Tries browser-side
-      // Gemini vision first, then the server edge function — both free tier.
-      scan: (images, context) => aiClient.analyzeImages(images, { maxImages: 5, ...context }),
+      // Stage 1: identify. Stage 2: complete specs for the identified product.
+      // Both reuse the Gemini key already saved in AI Settings, trying
+      // browser-side Gemini vision first, then the server edge function.
+      scan: async (images, context) => {
+        const identification = await aiClient.identifyProduct(images, context);
+        if (!identification || identification.identified === false) return { identification, specs: null, sources: {} };
+        const specs = await aiClient.completeProductSpecs(images, identification, context);
+        return { identification, specs, sources: buildScanSources(identification, specs) };
+      },
     },
   },
   async scan(images, context) {
@@ -2477,42 +2500,142 @@ const AI_PRODUCT_SCANNER = {
   },
 };
 
-// Fill the product form fields with the structured scan result. Only sets
-// fields that exist in the current form and never guesses price/stock.
+// Map each filled field to its source: image / est-image / spec / est-spec.
+function buildScanSources(identification, specs) {
+  const sources = {};
+  const id = identification || {};
+  const sp = specs || {};
+  const est = new Set(Array.isArray(sp.estimated) ? sp.estimated : []);
+  for (const k of ['brand', 'model', 'color', 'condition', 'body_type', 'subcategory']) {
+    if (id[k] != null && String(id[k]).trim() !== '') sources[k] = 'image';
+  }
+  if (id.year != null && String(id.year).trim() !== '') sources.model_year = id.year_estimated ? 'est-image' : 'image';
+  const specKeys = ['title', 'description', 'engine', 'transmission', 'fuel_type', 'drive_type', 'horsepower', 'mileage', 'seating_capacity', 'doors', 'body_type', 'model_year', 'safety_features', 'storage', 'ram', 'processor', 'display', 'graphics', 'os', 'material', 'size', 'gender', 'platform'];
+  for (const k of specKeys) {
+    const v = sp[k];
+    if (v == null) continue;
+    if (Array.isArray(v) && !v.length) continue;
+    if (String(v).trim() === '') continue;
+    if (sources[k]) continue; // image already wins for this field
+    sources[k] = est.has(k) ? 'est-spec' : 'spec';
+  }
+  return sources;
+}
+
+// Best-match a free-text value to a select field's options (e.g. "Petrol" → "Gasoline").
+function mapSelectValue(field, value) {
+  const options = [...(field.options || [])].map(o => o.value).filter(Boolean);
+  if (options.includes(String(value))) return String(value);
+  const synonyms = {
+    petrol: 'Gasoline', gas: 'Gasoline', gasoline: 'Gasoline', unleaded: 'Gasoline',
+    ev: 'Electric', electric: 'Electric', 'fully electric': 'Electric',
+    hybrid: 'Hybrid', 'hybrid electric': 'Hybrid',
+    'plug-in hybrid': 'Plug-in Hybrid', phev: 'Plug-in Hybrid',
+    auto: 'Automatic', automatic: 'Automatic', 'automatic transmission': 'Automatic',
+    manual: 'Manual', 'manual transmission': 'Manual',
+    cvt: 'CVT', 'continuously variable': 'CVT',
+    'dual clutch': 'Dual-Clutch', dct: 'Dual-Clutch',
+    fwd: 'FWD', 'front-wheel drive': 'FWD', 'front wheel drive': 'FWD',
+    rwd: 'RWD', 'rear-wheel drive': 'RWD', 'rear wheel drive': 'RWD',
+    awd: 'AWD', 'all-wheel drive': 'AWD', 'all wheel drive': 'AWD',
+    '4wd': '4WD', 'four-wheel drive': '4WD', 'four wheel drive': '4WD', '4x4': '4WD',
+    sedan: 'Sedan', saloon: 'Sedan', suv: 'SUV', hatchback: 'Hatchback', coupe: 'Coupe', 'coupé': 'Coupe',
+    convertible: 'Convertible', wagon: 'Wagon', estate: 'Wagon', pickup: 'Pickup', 'pick up': 'Pickup',
+    van: 'Van', truck: 'Truck', 'sports car': 'Sports Car', motorcycle: 'Motorcycle', yacht: 'Yacht',
+    'like new': 'Used - Like New', 'used - like new': 'Used - Like New',
+  };
+  const v = String(value).toLowerCase().trim();
+  if (synonyms[v]) return synonyms[v];
+  const fuzzy = options.find(o => o.toLowerCase().includes(v) || v.includes(o.toLowerCase()));
+  return fuzzy || null;
+}
+
+// Small tag on a filled field's label showing where the value came from.
+function addSourceBadge(field, source) {
+  const wrap = field.closest('div');
+  const label = wrap && wrap.querySelector('.lbl');
+  if (!label) return;
+  const chip = document.createElement('span');
+  chip.className = 'scan-src ml-2 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded align-middle';
+  const map = {
+    image: ['📷 image', 'bg-sky-500/15 text-sky-300 border border-sky-500/30'],
+    'est-image': ['≈ image (est.)', 'bg-amber-500/15 text-amber-300 border border-amber-500/30'],
+    spec: ['📚 spec lookup', 'bg-violet-500/15 text-violet-300 border border-violet-500/30'],
+    'est-spec': ['≈ spec (est.)', 'bg-amber-500/15 text-amber-300 border border-amber-500/30'],
+  };
+  const [text, cls] = map[source] || ['AI', 'bg-gray-500/15 text-gray-300 border border-gray-500/30'];
+  chip.textContent = text;
+  chip.classList.add(...cls.split(' '));
+  label.appendChild(chip);
+}
+
+function buildScanTitle(identification) {
+  const parts = [];
+  if (identification.year) parts.push(identification.year);
+  if (identification.brand) parts.push(identification.brand);
+  if (identification.model) parts.push(identification.model);
+  if (!identification.model && identification.body_type) parts.push(identification.body_type);
+  return parts.join(' ') || identification.detected_name || '';
+}
+
+// Fill the product form fields from the two-stage result. Only sets fields
+// that exist in the current form and never guesses price/stock.
 function applyScanToProductForm(result) {
-  if (!result || typeof result !== 'object') return [];
+  const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
+  const specs = result && result.specs ? result.specs : {};
+  const sources = result && result.sources ? result.sources : {};
   const filled = [];
+  document.querySelectorAll('#product-form .scan-src').forEach((el) => el.remove());
   const text = (v) => (Array.isArray(v) ? v.join(', ') : String(v ?? '').trim());
-  const set = (key, value, allowed) => {
+  const set = (key, value, allowed, dfltSrc) => {
     if (value == null || text([value]) === '') return;
     const field = document.querySelector(`#product-form [name="${key}"]`);
     if (!field) return;
-    if (allowed && !allowed.includes(String(value))) return;
-    field.value = String(value);
+    let v = String(value);
+    if (allowed && !allowed.includes(v)) {
+      const mapped = mapSelectValue(field, v);
+      if (mapped === null) return;
+      v = mapped;
+    }
+    field.value = v;
     filled.push(key);
+    addSourceBadge(field, sources[key] || dfltSrc || 'ai');
   };
-  set('title', result.title);
-  set('description', result.description);
-  set('brand', result.brand);
-  set('model', result.model);
-  set('subcategory', result.subcategory);
-  set('color', result.color);
-  set('size', result.size);
-  set('material', result.material);
-  set('storage', result.storage);
-  set('ram', result.ram);
-  set('processor', result.processor);
-  set('display', result.display);
-  set('graphics', result.graphics);
-  set('os', result.os);
-  set('year', result.year);
-  set('model_year', result.model_year);
-  set('condition', result.condition, ['New', 'Refurbished', 'Used', 'Used - Like New', 'Used - Good', 'Used - Fair']);
-  set('features_text', text(result.features));
-  set('highlights_text', text(result.highlights));
-  set('seo_keywords_text', text(result.seo_keywords));
+
+  // From image (identification stage)
+  set('brand', identification.brand, null, 'image');
+  set('model', identification.model, null, 'image');
+  set('color', identification.color, null, 'image');
+  set('condition', identification.condition, SCAN_CONDITION_OPTIONS, 'image');
+  set('subcategory', identification.subcategory, null, 'image');
+  set('body_type', identification.body_type || specs.body_type, SCAN_BODY_OPTIONS);
+  set('model_year', identification.year || specs.model_year, null, identification.year ? 'image' : 'spec');
+
+  // Completed specifications (spec-lookup stage) — the always-fill list.
+  set('title', specs.title || buildScanTitle(identification), null, 'spec');
+  set('description', specs.description, null, 'spec');
+  set('engine', specs.engine, null, 'spec');
+  set('transmission', specs.transmission, SCAN_TRANSMISSION_OPTIONS, 'spec');
+  set('fuel_type', specs.fuel_type, SCAN_FUEL_OPTIONS, 'spec');
+  set('drive_type', specs.drive_type, SCAN_DRIVE_OPTIONS, 'spec');
+  set('horsepower', specs.horsepower, null, 'spec');
+  set('mileage', specs.mileage, null, 'spec');
+  set('seating_capacity', specs.seating_capacity, null, 'spec');
+  set('doors', specs.doors, null, 'spec');
+  set('safety_features', text(specs.safety_features), null, 'spec');
+  set('storage', specs.storage, null, 'spec');
+  set('ram', specs.ram, null, 'spec');
+  set('processor', specs.processor, null, 'spec');
+  set('display', specs.display, null, 'spec');
+  set('graphics', specs.graphics, null, 'spec');
+  set('os', specs.os, null, 'spec');
+  set('material', specs.material, null, 'spec');
+  set('size', specs.size, null, 'spec');
+  set('gender', specs.gender, null, 'spec');
+  set('platform', specs.platform, null, 'spec');
+
   updateProductReviewPanel();
-  return filled;
+  return { filled, sources };
 }
 
 // Manual trigger only — never called from any image-upload handler.
@@ -2521,6 +2644,7 @@ window.scanProductWithAI = async function() {
   if (!form) { showToast('Open the product form first.', 'error'); return; }
   const btn = document.getElementById('btn-scan-ai');
   const status = document.getElementById('scan-ai-status');
+  const report = document.getElementById('scan-ai-report');
 
   const images = [...(document.querySelectorAll('#image-url-inputs [name="images"]') || [])]
     .map((el) => el.value).filter(Boolean);
@@ -2533,6 +2657,7 @@ window.scanProductWithAI = async function() {
     if (cls) status.classList.add(cls);
     status.textContent = msg;
   };
+  const setReport = (html) => { if (report) { report.innerHTML = html || ''; report.classList.toggle('hidden', !html); } };
 
   try {
     const cfg = await aiClient.getConfig();
@@ -2545,27 +2670,48 @@ window.scanProductWithAI = async function() {
   } catch { /* config load failed — let the scan try anyway */ }
 
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
-  setStatus('Reading your images with Gemini free tier — this can take a few seconds…', 'text-blue-300');
+  setReport('');
+  setStatus('Step 1/2 — Identifying the actual product from your images…', 'text-blue-300');
 
   try {
     const result = await AI_PRODUCT_SCANNER.scan(images, { category: form.dataset.category || '' });
-    if (!result || typeof result !== 'object') {
-      setStatus('The AI could not read these images. Make sure the photos clearly show the product, then try again (or confirm your Gemini key in AI Settings).', 'text-amber-300');
-      showToast('AI scan returned nothing. Check the images or your Gemini key.', 'error');
+    const identification = result ? result.identification : null;
+
+    if (!identification || identification.identified === false) {
+      setStatus(identification && identification.reason
+        ? `Could not identify the product: ${esc(identification.reason)}`
+        : 'The AI could not read these images. Make sure the photos clearly show the product, then try again.', 'text-amber-300');
+      showToast('AI could not identify the product in the images.', 'error');
       return;
     }
-    const filled = applyScanToProductForm(result);
-    let msg;
-    if (filled.length) {
-      msg = `Scan complete — filled ${filled.length} field${filled.length > 1 ? 's' : ''} (${filled.join(', ')}). Review every field, then press SAVE / UPDATE.`;
-    } else {
-      msg = 'Scan finished but no fields matched this form. Review the images and scan again.';
-    }
-    if (result.category && result.category !== form.dataset.category) {
-      msg += ` AI detected category "${esc(result.category)}" — change it in Step 1 if that looks right.`;
-    }
-    setStatus(msg, filled.length ? 'text-emerald-300' : 'text-amber-300');
-    showToast(filled.length ? `AI filled ${filled.length} fields. Review, then save.` : 'AI scan finished.', filled.length ? 'success' : 'info');
+
+    const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'identified product';
+    const out = applyScanToProductForm(result);
+    const filledArr = out.filled;
+    const srcMap = out.sources || {};
+    const by = (s) => Object.entries(srcMap).filter(([, v]) => v === s).map(([k]) => k);
+    const fromImage = by('image');
+    const fromEstImage = by('est-image');
+    const fromSpec = by('spec');
+    const fromEstSpec = by('est-spec');
+
+    let msg = `Identified: ${esc(idLabel)} — filled ${filledArr.length} field${filledArr.length > 1 ? 's' : ''}. Review & edit, then press SAVE / UPDATE.`;
+    if (identification.year_estimated) msg += ' The model year is an AI estimate — please confirm it.';
+    setStatus(msg, 'text-emerald-300');
+
+    const list = (arr, label, color) => arr.length ? `<li><span class="font-bold ${color}">${label}:</span> ${arr.map(esc).join(', ')}</li>` : '';
+    setReport(`<div class="text-xs space-y-1 rounded-xl border border-white/10 bg-white/5 p-3">
+      <p class="font-bold text-white">Scan report — where each value came from</p>
+      <ul class="list-disc list-inside text-gray-300">
+        ${list(fromImage, '📷 From image', 'text-sky-300')}
+        ${list(fromEstImage, '≈ From image (estimated)', 'text-amber-300')}
+        ${list(fromSpec, '📚 Spec lookup for ' + esc(idLabel), 'text-violet-300')}
+        ${list(fromEstSpec, '≈ Spec lookup (estimated)', 'text-amber-300')}
+        ${filledArr.length === 0 ? '<li class="text-amber-300">No fields could be filled — review the images and scan again.</li>' : ''}
+      </ul>
+    </div>`);
+
+    showToast(filledArr.length ? `AI filled ${filledArr.length} fields for ${idLabel}. Review, then save.` : 'AI scan finished.', filledArr.length ? 'success' : 'info');
   } catch (err) {
     const msg = String(err?.message || err);
     const keyHint = /key|api|configured|settings|vision/i.test(msg);
@@ -2605,7 +2751,7 @@ window.saveProduct = async function(e, category, existingId) {
     const normalizeComma = (raw) => normalizeCommaList(raw);
 
     const buildSpecifications = (src) => {
-      const specKeys = ['model', 'storage', 'ram', 'processor', 'display', 'material', 'gender', 'platform', 'voltage', 'engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year'];
+      const specKeys = ['model', 'storage', 'ram', 'processor', 'display', 'material', 'gender', 'platform', 'voltage', 'engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year', 'seating_capacity', 'doors'];
       const spec = {};
       for (const k of specKeys) {
         const v = src[k];
@@ -2636,7 +2782,7 @@ window.saveProduct = async function(e, category, existingId) {
       };
       const changes = {};
 
-      ['title', 'description', 'currency', 'subcategory', 'brand', 'color', 'size', 'condition', 'warranty', 'availability_status', 'model_year', 'body_type', 'mileage', 'engine', 'horsepower', 'transmission', 'drive_type', 'fuel_type'].forEach((key) => {
+      ['title', 'description', 'currency', 'subcategory', 'brand', 'color', 'size', 'condition', 'warranty', 'availability_status', 'model_year', 'body_type', 'mileage', 'engine', 'horsepower', 'transmission', 'drive_type', 'fuel_type', 'seating_capacity', 'doors'].forEach((key) => {
         if (!eq(data[key], base[key])) changes[key] = (data[key] == null || data[key] === '') ? null : data[key];
       });
 
@@ -4094,6 +4240,95 @@ Rules:
     // 3) No vision at all: NEVER fall back to a text-only model here — it cannot
     //    see the photo and would just invent a fake product. Return null.
     return null;
+  },
+
+  // Shared vision runner: fetch images → try browser Gemini → try server edge →
+  // returns parsed JSON (with _aiProvider/_aiModel) or null. Never falls back to
+  // a text-only model because it cannot see the photo.
+  async _runVisionPrompt(prompt, imageUrls, { maxImages = 3, maxTokens = 4096 } = {}) {
+    const images = [];
+    for (const url of (imageUrls || []).slice(0, maxImages)) {
+      const dataUrl = await this._fetchImageAsDataUrl(url, 1024);
+      if (dataUrl) images.push(dataUrl);
+    }
+    if (!images.length) throw new Error('Could not read the uploaded images.');
+
+    try {
+      const fast = await this._tryBrowserGeminiVision(prompt, images);
+      if (fast) return fast;
+    } catch { /* fall through to server vision */ }
+
+    try {
+      const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens });
+      if (res && res.success && res.text) {
+        const parsed = extractJsonFromAiText(res.text);
+        if (parsed) return { ...parsed, _aiProvider: res.provider, _aiModel: res.model };
+        throw new Error('The AI returned no valid analysis for these images.');
+      }
+      throw new Error((res && res.error) || 'Vision service unavailable.');
+    } catch { /* no vision */ }
+
+    return null;
+  },
+
+  // STAGE 1 — IDENTIFY the exact product shown in the photo (brand/model/year/
+  // body type/color/condition). Strict: never swap one brand for another.
+  async identifyProduct(imageUrls, context = {}) {
+    const prompt = `STAGE 1 — IDENTIFY THE EXACT PRODUCT.
+Look at the photo(s) and state exactly what product is shown. Identification ONLY — do not complete any specifications yet.
+
+IDENTIFICATION RULES (accuracy over guesses — this is the most important step):
+- Read the real brand badge / logo / emblem / nameplate in the photo character by character and use the EXACT brand that is printed. NEVER swap brands: a BMW must never be called Mercedes-Benz, an iPhone never Samsung, a Toyota never Honda or any other brand.
+- The model must come from a visible nameplate / label / badging when present. Otherwise identify the exact design (grille, headlights, taillights, wheels, body lines, interior, silhouette) and give your best professional identification, or give the brand + body type (e.g. "BMW SUV") instead of inventing a specific model.
+- year: only from a visible printed year, serial, badge or registration. Otherwise estimate from the design era and set "year_estimated": true.
+- color: the dominant color clearly visible.
+- body_type: only when clearly visible (Sedan, SUV, Hatchback, Coupe, Convertible, Wagon, Pickup, Truck, Van, Sports Car, Luxury Sedan, Motorcycle, Yacht, Other).
+- condition: judge from what is visible (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
+- category: best match from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other.
+- detected_name: a short plain label of what you actually see, e.g. "white Toyota Camry sedan" or "black leather handbag".
+- If the photo does not clearly show a product, return { "identified": false, "detected_name": "what you see", "reason": "why you cannot identify it" }.
+
+Return ONE valid JSON object (no markdown) with only these keys:
+{ "identified": true, "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "detected_name": string }`;
+    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
+  },
+
+  // STAGE 2 — COMPLETE standard specifications ONLY for the identified product.
+  async completeProductSpecs(imageUrls, identification, context = {}) {
+    const id = identification || {};
+    const prompt = `STAGE 2 — COMPLETE THE STANDARD SPECIFICATIONS.
+The product below was identified in STAGE 1 from the photos.
+
+IDENTIFIED PRODUCT:
+- brand: ${String(id.brand || 'unknown')}
+- model: ${String(id.model || 'unknown')}
+- year: ${String(id.year || 'unknown')}
+- body_type: ${String(id.body_type || 'unknown')}
+- category: ${String(id.category || 'unknown')}
+- detected_name: ${String(id.detected_name || 'unknown')}
+
+Look at the photo(s) again, then complete the standard specifications for THIS EXACT identified product using reliable product/vehicle specification data for that exact brand + model.
+
+ALWAYS fill every relevant specification when you can determine it for the identified model: Engine, Transmission, Fuel, Drive type, Horsepower, Seats (seating capacity), Doors, Body type, Model year, Mileage (only if visible/known), Safety features, plus other relevant standard specs for the product type.
+
+HARD RULES:
+- ONLY use specifications for the exact brand + model identified above. A Toyota photo must produce TOYOTA specifications. NEVER use specifications from a different brand or model (never a Toyota image → Mercedes specs, never an iPhone image → Samsung specs, never a bag image → car specs).
+- If the exact year or trim is uncertain, use the most common / standard specification for that identified model and list that key in "estimated". Do not randomly invent values that are not reasonable for that model.
+- Only return specs that exist for the product type: a bag has no engine/transmission/horsepower (leave those null); a phone has no transmission or doors (leave those null); a car has engine/transmission/fuel/drive/horsepower/seats/doors.
+- Never return price or stock_quantity.
+
+Return ONE valid JSON object (no markdown):
+{
+  "title": string|null (professional listing title: year + real brand + real model + body type, e.g. "2023 Toyota Camry SE Sedan"),
+  "description": string|null (a factual 2-4 sentence marketplace description based ONLY on the identified product and its standard specs — never invent extras),
+  "engine": string|null, "transmission": string|null, "fuel_type": string|null, "drive_type": string|null,
+  "horsepower": string|null, "mileage": string|null, "seating_capacity": string|null, "doors": string|null,
+  "body_type": string|null, "model_year": string|null, "safety_features": string[]|null,
+  "storage": string|null, "ram": string|null, "processor": string|null, "display": string|null, "graphics": string|null, "os": string|null,
+  "material": string|null, "size": string|null, "gender": string|null, "platform": string|null,
+  "estimated": string[] (keys above that are estimates, e.g. ["engine","horsepower"])
+}`;
+    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
 
   // POST to the Supabase edge function so the Gemini key never leaves the server.
