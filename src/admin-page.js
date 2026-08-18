@@ -2478,8 +2478,8 @@ window.runProductImageAnalysis = async function(auto = false) {
   try {
     const result = await aiClient.analyzeImages(images, { category, existingTitle: form.querySelector('[name="title"]')?.value || '' });
     if (!result) {
-      setProductAiStatus('I could not scan the image — no vision provider is working. Image scanning needs a real API key for Google Gemini, Groq, OpenRouter, Hugging Face, or OpenAI in Admin → AI Settings (a free Google Gemini key at aistudio.google.com/apikey works best). Until then I cannot see the photo, so I will not guess.', 'warn');
-      if (!auto) showToast('Could not scan the image. Add a Google Gemini API key in AI Settings so the AI can see the photo.', 'error');
+      setProductAiStatus('I could not scan the image — no vision engine worked this time. My built-in free AI (runs in your browser, no API key, downloads once) normally handles this; if it failed here, try again or check the browser console. Adding a free Google Gemini key at aistudio.google.com/apikey in Admin → AI Settings gives the most accurate scans.', 'warn');
+      if (!auto) showToast('Could not scan the image this time. Try again — the free in-browser AI may need a moment to load. For best accuracy add a free Google Gemini key in AI Settings.', 'error');
       return;
     }
     const updated = applyAiAnalysisToForm(result, category, true);
@@ -2491,7 +2491,7 @@ window.runProductImageAnalysis = async function(auto = false) {
         : 'AI analyzed your images — no new fields to fill.', 'success');
     }
   } catch (err) {
-    setProductAiStatus('AI analysis failed: ' + (err.message || err) + ' — make sure a vision-capable AI provider (Gemini, Groq, OpenRouter, Hugging Face) is configured in AI Settings, or Ollama runs locally.', 'error');
+    setProductAiStatus('AI analysis failed: ' + (err.message || err) + ' — a vision-capable AI is needed (Gemini, Groq, OpenRouter, Hugging Face in AI Settings, or the free in-browser AI / local Ollama).', 'error');
     if (!auto) showToast('AI analysis failed: ' + (err.message || err), 'error');
   } finally {
     form.dataset.aiBusy = '0';
@@ -4776,7 +4776,15 @@ Rules:
       if (local) return local;
     } catch { /* no local vision */ }
 
-    // 4) No vision at all: NEVER fall back to a text-only model here — it cannot
+    // 4) FREE in-browser vision: runs a small vision model locally (no key, no
+    //    install, no data leaves the computer). This never requires an account,
+    //    so image scanning works even with zero API keys configured.
+    try {
+      const free = await this._tryBrowserLocalVision(prompt, images);
+      if (free) return free;
+    } catch { /* no free local vision */ }
+
+    // 5) No vision at all: NEVER fall back to a text-only model here — it cannot
     //    see the photo and would just invent a fake product (e.g. always "Mercedes-Benz
     //    S-Class"). Return null so the UI shows a clear message instead of fake data.
     return null;
@@ -4927,6 +4935,51 @@ Rules:
       } catch { /* try next provider */ }
     }
     return null;
+  },
+
+  // 100% FREE, keyless, in-browser vision: runs a small vision-language model
+  // (SmolVLM) directly in the admin's browser via Transformers.js (ONNX/WebGPU).
+  // No API key, no install, no data leaves the computer. The first run downloads
+  // the model (~350MB–1GB, cached after that); afterwards it works fully offline.
+  async _tryBrowserLocalVision(prompt, images) {
+    try {
+      const mod = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0');
+      const pipeline = mod?.pipeline;
+      if (typeof pipeline !== 'function') return null;
+      try { mod.env.allowLocalModels = false; } catch { /* optional */ }
+
+      const attempts = [
+        { device: 'webgpu', dtype: 'fp32' },
+        { device: 'wasm', dtype: 'q8' },
+        { device: 'wasm', dtype: 'fp32' },
+      ];
+      let pipe = null;
+      for (const opts of attempts) {
+        if (opts.device === 'webgpu') {
+          try { if (!navigator.gpu || !(await navigator.gpu.requestAdapter())) continue; } catch { continue; }
+        }
+        try {
+          pipe = await pipeline('image-text-to-text', 'HuggingFaceTB/SmolVLM-256M-Instruct', opts);
+          break;
+        } catch { /* try next backend */ }
+      }
+      if (!pipe) return null;
+
+      const content = [
+        { type: 'text', text: prompt },
+        ...images.slice(0, 1).map(url => ({ type: 'image', image: url })),
+      ];
+      const out = await pipe(
+        [{ role: 'user', content }],
+        { max_new_tokens: 600, do_sample: false, temperature: 0.2 }
+      );
+      const text = String(out?.[0]?.generated_text || '').trim();
+      if (!text) return null;
+      const parsed = extractJsonFromAiText(text);
+      return parsed
+        ? { ...parsed, _aiProvider: 'Free local AI (browser)', _aiModel: 'SmolVLM-256M-Instruct' }
+        : { description: text, _aiProvider: 'Free local AI (browser)', _aiModel: 'SmolVLM-256M-Instruct' };
+    } catch { return null; }
   },
 
   // ── IMAGE GENERATION: expand a product into realistic angle photos ──
