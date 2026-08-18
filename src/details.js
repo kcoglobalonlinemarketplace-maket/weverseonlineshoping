@@ -114,7 +114,6 @@ function reviewItemHtml(r) {
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-sm font-bold text-gray-900">${escapeHtml(nm)}</span>${loc}
-          ${r.verified ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"><i data-lucide="badge-check" class="w-3 h-3"></i> Verified Purchase</span>' : ''}
           <span class="text-xs text-gray-400">${new Date(r.date || r.created_at).toLocaleDateString()}</span>
         </div>
         <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= (r.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
@@ -172,7 +171,7 @@ function ratingsBreakdownHtml(listing, breakdown, total) {
         <div class="flex items-center gap-1.5 text-xs text-gray-500 font-medium"><i data-lucide="star" class="w-3 h-3 ${s <= 5 ? 'fill-amber-400 text-amber-400' : ''}"></i>${s}</div>
         <div class="flex items-center gap-2">
           <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-amber-400 rounded-full" style="width:${pct}%"></div></div>
-          <span class="text-[11px] text-gray-500 w-8 text-right tabular-nums">${n.toLocaleString()}</span>
+          <span class="text-[11px] text-gray-400 w-9 text-right tabular-nums">${pct}%</span>
         </div>`;
       }).join('')}
     </div>`;
@@ -1291,7 +1290,7 @@ async function loadReviews(listing) {
         <div class="text-4xl font-black text-gray-900">${displayRating > 0 ? displayRating.toFixed(1) : 'New'}</div>
         <div>
           <div class="flex gap-0.5">${ratingStars(displayRating, 'w-5 h-5')}</div>
-          <div class="text-xs text-gray-500 mt-0.5">${displayCount > 0 ? displayCount.toLocaleString() + ' buyer ratings' : 'Be the first to review this item'}</div>
+          <div class="text-xs text-gray-500 mt-0.5">Customer Reviews</div>
         </div>
       </div>
       <div class="hidden sm:block w-px h-10 bg-gray-200"></div>
@@ -1311,8 +1310,8 @@ async function loadReviews(listing) {
     return;
   }
 
-  // Preview the newest reviews, then a professional "View All Reviews (N)"
-  // button that expands the FULL list (real base per product, 187+).
+  // Show the newest reviews first, then let customers scroll through the full
+  // list. No review-count numbers are shown anywhere.
   const preview = all.slice(0, 8);
   listEl.innerHTML = preview.map(reviewItemHtml).join('');
 
@@ -1322,7 +1321,6 @@ async function loadReviews(listing) {
     wrap.innerHTML = `
       <button type="button" id="view-all-reviews-btn" class="btn-press inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm shadow-blue-500/20">
         View All Reviews
-        <span class="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-white/25 text-xs font-black">${all.length.toLocaleString()}</span>
         <i data-lucide="chevron-down" class="w-4 h-4"></i>
       </button>`;
     listEl.appendChild(wrap);
@@ -1335,8 +1333,28 @@ async function loadReviews(listing) {
       btn.disabled = true;
       listEl.innerHTML = all.map(reviewItemHtml).join('');
       if (window.lucide) lucide.createIcons();
+      appendReviewsBackToTop(listEl);
     });
   }
+  if (window.lucide) lucide.createIcons();
+}
+
+// Floating control so customers scrolling through the full review list can tap
+// to return to the top of the Customer Reviews section.
+function appendReviewsBackToTop(listEl) {
+  if (!listEl || document.getElementById('reviews-back-top')) return;
+  const back = document.createElement('div');
+  back.id = 'reviews-back-top';
+  back.className = 'mt-5 flex justify-center';
+  back.innerHTML = `
+    <button type="button" class="btn-press inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white font-bold py-2.5 px-5 rounded-full text-xs transition shadow-sm">
+      <i data-lucide="chevron-up" class="w-4 h-4"></i> Back to top
+    </button>`;
+  listEl.appendChild(back);
+  back.querySelector('button').addEventListener('click', () => {
+    const sec = document.getElementById('reviews-section');
+    if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   if (window.lucide) lucide.createIcons();
 }
 
