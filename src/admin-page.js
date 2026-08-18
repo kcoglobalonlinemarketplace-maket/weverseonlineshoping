@@ -2010,6 +2010,19 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             </div>
           </div>
 
+          <!-- AI Product Scanner (manual only — never auto-scans on upload) -->
+          <div class="glass-soft border border-violet-500/25 rounded-2xl p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Product Scanner</p>
+                <p class="text-xs text-gray-500 mt-1">Reads your uploaded images and fills the form for you. Powered by Google Gemini free tier — add your FREE key in AI Settings if not set. Only runs when you press the button.</p>
+              </div>
+              <button type="button" id="btn-scan-ai" onclick="scanProductWithAI()" class="btn-press px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl transition flex items-center gap-2 shrink-0">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
+              </button>
+            </div>
+            <p id="scan-ai-status" class="hidden text-sm mt-3 font-medium"></p>
+          </div>
 
           <!-- Step 2: Product Details -->
           <div class="text-sm text-blue-200 font-bold uppercase tracking-wide">Step 2: Product Details</div>
@@ -2437,6 +2450,134 @@ function setupProductFormExperience(category, existingId) {
   updateProductReviewPanel();
   updateGalleryCounter();
 }
+
+// ── AI PRODUCT SCANNER ───────────────────────────────────────────────
+// The "SCAN WITH AI" button on the product form. It NEVER runs on upload —
+// it only runs when you press the button: Upload → WAIT → SCAN → AI fills
+// the form → review → SAVE/UPDATE.
+//
+// Provider is modular: register a new provider in AI_PRODUCT_SCANNER.PROVIDERS
+// and switch AI_PRODUCT_SCANNER.activeProvider. Each provider only needs a
+// scan(images, context) method that returns structured product JSON.
+const AI_PRODUCT_SCANNER = {
+  activeProvider: 'gemini',
+  maxImages: 5,
+  PROVIDERS: {
+    gemini: {
+      label: 'Google Gemini (Free Tier)',
+      // Reuses the Gemini key already saved in AI Settings. Tries browser-side
+      // Gemini vision first, then the server edge function — both free tier.
+      scan: (images, context) => aiClient.analyzeImages(images, { maxImages: 5, ...context }),
+    },
+  },
+  async scan(images, context) {
+    const provider = this.PROVIDERS[this.activeProvider];
+    if (!provider) throw new Error(`Scanner provider "${this.activeProvider}" is not configured.`);
+    return provider.scan((images || []).slice(0, this.maxImages), context);
+  },
+};
+
+// Fill the product form fields with the structured scan result. Only sets
+// fields that exist in the current form and never guesses price/stock.
+function applyScanToProductForm(result) {
+  if (!result || typeof result !== 'object') return [];
+  const filled = [];
+  const text = (v) => (Array.isArray(v) ? v.join(', ') : String(v ?? '').trim());
+  const set = (key, value, allowed) => {
+    if (value == null || text([value]) === '') return;
+    const field = document.querySelector(`#product-form [name="${key}"]`);
+    if (!field) return;
+    if (allowed && !allowed.includes(String(value))) return;
+    field.value = String(value);
+    filled.push(key);
+  };
+  set('title', result.title);
+  set('description', result.description);
+  set('brand', result.brand);
+  set('model', result.model);
+  set('subcategory', result.subcategory);
+  set('color', result.color);
+  set('size', result.size);
+  set('material', result.material);
+  set('storage', result.storage);
+  set('ram', result.ram);
+  set('processor', result.processor);
+  set('display', result.display);
+  set('graphics', result.graphics);
+  set('os', result.os);
+  set('year', result.year);
+  set('model_year', result.model_year);
+  set('condition', result.condition, ['New', 'Refurbished', 'Used', 'Used - Like New', 'Used - Good', 'Used - Fair']);
+  set('features_text', text(result.features));
+  set('highlights_text', text(result.highlights));
+  set('seo_keywords_text', text(result.seo_keywords));
+  updateProductReviewPanel();
+  return filled;
+}
+
+// Manual trigger only — never called from any image-upload handler.
+window.scanProductWithAI = async function() {
+  const form = document.getElementById('product-form');
+  if (!form) { showToast('Open the product form first.', 'error'); return; }
+  const btn = document.getElementById('btn-scan-ai');
+  const status = document.getElementById('scan-ai-status');
+
+  const images = [...(document.querySelectorAll('#image-url-inputs [name="images"]') || [])]
+    .map((el) => el.value).filter(Boolean);
+  if (!images.length) { showToast('Upload at least one product image before scanning.', 'error'); return; }
+
+  const original = btn ? btn.innerHTML : '';
+  const setStatus = (msg, cls) => {
+    if (!status) return;
+    status.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300');
+    if (cls) status.classList.add(cls);
+    status.textContent = msg;
+  };
+
+  try {
+    const cfg = await aiClient.getConfig();
+    const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
+    if (!keyReady) {
+      setStatus('No Gemini key yet. Open AI Settings at the bottom of the Admin Home page, paste your FREE Gemini API key (aistudio.google.com/apikey — no credit card needed), then scan again.', 'text-amber-300');
+      showToast('Add your free Gemini key in AI Settings first.', 'error');
+      return;
+    }
+  } catch { /* config load failed — let the scan try anyway */ }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
+  setStatus('Reading your images with Gemini free tier — this can take a few seconds…', 'text-blue-300');
+
+  try {
+    const result = await AI_PRODUCT_SCANNER.scan(images, { category: form.dataset.category || '' });
+    if (!result || typeof result !== 'object') {
+      setStatus('The AI could not read these images. Make sure the photos clearly show the product, then try again (or confirm your Gemini key in AI Settings).', 'text-amber-300');
+      showToast('AI scan returned nothing. Check the images or your Gemini key.', 'error');
+      return;
+    }
+    const filled = applyScanToProductForm(result);
+    let msg;
+    if (filled.length) {
+      msg = `Scan complete — filled ${filled.length} field${filled.length > 1 ? 's' : ''} (${filled.join(', ')}). Review every field, then press SAVE / UPDATE.`;
+    } else {
+      msg = 'Scan finished but no fields matched this form. Review the images and scan again.';
+    }
+    if (result.category && result.category !== form.dataset.category) {
+      msg += ` AI detected category "${esc(result.category)}" — change it in Step 1 if that looks right.`;
+    }
+    setStatus(msg, filled.length ? 'text-emerald-300' : 'text-amber-300');
+    showToast(filled.length ? `AI filled ${filled.length} fields. Review, then save.` : 'AI scan finished.', filled.length ? 'success' : 'info');
+  } catch (err) {
+    const msg = String(err?.message || err);
+    const keyHint = /key|api|configured|settings|vision/i.test(msg);
+    setStatus(keyHint
+      ? 'Gemini could not scan right now. Confirm your free key is set in AI Settings, then try again.'
+      : `Scan failed: ${msg}`, 'text-red-400');
+    showToast('AI scan failed.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    if (window.lucide) lucide.createIcons();
+  }
+};
 
 window.saveProduct = async function(e, category, existingId) {
   e.preventDefault();
@@ -3927,7 +4068,7 @@ Rules:
 - Respond with valid JSON only.`;
 
     const images = [];
-    for (const url of (imageUrls || []).slice(0, 3)) {
+    for (const url of (imageUrls || []).slice(0, context.maxImages || 3)) {
       const dataUrl = await this._fetchImageAsDataUrl(url, 1024);
       if (dataUrl) images.push(dataUrl);
     }
@@ -4002,7 +4143,7 @@ Rules:
     for (const model of models) {
       try {
         const parts = [{ text: prompt }];
-        for (const url of images.slice(0, 3)) {
+        for (const url of images) {
           const match = String(url).match(/^data:([^;,]+)[;,]base64,(.+)$/s);
           if (!match) continue;
           parts.push({ inlineData: { mimeType: match[1].trim(), data: match[2].trim() } });

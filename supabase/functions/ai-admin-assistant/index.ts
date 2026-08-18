@@ -320,7 +320,7 @@ async function callGeminiVision(params: {
   const { apiKey, model, prompt, images, maxTokens } = params;
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [{ text: prompt }];
-  for (const url of images.slice(0, 4)) {
+  for (const url of images.slice(0, 5)) {
     const { mimeType, b64 } = parseDataUrl(url);
     if (b64) parts.push({ inlineData: { mimeType, data: b64 } });
   }
