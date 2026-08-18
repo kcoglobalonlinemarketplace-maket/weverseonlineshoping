@@ -1277,15 +1277,20 @@ async function loadReviews(listing) {
     }
   }
 
-  const rating = seed.computedRating || Number(listing.rating) || 0;
-  const displayCount = Math.max(total, 0);
-  const summary = Number(rating);
+  // Rating recomputed from the true combined breakdown so it stays honest when
+  // real customer reviews change the mix.
+  let weighted = 0;
+  for (let s = 5; s >= 1; s--) weighted += s * breakdown[s];
+  const computed = total ? weighted / total : 0;
+  const displayRating = computed || Number(listing.rating) || 0;
+  const displayCount = total;
+
   const summaryHtml = `
     <div class="flex flex-wrap items-center gap-4 sm:gap-6">
       <div class="flex items-center gap-3">
-        <div class="text-4xl font-black text-gray-900">${summary > 0 ? summary.toFixed(1) : 'New'}</div>
+        <div class="text-4xl font-black text-gray-900">${displayRating > 0 ? displayRating.toFixed(1) : 'New'}</div>
         <div>
-          <div class="flex gap-0.5">${ratingStars(summary, 'w-5 h-5')}</div>
+          <div class="flex gap-0.5">${ratingStars(displayRating, 'w-5 h-5')}</div>
           <div class="text-xs text-gray-500 mt-0.5">${displayCount > 0 ? displayCount.toLocaleString() + ' buyer ratings' : 'Be the first to review this item'}</div>
         </div>
       </div>
@@ -1302,8 +1307,35 @@ async function loadReviews(listing) {
   const all = [...dbReviews, ...seed.reviews];
   if (!all.length) {
     listEl.innerHTML = '<p class="text-gray-500 text-sm py-2">No reviews yet. Be the first to review this product!</p>';
-  } else {
-    listEl.innerHTML = all.map(reviewItemHtml).join('');
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  // Preview the newest reviews, then a professional "View All Reviews (N)"
+  // button that expands the FULL list (real base per product, 187+).
+  const preview = all.slice(0, 8);
+  listEl.innerHTML = preview.map(reviewItemHtml).join('');
+
+  if (all.length > preview.length) {
+    const wrap = document.createElement('div');
+    wrap.className = 'mt-4 flex justify-center';
+    wrap.innerHTML = `
+      <button type="button" id="view-all-reviews-btn" class="btn-press inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm shadow-blue-500/20">
+        View All Reviews
+        <span class="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-white/25 text-xs font-black">${all.length.toLocaleString()}</span>
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>`;
+    listEl.appendChild(wrap);
+
+    const btn = wrap.querySelector('#view-all-reviews-btn');
+    let expanded = false;
+    btn.addEventListener('click', () => {
+      if (expanded) return;
+      expanded = true;
+      btn.disabled = true;
+      listEl.innerHTML = all.map(reviewItemHtml).join('');
+      if (window.lucide) lucide.createIcons();
+    });
   }
   if (window.lucide) lucide.createIcons();
 }
