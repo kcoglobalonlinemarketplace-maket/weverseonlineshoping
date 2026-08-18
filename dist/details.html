@@ -55,7 +55,7 @@
   <header class="fixed top-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <button onclick="history.back()" class="p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Back">
+        <button onclick="window.kcoGoBack?window.kcoGoBack(event):history.back()" class="p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Back">
           <i data-lucide="arrow-left" class="w-5 h-5"></i>
         </button>
         <a href="/" class="flex items-center gap-2 no-underline">
