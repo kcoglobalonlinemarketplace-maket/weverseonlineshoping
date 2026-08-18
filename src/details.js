@@ -1157,7 +1157,8 @@ async function setupReviewForm(listing) {
     btn.addEventListener('click', () => {
       selectedRating = parseInt(btn.dataset.rating, 10);
       document.querySelectorAll('.star-btn').forEach((b, i) => {
-        const icon = b.querySelector('i');
+        const icon = b.querySelector('i, svg');
+        if (!icon) return;
         if (i < selectedRating) {
           icon.classList.add('fill-amber-400','text-amber-400');
           icon.classList.remove('text-gray-300');
@@ -1235,7 +1236,8 @@ async function setupReviewForm(listing) {
     if (photoInput) photoInput.value = '';
     if (photoPreview) photoPreview.innerHTML = '';
     document.querySelectorAll('.star-btn').forEach(b => {
-      const icon = b.querySelector('i');
+      const icon = b.querySelector('i, svg');
+      if (!icon) return;
       icon.classList.remove('fill-amber-400','text-amber-400');
       icon.classList.add('text-gray-300');
     });
@@ -1310,9 +1312,10 @@ async function loadReviews(listing) {
     return;
   }
 
-  // Show the newest reviews first, then let customers scroll through the full
-  // list. No review-count numbers are shown anywhere.
-  const preview = all.slice(0, 8);
+  // Show the 3 newest reviews first, then let customers scroll through the
+  // full list. New customer reviews appear at the very top (dbReviews are
+  // merged before seeds). No review-count numbers are shown anywhere.
+  const preview = all.slice(0, 3);
   listEl.innerHTML = preview.map(reviewItemHtml).join('');
 
   if (all.length > preview.length) {
