@@ -2024,7 +2024,6 @@ window.showAddProductStep2 = function(category, existingData = {}) {
               </button>
             </div>
             <p id="scan-ai-status" class="hidden text-sm mt-3 font-medium"></p>
-            <div id="scan-ai-report" class="hidden mt-3"></div>
           </div>
 
           <!-- Step 2: Product Details -->
@@ -2456,20 +2455,25 @@ function setupProductFormExperience(category, existingId) {
 
 // ── AI PRODUCT SCANNER ───────────────────────────────────────────────
 // The "SCAN WITH AI" button on the product form. It NEVER runs on upload —
-// it only runs when you press the button: Upload → WAIT → SCAN → AI fills
-// the form → review → SAVE/UPDATE.
+// it only runs when you press the button:
+// Upload → SCAN WITH AI → Identify Product → Complete Specifications →
+// Estimate Price → Fill Form → Generate Detailed Description →
+// I review/edit everything → SAVE/UPDATE → Showroom.
 //
-// Two stages, in order:
+// Three stages, in order:
 //   1) IDENTIFY the exact product from the photo (never swap brands).
 //   2) COMPLETE standard specifications ONLY for that identified product
-//      (engine, transmission, fuel, drive, horsepower, seats, doors, etc.).
-// Each filled field is tagged with its source: from image / spec lookup /
-// estimated — and everything stays manually editable before save.
+//      (engine, transmission, fuel, drive, horsepower, seats, doors, etc.)
+//      plus a detailed, professional description about that exact product.
+//   3) ESTIMATE a reasonable current market price for that exact product and
+//      put it into the Price field (always left editable).
+// It never auto-saves, never auto-publishes, and never shows AI/internal
+// labels to customers.
 //
 // Provider is modular: register a new provider in AI_PRODUCT_SCANNER.PROVIDERS
 // and switch AI_PRODUCT_SCANNER.activeProvider. Each provider only needs a
 // scan(images, context) method that returns
-// { identification, specs, sources }.
+// { identification, specs, price }.
 const SCAN_CONDITION_OPTIONS = ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'];
 const SCAN_BODY_OPTIONS = ['Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Wagon', 'Pickup', 'Van', 'Truck', 'Sports Car', 'Luxury Sedan', 'Motorcycle', 'Yacht', 'Other'];
 const SCAN_TRANSMISSION_OPTIONS = ['Automatic', 'Manual', 'CVT', 'Dual-Clutch', 'Semi-Automatic', 'Electric (Single Speed)'];
@@ -2482,14 +2486,21 @@ const AI_PRODUCT_SCANNER = {
   PROVIDERS: {
     gemini: {
       label: 'Google Gemini (Free Tier)',
-      // Stage 1: identify. Stage 2: complete specs for the identified product.
-      // Both reuse the Gemini key already saved in AI Settings, trying
+      // Stage 1: identify. Stage 2: complete specs + detailed description.
+      // Stage 3: estimate a current market price for that exact product.
+      // All reuse the Gemini key already saved in AI Settings, trying
       // browser-side Gemini vision first, then the server edge function.
       scan: async (images, context) => {
+        const report = typeof context.onProgress === 'function' ? context.onProgress : () => {};
+        report(1, 'Identifying the exact product from your images…');
         const identification = await aiClient.identifyProduct(images, context);
-        if (!identification || identification.identified === false) return { identification, specs: null, sources: {} };
+        if (!identification || identification.identified === false) return { identification, specs: null, price: null };
+        report(2, 'Completing the standard specifications for that product…');
         const specs = await aiClient.completeProductSpecs(images, identification, context);
-        return { identification, specs, sources: buildScanSources(identification, specs) };
+        report(3, 'Estimating a fair current market price…');
+        let price = null;
+        try { price = await aiClient.estimateProductPrice(images, identification, specs, context); } catch { /* price is optional */ }
+        return { identification, specs, price };
       },
     },
   },
@@ -2499,28 +2510,6 @@ const AI_PRODUCT_SCANNER = {
     return provider.scan((images || []).slice(0, this.maxImages), context);
   },
 };
-
-// Map each filled field to its source: image / est-image / spec / est-spec.
-function buildScanSources(identification, specs) {
-  const sources = {};
-  const id = identification || {};
-  const sp = specs || {};
-  const est = new Set(Array.isArray(sp.estimated) ? sp.estimated : []);
-  for (const k of ['brand', 'model', 'color', 'condition', 'body_type', 'subcategory']) {
-    if (id[k] != null && String(id[k]).trim() !== '') sources[k] = 'image';
-  }
-  if (id.year != null && String(id.year).trim() !== '') sources.model_year = id.year_estimated ? 'est-image' : 'image';
-  const specKeys = ['title', 'description', 'engine', 'transmission', 'fuel_type', 'drive_type', 'horsepower', 'mileage', 'seating_capacity', 'doors', 'body_type', 'model_year', 'safety_features', 'storage', 'ram', 'processor', 'display', 'graphics', 'os', 'material', 'size', 'gender', 'platform'];
-  for (const k of specKeys) {
-    const v = sp[k];
-    if (v == null) continue;
-    if (Array.isArray(v) && !v.length) continue;
-    if (String(v).trim() === '') continue;
-    if (sources[k]) continue; // image already wins for this field
-    sources[k] = est.has(k) ? 'est-spec' : 'spec';
-  }
-  return sources;
-}
 
 // Best-match a free-text value to a select field's options (e.g. "Petrol" → "Gasoline").
 function mapSelectValue(field, value) {
@@ -2550,25 +2539,6 @@ function mapSelectValue(field, value) {
   return fuzzy || null;
 }
 
-// Small tag on a filled field's label showing where the value came from.
-function addSourceBadge(field, source) {
-  const wrap = field.closest('div');
-  const label = wrap && wrap.querySelector('.lbl');
-  if (!label) return;
-  const chip = document.createElement('span');
-  chip.className = 'scan-src ml-2 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded align-middle';
-  const map = {
-    image: ['📷 image', 'bg-sky-500/15 text-sky-300 border border-sky-500/30'],
-    'est-image': ['≈ image (est.)', 'bg-amber-500/15 text-amber-300 border border-amber-500/30'],
-    spec: ['📚 spec lookup', 'bg-violet-500/15 text-violet-300 border border-violet-500/30'],
-    'est-spec': ['≈ spec (est.)', 'bg-amber-500/15 text-amber-300 border border-amber-500/30'],
-  };
-  const [text, cls] = map[source] || ['AI', 'bg-gray-500/15 text-gray-300 border border-gray-500/30'];
-  chip.textContent = text;
-  chip.classList.add(...cls.split(' '));
-  label.appendChild(chip);
-}
-
 function buildScanTitle(identification) {
   const parts = [];
   if (identification.year) parts.push(identification.year);
@@ -2583,11 +2553,10 @@ function buildScanTitle(identification) {
 function applyScanToProductForm(result) {
   const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
   const specs = result && result.specs ? result.specs : {};
-  const sources = result && result.sources ? result.sources : {};
+  const price = result && result.price ? result.price : null;
   const filled = [];
-  document.querySelectorAll('#product-form .scan-src').forEach((el) => el.remove());
   const text = (v) => (Array.isArray(v) ? v.join(', ') : String(v ?? '').trim());
-  const set = (key, value, allowed, dfltSrc) => {
+  const set = (key, value, allowed) => {
     if (value == null || text([value]) === '') return;
     const field = document.querySelector(`#product-form [name="${key}"]`);
     if (!field) return;
@@ -2599,43 +2568,53 @@ function applyScanToProductForm(result) {
     }
     field.value = v;
     filled.push(key);
-    addSourceBadge(field, sources[key] || dfltSrc || 'ai');
   };
 
   // From image (identification stage)
-  set('brand', identification.brand, null, 'image');
-  set('model', identification.model, null, 'image');
-  set('color', identification.color, null, 'image');
-  set('condition', identification.condition, SCAN_CONDITION_OPTIONS, 'image');
-  set('subcategory', identification.subcategory, null, 'image');
+  set('brand', identification.brand);
+  set('model', identification.model);
+  set('color', identification.color);
+  set('condition', identification.condition, SCAN_CONDITION_OPTIONS);
+  set('subcategory', identification.subcategory);
   set('body_type', identification.body_type || specs.body_type, SCAN_BODY_OPTIONS);
-  set('model_year', identification.year || specs.model_year, null, identification.year ? 'image' : 'spec');
+  set('model_year', identification.year || specs.model_year);
 
-  // Completed specifications (spec-lookup stage) — the always-fill list.
-  set('title', specs.title || buildScanTitle(identification), null, 'spec');
-  set('description', specs.description, null, 'spec');
-  set('engine', specs.engine, null, 'spec');
-  set('transmission', specs.transmission, SCAN_TRANSMISSION_OPTIONS, 'spec');
-  set('fuel_type', specs.fuel_type, SCAN_FUEL_OPTIONS, 'spec');
-  set('drive_type', specs.drive_type, SCAN_DRIVE_OPTIONS, 'spec');
-  set('horsepower', specs.horsepower, null, 'spec');
-  set('mileage', specs.mileage, null, 'spec');
-  set('seating_capacity', specs.seating_capacity, null, 'spec');
-  set('doors', specs.doors, null, 'spec');
-  set('safety_features', text(specs.safety_features), null, 'spec');
-  set('storage', specs.storage, null, 'spec');
-  set('ram', specs.ram, null, 'spec');
-  set('processor', specs.processor, null, 'spec');
-  set('display', specs.display, null, 'spec');
-  set('graphics', specs.graphics, null, 'spec');
-  set('os', specs.os, null, 'spec');
-  set('material', specs.material, null, 'spec');
-  set('size', specs.size, null, 'spec');
-  set('gender', specs.gender, null, 'spec');
-  set('platform', specs.platform, null, 'spec');
+  // Completed specifications — the always-fill list.
+  set('title', specs.title || buildScanTitle(identification));
+  set('description', specs.description);
+  set('engine', specs.engine);
+  set('transmission', specs.transmission, SCAN_TRANSMISSION_OPTIONS);
+  set('fuel_type', specs.fuel_type, SCAN_FUEL_OPTIONS);
+  set('drive_type', specs.drive_type, SCAN_DRIVE_OPTIONS);
+  set('horsepower', specs.horsepower);
+  set('mileage', specs.mileage);
+  set('seating_capacity', specs.seating_capacity);
+  set('doors', specs.doors);
+  set('safety_features', text(specs.safety_features));
+  set('storage', specs.storage);
+  set('ram', specs.ram);
+  set('processor', specs.processor);
+  set('display', specs.display);
+  set('graphics', specs.graphics);
+  set('os', specs.os);
+  set('material', specs.material);
+  set('size', specs.size);
+  set('gender', specs.gender);
+  set('platform', specs.platform);
+
+  // Estimated market price from stage 3 — always placed into the Price field
+  // and left fully editable. No auto-save, no auto-publish.
+  const priceField = document.querySelector('#product-form [name="price"]');
+  const estPrice = price ? Number(price.estimated_price) : NaN;
+  if (priceField && Number.isFinite(estPrice) && estPrice > 0) {
+    const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 0;
+    const max = Number.isFinite(Number(GLOBAL_PRICE_MAX)) ? Number(GLOBAL_PRICE_MAX) : 999999999;
+    priceField.value = String(Math.max(min, Math.min(max, Math.round(estPrice))));
+    filled.push('price');
+  }
 
   updateProductReviewPanel();
-  return { filled, sources };
+  return { filled };
 }
 
 // Manual trigger only — never called from any image-upload handler.
@@ -2644,7 +2623,6 @@ window.scanProductWithAI = async function() {
   if (!form) { showToast('Open the product form first.', 'error'); return; }
   const btn = document.getElementById('btn-scan-ai');
   const status = document.getElementById('scan-ai-status');
-  const report = document.getElementById('scan-ai-report');
 
   const images = [...(document.querySelectorAll('#image-url-inputs [name="images"]') || [])]
     .map((el) => el.value).filter(Boolean);
@@ -2657,7 +2635,6 @@ window.scanProductWithAI = async function() {
     if (cls) status.classList.add(cls);
     status.textContent = msg;
   };
-  const setReport = (html) => { if (report) { report.innerHTML = html || ''; report.classList.toggle('hidden', !html); } };
 
   try {
     const cfg = await aiClient.getConfig();
@@ -2670,53 +2647,37 @@ window.scanProductWithAI = async function() {
   } catch { /* config load failed — let the scan try anyway */ }
 
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
-  setReport('');
-  setStatus('Step 1/2 — Identifying the actual product from your images…', 'text-blue-300');
+  setStatus('Reading your uploaded images…', 'text-blue-300');
 
   try {
-    const result = await AI_PRODUCT_SCANNER.scan(images, { category: form.dataset.category || '' });
+    const result = await AI_PRODUCT_SCANNER.scan(images, {
+      category: form.dataset.category || '',
+      onProgress: (step, msg) => setStatus(msg, 'text-blue-300'),
+    });
     const identification = result ? result.identification : null;
 
     if (!identification || identification.identified === false) {
       setStatus(identification && identification.reason
         ? `Could not identify the product: ${esc(identification.reason)}`
-        : 'The AI could not read these images. Make sure the photos clearly show the product, then try again.', 'text-amber-300');
-      showToast('AI could not identify the product in the images.', 'error');
+        : 'The product could not be read from these images. Make sure the photos clearly show it, then try again.', 'text-amber-300');
+      showToast('The product could not be identified from the images.', 'error');
       return;
     }
 
-    const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'identified product';
+    const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'the product';
     const out = applyScanToProductForm(result);
     const filledArr = out.filled;
-    const srcMap = out.sources || {};
-    const by = (s) => Object.entries(srcMap).filter(([, v]) => v === s).map(([k]) => k);
-    const fromImage = by('image');
-    const fromEstImage = by('est-image');
-    const fromSpec = by('spec');
-    const fromEstSpec = by('est-spec');
 
-    let msg = `Identified: ${esc(idLabel)} — filled ${filledArr.length} field${filledArr.length > 1 ? 's' : ''}. Review & edit, then press SAVE / UPDATE.`;
-    if (identification.year_estimated) msg += ' The model year is an AI estimate — please confirm it.';
+    let msg = `${esc(idLabel)} — ${filledArr.length} field${filledArr.length > 1 ? 's' : ''} ready for you (including the detailed description and a suggested price). Review and edit everything, then press SAVE / UPDATE.`;
+    if (identification.year_estimated) msg += ' Confirm the model year before saving.';
     setStatus(msg, 'text-emerald-300');
 
-    const list = (arr, label, color) => arr.length ? `<li><span class="font-bold ${color}">${label}:</span> ${arr.map(esc).join(', ')}</li>` : '';
-    setReport(`<div class="text-xs space-y-1 rounded-xl border border-white/10 bg-white/5 p-3">
-      <p class="font-bold text-white">Scan report — where each value came from</p>
-      <ul class="list-disc list-inside text-gray-300">
-        ${list(fromImage, '📷 From image', 'text-sky-300')}
-        ${list(fromEstImage, '≈ From image (estimated)', 'text-amber-300')}
-        ${list(fromSpec, '📚 Spec lookup for ' + esc(idLabel), 'text-violet-300')}
-        ${list(fromEstSpec, '≈ Spec lookup (estimated)', 'text-amber-300')}
-        ${filledArr.length === 0 ? '<li class="text-amber-300">No fields could be filled — review the images and scan again.</li>' : ''}
-      </ul>
-    </div>`);
-
-    showToast(filledArr.length ? `AI filled ${filledArr.length} fields for ${idLabel}. Review, then save.` : 'AI scan finished.', filledArr.length ? 'success' : 'info');
+    showToast(`Review ${idLabel}, then press SAVE / UPDATE.`, 'success');
   } catch (err) {
     const msg = String(err?.message || err);
     const keyHint = /key|api|configured|settings|vision/i.test(msg);
     setStatus(keyHint
-      ? 'Gemini could not scan right now. Confirm your free key is set in AI Settings, then try again.'
+      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
       : `Scan failed: ${msg}`, 'text-red-400');
     showToast('AI scan failed.', 'error');
   } finally {
@@ -4321,18 +4282,72 @@ HARD RULES:
 - ONLY use specifications for the exact brand + model identified above. A Toyota photo must produce TOYOTA specifications. NEVER use specifications from a different brand or model (never a Toyota image → Mercedes specs, never an iPhone image → Samsung specs, never a bag image → car specs).
 - If the exact year or trim is uncertain, use the most common / standard specification for that identified model and list that key in "estimated". Do not randomly invent values that are not reasonable for that model.
 - Only return specs that exist for the product type: a bag has no engine/transmission/horsepower (leave those null); a phone has no transmission or doors (leave those null); a car has engine/transmission/fuel/drive/horsepower/seats/doors.
-- Never return price or stock_quantity.
+- Never return price or stock_quantity in this stage — price is handled in a separate stage.
+
+DESCRIPTION REQUIREMENTS (the description is a MAJOR part of the listing):
+- Write a detailed, professional, natural, trustworthy and enjoyable marketplace description that is clearly about THIS exact identified product and nothing else.
+- For vehicles, naturally explain the engine, performance, transmission, drivetrain, fuel type, comfort, interior, exterior, safety, technology and practicality — always grounded in the reliable specifications you returned above.
+- For other product types, cover the product's most relevant, genuine attributes (design, materials, build quality, usability, and key specs) based only on the identified product and its reliable specs.
+- Write in smooth, complete sentences and short paragraphs (roughly 3-6 sentences / 60-140 words). Never sound robotic, never use bullet lists, never invent features, prices, bundles or promises that are not true of the identified product, and NEVER mention AI, scanning, estimates, specification lookup or any internal process.
 
 Return ONE valid JSON object (no markdown):
 {
   "title": string|null (professional listing title: year + real brand + real model + body type, e.g. "2023 Toyota Camry SE Sedan"),
-  "description": string|null (a factual 2-4 sentence marketplace description based ONLY on the identified product and its standard specs — never invent extras),
+  "description": string|null (the detailed, professional description described above — based ONLY on the identified product and its standard specs),
   "engine": string|null, "transmission": string|null, "fuel_type": string|null, "drive_type": string|null,
   "horsepower": string|null, "mileage": string|null, "seating_capacity": string|null, "doors": string|null,
   "body_type": string|null, "model_year": string|null, "safety_features": string[]|null,
   "storage": string|null, "ram": string|null, "processor": string|null, "display": string|null, "graphics": string|null, "os": string|null,
   "material": string|null, "size": string|null, "gender": string|null, "platform": string|null,
   "estimated": string[] (keys above that are estimates, e.g. ["engine","horsepower"])
+}`;
+    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
+  },
+
+  // STAGE 3 — ESTIMATE a reasonable current market selling price for the exact
+  // identified product (model/year/condition/trim), so it can be placed into the
+  // form's Price field. Never a price from a different product.
+  async estimateProductPrice(imageUrls, identification, specs = {}, context = {}) {
+    const id = identification || {};
+    const sp = specs || {};
+    const prompt = `STAGE 3 — ESTIMATE THE CURRENT MARKET SELLING PRICE.
+The exact product below was identified from the photos in STAGE 1, and its standard specifications were completed in STAGE 2.
+
+IDENTIFIED PRODUCT:
+- brand: ${String(id.brand || 'unknown')}
+- model: ${String(id.model || 'unknown')}
+- year: ${String(id.year || 'unknown')}
+- body_type: ${String(id.body_type || 'unknown')}
+- condition: ${String(id.condition || 'unknown')}
+- category: ${String(id.category || 'unknown')}
+- detected_name: ${String(id.detected_name || 'unknown')}
+
+KNOWN SPECIFICATIONS:
+- engine: ${String(sp.engine || 'unknown')}
+- transmission: ${String(sp.transmission || 'unknown')}
+- fuel_type: ${String(sp.fuel_type || 'unknown')}
+- drive_type: ${String(sp.drive_type || 'unknown')}
+- horsepower: ${String(sp.horsepower || 'unknown')}
+- mileage: ${String(sp.mileage || 'unknown')}
+- storage/ram: ${String(sp.storage || '')}${sp.ram ? ' / ' + sp.ram : ''}
+
+Estimate the reasonable CURRENT MARKET SELLING PRICE (in USD) for THIS EXACT identified product — the price a real buyer would realistically pay for it today, in the condition shown in the photo. Use reliable current market data for that exact brand + model + year + condition + trim.
+
+HARD RULES:
+- ONLY price the exact product identified above. A Toyota photo must get a TOYOTA price, an iPhone photo an iPhone price, a Gucci bag a Gucci bag price. NEVER use the price of a different brand or model.
+- Base the price on the identified product's real market value: for a car use current market value of that model/year/condition (consider trim, engine, mileage, condition); for a house/property use typical values for the identified property type and location when visible; for a bag use the market price of that brand/model/type/condition; for a phone use the current market price of that model/storage/condition.
+- If the exact value cannot be determined, give the best reasonable market estimate — never 0, never a random invented number, and never a price for a different product.
+- Never include currency symbols or commas in the number; estimated_price must be a plain number (e.g. 24500).
+- Never return a price range as the main value.
+
+Return ONE valid JSON object (no markdown):
+{
+  "currency": "USD",
+  "estimated_price": number (the best current market selling price for this exact product),
+  "price_range_min": number|null,
+  "price_range_max": number|null,
+  "confidence": "high" | "medium" | "low",
+  "reason": string (one short sentence explaining the estimate)
 }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
