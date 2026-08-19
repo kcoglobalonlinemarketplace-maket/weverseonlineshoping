@@ -6,6 +6,7 @@ import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth-lazy.js';
 import { isCatalogListingHidden, loadHiddenCatalogIds } from './catalog-hidden-store.js';
 import { addToCart as cartAddToCart } from './cart.js';
+import { openShareSheet } from './share.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -488,7 +489,7 @@ export function renderCard(listing) {
   const wishSaved = isSaved(listing);
 
   card.innerHTML = `
-    <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
+    <div class="relative aspect-[6/5] overflow-hidden bg-gray-100">
       <img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
@@ -503,7 +504,7 @@ export function renderCard(listing) {
         </button>
       </div>
     </div>
-    <div class="p-3.5 sm:p-4 flex flex-col flex-1">
+    <div class="px-3.5 sm:px-4 pt-2.5 sm:pt-3 pb-3 sm:pb-3.5 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">${listing.title}</h3>
       ${p.ratingStars}
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
@@ -513,14 +514,14 @@ export function renderCard(listing) {
       ${p.locationHtml}
       ${p.specsHtml}
       <div class="flex gap-2 mt-2.5 pt-2.5 border-t border-gray-100">
-        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/25">
+        <button class="buy-btn flex-1 min-w-0 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30">
           <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy</span>
         </button>
-        <button class="cart-btn flex-1 min-w-0 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 hover:text-emerald-800 text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 border border-emerald-300 hover:border-emerald-400">
+        <button class="cart-btn flex-1 min-w-0 bg-white hover:bg-emerald-50 active:scale-[0.97] text-emerald-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-emerald-400 shadow-sm">
           <i data-lucide="shopping-cart" class="w-4 h-4 shrink-0"></i> <span class="truncate">Cart</span>
         </button>
       </div>
-      <button class="details-btn mt-2 w-full min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
+      <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
       </button>
     </div>
@@ -544,7 +545,7 @@ export function renderFeedCard(listing) {
   const wishSaved = isSaved(listing);
 
   card.innerHTML = `
-    <div class="relative shrink-0 sm:w-[42%] lg:w-[38%] xl:w-[34%] aspect-[16/10] sm:aspect-auto sm:min-h-[280px] overflow-hidden bg-gray-100">
+    <div class="relative shrink-0 sm:w-[42%] lg:w-[38%] xl:w-[34%] aspect-[7/5] sm:aspect-auto sm:min-h-[300px] overflow-hidden bg-gray-100">
       <img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
            onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
@@ -554,7 +555,7 @@ export function renderFeedCard(listing) {
         <i data-lucide="expand" class="w-3.5 h-3.5"></i> View
       </span>
     </div>
-    <div class="flex-1 p-4 sm:p-5 lg:p-6 flex flex-col min-w-0">
+    <div class="flex-1 px-4 pt-2.5 pb-4 sm:p-5 lg:p-6 flex flex-col min-w-0">
       <h3 class="text-base sm:text-lg font-bold text-gray-900 leading-snug mb-1.5 line-clamp-2 group-hover:text-blue-700 transition-colors">${listing.title}</h3>
       ${p.locationHtml}
       ${p.specsHtml}
@@ -571,17 +572,17 @@ export function renderFeedCard(listing) {
           <i data-lucide="heart" class="w-4 h-4 ${wishSaved ? 'fill-red-500 text-red-500' : ''}"></i>
         </button>
       </div>
-      <div class="flex gap-2 mt-2.5">
-        <button class="buy-btn flex-1 min-w-0 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/25">
-          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy Now</span>
+      <div class="flex gap-2 mt-2.5 pt-2.5 border-t border-gray-100">
+        <button class="buy-btn flex-1 min-w-0 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30">
+          <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy</span>
         </button>
-        <button class="cart-btn flex-1 min-w-0 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 hover:text-emerald-800 text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-emerald-300 hover:border-emerald-400">
-          <i data-lucide="shopping-cart" class="w-4 h-4 shrink-0"></i> <span class="truncate">Add to Cart</span>
-        </button>
-        <button class="details-btn flex-1 min-w-0 bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-700 hover:text-gray-900 text-xs font-bold py-3.5 rounded-xl transition uppercase tracking-wide flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400">
-          <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+        <button class="cart-btn flex-1 min-w-0 bg-white hover:bg-emerald-50 active:scale-[0.97] text-emerald-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-emerald-400 shadow-sm">
+          <i data-lucide="shopping-cart" class="w-4 h-4 shrink-0"></i> <span class="truncate">Cart</span>
         </button>
       </div>
+      <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
+        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+      </button>
     </div>
   `;
 
@@ -623,12 +624,7 @@ function addToCart(listing) {
 }
 
 function handleShare(listing) {
-  const url = `${window.location.origin}/details.html?id=${listing.property_id}`;
-  if (navigator.share) {
-    navigator.share({ title: listing.title, url }).catch(() => {});
-  } else {
-    navigator.clipboard?.writeText(url).then(() => showToast('Link copied to clipboard'));
-  }
+  openShareSheet(listing);
 }
 
 function showToast(msg) {

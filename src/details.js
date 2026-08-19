@@ -10,6 +10,7 @@ import { PRODUCT_LISTINGS } from './products-data.js';
 // products-extra.js is ~636 KB — loaded LAZILY (dynamic import) so the details
 // page doesn't block on it for properties/cars/etc.
 import { renderCard } from './showroom-cards.js';
+import { openShareSheet, setProductMeta } from './share.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
@@ -493,20 +494,8 @@ function renderTruck(listing) {
     }
   });
 
-  document.getElementById('share-btn').addEventListener('click', async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: escapeHtml(listing.title), url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        const btn = document.getElementById('share-btn');
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Copied!';
-        if (window.lucide) lucide.createIcons();
-        setTimeout(() => { btn.innerHTML = orig; if (window.lucide) lucide.createIcons(); }, 2000);
-      }
-    } catch (e) { /* user cancelled */ }
+  document.getElementById('share-btn').addEventListener('click', () => {
+    openShareSheet(listing);
   });
 
   loadRelatedSections(listing);
@@ -640,20 +629,8 @@ function renderMotorhome(listing) {
     }
   });
 
-  document.getElementById('share-btn').addEventListener('click', async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: escapeHtml(listing.title), url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        const btn = document.getElementById('share-btn');
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Copied!';
-        if (window.lucide) lucide.createIcons();
-        setTimeout(() => { btn.innerHTML = orig; if (window.lucide) lucide.createIcons(); }, 2000);
-      }
-    } catch (e) { /* user cancelled */ }
+  document.getElementById('share-btn').addEventListener('click', () => {
+    openShareSheet(listing);
   });
 
   loadRelatedSections(listing);
@@ -782,20 +759,8 @@ function renderCar(listing) {
     }
   });
 
-  document.getElementById('share-btn').addEventListener('click', async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: escapeHtml(listing.title), url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        const btn = document.getElementById('share-btn');
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Copied!';
-        if (window.lucide) lucide.createIcons();
-        setTimeout(() => { btn.innerHTML = orig; if (window.lucide) lucide.createIcons(); }, 2000);
-      }
-    } catch (e) { /* user cancelled */ }
+  document.getElementById('share-btn').addEventListener('click', () => {
+    openShareSheet(listing);
   });
 
   loadRelatedSections(listing);
@@ -1169,20 +1134,8 @@ function render(listing) {
     }
   });
 
-  document.getElementById('share-btn').addEventListener('click', async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: escapeHtml(listing.title), url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        const btn = document.getElementById('share-btn');
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Copied!';
-        if (window.lucide) lucide.createIcons();
-        setTimeout(() => { btn.innerHTML = orig; if (window.lucide) lucide.createIcons(); }, 2000);
-      }
-    } catch (e) { /* user cancelled */ }
+  document.getElementById('share-btn').addEventListener('click', () => {
+    openShareSheet(listing);
   });
 
   const viewDetailsBtn = document.getElementById('view-details-btn');
@@ -1596,6 +1549,7 @@ async function init() {
   const renderListing = (l) => {
     cleanListing(l);
     document.title = `${l.title} | Weverse Online Shop`;
+    setProductMeta(l);
     // Built-in trucks/motorhomes/cars keep their specialist renderers (which
     // load related sections internally); everything else uses the main renderer.
     if (l === getTruckById(id)) renderTruck(l);
@@ -1653,6 +1607,7 @@ async function init() {
   }
   cleanListing(listing);
   document.title = `${listing.title} | Weverse Online Shop`;
+  setProductMeta(listing);
   render(listing);
   try { loadRelatedSections(listing); } catch {}
 }

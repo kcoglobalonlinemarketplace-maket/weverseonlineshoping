@@ -27,6 +27,7 @@ import {
   DEFAULT_PROMO_SETTINGS,
 } from './promo-pool.js';
 import { W_LOGO_SVG } from './brand.js';
+import { loadPromoBackgrounds, bgMediaLayer, DEFAULT_PROMO_BG } from './promo-backgrounds.js';
 
 const MOUNT = () => document.getElementById('app-promo-banner');
 const FALLBACK_IMG = '/fallback.svg';
@@ -320,6 +321,8 @@ function bannerHtml(settings, pool) {
         radial-gradient(800px 420px at 10% 90%, rgba(6,182,212,.22), transparent 60%),
         linear-gradient(180deg,#0a1128 0%,#060c1c 60%,#04101f 100%)"></div>
       <div class="absolute inset-0 opacity-[.06]" style="background-image:radial-gradient(#7dd3fc 1px, transparent 1px);background-size:22px 22px"></div>
+      <!-- admin-chosen background (image or video) — added at init -->
+      <div class="absolute inset-0" data-bg-slot="app_banner"></div>
 
       <div class="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-10 sm:py-14 lg:py-16">
         <div class="grid lg:grid-cols-[1.05fr_.95fr] gap-10 lg:gap-6 items-center">
@@ -423,6 +426,18 @@ async function init() {
   if (window.lucide) { try { lucide.createIcons(); } catch { /* ignore */ } }
   startPhoneCycling(cards);
   window.dispatchEvent(new CustomEvent('app-promo-banner-ready'));
+
+  // Admin-chosen banner background (image OR video) — empty keeps the design.
+  let bg = { ...DEFAULT_PROMO_BG };
+  try { bg = await loadPromoBackgrounds(); } catch { /* keep defaults */ }
+  const apply = (current) => {
+    const slot = mount.querySelector('[data-bg-slot="app_banner"]');
+    if (slot) slot.innerHTML = bgMediaLayer(current.app_banner_bg_image, current.app_banner_bg_video);
+  };
+  apply(bg);
+  window.addEventListener('promo-backgrounds-updated', () => {
+    loadPromoBackgrounds().then(apply).catch(() => {});
+  });
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

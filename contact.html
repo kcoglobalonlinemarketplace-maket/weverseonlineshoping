@@ -70,8 +70,7 @@
       </form>
     </div>
   </main>
-  <footer class="border-t border-blue-100 mt-12 py-8 text-center text-xs text-gray-600">© Weverse Online Shop. All rights reserved.</footer>
-  <script type="module">
+<script type="module">
     document.getElementById('contact-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('cf-submit');
@@ -106,6 +105,8 @@
   <script src="/back-button.js" defer></script>
   <script type="module" src="/src/brand.js"></script>
   <!-- APP PROMOTION BANNER + LIVE PRODUCT PROMOTIONS -->
+  <div id="trust-info-area"></div>
+  <script type="module" src="/src/trust-info-area.js"></script>
   <div id="app-promo-banner"></div>
   <div id="live-promo-alerts" class="fixed bottom-4 right-4 z-50 w-[340px] max-w-[90vw] space-y-3 pointer-events-none" aria-live="polite"></div>
   <script type="module" src="/src/app-promo-banner.js"></script>

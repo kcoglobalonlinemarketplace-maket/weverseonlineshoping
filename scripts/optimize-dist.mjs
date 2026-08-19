@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, copyFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -25,4 +25,13 @@ html = html.replace(
 );
 
 writeFileSync(file, html, 'utf8');
+
+// The api/og.js serverless function serves the built details page with
+// per-product Open Graph tags injected. Copy the built details.html next to
+// the function so it is guaranteed to be present in the deployment's bundle
+// (the og:image baked into index.html rides along in dist/ itself).
+try {
+  copyFileSync(join(root, 'dist', 'details.html'), join(root, 'api', 'details-static.html'));
+} catch {}
+
 console.log('optimize-dist ok — stylesheet high, heavy chunks low');

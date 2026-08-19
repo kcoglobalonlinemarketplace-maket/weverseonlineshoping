@@ -10,6 +10,7 @@ import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { TRUCK_LISTINGS } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { generateProduct, getCatalogCategories, getCatalogCategory, getHiddenCatalogIds, loadHiddenCatalogIds, resetHiddenCatalogIds, saveCatalogHidden } from './catalog.js';
+import { invalidatePromoBackgrounds } from './promo-backgrounds.js';
 
 // ══════════════════════════════════════════════════════════
 //  WEVERSE ADMIN DASHBOARD  —  Complete Management Console
@@ -46,6 +47,7 @@ const NAV = [
     { id: 'payment-settings', label: 'Payment Settings',  icon: 'credit-card' },
     { id: 'ai-settings', label: 'AI Settings',        icon: 'bot' },
     { id: 'homepage-branding', label: 'Homepage Branding', icon: 'image' },
+    { id: 'promo-bg',     label: 'Promo & Backgrounds', icon: 'image' },
     { id: 'brand',        label: 'Brand Manager',      icon: 'palette' },
     { id: 'content',     label: 'Content Manager',    icon: 'file-text' },
     { id: 'seo',         label: 'SEO Manager',        icon: 'search' },
@@ -67,6 +69,7 @@ messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement 
   'ai-settings': 'AI Settings', content: 'Content Manager',
   ai: 'AI Assistant',
   'homepage-branding': 'Homepage Branding',
+  'promo-bg': 'Promo & Backgrounds',
   brand: 'Brand Manager',
   'payment-settings': 'Payment Settings',
   seo: 'SEO Manager', email: 'Email Settings', analytics: 'Analytics',
@@ -197,6 +200,7 @@ window.navigate = function(section) {
     notifications: renderNotifications, ai: renderAiAssistant,
     'ai-settings': renderAiSettings,
     'homepage-branding': renderHomepageBrandingManager,
+    'promo-bg': renderPromoBackgrounds,
     content: renderContent, seo: renderSeo, email: renderEmail,
     analytics: renderAnalytics, security: renderSecurity, activity: renderActivity,
     brand: renderBrandManager,
@@ -5926,6 +5930,201 @@ window.saveHomepageBranding = async function(e) {
     showToast('Homepage banner published.', 'success');
   }
   setTimeout(() => renderHomepageBrandingManager(), 500);
+};
+
+// ══════════════════════════════════════════════════════════
+//  PROMO & BACKGROUNDS  (image/video backgrounds for the
+//  trust promo hero, the Weverse Mobile App banner and the
+//  Customer Reviews section — applied across every page)
+// ══════════════════════════════════════════════════════════
+const PROMO_BG_SLOTS = [
+  { key: 'trust_promo', label: 'Promotional Hero (Trust & Info Area)', icon: 'sparkles', desc: 'The family-receives-orders section above the app banner. Show it as-is for the built-in design, or upload the real photo/video.' },
+  { key: 'app_banner',  label: 'Weverse Mobile App Banner',           icon: 'smartphone', desc: 'The dark app banner at the very bottom of every page.' },
+  { key: 'reviews',     label: 'Customer Reviews & Trust',            icon: 'star',       desc: 'The customer reviews strip just below the accordions.' },
+];
+
+async function renderPromoBackgrounds(seed) {
+  const content = document.getElementById('content');
+  if (content) content.innerHTML = loading();
+  try {
+    let vals = seed ? { ...seed } : null;
+    if (!vals) {
+      const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+      const d = s || {};
+      vals = {};
+      for (const slot of PROMO_BG_SLOTS) {
+        vals[slot.key + '_bg_image'] = d[slot.key + '_bg_image'] || '';
+        vals[slot.key + '_bg_video'] = d[slot.key + '_bg_video'] || '';
+      }
+    }
+
+    content.innerHTML = `
+      <div class="space-y-5 fade-in">
+        <h2 class="text-xl font-black text-white flex items-center gap-2"><i data-lucide="image" class="w-5 h-5 text-blue-400"></i> Promo & Backgrounds</h2>
+        <p class="text-xs text-gray-500 max-w-2xl leading-relaxed">Choose an <b class="text-gray-300">image</b> and/or a <b class="text-gray-300">video</b> for each promotional section. When a video is set it plays automatically and the image acts as its poster. Leave a slot empty to keep that section\u2019s built-in design. Changes appear instantly on every page after publishing.</p>
+
+        <div id="promo-bg-status" class="hidden p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300 flex items-center gap-2">
+          <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i>
+          <span id="promo-bg-msg">Uploading…</span>
+        </div>
+
+        <form id="promo-bg-form" onsubmit="savePromoBackgrounds(event)" class="space-y-5">
+          ${PROMO_BG_SLOTS.map(slot => promoBgSlot(slot, vals)).join('')}
+
+          <div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3">
+            <i data-lucide="info" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+            <p class="text-[11px] text-gray-400 leading-relaxed">Published backgrounds are cached on visitor devices for up to a minute. Publishing clears the cache so everyone sees your new media immediately.</p>
+          </div>
+
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">
+            <i data-lucide="rocket" class="w-4 h-4 inline mr-2"></i>Publish Promo & Backgrounds
+          </button>
+        </form>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+function promoBgSlot(slot, vals) {
+  const imgKey = slot.key + '_bg_image';
+  const vidKey = slot.key + '_bg_video';
+  const img = vals[imgKey] || '';
+  const vid = vals[vidKey] || '';
+  const hasImg = !!(img && img.trim());
+  const hasVid = !!(vid && vid.trim());
+  return `
+    <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 bg-blue-500/10 rounded-xl border border-blue-500/20"><i data-lucide="${slot.icon}" class="w-4 h-4 text-blue-400"></i></div>
+          <div>
+            <p class="text-xs font-black text-white">${slot.label}</p>
+            <p class="text-[10px] text-gray-500 mt-0.5 max-w-xl">${slot.desc}</p>
+          </div>
+        </div>
+        <div class="flex gap-1.5">
+          ${hasImg ? '<span class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">✓ Image</span>' : ''}
+          ${hasVid ? '<span class="text-[9px] font-bold text-violet-500 bg-violet-500/10 px-1.5 py-0.5 rounded-full">✓ Video</span>' : ''}
+          ${(hasImg || hasVid) ? '' : '<span class="text-[9px] text-gray-600">Built-in design</span>'}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        ${promoBgMedia(slot, imgKey, img, hasImg, 'image')}
+        ${promoBgMedia(slot, vidKey, vid, hasVid, 'video')}
+      </div>
+    </div>`;
+}
+
+function promoBgMedia(slot, field, current, has, kind) {
+  const isImg = kind === 'image';
+  const accent = isImg ? 'blue' : 'violet';
+  const icon = isImg ? 'image-plus' : 'video';
+  const color = isImg ? 'text-blue-400' : 'text-violet-400';
+  return `
+    <div>
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5"><i data-lucide="${icon}" class="w-3 h-3 ${color}"></i>${kind}</p>
+      ${has
+        ? `<div class="relative group w-full h-28 rounded-xl overflow-hidden bg-gray-900 border border-${accent}-500/15 flex items-center justify-center">
+             ${isImg
+               ? `<img src="${esc(current)}" class="w-full h-full object-cover" onerror="this.style.display='none'">`
+               : `<video src="${esc(current)}" class="w-full h-full object-cover" muted playsinline preload="metadata"></video>`}
+             <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+               <button type="button" onclick="triggerPromoBgUpload('${field}')" class="text-xs font-bold text-white bg-${accent}-600 px-3 py-1.5 rounded-lg">Replace</button>
+               <button type="button" onclick="clearPromoBg('${field}')" class="text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg">Remove</button>
+             </div>
+           </div>`
+        : `<button type="button" onclick="triggerPromoBgUpload('${field}')" class="w-full h-28 rounded-xl border-2 border-dashed border-${accent}-500/25 hover:border-${accent}-500/50 flex flex-col items-center justify-center gap-1.5 transition">
+             <i data-lucide="${icon}" class="w-6 h-6 ${color}"></i>
+             <p class="text-[10px] text-gray-500">Upload ${kind}</p>
+           </button>`}
+      <input type="file" id="file-${field}" class="hidden" accept="${isImg ? 'image/*' : 'video/*'}" onchange="handlePromoBgUpload(event,'${field}')">
+      <input type="hidden" name="${field}" id="val-${field}" value="${esc(current)}">
+      <div class="flex gap-2 mt-1.5">
+        <input class="input-field text-xs flex-1" id="url-${field}" value="${esc(current)}" placeholder="Or paste ${kind} URL" oninput="document.getElementById('val-${field}').value=this.value">
+        <button type="button" onclick="document.getElementById('url-${field}').classList.toggle('hidden')" class="text-[10px] text-${accent}-400 hover:text-${accent}-300 transition shrink-0">Edit URL</button>
+      </div>
+    </div>`;
+}
+
+window.triggerPromoBgUpload = function(field) {
+  document.getElementById('file-' + field)?.click();
+};
+
+function promoBgFormValues() {
+  const vals = {};
+  for (const slot of PROMO_BG_SLOTS) {
+    vals[slot.key + '_bg_image'] = document.getElementById('val-' + slot.key + '_bg_image')?.value || '';
+    vals[slot.key + '_bg_video'] = document.getElementById('val-' + slot.key + '_bg_video')?.value || '';
+  }
+  return vals;
+}
+
+window.clearPromoBg = function(field) {
+  const seed = promoBgFormValues();
+  seed[field] = '';
+  const valEl = document.getElementById('val-' + field);
+  const urlEl = document.getElementById('url-' + field);
+  if (valEl) valEl.value = '';
+  if (urlEl) urlEl.value = '';
+  renderPromoBackgrounds(seed);
+  showToast('Cleared. Publish to apply.', 'info');
+};
+
+window.handlePromoBgUpload = async function(e, field) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const statusEl = document.getElementById('promo-bg-status');
+  const msgEl = document.getElementById('promo-bg-msg');
+  if (statusEl) statusEl.classList.remove('hidden');
+  if (msgEl) msgEl.textContent = `Uploading ${file.name}…`;
+  try {
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+    const path = `promo/${field}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: true });
+    let url;
+    if (upErr) {
+      url = URL.createObjectURL(file);
+      if (msgEl) msgEl.textContent = `Preview only (storage: ${upErr.message})`;
+    } else {
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+      url = data.publicUrl;
+      if (msgEl) msgEl.textContent = `✓ ${file.name} uploaded`;
+    }
+    const valEl = document.getElementById('val-' + field);
+    const urlEl = document.getElementById('url-' + field);
+    if (valEl) valEl.value = url;
+    if (urlEl) { urlEl.value = url; urlEl.classList.remove('hidden'); }
+    const seed = promoBgFormValues();
+    renderPromoBackgrounds(seed);
+  } catch (err) {
+    if (msgEl) msgEl.textContent = `Upload failed: ${err.message}`;
+  }
+  setTimeout(() => statusEl?.classList.add('hidden'), 4000);
+};
+
+window.savePromoBackgrounds = async function(e) {
+  e.preventDefault();
+  const payload = {};
+  for (const slot of PROMO_BG_SLOTS) {
+    payload[slot.key + '_bg_image'] = document.getElementById('val-' + slot.key + '_bg_image')?.value || '';
+    payload[slot.key + '_bg_video'] = document.getElementById('val-' + slot.key + '_bg_video')?.value || '';
+  }
+  const btn = e.target.querySelector('[type=submit]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Publishing…'; if (window.lucide) lucide.createIcons(); }
+
+  const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
+  let error;
+  if (existing?.id) ({ error } = await supabase.from('site_settings').update(payload).eq('id', existing.id));
+  else ({ error } = await supabase.from('site_settings').insert(payload));
+  invalidatePromoBackgrounds();
+  if (error) {
+    showToast('Publish failed — the settings table rejected the update. Make sure the new promo-background columns are migrated, then try again.', 'error');
+    renderPromoBackgrounds(payload);
+  } else {
+    showToast('Promo & backgrounds published across all pages.', 'success');
+    setTimeout(() => renderPromoBackgrounds(), 500);
+  }
 };
 
 //  PAYMENT SETTINGS
