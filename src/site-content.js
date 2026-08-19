@@ -32,6 +32,24 @@ export const DEFAULT_SITE_CONTENT = {
   bottom_footer_text: 'GLOBAL SHOPPING · WORLDWIDE DELIVERY',
   bottom_footer_closing: 'Made with ❤️ for shoppers everywhere',
   bottom_copyright: '',
+
+  // Home page promo banner (rotating hero cards)
+  promo_banner_enabled: true,
+  promo_banner_image: '',
+  promo_banner_video: '',
+  promo_banner_title: 'Delivering Worldwide',
+  promo_banner_subtitle: 'Weverse Online Shop — global delivery to 200+ countries',
+  promo_banner_button_text: 'Shop Now',
+  promo_banner_button_link: '/#showroom-directory',
+
+  // Home page video advertisement card (below the promo banner)
+  video_ad_enabled: false,
+  video_ad_video_url: '',
+  video_ad_poster_url: '',
+  video_ad_title: 'Weverse Online Shop',
+  video_ad_subtitle: 'Watch our latest showcase',
+  video_ad_button_text: 'Shop Now',
+  video_ad_button_link: '/#showroom-directory',
 };
 
 const CONTENT_FIELDS = Object.keys(DEFAULT_SITE_CONTENT).join(',');
@@ -60,6 +78,7 @@ export async function loadSiteContent() {
       for (const key of Object.keys(DEFAULT_SITE_CONTENT)) {
         const v = data[key];
         if (typeof v === 'string' && v) merged[key] = v;
+        else if (typeof v === 'boolean') merged[key] = v;
       }
     }
   } catch { /* fall back to defaults */ }

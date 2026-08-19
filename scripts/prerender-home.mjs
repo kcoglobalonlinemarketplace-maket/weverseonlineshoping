@@ -444,13 +444,11 @@ function viewAllButton(kind) {
 }
 
 // Hero slide 0 — identical to the first slide renderCarousel builds.
-// Must match the first slide that survives the homepage filter in app.js
-// (only homes, trucks, motorhomes and cars are shown at the top).
+// Built-in videos are dropped; the hero is a clean image banner area. This
+// must match the prerendered slide in index.html (image, not video).
 function heroHtml() {
-  const V = 'https://videos.pexels.com/video-files/';
-  const slide = { video: V + '4324104/4324104-sd_640_360_24fps.mp4' };
   return `<div class="carousel-slide active-slide" id="slide-0">
-  <video class="hero-video" muted loop playsinline webkit-playsinline preload="metadata" data-src="${slide.video}" style="width:100%;height:100%;object-fit:cover;object-position:center"></video>
+  <div class="kb-img kb-1" style="background-image:url('/videos/WhatsApp_Image_2026-07-24_at_3.51.07_PM_(2).jpeg');background-size:cover;background-position:center"></div>
   <div class="absolute inset-0 z-10 flex items-center justify-center text-center p-6 sm:p-10">
     <div class="glass-hero-panel">
       <h2 id="slide-title-0" class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]">Weverse Online Shop</h2>

@@ -387,7 +387,12 @@ const CAROUSEL_SLIDES = [
 // the showroom: Homes (real estate), Trucks, Motorhomes and Cars. Every
 // other slide (fashion, electronics, food, logistics, boats, aviation, …)
 // is dropped so the carousel never shows content that isn't for sale.
+// Built-in video slides are dropped too — the hero banner is a clean image
+// area; the owner's own promo banner (image or video) is injected first and
+// any image/video they upload through the Advertisements manager rotates in.
 .filter((s) => {
+  if (s.promoBanner) return true;
+  if (s.video) return false;
   const text = [s.badge, s.titles && s.titles.en, s.descs && s.descs.en].filter(Boolean).join(' ').toLowerCase();
   const isHome = /\b(house|houses|homes|apartment|apartments|villa|villas|condo|condominium|townhouse|townhouses|bungalow|mansion|mansions|penthouse|duplex|resort|resorts|hotels?|estates?|property|real estate|commercial buildings?|office buildings?|shopping malls?|vacation home|waterfront home|farm house|land for sale)\b/.test(text);
   const isTruck = /\b(trucks?|pickup|delivery trucks?|last-mile)\b/.test(text);
@@ -410,6 +415,7 @@ function carouselCategoryName(slide) {
 let currentSlide = 0, carouselTimer = null, currentLang = "en", currentCountry = "US";
 let voiceRecognition = null, isListening = false;
 let adminAdSlides = [];
+let promoBannerSlide = null;
 let activeCarouselSlides = CAROUSEL_SLIDES;
 
 // Continuous rotation: remember the showcase position so the carousel
@@ -462,10 +468,18 @@ function isAllowedHeroSlide(s) {
 }
 function mergeAdSlides(){
   const seen = new Set();
+  const banner = promoBannerSlide ? [promoBannerSlide] : [];
   const ads = (window._ads || adminAdSlides).filter(Boolean).filter(isAllowedHeroSlide);
   const priority = dedupSlides(ads, seen);
-  activeCarouselSlides = priority.length ? [...priority, ...dedupSlides(CAROUSEL_SLIDES, seen)] : CAROUSEL_SLIDES;
+  const rest = dedupSlides(CAROUSEL_SLIDES, seen);
+  activeCarouselSlides = [...banner, ...priority, ...rest];
 }
+
+window.addEventListener('promo-banner-updated', (e) => {
+  promoBannerSlide = e.detail || null;
+  mergeAdSlides();
+  renderCarousel();
+});
 
 // ---- INIT: Populate Selectors ----
 function populateSelectors(){
@@ -936,12 +950,21 @@ function renderCarousel(){
       '</video>';
     }
     el.innerHTML=mediaHtml+
-      '<div class="absolute inset-0 z-10 flex items-center justify-center text-center p-6 sm:p-10">'+
-      '<div class="glass-hero-panel">'+
-      '<h2 id="slide-title-'+idx+'" class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]"></h2>'+
-      '<p class="mt-3 text-base sm:text-lg font-extrabold text-amber-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">Delivering worldwide 🚛🚒</p>'+
-      '</div>'+
-      '</div>';
+      (slide.promoBanner
+        ? '<div class="absolute inset-0 z-10 flex items-end justify-start p-5 sm:p-8 pointer-events-none">'+
+          '<div class="max-w-md bg-black/45 backdrop-blur-md border border-white/10 rounded-2xl p-4 sm:p-5 pointer-events-auto">'+
+          (slide.badge?'<span class="inline-block text-[10px] font-black uppercase tracking-widest text-amber-300 mb-1.5">'+escHtml(slide.badge)+'</span>':'')+
+          '<h2 id="slide-title-'+idx+'" class="text-white text-2xl sm:text-3xl font-black leading-tight drop-shadow-[0_2px_14px_rgba(0,0,0,0.5)]"></h2>'+
+          '<p class="mt-1.5 text-white/90 text-sm sm:text-base font-medium drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]"></p>'+
+          (slide.buttonText&&slide.buttonLink?'<a href="'+escHtml(slide.buttonLink)+'" class="inline-flex items-center gap-2 mt-3 bg-white text-gray-900 text-xs font-black px-5 py-2.5 rounded-full hover:gap-3 transition-all shadow-lg">'+escHtml(slide.buttonText)+' <i data-lucide="arrow-right" class="w-4 h-4"></i></a>':'')+
+          '</div>'+
+        '</div>'
+        : '<div class="absolute inset-0 z-10 flex items-center justify-center text-center p-6 sm:p-10">'+
+        '<div class="glass-hero-panel">'+
+        '<h2 id="slide-title-'+idx+'" class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]"></h2>'+
+        '<p class="mt-3 text-base sm:text-lg font-extrabold text-amber-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">Delivering worldwide 🚛🚒</p>'+
+        '</div>'+
+        '</div>');
     sc.appendChild(el);
   });
   currentSlide=restoreShowcasePosition(activeCarouselSlides.length);
@@ -952,7 +975,14 @@ function renderCarousel(){
 function updateCarouselLanguage(){
   activeCarouselSlides.forEach((slide,idx)=>{
     const t=document.getElementById("slide-title-"+idx);
-    if(t)t.textContent='Weverse Online Shop';
+    if(!t)return;
+    if(slide.promoBanner){
+      t.textContent=slide.title||'';
+      const p=t.parentElement&&t.parentElement.querySelector('p');
+      if(p)p.textContent=slide.subtitle||'';
+    }else{
+      t.textContent='Weverse Online Shop';
+    }
   });
   updateBadgeLanguage();
 }

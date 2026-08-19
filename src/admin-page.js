@@ -6157,7 +6157,108 @@ const CONTENT_SETTINGS_SECTIONS = [
       { key: 'bottom_copyright', label: 'Copyright Text (empty = automatic “© year Brand” line)', type: 'text' },
     ],
   },
+  {
+    key: 'promo_banner',
+    title: 'HOME PAGE PROMO BANNER',
+    desc: 'The main rotating banner at the top of the homepage. Upload your own image or video and write your own words — the clean design stays. If empty, the built-in image banners rotate.',
+    accent: 'from-fuchsia-400 to-purple-500',
+    fields: [
+      { key: 'promo_banner_enabled', label: 'Show my promo banner', type: 'checkbox' },
+      { key: 'promo_banner_image', label: 'Banner Image', type: 'media', kind: 'image' },
+      { key: 'promo_banner_video', label: 'Banner Video (plays if no image)', type: 'media', kind: 'video' },
+      { key: 'promo_banner_title', label: 'Banner Title', type: 'text' },
+      { key: 'promo_banner_subtitle', label: 'Banner Subtitle', type: 'text' },
+      { key: 'promo_banner_button_text', label: 'Button Text', type: 'text' },
+      { key: 'promo_banner_button_link', label: 'Button Link', type: 'text' },
+    ],
+  },
+  {
+    key: 'video_ad',
+    title: 'HOME PAGE VIDEO ADVERTISEMENT',
+    desc: 'A separate video card below the promo banner. Upload your own video (and optional poster image) and write your own words. It plays muted with play/pause and a progress bar.',
+    accent: 'from-rose-400 to-orange-500',
+    fields: [
+      { key: 'video_ad_enabled', label: 'Show the video advertisement', type: 'checkbox' },
+      { key: 'video_ad_video_url', label: 'Video File', type: 'media', kind: 'video' },
+      { key: 'video_ad_poster_url', label: 'Poster Image (shown before play)', type: 'media', kind: 'image' },
+      { key: 'video_ad_title', label: 'Video Title', type: 'text' },
+      { key: 'video_ad_subtitle', label: 'Video Subtitle', type: 'text' },
+      { key: 'video_ad_button_text', label: 'Button Text', type: 'text' },
+      { key: 'video_ad_button_link', label: 'Button Link', type: 'text' },
+    ],
+  },
 ];
+
+// Content Settings media field — upload your own image/video from the panel.
+function contentMediaSlotHtml(f, value) {
+  const isImg = f.kind === 'image';
+  const current = value || '';
+  const icon = isImg ? 'image' : 'video';
+  const color = 'text-fuchsia-300';
+  const has = !!current;
+  return `<div id="slot-${f.key}">
+      ${has
+        ? `<div class="relative group w-full h-28 rounded-xl overflow-hidden bg-gray-900 border border-fuchsia-500/15 flex items-center justify-center">
+             ${isImg
+               ? `<img src="${esc(current)}" class="w-full h-full object-cover" onerror="this.style.display='none'">`
+               : `<video src="${esc(current)}" class="w-full h-full object-cover" muted playsinline preload="metadata"></video>`}
+             <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+               <button type="button" onclick="triggerContentMediaUpload('${f.key}')" class="text-xs font-bold text-white bg-fuchsia-600 px-3 py-1.5 rounded-lg">Replace</button>
+               <button type="button" onclick="clearContentMedia('${f.key}')" class="text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg">Remove</button>
+             </div>
+           </div>`
+        : `<button type="button" onclick="triggerContentMediaUpload('${f.key}')" class="w-full h-28 rounded-xl border-2 border-dashed border-fuchsia-500/25 hover:border-fuchsia-500/50 flex flex-col items-center justify-center gap-1.5 transition">
+             <i data-lucide="${icon}" class="w-6 h-6 ${color}"></i>
+             <p class="text-[10px] text-gray-500">Upload ${isImg ? 'Image' : 'Video'}</p>
+           </button>`}
+      <input type="file" id="file-${f.key}" class="hidden" accept="${isImg ? 'image/*' : 'video/*'}" onchange="handleContentMediaUpload(event,'${f.key}')">
+      <input type="hidden" name="${f.key}" id="val-${f.key}" value="${esc(current)}">
+      <div class="flex gap-2 mt-1.5">
+        <input class="input-field text-xs flex-1" id="url-${f.key}" value="${esc(current)}" placeholder="Or paste ${isImg ? 'image' : 'video'} URL" oninput="document.getElementById('val-${f.key}').value=this.value">
+      </div>
+    </div>`;
+}
+
+window.triggerContentMediaUpload = function(field) {
+  document.getElementById('file-' + field)?.click();
+};
+
+window.clearContentMedia = function(field) {
+  const valEl = document.getElementById('val-' + field);
+  const urlEl = document.getElementById('url-' + field);
+  if (valEl) valEl.value = '';
+  if (urlEl) urlEl.value = '';
+  showToast('Cleared. Save to apply.', 'info');
+  renderContentSettings();
+};
+
+window.handleContentMediaUpload = async function(e, field) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const isVideo = file.type.startsWith('video/');
+  showToast(`Uploading ${file.name}…`, 'info');
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { showToast('Sign in to upload media', 'error'); return; }
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const path = `content/${field}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) { showToast('Upload failed: ' + upErr.message, 'error'); return; }
+    const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+    const url = data.publicUrl;
+    const valEl = document.getElementById('val-' + field);
+    const urlEl = document.getElementById('url-' + field);
+    if (valEl) valEl.value = url;
+    if (urlEl) urlEl.value = url;
+    // Update just this field's preview in place so other unsaved edits are kept.
+    const slot = document.getElementById('slot-' + field);
+    if (slot) {
+      const f = CONTENT_SETTINGS_SECTIONS.flatMap((s) => s.fields).find((x) => x.key === field);
+      if (f) slot.outerHTML = contentMediaSlotHtml(f, url);
+    }
+    showToast('✓ Uploaded — save to apply', 'success');
+  } catch (err) { showToast('Upload failed', 'error'); }
+};
 
 async function renderContentSettings() {
   const content = document.getElementById('content');
@@ -6180,12 +6281,21 @@ async function renderContentSettings() {
               <p class="text-[11px] text-gray-400 mb-4">${sec.desc}</p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 ${sec.fields.map(f => `
-                  <div class="${f.type === 'textarea' ? 'sm:col-span-2' : ''}">
-                    <label class="lbl" for="cs-${f.key}">${f.label}</label>
+                  <div class="${f.type === 'textarea' || f.type === 'media' ? 'sm:col-span-2' : ''}">
+                    ${f.type === 'checkbox'
+                      ? `<label class="flex items-center gap-2.5 cursor-pointer select-none py-2">
+                           <input id="cs-${f.key}" type="checkbox" name="${f.key}" ${d[f.key] ? 'checked' : ''} class="w-4 h-4 accent-blue-500 rounded">
+                           <span class="text-sm font-bold text-gray-200">${f.label}</span>
+                         </label>`
+                      : `<label class="lbl" for="cs-${f.key}">${f.label}</label>`}
                     ${f.type === 'textarea'
                       ? `<textarea id="cs-${f.key}" name="${f.key}" rows="3" class="input-field w-full" placeholder="Enter the current wording…">${esc(d[f.key] || '')}</textarea>`
-                      : `<input id="cs-${f.key}" type="text" name="${f.key}" value="${esc(d[f.key] || '')}" class="input-field w-full" placeholder="Enter the current wording…">`}
-                    <p class="text-[10px] text-gray-500 mt-1">Current: ${esc((d[f.key] || '').slice(0, 80))}${(d[f.key] || '').length > 80 ? '…' : ''}</p>
+                      : f.type === 'media'
+                        ? contentMediaSlotHtml(f, d[f.key] || '')
+                        : f.type === 'checkbox'
+                          ? ''
+                          : `<input id="cs-${f.key}" type="text" name="${f.key}" value="${esc(d[f.key] || '')}" class="input-field w-full" placeholder="Enter the current wording…">`}
+                    ${f.type === 'text' || f.type === 'textarea' ? `<p class="text-[10px] text-gray-500 mt-1">Current: ${esc((d[f.key] || '').slice(0, 80))}${(d[f.key] || '').length > 80 ? '…' : ''}</p>` : ''}
                   </div>`).join('')}
               </div>
             </div>`).join('')}
@@ -6201,6 +6311,13 @@ window.saveContentSettings = async function(e) {
   const fd = new FormData(e.target);
   const data = {};
   for (const [k, v] of fd.entries()) data[k] = v;
+  // Unchecked checkboxes are missing from FormData — store them as false.
+  for (const sec of CONTENT_SETTINGS_SECTIONS) {
+    for (const f of sec.fields) {
+      if (f.type === 'checkbox' && !(f.key in data)) data[f.key] = false;
+      else if (f.type === 'checkbox') data[f.key] = true;
+    }
+  }
   try {
     const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
     let error;
@@ -6208,7 +6325,7 @@ window.saveContentSettings = async function(e) {
     else ({ error } = await supabase.from('site_settings').insert({ id: 1, ...data }));
     if (error) throw new Error(error.message);
     invalidateSiteContent();
-    showToast('Content updated — the banner and bottom section now use your new wording.', 'success');
+    showToast('Content updated — the banners now use your new words and uploads.', 'success');
   } catch (err) {
     showToast(err.message || 'Could not save content. Please try again.', 'error');
   }
