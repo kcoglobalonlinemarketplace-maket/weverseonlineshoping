@@ -29,7 +29,7 @@ function safeImages(imgs) { return (Array.isArray(imgs) && imgs.length > 0) ? im
 function ratingStars(rating, cls = 'w-4 h-4') {
   const r = Math.round(Number(rating) || 0);
   return [1, 2, 3, 4, 5].map(i =>
-    `<i data-lucide="star" class="${cls} ${i <= r ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`
+    `<i data-lucide="star" class="${cls} ${i <= r ? 'fill-amber-400 text-amber-400 drop-shadow-[0_1px_4px_rgba(0,0,0,.6)]' : 'text-white/40'}"></i>`
   ).join('');
 }
 
@@ -278,7 +278,7 @@ function setupAccordions() {
 function reviewItemHtml(r) {
   const nm = r.name || r.profiles?.full_name || 'Anonymous';
   const initial = escapeHtml(nm.trim().charAt(0).toUpperCase() || 'A');
-  const loc = r.location ? `<span class="text-xs text-slate-400">&middot; ${escapeHtml(r.location)}</span>` : '';
+  const loc = r.location ? `<span class="text-xs text-slate-300">&middot; ${escapeHtml(r.location)}</span>` : '';
   const title = r.title ? `<p class="text-sm font-bold text-white mt-1">${escapeHtml(r.title)}</p>` : '';
   const photo = r.review_photo ? `<div class="mt-2.5"><img src="${escapeHtml(r.review_photo)}" alt="Customer photo" class="w-28 h-28 object-cover rounded-xl border border-white/10" loading="lazy" onerror="this.style.display='none'"></div>` : '';
   return `
@@ -287,9 +287,9 @@ function reviewItemHtml(r) {
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-sm font-bold text-white">${escapeHtml(nm)}</span>${loc}
-          <span class="text-xs text-slate-400">${new Date(r.date || r.created_at).toLocaleDateString()}</span>
+          <span class="text-xs text-slate-300">${new Date(r.date || r.created_at).toLocaleDateString()}</span>
         </div>
-        <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= (r.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
+        <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= (r.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-white/40'}"></i>`).join('')}</div>
         ${title}
         <p class="text-[15px] text-slate-100 leading-relaxed mt-1.5">${escapeHtml(r.text || r.comment || '')}</p>
         ${photo}
@@ -1428,16 +1428,16 @@ async function loadReviews(listing) {
   const displayCount = total;
 
   const summaryHtml = `
-    <div class="flex flex-wrap items-center gap-4 sm:gap-6">
-      <div class="flex items-center gap-3">
-        <div class="text-4xl font-black text-white">${displayRating > 0 ? displayRating.toFixed(1) : 'New'}</div>
-        <div>
-          <div class="flex gap-0.5">${ratingStars(displayRating, 'w-5 h-5')}</div>
-          <div class="text-xs text-slate-300 mt-0.5">Customer Reviews</div>
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-4">
+      <div class="flex items-center gap-4 shrink-0">
+        <div class="text-5xl sm:text-6xl font-black leading-none text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,.55)]">${displayRating > 0 ? displayRating.toFixed(1) : 'New'}</div>
+        <div class="shrink-0">
+          <div class="flex gap-1">${ratingStars(displayRating, 'w-5 h-5 sm:w-6 sm:h-6')}</div>
+          <div class="text-[13px] sm:text-sm font-bold text-slate-100 mt-1.5 tracking-wide">Customer Reviews</div>
         </div>
       </div>
-      <div class="hidden sm:block w-px h-10 bg-white/20"></div>
-      <div class="flex flex-wrap gap-2">
+      <div class="hidden md:block w-px h-12 bg-white/25"></div>
+      <div class="flex flex-wrap items-center gap-2">
         <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-300 bg-emerald-400/10 border border-emerald-400/20 px-2.5 py-1.5 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Listing</span>
         <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-300 bg-blue-400/10 border border-blue-400/20 px-2.5 py-1.5 rounded-full"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Secure Checkout</span>
         <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-300 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1.5 rounded-full"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Fast Worldwide Delivery</span>
