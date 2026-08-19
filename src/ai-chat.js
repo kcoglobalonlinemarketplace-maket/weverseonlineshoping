@@ -61,7 +61,7 @@ function iconSvg(name, size = 20) {
     message: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
     send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
     close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
-    bot: '<rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/>',
+    headset: '<path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Z"/><path d="M21 11h-3a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-5Z"/><path d="M3 11v-1a9 9 0 0 1 18 0v1"/><path d="M21 16v2a4 4 0 0 1-4 4h-5"/>',
   };
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.message}</svg>`;
 }
@@ -114,7 +114,7 @@ function injectStyles() {
 function buildDom() {
   const btn = document.createElement('button');
   btn.id = 'kco-ai-btn';
-  btn.setAttribute('aria-label', 'Open AI chat assistant');
+  btn.setAttribute('aria-label', 'Open chat');
   btn.innerHTML = iconSvg('message', 24);
   btn.addEventListener('click', () => toggle());
 
@@ -124,7 +124,7 @@ function buildDom() {
   panel.setAttribute('aria-label', 'Weverse Online Shop assistant chat');
   panel.innerHTML = `
     <div class="kco-ai-head">
-      <div class="kco-ai-avatar">${iconSvg('bot', 20)}</div>
+      <div class="kco-ai-avatar">${iconSvg('headset', 20)}</div>
       <div>
         <div class="kco-ai-title">Weverse Online Shop</div>
         <div class="kco-ai-status"><span class="kco-ai-dot"></span> Online — replies instantly</div>
@@ -137,7 +137,7 @@ function buildDom() {
       <input class="kco-ai-input" type="text" placeholder="Ask about products, orders, shipping…" maxlength="600" aria-label="Message">
       <button class="kco-ai-send" aria-label="Send message">${iconSvg('send', 18)}</button>
     </div>
-    <div class="kco-ai-foot">AI assistant · For urgent help email support@weverseonlineshop.com</div>
+    <div class="kco-ai-foot">For urgent help, email support@weverseonlineshop.com</div>
   `;
 
   const body = panel.querySelector('.kco-ai-body');
