@@ -291,7 +291,7 @@ function reviewItemHtml(r) {
         </div>
         <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= (r.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
         ${title}
-        <p class="text-[15px] text-slate-200 leading-relaxed mt-1.5">${escapeHtml(r.text || r.comment || '')}</p>
+        <p class="text-[15px] text-slate-100 leading-relaxed mt-1.5">${escapeHtml(r.text || r.comment || '')}</p>
         ${photo}
       </div>
     </div>`;
@@ -306,36 +306,42 @@ function reviewsSectionHtml(listing) {
   return `
     <div id="reviews-section" class="relative overflow-hidden rounded-2xl mb-6 shadow-sm">
       <div class="absolute inset-0" data-bg-slot="reviews"></div>
-      <div class="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-950/75 to-slate-950/95"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/80 to-slate-950/90"></div>
       <div class="relative p-4 sm:p-6">
-        <div class="flex items-center gap-2.5 mb-4">
+        <div class="flex items-center gap-2.5 mb-5">
           <div class="shrink-0 w-10 h-10 rounded-xl bg-amber-400/15 text-amber-300 flex items-center justify-center"><i data-lucide="message-square-star" class="w-5 h-5"></i></div>
           <h3 class="text-lg font-black text-white tracking-tight">Customer Reviews</h3>
         </div>
-        <div id="reviews-summary" class="mb-1"><div class="text-slate-400 text-sm py-3">Loading ratings…</div></div>
-        <div id="reviews-breakdown" class="mb-3"></div>
-        <div id="reviews-list"><div class="text-slate-400 text-sm py-4">Loading reviews…</div></div>
-        <div id="review-form-wrapper" class="mt-5 pt-5 border-t border-white/10">
-          <h4 class="text-[15px] font-black text-white mb-3 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-400"></i> Write a Review</h4>
-          <div id="review-login-msg" class="text-xs text-slate-300 hidden">Please <a href="/auth.html?redirect=${redirect}" class="text-blue-400 hover:underline">sign in</a> to write a review.</div>
-          <form id="review-form" class="space-y-3">
-            <div class="flex items-center gap-2">
-              <label class="text-xs text-slate-300 font-bold uppercase">Rating</label>
-              <div id="star-rating" class="flex gap-1">
-                ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-300 hover:text-amber-400 transition"></i></button>`).join('')}
+        <div class="rounded-2xl border border-white/10 bg-slate-950/55 backdrop-blur-md shadow-xl shadow-slate-950/40 p-5 mb-4">
+          <div id="reviews-summary" class="mb-1"><div class="text-slate-400 text-sm py-3">Loading ratings…</div></div>
+          <div id="reviews-breakdown"></div>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-slate-950/55 backdrop-blur-md shadow-xl shadow-slate-950/40 p-5 mb-4">
+          <div id="reviews-list"><div class="text-slate-400 text-sm py-4">Loading reviews…</div></div>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-slate-950/55 backdrop-blur-md shadow-xl shadow-slate-950/40 p-5">
+          <div id="review-form-wrapper">
+            <h4 class="text-[15px] font-black text-white mb-3 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-400"></i> Write a Review</h4>
+            <div id="review-login-msg" class="text-xs text-slate-300">Please <a href="/auth.html?redirect=${redirect}" class="text-blue-400 hover:underline">sign in</a> to write a review.</div>
+            <form id="review-form" class="space-y-3 hidden">
+              <div class="flex items-center gap-2">
+                <label class="text-xs text-slate-300 font-bold uppercase">Rating</label>
+                <div id="star-rating" class="flex gap-1">
+                  ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-300 hover:text-amber-400 transition"></i></button>`).join('')}
+                </div>
               </div>
-            </div>
-            <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-slate-950/50 border border-white/15 rounded-xl px-4 py-3 text-[15px] text-white placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"></textarea>
-            <div class="flex items-center gap-3">
-              <label for="review-photo-input" class="inline-flex items-center gap-2 text-xs font-bold text-slate-200 bg-white/10 border border-white/15 rounded-xl px-3.5 py-2.5 cursor-pointer hover:border-blue-300 hover:bg-white/15 transition">
-                <i data-lucide="camera" class="w-4 h-4 text-blue-400"></i> Add a photo
-              </label>
-              <input id="review-photo-input" type="file" accept="image/*" class="hidden">
-              <div id="review-photo-preview" class="flex items-center gap-2"></div>
-            </div>
-            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">Submit Review</button>
-            <div id="review-submit-msg" class="text-xs text-emerald-300 font-bold hidden"><i data-lucide="check-circle" class="w-3.5 h-3.5 inline"></i> Thank you! Your review is now live.</div>
-          </form>
+              <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-slate-950/50 border border-white/15 rounded-xl px-4 py-3 text-[15px] text-white placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"></textarea>
+              <div class="flex items-center gap-3">
+                <label for="review-photo-input" class="inline-flex items-center gap-2 text-xs font-bold text-slate-200 bg-white/10 border border-white/15 rounded-xl px-3.5 py-2.5 cursor-pointer hover:border-blue-300 hover:bg-white/15 transition">
+                  <i data-lucide="camera" class="w-4 h-4 text-blue-400"></i> Add a photo
+                </label>
+                <input id="review-photo-input" type="file" accept="image/*" class="hidden">
+                <div id="review-photo-preview" class="flex items-center gap-2"></div>
+              </div>
+              <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">Submit Review</button>
+              <div id="review-submit-msg" class="text-xs text-emerald-300 font-bold hidden"><i data-lucide="check-circle" class="w-3.5 h-3.5 inline"></i> Thank you! Your review is now live.</div>
+            </form>
+          </div>
         </div>
       </div>
     </div>`;
