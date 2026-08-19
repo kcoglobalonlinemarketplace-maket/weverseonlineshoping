@@ -2945,6 +2945,35 @@ function applyScanToProductForm(result) {
   set('warranty', specs.warranty || identification.warranty);
   set('availability_status', specs.availability_status);
 
+  // Listing content fields — the customer-facing extras for the identified product.
+  set('features_text', text(specs.features));
+  set('highlights_text', text(identification.highlights || specs.highlights));
+  set('seo_keywords_text', text(specs.seo_keywords));
+  const scanTags = new Set((Array.isArray(specs.tags) ? specs.tags : []).map(t => String(t).trim()));
+  document.querySelectorAll('#product-form input[name="tags"]').forEach((cb) => {
+    if (scanTags.has(cb.value)) { cb.checked = true; filled.push('tags'); }
+  });
+  const stock = Number(specs.stock_quantity);
+  if (Number.isFinite(stock) && stock > 0) { set('stock_quantity', stock); }
+
+  // "Not specified" policy — any relevant field the AI could not determine is
+  // marked clearly instead of being left blank or guessed, per the owner's rules.
+  const missing = new Set((Array.isArray(specs.missing_fields) ? specs.missing_fields : []).map(k => String(k)));
+  const NOT_SPECIFIED_SKIP = new Set(['title', 'description', 'price', 'real_price', 'stock_quantity', 'images', 'features', 'highlights', 'seo_keywords', 'tags', 'safety_features']);
+  missing.forEach((key) => {
+    if (NOT_SPECIFIED_SKIP.has(key)) return;
+    const field = document.querySelector(`#product-form [name="${key}"]`);
+    if (!field || field.type === 'checkbox' || field.type === 'radio' || field.type === 'number') return;
+    if (String(field.value || '').trim() !== '') return;
+    if (field.tagName === 'SELECT' && ![...field.options].some(o => o.value === 'Not specified')) {
+      const opt = document.createElement('option');
+      opt.value = 'Not specified'; opt.textContent = 'Not specified';
+      field.appendChild(opt);
+    }
+    field.value = 'Not specified';
+    filled.push(`${key} (Not specified)`);
+  });
+
   // Estimated market prices from stage 3 — the REAL price always goes into the
   // Real Price field (crossed out on the store), and the suggested discount
   // price goes into the Discount Price field (what customers pay). If no
@@ -3224,6 +3253,15 @@ function applyScanToPropertyForm(result) {
   if (baths != null && baths !== '') set('bathrooms', parseInt(baths, 10) || baths);
   set('building_size', identification.building_size || specs.building_size);
   set('land_size', identification.land_size || specs.land_size);
+  const parking = identification.parking_spaces ?? specs.parking_spaces;
+  if (parking != null && parking !== '') set('parking_spaces', parseInt(parking, 10) || parking);
+  const furnRaw = String(identification.furnished || specs.furnished || '').toLowerCase();
+  if (/furnished|yes/.test(furnRaw)) set('furnished', 'Furnished');
+  else if (/unfurnished|no|empty/.test(furnRaw)) set('furnished', 'Unfurnished');
+  const lsRaw = String(identification.listing_status || specs.listing_status || '').toLowerCase();
+  if (/rent|lease/.test(lsRaw)) set('listing_status', 'rent');
+  else if (/sale|buy|purchase/.test(lsRaw)) set('listing_status', 'sale');
+  set('town', identification.town || specs.town);
   set('city', identification.city || specs.city);
   set('state', identification.state || specs.state);
   const country = identification.country || specs.country;
@@ -3239,10 +3277,36 @@ function applyScanToPropertyForm(result) {
   set('highlights_text', text(identification.highlights || specs.highlights));
   set('seo_keywords_text', text(specs.seo_keywords));
   set('product_location', [identification.city, identification.state, country].filter(Boolean).join(', '));
+
+  // "Not specified" policy — any relevant field the AI could not determine is
+  // marked clearly instead of being left blank or guessed, per the owner's rules.
+  const missing = new Set((Array.isArray(specs.missing_fields) ? specs.missing_fields : []).map(k => String(k)));
+  const NOT_SPECIFIED_SKIP = new Set(['title', 'description', 'price', 'real_price', 'features', 'highlights', 'seo_keywords']);
+  missing.forEach((key) => {
+    if (NOT_SPECIFIED_SKIP.has(key)) return;
+    const field = document.querySelector(`#property-form [name="${key}"]`);
+    if (!field || field.type === 'checkbox' || field.type === 'radio' || field.type === 'number') return;
+    if (String(field.value || '').trim() !== '') return;
+    if (field.tagName === 'SELECT' && ![...field.options].some(o => o.value === 'Not specified')) {
+      const opt = document.createElement('option');
+      opt.value = 'Not specified'; opt.textContent = 'Not specified';
+      field.appendChild(opt);
+    }
+    field.value = 'Not specified';
+    filled.push(`${key} (Not specified)`);
+  });
+
   const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 0;
   const max = Number.isFinite(Number(GLOBAL_PRICE_MAX)) ? Number(GLOBAL_PRICE_MAX) : 999999999;
+  const clamp = (n) => Math.max(min, Math.min(max, Math.round(n)));
   const est = price ? Number(price.estimated_price) : NaN;
-  if (Number.isFinite(est) && est > 0) set('price', String(Math.max(min, Math.min(max, Math.round(est)))));
+  const estDiscount = price ? Number(price.suggested_discount_price) : NaN;
+  if (Number.isFinite(est) && est > 0) {
+    const realField = document.querySelector('#property-form [name="real_price"]');
+    if (realField) { realField.value = String(clamp(est)); filled.push('real_price'); }
+    const discount = Number.isFinite(estDiscount) && estDiscount > 0 && estDiscount < est ? estDiscount : est;
+    set('price', String(clamp(discount)));
+  }
   return { filled };
 }
 
@@ -3842,6 +3906,7 @@ async function renderProperties() {
                       <div class="flex gap-1">
                         <button onclick="editProperty('${p.property_id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
                         <button onclick="archiveProduct('${p.property_id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="deleteProduct('${p.property_id}')" class="btn-press p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                       </div>
                     </td>
                   </tr>`).join('')}
@@ -3894,6 +3959,7 @@ window.showAddPropertyModal = function(existing = {}) {
               <option value="rent" ${existing.listing_status === 'rent' ? 'selected' : ''}>For Rent</option>
             </select></div>
             <div><label class="lbl">Price *</label><input type="number" class="input-field" id="ppf-price" name="price" value="${existing.price || ''}" required placeholder="0"></div>
+            <div><label class="lbl">Real Price (crossed out)</label><input type="number" class="input-field" id="ppf-real_price" name="real_price" value="${existing.real_price ?? existing.specifications?.real_price ?? ''}" placeholder="Original price before discount"></div>
             <div><label class="lbl">Country Name *</label><input class="input-field" id="ppf-country" name="country" value="${esc(existing.country || '')}" required placeholder="United States"></div>
             <div><label class="lbl">Subcategory</label><input class="input-field" name="subcategory" value="${esc(existing.subcategory || '')}" placeholder="e.g. Villas, Mansions, Hotels"></div>
             <div><label class="lbl">State / Province</label><input class="input-field" name="state" value="${esc(existing.state || '')}" placeholder="e.g. California"></div>
@@ -3973,6 +4039,7 @@ window.saveProperty = async function(e, existingId) {
   const features = (data.features_text || '').split(',').map(s => s.trim()).filter(Boolean);
   const requiredImageCount = existingId ? 0 : (parseInt(data.required_image_count || '24', 10) || 24);
   validateImageRequirement(requiredImageCount, images, 'This property');
+  const realPriceNum = (data.real_price === '' || data.real_price == null) ? null : Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.real_price) || 0));
   const payload = {
     listing_type: 'property',
     category: data.property_type || 'Real Estate',
@@ -4000,9 +4067,11 @@ window.saveProperty = async function(e, existingId) {
   if (existingId) {
     payload.property_id = existingId;
     const current = sanitizeShowroomPayload((window._propertiesData || []).find(item => item.property_id === existingId) || (window._productsData || []).find(item => item.property_id === existingId));
+    payload.specifications = { ...(current.specifications && typeof current.specifications === 'object' ? current.specifications : {}), real_price: realPriceNum };
     ({ error: err } = await supabase.from('showroom_listings').upsert({ ...current, ...payload }, { onConflict: 'property_id' }));
   } else {
     payload.property_id = genId();
+    payload.specifications = { real_price: realPriceNum };
     ({ error: err } = await supabase.from('showroom_listings').insert(payload));
   }
   if (err) {
@@ -5212,14 +5281,14 @@ IDENTIFICATION RULES (accuracy over guesses — this is the most important step)
 - condition: judge from what is visible (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
 - listing_type: "property" if the photo shows a house, villa, apartment, condo, mansion, land, estate or any building for sale; "vehicle" for cars, motorcycles, boats and other vehicles; otherwise "product".
 - category (for products and vehicles): best match from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For property photos set category to "Real Estate".
-- For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), building_size (string|null), land_size (string|null), city (string|null), state (string|null), country (string|null).
+- For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), building_size (string|null), land_size (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), town (string|null), city (string|null), state (string|null), country (string|null), listing_status ("sale"/"rent"/null).
 - confidence: how certain you are about what this is: "high" | "medium" | "low".
 - alternate_categories: up to 2 other plausible category matches from the list above, or [].
 - detected_name: a short plain label of what you actually see, e.g. "white Toyota Camry sedan", "black leather handbag", "modern 4-bedroom villa".
 - If the photo does not clearly show a product, return { "identified": false, "detected_name": "what you see", "reason": "why you cannot identify it" }.
 
 Return ONE valid JSON object (no markdown) with only these keys:
-{ "identified": true, "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "city": string|null, "state": string|null, "country": string|null, "confidence": "high"|"medium"|"low", "alternate_categories": string[], "detected_name": string }`;
+{ "identified": true, "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "alternate_categories": string[], "detected_name": string }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
 
@@ -5247,12 +5316,12 @@ For each distinct product include:
 - year: only from visible text; otherwise null with year_estimated true when estimated from the design.
 - body_type, color, condition (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
 - category: best match from this list — Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For properties set category to "Real Estate".
-- subcategory, property_type, bedrooms, bathrooms, building_size, land_size, city, state, country for properties.
+- subcategory, property_type, bedrooms, bathrooms, building_size, land_size, parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), town, city, state, country, listing_status ("sale"/"rent"/null) for properties.
 - confidence: "high" | "medium" | "low" for each product.
 - detected_name: a short plain label for each product, e.g. "black leather handbag", "silver wristwatch", "white Nike sneakers", "modern 3-bedroom villa".
 
 Return ONE valid JSON object (no markdown):
-{ "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "city": string|null, "state": string|null, "country": string|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
+{ "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
 
@@ -5276,14 +5345,16 @@ Look at the photo(s) again, then complete the standard specifications for THIS E
 ALWAYS fill every relevant specification when you can determine it for the identified product:
 - Vehicles: Engine, Transmission, Fuel, Drive type, Horsepower, Seats (seating capacity), Doors, Body type, Model year, Mileage (only if visible/known), Safety features.
 - Phones/Computers: storage, ram, processor, display, graphics, os.
-- Properties (house/villa/land): property_type, bedrooms, bathrooms, building_size, land_size, city, state, country, and a short condition/features summary.
+- Properties (house/villa/land): property_type, bedrooms, bathrooms, building_size, land_size, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), town, city, state, country, listing_status ("sale"/"rent"/null), and a short condition/features summary.
 - Other product types: fill whatever genuinely applies — type (e.g. Handbag, Sneaker, Textbook), material, size, color, brand, model, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, storage, assembly, weatherproof, warranty.
+- Also complete the listing content for the exact identified product: highlights (3-6 genuine selling points), seo_keywords (6-10 relevant search keywords for the identified product), tags (from the allowed badge set — "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" — only the ones that genuinely apply to this exact product), warranty (only when the identified product type genuinely carries one, e.g. electronics, vehicles, appliances), availability_status ("In Stock" for a new product, otherwise null if not determinable), and stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle, property or single specimen — otherwise null, because stock cannot be known from a photo).
 
 HARD RULES:
 - ONLY use specifications for the exact brand + model identified above. A Toyota photo must produce TOYOTA specifications. NEVER use specifications from a different brand or model (never a Toyota image → Mercedes specs, never an iPhone image → Samsung specs, never a bag image → car specs).
 - If the exact year or trim is uncertain, use the most common / standard specification for that identified model and list that key in "estimated". Do not randomly invent values that are not reasonable for that model.
 - Only return specs that exist for the product type: a bag has no engine/transmission/horsepower (leave those null); a phone has no transmission or doors (leave those null); a car has engine/transmission/fuel/drive/horsepower/seats/doors; a house has bedrooms/bathrooms/sizes but no engine or storage.
-- Never return price or stock_quantity in this stage — price is handled in a separate stage.
+- Never return price in this stage — price is handled in a separate stage.
+- "missing_fields" is the ONLY place where uncertainty is recorded: for every field in this JSON that APPLIES to the identified product type but that you genuinely cannot determine or reliably verify (from the photos or reliable product data), list that key in "missing_fields". NEVER guess a value for a field you cannot determine — put its key in "missing_fields" instead. NEVER list a field that does not apply to this product type. The owner will see "Not specified" for those fields and can review/edit them before publishing.
 
 DESCRIPTION REQUIREMENTS (the description is a MAJOR part of the listing):
 - Write a detailed, professional, natural, trustworthy and enjoyable marketplace description that is clearly about THIS exact identified product and nothing else.
@@ -5302,10 +5373,16 @@ Return ONE valid JSON object (no markdown):
   "storage": string|null, "ram": string|null, "processor": string|null, "display": string|null, "graphics": string|null, "os": string|null,
   "material": string|null, "size": string|null, "gender": string|null, "platform": string|null,
   "type": string|null, "color": string|null, "brand": string|null, "model": string|null,
-  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null,
+  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null, "listing_status": "sale"|"rent"|null,
   "author": string|null, "publisher": string|null, "language": string|null, "format": string|null, "isbn": string|null, "pages": string|null, "edition": string|null, "quantity": string|null, "age_range": string|null, "skin_type": string|null, "ingredients": string|null, "pet_type": string|null, "lens": string|null, "sensor": string|null, "megapixels": string|null, "video": string|null, "license": string|null, "version": string|null, "duration": string|null, "followers": string|null, "engagement": string|null, "niche": string|null, "usage": string|null, "shelf_life": string|null, "assembly": string|null, "weatherproof": string|null, "warranty": string|null,
   "features": string[]|null (notable features, e.g. ["OLED display","5G"] or ["Swimming pool","Double garage"]),
-  "estimated": string[] (keys above that are estimates, e.g. ["engine","horsepower"])
+  "highlights": string[]|null (3-6 genuine selling points of this exact product),
+  "seo_keywords": string[]|null (6-10 relevant search keywords for this exact product),
+  "tags": string[]|null (only from: "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" — only ones that genuinely apply),
+  "availability_status": "In Stock"|"Out of Stock"|"Pre-order"|"Limited Stock"|null,
+  "stock_quantity": number|null (1 only for unique one-of-a-kind items, otherwise null),
+  "estimated": string[] (keys above that are estimates, e.g. ["engine","horsepower"]),
+  "missing_fields": string[] (keys above that APPLY to this product type but could not be determined — see HARD RULES)
 }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
