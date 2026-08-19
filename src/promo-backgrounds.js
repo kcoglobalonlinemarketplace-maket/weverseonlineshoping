@@ -85,7 +85,7 @@ export function bgMediaLayer(bgImage, bgVideo) {
     );
   }
   // Soft overlay keeps the text readable on any media.
-  if (vid || img) parts.push(`<div class="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/45 to-slate-900/30"></div>`);
+  if (vid || img) parts.push(`<div class="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/70 to-slate-900/45"></div>`);
   return parts.join('');
 }
 

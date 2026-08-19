@@ -46,16 +46,16 @@ function promoHeroHtml() {
       <div class="absolute inset-0" data-bg-slot="trust_promo"></div>
 
       <div class="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-12 sm:py-16 lg:py-20">
-        <div class="max-w-2xl">
+        <div class="max-w-2xl relative rounded-3xl bg-slate-950/55 border border-white/10 p-6 sm:p-8 md:p-10 backdrop-blur-md shadow-2xl shadow-slate-950/50">
           <span class="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-cyan-300 border border-cyan-400/30 bg-cyan-400/10 rounded-full px-3.5 py-1.5 mb-5">
             <i data-lucide="truck" class="w-3.5 h-3.5"></i> Worldwide Delivery
           </span>
           <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.06] tracking-tight text-white">
-            Happiness delivered to your door
+            Premium shopping, delivered right to your door
           </h2>
-          <p class="text-[15px] sm:text-base text-slate-300 mt-4 leading-relaxed max-w-xl">
-            From our shop to your family — every order is packed with care, tracked in real time,
-            and delivered reliably to ${esc(name)} customers in 200+ countries.
+          <p class="text-[15px] sm:text-base text-slate-200 mt-4 leading-relaxed max-w-xl">
+            Every order is packed with care, tracked in real time, and shipped securely to customers in
+            200+ countries worldwide — so shopping with ${esc(name)} is always fast, safe and worry-free.
           </p>
           <div class="flex flex-wrap items-center gap-3.5 mt-7">
             <a href="/#showroom-directory" class="inline-flex items-center gap-2 bg-white text-blue-900 font-black text-sm px-6 py-3.5 rounded-2xl shadow-xl shadow-slate-900/40 hover:scale-[1.03] active:scale-[.98] transition">
