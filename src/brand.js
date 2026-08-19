@@ -217,15 +217,11 @@ function injectHeaderBrand(name, slogan, logo, badge, primary) {
     document.querySelectorAll('[data-brand="badge"], .brand-badge, #brand-badge').forEach(el => {
       if (el.tagName === 'IMG') { el.src = badge; el.alt = 'Verified'; el.style.display = ''; }
     });
-    // Also find existing "Verified" badge spans and optionally add the image next to them
-    document.querySelectorAll('span').forEach(span => {
-      if (span.textContent.includes('Verified') && !span.querySelector('img.brand-badge-img')) {
-        const img = document.createElement('img');
-        img.src = badge; img.alt = 'Verified'; img.className = 'brand-badge-img w-4 h-4 inline-block ml-1';
-        img.onerror = () => img.remove();
-        span.appendChild(img);
-      }
-    });
+    // NOTE: the blue verified badge is intentionally ONLY added next to the
+    // brand name ([data-brand="name"]) above. It is NOT injected into every
+    // span that merely contains the word "Verified" — that previously created
+    // stray, mispositioned blue checks after product titles that sometimes
+    // disappeared. Green "Verified" pills and other trust badges stay untouched.
   }
 
   // Replace the blue gradient icon block with logo image if logo is set

@@ -502,10 +502,17 @@ export async function initLocalization() {
     const browserLang = detectBrowserLanguage();
     const detectedTz = detectTimezone();
 
+    // Prefer the detected country's native language so a visitor from a
+    // non-English country always sees the site in their own language even if
+    // their browser is set to English. Only a manual choice overrides this.
+    const countryLang = getDefaultLanguage(detected.country);
+    const isSupported = LANGUAGES.some(l => l.code === countryLang);
+    const preferredLanguage = isSupported ? countryLang : browserLang;
+
     currentLocale = {
       ...currentLocale,
       ...detected,
-      language: browserLang,
+      language: preferredLanguage,
       timezone: detectedTz || detected.timezone || getDefaultTimezone(detected.country),
       currency: getCurrencyForCountry(detected.country),
     };

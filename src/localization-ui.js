@@ -123,8 +123,8 @@ function buildModal() {
       <div id="kco-loc-list" class="kco-loc-list flex-1 overflow-y-auto px-2 py-2">
       </div>
 
-      <!-- Live clock footer -->
-      <div class="px-4 py-2.5 border-t border-white/10 bg-slate-900/80">
+      <!-- Live clock footer (hidden — kept in the code, not shown) -->
+      <div class="hidden px-4 py-2.5 border-t border-white/10 bg-slate-900/80">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="kco-loc-dot w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>

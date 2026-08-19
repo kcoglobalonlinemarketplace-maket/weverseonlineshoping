@@ -1257,6 +1257,10 @@ function loadRegionSettings(){
 // ---- AUTO COUNTRY & LANGUAGE DETECTION ----
 // Runs once on first visit (no saved preference). Detects from browser settings,
 // shows a friendly notification, and is VPN-aware (never forces a change).
+// Country -> native language map: a visitor from a non-English country always
+// sees the site in their own language automatically (VPN included), and it only
+// changes if they pick another language themselves.
+var COUNTRY_LANG={US:"en",GB:"en",AU:"en",NZ:"en",CA:"en",IE:"en",ZA:"en",NG:"en",GH:"en",KE:"sw",TZ:"sw",UG:"sw",ES:"es",MX:"es",AR:"es",CO:"es",CL:"es",PE:"es",VE:"es",BO:"es",PY:"es",UY:"es",CR:"es",PA:"es",GT:"es",HN:"es",SV:"es",NI:"es",DO:"es",EC:"es",FR:"fr",BE:"fr",LU:"fr",MC:"fr",HT:"fr",SN:"fr",CI:"fr",ML:"fr",BF:"fr",NE:"fr",TG:"fr",BJ:"fr",MG:"fr",CM:"fr",DE:"de",AT:"de",CH:"de",LI:"de",IT:"it",SM:"it",PT:"pt",BR:"pt",AO:"pt",MZ:"pt",NL:"nl",RU:"ru",BY:"ru",KZ:"ru",KG:"ru",SA:"ar",AE:"ar",EG:"ar",DZ:"ar",MA:"ar",TN:"ar",LY:"ar",SY:"ar",JO:"ar",LB:"ar",IQ:"ar",KW:"ar",QA:"ar",BH:"ar",OM:"ar",YE:"ar",SD:"ar",MR:"ar",CN:"zh",TW:"zh",HK:"zh",SG:"zh",JP:"ja",KR:"ko",IN:"hi",PK:"ur",BD:"bn",LK:"si",NP:"ne",IR:"fa",AF:"fa",TR:"tr",AZ:"az",UZ:"uz",ID:"id",MY:"ms",BN:"ms",TH:"th",VN:"vi",KH:"km",LA:"lo",MM:"my",PL:"pl",CZ:"cs",SK:"sk",HU:"hu",RO:"ro",BG:"bg",HR:"hr",SR:"sr",SI:"sl",MK:"mk",BA:"bs",SE:"sv",DK:"da",FI:"fi",NO:"no",IS:"is",UA:"uk",GR:"el",CY:"el",IL:"he",ET:"am",GE:"ka",AM:"hy"};
 function detectRegionAuto(){
   // Only auto-detect on first visit â€” if user already has a preference, respect it
   if(localStorage.getItem("kco_country")||localStorage.getItem("kco_language"))return;
@@ -1294,7 +1298,10 @@ function detectRegionAuto(){
 
   // Prefer timezone country when available (more reliable than browser language region)
   const finalCountry=tzCountry||detectedCountry||"US";
-  const finalLang=detectedLang||"en";
+  // Use the detected country's native language automatically so every visitor
+  // sees their own language (even with a VPN). Falls back to their browser
+  // language, then English.
+  const finalLang=COUNTRY_LANG[finalCountry]||detectedLang||"en";
 
   // Apply detected values to selectors
   const countrySel=document.getElementById("country");
@@ -1321,22 +1328,24 @@ function detectRegionAuto(){
 }
 
 function showRegionNotification(msg){
+  // Non-blocking toast pinned to the bottom-left corner so it never covers the
+  // page content, auto-hides, and can be dismissed instantly.
   let n=document.getElementById("region-detect-notification");
   if(!n){
     n=document.createElement("div");
     n.id="region-detect-notification";
-    n.className="fixed top-[201px] sm:top-[185px] left-1/2 -translate-x-1/2 z-[55] max-w-[92vw] sm:max-w-md bg-white border border-blue-200 rounded-xl shadow-2xl px-4 py-3 flex items-start gap-3 transition-all duration-500";
+    n.className="fixed bottom-5 left-4 z-[55] max-w-[320px] w-[calc(100vw-2rem)] bg-white border border-blue-200 rounded-2xl shadow-2xl px-4 py-3 flex items-start gap-3 transition-all duration-500";
     n.innerHTML='<i data-lucide="globe" class="w-5 h-5 text-blue-600 shrink-0 mt-0.5"></i>'+
       '<div class="flex-1 min-w-0"><p class="text-xs text-gray-700 leading-snug" id="region-detect-text"></p>'+
-      '<button onclick="document.getElementById(\'region-detect-notification\').classList.add(\'opacity-0\',\'translate-y-[-10px]\');setTimeout(()=>document.getElementById(\'region-detect-notification\').remove(),500)" class="text-[10px] text-blue-600 hover:text-blue-700 font-semibold mt-1.5">Dismiss</button></div>'+
-      '<button onclick="document.getElementById(\'region-detect-notification\').remove()" class="text-gray-500 hover:text-gray-900 shrink-0 text-[10px] font-bold uppercase tracking-wide" aria-label="Close">ðŸ”™ Back</button>';
+      '<button onclick="document.getElementById(\'region-detect-notification\').classList.add(\'opacity-0\',\'translate-y-2\');setTimeout(()=>document.getElementById(\'region-detect-notification\').remove(),400)" class="text-[10px] text-blue-600 hover:text-blue-700 font-semibold mt-1.5">Dismiss</button></div>'+
+      '<button onclick="document.getElementById(\'region-detect-notification\').remove()" class="text-gray-400 hover:text-gray-700 shrink-0 text-[10px] font-bold uppercase tracking-wide" aria-label="Close">✕</button>';
     document.body.appendChild(n);
     if(window.lucide)lucide.createIcons();
   }
   document.getElementById("region-detect-text").textContent=msg;
-  n.classList.remove("opacity-0","translate-y-[-10px]");
+  n.classList.remove("opacity-0","translate-y-2");
   clearTimeout(n._t);
-  n._t=setTimeout(()=>{n.classList.add("opacity-0","translate-y-[-10px]");setTimeout(()=>n.remove(),500)},8000);
+  n._t=setTimeout(()=>{n.classList.add("opacity-0","translate-y-2");setTimeout(()=>n.remove(),400)},8000);
 }
 
 // ---- UI HELPERS ----
@@ -1359,9 +1368,17 @@ window._showToast=showToast;
 // ---- BOOTSTRAP ----
 document.addEventListener("DOMContentLoaded",()=>{
   populateSelectors();loadRegionSettings();detectRegionAuto();renderCategories();setupSearchSuggestions();
-  renderCarousel();updateClock();updateBadgeLanguage();
-  lucide.createIcons();setInterval(updateClock,1000);
-  initLiveLocation();
+  renderCarousel();updateBadgeLanguage();
+  lucide.createIcons();
+  // The live date/time/location bar is intentionally hidden (not removed). When
+  // hidden we skip the ticking clock and the IP/GPS location requests so they
+  // never hang the network or distract the customer.
+  const trustBar=document.getElementById("trust-bar");
+  if(trustBar&&!trustBar.classList.contains("hidden")){
+    updateClock();
+    setInterval(updateClock,1000);
+    initLiveLocation();
+  }
   initAds();
 });
 // Re-render the category nav once the live showroom data (DB products,
