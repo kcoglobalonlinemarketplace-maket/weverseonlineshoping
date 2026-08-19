@@ -3261,6 +3261,8 @@ function applyScanToPropertyForm(result) {
   const lsRaw = String(identification.listing_status || specs.listing_status || '').toLowerCase();
   if (/rent|lease/.test(lsRaw)) set('listing_status', 'rent');
   else if (/sale|buy|purchase/.test(lsRaw)) set('listing_status', 'sale');
+  const area = identification.area || specs.area;
+  if (area && !(identification.town || specs.town)) set('town', area);
   set('town', identification.town || specs.town);
   set('city', identification.city || specs.city);
   set('state', identification.state || specs.state);
@@ -3273,15 +3275,21 @@ function applyScanToPropertyForm(result) {
       if (f) { f.value = match.code; filled.push('country_code'); }
     }
   }
+  const address = identification.address || specs.address;
+  set('product_location', address || [area || identification.town || specs.town, identification.city || specs.city, identification.state || specs.state, country].filter(Boolean).join(', '));
+  const latNum = Number(identification.latitude ?? specs.latitude);
+  const lngNum = Number(identification.longitude ?? specs.longitude);
+  if (Number.isFinite(latNum) && latNum >= -90 && latNum <= 90 && latNum !== 0) { set('latitude', String(latNum)); }
+  if (Number.isFinite(lngNum) && lngNum >= -180 && lngNum <= 180 && lngNum !== 0) { set('longitude', String(lngNum)); }
   set('features_text', text(specs.features));
   set('highlights_text', text(identification.highlights || specs.highlights));
   set('seo_keywords_text', text(specs.seo_keywords));
-  set('product_location', [identification.city, identification.state, country].filter(Boolean).join(', '));
 
   // "Not specified" policy — any relevant field the AI could not determine is
   // marked clearly instead of being left blank or guessed, per the owner's rules.
   const missing = new Set((Array.isArray(specs.missing_fields) ? specs.missing_fields : []).map(k => String(k)));
-  const NOT_SPECIFIED_SKIP = new Set(['title', 'description', 'price', 'real_price', 'features', 'highlights', 'seo_keywords']);
+  const NOT_SPECIFIED_SKIP = new Set(['title', 'description', 'price', 'real_price', 'features', 'highlights', 'seo_keywords',
+      'country', 'country_code', 'state', 'city', 'town', 'product_location', 'area', 'address', 'latitude', 'longitude']);
   missing.forEach((key) => {
     if (NOT_SPECIFIED_SKIP.has(key)) return;
     const field = document.querySelector(`#property-form [name="${key}"]`);
@@ -3307,6 +3315,7 @@ function applyScanToPropertyForm(result) {
     const discount = Number.isFinite(estDiscount) && estDiscount > 0 && estDiscount < est ? estDiscount : est;
     set('price', String(clamp(discount)));
   }
+  if (typeof window.refreshPropertyMapFromForm === 'function') window.refreshPropertyMapFromForm();
   return { filled };
 }
 
@@ -3878,6 +3887,9 @@ async function renderProperties() {
       <div class="space-y-4 fade-in">
         <div class="flex flex-wrap items-center gap-3">
           <h2 class="text-xl font-black text-white flex-1">Properties Manager</h2>
+          <button onclick="fixPropertyMaps()" class="btn-press flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition" title="Geocode any property that is missing its map coordinates and update its map">
+            <i data-lucide="map-pin" class="w-4 h-4"></i> Fix Maps
+          </button>
           <button onclick="showAddPropertyModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
             <i data-lucide="plus" class="w-4 h-4"></i> Add Property
           </button>
@@ -3967,6 +3979,16 @@ window.showAddPropertyModal = function(existing = {}) {
             <div><label class="lbl">Town / Local Area</label><input class="input-field" name="town" value="${esc(existing.town || '')}" placeholder="Neighborhood or district"></div>
             <div><label class="lbl">Latitude</label><input type="number" step="any" class="input-field" name="latitude" value="${esc(existing.latitude || '')}" placeholder="40.7128"></div>
             <div><label class="lbl">Longitude</label><input type="number" step="any" class="input-field" name="longitude" value="${esc(existing.longitude || '')}" placeholder="-74.0060"></div>
+            <div class="sm:col-span-2">
+              <div class="rounded-xl border border-gray-200 overflow-hidden" style="height:250px;background:#e2e8f0"><div id="property-map-preview" style="width:100%;height:100%"></div></div>
+              <div class="flex flex-wrap items-center justify-between gap-2 mt-2">
+                <div class="text-[11px] text-gray-500" id="property-map-status">Map preview — fill the location fields or click the map to drop a pin.</div>
+                <div class="flex items-center gap-2">
+                  <button type="button" id="btn-geocode-property" class="btn-press text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition">Locate from fields</button>
+                  <a id="btn-open-google-map" href="#" target="_blank" rel="noopener" class="text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-200 transition">Open in Google Maps</a>
+                </div>
+              </div>
+            </div>
             <div><label class="lbl">Bedrooms</label><input type="number" class="input-field" name="bedrooms" value="${existing.bedrooms ?? ''}" placeholder="3"></div>
             <div><label class="lbl">Bathrooms</label><input type="number" class="input-field" name="bathrooms" value="${existing.bathrooms ?? ''}" placeholder="2"></div>
             <div><label class="lbl">Building Size</label><input class="input-field" name="building_size" value="${esc(existing.building_size || '')}" placeholder="e.g. 2,500 sqft"></div>
@@ -4029,6 +4051,166 @@ window.showAddPropertyModal = function(existing = {}) {
   syncCountryAndCurrency('ppf');
   applyCatalogDraftToPropertyForm('pricing');
   document.getElementById('ppf-price')?.addEventListener('input', () => applyCatalogDraftToPropertyForm('pricing'));
+  initPropertyMapPreview();
+};
+
+// ── Live map preview for the property form ────────────────────────────────
+// Shows the property's OWN real map location. It geocodes from the location
+// fields (address / area / town / city / state / country), fills Latitude +
+// Longitude automatically, lets the owner click the map to drop a pin
+// (reverse-geocoding the address), and refreshes whenever any location field
+// changes. Never a single fixed location for every property.
+let _propMap = null;
+let _propMarker = null;
+let _propGeoTimer = null;
+
+function buildPropertyMapQuery() {
+  const f = document.querySelector('#property-form');
+  if (!f) return '';
+  const v = (n) => (f.querySelector(`[name="${n}"]`)?.value || '').trim();
+  return [v('product_location'), v('town'), v('city'), v('state'), v('country')].filter(Boolean).join(', ');
+}
+
+function updatePropertyMapStatus(msg, isError) {
+  const el = document.getElementById('property-map-status');
+  if (el) { el.textContent = msg; el.style.color = isError ? '#dc2626' : ''; }
+}
+
+function setPropertyMapPin(lat, lng, { reverse = false } = {}) {
+  if (!_propMap || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  const ll = [lat, lng];
+  if (!_propMarker) _propMarker = L.marker(ll, { draggable: true }).addTo(_propMap);
+  else _propMarker.setLatLng(ll);
+  _propMap.setView(ll, Math.max(_propMap.getZoom(), 13));
+  const latF = document.querySelector('#property-form [name="latitude"]');
+  const lngF = document.querySelector('#property-form [name="longitude"]');
+  if (latF) latF.value = String(Number(lat.toFixed(6)));
+  if (lngF) lngF.value = String(Number(lng.toFixed(6)));
+  if (reverse) reverseGeocodeProperty(lat, lng);
+  const link = document.getElementById('btn-open-google-map');
+  if (link) link.href = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+}
+
+async function geocodePropertyFromFields() {
+  const q = buildPropertyMapQuery();
+  if (!q) { updatePropertyMapStatus('Enter a location (address, area, city, state, country), then press Locate from fields.'); return; }
+  updatePropertyMapStatus('Searching location…');
+  try {
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
+    const data = await res.json();
+    if (data && data[0]) {
+      setPropertyMapPin(parseFloat(data[0].lat), parseFloat(data[0].lon));
+      updatePropertyMapStatus('Located: ' + data[0].display_name);
+    } else {
+      updatePropertyMapStatus('Could not find that location. Check the spelling or click the map to drop the pin.', true);
+    }
+  } catch {
+    updatePropertyMapStatus('Map lookup failed. You can still drop the pin by clicking the map.', true);
+  }
+}
+
+async function reverseGeocodeProperty(lat, lng) {
+  const f = document.querySelector('#property-form');
+  if (!f) return;
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16`);
+    const data = await res.json();
+    const a = (data && data.address) || {};
+    const setIfEmpty = (name, value) => {
+      if (!value) return;
+      const field = f.querySelector(`[name="${name}"]`);
+      if (field && !String(field.value || '').trim()) { field.value = value; return true; }
+      return false;
+    };
+    const street = [a.road || '', a.house_number || ''].filter(Boolean).join(' ');
+    const area = a.suburb || a.neighbourhood || a.quarter || a.district || a.borough || '';
+    const townish = a.town || a.village || a.municipality || a.city_district || '';
+    const city = a.city || a.county || '';
+    const state = a.state || a.region || '';
+    const country = a.country || '';
+    setIfEmpty('product_location', street || area || townish);
+    setIfEmpty('town', area || townish);
+    setIfEmpty('city', city);
+    setIfEmpty('state', state);
+    if (country) {
+      setIfEmpty('country', country);
+      const cc = f.querySelector('[name="country_code"]');
+      if (cc) {
+        const m = (COUNTRIES || []).find(c => String(c.name || '').toLowerCase() === String(country).toLowerCase());
+        if (m && m.code && !cc.value) cc.value = m.code;
+      }
+    }
+    updatePropertyMapStatus('Pin set at ' + lat.toFixed(5) + ', ' + lng.toFixed(5) + (data.display_name ? ' — ' + data.display_name : ''));
+  } catch { updatePropertyMapStatus('Pin set. Could not reverse-geocode the address.', true); }
+}
+
+window.refreshPropertyMapFromForm = function() {
+  if (!_propMap) return;
+  const lat = parseFloat(document.querySelector('#property-form [name="latitude"]')?.value);
+  const lng = parseFloat(document.querySelector('#property-form [name="longitude"]')?.value);
+  if (Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)) { setPropertyMapPin(lat, lng); updatePropertyMapStatus('Map updated from coordinates.'); }
+  else geocodePropertyFromFields();
+};
+
+function initPropertyMapPreview() {
+  const el = document.getElementById('property-map-preview');
+  if (!el || !window.L) { updatePropertyMapStatus('Map unavailable right now — your location fields still save normally.'); return; }
+  if (_propMap) { _propMap.remove(); _propMap = null; _propMarker = null; }
+  const lat = parseFloat(document.querySelector('#property-form [name="latitude"]')?.value);
+  const lng = parseFloat(document.querySelector('#property-form [name="longitude"]')?.value);
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng);
+  _propMap = L.map(el, { scrollWheelZoom: false }).setView(hasCoords ? [lat, lng] : [20, 0], hasCoords ? 13 : 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(_propMap);
+  _propMap.on('click', (e) => setPropertyMapPin(e.latlng.lat, e.latlng.lng, { reverse: true }));
+  document.getElementById('btn-geocode-property')?.addEventListener('click', geocodePropertyFromFields);
+  ['product_location', 'town', 'city', 'state', 'country', 'latitude', 'longitude'].forEach((n) => {
+    const f = document.querySelector(`#property-form [name="${n}"]`);
+    if (!f) return;
+    f.addEventListener('input', () => {
+      if (n === 'latitude' || n === 'longitude') {
+        const la = parseFloat(document.querySelector('#property-form [name="latitude"]')?.value);
+        const lo = parseFloat(document.querySelector('#property-form [name="longitude"]')?.value);
+        if (Number.isFinite(la) && Number.isFinite(lo) && (la || lo)) setPropertyMapPin(la, lo);
+        return;
+      }
+      clearTimeout(_propGeoTimer);
+      _propGeoTimer = setTimeout(geocodePropertyFromFields, 900);
+    });
+    f.addEventListener('change', () => { if (n !== 'latitude' && n !== 'longitude') geocodePropertyFromFields(); });
+  });
+  if (hasCoords) setPropertyMapPin(lat, lng);
+  else geocodePropertyFromFields();
+}
+
+// One-click backfill: geocodes every property missing its map coordinates and
+// updates the DB, so old + new properties all end up with their OWN working map.
+window.fixPropertyMaps = async function() {
+  const items = window._propertiesData || [];
+  const needsFix = items.filter((p) => {
+    const lat = parseFloat(p.latitude);
+    const lng = parseFloat(p.longitude);
+    const q = [p.product_location, p.town, p.city, p.state, p.country].filter(Boolean).join(', ');
+    return !(Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) && Boolean(q);
+  });
+  if (!needsFix.length) { showToast('All properties already have map coordinates.', 'success'); return; }
+  showToast(`Fixing maps for ${needsFix.length} propert${needsFix.length > 1 ? 'ies' : 'y'}…`, 'success');
+  let updated = 0, failed = 0;
+  for (const p of needsFix) {
+    const q = [p.product_location, p.town, p.city, p.state, p.country].filter(Boolean).join(', ');
+    try {
+      const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
+      const data = await res.json();
+      if (data && data[0]) {
+        const coords = { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) };
+        const { error: uErr } = await supabase.from('showroom_listings').update(coords).eq('property_id', p.property_id);
+        if (!uErr) { Object.assign(p, coords); updated++; }
+        else failed++;
+      } else failed++;
+    } catch { failed++; }
+    await new Promise((r) => setTimeout(r, 1100));
+  }
+  showToast(`Map fix done: ${updated} updated, ${failed} failed.`, failed ? 'error' : 'success');
+  renderProperties();
 };
 
 window.saveProperty = async function(e, existingId) {
@@ -5281,14 +5463,15 @@ IDENTIFICATION RULES (accuracy over guesses — this is the most important step)
 - condition: judge from what is visible (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
 - listing_type: "property" if the photo shows a house, villa, apartment, condo, mansion, land, estate or any building for sale; "vehicle" for cars, motorcycles, boats and other vehicles; otherwise "product".
 - category (for products and vehicles): best match from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For property photos set category to "Real Estate".
-- For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), building_size (string|null), land_size (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), town (string|null), city (string|null), state (string|null), country (string|null), listing_status ("sale"/"rent"/null).
+- For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), building_size (string|null), land_size (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), area (neighborhood/district, string|null), address (street + number or landmark when visible in the photo or reliably known, string|null), town (string|null), city (string|null), state (string|null), country (string|null), latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null).
+- LOCATION RULES: use ONLY location information genuinely visible in the photo or reliably known from it (street signs, landmarks, real estate signs, watermarks). NEVER invent a street address, area, city or coordinates. If you cannot determine a location value, return null for that field — the owner will enter it. Latitude/longitude may be derived from a readable address (e.g. a visible street sign); otherwise null.
 - confidence: how certain you are about what this is: "high" | "medium" | "low".
 - alternate_categories: up to 2 other plausible category matches from the list above, or [].
 - detected_name: a short plain label of what you actually see, e.g. "white Toyota Camry sedan", "black leather handbag", "modern 4-bedroom villa".
 - If the photo does not clearly show a product, return { "identified": false, "detected_name": "what you see", "reason": "why you cannot identify it" }.
 
 Return ONE valid JSON object (no markdown) with only these keys:
-{ "identified": true, "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "alternate_categories": string[], "detected_name": string }`;
+{ "identified": true, "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "area": string|null, "address": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "alternate_categories": string[], "detected_name": string }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
 
@@ -5316,12 +5499,12 @@ For each distinct product include:
 - year: only from visible text; otherwise null with year_estimated true when estimated from the design.
 - body_type, color, condition (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
 - category: best match from this list — Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For properties set category to "Real Estate".
-- subcategory, property_type, bedrooms, bathrooms, building_size, land_size, parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), town, city, state, country, listing_status ("sale"/"rent"/null) for properties.
+- subcategory, property_type, bedrooms, bathrooms, building_size, land_size, parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), area (neighborhood/district), address (street + number or landmark when visible/reliably known), town, city, state, country, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null) for properties. LOCATION RULES: only use location genuinely visible in the photo — never invent an address or coordinates; return null when unknown.
 - confidence: "high" | "medium" | "low" for each product.
 - detected_name: a short plain label for each product, e.g. "black leather handbag", "silver wristwatch", "white Nike sneakers", "modern 3-bedroom villa".
 
 Return ONE valid JSON object (no markdown):
-{ "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
+{ "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "area": string|null, "address": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
 
@@ -5345,7 +5528,7 @@ Look at the photo(s) again, then complete the standard specifications for THIS E
 ALWAYS fill every relevant specification when you can determine it for the identified product:
 - Vehicles: Engine, Transmission, Fuel, Drive type, Horsepower, Seats (seating capacity), Doors, Body type, Model year, Mileage (only if visible/known), Safety features.
 - Phones/Computers: storage, ram, processor, display, graphics, os.
-- Properties (house/villa/land): property_type, bedrooms, bathrooms, building_size, land_size, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), town, city, state, country, listing_status ("sale"/"rent"/null), and a short condition/features summary.
+- Properties (house/villa/land): property_type, bedrooms, bathrooms, building_size, land_size, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), area (neighborhood/district), address (street + number or landmark when visible/reliably known), town, city, state, country, country_code, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null), and a short condition/features summary. LOCATION RULES: only use location genuinely visible in the photo or reliably known — never invent an address, city or coordinates; return null (and list the key in "missing_fields") when you cannot determine it. latitude/longitude may be derived from a readable address; otherwise null.
 - Other product types: fill whatever genuinely applies — type (e.g. Handbag, Sneaker, Textbook), material, size, color, brand, model, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, storage, assembly, weatherproof, warranty.
 - Also complete the listing content for the exact identified product: highlights (3-6 genuine selling points), seo_keywords (6-10 relevant search keywords for the identified product), tags (from the allowed badge set — "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" — only the ones that genuinely apply to this exact product), warranty (only when the identified product type genuinely carries one, e.g. electronics, vehicles, appliances), availability_status ("In Stock" for a new product, otherwise null if not determinable), and stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle, property or single specimen — otherwise null, because stock cannot be known from a photo).
 
@@ -5373,7 +5556,7 @@ Return ONE valid JSON object (no markdown):
   "storage": string|null, "ram": string|null, "processor": string|null, "display": string|null, "graphics": string|null, "os": string|null,
   "material": string|null, "size": string|null, "gender": string|null, "platform": string|null,
   "type": string|null, "color": string|null, "brand": string|null, "model": string|null,
-  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null, "listing_status": "sale"|"rent"|null,
+  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "area": string|null, "address": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null,
   "author": string|null, "publisher": string|null, "language": string|null, "format": string|null, "isbn": string|null, "pages": string|null, "edition": string|null, "quantity": string|null, "age_range": string|null, "skin_type": string|null, "ingredients": string|null, "pet_type": string|null, "lens": string|null, "sensor": string|null, "megapixels": string|null, "video": string|null, "license": string|null, "version": string|null, "duration": string|null, "followers": string|null, "engagement": string|null, "niche": string|null, "usage": string|null, "shelf_life": string|null, "assembly": string|null, "weatherproof": string|null, "warranty": string|null,
   "features": string[]|null (notable features, e.g. ["OLED display","5G"] or ["Swimming pool","Double garage"]),
   "highlights": string[]|null (3-6 genuine selling points of this exact product),

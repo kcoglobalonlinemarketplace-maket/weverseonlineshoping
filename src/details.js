@@ -1202,28 +1202,31 @@ function render(listing) {
   if (mapEl && window.L) {
     const lat = parseFloat(listing.latitude) || null;
     const lng = parseFloat(listing.longitude) || null;
-    const query = [listing.town, listing.city, listing.state, listing.country].filter(Boolean).join(', ');
-    if (lat && lng) {
-      const map = L.map(mapEl).setView([lat, lng], 13);
+    const addressLabel = [listing.product_location, listing.town, listing.city, listing.state, listing.country].filter(Boolean).join(', ') || listing.title;
+    const query = [listing.product_location, listing.town, listing.city, listing.state, listing.country].filter(Boolean).join(', ');
+    const fallbackLink = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query || listing.title);
+    const showMap = (ml, mln, zoom) => {
+      const map = L.map(mapEl).setView([ml, mln], zoom);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
-      L.marker([lat, lng]).addTo(map).bindPopup(listing.title);
+      L.marker([ml, mln]).addTo(map).bindPopup(`<strong>${escapeHtml(listing.title)}</strong><br>${escapeHtml(addressLabel)}`).openPopup();
+    };
+    const showFallback = () => {
+      mapEl.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-50 text-center p-4">
+        <i data-lucide="map-pin" class="w-6 h-6 text-gray-400"></i>
+        <p class="text-xs text-gray-500">Exact map position not available for this location.</p>
+        <a href="${fallbackLink}" target="_blank" rel="noopener" class="text-xs font-bold text-blue-600 hover:underline">Open location in Google Maps</a>
+      </div>`;
+      if (window.lucide) lucide.createIcons();
+    };
+    if (lat && lng) {
+      showMap(lat, lng, 13);
     } else if (query) {
       fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query))
         .then(r => r.json())
-        .then(data => {
-          if (data && data[0]) {
-            const ml = parseFloat(data[0].lat);
-            const mln = parseFloat(data[0].lon);
-            const map = L.map(mapEl).setView([ml, mln], 12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
-            L.marker([ml, mln]).addTo(map).bindPopup(listing.title);
-          } else {
-            mapEl.style.display = 'none';
-          }
-        })
-        .catch(() => { mapEl.style.display = 'none'; });
+        .then(data => { if (data && data[0]) showMap(parseFloat(data[0].lat), parseFloat(data[0].lon), 12); else showFallback(); })
+        .catch(showFallback);
     } else {
-      mapEl.style.display = 'none';
+      showFallback();
     }
   }
 }

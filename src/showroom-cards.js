@@ -7,6 +7,7 @@ import { getCurrentUser, setRedirectAfterAuth } from './auth-lazy.js';
 import { isCatalogListingHidden, loadHiddenCatalogIds } from './catalog-hidden-store.js';
 import { addToCart as cartAddToCart } from './cart.js';
 import { openShareSheet } from './share.js';
+import { renderCardMaps } from './static-map.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -460,13 +461,13 @@ function cardParts(listing) {
     originalPriceHtml = `<span class="text-xs text-gray-400 price-strike line-through">${fmtNum(realNum)}</span>`;
   }
 
-  // Map preview strip for property cards (rendered from listing coordinates).
+  // Map preview strip for property cards (rendered from listing coordinates
+  // onto a canvas using OpenStreetMap tiles — no API key, no dead service).
   let mapPreviewHtml = '';
   if (isProperty && listing.latitude && listing.longitude) {
-    const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${listing.latitude},${listing.longitude}&zoom=13&size=600x160&markers=${listing.latitude},${listing.longitude},color-red&maptype=mapnik`;
     mapPreviewHtml = `
       <div class="relative mt-2.5 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
-        <img src="${mapUrl}" alt="Map location for ${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null;this.style.display='none'">
+        <canvas data-static-map data-lat="${escapeHtml(listing.latitude)}" data-lng="${escapeHtml(listing.longitude)}" class="w-full h-full block"></canvas>
         <span class="absolute top-1 left-1 bg-black/70 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1"><i data-lucide="map" class="w-3 h-3"></i>Map · ${listing.city || listing.town || ''}</span>
       </div>`;
   }
@@ -513,6 +514,7 @@ export function renderCard(listing) {
       </div>
       ${p.locationHtml}
       ${p.specsHtml}
+      ${p.mapPreviewHtml}
       <div class="flex gap-2 mt-2.5 pt-2.5 border-t border-gray-100">
         <button class="buy-btn flex-1 min-w-0 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30">
           <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> <span class="truncate">Buy</span>
@@ -528,6 +530,7 @@ export function renderCard(listing) {
   `;
 
   attachCardListeners(card, listing);
+  renderCardMaps(card);
 
   return card;
 }
@@ -587,6 +590,7 @@ export function renderFeedCard(listing) {
   `;
 
   attachCardListeners(card, listing);
+  renderCardMaps(card);
 
   return card;
 }
