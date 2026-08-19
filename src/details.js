@@ -1497,18 +1497,24 @@ document.addEventListener('promo-backgrounds-updated', () => { try { applyReview
 
 // Floating control so customers scrolling through the full review list can tap
 // to collapse back to the 3-review preview AND jump to the top of the Customer
-// Reviews section — no long scrolling before reaching the Buy button.
+// Reviews section — no long scrolling before reaching the Buy button. The
+// button is FIXED to the screen (bottom-right) so it stays visible and reachable
+// no matter how far down the review list the customer has scrolled.
 function appendReviewsBackToTop(listEl, collapseFn) {
-  if (!listEl || document.getElementById('reviews-back-top')) return;
-  const back = document.createElement('div');
-  back.id = 'reviews-back-top';
-  back.className = 'mt-5 flex justify-center';
-  back.innerHTML = `
-    <button type="button" class="btn-press inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white font-bold py-2.5 px-5 rounded-full text-xs transition shadow-sm">
-      <i data-lucide="chevron-up" class="w-4 h-4"></i> Back to top
-    </button>`;
-  listEl.appendChild(back);
-  back.querySelector('button').addEventListener('click', () => {
+  if (!listEl) return;
+  const existing = document.getElementById('reviews-back-top');
+  if (existing) existing.remove();
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'reviews-back-top';
+  btn.setAttribute('aria-label', 'Back to product page');
+  btn.className = 'btn-press fixed z-[90] bottom-4 right-4 sm:bottom-6 sm:right-6 inline-flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 text-white font-bold pl-3 pr-5 py-3 rounded-full text-xs shadow-xl shadow-slate-950/50 border border-white/10 backdrop-blur transition active:scale-95';
+  btn.innerHTML = `
+    <span class="shrink-0 w-7 h-7 rounded-full bg-white/10 flex items-center justify-center"><i data-lucide="chevron-up" class="w-4 h-4"></i></span>
+    Back to product page`;
+  document.body.appendChild(btn);
+  btn.addEventListener('click', () => {
+    btn.remove();
     if (typeof collapseFn === 'function') collapseFn();
     const sec = document.getElementById('reviews-section');
     if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
