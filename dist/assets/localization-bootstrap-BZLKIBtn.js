@@ -1,4 +1,4 @@
-import{b as r,C as x,L as k,A as h,c as v,e as w,f as L,h as E,i as I,j as C,o as B,k as z}from"./localization-BwnLBrky.js";let u=!1;function T(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
+import{b as r,C as x,L as k,A as h,c as v,e as w,f as L,h as E,i as I,j as C,o as B,k as z}from"./localization-CFAy5nGb.js";let u=!1;function T(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
     @keyframes kcoLocPulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
     @keyframes kcoLocSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
     @keyframes kcoLocFadeIn { from { opacity:0; } to { opacity:1; } }
@@ -65,8 +65,8 @@ import{b as r,C as x,L as k,A as h,c as v,e as w,f as L,h as E,i as I,j as C,o a
       <div id="kco-loc-list" class="kco-loc-list flex-1 overflow-y-auto px-2 py-2">
       </div>
 
-      <!-- Live clock footer -->
-      <div class="px-4 py-2.5 border-t border-white/10 bg-slate-900/80">
+      <!-- Live clock footer (hidden — kept in the code, not shown) -->
+      <div class="hidden px-4 py-2.5 border-t border-white/10 bg-slate-900/80">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="kco-loc-dot w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
