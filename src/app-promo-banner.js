@@ -28,6 +28,7 @@ import {
 } from './promo-pool.js';
 import { W_LOGO_SVG } from './brand.js';
 import { loadPromoBackgrounds, bgMediaLayer, DEFAULT_PROMO_BG } from './promo-backgrounds.js';
+import { loadSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
 
 const MOUNT = () => document.getElementById('app-promo-banner');
 const FALLBACK_IMG = '/fallback.svg';
@@ -299,18 +300,24 @@ function phoneFrame(products) {
 }
 
 // ── The full banner ────────────────────────────────────────────────────────
-function bannerHtml(settings, pool) {
+function bannerHtml(settings, pool, content) {
   const products = pickPromoProducts(pool, settings, 12);
   const storeUrl = (settings.app_play_store_url || '').trim();
-  const headline = (settings.app_banner_headline || DEFAULT_PROMO_SETTINGS.app_banner_headline).trim();
+  const c = { ...DEFAULT_SITE_CONTENT, ...(content || {}) };
+  // Title: prefer the editable Content Settings value, keep the legacy
+  // headline setting as a fallback so nothing the owner saved is lost.
+  const headline = (c.app_banner_title || settings.app_banner_headline || DEFAULT_PROMO_SETTINGS.app_banner_headline).trim();
+  const description = c.app_banner_description;
+  const buttonText = c.app_banner_button_text;
+  const secondaryText = c.app_banner_secondary_text;
   const playCta = storeUrl
     ? `<a href="${esc(storeUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-2.5 bg-white text-blue-900 font-black text-sm px-6 py-3.5 rounded-2xl shadow-xl shadow-blue-900/30 hover:scale-[1.03] active:scale-[.98] transition">
          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none"><path d="M3 5.5v13c0 .8.5 1.5 1.2 1.8L13.5 12 4.2 3.7C3.5 4 3 4.7 3 5.5Z" fill="#34a853"/><path d="M21.4 11.2 17 8.5l-3.5 3.5L17 15.5l4.4-2.7c.8-.5.8-1.1 0-1.6Z" fill="#4285f4"/><path d="m13.5 12 1.2 1.2-5.4 5.2c.4.2.9.2 1.3 0l10.8-6.5c.4-.2.6-.6.6-.9h.1V5.5c0-.8-.5-1.5-1.2-1.8L13.5 12Z" fill="#fbbc04"/><path d="m6.1 3.6 7.4 8.4 2.5-2.5-8.7-5.3c-.4-.2-.9-.2-1.2-.6Z" fill="#ea4335"/></svg>
-         <span>Get it on Google Play</span>
+         <span>${esc(buttonText)}</span>
        </a>`
     : `<span class="inline-flex items-center gap-2 bg-white/15 border border-white/20 text-white text-sm font-bold px-6 py-3.5 rounded-2xl backdrop-blur cursor-default">
          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none"><path d="M5 12l5 5 9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-         <span>Android App — Coming Soon</span>
+         <span>${esc(buttonText)}</span>
        </span>`;
 
   return `
@@ -336,7 +343,7 @@ function bannerHtml(settings, pool) {
               ${esc(headline.split(' — ')[0] || headline)}
             </h2>
             <p class="text-[15px] sm:text-base text-slate-300 mt-4 leading-relaxed max-w-lg">
-              Shop products, discover new arrivals, manage your orders, save favorites, and enjoy a smooth shopping experience wherever you go.
+              ${esc(description)}
             </p>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-7 max-w-lg">
               ${[
@@ -353,19 +360,19 @@ function bannerHtml(settings, pool) {
             <div class="flex flex-wrap items-center gap-3.5 mt-8">
               ${playCta}
               <a href="/#showroom-directory" class="inline-flex items-center gap-2 text-sm font-bold text-cyan-200 hover:text-white transition">
-                Browse the Shop <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                ${esc(secondaryText)} <i data-lucide="arrow-right" class="w-4 h-4"></i>
               </a>
             </div>
             ${storeUrl ? '' : '<p class="text-[11px] text-slate-500 mt-3">The Android app is in final review. We\u2019ll publish the download link here the moment it is live.</p>'}
           </div>
 
-          <!-- visual side: woman holding the phone -->
-          <div class="relative mx-auto w-full max-w-[300px] sm:max-w-[340px] lg:max-w-[400px] aspect-[560/720]">
+          <!-- visual side: woman holding the phone (phone floats in front, fully visible) -->
+          <div class="relative mx-auto w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[440px]">
             <div class="absolute inset-0 woman-back" aria-hidden="true">${womanBackSvg()}</div>
-            <div class="absolute inset-0 flex items-center justify-center">
-              <div class="translate-y-[34%] scale-[.92] sm:scale-100">${phoneFrame(products)}</div>
-            </div>
             <div class="absolute inset-0 hands-front pointer-events-none" aria-hidden="true">${handsFrontSvg()}</div>
+            <div class="relative flex justify-center pt-[30%] sm:pt-[27%] lg:pt-[26%]">
+              <div class="scale-100 sm:scale-105 lg:scale-110">${phoneFrame(products)}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -373,7 +380,10 @@ function bannerHtml(settings, pool) {
 }
 
 // ── Live phone screen: cycle real product cards every ~4.5s ────────────────
+let phoneTimer = null;
+
 function startPhoneCycling(pool) {
+  if (phoneTimer) { clearInterval(phoneTimer); phoneTimer = null; }
   const screen = document.getElementById('promo-phone-screen');
   const grid = document.getElementById('promo-phone-grid');
   if (!screen || !grid || !pool.length) return;
@@ -401,7 +411,7 @@ function startPhoneCycling(pool) {
     if (window.lucide) { try { lucide.createIcons(); } catch { /* ignore */ } }
   };
   render();
-  setInterval(() => { idx += 2; render(); }, 4500);
+  phoneTimer = setInterval(() => { idx += 2; render(); }, 4500);
 }
 
 async function init() {
@@ -422,21 +432,34 @@ async function init() {
     { property_id: 'browse', title: 'Browse the full Weverse Online Shop', price: 0, currency: 'USD', images: ['/fallback.svg'] },
   ];
 
-  mount.innerHTML = bannerHtml(settings, cards);
-  if (window.lucide) { try { lucide.createIcons(); } catch { /* ignore */ } }
-  startPhoneCycling(cards);
-  window.dispatchEvent(new CustomEvent('app-promo-banner-ready'));
-
-  // Admin-chosen banner background (image OR video) — empty keeps the design.
   let bg = { ...DEFAULT_PROMO_BG };
   try { bg = await loadPromoBackgrounds(); } catch { /* keep defaults */ }
-  const apply = (current) => {
+  const applyBg = (current) => {
     const slot = mount.querySelector('[data-bg-slot="app_banner"]');
     if (slot) slot.innerHTML = bgMediaLayer(current.app_banner_bg_image, current.app_banner_bg_video);
   };
-  apply(bg);
+
+  async function renderBanner() {
+    let content = { ...DEFAULT_SITE_CONTENT };
+    try { content = await loadSiteContent(); } catch { /* keep defaults */ }
+    mount.innerHTML = bannerHtml(settings, cards, content);
+    if (window.lucide) { try { lucide.createIcons(); } catch { /* ignore */ } }
+    startPhoneCycling(cards);
+    window.dispatchEvent(new CustomEvent('app-promo-banner-ready'));
+    applyBg(bg);
+  }
+
+  await renderBanner();
+  applyBg(bg);
+
+  window.addEventListener('site-content-updated', () => {
+    renderBanner().catch(() => {});
+  });
   window.addEventListener('promo-backgrounds-updated', () => {
-    loadPromoBackgrounds().then(apply).catch(() => {});
+    loadPromoBackgrounds().then((current) => {
+      bg = current;
+      applyBg(current);
+    }).catch(() => {});
   });
 }
 

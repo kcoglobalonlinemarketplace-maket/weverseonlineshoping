@@ -11,6 +11,7 @@ import { TRUCK_LISTINGS } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { generateProduct, getCatalogCategories, getCatalogCategory, getHiddenCatalogIds, loadHiddenCatalogIds, resetHiddenCatalogIds, saveCatalogHidden } from './catalog.js';
 import { invalidatePromoBackgrounds } from './promo-backgrounds.js';
+import { invalidateSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
 
 // ══════════════════════════════════════════════════════════
 //  WEVERSE ADMIN DASHBOARD  —  Complete Management Console
@@ -50,6 +51,7 @@ const NAV = [
     { id: 'promo-bg',     label: 'Promo & Backgrounds', icon: 'image' },
     { id: 'brand',        label: 'Brand Manager',      icon: 'palette' },
     { id: 'content',     label: 'Content Manager',    icon: 'file-text' },
+    { id: 'content-settings', label: 'Content Settings', icon: 'file-cog' },
     { id: 'seo',         label: 'SEO Manager',        icon: 'search' },
     { id: 'email',       label: 'Email Settings',     icon: 'mail' },
     { id: 'analytics',   label: 'Analytics',          icon: 'bar-chart-3' },
@@ -67,6 +69,7 @@ const PAGE_TITLES = {
   orders: 'Orders Manager', customers: 'Customers Manager', reviews: 'Reviews Manager',
 messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement Manager',
   'ai-settings': 'AI Settings', content: 'Content Manager',
+  'content-settings': 'Content Settings',
   ai: 'AI Assistant',
   'homepage-branding': 'Homepage Branding',
   'promo-bg': 'Promo & Backgrounds',
@@ -201,7 +204,8 @@ window.navigate = function(section) {
     'ai-settings': renderAiSettings,
     'homepage-branding': renderHomepageBrandingManager,
     'promo-bg': renderPromoBackgrounds,
-    content: renderContent, seo: renderSeo, email: renderEmail,
+    content: renderContent, 'content-settings': renderContentSettings,
+    seo: renderSeo, email: renderEmail,
     analytics: renderAnalytics, security: renderSecurity, activity: renderActivity,
     brand: renderBrandManager,
     'payment-settings': renderPaymentSettings,
@@ -4793,6 +4797,98 @@ window.saveContent = async function(e) {
   const { error } = await supabase.from('site_settings').upsert({ id: 1, ...data });
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Content settings saved!');
+};
+
+// ══════════════════════════════════════════════════════════
+//  CONTENT SETTINGS — edit the wording of the Android App
+//  banner + the final bottom / end-of-page closing section.
+//  Save once → every page updates automatically.
+// ══════════════════════════════════════════════════════════
+const CONTENT_SETTINGS_SECTIONS = [
+  {
+    key: 'banner',
+    title: 'ANDROID APP BANNER',
+    desc: 'The mobile-app promotion banner shown at the bottom of every page. Editing these words never changes the banner design, phone image, logo or buttons.',
+    accent: 'from-cyan-400 to-blue-500',
+    fields: [
+      { key: 'app_banner_title', label: 'App Banner Title', type: 'text' },
+      { key: 'app_banner_description', label: 'App Banner Description', type: 'textarea' },
+      { key: 'app_banner_button_text', label: 'App Banner Button Text', type: 'text' },
+      { key: 'app_banner_secondary_text', label: 'App Banner Secondary Text', type: 'text' },
+    ],
+  },
+  {
+    key: 'bottom',
+    title: 'BOTTOM / END-OF-PAGE SECTION',
+    desc: 'The final professional closing area of the website — thank-you message, customer support, footer links and copyright. The polished design stays; only these words change.',
+    accent: 'from-emerald-400 to-cyan-500',
+    fields: [
+      { key: 'bottom_heading', label: 'Bottom Section Heading', type: 'text' },
+      { key: 'bottom_main_message', label: 'Main Bottom Message', type: 'textarea' },
+      { key: 'bottom_closing_message', label: 'Closing Message', type: 'text' },
+      { key: 'bottom_support_heading', label: 'Customer Support Heading', type: 'text' },
+      { key: 'bottom_support_description', label: 'Customer Support Description', type: 'textarea' },
+      { key: 'bottom_support_button_text', label: 'Support Button Text', type: 'text' },
+      { key: 'bottom_footer_text', label: 'Footer Section Text', type: 'text' },
+      { key: 'bottom_footer_closing', label: 'Footer Closing Message', type: 'text' },
+      { key: 'bottom_copyright', label: 'Copyright Text (empty = automatic “© year Brand” line)', type: 'text' },
+    ],
+  },
+];
+
+async function renderContentSettings() {
+  const content = document.getElementById('content');
+  try {
+    const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+    const d = { ...DEFAULT_SITE_CONTENT, ...(s || {}) };
+    content.innerHTML = `
+      <div class="space-y-6 fade-in">
+        <div>
+          <h2 class="text-xl font-black text-white">Content Settings</h2>
+          <p class="text-xs text-gray-400 mt-1">Edit the wording of the two shared sections below. Save once and every page updates automatically — no code needed. Your products, prices, reviews, orders and design are never touched.</p>
+        </div>
+        <form id="content-settings-form" onsubmit="saveContentSettings(event)" class="space-y-5">
+          ${CONTENT_SETTINGS_SECTIONS.map(sec => `
+            <div class="glass-soft border border-white/10 rounded-2xl p-5">
+              <div class="flex items-center gap-2.5 mb-1">
+                <span class="w-2 h-2 rounded-full bg-gradient-to-r ${sec.accent}"></span>
+                <h3 class="text-sm font-black text-white tracking-wide">${sec.title}</h3>
+              </div>
+              <p class="text-[11px] text-gray-400 mb-4">${sec.desc}</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                ${sec.fields.map(f => `
+                  <div class="${f.type === 'textarea' ? 'sm:col-span-2' : ''}">
+                    <label class="lbl" for="cs-${f.key}">${f.label}</label>
+                    ${f.type === 'textarea'
+                      ? `<textarea id="cs-${f.key}" name="${f.key}" rows="3" class="input-field w-full" placeholder="Enter the current wording…">${esc(d[f.key] || '')}</textarea>`
+                      : `<input id="cs-${f.key}" type="text" name="${f.key}" value="${esc(d[f.key] || '')}" class="input-field w-full" placeholder="Enter the current wording…">`}
+                    <p class="text-[10px] text-gray-500 mt-1">Current: ${esc((d[f.key] || '').slice(0, 80))}${(d[f.key] || '').length > 80 ? '…' : ''}</p>
+                  </div>`).join('')}
+              </div>
+            </div>`).join('')}
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Content</button>
+        </form>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
+}
+
+window.saveContentSettings = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = {};
+  for (const [k, v] of fd.entries()) data[k] = v;
+  try {
+    const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
+    let error;
+    if (existing?.id) ({ error } = await supabase.from('site_settings').update(data).eq('id', existing.id));
+    else ({ error } = await supabase.from('site_settings').insert({ id: 1, ...data }));
+    if (error) throw new Error(error.message);
+    invalidateSiteContent();
+    showToast('Content updated — the banner and bottom section now use your new wording.', 'success');
+  } catch (err) {
+    showToast(err.message || 'Could not save content. Please try again.', 'error');
+  }
 };
 
 // ══════════════════════════════════════════════════════════

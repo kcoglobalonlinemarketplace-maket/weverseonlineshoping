@@ -5,13 +5,19 @@
 //   2. A two-column Trust & Security strip.
 //   3. Expandable, customer-friendly information sections (varied designs).
 //   4. A Customer Reviews section with its own admin-chosen background.
-//   5. A two-column footer (Company/Legal + Account/Support).
+//   5. The final bottom / end-of-page closing section — the polished "ending
+//      screen" of the shop: brand logo, thank-you message, customer support,
+//      professional footer links and copyright. All of its wording is edited
+//      from the admin "Content Settings" panel (src/site-content.js). The
+//      design stays fixed; only the words change.
 
 import { loadPromoBackgrounds, bgMediaLayer, DEFAULT_PROMO_BG } from './promo-backgrounds.js';
 import { DEFAULT_BRAND_NAME, W_LOGO_SVG } from './brand.js';
 import { getSupabase } from './supabase-lazy.js';
+import { loadSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
 
 const SITE_NAME = 'Weverse Online Shop';
+const SUPPORT_EMAIL = 'support@weverseonlineshop.com';
 const BRAND_CACHE_KEY = 'weverse_brand_v1';
 
 function esc(s) {
@@ -411,77 +417,130 @@ function reviewsHtml() {
     </section>`;
 }
 
-// ── 5. Two-column footer ─────────────────────────────────────────
-function footerLink(href, label, onClick) {
-  return `<li><a href="${href}" ${onClick ? `onclick="${onClick}"` : ''} class="text-xs text-gray-600 hover:text-blue-600 transition">${label}</a></li>`;
+// ── 5. Final bottom / end-of-page closing section ────────────────
+// A polished "ending screen": brand logo, thank-you heading, main message,
+// closing message, customer support area, professional footer links and
+// copyright. Every piece of wording is editable from the admin
+// "Content Settings" panel — the design here never changes.
+function closingLink(href, label) {
+  return `<li><a href="${href}" class="text-xs text-slate-400 hover:text-white transition">${label}</a></li>`;
 }
 
-function footerHtml() {
+function closingSectionHtml(content) {
+  const c = { ...DEFAULT_SITE_CONTENT, ...(content || {}) };
   const brand = readBrand();
   const name = brand.brand_name || brand.site_name || DEFAULT_BRAND_NAME;
   const logo = brand.brand_logo || brand.brand_header_logo || brand.brand_footer_logo || '/w-logo.svg';
-  const slogan = brand.brand_slogan || brand.site_tagline || 'GLOBAL SHOPPING · WORLDWIDE DELIVERY';
-  const supportEmail = 'support@weverseonlineshop.com';
+  const slogan = c.bottom_footer_text || brand.brand_slogan || brand.site_tagline || 'GLOBAL SHOPPING · WORLDWIDE DELIVERY';
+  const copyright = c.bottom_copyright
+    ? c.bottom_copyright
+    : `© ${new Date().getFullYear()} ${name}. All rights reserved.`;
+
   return `
-    <footer class="bg-gray-50 border-t border-gray-200">
-      <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-10 sm:py-12">
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-9 pb-7 border-b border-gray-200">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
-              <img src="${esc(logo)}" alt="${esc(name)}" class="w-7 h-7 object-contain" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <span style="display:none">${W_LOGO_SVG('w-7 h-7')}</span>
+    <section id="site-closing-section" class="relative overflow-hidden bg-[#060c1c] text-white">
+      <!-- backdrop -->
+      <div class="absolute inset-0" style="background:
+        radial-gradient(900px 480px at 82% 10%, rgba(37,99,235,.32), transparent 62%),
+        radial-gradient(720px 420px at 10% 94%, rgba(6,182,212,.20), transparent 60%),
+        linear-gradient(180deg,#0a1128 0%,#060c1c 55%,#04101f 100%)"></div>
+      <div class="absolute inset-0 opacity-[.05]" style="background-image:radial-gradient(#7dd3fc 1px, transparent 1px);background-size:24px 24px"></div>
+
+      <div class="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-14 sm:pt-20 pb-8 sm:pb-10">
+        <!-- Thank-you hero -->
+        <div class="text-center max-w-3xl mx-auto">
+          <div class="mx-auto w-16 h-16 rounded-2xl bg-white/[.07] border border-white/10 flex items-center justify-center overflow-hidden backdrop-blur">
+            <img src="${esc(logo)}" alt="${esc(name)}" class="w-10 h-10 object-contain" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <span style="display:none">${W_LOGO_SVG('w-9 h-9')}</span>
+          </div>
+          <p class="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-cyan-300">${esc(slogan)}</p>
+          <h2 class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.08] tracking-tight text-white">
+            ${esc(c.bottom_heading)}
+          </h2>
+          <p class="mt-4 text-[15px] sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
+            ${esc(c.bottom_main_message)}
+          </p>
+          <p class="mt-5 text-lg sm:text-xl font-semibold text-cyan-200">${esc(c.bottom_closing_message)}</p>
+        </div>
+
+        <!-- Customer Support area -->
+        <div class="mt-12 max-w-4xl mx-auto rounded-3xl border border-white/10 bg-white/[.05] backdrop-blur-md p-6 sm:p-8">
+          <div class="flex flex-col lg:flex-row items-center gap-6 justify-between text-center lg:text-left">
+            <div class="flex items-center gap-4">
+              <div class="shrink-0 w-12 h-12 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 text-cyan-300 flex items-center justify-center">
+                <i data-lucide="headphones" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <h3 class="text-lg sm:text-xl font-black text-white tracking-tight">${esc(c.bottom_support_heading)}</h3>
+                <p class="text-sm text-slate-300 mt-1 max-w-md">${esc(c.bottom_support_description)}</p>
+              </div>
             </div>
-            <div>
-              <p class="text-sm font-black text-gray-900 leading-none">${esc(name)}</p>
-              <p class="text-[10px] text-gray-500 mt-1 font-semibold tracking-wide">${esc(slogan)}</p>
+            <div class="flex flex-col sm:flex-row gap-3 shrink-0">
+              <a href="mailto:${esc(SUPPORT_EMAIL)}" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-sm px-6 py-3.5 rounded-2xl shadow-xl shadow-blue-900/30 hover:scale-[1.03] active:scale-[.98] transition">
+                ${esc(c.bottom_support_button_text)} <i data-lucide="message-circle" class="w-4 h-4"></i>
+              </a>
+              <a href="/contact.html" class="inline-flex items-center gap-2 border border-white/25 bg-white/10 text-white text-sm font-bold px-6 py-3.5 rounded-2xl backdrop-blur hover:bg-white/15 transition">
+                Contact Us <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </a>
             </div>
           </div>
-          <div class="flex items-center gap-2 text-[11px] font-bold text-gray-500">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200"><i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-600"></i> SSL Secure</span>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i> Secure Checkout</span>
+          <div class="mt-6 pt-5 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center text-[11px] text-slate-400">
+            <span class="inline-flex items-center justify-center gap-1.5"><i data-lucide="mail" class="w-3.5 h-3.5 text-cyan-300"></i> ${esc(SUPPORT_EMAIL)}</span>
+            <span class="inline-flex items-center justify-center gap-1.5"><i data-lucide="message-circle" class="w-3.5 h-3.5 text-cyan-300"></i> 24/7 live chat</span>
+            <span class="inline-flex items-center justify-center gap-1.5"><i data-lucide="life-buoy" class="w-3.5 h-3.5 text-cyan-300"></i> <a href="/help.html" class="hover:text-white transition">Help Center</a></span>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-x-6 gap-y-9 sm:gap-x-10">
+        <!-- Professional footer links -->
+        <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-9">
           <div>
-            <h4 class="text-xs font-black text-gray-900 uppercase tracking-widest mb-3.5">Company</h4>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Company</h4>
             <ul class="space-y-2.5">
-              ${footerLink('/about.html', 'About Us')}
-              ${footerLink('/team.html', 'Our Team')}
-              ${footerLink('/contact.html', 'Contact Us')}
-              ${footerLink('/help.html', 'Help Center')}
+              ${closingLink('/about.html', 'About Us')}
+              ${closingLink('/team.html', 'Our Team')}
+              ${closingLink('/contact.html', 'Contact Us')}
+              ${closingLink('/help.html', 'Help Center')}
             </ul>
           </div>
           <div>
-            <h4 class="text-xs font-black text-gray-900 uppercase tracking-widest mb-3.5">Legal</h4>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Legal</h4>
             <ul class="space-y-2.5">
-              ${footerLink('/privacy.html', 'Privacy Policy')}
-              ${footerLink('/terms.html', 'Terms & Conditions')}
-              ${footerLink('/refund-policy.html', 'Refund Policy')}
-              ${footerLink('/shipping-policy.html', 'Shipping Policy')}
+              ${closingLink('/privacy.html', 'Privacy Policy')}
+              ${closingLink('/terms.html', 'Terms & Conditions')}
+              ${closingLink('/refund-policy.html', 'Refund Policy')}
+              ${closingLink('/shipping-policy.html', 'Shipping Policy')}
             </ul>
           </div>
           <div>
-            <h4 class="text-xs font-black text-gray-900 uppercase tracking-widest mb-3.5">Account</h4>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Account</h4>
             <ul class="space-y-2.5">
-              ${footerLink('/account.html', 'My Account')}
-              ${footerLink('/auth.html', 'Sign In')}
-              ${footerLink('/auth.html', 'Register / Create Account')}
+              ${closingLink('/account.html', 'My Account')}
+              ${closingLink('/auth.html', 'Sign In')}
+              ${closingLink('/auth.html', 'Register / Create Account')}
             </ul>
           </div>
           <div>
-            <h4 class="text-xs font-black text-gray-900 uppercase tracking-widest mb-3.5">Support</h4>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Support</h4>
             <ul class="space-y-2.5">
-              ${footerLink('mailto:' + supportEmail, 'Email Support')}
-              ${footerLink('/help.html', 'FAQ')}
-              ${footerLink('/contact.html', 'Contact Us')}
+              ${closingLink('mailto:' + SUPPORT_EMAIL, 'Email Support')}
+              ${closingLink('/help.html', 'FAQ')}
+              ${closingLink('/contact.html', 'Contact Us')}
             </ul>
           </div>
         </div>
 
-        <p class="text-center text-[11px] text-gray-400 mt-10">© ${new Date().getFullYear()} ${esc(name)}. All rights reserved.</p>
+        <!-- Bottom bar -->
+        <div class="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p class="text-[11px] text-slate-400 text-center sm:text-left">
+            ${esc(c.bottom_footer_closing)}
+          </p>
+          <div class="flex items-center gap-2 text-[11px] font-bold text-slate-400">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[.06] border border-white/10"><i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-400"></i> SSL Secure</span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[.06] border border-white/10"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Secure Checkout</span>
+          </div>
+        </div>
+        <p class="text-center text-[11px] text-slate-500 mt-4">${esc(copyright)}</p>
       </div>
-    </footer>`;
+    </section>`;
 }
 
 // ── Wiring ───────────────────────────────────────────────────────
@@ -634,12 +693,14 @@ async function init() {
   const mount = document.getElementById('trust-info-area');
   if (!mount) return;
   injectStyle();
+  let content = { ...DEFAULT_SITE_CONTENT };
+  try { content = await loadSiteContent(); } catch { /* keep defaults */ }
   mount.innerHTML = [
     promoHeroHtml(),
     trustSecurityHtml(),
     accordionsHtml(),
     reviewsHtml(),
-    footerHtml(),
+    closingSectionHtml(content),
   ].join('');
   if (window.lucide) { try { lucide.createIcons(); } catch {} }
   bindAccordions(mount);
@@ -650,6 +711,14 @@ async function init() {
   applyBg(bg);
   window.addEventListener('promo-backgrounds-updated', () => {
     loadPromoBackgrounds().then(applyBg).catch(() => {});
+  });
+  // Re-render the closing section when the admin saves new wording.
+  window.addEventListener('site-content-updated', () => {
+    loadSiteContent().then((c) => {
+      const sec = mount.querySelector('#site-closing-section');
+      if (sec) sec.outerHTML = closingSectionHtml(c);
+      if (window.lucide) { try { lucide.createIcons(); } catch {} }
+    }).catch(() => {});
   });
 }
 
