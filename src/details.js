@@ -1437,39 +1437,37 @@ async function loadReviews(listing) {
     return;
   }
 
-  // Show the 3 newest reviews first, then let customers scroll through the
-  // full list. New customer reviews appear at the very top (dbReviews are
+  // Show the 3 newest reviews first, then "View All Customer Reviews" expands
+  // the full list. New customer reviews appear at the very top (dbReviews are
   // merged before seeds). No review-count numbers are shown anywhere.
   const preview = all.slice(0, 3);
-  listEl.innerHTML = preview.map(reviewItemHtml).join('');
-
-  if (all.length > preview.length) {
-    const wrap = document.createElement('div');
-    wrap.className = 'mt-4 flex justify-center';
-    wrap.innerHTML = `
-      <button type="button" id="view-all-reviews-btn" class="btn-press inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm shadow-blue-500/20">
-        View All Reviews
-        <i data-lucide="chevron-down" class="w-4 h-4"></i>
-      </button>`;
-    listEl.appendChild(wrap);
-
-    const btn = wrap.querySelector('#view-all-reviews-btn');
-    let expanded = false;
-    btn.addEventListener('click', () => {
-      if (expanded) return;
-      expanded = true;
-      btn.disabled = true;
-      listEl.innerHTML = all.map(reviewItemHtml).join('');
+  const renderPreview = () => {
+    listEl.innerHTML = preview.map(reviewItemHtml).join('');
+    if (all.length > preview.length) {
+      const wrap = document.createElement('div');
+      wrap.className = 'mt-4 flex justify-center';
+      wrap.innerHTML = `
+        <button type="button" class="view-all-reviews-btn btn-press inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm shadow-blue-500/20">
+          View All Customer Reviews
+          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+        </button>`;
+      listEl.appendChild(wrap);
       if (window.lucide) lucide.createIcons();
-      appendReviewsBackToTop(listEl);
-    });
-  }
+      wrap.querySelector('.view-all-reviews-btn').addEventListener('click', () => {
+        listEl.innerHTML = all.map(reviewItemHtml).join('');
+        if (window.lucide) lucide.createIcons();
+        appendReviewsBackToTop(listEl, renderPreview);
+      });
+    }
+  };
+  renderPreview();
   if (window.lucide) lucide.createIcons();
 }
 
 // Floating control so customers scrolling through the full review list can tap
-// to return to the top of the Customer Reviews section.
-function appendReviewsBackToTop(listEl) {
+// to collapse back to the 3-review preview AND jump to the top of the Customer
+// Reviews section — no long scrolling before reaching the Buy button.
+function appendReviewsBackToTop(listEl, collapseFn) {
   if (!listEl || document.getElementById('reviews-back-top')) return;
   const back = document.createElement('div');
   back.id = 'reviews-back-top';
@@ -1480,6 +1478,7 @@ function appendReviewsBackToTop(listEl) {
     </button>`;
   listEl.appendChild(back);
   back.querySelector('button').addEventListener('click', () => {
+    if (typeof collapseFn === 'function') collapseFn();
     const sec = document.getElementById('reviews-section');
     if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });

@@ -3422,25 +3422,80 @@ async function renderReviews() {
     const { data: reviews } = await supabase.from('product_reviews').select('*, showroom_listings(title, property_id)').order('created_at', { ascending: false }).limit(200);
     const items = reviews || [];
     const pending = items.filter(r => !r.is_approved).length;
+    const { data: feedback } = await supabase.from('site_feedback').select('*').order('created_at', { ascending: false }).limit(200);
+    const fbItems = feedback || [];
+    const fbPending = fbItems.filter(f => !f.is_approved).length;
     content.innerHTML = `
       <div class="space-y-4 fade-in">
         <div class="flex items-center gap-3">
-          <h2 class="text-xl font-black text-white flex-1">Reviews Manager</h2>
-          ${pending > 0 ? `<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">${pending} pending</span>` : ''}
+          <h2 class="text-xl font-black text-white flex-1">Reviews & Feedback Manager</h2>
+          ${(pending + fbPending) > 0 ? `<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">${pending + fbPending} pending</span>` : ''}
         </div>
-        <div class="flex gap-2">
-          <button onclick="filterReviewTab('all')" class="tab-btn active" id="rtab-all">All Reviews</button>
-          <button onclick="filterReviewTab('pending')" class="tab-btn" id="rtab-pending">Pending (${pending})</button>
-          <button onclick="filterReviewTab('approved')" class="tab-btn" id="rtab-approved">Approved</button>
+
+        <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="star" class="w-4 h-4 text-amber-400"></i> Product Reviews</h3>
+            <div class="flex gap-2 ml-auto">
+              <button onclick="filterReviewTab('all')" class="tab-btn active" id="rtab-all">All Reviews</button>
+              <button onclick="filterReviewTab('pending')" class="tab-btn" id="rtab-pending">Pending (${pending})</button>
+              <button onclick="filterReviewTab('approved')" class="tab-btn" id="rtab-approved">Approved</button>
+            </div>
+          </div>
+          <div class="space-y-3" id="reviews-list">
+            ${items.length === 0 ? emptyState('star', 'No Reviews', 'Customer reviews will appear here.') :
+              items.map(r => reviewCard(r)).join('')}
+          </div>
         </div>
-        <div class="space-y-3" id="reviews-list">
-          ${items.length === 0 ? emptyState('star', 'No Reviews', 'Customer reviews will appear here.') :
-            items.map(r => reviewCard(r)).join('')}
+
+        <div class="glass-soft border border-emerald-500/15 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="message-square-text" class="w-4 h-4 text-emerald-400"></i> Customer Feedback (site-wide)</h3>
+            ${fbPending > 0 ? `<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">${fbPending} pending</span>` : ''}
+          </div>
+          <p class="text-[11px] text-gray-500">Feedback submitted from the "Feedback" form on every page. Approve to show it in the public "View more Feedback" list.</p>
+          <div class="space-y-3" id="feedback-list">
+            ${fbItems.length === 0 ? emptyState('message-square', 'No Feedback Yet', 'Site feedback will appear here.') :
+              fbItems.map(f => feedbackAdminCard(f)).join('')}
+          </div>
         </div>
       </div>`;
     if (window.lucide) lucide.createIcons();
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
+
+function feedbackAdminCard(f) {
+  const stars = Array.from({ length: 5 }, (_, i) => i < (f.rating || 5) ? '★' : '☆').join('');
+  return `<div class="glass-soft border ${f.is_approved ? 'border-emerald-500/15' : 'border-amber-500/20'} rounded-xl p-4" data-fb-approved="${f.is_approved}">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1 flex-wrap">
+          <span class="text-amber-400 font-bold text-sm">${stars}</span>
+          <span class="text-xs font-black text-white">${esc(f.name || 'Anonymous shopper')}</span>
+          <span class="text-xs text-gray-500">${esc(f.email || 'no email')} · ${fmtDate(f.created_at)}</span>
+          ${!f.is_approved ? `<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">Pending</span>` : `<span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Approved</span>`}
+        </div>
+        <p class="text-sm text-gray-200 leading-relaxed">${esc(f.feedback || '—')}</p>
+      </div>
+      <div class="flex gap-1 shrink-0">
+        ${!f.is_approved ? `<button onclick="approveFeedback('${f.id}')" class="btn-press p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition" title="Approve"><i data-lucide="check" class="w-4 h-4"></i></button>` : ''}
+        <button onclick="deleteFeedback('${f.id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.approveFeedback = async function(id) {
+  const { error } = await supabase.from('site_feedback').update({ is_approved: true }).eq('id', id);
+  if (error) showToast(error.message, 'error'); else showToast('Feedback approved — it now shows on every page.');
+  renderReviews();
+};
+
+window.deleteFeedback = async function(id) {
+  if (!confirm('Delete this feedback permanently?')) return;
+  const { error } = await supabase.from('site_feedback').delete().eq('id', id);
+  if (error) showToast(error.message, 'error'); else showToast('Feedback deleted.');
+  renderReviews();
+};
 
 function reviewCard(r) {
   const stars = Array.from({length: 5}, (_, i) => i < r.rating ? '★' : '☆').join('');

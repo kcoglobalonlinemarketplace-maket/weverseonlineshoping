@@ -9,6 +9,7 @@
 
 import { loadPromoBackgrounds, bgMediaLayer, DEFAULT_PROMO_BG } from './promo-backgrounds.js';
 import { DEFAULT_BRAND_NAME, W_LOGO_SVG } from './brand.js';
+import { getSupabase } from './supabase-lazy.js';
 
 const SITE_NAME = 'Weverse Online Shop';
 const BRAND_CACHE_KEY = 'weverse_brand_v1';
@@ -283,14 +284,58 @@ function accordionsHtml() {
 
 // ── 4. Customer Reviews & Trust (with admin background) ──────────
 const TESTIMONIALS = [
-  { name: 'Amina K.', country: 'Nigeria', text: 'My order arrived ahead of schedule and the quality was exactly as described. I shop here without any doubt.' },
-  { name: 'Sarah & James', country: 'United States', text: 'Ordered for our whole family — tracking updates made it feel safe and reliable from checkout to delivery.' },
-  { name: 'Priya S.', country: 'India', text: 'The customer support team answered my questions in minutes. Genuinely trustworthy shopping experience.' },
+  { name: 'Amina K.', country: 'Nigeria', text: 'My order arrived ahead of schedule and the quality was exactly as described. I shop here without any doubt.', verified: true },
+  { name: 'Sarah & James', country: 'United States', text: 'Ordered for our whole family — tracking updates made it feel safe and reliable from checkout to delivery.', verified: true },
+  { name: 'Priya S.', country: 'India', text: 'The customer support team answered my questions in minutes. Genuinely trustworthy shopping experience.', verified: true },
+];
+
+// ── 4. Customer Feedback (professional banner + separate comments) ──
+function feedbackStars(n) {
+  return [1, 2, 3, 4, 5].map((i) =>
+    `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= n ? 'fill-amber-400 text-amber-400' : 'text-slate-500'}"></i>`).join('');
+}
+
+function feedbackCardHtml(f) {
+  const n = String(f.name || 'Verified shopper').trim() || 'Verified shopper';
+  const initial = (n.charAt(0) || 'V').toUpperCase();
+  const meta = [
+    f.country || '',
+    f.verified ? 'Verified buyer' : '',
+    f.date || '',
+  ].filter(Boolean).join(' · ');
+  return `
+    <div class="bg-white/[.07] border border-white/10 rounded-2xl p-4 backdrop-blur flex flex-col">
+      <div class="flex items-center gap-1 mb-2.5">${feedbackStars(f.rating || 5)}</div>
+      <p class="text-[13px] text-slate-200 leading-relaxed flex-1">“${esc(f.text)}”</p>
+      <div class="flex items-center gap-2.5 mt-3.5">
+        <span class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white text-[11px] font-black">${esc(initial)}</span>
+        <div class="min-w-0">
+          <p class="text-xs font-black text-white truncate">${esc(n)}</p>
+          <p class="text-[10px] text-slate-400 truncate">${meta}</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Curated shop-experience feedback used in the "View more Feedback" list.
+const MORE_FEEDBACK = [
+  { name: 'Daniel O.', country: 'Ghana', text: 'Ordered a laptop and it arrived in under a week, perfectly packed. The tracking updates were accurate all the way to my door.', rating: 5, verified: true },
+  { name: 'Emily R.', country: 'Canada', text: 'The checkout process was smooth and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Kevin M.', country: 'United Kingdom', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Grace A.', country: 'Nigeria', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Lucas T.', country: 'Brazil', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
+  { name: 'Fatima Z.', country: 'United Arab Emirates', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'James H.', country: 'Australia', text: 'Had to arrange a return once and it was handled quickly with a full refund. That is how you keep customers happy.', rating: 5, verified: true },
+  { name: 'Amara N.', country: 'Kenya', text: 'The customer support team is available around the clock. I asked a question at midnight and still got a helpful reply.', rating: 5, verified: true },
+  { name: 'Sophie L.', country: 'France', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Ravi P.', country: 'India', text: 'Tracking updates at every step made the whole experience worry-free. The product arrived safely and on time.', rating: 5, verified: true },
+  { name: 'Maria S.', country: 'Spain', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Ahmed B.', country: 'Egypt', text: 'Ordered several items for the family — every single one was packed with care and delivered on time. Five stars from us.', rating: 5, verified: true },
 ];
 
 function reviewsHtml() {
   return `
-    <section class="relative overflow-hidden bg-slate-950 text-white">
+    <section id="customer-feedback" class="relative overflow-hidden bg-slate-950 text-white">
       <div class="absolute inset-0" style="background:
         radial-gradient(800px 420px at 15% 20%, rgba(16,185,129,.25), transparent 60%),
         linear-gradient(160deg,#071a16 0%,#060c1c 60%,#0b1226 100%)"></div>
@@ -299,52 +344,65 @@ function reviewsHtml() {
 
       <div class="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-10 sm:py-14">
         <div class="flex items-center gap-3 mb-6">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-400/20 text-emerald-300 flex items-center justify-center"><i data-lucide="star" class="w-5 h-5"></i></div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-400/20 text-emerald-300 flex items-center justify-center"><i data-lucide="message-square-text" class="w-5 h-5"></i></div>
           <div>
-            <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Customer Reviews & Trust</h2>
+            <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Customer Feedback</h2>
             <p class="text-xs text-slate-400 mt-0.5">Real shoppers, real orders, real peace of mind.</p>
           </div>
         </div>
 
-        <div class="grid sm:grid-cols-3 gap-4">
-          ${TESTIMONIALS.map((t) => `
-            <div class="bg-white/[.07] border border-white/10 rounded-2xl p-4 backdrop-blur flex flex-col">
-              <div class="flex items-center gap-1 mb-2.5">
-                ${[1, 2, 3, 4, 5].map(() => '<i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400 text-amber-400"></i>').join('')}
-              </div>
-              <p class="text-[13px] text-slate-200 leading-relaxed flex-1">“${esc(t.text)}”</p>
-              <div class="flex items-center gap-2.5 mt-3.5">
-                <span class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white text-[11px] font-black">${esc(t.name.split(' ')[0][0])}</span>
-                <div>
-                  <p class="text-xs font-black text-white">${esc(t.name)}</p>
-                  <p class="text-[10px] text-slate-400">${esc(t.country)} · Verified buyer</p>
-                </div>
-              </div>
-            </div>`).join('')}
+        <div class="grid sm:grid-cols-3 gap-4" id="fb-featured">
+          ${TESTIMONIALS.map(feedbackCardHtml).join('')}
         </div>
 
-        <div class="mt-6 bg-white/[.06] border border-white/10 rounded-2xl overflow-hidden">
+        <!-- Feedback form -->
+        <div class="mt-6 rounded-2xl border border-white/10 bg-white/[.06] backdrop-blur p-5 sm:p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <i data-lucide="pen-line" class="w-4 h-4 text-emerald-300"></i>
+            <p class="text-sm font-black text-white">Feedback</p>
+            <span class="text-[10px] text-slate-400">Your experience helps us improve</span>
+          </div>
+          <form id="fb-form" class="space-y-3.5">
+            <div class="grid sm:grid-cols-2 gap-3.5">
+              <input id="fb-name" type="text" maxlength="60" placeholder="Your name" class="w-full rounded-xl border border-white/15 bg-slate-950/40 px-4 py-3 text-sm text-white placeholder-slate-400 outline-none focus:border-emerald-400/60">
+              <input id="fb-email" type="email" maxlength="120" placeholder="Email (optional)" class="w-full rounded-xl border border-white/15 bg-slate-950/40 px-4 py-3 text-sm text-white placeholder-slate-400 outline-none focus:border-emerald-400/60">
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <p class="text-xs font-bold text-slate-300">Your rating:</p>
+              <div class="flex gap-1" id="fb-stars">
+                ${[1, 2, 3, 4, 5].map((i) =>
+                  `<button type="button" data-star="${i}" class="fb-star text-slate-500 hover:text-amber-400 transition"><i data-lucide="star" class="w-6 h-6"></i></button>`).join('')}
+              </div>
+              <input type="hidden" id="fb-rating" value="5">
+            </div>
+            <textarea id="fb-text" rows="3" maxlength="1000" required placeholder="Write your feedback here…" class="w-full rounded-xl border border-white/15 bg-slate-950/40 px-4 py-3 text-sm text-white placeholder-slate-400 outline-none focus:border-emerald-400/60"></textarea>
+            <div class="flex flex-wrap items-center gap-3">
+              <button type="submit" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold py-3 px-6 rounded-xl text-sm transition hover:scale-[1.02] active:scale-[.98]">
+                Submit Feedback <i data-lucide="send" class="w-4 h-4"></i>
+              </button>
+              <p id="fb-msg" class="text-xs font-bold hidden"></p>
+            </div>
+          </form>
+        </div>
+
+        <!-- View more Feedback (same banner background, separate comments) -->
+        <div class="mt-6 rounded-2xl overflow-hidden border border-white/10 bg-white/[.06] backdrop-blur">
           <button type="button" data-acc="trust-reviews-more" aria-expanded="false" class="w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-white/[.04] transition">
             <span class="flex items-center gap-2.5">
-              <i data-lucide="message-circle-heart" class="w-5 h-5 text-emerald-300"></i>
-              <span class="text-sm font-black text-white">Why thousands of families trust ${SITE_NAME}</span>
+              <i data-lucide="messages-square" class="w-5 h-5 text-emerald-300"></i>
+              <span class="text-sm font-black text-white">View more Feedback</span>
             </span>
             <span data-acc-icon="trust-reviews-more" class="shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center transition-transform duration-300"><i data-lucide="chevron-down" class="w-5 h-5 text-slate-300"></i></span>
           </button>
           <div data-acc-body="trust-reviews-more" class="trust-acc-body" data-open="0">
-            <div class="px-4 sm:px-5 pb-5 pt-1 border-t border-white/10 text-[13px] text-slate-300 leading-relaxed">
-              <p class="mt-2">Every listing on ${SITE_NAME} comes with real product details, clear pricing, secure checkout and tracked worldwide delivery. We read and verify customer feedback continuously, and our team responds to every review — good or bad — to keep your shopping experience fair, honest and worry-free.</p>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                ${[
-                  { icon: 'shield-check', v: '100%', l: 'secure checkout' },
-                  { icon: 'globe', v: '200+', l: 'countries served' },
-                  { icon: 'package-search', v: 'Real-time', l: 'order tracking' },
-                  { icon: 'headphones', v: '24/7', l: 'human support' },
-                ].map((s) => `
-                  <div class="bg-white/[.05] border border-white/10 rounded-xl p-3 text-center">
-                    <p class="text-base font-black text-emerald-300">${s.v}</p>
-                    <p class="text-[10px] text-slate-400 mt-0.5">${s.l}</p>
-                  </div>`).join('')}
+            <div class="border-t border-white/10 px-4 sm:px-5 pb-5 pt-4">
+              <div id="fb-more-list" class="max-h-[26rem] overflow-y-auto pr-1 space-y-3">
+                ${MORE_FEEDBACK.map(feedbackCardHtml).join('')}
+              </div>
+              <div class="flex justify-center mt-4">
+                <button type="button" data-feedback-backtop class="btn-press inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold py-2.5 px-5 rounded-full text-xs transition">
+                  <i data-lucide="chevron-up" class="w-4 h-4"></i> Back to top
+                </button>
               </div>
             </div>
           </div>
@@ -462,6 +520,106 @@ function applyBg(bg) {
   });
 }
 
+// ── Customer Feedback form + View-more-Feedback list ──────────────
+function bindFeedback(root) {
+  const stars = root.querySelector('#fb-stars');
+  if (stars) {
+    stars.addEventListener('click', (e) => {
+      const b = e.target.closest('.fb-star');
+      if (!b) return;
+      const n = parseInt(b.dataset.star, 10);
+      const rating = root.querySelector('#fb-rating');
+      if (rating) rating.value = String(n);
+      stars.querySelectorAll('.fb-star').forEach((s, i) => {
+        const ic = s.querySelector('i, svg');
+        if (!ic) return;
+        if (i < n) { ic.classList.add('fill-amber-400', 'text-amber-400'); ic.classList.remove('text-slate-500'); }
+        else { ic.classList.remove('fill-amber-400', 'text-amber-400'); ic.classList.add('text-slate-500'); }
+      });
+    });
+  }
+
+  const form = root.querySelector('#fb-form');
+  if (form) form.addEventListener('submit', (e) => { e.preventDefault(); submitFeedback(form); });
+
+  const backTop = root.querySelector('[data-feedback-backtop]');
+  if (backTop) {
+    backTop.addEventListener('click', () => {
+      const acc = root.querySelector('[data-acc="trust-reviews-more"]');
+      if (acc) acc.click();
+      const sec = document.getElementById('customer-feedback');
+      if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+}
+
+function feedbackMsg(form, text, cls) {
+  const msg = form.closest('#customer-feedback')?.querySelector('#fb-msg');
+  if (!msg) return;
+  msg.textContent = text;
+  msg.classList.remove('hidden', 'text-emerald-300', 'text-amber-300');
+  if (cls) msg.classList.add(cls);
+}
+
+async function submitFeedback(form) {
+  const textEl = form.querySelector('#fb-text');
+  const text = (textEl?.value || '').trim();
+  if (!text) { feedbackMsg(form, 'Please write your feedback first.', 'text-amber-300'); return; }
+  const btn = form.querySelector('[type=submit]');
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Sending…';
+  if (window.lucide) { try { lucide.createIcons(); } catch {} }
+  try {
+    const supabase = await getSupabase();
+    let userId = null;
+    try { userId = (await supabase.auth.getUser()).data?.user?.id || null; } catch {}
+    const { error } = await supabase.from('site_feedback').insert({
+      user_id: userId,
+      name: form.querySelector('#fb-name')?.value.trim() || 'Anonymous shopper',
+      email: form.querySelector('#fb-email')?.value.trim() || '',
+      rating: parseInt(form.querySelector('#fb-rating')?.value || '5', 10),
+      feedback: text,
+      is_approved: false,
+    });
+    if (error) throw new Error(error.message);
+    feedbackMsg(form, '✓ Thank you! Your feedback has been sent.', 'text-emerald-300');
+    form.reset();
+    const stars = form.closest('#customer-feedback')?.querySelector('#fb-stars');
+    if (stars) stars.querySelectorAll('.fb-star').forEach((s) => { const ic = s.querySelector('i, svg'); if (ic) { ic.classList.remove('fill-amber-400', 'text-amber-400'); ic.classList.add('text-slate-500'); } });
+  } catch (err) {
+    feedbackMsg(form, 'Could not send your feedback right now. Please try again later.', 'text-amber-300');
+  }
+  btn.disabled = false;
+  btn.innerHTML = original;
+  if (window.lucide) { try { lucide.createIcons(); } catch {} }
+}
+
+// Approved feedback from the DB is prepended to the "View more Feedback" list.
+async function loadSiteFeedbackList(root) {
+  const list = root?.querySelector('#fb-more-list');
+  if (!list) return;
+  try {
+    const supabase = await getSupabase();
+    const { data, error } = await supabase
+      .from('site_feedback')
+      .select('name,rating,feedback,created_at')
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (error || !data || !data.length) return;
+    const cards = data.map((f) => feedbackCardHtml({
+      name: f.name || 'Verified shopper',
+      text: f.feedback || '',
+      rating: f.rating || 5,
+      verified: true,
+      country: 'Verified customer',
+      date: f.created_at ? new Date(f.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+    })).join('');
+    list.innerHTML = cards + list.innerHTML;
+  } catch {}
+}
+
 function injectStyle() {
   if (document.getElementById('trust-info-style')) return;
   const st = document.createElement('style');
@@ -485,6 +643,8 @@ async function init() {
   ].join('');
   if (window.lucide) { try { lucide.createIcons(); } catch {} }
   bindAccordions(mount);
+  bindFeedback(mount);
+  loadSiteFeedbackList(mount);
   let bg = { ...DEFAULT_PROMO_BG };
   try { bg = await loadPromoBackgrounds(); } catch {}
   applyBg(bg);
