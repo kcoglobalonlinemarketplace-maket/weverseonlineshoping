@@ -425,6 +425,8 @@ function cardParts(listing) {
     if (listing.bedrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i>${listing.bedrooms}</span>`);
     if (listing.bathrooms != null) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${listing.bathrooms}</span>`);
     if (listing.land_size) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${listing.land_size}</span>`);
+    if (listing.year_built) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${listing.year_built}</span>`);
+    if (listing.condition) specs.push(`<span class="flex items-center gap-0.5"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i>${listing.condition}</span>`);
     if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
   } else if (isTruck || isMotorhome || isCar) {
     const specs = [];

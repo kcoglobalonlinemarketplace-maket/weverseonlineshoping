@@ -111,6 +111,146 @@ function highlightsListHtml(highlights) {
       </div>`;
 }
 
+// ── Complete property listing sections ─────────────────────────
+function checklistListHtml(items, tone = 'emerald') {
+  if (!items || !items.length) return '';
+  const iconCls = { emerald: 'bg-emerald-100 text-emerald-600', amber: 'bg-amber-100 text-amber-600', blue: 'bg-blue-100 text-blue-600', violet: 'bg-violet-100 text-violet-600', rose: 'bg-rose-100 text-rose-600' }[tone] || 'bg-emerald-100 text-emerald-600';
+  return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+    ${items.map(f => `
+      <div class="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-xl px-3.5 py-2.5">
+        <span class="shrink-0 w-6 h-6 rounded-full ${iconCls} flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5"></i></span>
+        <span class="text-[15px] text-gray-800 font-medium">${escapeHtml(String(f))}</span>
+      </div>`).join('')}
+  </div>`;
+}
+
+function floorPlanHtml(listing) {
+  const fp = listing.floor_plan && typeof listing.floor_plan === 'object' ? listing.floor_plan : {};
+  const rooms = Array.isArray(fp.rooms) ? fp.rooms : [];
+  const hasAny = fp.image || fp.levels || fp.total_area || rooms.length;
+  if (!hasAny) return '';
+  const roomsHtml = rooms.length ? `
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-3">
+      ${rooms.map(r => {
+        const name = typeof r === 'string' ? r : (r.name || 'Room');
+        const dims = typeof r === 'string' ? '' : (r.dimensions || '');
+        return `<div class="bg-gray-50 border border-gray-100 rounded-xl p-3">
+          <p class="text-[15px] font-bold text-gray-900">${escapeHtml(String(name))}</p>
+          ${dims ? `<p class="text-xs text-gray-500 mt-0.5">${escapeHtml(String(dims))}</p>` : ''}
+        </div>`;
+      }).join('')}
+    </div>` : '';
+  const meta = [fp.levels ? `Levels: ${fp.levels}` : '', fp.total_area ? `Total area: ${fp.total_area}` : ''].filter(Boolean);
+  return `
+    <div class="space-y-3">
+      ${fp.image ? `<img src="${escapeHtml(String(fp.image))}" alt="Floor plan" class="w-full rounded-xl border border-gray-200 bg-gray-50" loading="lazy" onerror="this.style.display='none'">` : ''}
+      ${meta.length ? `<div class="flex flex-wrap gap-2">${meta.map(m => `<span class="inline-flex items-center gap-1 text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-full">${escapeHtml(String(m))}</span>`).join('')}</div>` : ''}
+      ${roomsHtml}
+    </div>`;
+}
+
+function legalFinancialHtml(listing) {
+  const legal = Array.isArray(listing.legal_info) ? listing.legal_info : [];
+  const risk = listing.risk_notes;
+  if (!legal.length && !risk) return '';
+  const srcBadge = {
+    'Seller provided': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Documented': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Not verified': 'bg-gray-50 text-gray-600 border-gray-200',
+  };
+  const items = legal.map(item => {
+    const label = typeof item === 'string' ? item : (item.label || '');
+    const value = typeof item === 'string' ? '' : (item.value || '');
+    const source = typeof item === 'string' ? 'Not verified' : (item.source || 'Not verified');
+    const badge = srcBadge[source] || srcBadge['Not verified'];
+    const labelText = `${label}${value ? ': ' + value : ''}`;
+    return `<div class="flex items-center justify-between gap-3 bg-gray-50 border border-gray-100 rounded-xl px-3.5 py-2.5">
+      <span class="text-[15px] text-gray-800 font-medium">${escapeHtml(labelText)}</span>
+      <span class="shrink-0 text-[10px] font-black uppercase tracking-wide px-2 py-1 rounded-full border ${badge}">${escapeHtml(source)}</span>
+    </div>`;
+  }).join('');
+  return `
+    <div class="space-y-2.5">
+      ${items || ''}
+      ${risk ? `<div class="bg-amber-50/60 border border-amber-200 rounded-xl p-3.5"><p class="text-xs font-bold text-amber-700 uppercase tracking-wide mb-1">Condition / Risk Notes</p><p class="text-sm text-gray-700 leading-relaxed">${escapeHtml(String(risk))}</p></div>` : ''}
+      <p class="text-xs text-gray-400 leading-relaxed"><strong class="text-gray-500">Note:</strong> Legal and ownership details are provided by the seller for information only and have not been independently verified by the marketplace. Always confirm with the seller or a qualified professional before purchase.</p>
+    </div>`;
+}
+
+function nearbyHtml(listing) {
+  const na = listing.nearby_area && typeof listing.nearby_area === 'object' ? listing.nearby_area : {};
+  const groups = [
+    { icon: 'school', label: 'Schools', items: na.schools },
+    { icon: 'cross', label: 'Hospitals & Clinics', items: na.hospitals },
+    { icon: 'shopping-cart', label: 'Shopping & Markets', items: na.shopping },
+    { icon: 'bus', label: 'Transportation', items: na.transportation },
+  ].filter(g => Array.isArray(g.items) && g.items.length);
+  const distances = Array.isArray(na.distances) ? na.distances : [];
+  if (!groups.length && !distances.length) return '';
+  return `
+    <div class="space-y-3">
+      ${groups.map(g => `
+        <div>
+          <p class="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><i data-lucide="${g.icon}" class="w-3.5 h-3.5"></i> ${g.label}</p>
+          <div class="flex flex-wrap gap-2">
+            ${g.items.map(i => `<span class="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-full">${escapeHtml(String(i))}</span>`).join('')}
+          </div>
+        </div>`).join('')}
+      ${distances.length ? `<div><p class="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><i data-lucide="navigation" class="w-3.5 h-3.5"></i> Distances</p><div class="flex flex-wrap gap-2">${distances.map(i => `<span class="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-full">${escapeHtml(String(i))}</span>`).join('')}</div></div>` : ''}
+    </div>`;
+}
+
+function trustHtml(listing) {
+  const vs = listing.verification_status || 'Not verified';
+  const vBadge = {
+    'Verified': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Pending verification': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Not verified': 'bg-gray-50 text-gray-600 border-gray-200',
+  }[vs] || 'bg-gray-50 text-gray-600 border-gray-200';
+  const docs = Array.isArray(listing.documents) ? listing.documents : [];
+  const meta = [
+    { icon: 'shield-check', label: 'Verification', value: vs, badge: vBadge },
+    listing.verification_date ? { icon: 'calendar-check', label: 'Verification Date', value: listing.verification_date } : null,
+    listing.inspection_info ? { icon: 'clipboard-check', label: 'Inspection', value: listing.inspection_info } : null,
+  ].filter(Boolean);
+  return `
+    <div class="space-y-3">
+      ${meta.length ? `<div class="space-y-2.5">${meta.map(m => `
+        <div class="flex items-center justify-between gap-3 bg-gray-50 border border-gray-100 rounded-xl px-3.5 py-2.5">
+          <span class="flex items-center gap-2 text-sm text-gray-800 font-medium"><i data-lucide="${m.icon}" class="w-4 h-4 text-blue-500"></i> ${m.label}</span>
+          ${m.badge ? `<span class="shrink-0 text-[10px] font-black uppercase tracking-wide px-2 py-1 rounded-full border ${m.badge}">${escapeHtml(String(m.value))}</span>` : `<span class="text-sm text-gray-700 font-semibold">${escapeHtml(String(m.value))}</span>`}
+        </div>`).join('')}</div>` : ''}
+      ${docs.length ? `<div><p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Documents</p><div class="space-y-1.5">${docs.map(d => `<a href="${escapeHtml(String(d))}" target="_blank" rel="noopener" class="flex items-center gap-2 text-xs font-bold text-blue-600 hover:underline"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> ${escapeHtml(String(d))}</a>`).join('')}</div></div>` : ''}
+      <div class="flex flex-wrap gap-2">
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-full"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Secure Checkout</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-full"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Payment Protection</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2.5 py-1.5 rounded-full"><i data-lucide="file-check" class="w-3.5 h-3.5"></i> Purchase Agreement</span>
+      </div>
+      <p class="text-xs text-gray-400 leading-relaxed">Full purchase and booking terms are confirmed with the seller before any payment is completed.</p>
+    </div>`;
+}
+
+function propertyExtrasHtml(listing) {
+  if (listing.listing_type !== 'property') return '';
+  const sections = [];
+  const interior = checklistListHtml(listing.interior_features, 'emerald');
+  const exterior = checklistListHtml(listing.exterior_features, 'blue');
+  const systems = checklistListHtml(listing.home_systems, 'violet');
+  const feats = [interior ? `<div class="mb-4"><p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Interior Features</p>${interior}</div>` : '',
+    exterior ? `<div class="mb-4"><p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Exterior Features</p>${exterior}</div>` : '',
+    systems ? `<div><p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Home Systems</p>${systems}</div>` : ''].filter(Boolean).join('');
+  if (feats) sections.push(accordionItem('acc-features', 'home', 'Features & Home Systems', feats, false, 'emerald'));
+  const fp = floorPlanHtml(listing);
+  if (fp) sections.push(accordionItem('acc-floorplan', 'layout-dashboard', 'Floor Plan', fp, false, 'violet'));
+  const legal = legalFinancialHtml(listing);
+  if (legal) sections.push(accordionItem('acc-legal', 'scale', 'Legal & Financial', legal, false, 'amber'));
+  const nearby = nearbyHtml(listing);
+  if (nearby) sections.push(accordionItem('acc-nearby', 'map-pin', 'Nearby Area', nearby, false, 'rose'));
+  const trust = trustHtml(listing);
+  if (trust) sections.push(accordionItem('acc-trust', 'shield-check', 'Verification & Trust', trust, false, 'blue'));
+  return sections.join('');
+}
+
 function descriptionBlockHtml(text) {
   return `
     <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
@@ -215,15 +355,17 @@ function faqContent() {
     </div>`;
 }
 
-function detailsAccordions(listing, specs, features, highlights, locationContent) {
+function detailsAccordions(listing, specs, features, highlights, locationContent, propertyExtras = '') {
+  const isProperty = listing.listing_type === 'property';
   const productDetails = `
     <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed">${escapeHtml(listing.description || '')}</p>
     ${locationContent || ''}
     ${highlightsListHtml(highlights)}
     ${featuresListHtml(features)}`;
   return `
-    ${accordionItem('acc-details', 'file-text', 'Product Details', productDetails, true, 'blue')}
-    ${accordionItem('acc-specs', 'settings-2', 'Specifications', specsGridHtml(specs) || '<p class="text-sm text-gray-500">No specifications available for this listing.</p>', true, 'violet')}
+    ${accordionItem('acc-details', 'file-text', isProperty ? 'Property Details' : 'Product Details', productDetails, true, 'blue')}
+    ${accordionItem('acc-specs', 'settings-2', isProperty ? 'Property Specifications' : 'Specifications', specsGridHtml(specs) || '<p class="text-sm text-gray-500">No specifications available for this listing.</p>', true, 'violet')}
+    ${propertyExtras || ''}
     ${accordionItem('acc-shipping', 'truck', 'Shipping Information', shippingInfoContent(), false, 'emerald')}
     ${accordionItem('acc-refund', 'rotate-ccw', 'Return &amp; Refund Policy', refundPolicyContent(), false, 'rose')}
     ${accordionItem('acc-faq', 'circle-help', 'Frequently Asked Questions', faqContent(), false, 'amber')}`;
@@ -816,27 +958,51 @@ function actionGridHtml(listing) {
   const isProperty = listing.listing_type === 'property';
   const shareLabel = isProperty ? 'Share Property' : 'Share';
   const contactHref = `/contact.html?listing=${encodeURIComponent(listing.property_id || '')}`;
+  const viewMapBtn = isProperty
+    ? `<a href="#listing-map" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-600 text-gray-700 font-bold py-3 rounded-xl transition text-sm"><i data-lucide="map-pin" class="w-5 h-5"></i> View Map</a>`
+    : '';
+  const propertyActions = isProperty ? `
+    <button type="button" id="request-viewing-btn" class="flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl transition text-sm">
+      <i data-lucide="eye" class="w-4 h-4"></i> Request Viewing
+    </button>
+    <button type="button" id="request-info-btn" class="flex items-center justify-center gap-2 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold py-3 rounded-xl transition text-sm">
+      <i data-lucide="info" class="w-4 h-4"></i> Request More Information
+    </button>
+    <a href="${contactHref}" class="flex items-center justify-center gap-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl transition text-sm">
+      <i data-lucide="badge-check" class="w-4 h-4"></i> Contact Us
+      <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online</span>
+    </a>
+    <a href="${contactHref}&subject=Message" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 rounded-xl transition text-sm">
+      <i data-lucide="message-circle" class="w-5 h-5"></i> Send Message
+    </a>
+  ` : `
+    <a href="${contactHref}" class="flex items-center justify-center gap-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl transition text-sm">
+      <i data-lucide="badge-check" class="w-4 h-4"></i> Contact Us
+      <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online</span>
+    </a>`;
   return `
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-      <button type="button" id="view-details-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition text-sm">
-        <i data-lucide="eye" class="w-5 h-5"></i> View Details
-      </button>
-      <button type="button" id="add-cart-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition text-sm">
-        <i data-lucide="shopping-cart" class="w-5 h-5"></i> Add to Cart
-      </button>
-      <button type="button" id="buy-now-btn" class="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl transition text-sm uppercase tracking-wider">
-        <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
-      </button>
-      <a href="${contactHref}" class="flex items-center justify-center gap-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-bold py-3.5 rounded-xl transition text-sm">
-        <i data-lucide="badge-check" class="w-4 h-4"></i> Contact Us
-        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online</span>
-      </a>
-      <button type="button" id="wishlist-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-red-100 hover:text-red-600 text-gray-700 font-bold py-3.5 rounded-xl transition text-sm">
-        <i data-lucide="heart" class="w-5 h-5"></i> Add to Wishlist
-      </button>
-      <button type="button" id="share-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-600 text-gray-700 font-bold py-3.5 rounded-xl transition text-sm">
-        <i data-lucide="share-2" class="w-5 h-5"></i> ${shareLabel}
-      </button>
+    <div class="mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button type="button" id="buy-now-btn" class="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl transition text-sm uppercase tracking-wider">
+          <i data-lucide="shopping-bag" class="w-5 h-5"></i> Buy Now
+        </button>
+        <button type="button" id="add-cart-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition text-sm">
+          <i data-lucide="shopping-cart" class="w-5 h-5"></i> Add to Cart
+        </button>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+        <button type="button" id="view-details-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3 rounded-xl transition text-sm">
+          <i data-lucide="eye" class="w-5 h-5"></i> View Details
+        </button>
+        <button type="button" id="wishlist-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-red-100 hover:text-red-600 text-gray-700 font-bold py-3 rounded-xl transition text-sm">
+          <i data-lucide="heart" class="w-5 h-5"></i> Favorite
+        </button>
+        <button type="button" id="share-btn" class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-blue-100 hover:text-blue-600 text-gray-700 font-bold py-3 rounded-xl transition text-sm">
+          <i data-lucide="share-2" class="w-5 h-5"></i> ${shareLabel}
+        </button>
+        ${viewMapBtn}
+      </div>
+      ${isProperty ? `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">${propertyActions}</div>` : ''}
     </div>
   `;
 }
@@ -1023,12 +1189,18 @@ function render(listing) {
     specs = [
       { icon: 'bed-double', label: 'Bedrooms', value: listing.bedrooms },
       { icon: 'bath', label: 'Bathrooms', value: listing.bathrooms },
-      { icon: 'building', label: 'Building Size', value: listing.building_size },
-      { icon: 'ruler', label: 'Land Size', value: listing.land_size },
-      { icon: 'car', label: 'Parking Spaces', value: listing.parking_spaces },
+      { icon: 'droplets', label: 'Half Bathrooms', value: listing.half_bathrooms },
+      { icon: 'building', label: 'Building / Living Size', value: listing.building_size },
+      { icon: 'ruler', label: 'Land / Lot Size', value: listing.land_size },
+      { icon: 'layers', label: 'Floors / Levels', value: listing.floors },
+      { icon: 'car-front', label: 'Parking Spaces', value: listing.parking_spaces },
+      { icon: 'warehouse', label: 'Garage', value: listing.garage },
       { icon: 'home', label: 'Property Type', value: listing.property_type },
       { icon: 'sofa', label: 'Furnished', value: listing.furnished },
+      { icon: 'badge-check', label: 'Condition', value: listing.condition },
       { icon: 'calendar', label: 'Year Built', value: listing.year_built },
+      { icon: 'paintbrush', label: 'Year Renovated', value: listing.year_renovated },
+      { icon: 'mail', label: 'ZIP / Postal Code', value: listing.zip_code },
       { icon: 'tag', label: 'Status', value: listing.listing_status === 'rent' ? 'For Rent' : 'For Sale' },
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = specsPanel('Property Information', 'home', specs);
@@ -1094,7 +1266,12 @@ function render(listing) {
       <div class="mb-5">
         <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
         <div class="flex flex-wrap items-center gap-2 mt-2.5">
-          <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified</span>
+          ${isProperty ? (listing.verification_status === 'Verified'
+            ? `<span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified</span>`
+            : (listing.verification_status === 'Pending verification'
+              ? `<span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full"><i data-lucide="clock" class="w-3.5 h-3.5"></i> Pending Verification</span>`
+              : `<span class="inline-flex items-center gap-1 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full"><i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> Not Verified</span>`))
+          : `<span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified</span>`}
           <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full"><i data-lucide="box" class="w-3.5 h-3.5"></i> ${idLabel}: <span class="font-mono">${escapeHtml(listing.property_id)}</span></span>
           <span class="inline-flex items-center gap-1 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">${listing.listing_status === 'rent' ? 'For Rent' : 'For Sale'}</span>
         </div>
@@ -1118,8 +1295,11 @@ function render(listing) {
         </div>
       </div>
 
-      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 hero-zoom">
+      <div id="hero-wrap" class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 cursor-zoom-in group" role="button" tabindex="0" aria-label="Open image gallery">
         <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+        <div class="absolute inset-0 flex items-end justify-between p-3 opacity-0 group-hover:opacity-100 transition pointer-events-none">
+          <span class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-black/50 backdrop-blur px-3 py-1.5 rounded-full"><i data-lucide="expand" class="w-3.5 h-3.5"></i> Tap to enlarge</span>
+        </div>
       </div>
 
       <div class="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-8">
@@ -1129,10 +1309,12 @@ function render(listing) {
       ${actionGridHtml(listing)}
 
       <div id="listing-details">
-        ${detailsAccordions(listing, specs, listing.features, listing.highlights, locationBlock)}
+        ${detailsAccordions(listing, specs, listing.features, listing.highlights, locationBlock, propertyExtrasHtml(listing))}
       </div>
 
       ${ratingsBlock}
+
+      ${isProperty ? sellerBlock(listing) : ''}
 
       <div id="recommendations-section" class="hidden">
         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">You May Also Like</h3>
@@ -1144,6 +1326,12 @@ function render(listing) {
   `;
 
   const hero = document.getElementById('hero-image');
+  const heroWrap = document.getElementById('hero-wrap');
+  if (heroWrap) {
+    const openLightbox = () => openGalleryLightbox(listing, imgs2);
+    heroWrap.addEventListener('click', openLightbox);
+    heroWrap.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(); } });
+  }
   root.querySelectorAll('.gallery-thumb').forEach(thumb => {
     thumb.addEventListener('click', () => {
       root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
@@ -1167,6 +1355,11 @@ function render(listing) {
   document.getElementById('share-btn').addEventListener('click', () => {
     openShareSheet(listing);
   });
+
+  const requestViewingBtn = document.getElementById('request-viewing-btn');
+  if (requestViewingBtn) requestViewingBtn.addEventListener('click', () => openPropertyRequestModal(listing, 'viewing'));
+  const requestInfoBtn = document.getElementById('request-info-btn');
+  if (requestInfoBtn) requestInfoBtn.addEventListener('click', () => openPropertyRequestModal(listing, 'info'));
 
   const viewDetailsBtn = document.getElementById('view-details-btn');
   if (viewDetailsBtn) {
@@ -1229,6 +1422,172 @@ function render(listing) {
       showFallback();
     }
   }
+}
+
+// ── Full-screen gallery lightbox (tap to enlarge, swipe, arrows) ──────────
+function openGalleryLightbox(listing, imgs) {
+  const images = (Array.isArray(imgs) && imgs.length ? imgs : [listing.images?.[0] || FALLBACK_IMG]).filter(Boolean);
+  if (!images.length) return;
+  let current = 0;
+  const root = document.createElement('div');
+  root.id = 'gallery-lightbox';
+  root.className = 'fixed inset-0 z-[500] bg-black/95 flex flex-col';
+  root.innerHTML = `
+    <style>
+      #gallery-lightbox .lb-img{transition:opacity .18s ease}
+      #gallery-lightbox .lb-img.lb-fade{opacity:0}
+    </style>
+    <div class="flex items-center justify-between px-4 py-3 text-white">
+      <span class="text-xs font-bold text-gray-300 truncate">${escapeHtml(listing.title)}</span>
+      <button type="button" id="lb-close" class="shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" aria-label="Close">✕</button>
+    </div>
+    <div id="lb-viewport" class="relative flex-1 flex items-center justify-center overflow-hidden select-none">
+      <img id="lb-img" src="" alt="Gallery" class="lb-img max-w-full max-h-full object-contain px-4" draggable="false">
+      <button type="button" id="lb-prev" class="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center text-2xl" aria-label="Previous">‹</button>
+      <button type="button" id="lb-next" class="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center text-2xl" aria-label="Next">›</button>
+    </div>
+    <div class="px-4 py-3 flex items-center justify-between gap-3 text-white">
+      <span id="lb-count" class="shrink-0 text-xs font-bold text-gray-300"></span>
+      <div id="lb-thumbs" class="flex gap-1.5 overflow-x-auto scrollbar-none justify-end"></div>
+    </div>
+  `;
+  document.body.appendChild(root);
+  document.body.style.overflow = 'hidden';
+  const imgEl = root.querySelector('#lb-img');
+  const countEl = root.querySelector('#lb-count');
+  const thumbsEl = root.querySelector('#lb-thumbs');
+  let startX = null;
+  const render = () => {
+    imgEl.classList.add('lb-fade');
+    setTimeout(() => {
+      imgEl.src = images[current];
+      imgEl.onerror = () => { imgEl.onerror = null; imgEl.src = FALLBACK_IMG; };
+      imgEl.classList.remove('lb-fade');
+      countEl.textContent = `${current + 1} / ${images.length}`;
+      thumbsEl.innerHTML = images.map((u, i) => `<button type="button" data-i="${i}" class="w-12 h-9 rounded-lg overflow-hidden border-2 ${i === current ? 'border-blue-500' : 'border-transparent'}" aria-label="Image ${i + 1}"><img src="${escapeHtml(u)}" class="w-full h-full object-cover" onerror="this.style.display='none'"></button>`).join('');
+      thumbsEl.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => { current = parseInt(b.dataset.i, 10); render(); }));
+    }, 90);
+  };
+  const prev = () => { current = (current - 1 + images.length) % images.length; render(); };
+  const next = () => { current = (current + 1) % images.length; render(); };
+  const close = () => { root.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => {
+    if (e.key === 'Escape') close();
+    else if (e.key === 'ArrowLeft') prev();
+    else if (e.key === 'ArrowRight') next();
+  };
+  root.querySelector('#lb-close').addEventListener('click', close);
+  root.querySelector('#lb-prev').addEventListener('click', prev);
+  root.querySelector('#lb-next').addEventListener('click', next);
+  const vp = root.querySelector('#lb-viewport');
+  vp.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+  vp.addEventListener('touchend', (e) => {
+    if (startX == null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) { if (dx < 0) next(); else prev(); }
+    startX = null;
+  }, { passive: true });
+  vp.addEventListener('click', (e) => { if (e.target === vp) close(); });
+  document.addEventListener('keydown', onKey);
+  render();
+}
+
+// ── Request Viewing / Request More Information modal ───────────────────────
+// Writes straight into site_feedback (like the Contact form) so the admin
+// Support/Messages dashboard sees it, then sends a best-effort email alert.
+function openPropertyRequestModal(listing, kind) {
+  const isViewing = kind === 'viewing';
+  const title = isViewing ? 'Request a Viewing' : 'Request More Information';
+  const ref = listing.property_id || listing.id || '';
+  const root = document.createElement('div');
+  root.id = 'property-request-modal';
+  root.className = 'fixed inset-0 z-[450] flex items-end sm:items-center justify-center p-0 sm:p-4';
+  root.innerHTML = `
+    <style>
+      @keyframes req-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+      @media (min-width:640px){@keyframes req-up{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}}
+      #property-request-modal .animate-req-up{animation:req-up .26s cubic-bezier(.2,.8,.2,1)}
+    </style>
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-req-close></div>
+    <div class="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-req-up">
+      <div class="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
+        <div>
+          <h3 class="text-base font-black text-gray-900 tracking-tight">${isViewing ? 'Request a Viewing' : 'Request More Information'}</h3>
+          <p class="text-xs text-gray-500 mt-0.5 truncate">${escapeHtml(listing.title)}</p>
+        </div>
+        <button type="button" data-req-close class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition" aria-label="Close">✕</button>
+      </div>
+      <form id="property-request-form" class="p-5 space-y-4">
+        <input type="hidden" id="prq-kind" value="${isViewing ? 'viewing' : 'info'}">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Your Name *</label><input type="text" id="prq-name" required placeholder="Full name" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Email Address *</label><input type="email" id="prq-email" required placeholder="you@email.com" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Phone (optional)</label><input type="tel" id="prq-phone" placeholder="+1 555 000 0000" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>
+          ${isViewing ? `<div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Preferred Date</label><input type="date" id="prq-date" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"></div>` : ''}
+        </div>
+        <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Message</label><textarea id="prq-message" rows="3" placeholder="${isViewing ? 'Preferred time, questions about the property…' : 'What would you like to know about this property?'}" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-none"></textarea></div>
+        <button type="submit" id="prq-submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">${isViewing ? 'Request Viewing' : 'Send Request'}</button>
+        <div id="prq-status" class="hidden text-center text-sm py-2 rounded-xl"></div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(root);
+  document.body.style.overflow = 'hidden';
+  getCurrentUser().then((user) => {
+    if (user) {
+      const nameIn = root.querySelector('#prq-name');
+      const emailIn = root.querySelector('#prq-email');
+      const meta = user.user_metadata || {};
+      if (meta?.full_name && nameIn && !nameIn.value) nameIn.value = meta.full_name;
+      if (user.email && emailIn && !emailIn.value) emailIn.value = user.email;
+    }
+  });
+  const close = () => { root.remove(); document.body.style.overflow = ''; };
+  root.querySelectorAll('[data-req-close]').forEach(el => el.addEventListener('click', close));
+  root.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = root.querySelector('#prq-submit');
+    const status = root.querySelector('#prq-status');
+    const name = root.querySelector('#prq-name').value.trim();
+    const email = root.querySelector('#prq-email').value.trim();
+    const phone = root.querySelector('#prq-phone')?.value.trim() || '';
+    const date = root.querySelector('#prq-date')?.value || '';
+    const message = root.querySelector('#prq-message').value.trim();
+    btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i> Sending...'; if (window.lucide) lucide.createIcons();
+    try {
+      let userId = null;
+      try { userId = (await supabase.auth.getUser()).data?.user?.id || null; } catch {}
+      const label = isViewing ? 'Request Viewing' : 'Request More Information';
+      const detail = [ref && `Property: ${ref}`, phone && `Phone: ${phone}`, date && `Preferred date: ${date}`, message].filter(Boolean).join(' | ');
+      const { error } = await supabase.from('site_feedback').insert({
+        user_id: userId,
+        name,
+        email,
+        rating: 5,
+        feedback: `${label} (${listing.title}): ${detail}`,
+        is_approved: false,
+      });
+      if (error) throw new Error(error.message);
+      try {
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-auth-email`, {
+          method: 'POST', headers: { 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'contact_form', name, email, subject: `${label} — ${listing.title}`, message: detail }),
+        });
+      } catch {}
+      status.className = 'text-center text-sm py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200';
+      status.textContent = isViewing ? 'Viewing request sent! We\'ll confirm your appointment within 24 hours.' : 'Request sent! We\'ll get back to you within 24 hours.';
+      status.classList.remove('hidden');
+      setTimeout(close, 1800);
+    } catch (err) {
+      status.className = 'text-center text-sm py-3 rounded-xl bg-red-50 text-red-600 border border-red-200';
+      status.textContent = 'Failed to send. Please email support@weverseonlineshop.com directly.';
+      status.classList.remove('hidden');
+      btn.disabled = false; btn.innerHTML = isViewing ? 'Request Viewing' : 'Send Request';
+      if (window.lucide) lucide.createIcons();
+    }
+  });
 }
 
 let selectedRating = 0;

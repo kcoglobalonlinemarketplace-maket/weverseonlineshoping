@@ -100,7 +100,7 @@ function genId() { return 'W-' + String(Date.now()).slice(-6) + Math.floor(Math.
 // Whitelist of showroom_listings columns known to exist in the live DB.
 // Used to sanitize upsert payloads so seed/local objects (which may carry
 // extra display-only keys) never cause "column does not exist" errors.
-const SHOWROOM_COLUMNS = ['id','property_id','listing_type','category','subcategory','title','description','price','price_period','currency','country','country_code','state','city','town','product_location','latitude','longitude','bedrooms','bathrooms','building_size','land_size','parking_spaces','property_type','furnished','listing_status','images','features','features_text','tags','highlights','seo_keywords','specifications','brand','color','size','condition','warranty','shipping_info','delivery_estimate','weight','dimensions','storage_options','ram_options','color_options','availability_status','stock_quantity','sku','is_active','is_featured','is_ai_generated','ai_generated_fields','rating','rating_count','favorite_count','review_count','video','video_url','approval_status','published_at','created_at','updated_at'];
+const SHOWROOM_COLUMNS = ['id','property_id','listing_type','category','subcategory','title','description','price','price_period','currency','country','country_code','state','city','town','product_location','latitude','longitude','bedrooms','bathrooms','building_size','land_size','parking_spaces','property_type','furnished','listing_status','images','features','features_text','tags','highlights','seo_keywords','specifications','brand','color','size','condition','warranty','shipping_info','delivery_estimate','weight','dimensions','storage_options','ram_options','color_options','availability_status','stock_quantity','sku','is_active','is_featured','is_ai_generated','ai_generated_fields','rating','rating_count','favorite_count','review_count','video','video_url','approval_status','published_at','created_at','updated_at','real_price','year_built','year_renovated','half_bathrooms','floors','garage','zip_code','address','landmarks','interior_features','exterior_features','home_systems','legal_info','risk_notes','floor_plan','nearby_area','verification_status','verification_date','inspection_info','documents'];
 
 function sanitizeShowroomPayload(obj) {
   const out = {};
@@ -3277,6 +3277,8 @@ function applyScanToPropertyForm(result) {
   }
   const address = identification.address || specs.address;
   set('product_location', address || [area || identification.town || specs.town, identification.city || specs.city, identification.state || specs.state, country].filter(Boolean).join(', '));
+  set('address', identification.address || specs.address);
+  set('zip_code', identification.zip_code || specs.zip_code);
   const latNum = Number(identification.latitude ?? specs.latitude);
   const lngNum = Number(identification.longitude ?? specs.longitude);
   if (Number.isFinite(latNum) && latNum >= -90 && latNum <= 90 && latNum !== 0) { set('latitude', String(latNum)); }
@@ -3285,11 +3287,63 @@ function applyScanToPropertyForm(result) {
   set('highlights_text', text(identification.highlights || specs.highlights));
   set('seo_keywords_text', text(specs.seo_keywords));
 
+  // New complete-property fields.
+  const halfBaths = identification.half_bathrooms ?? specs.half_bathrooms;
+  if (halfBaths != null && halfBaths !== '') set('half_bathrooms', parseInt(halfBaths, 10) || halfBaths);
+  const floors = identification.floors ?? specs.floors;
+  if (floors != null && floors !== '') set('floors', parseInt(floors, 10) || floors);
+  set('garage', identification.garage || specs.garage);
+  const yb = identification.year_built ?? specs.year_built;
+  if (yb != null && yb !== '') set('year_built', parseInt(yb, 10) || yb);
+  const yr = identification.year_renovated ?? specs.year_renovated;
+  if (yr != null && yr !== '') set('year_renovated', parseInt(yr, 10) || yr);
+  const cond = identification.condition || specs.condition;
+  const COND_OPTIONS = ['New Construction', 'Like New', 'Excellent', 'Good', 'Fair', 'Needs Renovation'];
+  if (cond) {
+    const condRaw = String(cond).toLowerCase();
+    const matched = COND_OPTIONS.find(c => condRaw.includes(c.toLowerCase()) || c.toLowerCase().includes(condRaw));
+    if (matched) set('condition', matched);
+  }
+  set('interior_features_text', text(specs.interior_features));
+  set('exterior_features_text', text(specs.exterior_features));
+  set('home_systems_text', text(specs.home_systems));
+  const lm = text(identification.landmarks || specs.landmarks);
+  if (lm) set('landmarks_text', lm);
+  const fp = specs.floor_plan;
+  if (fp && typeof fp === 'object') {
+    if (fp.image) set('floor_plan_image', fp.image);
+    if (fp.levels) set('floor_plan_levels', fp.levels);
+    if (fp.total_area) set('floor_plan_total_area', fp.total_area);
+    const rooms = Array.isArray(fp.rooms) ? fp.rooms.map(r => {
+      const m = String(r).match(/^(.*?):\s*(.*)$/);
+      return m ? `${m[1].trim()}: ${m[2].trim()}` : String(r);
+    }) : [];
+    if (rooms.length) set('floor_plan_rooms', rooms.join(', '));
+  }
+  const na = specs.nearby_area;
+  if (na && typeof na === 'object') {
+    if (Array.isArray(na.schools) && na.schools.length) set('nearby_schools_text', na.schools.join(', '));
+    if (Array.isArray(na.hospitals) && na.hospitals.length) set('nearby_hospitals_text', na.hospitals.join(', '));
+    if (Array.isArray(na.shopping) && na.shopping.length) set('nearby_shopping_text', na.shopping.join(', '));
+    if (Array.isArray(na.transportation) && na.transportation.length) set('nearby_transportation_text', na.transportation.join(', '));
+    if (Array.isArray(na.distances) && na.distances.length) set('nearby_distances_text', na.distances.join(', '));
+  }
+  const li = Array.isArray(specs.legal_info) ? specs.legal_info.join(', ') : text(specs.legal_info);
+  if (li) set('legal_info_text', li);
+  if (specs.inspection_info) set('inspection_info', specs.inspection_info);
+  if (specs.risk_notes) set('risk_notes', specs.risk_notes);
+  const vs = document.querySelector('#property-form [name="verification_status"]');
+  if (vs) { vs.value = 'Not verified'; filled.push('verification_status'); }
+
   // "Not specified" policy — any relevant field the AI could not determine is
   // marked clearly instead of being left blank or guessed, per the owner's rules.
   const missing = new Set((Array.isArray(specs.missing_fields) ? specs.missing_fields : []).map(k => String(k)));
   const NOT_SPECIFIED_SKIP = new Set(['title', 'description', 'price', 'real_price', 'features', 'highlights', 'seo_keywords',
-      'country', 'country_code', 'state', 'city', 'town', 'product_location', 'area', 'address', 'latitude', 'longitude']);
+      'country', 'country_code', 'state', 'city', 'town', 'product_location', 'area', 'address', 'zip_code', 'latitude', 'longitude',
+      'landmarks_text', 'interior_features_text', 'exterior_features_text', 'home_systems_text',
+      'floor_plan_image', 'floor_plan_levels', 'floor_plan_total_area', 'floor_plan_rooms',
+      'nearby_schools_text', 'nearby_hospitals_text', 'nearby_shopping_text', 'nearby_transportation_text', 'nearby_distances_text',
+      'legal_info_text', 'inspection_info', 'risk_notes', 'documents_text', 'verification_date', 'verification_status']);
   missing.forEach((key) => {
     if (NOT_SPECIFIED_SKIP.has(key)) return;
     const field = document.querySelector(`#property-form [name="${key}"]`);
@@ -3999,11 +4053,69 @@ window.showAddPropertyModal = function(existing = {}) {
               <option value="Furnished" ${existing.furnished==='Furnished'?'selected':''}>Furnished</option>
               <option value="Unfurnished" ${existing.furnished==='Unfurnished'?'selected':''}>Unfurnished</option>
             </select></div>
+            <div><label class="lbl">Condition</label><select class="input-field" name="condition">
+              <option value="">Not specified</option>
+              ${['New Construction','Like New','Excellent','Good','Fair','Needs Renovation'].map(c => `<option value="${c}" ${existing.condition === c ? 'selected' : ''}>${c}</option>`).join('')}
+            </select></div>
+            <div><label class="lbl">Year Built</label><input type="number" class="input-field" name="year_built" value="${existing.year_built ?? ''}" placeholder="2015"></div>
+            <div><label class="lbl">Year Renovated</label><input type="number" class="input-field" name="year_renovated" value="${existing.year_renovated ?? ''}" placeholder="2021"></div>
+            <div><label class="lbl">Half Bathrooms</label><input type="number" class="input-field" name="half_bathrooms" value="${existing.half_bathrooms ?? ''}" placeholder="1"></div>
+            <div><label class="lbl">Floors / Levels</label><input type="number" class="input-field" name="floors" value="${existing.floors ?? ''}" placeholder="2"></div>
+            <div><label class="lbl">Garage</label><input class="input-field" name="garage" value="${esc(existing.garage || '')}" placeholder="e.g. 2-car attached, None"></div>
             <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the property…">${esc(existing.description || '')}</textarea></div>
             <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Swimming Pool, Garden, Garage…"></div>
             <div class="sm:col-span-2"><label class="lbl">Highlights (comma separated)</label><input class="input-field" name="highlights_text" value="${esc((existing.highlights || []).join(', '))}" placeholder="Prime location, map-ready post, 24-image gallery"></div>
             <div class="sm:col-span-2"><label class="lbl">SEO Keywords (comma separated)</label><input class="input-field" name="seo_keywords_text" value="${esc((existing.seo_keywords || []).join(', '))}" placeholder="mansion, villa, property investment"></div>
             <div class="sm:col-span-2"><label class="lbl">Property Location</label><input class="input-field" name="product_location" value="${esc(existing.product_location || '')}" placeholder="Estate, district, city, landmark"></div>
+            <div class="sm:col-span-2"><label class="lbl">Street / Address</label><input class="input-field" name="address" value="${esc(existing.address || '')}" placeholder="Street and number, e.g. 123 Maple Street"></div>
+            <div><label class="lbl">ZIP / Postal Code</label><input class="input-field" name="zip_code" value="${esc(existing.zip_code || '')}" placeholder="e.g. 10001"></div>
+            <div><label class="lbl">Landmarks (comma separated)</label><input class="input-field" name="landmarks_text" value="${esc((existing.landmarks || []).join(', '))}" placeholder="City Hall, Central Park, Main Station"></div>
+          </div>
+
+          <div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="home" class="w-4 h-4 text-emerald-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Interior &amp; Exterior Features</p></div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Interior Features (comma separated)</label><input class="input-field" name="interior_features_text" value="${esc((existing.interior_features || []).join(', '))}" placeholder="Open plan kitchen, Walk-in closet, Fireplace…"></div>
+              <div class="sm:col-span-2"><label class="lbl">Exterior Features (comma separated)</label><input class="input-field" name="exterior_features_text" value="${esc((existing.exterior_features || []).join(', '))}" placeholder="Swimming pool, Garden, Balcony, Patio…"></div>
+              <div class="sm:col-span-2"><label class="lbl">Home Systems (comma separated)</label><input class="input-field" name="home_systems_text" value="${esc((existing.home_systems || []).join(', '))}" placeholder="Central heating, Air conditioning, Solar panels…"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-violet-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="layout-dashboard" class="w-4 h-4 text-violet-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Floor Plan</p></div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Floor Plan Image URL</label><input class="input-field" name="floor_plan_image" value="${esc(existing.floor_plan?.image || '')}" placeholder="https://…/floor-plan.png"></div>
+              <div><label class="lbl">Levels</label><input class="input-field" name="floor_plan_levels" value="${esc(existing.floor_plan?.levels || '')}" placeholder="e.g. Ground + 1"></div>
+              <div><label class="lbl">Total Area</label><input class="input-field" name="floor_plan_total_area" value="${esc(existing.floor_plan?.total_area || '')}" placeholder="e.g. 2,500 sqft"></div>
+              <div class="sm:col-span-2"><label class="lbl">Rooms (comma separated — Name: dimensions)</label><input class="input-field" name="floor_plan_rooms" value="${esc((existing.floor_plan?.rooms || []).map(r => (r.name || '') + (r.dimensions ? ': ' + r.dimensions : '')).join(', '))}" placeholder="Living Room: 15x12, Kitchen: 10x10…"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-amber-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="school" class="w-4 h-4 text-amber-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Nearby Area</p></div>
+            <div class="form-grid form-grid-2">
+              <div><label class="lbl">Schools (comma separated)</label><input class="input-field" name="nearby_schools_text" value="${esc((existing.nearby_area?.schools || []).join(', '))}" placeholder="Riverside Elementary…"></div>
+              <div><label class="lbl">Hospitals / Clinics</label><input class="input-field" name="nearby_hospitals_text" value="${esc((existing.nearby_area?.hospitals || []).join(', '))}" placeholder="City General Hospital…"></div>
+              <div><label class="lbl">Shopping / Markets</label><input class="input-field" name="nearby_shopping_text" value="${esc((existing.nearby_area?.shopping || []).join(', '))}" placeholder="Maple Mall, Farmers Market…"></div>
+              <div><label class="lbl">Transportation</label><input class="input-field" name="nearby_transportation_text" value="${esc((existing.nearby_area?.transportation || []).join(', '))}" placeholder="Metro Station, Bus Stop…"></div>
+              <div class="sm:col-span-2"><label class="lbl">Distances (comma separated)</label><input class="input-field" name="nearby_distances_text" value="${esc((existing.nearby_area?.distances || []).join(', '))}" placeholder="0.5 mi to school, 1 mi to hospital…"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-blue-500/20 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Legal, Verification &amp; Trust</p></div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Legal / Financial Info (comma separated — add source tag)</label><input class="input-field" name="legal_info_text" value="${esc((existing.legal_info || []).map(i => (i.label || '') + (i.value ? ': ' + i.value : '') + (i.source ? ` (${i.source})` : '')).join(', '))}" placeholder="Ownership: Clear title (Seller provided), Property taxes: (Not verified)…"></div>
+              <div><label class="lbl">Verification Status</label><select class="input-field" name="verification_status">
+                <option value="Not verified" ${(existing.verification_status || 'Not verified') === 'Not verified' ? 'selected' : ''}>Not verified</option>
+                <option value="Pending verification" ${existing.verification_status === 'Pending verification' ? 'selected' : ''}>Pending verification</option>
+                <option value="Verified" ${existing.verification_status === 'Verified' ? 'selected' : ''}>Verified</option>
+              </select></div>
+              <div><label class="lbl">Verification Date</label><input type="date" class="input-field" name="verification_date" value="${esc(existing.verification_date || '')}"></div>
+              <div class="sm:col-span-2"><label class="lbl">Inspection Info</label><input class="input-field" name="inspection_info" value="${esc(existing.inspection_info || '')}" placeholder="Inspected on date by company — result"></div>
+              <div class="sm:col-span-2"><label class="lbl">Documents (comma separated URLs)</label><input class="input-field" name="documents_text" value="${esc((existing.documents || []).join(', '))}" placeholder="https://…/title.pdf, https://…/inspection.pdf"></div>
+              <div class="sm:col-span-2"><label class="lbl">Condition / Risk Notes</label><textarea class="input-field" name="risk_notes" rows="2" placeholder="Any known issues, renovation needs, or risk notes…">${esc(existing.risk_notes || '')}</textarea></div>
+            </div>
           </div>
 
           <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/15 rounded-xl">
@@ -4222,23 +4334,58 @@ window.saveProperty = async function(e, existingId) {
   const requiredImageCount = existingId ? 0 : (parseInt(data.required_image_count || '24', 10) || 24);
   validateImageRequirement(requiredImageCount, images, 'This property');
   const realPriceNum = (data.real_price === '' || data.real_price == null) ? null : Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.real_price) || 0));
+  const splitList = (v) => (v || '').split(',').map(s => s.trim()).filter(Boolean);
+  const numOrNull = (v) => (v === '' || v == null || !isFinite(parseInt(v, 10))) ? null : parseInt(v, 10);
+  const floorPlanRooms = splitList(data.floor_plan_rooms).map(r => {
+    const m = String(r).match(/^(.*?):\s*(.*)$/);
+    return m ? { name: m[1].trim(), dimensions: m[2].trim() } : { name: r, dimensions: '' };
+  });
   const payload = {
     listing_type: 'property',
     category: data.property_type || 'Real Estate',
     subcategory: data.subcategory || null,
     title: data.title, description: data.description || '',
     price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.price) || 0)), currency: data.currency || 'USD',
+    real_price: realPriceNum,
     country: data.country || '', country_code: (data.country_code || '').toUpperCase(),
     state: data.state || '', city: data.city || '', town: data.town || '',
+    address: data.address || '', zip_code: data.zip_code || '',
     product_location: data.product_location || '',
     latitude: data.latitude ? parseFloat(data.latitude) : null,
     longitude: data.longitude ? parseFloat(data.longitude) : null,
     property_type: data.property_type || '', listing_status: data.listing_status || 'sale',
+    condition: data.condition || null,
     bedrooms: data.bedrooms ? parseInt(data.bedrooms) : null,
     bathrooms: data.bathrooms ? parseInt(data.bathrooms) : null,
+    half_bathrooms: numOrNull(data.half_bathrooms),
     building_size: data.building_size || '', land_size: data.land_size || '',
+    floors: numOrNull(data.floors), garage: data.garage || '',
     parking_spaces: data.parking_spaces ? parseInt(data.parking_spaces) : null,
-    furnished: data.furnished || '', features, images,
+    furnished: data.furnished || '',
+    year_built: numOrNull(data.year_built), year_renovated: numOrNull(data.year_renovated),
+    landmarks: splitList(data.landmarks_text),
+    interior_features: splitList(data.interior_features_text),
+    exterior_features: splitList(data.exterior_features_text),
+    home_systems: splitList(data.home_systems_text),
+    legal_info: splitList(data.legal_info_text).map(i => {
+      const m = String(i).match(/^(.*?):\s*(.*?)\s*\((Seller provided|Not verified|Documented)\)\s*$/i);
+      if (m) return { label: m[1].trim(), value: m[2].trim(), source: m[3] };
+      return { label: i, value: '', source: 'Not verified' };
+    }),
+    risk_notes: data.risk_notes || '',
+    floor_plan: { image: data.floor_plan_image || '', rooms: floorPlanRooms, levels: data.floor_plan_levels || '', total_area: data.floor_plan_total_area || '' },
+    nearby_area: {
+      schools: splitList(data.nearby_schools_text),
+      hospitals: splitList(data.nearby_hospitals_text),
+      shopping: splitList(data.nearby_shopping_text),
+      transportation: splitList(data.nearby_transportation_text),
+      distances: splitList(data.nearby_distances_text),
+    },
+    verification_status: data.verification_status || 'Not verified',
+    verification_date: data.verification_date || '',
+    inspection_info: data.inspection_info || '',
+    documents: splitList(data.documents_text),
+    features, images,
     highlights: normalizeCommaList(data.highlights_text),
     seo_keywords: normalizeCommaList(data.seo_keywords_text),
     is_ai_generated: !!data.catalog_template_id,
@@ -5463,7 +5610,7 @@ IDENTIFICATION RULES (accuracy over guesses — this is the most important step)
 - condition: judge from what is visible (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
 - listing_type: "property" if the photo shows a house, villa, apartment, condo, mansion, land, estate or any building for sale; "vehicle" for cars, motorcycles, boats and other vehicles; otherwise "product".
 - category (for products and vehicles): best match from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For property photos set category to "Real Estate".
-- For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), building_size (string|null), land_size (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), area (neighborhood/district, string|null), address (street + number or landmark when visible in the photo or reliably known, string|null), town (string|null), city (string|null), state (string|null), country (string|null), latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null).
+- For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), half_bathrooms (number or null), building_size (string|null), land_size (string|null), floors (number|null), garage (string|null, e.g. "2-car attached"), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), condition (string|null — only from a visible listing sign, seller notes or obvious visible state: "New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation"), year_built (number|null — only from a visible year, plaque, cornerstone or listing sign), year_renovated (number|null — only if visibly stated), area (neighborhood/district, string|null), address (street + number or landmark when visible in the photo or reliably known, string|null), zip_code (string|null — only if visibly printed), landmarks (string[]|null — only well-known landmarks visible in or clearly indicated by the photo), town (string|null), city (string|null), state (string|null), country (string|null), latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null).
 - LOCATION RULES: use ONLY location information genuinely visible in the photo or reliably known from it (street signs, landmarks, real estate signs, watermarks). NEVER invent a street address, area, city or coordinates. If you cannot determine a location value, return null for that field — the owner will enter it. Latitude/longitude may be derived from a readable address (e.g. a visible street sign); otherwise null.
 - confidence: how certain you are about what this is: "high" | "medium" | "low".
 - alternate_categories: up to 2 other plausible category matches from the list above, or [].
@@ -5471,7 +5618,7 @@ IDENTIFICATION RULES (accuracy over guesses — this is the most important step)
 - If the photo does not clearly show a product, return { "identified": false, "detected_name": "what you see", "reason": "why you cannot identify it" }.
 
 Return ONE valid JSON object (no markdown) with only these keys:
-{ "identified": true, "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "area": string|null, "address": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "alternate_categories": string[], "detected_name": string }`;
+{ "identified": true, "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": string|null, "year_built": number|null, "year_renovated": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "alternate_categories": string[], "detected_name": string }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
 
@@ -5499,12 +5646,12 @@ For each distinct product include:
 - year: only from visible text; otherwise null with year_estimated true when estimated from the design.
 - body_type, color, condition (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
 - category: best match from this list — Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For properties set category to "Real Estate".
-- subcategory, property_type, bedrooms, bathrooms, building_size, land_size, parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), area (neighborhood/district), address (street + number or landmark when visible/reliably known), town, city, state, country, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null) for properties. LOCATION RULES: only use location genuinely visible in the photo — never invent an address or coordinates; return null when unknown.
+- subcategory, property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors (number|null), garage (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), year_built (number|null — only if visible), area (neighborhood/district), address (street + number or landmark when visible/reliably known), zip_code (string|null — only if visible), landmarks (string[]|null — only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null) for properties. LOCATION RULES: only use location genuinely visible in the photo — never invent an address or coordinates; return null when unknown.
 - confidence: "high" | "medium" | "low" for each product.
 - detected_name: a short plain label for each product, e.g. "black leather handbag", "silver wristwatch", "white Nike sneakers", "modern 3-bedroom villa".
 
 Return ONE valid JSON object (no markdown):
-{ "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "area": string|null, "address": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
+{ "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": string|null, "year_built": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
 
@@ -5528,7 +5675,7 @@ Look at the photo(s) again, then complete the standard specifications for THIS E
 ALWAYS fill every relevant specification when you can determine it for the identified product:
 - Vehicles: Engine, Transmission, Fuel, Drive type, Horsepower, Seats (seating capacity), Doors, Body type, Model year, Mileage (only if visible/known), Safety features.
 - Phones/Computers: storage, ram, processor, display, graphics, os.
-- Properties (house/villa/land): property_type, bedrooms, bathrooms, building_size, land_size, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), area (neighborhood/district), address (street + number or landmark when visible/reliably known), town, city, state, country, country_code, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null), and a short condition/features summary. LOCATION RULES: only use location genuinely visible in the photo or reliably known — never invent an address, city or coordinates; return null (and list the key in "missing_fields") when you cannot determine it. latitude/longitude may be derived from a readable address; otherwise null.
+- Properties (house/villa/land): property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition (string|null — "New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation"; only from visible state or a listing sign, never inferred as verified), year_built (number|null — only if visible/known), year_renovated (number|null — only if visible/known), area (neighborhood/district), address (street + number or landmark when visible/reliably known), zip_code (string|null — only if visibly printed), landmarks (string[]|null — only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, country_code, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null), interior_features (string[]|null — only interior elements actually visible in the photos), exterior_features (string[]|null — only exterior elements actually visible), home_systems (string[]|null — only systems visibly present, e.g. air conditioning units, solar panels, radiators), nearby_area (only genuinely known from the photo/listing sign: schools/hospitals/shopping/transportation/distances — otherwise null), floor_plan (only if a floor plan is actually visible in the photos, otherwise null), legal_info (NEVER claim ownership/title/permits/taxes/legal status as verified from a photo — only mention something clearly printed on a visible listing/sign as source "Seller provided", otherwise null), inspection_info (string|null — only if visibly stated), verification_status (always null here — stays "Not verified" unless the owner verifies), risk_notes (string|null — only clearly visible issues). LOCATION RULES: only use location genuinely visible in the photo or reliably known — never invent an address, city, coordinates, landmarks or nearby places; return null (and list the key in "missing_fields") when you cannot determine it. latitude/longitude may be derived from a readable address; otherwise null.
 - Other product types: fill whatever genuinely applies — type (e.g. Handbag, Sneaker, Textbook), material, size, color, brand, model, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, storage, assembly, weatherproof, warranty.
 - Also complete the listing content for the exact identified product: highlights (3-6 genuine selling points), seo_keywords (6-10 relevant search keywords for the identified product), tags (from the allowed badge set — "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" — only the ones that genuinely apply to this exact product), warranty (only when the identified product type genuinely carries one, e.g. electronics, vehicles, appliances), availability_status ("In Stock" for a new product, otherwise null if not determinable), and stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle, property or single specimen — otherwise null, because stock cannot be known from a photo).
 
@@ -5556,7 +5703,7 @@ Return ONE valid JSON object (no markdown):
   "storage": string|null, "ram": string|null, "processor": string|null, "display": string|null, "graphics": string|null, "os": string|null,
   "material": string|null, "size": string|null, "gender": string|null, "platform": string|null,
   "type": string|null, "color": string|null, "brand": string|null, "model": string|null,
-  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "parking_spaces": number|null, "furnished": string|null, "area": string|null, "address": string|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null,
+  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": string|null, "condition": string|null, "year_built": number|null, "year_renovated": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "interior_features": string[]|null, "exterior_features": string[]|null, "home_systems": string[]|null, "nearby_area": { "schools": string[]|null, "hospitals": string[]|null, "shopping": string[]|null, "transportation": string[]|null, "distances": string[]|null }|null, "floor_plan": { "image": string|null, "rooms": string[]|null, "levels": string|null, "total_area": string|null }|null, "legal_info": string[]|null (each item like "Ownership: Clear title (Seller provided)" or "Property taxes (Not verified)" — NEVER verified from a photo), "inspection_info": string|null, "risk_notes": string|null,
   "author": string|null, "publisher": string|null, "language": string|null, "format": string|null, "isbn": string|null, "pages": string|null, "edition": string|null, "quantity": string|null, "age_range": string|null, "skin_type": string|null, "ingredients": string|null, "pet_type": string|null, "lens": string|null, "sensor": string|null, "megapixels": string|null, "video": string|null, "license": string|null, "version": string|null, "duration": string|null, "followers": string|null, "engagement": string|null, "niche": string|null, "usage": string|null, "shelf_life": string|null, "assembly": string|null, "weatherproof": string|null, "warranty": string|null,
   "features": string[]|null (notable features, e.g. ["OLED display","5G"] or ["Swimming pool","Double garage"]),
   "highlights": string[]|null (3-6 genuine selling points of this exact product),
@@ -5596,7 +5743,7 @@ KNOWN SPECIFICATIONS:
 - horsepower: ${String(sp.horsepower || 'unknown')}
 - mileage: ${String(sp.mileage || 'unknown')}
 - storage/ram: ${String(sp.storage || '')}${sp.ram ? ' / ' + sp.ram : ''}
-- property: ${String(id.property_type || sp.property_type || '')}${sp.bedrooms ? ` ${sp.bedrooms} beds` : ''}${sp.bathrooms ? ` / ${sp.bathrooms} baths` : ''}${sp.building_size ? ` / ${sp.building_size}` : ''}${sp.city ? ` / ${sp.city}` : ''}
+- property: ${String(id.property_type || sp.property_type || '')}${sp.bedrooms ? ` ${sp.bedrooms} beds` : ''}${sp.half_bathrooms ? ` / ${sp.half_bathrooms} half baths` : ''}${sp.bathrooms ? ` / ${sp.bathrooms} baths` : ''}${sp.building_size ? ` / ${sp.building_size}` : ''}${sp.land_size ? ` / ${sp.land_size} land` : ''}${sp.year_built ? ` / built ${sp.year_built}` : ''}${sp.condition ? ` / ${sp.condition}` : ''}${sp.city ? ` / ${sp.city}` : ''}
 
 Estimate the reasonable CURRENT MARKET SELLING PRICE (in USD) for THIS EXACT identified product — the price a real buyer would realistically pay for it today, in the condition shown in the photo. Use reliable current market data for that exact brand + model + year + condition + trim.
 
