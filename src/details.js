@@ -16,6 +16,7 @@ import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
 import { addToCart as cartAddToCart } from './cart.js';
 import { generateSeedReviews } from './seed-reviews.js';
+import { loadPromoBackgrounds, bgMediaLayer } from './promo-backgrounds.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -277,20 +278,20 @@ function setupAccordions() {
 function reviewItemHtml(r) {
   const nm = r.name || r.profiles?.full_name || 'Anonymous';
   const initial = escapeHtml(nm.trim().charAt(0).toUpperCase() || 'A');
-  const loc = r.location ? `<span class="text-xs text-gray-400">&middot; ${escapeHtml(r.location)}</span>` : '';
-  const title = r.title ? `<p class="text-sm font-bold text-gray-900 mt-1">${escapeHtml(r.title)}</p>` : '';
-  const photo = r.review_photo ? `<div class="mt-2.5"><img src="${escapeHtml(r.review_photo)}" alt="Customer photo" class="w-28 h-28 object-cover rounded-xl border border-gray-100" loading="lazy" onerror="this.style.display='none'"></div>` : '';
+  const loc = r.location ? `<span class="text-xs text-slate-400">&middot; ${escapeHtml(r.location)}</span>` : '';
+  const title = r.title ? `<p class="text-sm font-bold text-white mt-1">${escapeHtml(r.title)}</p>` : '';
+  const photo = r.review_photo ? `<div class="mt-2.5"><img src="${escapeHtml(r.review_photo)}" alt="Customer photo" class="w-28 h-28 object-cover rounded-xl border border-white/10" loading="lazy" onerror="this.style.display='none'"></div>` : '';
   return `
-    <div class="flex gap-3 py-4 border-b border-gray-100 last:border-0">
+    <div class="flex gap-3 py-4 border-b border-white/10 last:border-0">
       <div class="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-black uppercase shadow-sm">${initial}</div>
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm font-bold text-gray-900">${escapeHtml(nm)}</span>${loc}
-          <span class="text-xs text-gray-400">${new Date(r.date || r.created_at).toLocaleDateString()}</span>
+          <span class="text-sm font-bold text-white">${escapeHtml(nm)}</span>${loc}
+          <span class="text-xs text-slate-400">${new Date(r.date || r.created_at).toLocaleDateString()}</span>
         </div>
         <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= (r.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
         ${title}
-        <p class="text-[15px] text-gray-700 leading-relaxed mt-1.5">${escapeHtml(r.text || r.comment || '')}</p>
+        <p class="text-[15px] text-slate-200 leading-relaxed mt-1.5">${escapeHtml(r.text || r.comment || '')}</p>
         ${photo}
       </div>
     </div>`;
@@ -298,36 +299,44 @@ function reviewItemHtml(r) {
 
 // Full Customer Reviews section: live summary, 5→1 breakdown bars, real + seed
 // review list, and the write-a-review form. Keyed by the PUBLIC property_id so
-// reviews for one product can never leak onto another product's page.
+// reviews for one product can never leak onto another product's page. Rendered
+// over the admin-chosen "reviews" promo banner background.
 function reviewsSectionHtml(listing) {
   const redirect = encodeURIComponent(window.location.pathname + window.location.search);
   return `
-    <div id="reviews-section" class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
-      ${sectionHeader('message-square-star', 'Customer Reviews', 'amber')}
-      <div id="reviews-summary" class="mb-1"><div class="text-gray-500 text-sm py-3">Loading ratings…</div></div>
-      <div id="reviews-breakdown" class="mb-3"></div>
-      <div id="reviews-list"><div class="text-gray-500 text-sm py-4">Loading reviews…</div></div>
-      <div id="review-form-wrapper" class="mt-5 pt-5 border-t border-gray-100">
-        <h4 class="text-[15px] font-black text-gray-900 mb-3 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-500"></i> Write a Review</h4>
-        <div id="review-login-msg" class="text-xs text-gray-500 hidden">Please <a href="/auth.html?redirect=${redirect}" class="text-blue-500 hover:underline">sign in</a> to write a review.</div>
-        <form id="review-form" class="space-y-3">
-          <div class="flex items-center gap-2">
-            <label class="text-xs text-gray-600 font-bold uppercase">Rating</label>
-            <div id="star-rating" class="flex gap-1">
-              ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-300 hover:text-amber-400 transition"></i></button>`).join('')}
+    <div id="reviews-section" class="relative overflow-hidden rounded-2xl mb-6 shadow-sm">
+      <div class="absolute inset-0" data-bg-slot="reviews"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-950/75 to-slate-950/95"></div>
+      <div class="relative p-4 sm:p-6">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="shrink-0 w-10 h-10 rounded-xl bg-amber-400/15 text-amber-300 flex items-center justify-center"><i data-lucide="message-square-star" class="w-5 h-5"></i></div>
+          <h3 class="text-lg font-black text-white tracking-tight">Customer Reviews</h3>
+        </div>
+        <div id="reviews-summary" class="mb-1"><div class="text-slate-400 text-sm py-3">Loading ratings…</div></div>
+        <div id="reviews-breakdown" class="mb-3"></div>
+        <div id="reviews-list"><div class="text-slate-400 text-sm py-4">Loading reviews…</div></div>
+        <div id="review-form-wrapper" class="mt-5 pt-5 border-t border-white/10">
+          <h4 class="text-[15px] font-black text-white mb-3 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-400"></i> Write a Review</h4>
+          <div id="review-login-msg" class="text-xs text-slate-300 hidden">Please <a href="/auth.html?redirect=${redirect}" class="text-blue-400 hover:underline">sign in</a> to write a review.</div>
+          <form id="review-form" class="space-y-3">
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-slate-300 font-bold uppercase">Rating</label>
+              <div id="star-rating" class="flex gap-1">
+                ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-300 hover:text-amber-400 transition"></i></button>`).join('')}
+              </div>
             </div>
-          </div>
-          <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-[15px] text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></textarea>
-          <div class="flex items-center gap-3">
-            <label for="review-photo-input" class="inline-flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 cursor-pointer hover:border-blue-300 hover:bg-blue-50/40 transition">
-              <i data-lucide="camera" class="w-4 h-4 text-blue-500"></i> Add a photo
-            </label>
-            <input id="review-photo-input" type="file" accept="image/*" class="hidden">
-            <div id="review-photo-preview" class="flex items-center gap-2"></div>
-          </div>
-          <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">Submit Review</button>
-          <div id="review-submit-msg" class="text-xs text-emerald-600 font-bold hidden"><i data-lucide="check-circle" class="w-3.5 h-3.5 inline"></i> Thank you! Your review is now live.</div>
-        </form>
+            <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-slate-950/50 border border-white/15 rounded-xl px-4 py-3 text-[15px] text-white placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"></textarea>
+            <div class="flex items-center gap-3">
+              <label for="review-photo-input" class="inline-flex items-center gap-2 text-xs font-bold text-slate-200 bg-white/10 border border-white/15 rounded-xl px-3.5 py-2.5 cursor-pointer hover:border-blue-300 hover:bg-white/15 transition">
+                <i data-lucide="camera" class="w-4 h-4 text-blue-400"></i> Add a photo
+              </label>
+              <input id="review-photo-input" type="file" accept="image/*" class="hidden">
+              <div id="review-photo-preview" class="flex items-center gap-2"></div>
+            </div>
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">Submit Review</button>
+            <div id="review-submit-msg" class="text-xs text-emerald-300 font-bold hidden"><i data-lucide="check-circle" class="w-3.5 h-3.5 inline"></i> Thank you! Your review is now live.</div>
+          </form>
+        </div>
       </div>
     </div>`;
 }
@@ -335,15 +344,15 @@ function reviewsSectionHtml(listing) {
 function ratingsBreakdownHtml(listing, breakdown, total) {
   const max = Math.max(1, total);
   return `
-    <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-6 gap-y-1 items-center bg-gray-50/70 border border-gray-100 rounded-2xl p-4">
+    <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-6 gap-y-1 items-center bg-white/[.06] border border-white/10 rounded-2xl p-4 backdrop-blur">
       ${[5,4,3,2,1].map(s => {
         const n = breakdown[s] || 0;
         const pct = Math.round((n / max) * 100);
         return `
-        <div class="flex items-center gap-1.5 text-xs text-gray-500 font-medium"><i data-lucide="star" class="w-3 h-3 ${s <= 5 ? 'fill-amber-400 text-amber-400' : ''}"></i>${s}</div>
+        <div class="flex items-center gap-1.5 text-xs text-slate-300 font-medium"><i data-lucide="star" class="w-3 h-3 ${s <= 5 ? 'fill-amber-400 text-amber-400' : ''}"></i>${s}</div>
         <div class="flex items-center gap-2">
-          <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-amber-400 rounded-full" style="width:${pct}%"></div></div>
-          <span class="text-[11px] text-gray-400 w-9 text-right tabular-nums">${pct}%</span>
+          <div class="flex-1 h-2 bg-white/15 rounded-full overflow-hidden"><div class="h-full bg-amber-400 rounded-full" style="width:${pct}%"></div></div>
+          <span class="text-[11px] text-slate-400 w-9 text-right tabular-nums">${pct}%</span>
         </div>`;
       }).join('')}
     </div>`;
@@ -1375,6 +1384,7 @@ async function setupReviewForm(listing) {
 }
 
 async function loadReviews(listing) {
+  applyReviewsBannerBg();
   const listEl = document.getElementById('reviews-list');
   const summaryEl = document.getElementById('reviews-summary');
   const breakdownEl = document.getElementById('reviews-breakdown');
@@ -1414,17 +1424,17 @@ async function loadReviews(listing) {
   const summaryHtml = `
     <div class="flex flex-wrap items-center gap-4 sm:gap-6">
       <div class="flex items-center gap-3">
-        <div class="text-4xl font-black text-gray-900">${displayRating > 0 ? displayRating.toFixed(1) : 'New'}</div>
+        <div class="text-4xl font-black text-white">${displayRating > 0 ? displayRating.toFixed(1) : 'New'}</div>
         <div>
           <div class="flex gap-0.5">${ratingStars(displayRating, 'w-5 h-5')}</div>
-          <div class="text-xs text-gray-500 mt-0.5">Customer Reviews</div>
+          <div class="text-xs text-slate-300 mt-0.5">Customer Reviews</div>
         </div>
       </div>
-      <div class="hidden sm:block w-px h-10 bg-gray-200"></div>
+      <div class="hidden sm:block w-px h-10 bg-white/20"></div>
       <div class="flex flex-wrap gap-2">
-        <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Listing</span>
-        <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-full"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Secure Checkout</span>
-        <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-full"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Fast Worldwide Delivery</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-300 bg-emerald-400/10 border border-emerald-400/20 px-2.5 py-1.5 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified Listing</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-300 bg-blue-400/10 border border-blue-400/20 px-2.5 py-1.5 rounded-full"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Secure Checkout</span>
+        <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-300 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1.5 rounded-full"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Fast Worldwide Delivery</span>
       </div>
     </div>`;
   if (summaryEl) summaryEl.innerHTML = summaryHtml;
@@ -1432,7 +1442,7 @@ async function loadReviews(listing) {
 
   const all = [...dbReviews, ...seed.reviews];
   if (!all.length) {
-    listEl.innerHTML = '<p class="text-gray-500 text-sm py-2">No reviews yet. Be the first to review this product!</p>';
+    listEl.innerHTML = '<p class="text-slate-300 text-sm py-2">No reviews yet. Be the first to review this product!</p>';
     if (window.lucide) lucide.createIcons();
     return;
   }
@@ -1463,6 +1473,21 @@ async function loadReviews(listing) {
   renderPreview();
   if (window.lucide) lucide.createIcons();
 }
+
+// Fills the Customer Reviews banner with the admin-chosen "reviews" promo
+// background (same image/video as the bottom trust area). Cached loader is
+// imported from promo-backgrounds.js; a 'promo-backgrounds-updated' event also
+// refreshes the slot live when an admin changes the background.
+async function applyReviewsBannerBg() {
+  const slot = document.querySelector('[data-bg-slot="reviews"]');
+  if (!slot) return;
+  try {
+    const bg = await loadPromoBackgrounds();
+    slot.innerHTML = bgMediaLayer(bg.reviews_bg_image, bg.reviews_bg_video);
+  } catch {}
+}
+
+document.addEventListener('promo-backgrounds-updated', () => { try { applyReviewsBannerBg(); } catch {} });
 
 // Floating control so customers scrolling through the full review list can tap
 // to collapse back to the 3-review preview AND jump to the top of the Customer
