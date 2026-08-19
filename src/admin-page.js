@@ -1776,6 +1776,231 @@ const CAT_FIELDS = {
   { key: 'description', label: 'Description', type: 'textarea', span: 2 },
 ]);
 
+// ── Category-specific field templates for EVERY product category ────────────
+// Each template gives the AI scanner + the manual form the exact fields for
+// that kind of product, so a bag scan fills bag fields, a book scan book
+// fields, etc. Non-column keys are stored in the `specifications` JSONB.
+CAT_FIELDS['Bags & Accessories'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (Handbag, Backpack, Luggage…)', type: 'text' },
+  { key: 'size', label: 'Size / Dimensions', type: 'text' },
+  { key: 'material', label: 'Material (e.g. Leather)', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'gender', label: 'Gender', type: 'select', options: ['Men', 'Women', 'Unisex', 'Kids'] },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'], required: true },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'warranty', label: 'Warranty', type: 'text' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Beauty & Skincare'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (Serum, Cream, Makeup…)', type: 'text' },
+  { key: 'size', label: 'Size (ml / g)', type: 'text' },
+  { key: 'skin_type', label: 'Skin Type', type: 'text' },
+  { key: 'ingredients', label: 'Key Ingredients', type: 'text' },
+  { key: 'color', label: 'Color / Shade', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Home & Kitchen'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'model', label: 'Model', type: 'text' },
+  { key: 'type', label: 'Type (Appliance, Cookware, Decor…)', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'material', label: 'Material', type: 'text' },
+  { key: 'dimensions', label: 'Dimensions', type: 'text' },
+  { key: 'voltage', label: 'Voltage / Power', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used'], required: true },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'warranty', label: 'Warranty', type: 'text' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Furniture'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (Sofa, Table, Chair…)', type: 'text' },
+  { key: 'material', label: 'Material', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'dimensions', label: 'Dimensions', type: 'text' },
+  { key: 'assembly', label: 'Assembly Required', type: 'select', options: ['', 'Yes', 'No'] },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'warranty', label: 'Warranty', type: 'text' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Garden & Outdoor'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (Mower, Grill, Furniture…)', type: 'text' },
+  { key: 'material', label: 'Material', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'dimensions', label: 'Dimensions', type: 'text' },
+  { key: 'weatherproof', label: 'Weatherproof', type: 'select', options: ['', 'Yes', 'No'] },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Toys & Games'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'model', label: 'Model / Set Name', type: 'text' },
+  { key: 'age_range', label: 'Age Range', type: 'text' },
+  { key: 'material', label: 'Material', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Food & Groceries'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (Snack, Beverage, Pantry…)', type: 'text' },
+  { key: 'size', label: 'Size / Weight', type: 'text' },
+  { key: 'shelf_life', label: 'Shelf Life', type: 'text' },
+  { key: 'storage', label: 'Storage Instructions', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'New (Sealed)', 'Open Box'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Baby & Kids'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (Stroller, Clothing, Toy…)', type: 'text' },
+  { key: 'age_range', label: 'Age Range', type: 'text' },
+  { key: 'size', label: 'Size', type: 'text' },
+  { key: 'material', label: 'Material', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'warranty', label: 'Warranty', type: 'text' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Health & Medical'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (Device, Supplement, Care…)', type: 'text' },
+  { key: 'size', label: 'Size / Quantity', type: 'text' },
+  { key: 'usage', label: 'Usage / Dosage', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'warranty', label: 'Warranty', type: 'text' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Books & Education'] = [
+  { key: 'title', label: 'Title / Book Name', type: 'text', required: true, span: 2 },
+  { key: 'author', label: 'Author', type: 'text' },
+  { key: 'publisher', label: 'Publisher', type: 'text' },
+  { key: 'language', label: 'Language', type: 'text' },
+  { key: 'format', label: 'Format (Hardcover, Paperback, E-book)', type: 'text' },
+  { key: 'isbn', label: 'ISBN', type: 'text' },
+  { key: 'pages', label: 'Pages', type: 'text' },
+  { key: 'edition', label: 'Edition', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Like New', 'Very Good', 'Good', 'Fair'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Office & Stationery'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (Notebook, Pen, Printer…)', type: 'text' },
+  { key: 'material', label: 'Material', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'size', label: 'Size', type: 'text' },
+  { key: 'quantity', label: 'Quantity / Pack Size', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Pet Supplies'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text' },
+  { key: 'type', label: 'Type (Food, Toy, Bed, Collar…)', type: 'text' },
+  { key: 'pet_type', label: 'Pet Type (Dog, Cat, Bird…)', type: 'text' },
+  { key: 'size', label: 'Size / Weight', type: 'text' },
+  { key: 'material', label: 'Material', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Musical Instruments'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text', required: true },
+  { key: 'model', label: 'Model', type: 'text' },
+  { key: 'type', label: 'Type (Guitar, Piano, Drums…)', type: 'text' },
+  { key: 'material', label: 'Material', type: 'text' },
+  { key: 'color', label: 'Color / Finish', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'], required: true },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'warranty', label: 'Warranty', type: 'text' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Cameras & Photography'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand', type: 'text', required: true },
+  { key: 'model', label: 'Model', type: 'text' },
+  { key: 'lens', label: 'Lens', type: 'text' },
+  { key: 'sensor', label: 'Sensor', type: 'text' },
+  { key: 'megapixels', label: 'Megapixels', type: 'text' },
+  { key: 'video', label: 'Video Recording', type: 'text' },
+  { key: 'color', label: 'Color', type: 'text' },
+  { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'], required: true },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'warranty', label: 'Warranty', type: 'text' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Software & Digital'] = [
+  { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
+  { key: 'brand', label: 'Brand / Developer', type: 'text' },
+  { key: 'type', label: 'Type (Software, App, License…)', type: 'text' },
+  { key: 'platform', label: 'Platform', type: 'text' },
+  { key: 'license', label: 'License Type', type: 'text' },
+  { key: 'version', label: 'Version', type: 'text' },
+  { key: 'language', label: 'Language', type: 'text' },
+  { key: 'format', label: 'Format', type: 'text' },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Services'] = [
+  { key: 'title', label: 'Service Title', type: 'text', required: true, span: 2 },
+  { key: 'type', label: 'Service Type', type: 'text' },
+  { key: 'duration', label: 'Duration', type: 'text' },
+  { key: 'location', label: 'Location / Coverage', type: 'text' },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+CAT_FIELDS['Social Media Accounts'] = [
+  { key: 'title', label: 'Account Title', type: 'text', required: true, span: 2 },
+  { key: 'type', label: 'Platform (Instagram, TikTok…)', type: 'text' },
+  { key: 'followers', label: 'Followers', type: 'text' },
+  { key: 'engagement', label: 'Engagement Rate', type: 'text' },
+  { key: 'niche', label: 'Niche', type: 'text' },
+  { key: 'condition', label: 'Status', type: 'select', options: ['Active', 'Verified', 'Suspended'] },
+  { key: 'price', label: 'Price (USD)', type: 'number', required: true },
+  { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
+  { key: 'description', label: 'Description', type: 'textarea', span: 2 },
+];
+
 AUTOMOTIVE_CATEGORIES.forEach(k => CAT_FIELDS[k] = [
   { key: 'title', label: 'Vehicle Title', type: 'text', required: true, span: 2, placeholder: 'e.g. 2023 Toyota Land Cruiser V8 Turbo Diesel' },
   { key: 'brand', label: 'Brand', type: 'text', required: true },
@@ -1982,9 +2207,32 @@ window.showAddProductStep1 = function() {
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
-          <h3 class="text-base font-black text-white">Select Product Category</h3>
+          <h3 class="text-base font-black text-white">Add New Product</h3>
           <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
         </div>
+
+        <!-- Scan first — let AI pick the category -->
+        <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3 mb-4">
+          <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan First — let AI pick the category</p>
+          <p class="text-[11px] text-gray-500">Upload your product photos, press SCAN WITH AI. It detects EVERY distinct product (a photo with a bag + watch + shoes + phone gives four separate listings; several photos of the same product merge into one). Review each detection, then the correct category form opens filled for you. Nothing is published automatically.</p>
+          <div id="s1-drop-zone" class="drop-zone" onclick="document.getElementById('s1-img-upload').click()">
+            <i data-lucide="image-plus" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
+            <p class="text-xs font-bold text-gray-300">Click or drag & drop product images</p>
+            <input type="file" id="s1-img-upload" class="hidden" multiple accept="image/*" onchange="handleStep1ImageUpload(event)">
+          </div>
+          <div id="s1-image-preview" class="flex flex-wrap gap-2"></div>
+          <button type="button" id="btn-s1-scan" onclick="scanFirstWithAI()" disabled class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2" style="opacity:0.5">
+            <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
+          </button>
+          <div id="s1-scan-status" class="hidden text-xs font-medium"></div>
+        </div>
+
+        <div class="flex items-center gap-3 mb-3">
+          <div class="flex-1 h-px bg-gray-800"></div>
+          <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wide">or choose a category manually</span>
+          <div class="flex-1 h-px bg-gray-800"></div>
+        </div>
+
         <p class="text-xs text-gray-400 mb-3">Choose the category that best matches your product. The form will show smart fields automatically.</p>
         <div class="relative mb-3">
           <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
@@ -1999,6 +2247,7 @@ window.showAddProductStep1 = function() {
         </div>
       </div>
     </div>`);
+  if (window.lucide) lucide.createIcons();
 };
 
 window.filterProductCategoryChoices = function(query) {
@@ -2075,13 +2324,13 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Product Scanner</p>
-                <p class="text-xs text-gray-500 mt-1">Reads your uploaded images and fills the form for you. Powered by Google Gemini free tier — add your FREE key in AI Settings if not set. Only runs when you press the button.</p>
+                <p class="text-xs text-gray-500 mt-1">Reads your uploaded images and fills the form for you. Detects every distinct product (multiple products in one photo = separate listings; several photos of the same product = one listing). Powered by Google Gemini free tier — add your FREE key in AI Settings if not set. Only runs when you press the button.</p>
               </div>
               <button type="button" id="btn-scan-ai" onclick="scanProductWithAI()" class="btn-press px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl transition flex items-center gap-2 shrink-0">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
               </button>
             </div>
-            <p id="scan-ai-status" class="hidden text-sm mt-3 font-medium"></p>
+            <div id="scan-ai-status" class="hidden text-sm mt-3 font-medium"></div>
           </div>
 
           <!-- Step 2: Product Details -->
@@ -2663,6 +2912,39 @@ function applyScanToProductForm(result) {
   set('gender', specs.gender);
   set('platform', specs.platform);
 
+  // Category-specific fields — only filled when the current form has them, so a
+  // bag scan fills bag fields, a book scan fills book fields, etc.
+  set('type', specs.type || identification.type);
+  set('age_range', specs.age_range);
+  set('skin_type', specs.skin_type);
+  set('ingredients', specs.ingredients);
+  set('dimensions', specs.dimensions);
+  set('author', specs.author);
+  set('publisher', specs.publisher);
+  set('language', specs.language);
+  set('format', specs.format);
+  set('isbn', specs.isbn);
+  set('pages', specs.pages);
+  set('edition', specs.edition);
+  set('quantity', specs.quantity);
+  set('pet_type', specs.pet_type);
+  set('lens', specs.lens);
+  set('sensor', specs.sensor);
+  set('megapixels', specs.megapixels);
+  set('video', specs.video);
+  set('license', specs.license);
+  set('version', specs.version);
+  set('duration', specs.duration);
+  set('followers', specs.followers);
+  set('engagement', specs.engagement);
+  set('niche', specs.niche);
+  set('usage', specs.usage);
+  set('shelf_life', specs.shelf_life);
+  set('assembly', specs.assembly);
+  set('weatherproof', specs.weatherproof);
+  set('warranty', specs.warranty || identification.warranty);
+  set('availability_status', specs.availability_status);
+
   // Estimated market prices from stage 3 — the REAL price always goes into the
   // Real Price field (crossed out on the store), and the suggested discount
   // price goes into the Discount Price field (what customers pay). If no
@@ -2691,6 +2973,311 @@ function applyScanToProductForm(result) {
   return { filled };
 }
 
+// ── General AI Product Scanner ──────────────────────────────────────────────
+// ONE scanner for EVERY category: it identifies the product first, asks the
+// owner to confirm the detected category (and lets them pick a different one),
+// switches the form to the right category template, fills only the fields of
+// that template, and NEVER publishes anything automatically.
+
+// Best-match a free-text AI category to an exact PRODUCT_CATEGORIES entry.
+function normalizeDetectedCategory(raw) {
+  const s = String(raw || '').trim().toLowerCase();
+  const exact = PRODUCT_CATEGORIES.find(c => c.toLowerCase() === s);
+  if (exact) return { category: exact, listing_type: null };
+  if (/(house|villa|apartment|condo|mansion|land|estate|real estate|property|building|bungalow|townhouse|ranch|farmhouse)/.test(s)) {
+    return { category: null, listing_type: 'property' };
+  }
+  const map = {
+    bag: 'Bags & Accessories', bags: 'Bags & Accessories', handbag: 'Bags & Accessories', handbags: 'Bags & Accessories',
+    backpack: 'Bags & Accessories', backpacks: 'Bags & Accessories', luggage: 'Bags & Accessories', purse: 'Bags & Accessories',
+    wallet: 'Bags & Accessories', wallets: 'Bags & Accessories',
+    sneaker: 'Shoes', sneakers: 'Shoes', shoe: 'Shoes', shoes: 'Shoes', boot: 'Shoes', boots: 'Shoes', footwear: 'Shoes',
+    sandal: 'Shoes', sandals: 'Shoes', heel: 'Shoes', heels: 'Shoes',
+    phone: 'Phones', smartphone: 'Phones', smartphones: 'Phones', iphone: 'Phones', 'mobile phone': 'Phones',
+    laptop: 'Computers & Laptops', laptops: 'Computers & Laptops', computer: 'Computers & Laptops', notebook: 'Computers & Laptops',
+    macbook: 'Computers & Laptops', pc: 'Computers & Laptops', desktop: 'Computers & Laptops',
+    electronics: 'Electronics', electronic: 'Electronics', gadget: 'Electronics', gadgets: 'Electronics', tv: 'Electronics',
+    television: 'Electronics', headphones: 'Electronics', speaker: 'Electronics', speakers: 'Electronics', soundbar: 'Electronics',
+    tablet: 'Electronics', tablet: 'Electronics', earbuds: 'Electronics',
+    camera: 'Cameras & Photography', cameras: 'Cameras & Photography', dslr: 'Cameras & Photography', drone: 'Cameras & Photography', drone: 'Cameras & Photography',
+    jewelry: 'Jewelry', jewellery: 'Jewelry', ring: 'Jewelry', necklace: 'Jewelry', earring: 'Jewelry', earrings: 'Jewelry', bracelet: 'Jewelry',
+    watch: 'Watches', watches: 'Watches', wristwatch: 'Watches', 'smart watch': 'Watches',
+    clothing: 'Fashion', clothes: 'Fashion', fashion: 'Fashion', shirt: 'Fashion', shirts: 'Fashion', dress: 'Fashion', dresses: 'Fashion',
+    jacket: 'Fashion', jackets: 'Fashion', hoodie: 'Fashion', jeans: 'Fashion', 't-shirt': 'Fashion', tshirt: 'Fashion', apparel: 'Fashion',
+    "men's fashion": "Men's Fashion", 'mens fashion': "Men's Fashion",
+    "women's fashion": "Women's Fashion", 'womens fashion': "Women's Fashion",
+    car: 'Cars', cars: 'Cars', vehicle: 'Cars', vehicles: 'Cars', automobile: 'Cars', suv: 'Cars', sedan: 'Cars', 'luxury car': 'Luxury Cars',
+    'luxury cars': 'Luxury Cars',
+    truck: 'Commercial Vehicles', trucks: 'Commercial Vehicles', trailer: 'Commercial Vehicles', bus: 'Commercial Vehicles',
+    motorcycle: 'Motorcycles', motorbike: 'Motorcycles', bike: 'Motorcycles', 'motor bike': 'Motorcycles',
+    boat: 'Boats & Marine', boats: 'Boats & Marine', yacht: 'Boats & Marine', jet: 'Boats & Marine',
+    beauty: 'Beauty & Skincare', skincare: 'Beauty & Skincare', cosmetics: 'Beauty & Skincare', makeup: 'Beauty & Skincare', perfume: 'Beauty & Skincare',
+    kitchen: 'Home & Kitchen', appliance: 'Home & Kitchen', appliances: 'Home & Kitchen', blender: 'Home & Kitchen', kettle: 'Home & Kitchen',
+    cookware: 'Home & Kitchen', vacuum: 'Home & Kitchen',
+    furniture: 'Furniture', sofa: 'Furniture', chair: 'Furniture', chairs: 'Furniture', table: 'Furniture', tables: 'Furniture',
+    bed: 'Furniture', mattress: 'Furniture', desk: 'Furniture',
+    toy: 'Toys & Games', toys: 'Toys & Games', game: 'Gaming', games: 'Gaming', gaming: 'Gaming', console: 'Gaming',
+    food: 'Food & Groceries', groceries: 'Food & Groceries', snack: 'Food & Groceries', snacks: 'Food & Groceries', beverage: 'Food & Groceries',
+    baby: 'Baby & Kids', kids: 'Baby & Kids', stroller: 'Baby & Kids',
+    health: 'Health & Medical', medical: 'Health & Medical', supplement: 'Health & Medical',
+    fitness: 'Sports & Fitness', sport: 'Sports & Fitness', sports: 'Sports & Fitness', gym: 'Sports & Fitness', dumbbell: 'Sports & Fitness',
+    book: 'Books & Education', books: 'Books & Education', textbook: 'Books & Education', novel: 'Books & Education',
+    stationery: 'Office & Stationery', office: 'Office & Stationery', printer: 'Office & Stationery', pen: 'Office & Stationery',
+    pet: 'Pet Supplies', pets: 'Pet Supplies', dog: 'Pet Supplies', cat: 'Pet Supplies',
+    musical: 'Musical Instruments', guitar: 'Musical Instruments', piano: 'Musical Instruments', instrument: 'Musical Instruments',
+    software: 'Software & Digital', digital: 'Software & Digital',
+    account: 'Social Media Accounts', accounts: 'Social Media Accounts', instagram: 'Social Media Accounts', tiktok: 'Social Media Accounts',
+  };
+  const hit = map[s] || map[s.replace(/s$/, '')] || map[s.replace(/\s+/g, ' ')];
+  if (hit) return { category: hit, listing_type: null };
+  for (const cat of PRODUCT_CATEGORIES) {
+    if (s.includes(cat.toLowerCase()) || (s.length > 2 && cat.toLowerCase().includes(s))) return { category: cat, listing_type: null };
+  }
+  return { category: 'Other', listing_type: null };
+}
+
+function mapPropertyType(value) {
+  const s = String(value || '').toLowerCase().trim();
+  if (!s) return null;
+  const direct = PROPERTY_TYPES.find(t => t.toLowerCase() === s);
+  if (direct) return direct;
+  const fuzzy = PROPERTY_TYPES.find(t => t.toLowerCase().includes(s) || s.includes(t.toLowerCase()));
+  return fuzzy || null;
+}
+
+let _scanConfirmResolve = null;
+window._resolveScanConfirm = function(choice, category) {
+  if (typeof _scanConfirmResolve === 'function') _scanConfirmResolve({ choice, category });
+};
+
+// ── Multi-product review list ──────────────────────────────────────────────
+// After detection, every distinct product is shown as its own card so the owner
+// can review, edit, remove or continue each one. Different products are never
+// merged; the same product across several photos stays as one entry.
+let scanReviewProducts = [];
+let scanReviewImages = [];
+let scanReviewEntry = '';
+
+function imagesForProduct(p, images) {
+  const idxs = Array.isArray(p.image_indices) ? p.image_indices : [];
+  const out = idxs.map(i => images[i]).filter(Boolean);
+  return out.length ? out : images;
+}
+
+function scanReviewCardHtml(p, i) {
+  const norm = normalizeDetectedCategory(p.category);
+  const isProperty = p.listing_type === 'property' || (norm && norm.listing_type === 'property');
+  const cat = !isProperty ? (norm.category || p.category || 'Other') : 'Real Estate';
+  const conf = p.confidence || 'medium';
+  const confCls = {
+    high: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    medium: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    low: 'bg-red-500/10 text-red-400 border-red-500/20',
+  }[conf] || 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+  const thumbs = imagesForProduct(p, scanReviewImages).slice(0, 3);
+  return `
+  <div class="scan-review-card rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 space-y-2 fade-in" data-i="${i}">
+    <div class="flex items-center justify-between gap-2 flex-wrap">
+      <p class="text-xs font-bold text-white">${i + 1}. ${esc(p.detected_name || 'Detected product')}</p>
+      <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${confCls}">${esc(conf).toUpperCase()}</span>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      ${thumbs.map(u => `<img src="${esc(u)}" class="w-10 h-10 rounded-lg object-cover border border-violet-500/20" onerror="this.src='/fallback.svg'">`).join('')}
+      <span class="text-[11px] text-gray-400">${isProperty ? 'Real Estate' : esc(cat)} · ${(p.image_indices || []).length || 1} image(s)</span>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" onclick="scanReviewContinue(${i})" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Continue to ${isProperty ? 'Properties Manager' : 'its form'}</button>
+      <button type="button" onclick="scanReviewEdit(${i})" class="btn-press px-4 py-2 bg-gray-700/60 hover:bg-gray-600 text-gray-200 text-xs font-bold rounded-lg transition">Edit</button>
+      <button type="button" onclick="scanReviewRemove(${i})" class="btn-press px-4 py-2 bg-red-900/40 hover:bg-red-800/60 text-red-200 text-xs font-bold rounded-lg transition">Remove</button>
+      <button type="button" onclick="scanReviewCancel()" class="btn-press px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs font-bold rounded-lg transition">Cancel</button>
+    </div>
+  </div>`;
+}
+
+window.scanReviewRender = function() {
+  const el = document.getElementById(scanReviewEntry);
+  if (!el) return;
+  el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+  if (!scanReviewProducts.length) {
+    el.classList.add('text-gray-400');
+    el.textContent = 'All detected products were removed — nothing was changed.';
+    return;
+  }
+  el.classList.add('text-gray-100');
+  el.innerHTML = `
+    <div class="space-y-3">
+      <div>
+        <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4 text-violet-400"></i> ${scanReviewProducts.length} distinct product${scanReviewProducts.length > 1 ? 's' : ''} detected</p>
+        <p class="text-[11px] text-gray-400 mt-1">Photos of the same product are grouped into one listing; different products stay separate. Review each one — edit, remove, or continue to its correct form. Nothing is saved or published automatically.</p>
+      </div>
+      ${scanReviewProducts.map((p, i) => scanReviewCardHtml(p, i)).join('')}
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+};
+
+window.scanReviewContinue = async function(i) {
+  const p = scanReviewProducts[i];
+  if (!p) return;
+  const images = imagesForProduct(p, scanReviewImages);
+  const norm = normalizeDetectedCategory(p.category);
+  const isProperty = p.listing_type === 'property' || (norm && norm.listing_type === 'property');
+  if (isProperty) {
+    if (scanReviewEntry === 's1-scan-status') { closeModal(); step1Images = []; }
+    routePropertyScan(p, images);
+    return;
+  }
+  const cat = norm.category || p.category || 'Other';
+  if (scanReviewEntry === 's1-scan-status') {
+    try { localStorage.removeItem(productAutoSaveKey(cat, '')); } catch {}
+    step1Images = [];
+    showAddProductStep2(cat, { images });
+    await completeScanAndFill(p, images, cat);
+  } else {
+    const form = document.getElementById('product-form');
+    const currentCat = form ? form.dataset.category || '' : '';
+    if (cat !== currentCat) {
+      try { localStorage.removeItem(productAutoSaveKey(cat, '')); } catch {}
+      switchProductFormCategory(cat);
+      const el2 = document.getElementById(scanReviewEntry);
+      if (el2) { el2.classList.remove('hidden'); el2.classList.add('text-blue-300'); el2.textContent = `Category changed to ${cat} — finishing the scan…`; }
+      if (window.lucide) lucide.createIcons();
+    }
+    await completeScanAndFill(p, images, cat);
+  }
+};
+
+window.scanReviewEdit = function(i) {
+  const p = scanReviewProducts[i];
+  if (!p) return;
+  const card = document.querySelector(`.scan-review-card[data-i="${i}"]`);
+  if (!card) return;
+  const norm = normalizeDetectedCategory(p.category);
+  const isProperty = p.listing_type === 'property' || (norm && norm.listing_type === 'property');
+  const curCat = isProperty ? 'Real Estate' : (norm.category || p.category || 'Other');
+  const catOptions = PRODUCT_CATEGORIES.map(c => `<option value="${esc(c)}" ${c === curCat ? 'selected' : ''}>${esc(c)}</option>`).join('');
+  card.innerHTML = `
+    <p class="text-xs font-bold text-white">Edit detected product #${i + 1}</p>
+    <div class="space-y-2">
+      <input id="sr-name-${i}" class="input-field !py-2 !text-xs" value="${esc(p.detected_name || '')}" placeholder="Product name">
+      <input id="sr-brand-${i}" class="input-field !py-2 !text-xs" value="${esc(p.brand || '')}" placeholder="Brand">
+      <input id="sr-model-${i}" class="input-field !py-2 !text-xs" value="${esc(p.model || '')}" placeholder="Model">
+      <select id="sr-cat-${i}" class="input-field !py-2 !text-xs">${catOptions}</select>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" onclick="scanReviewApplyEdit(${i})" class="btn-press px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition">Apply</button>
+      <button type="button" onclick="scanReviewRender()" class="btn-press px-4 py-2 bg-gray-700/60 hover:bg-gray-600 text-gray-200 text-xs font-bold rounded-lg transition">Back</button>
+    </div>`;
+};
+
+window.scanReviewApplyEdit = function(i) {
+  const p = scanReviewProducts[i];
+  if (!p) return;
+  const name = document.getElementById(`sr-name-${i}`)?.value;
+  const brand = document.getElementById(`sr-brand-${i}`)?.value;
+  const model = document.getElementById(`sr-model-${i}`)?.value;
+  const cat = document.getElementById(`sr-cat-${i}`)?.value;
+  if (name) p.detected_name = name;
+  if (brand) p.brand = brand;
+  if (model) p.model = model;
+  if (cat) p.category = cat;
+  scanReviewRender();
+};
+
+window.scanReviewRemove = function(i) {
+  scanReviewProducts.splice(i, 1);
+  scanReviewRender();
+};
+
+window.scanReviewCancel = function() {
+  const el = document.getElementById(scanReviewEntry);
+  if (el) {
+    el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300');
+    el.classList.add('text-gray-400');
+    el.textContent = 'Scan cancelled — nothing was changed.';
+  }
+};
+
+// Fill the property form from a scan result (title, type, rooms, sizes,
+// location, description, features and a suggested price). Fully editable —
+// no auto-save, no auto-publish.
+function applyScanToPropertyForm(result) {
+  const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
+  const specs = result && result.specs ? result.specs : {};
+  const price = result && result.price ? result.price : null;
+  const filled = [];
+  const text = (v) => (Array.isArray(v) ? v.join(', ') : String(v ?? '').trim());
+  const set = (key, value) => {
+    if (value == null || text([value]) === '') return;
+    const field = document.querySelector(`#property-form [name="${key}"]`);
+    if (!field) return;
+    field.value = String(value);
+    filled.push(key);
+  };
+  const pt = identification.property_type || specs.property_type;
+  if (pt) { const mapped = mapPropertyType(pt); if (mapped) set('property_type', mapped); }
+  set('title', specs.title || identification.detected_name);
+  set('description', specs.description);
+  set('subcategory', identification.subcategory || specs.subcategory);
+  const beds = identification.bedrooms ?? specs.bedrooms;
+  if (beds != null && beds !== '') set('bedrooms', parseInt(beds, 10) || beds);
+  const baths = identification.bathrooms ?? specs.bathrooms;
+  if (baths != null && baths !== '') set('bathrooms', parseInt(baths, 10) || baths);
+  set('building_size', identification.building_size || specs.building_size);
+  set('land_size', identification.land_size || specs.land_size);
+  set('city', identification.city || specs.city);
+  set('state', identification.state || specs.state);
+  const country = identification.country || specs.country;
+  set('country', country);
+  if (country) {
+    const match = (COUNTRIES || []).find(c => String(c.name || '').toLowerCase() === String(country).toLowerCase() || String(c.code || '').toLowerCase() === String(country).toLowerCase());
+    if (match && match.code) {
+      const f = document.querySelector('#property-form [name="country_code"]');
+      if (f) { f.value = match.code; filled.push('country_code'); }
+    }
+  }
+  set('features_text', text(specs.features));
+  set('highlights_text', text(identification.highlights || specs.highlights));
+  set('seo_keywords_text', text(specs.seo_keywords));
+  set('product_location', [identification.city, identification.state, country].filter(Boolean).join(', '));
+  const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 0;
+  const max = Number.isFinite(Number(GLOBAL_PRICE_MAX)) ? Number(GLOBAL_PRICE_MAX) : 999999999;
+  const est = price ? Number(price.estimated_price) : NaN;
+  if (Number.isFinite(est) && est > 0) set('price', String(Math.max(min, Math.min(max, Math.round(est)))));
+  return { filled };
+}
+
+// STAGES 2+3 for a product form that is already open on the right category.
+async function completeScanAndFill(identification, images, category) {
+  const status = document.getElementById('scan-ai-status');
+  const setStatus = (html, cls) => {
+    if (!status) return;
+    status.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+    if (cls) status.classList.add(cls);
+    status.innerHTML = html;
+  };
+  try {
+    setStatus('Completing the standard specifications for that product…', 'text-blue-300');
+    const specs = await aiClient.completeProductSpecs(images, identification, { category: category || '', maxImages: AI_PRODUCT_SCANNER.maxImages });
+    let price = null;
+    setStatus('Estimating a fair current market price…', 'text-blue-300');
+    try { price = await aiClient.estimateProductPrice(images, identification, specs || {}, { category: category || '', maxImages: AI_PRODUCT_SCANNER.maxImages }); } catch { /* price is optional */ }
+    const out = applyScanToProductForm({ identification, specs, price });
+    const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'the product';
+    let msg = `${esc(idLabel)} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you (including the detailed description and suggested Real + Discount prices). Review and edit everything, then press SAVE / UPDATE.`;
+    if (identification.year_estimated) msg += ' Confirm the model year before saving.';
+    setStatus(msg, 'text-emerald-300');
+    showToast(`Review ${idLabel}, then press SAVE / UPDATE.`, 'success');
+  } catch (err) {
+    const msg = String(err?.message || err);
+    const keyHint = /key|api|configured|settings|vision/i.test(msg);
+    setStatus(keyHint
+      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
+      : `Scan failed: ${msg}`, 'text-red-400');
+    showToast('AI scan failed.', 'error');
+  }
+  if (window.lucide) lucide.createIcons();
+}
+
 // Manual trigger only — never called from any image-upload handler.
 window.scanProductWithAI = async function() {
   const form = document.getElementById('product-form');
@@ -2703,11 +3290,11 @@ window.scanProductWithAI = async function() {
   if (!images.length) { showToast('Upload at least one product image before scanning.', 'error'); return; }
 
   const original = btn ? btn.innerHTML : '';
-  const setStatus = (msg, cls) => {
+  const setStatus = (html, cls) => {
     if (!status) return;
-    status.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300');
+    status.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
     if (cls) status.classList.add(cls);
-    status.textContent = msg;
+    status.innerHTML = html;
   };
 
   try {
@@ -2721,32 +3308,11 @@ window.scanProductWithAI = async function() {
   } catch { /* config load failed — let the scan try anyway */ }
 
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
-  setStatus('Reading your uploaded images…', 'text-blue-300');
+  setStatus('Detecting every distinct product in your images…', 'text-blue-300');
 
+  let detection;
   try {
-    const result = await AI_PRODUCT_SCANNER.scan(images, {
-      category: form.dataset.category || '',
-      onProgress: (step, msg) => setStatus(msg, 'text-blue-300'),
-    });
-    const identification = result ? result.identification : null;
-
-    if (!identification || identification.identified === false) {
-      setStatus(identification && identification.reason
-        ? `Could not identify the product: ${esc(identification.reason)}`
-        : 'The product could not be read from these images. Make sure the photos clearly show it, then try again.', 'text-amber-300');
-      showToast('The product could not be identified from the images.', 'error');
-      return;
-    }
-
-    const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'the product';
-    const out = applyScanToProductForm(result);
-    const filledArr = out.filled;
-
-    let msg = `${esc(idLabel)} — ${filledArr.length} field${filledArr.length > 1 ? 's' : ''} ready for you (including the detailed description and suggested Real + Discount prices). Review and edit everything, then press SAVE / UPDATE.`;
-    if (identification.year_estimated) msg += ' Confirm the model year before saving.';
-    setStatus(msg, 'text-emerald-300');
-
-    showToast(`Review ${idLabel}, then press SAVE / UPDATE.`, 'success');
+    detection = await aiClient.detectProducts(images, { category: form.dataset.category || '', maxImages: Math.min(images.length, AI_PRODUCT_SCANNER.maxImages) });
   } catch (err) {
     const msg = String(err?.message || err);
     const keyHint = /key|api|configured|settings|vision/i.test(msg);
@@ -2754,10 +3320,252 @@ window.scanProductWithAI = async function() {
       ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
       : `Scan failed: ${msg}`, 'text-red-400');
     showToast('AI scan failed.', 'error');
-  } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = original; }
-    if (window.lucide) lucide.createIcons();
+    return;
   }
+  if (btn) { btn.disabled = false; btn.innerHTML = original; }
+
+  const products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
+  if (!products.length) {
+    setStatus(detection && detection.reason
+      ? `Could not identify any product: ${esc(detection.reason)}`
+      : 'No product could be read from these images. Make sure the photos clearly show the product(s), then try again.', 'text-amber-300');
+    showToast('No products could be identified from the images.', 'error');
+    return;
+  }
+
+  // REVIEW LIST — the AI never fills or publishes on its own.
+  scanReviewProducts = products;
+  scanReviewImages = images;
+  scanReviewEntry = 'scan-ai-status';
+  scanReviewRender();
+  showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected — review each one, then continue.`, 'info');
+};
+
+// Route an identified property into the Properties Manager with its images and
+// the same scan → confirm → fill → review flow (still never auto-publishes).
+function routePropertyScan(identification, images) {
+  if (window._pfEscapeHandler) { document.removeEventListener('keydown', window._pfEscapeHandler); window._pfEscapeHandler = null; }
+  showAddPropertyModal();
+  const preview = document.getElementById('image-preview');
+  const inputs = document.getElementById('image-url-inputs');
+  if (preview && inputs) {
+    preview.innerHTML = images.map((u, i) => imageThumbHtml(u, i)).join('');
+    inputs.innerHTML = images.map((u, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(u)}">`).join('');
+    updateCoverBadge();
+    updateGalleryCounter();
+  }
+  const status = document.getElementById('scan-ai-prop-status');
+  const setStatus = (html, cls) => {
+    if (!status) return;
+    status.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300');
+    if (cls) status.classList.add(cls);
+    status.innerHTML = html;
+  };
+  setStatus('Completing the standard specifications for this property…', 'text-blue-300');
+  aiClient.completeProductSpecs(images, identification, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages })
+    .then((specs) => aiClient.estimateProductPrice(images, identification, specs || {}, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages })
+      .then((price) => {
+        const out = applyScanToPropertyForm({ identification, specs, price });
+        setStatus(`${esc(identification.detected_name || 'Property')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`, 'text-emerald-300');
+        showToast('Review the property details, then press Publish Property.', 'success');
+        if (window.lucide) lucide.createIcons();
+      })
+      .catch(() => setStatus('Price estimate skipped — review the details and set a price manually.', 'text-amber-300')))
+    .catch((err) => {
+      const keyHint = /key|api|configured|settings|vision/i.test(String(err?.message || err));
+      setStatus(keyHint ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.' : `Scan failed: ${String(err?.message || err)}`, 'text-red-400');
+      showToast('AI scan failed.', 'error');
+    });
+}
+
+// ── AI Property Scanner (Properties Manager) ───────────────────────────────
+window.scanPropertyWithAI = async function() {
+  const form = document.getElementById('property-form');
+  if (!form) { showToast('Open the property form first.', 'error'); return; }
+  const btn = document.getElementById('btn-scan-ai-prop');
+  const status = document.getElementById('scan-ai-prop-status');
+
+  const images = [...(document.querySelectorAll('#image-url-inputs [name="images"]') || [])]
+    .map((el) => el.value).filter(Boolean);
+  if (!images.length) { showToast('Upload at least one property image before scanning.', 'error'); return; }
+
+  const original = btn ? btn.innerHTML : '';
+  const setStatus = (html, cls) => {
+    if (!status) return;
+    status.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+    if (cls) status.classList.add(cls);
+    status.innerHTML = html;
+  };
+
+  try {
+    const cfg = await aiClient.getConfig();
+    const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
+    if (!keyReady) {
+      setStatus('No Gemini key yet. Open AI Settings at the bottom of the Admin Home page, paste your FREE Gemini API key (aistudio.google.com/apikey — no credit card needed), then scan again.', 'text-amber-300');
+      showToast('Add your free Gemini key in AI Settings first.', 'error');
+      return;
+    }
+  } catch { }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
+  setStatus('Identifying this property from your images…', 'text-blue-300');
+
+  let identification;
+  try {
+    identification = await aiClient.identifyProduct(images, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages });
+  } catch (err) {
+    const msg = String(err?.message || err);
+    const keyHint = /key|api|configured|settings|vision/i.test(msg);
+    setStatus(keyHint
+      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
+      : `Scan failed: ${msg}`, 'text-red-400');
+    showToast('AI scan failed.', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    return;
+  }
+
+  if (!identification || identification.identified === false) {
+    setStatus(identification && identification.reason
+      ? `Could not identify the property: ${esc(identification.reason)}`
+      : 'The property could not be read from these images. Make sure the photos clearly show it, then try again.', 'text-amber-300');
+    showToast('The property could not be identified from the images.', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    return;
+  }
+  if (btn) { btn.disabled = false; btn.innerHTML = original; }
+
+  // Simplified confirmation — the owner reviews what was identified before any fill.
+  const choice = await new Promise((resolve) => {
+    _scanConfirmResolve = (c) => { _scanConfirmResolve = null; resolve(c); };
+    const el = document.getElementById('scan-ai-prop-status');
+    if (!el) { resolve({ choice: 'continue' }); return; }
+    el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300');
+    const conf = identification.confidence || 'medium';
+    const confBadge = { high: 'text-emerald-400 border-emerald-500/20', medium: 'text-amber-400 border-amber-500/20', low: 'text-red-400 border-red-500/20' }[conf] || 'text-amber-400 border-amber-500/20';
+    el.innerHTML = `
+      <div class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 space-y-2 fade-in">
+        <p class="text-xs font-bold text-white">AI identified: <span class="text-violet-300">${esc(identification.detected_name || 'this property')}</span></p>
+        <p class="text-[11px] text-gray-400">
+          ${identification.property_type ? 'Type: ' + esc(identification.property_type) + ' • ' : ''}${identification.bedrooms ? esc(identification.bedrooms) + ' bed • ' : ''}${identification.bathrooms ? esc(identification.bathrooms) + ' bath • ' : ''}${[identification.city, identification.state, identification.country].filter(Boolean).join(', ') || 'location not visible'}
+          <span class="ml-1 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${confBadge}">${esc(conf).toUpperCase()} confidence</span>
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="_resolveScanConfirm('continue')" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Fill the property form</button>
+          <button type="button" onclick="_resolveScanConfirm('cancel')" class="btn-press px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs font-bold rounded-lg transition">Cancel</button>
+        </div>
+      </div>`;
+  });
+
+  if (!choice || choice.choice === 'cancel') {
+    setStatus('Scan cancelled — nothing was changed.', 'text-gray-400');
+    showToast('Scan cancelled.', 'info');
+    return;
+  }
+
+  try {
+    setStatus('Completing the standard specifications for this property…', 'text-blue-300');
+    const specs = await aiClient.completeProductSpecs(images, identification, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages });
+    let price = null;
+    setStatus('Estimating a fair market value…', 'text-blue-300');
+    try { price = await aiClient.estimateProductPrice(images, identification, specs || {}, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages }); } catch { }
+    const out = applyScanToPropertyForm({ identification, specs, price });
+    setStatus(`${esc(identification.detected_name || 'Property')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`, 'text-emerald-300');
+    showToast('Review the property details, then press Publish Property.', 'success');
+  } catch (err) {
+    const msg = String(err?.message || err);
+    const keyHint = /key|api|configured|settings|vision/i.test(msg);
+    setStatus(keyHint
+      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
+      : `Scan failed: ${msg}`, 'text-red-400');
+    showToast('AI scan failed.', 'error');
+  }
+  if (window.lucide) lucide.createIcons();
+};
+
+// ── Scan-first panel on the category picker (Add Product step 1) ───────────
+let step1Images = [];
+window.handleStep1ImageUpload = async function(e) {
+  const files = Array.from(e.target.files || []).slice(0, 10);
+  if (!files.length) return;
+  for (const file of files) {
+    try {
+      const url = await uploadImageFile(file);
+      if (url) step1Images.push(url);
+    } catch { /* skip failed uploads */ }
+  }
+  renderStep1Preview();
+  e.target.value = '';
+};
+window.removeStep1Image = function(i) {
+  step1Images.splice(i, 1);
+  renderStep1Preview();
+};
+function renderStep1Preview() {
+  const preview = document.getElementById('s1-image-preview');
+  if (!preview) return;
+  preview.innerHTML = step1Images.map((u, i) => `
+    <div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}">
+      <img src="${esc(u)}" onerror="this.src='/fallback.svg'">
+      <button class="rm" onclick="removeStep1Image(${i})" type="button">🔙</button>
+    </div>`).join('');
+  const btn = document.getElementById('btn-s1-scan');
+  if (btn) { btn.disabled = step1Images.length === 0; btn.style.opacity = step1Images.length ? '' : '0.5'; }
+  if (window.lucide) lucide.createIcons();
+}
+
+window.scanFirstWithAI = async function() {
+  const images = step1Images.slice();
+  if (!images.length) { showToast('Upload at least one product image before scanning.', 'error'); return; }
+  const btn = document.getElementById('btn-s1-scan');
+  const status = document.getElementById('s1-scan-status');
+  const original = btn ? btn.innerHTML : '';
+  const setStatus = (html, cls) => {
+    if (!status) return;
+    status.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+    if (cls) status.classList.add(cls);
+    status.innerHTML = html;
+  };
+  try {
+    const cfg = await aiClient.getConfig();
+    const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
+    if (!keyReady) {
+      setStatus('No Gemini key yet. Open AI Settings at the bottom of the Admin Home page, paste your FREE Gemini API key (aistudio.google.com/apikey — no credit card needed), then scan again.', 'text-amber-300');
+      showToast('Add your free Gemini key in AI Settings first.', 'error');
+      return;
+    }
+  } catch { }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
+  setStatus('Detecting every distinct product in your images…', 'text-blue-300');
+
+  let detection;
+  try {
+    detection = await aiClient.detectProducts(images, { category: '', maxImages: Math.min(images.length, AI_PRODUCT_SCANNER.maxImages) });
+  } catch (err) {
+    const keyHint = /key|api|configured|settings|vision/i.test(String(err?.message || err));
+    setStatus(keyHint ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.' : `Scan failed: ${String(err?.message || err)}`, 'text-red-400');
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    return;
+  }
+  if (btn) { btn.disabled = false; btn.innerHTML = original; }
+
+  const products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
+  if (!products.length) {
+    setStatus(detection && detection.reason
+      ? `Could not identify any product: ${esc(detection.reason)}`
+      : 'No product could be read from these images. Make sure the photos clearly show the product(s), then try again.', 'text-amber-300');
+    showToast('No products could be identified from the images.', 'error');
+    return;
+  }
+
+  // REVIEW LIST — the AI never fills or publishes on its own. Continue on a
+  // product opens its correct category form with that product's own images.
+  scanReviewProducts = products;
+  scanReviewImages = images;
+  scanReviewEntry = 's1-scan-status';
+  scanReviewRender();
+  showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected — review each one, then continue.`, 'info');
 };
 
 window.saveProduct = async function(e, category, existingId) {
@@ -2786,7 +3594,7 @@ window.saveProduct = async function(e, category, existingId) {
     const normalizeComma = (raw) => normalizeCommaList(raw);
 
     const buildSpecifications = (src) => {
-      const specKeys = ['model', 'storage', 'ram', 'processor', 'display', 'material', 'gender', 'platform', 'voltage', 'engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year', 'seating_capacity', 'doors', 'real_price'];
+      const specKeys = ['model', 'storage', 'ram', 'processor', 'display', 'material', 'gender', 'platform', 'voltage', 'engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year', 'seating_capacity', 'doors', 'real_price', 'type', 'size', 'age_range', 'skin_type', 'ingredients', 'dimensions', 'author', 'publisher', 'language', 'format', 'isbn', 'pages', 'edition', 'quantity', 'pet_type', 'lens', 'sensor', 'megapixels', 'video', 'license', 'version', 'duration', 'followers', 'engagement', 'niche', 'usage', 'shelf_life', 'assembly', 'weatherproof', 'movement', 'case_material', 'water_resistance', 'gemstone', 'movement_type', 'warranty_period'];
       const spec = {};
       for (const k of specKeys) {
         const v = src[k];
@@ -2885,7 +3693,8 @@ window.saveProduct = async function(e, category, existingId) {
       validateImageRequirement(requiredImageCount, data.images || [], 'This listing');
       if (!data.title || !data.title.trim()) throw new Error('A product title is required.');
       if (data.price === '' || data.price == null || !isFinite(parseFloat(data.price))) throw new Error('A price is required.');
-      if (!data.condition) throw new Error('Please choose the product condition.');
+      const hasConditionField = !!form.querySelector('[name="condition"]');
+      if (hasConditionField && !data.condition) throw new Error('Please choose the product condition.');
 
       const payload = {
         listing_type: 'product',
@@ -3127,6 +3936,19 @@ window.showAddPropertyModal = function(existing = {}) {
             <div id="image-url-inputs">
               ${(existing.images || []).map((u, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(u)}">`).join('')}
             </div>
+          </div>
+
+          <div class="glass-soft border border-violet-500/25 rounded-2xl p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Property Scanner</p>
+                <p class="text-[11px] text-gray-500 mt-1">Reads your uploaded images and fills the property form for you. Only runs when you press the button — you review everything before publishing.</p>
+              </div>
+              <button type="button" id="btn-scan-ai-prop" onclick="scanPropertyWithAI()" class="btn-press px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shrink-0">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
+              </button>
+            </div>
+            <div id="scan-ai-prop-status" class="hidden text-xs mt-3 font-medium"></div>
           </div>
 
           <div class="flex gap-3 pt-2">
@@ -4382,18 +5204,55 @@ Rules:
 Look at the photo(s) and state exactly what product is shown. Identification ONLY — do not complete any specifications yet.
 
 IDENTIFICATION RULES (accuracy over guesses — this is the most important step):
-- Read the real brand badge / logo / emblem / nameplate in the photo character by character and use the EXACT brand that is printed. NEVER swap brands: a BMW must never be called Mercedes-Benz, an iPhone never Samsung, a Toyota never Honda or any other brand.
-- The model must come from a visible nameplate / label / badging when present. Otherwise identify the exact design (grille, headlights, taillights, wheels, body lines, interior, silhouette) and give your best professional identification, or give the brand + body type (e.g. "BMW SUV") instead of inventing a specific model.
+- Read the real brand badge / logo / emblem / nameplate / label in the photo character by character and use the EXACT brand that is printed. NEVER swap brands: a BMW must never be called Mercedes-Benz, an iPhone never Samsung, a Toyota never Honda or any other brand.
+- The model must come from a visible nameplate / label / badging when present. Otherwise identify the exact design (grille, headlights, taillights, wheels, body lines, interior, silhouette, box, packaging) and give your best professional identification, or give the brand + product type (e.g. "BMW SUV" or "Levi's jeans") instead of inventing a specific model.
 - year: only from a visible printed year, serial, badge or registration. Otherwise estimate from the design era and set "year_estimated": true.
 - color: the dominant color clearly visible.
 - body_type: only when clearly visible (Sedan, SUV, Hatchback, Coupe, Convertible, Wagon, Pickup, Truck, Van, Sports Car, Luxury Sedan, Motorcycle, Yacht, Other).
 - condition: judge from what is visible (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
-- category: best match from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other.
-- detected_name: a short plain label of what you actually see, e.g. "white Toyota Camry sedan" or "black leather handbag".
+- listing_type: "property" if the photo shows a house, villa, apartment, condo, mansion, land, estate or any building for sale; "vehicle" for cars, motorcycles, boats and other vehicles; otherwise "product".
+- category (for products and vehicles): best match from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For property photos set category to "Real Estate".
+- For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), building_size (string|null), land_size (string|null), city (string|null), state (string|null), country (string|null).
+- confidence: how certain you are about what this is: "high" | "medium" | "low".
+- alternate_categories: up to 2 other plausible category matches from the list above, or [].
+- detected_name: a short plain label of what you actually see, e.g. "white Toyota Camry sedan", "black leather handbag", "modern 4-bedroom villa".
 - If the photo does not clearly show a product, return { "identified": false, "detected_name": "what you see", "reason": "why you cannot identify it" }.
 
 Return ONE valid JSON object (no markdown) with only these keys:
-{ "identified": true, "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "detected_name": string }`;
+{ "identified": true, "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "city": string|null, "state": string|null, "country": string|null, "confidence": "high"|"medium"|"low", "alternate_categories": string[], "detected_name": string }`;
+    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
+  },
+
+  // STAGE 0 — DETECT EVERY DISTINCT PRODUCT across one photo or many photos.
+  // Multiple different products in a single photo = separate entries. Multiple
+  // photos of the SAME product = one entry with all its image indices. This is
+  // the grouping step so the scanner never merges different products into one
+  // listing and never splits one product into several.
+  async detectProducts(imageUrls, context = {}) {
+    const prompt = `STAGE 0 — DETECT EVERY DISTINCT PRODUCT.
+Look carefully at ALL of the photo(s) uploaded and detect EVERY distinct product shown.
+
+RULES:
+- Every DIFFERENT product must be its own entry. If one photo shows a bag, a watch, shoes and a phone, that is FOUR separate products — one entry per product.
+- Photos that show the SAME product from different angles / sides / details are ONE product: give them the same entry and list every image index in image_indices.
+- A single photo can appear in several products' image_indices when it contains several different products.
+- If a photo contains no recognizable product, ignore that photo.
+- If NO product can be identified in any photo, return { "identified": false, "reason": "why you cannot identify anything" }.
+
+For each distinct product include:
+- image_indices: array of the photo indexes (0-based) that show THIS product (used as its own images later). Never combine different products under one entry.
+- listing_type: "property" if it is a house, villa, apartment, condo, mansion, land, estate or building; "vehicle" for cars, motorcycles, boats; otherwise "product".
+- brand: the real brand printed on the product when visible — never swap one brand for another.
+- model: real model from a visible label when present, otherwise null.
+- year: only from visible text; otherwise null with year_estimated true when estimated from the design.
+- body_type, color, condition (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
+- category: best match from this list — Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For properties set category to "Real Estate".
+- subcategory, property_type, bedrooms, bathrooms, building_size, land_size, city, state, country for properties.
+- confidence: "high" | "medium" | "low" for each product.
+- detected_name: a short plain label for each product, e.g. "black leather handbag", "silver wristwatch", "white Nike sneakers", "modern 3-bedroom villa".
+
+Return ONE valid JSON object (no markdown):
+{ "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "city": string|null, "state": string|null, "country": string|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
 
@@ -4404,6 +5263,7 @@ Return ONE valid JSON object (no markdown) with only these keys:
 The product below was identified in STAGE 1 from the photos.
 
 IDENTIFIED PRODUCT:
+- listing_type: ${String(id.listing_type || 'product')}
 - brand: ${String(id.brand || 'unknown')}
 - model: ${String(id.model || 'unknown')}
 - year: ${String(id.year || 'unknown')}
@@ -4411,31 +5271,40 @@ IDENTIFIED PRODUCT:
 - category: ${String(id.category || 'unknown')}
 - detected_name: ${String(id.detected_name || 'unknown')}
 
-Look at the photo(s) again, then complete the standard specifications for THIS EXACT identified product using reliable product/vehicle specification data for that exact brand + model.
+Look at the photo(s) again, then complete the standard specifications for THIS EXACT identified product using reliable product/vehicle/property data for that exact brand + model.
 
-ALWAYS fill every relevant specification when you can determine it for the identified model: Engine, Transmission, Fuel, Drive type, Horsepower, Seats (seating capacity), Doors, Body type, Model year, Mileage (only if visible/known), Safety features, plus other relevant standard specs for the product type.
+ALWAYS fill every relevant specification when you can determine it for the identified product:
+- Vehicles: Engine, Transmission, Fuel, Drive type, Horsepower, Seats (seating capacity), Doors, Body type, Model year, Mileage (only if visible/known), Safety features.
+- Phones/Computers: storage, ram, processor, display, graphics, os.
+- Properties (house/villa/land): property_type, bedrooms, bathrooms, building_size, land_size, city, state, country, and a short condition/features summary.
+- Other product types: fill whatever genuinely applies — type (e.g. Handbag, Sneaker, Textbook), material, size, color, brand, model, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, storage, assembly, weatherproof, warranty.
 
 HARD RULES:
 - ONLY use specifications for the exact brand + model identified above. A Toyota photo must produce TOYOTA specifications. NEVER use specifications from a different brand or model (never a Toyota image → Mercedes specs, never an iPhone image → Samsung specs, never a bag image → car specs).
 - If the exact year or trim is uncertain, use the most common / standard specification for that identified model and list that key in "estimated". Do not randomly invent values that are not reasonable for that model.
-- Only return specs that exist for the product type: a bag has no engine/transmission/horsepower (leave those null); a phone has no transmission or doors (leave those null); a car has engine/transmission/fuel/drive/horsepower/seats/doors.
+- Only return specs that exist for the product type: a bag has no engine/transmission/horsepower (leave those null); a phone has no transmission or doors (leave those null); a car has engine/transmission/fuel/drive/horsepower/seats/doors; a house has bedrooms/bathrooms/sizes but no engine or storage.
 - Never return price or stock_quantity in this stage — price is handled in a separate stage.
 
 DESCRIPTION REQUIREMENTS (the description is a MAJOR part of the listing):
 - Write a detailed, professional, natural, trustworthy and enjoyable marketplace description that is clearly about THIS exact identified product and nothing else.
 - For vehicles, naturally explain the engine, performance, transmission, drivetrain, fuel type, comfort, interior, exterior, safety, technology and practicality — always grounded in the reliable specifications you returned above.
+- For properties, describe the home/land, its layout, rooms, size, location, surroundings and notable features — grounded in the property details returned above.
 - For other product types, cover the product's most relevant, genuine attributes (design, materials, build quality, usability, and key specs) based only on the identified product and its reliable specs.
 - Write in smooth, complete sentences and short paragraphs (roughly 3-6 sentences / 60-140 words). Never sound robotic, never use bullet lists, never invent features, prices, bundles or promises that are not true of the identified product, and NEVER mention AI, scanning, estimates, specification lookup or any internal process.
 
 Return ONE valid JSON object (no markdown):
 {
-  "title": string|null (professional listing title: year + real brand + real model + body type, e.g. "2023 Toyota Camry SE Sedan"),
+  "title": string|null (professional listing title: year + real brand + real model + product type, e.g. "2023 Toyota Camry SE Sedan" or "Black Leather Crossbody Handbag"),
   "description": string|null (the detailed, professional description described above — based ONLY on the identified product and its standard specs),
   "engine": string|null, "transmission": string|null, "fuel_type": string|null, "drive_type": string|null,
   "horsepower": string|null, "mileage": string|null, "seating_capacity": string|null, "doors": string|null,
   "body_type": string|null, "model_year": string|null, "safety_features": string[]|null,
   "storage": string|null, "ram": string|null, "processor": string|null, "display": string|null, "graphics": string|null, "os": string|null,
   "material": string|null, "size": string|null, "gender": string|null, "platform": string|null,
+  "type": string|null, "color": string|null, "brand": string|null, "model": string|null,
+  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "building_size": string|null, "land_size": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null,
+  "author": string|null, "publisher": string|null, "language": string|null, "format": string|null, "isbn": string|null, "pages": string|null, "edition": string|null, "quantity": string|null, "age_range": string|null, "skin_type": string|null, "ingredients": string|null, "pet_type": string|null, "lens": string|null, "sensor": string|null, "megapixels": string|null, "video": string|null, "license": string|null, "version": string|null, "duration": string|null, "followers": string|null, "engagement": string|null, "niche": string|null, "usage": string|null, "shelf_life": string|null, "assembly": string|null, "weatherproof": string|null, "warranty": string|null,
+  "features": string[]|null (notable features, e.g. ["OLED display","5G"] or ["Swimming pool","Double garage"]),
   "estimated": string[] (keys above that are estimates, e.g. ["engine","horsepower"])
 }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
@@ -4467,6 +5336,7 @@ KNOWN SPECIFICATIONS:
 - horsepower: ${String(sp.horsepower || 'unknown')}
 - mileage: ${String(sp.mileage || 'unknown')}
 - storage/ram: ${String(sp.storage || '')}${sp.ram ? ' / ' + sp.ram : ''}
+- property: ${String(id.property_type || sp.property_type || '')}${sp.bedrooms ? ` ${sp.bedrooms} beds` : ''}${sp.bathrooms ? ` / ${sp.bathrooms} baths` : ''}${sp.building_size ? ` / ${sp.building_size}` : ''}${sp.city ? ` / ${sp.city}` : ''}
 
 Estimate the reasonable CURRENT MARKET SELLING PRICE (in USD) for THIS EXACT identified product — the price a real buyer would realistically pay for it today, in the condition shown in the photo. Use reliable current market data for that exact brand + model + year + condition + trim.
 
