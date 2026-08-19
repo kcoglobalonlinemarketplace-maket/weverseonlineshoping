@@ -682,7 +682,7 @@ function getRowListings(rowDef) {
   if (catalogExtra.length > 0) {
     listings = [...listings, ...catalogExtra];
   }
-  return listings;
+  return listings.filter(l => l && !isCatalogListingHidden(l.property_id));
 }
 
 function renderRow(rowDef) {
@@ -745,7 +745,7 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = r.allTrucks ? ALL_TRUCKS : r.allMotorhomes ? ALL_MOTORHOMES : r.allCars ? ALL_CARS : r.newHouses ? ALL_HOUSES : r.allWashingMachines ? ALL_WASHING_MACHINES : r.productCategory ? ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === r.productCategory) : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids);
+    const base = (r.allTrucks ? ALL_TRUCKS : r.allMotorhomes ? ALL_MOTORHOMES : r.allCars ? ALL_CARS : r.newHouses ? ALL_HOUSES : r.allWashingMachines ? ALL_WASHING_MACHINES : r.productCategory ? ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === r.productCategory) : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids)).filter(l => l && !isCatalogListingHidden(l.property_id));
     count += base.length;
     if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts && !r.productCategory && !r.allWashingMachines) {
       count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;

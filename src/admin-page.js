@@ -2,7 +2,7 @@ import { SUPABASE_URL, supabase } from './supabase-client.js';
 import { COUNTRIES } from './country-data.js';
 import { ALL_CURRENCIES } from './localization.js';
 import { GLOBAL_PRICE_MAX, GLOBAL_PRICE_MIN, buildCatalogDraft, getDefaultCurrencyForCountry, getTemplatesForCategory } from './global-product-catalog.js';
-import { getLocalShowroomListingById, listLocalShowroomListings, patchLocalShowroomListing, upsertLocalShowroomListing } from './local-showroom-store.js';
+import { getLocalShowroomListingById, listLocalShowroomListings, patchLocalShowroomListing, removeLocalShowroomListing, upsertLocalShowroomListing } from './local-showroom-store.js';
 import { getFlagEmojiFromCountryCode, getManualPaymentAccounts, getPaymentInstructions, loadPaymentSettingsCache, savePaymentSettingsCache } from './payment-settings.js';
 import { SHOWROOM_LISTINGS } from './showroom-data.js';
 import { PRODUCT_LISTINGS } from './products-data.js';
@@ -905,6 +905,15 @@ async function renderProducts() {
       if (p && p.property_id && p.listing_type !== 'property' && !seen.has(p.property_id)) { seen.add(p.property_id); items.push(p); }
     }
     items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    // Hide any listing the admin deleted (seed items are tombstones in the
+    // hidden list — see deleteProduct) so deleted products never come back.
+    try { await loadHiddenCatalogIds(); } catch {}
+    const hiddenIds = new Set(getHiddenCatalogIds());
+    if (hiddenIds.size) {
+      for (let i = items.length - 1; i >= 0; i--) {
+        if (items[i] && items[i].property_id && hiddenIds.has(items[i].property_id)) items.splice(i, 1);
+      }
+    }
     const categories = [...new Set(items.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     const tags = [...new Set(items.flatMap(p => Array.isArray(p.tags) ? p.tags : []).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
@@ -1491,7 +1500,7 @@ window.quickEditProduct = async function(pid) {
             <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
               <i data-lucide="image-plus" class="w-10 h-10 text-blue-400 mx-auto mb-2"></i>
               <p class="text-base font-bold text-gray-300">Tap to add photos (up to 24)</p>
-              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP. First image is the cover.</p>
+              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP. First image is the cover. ✕ deletes any image (even the main/cover).</p>
               <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
             </div>
             <div id="image-preview" class="flex flex-wrap gap-2.5 mt-3">
@@ -1564,13 +1573,31 @@ window.shareProduct = async function(pid) {
 
 window.deleteProduct = async function(pid) {
   if (!confirm('Delete this product permanently? This action cannot be undone.')) return;
+  const item = (window._productsData || []).find(p => p.property_id === pid)
+    || (window._propertiesData || []).find(p => p.property_id === pid)
+    || getLocalShowroomListingById(pid);
   const { error } = await supabase.from('showroom_listings').delete().eq('property_id', pid);
-  if (error) {
-    if (isRlsDenied(error)) return showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+  if (error && !isRlsDenied(error)) {
     return showToast('Delete failed: ' + error.message, 'error');
   }
-  showToast('Product deleted');
-  renderProducts();
+  // Remove from the browser's local fallback store too, so locally-saved
+  // listings disappear instead of resurrecting on the next render.
+  removeLocalShowroomListing(pid);
+  // Seed listings (the built-in catalog) are not rows in the database, so a
+  // DB delete can never remove them. Tombstone the id in the persisted hidden
+  // list instead — the storefront checks it site-wide (cards, details, search,
+  // promo pool, checkout) and every manager render filters it below.
+  try {
+    const res = await saveCatalogHidden(pid, true);
+    if (res && res.error && isRlsDenied(res.error)) {
+      showToast('⚠️ Deleted, but the site-wide hidden list could not be saved: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+    } else {
+      showToast('Product deleted');
+    }
+  } catch {
+    showToast('Product deleted');
+  }
+  if (item && item.listing_type === 'property') { renderProperties(); } else { renderProducts(); }
 };
 
 // Delete EVERY product in the Product Manager (and the database) at once.
@@ -2312,7 +2339,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             <div id="image-preview" class="flex flex-wrap gap-2.5 mt-3">
               ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
             </div>
-            <p class="text-sm text-gray-500 mt-1">Drag to reorder • Click X to remove • First image is cover • Upload up to 24 gallery images</p>
+            <p class="text-sm text-gray-500 mt-1">Drag to reorder • ✕ deletes any image (even the main/cover — the next image becomes the cover) • ↻ replaces • Upload up to 24 gallery images</p>
             <p id="gallery-counter" class="text-sm mt-1 font-bold text-gray-400"></p>
             <div id="image-url-inputs">
               ${(existingData.images || []).map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}
@@ -2461,11 +2488,11 @@ window.switchProductFormCategory = function(newCategory) {
 
 
 function imageThumbHtml(url, i) {
-  return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}" title="${i === 0 ? 'Cover Image' : 'Image ' + (i + 1)}">
+  return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}" title="${i === 0 ? 'Cover Image (main photo)' : 'Image ' + (i + 1)}">
     <img src="${esc(url)}" onerror="this.src='/fallback.svg'">
+    <button class="rm" onclick="removeImage(${i})" type="button" title="Delete this image (cover can be deleted too)">✕</button>
     <button class="rp" onclick="document.getElementById('rp-input-${i}').click()" type="button" title="Replace image">↻</button>
     <input type="file" accept="image/*" class="rp-input" id="rp-input-${i}" onchange="replaceImage(${i}, this)">
-    <button class="rm" onclick="removeImage(${i})" type="button">🔙</button>
   </div>`;
 }
 
@@ -3940,6 +3967,10 @@ async function renderProperties() {
       if (seedProps.length) items = items.concat(seedProps);
     }
     items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    // Hide deleted properties the same way — tombstones never resurrect.
+    try { await loadHiddenCatalogIds(); } catch {}
+    const hiddenIds = new Set(getHiddenCatalogIds());
+    items = items.filter(p => !(p && p.property_id && hiddenIds.has(p.property_id)));
     window._propertiesData = items;
     content.innerHTML = `
       <div class="space-y-4 fade-in">

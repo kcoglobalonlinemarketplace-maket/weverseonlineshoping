@@ -570,13 +570,25 @@ export function loadDBListings() {
 }
 
 // Return ALL listings: hardcoded + database, deduplicated by property_id.
+function readHiddenIds() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('kco_hidden_catalog_ids_v1') || '[]');
+    return new Set(Array.isArray(raw) ? raw : []);
+  } catch {
+    return new Set();
+  }
+}
+
 export function getAllListings() {
+  const hidden = readHiddenIds();
   const seen = new Set();
   const all = [];
   for (const l of _dbListings) {
+    if (!l || !l.property_id || hidden.has(l.property_id)) continue;
     if (!seen.has(l.property_id)) { seen.add(l.property_id); all.push(l); }
   }
   for (const l of SHOWROOM_LISTINGS) {
+    if (!l || !l.property_id || hidden.has(l.property_id)) continue;
     if (!seen.has(l.property_id)) { seen.add(l.property_id); all.push(l); }
   }
   return all;
@@ -584,5 +596,6 @@ export function getAllListings() {
 
 // Find a single listing by property_id across both sources.
 export function findListingById(id) {
+  if (readHiddenIds().has(id)) return null;
   return LISTING_MAP.get(id) || null;
 }

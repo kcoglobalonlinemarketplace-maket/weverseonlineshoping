@@ -64,3 +64,9 @@ export function patchLocalShowroomListing(propertyId, updates) {
   writeStore(items);
   return items[index];
 }
+
+export function removeLocalShowroomListing(propertyId) {
+  const items = readStore().filter(item => item.property_id !== propertyId);
+  writeStore(items);
+  return true;
+}
