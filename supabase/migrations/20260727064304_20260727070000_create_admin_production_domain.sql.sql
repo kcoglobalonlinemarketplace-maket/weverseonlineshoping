@@ -2,7 +2,7 @@
 # Create First Administrator Account (Production Domain)
 
 ## Purpose
-Creates the first super administrator account for KCO Global Online Marketplace
+Creates the first super administrator account for Weverse Online Shop
 using the official production domain kcoglobalonlinemarket.com.
 
 ## New Data
@@ -52,16 +52,16 @@ BEGIN
       now(),
       now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"display_name":"KCO Administrator"}'::jsonb
+      '{"display_name":"Weverse Administrator"}'::jsonb
     )
     RETURNING id INTO admin_id;
   END IF;
 
   INSERT INTO public.profiles (user_id, is_admin, display_name, country_code)
-  VALUES (admin_id, true, 'KCO Administrator', 'US')
+  VALUES (admin_id, true, 'Weverse Administrator', 'US')
   ON CONFLICT (user_id) DO UPDATE
   SET is_admin = true,
-      display_name = 'KCO Administrator';
+      display_name = 'Weverse Administrator';
 
   INSERT INTO public.admin_roles (user_id, role, permissions)
   VALUES (

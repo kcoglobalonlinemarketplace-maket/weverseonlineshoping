@@ -2,7 +2,7 @@
 # Order Reminders & Customer Notifications
 
 ## Purpose
-Creates an automatic notification system for KCO Global Online Marketplace.
+Creates an automatic notification system for Weverse Online Shop.
 After every successful order, the system logs order events and sends professional
 reminder emails to customers at each stage of the purchase lifecycle.
 
@@ -202,13 +202,13 @@ BEGIN
     'Quantity: 1' || E'\n' ||
     'Total Amount: ' || NEW.amount || ' ' || NEW.currency || E'\n' ||
     'Current Status: ' || v_event_type || E'\n\n' ||
-    'Thank you for shopping with KCO Global Online Marketplace. ' ||
+    'Thank you for shopping with Weverse Online Shop. ' ||
     'Please keep your Order Number and payment confirmation for your records. ' ||
     'You can log into your account at any time to track your order status and view your order history. ' ||
     'We will continue to keep you updated until your order has been successfully delivered.' || E'\n\n' ||
-    'Track your order: https://kcoglobalonlinemarket.com/account' || E'\n' ||
-    'Contact Customer Support: support@kcoglobalonlinemarket.com' || E'\n\n' ||
-    '— KCO Global Online Marketplace Team';
+    'Track your order: https://weverseonlineshop.com/account' || E'\n' ||
+    'Contact Customer Support: support@weverseonlineshop.com' || E'\n\n' ||
+    '— Weverse Online Shop Team';
 
   -- Queue notification (edge function will pick up 'queued' rows)
   INSERT INTO public.notification_log

@@ -2,7 +2,7 @@
 # Create First Administrator Account
 
 ## Purpose
-Creates the first super administrator account for KCO Global Online Marketplace.
+Creates the first super administrator account for Weverse Online Shop.
 This is a one-time bootstrap migration that:
 1. Creates the admin user in auth.users with a secure temporary password.
 2. Creates their profile with is_admin = true.
@@ -66,17 +66,17 @@ BEGIN
       now(),
       now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"display_name":"KCO Administrator"}'::jsonb
+      '{"display_name":"Weverse Administrator"}'::jsonb
     )
     RETURNING id INTO admin_id;
   END IF;
 
   -- ── 2. Create or update the admin profile ───────────────────
   INSERT INTO public.profiles (user_id, is_admin, display_name, country_code)
-  VALUES (admin_id, true, 'KCO Administrator', 'US')
+  VALUES (admin_id, true, 'Weverse Administrator', 'US')
   ON CONFLICT (user_id) DO UPDATE
   SET is_admin = true,
-      display_name = 'KCO Administrator';
+      display_name = 'Weverse Administrator';
 
   -- ── 3. Assign super_admin role ───────────────────────────────
   INSERT INTO public.admin_roles (user_id, role, permissions)

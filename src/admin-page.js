@@ -5998,7 +5998,7 @@ async function renderContent() {
               { key: 'whatsapp_number', label: 'WhatsApp Number', type: 'tel', placeholder: '+1 234 567 8900' },
             ]},
             { section: 'Hero Section', fields: [
-              { key: 'hero_headline', label: 'Hero Headline', type: 'text', placeholder: 'Global Online Marketplace' },
+              { key: 'hero_headline', label: 'Hero Headline', type: 'text', placeholder: 'Weverse Online Shop' },
               { key: 'hero_subtext', label: 'Hero Subtext', type: 'textarea', placeholder: 'Shop premium products…' },
               { key: 'hero_cta_text', label: 'CTA Button Text', type: 'text', placeholder: 'Shop Now' },
             ]},

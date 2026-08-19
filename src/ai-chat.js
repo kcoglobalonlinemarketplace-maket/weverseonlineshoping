@@ -121,12 +121,12 @@ function buildDom() {
   const panel = document.createElement('div');
   panel.id = 'kco-ai-panel';
   panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'Weverse assistant chat');
+  panel.setAttribute('aria-label', 'Weverse Online Shop assistant chat');
   panel.innerHTML = `
     <div class="kco-ai-head">
       <div class="kco-ai-avatar">${iconSvg('bot', 20)}</div>
       <div>
-        <div class="kco-ai-title">Weverse Assistant</div>
+        <div class="kco-ai-title">Weverse Online Shop</div>
         <div class="kco-ai-status"><span class="kco-ai-dot"></span> Online — replies instantly</div>
       </div>
       <button class="kco-ai-close" aria-label="Close chat">${iconSvg('close', 16)}</button>

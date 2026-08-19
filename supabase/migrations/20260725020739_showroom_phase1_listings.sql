@@ -2,7 +2,7 @@
 # Showroom Phase 1 — Listings & Favorites
 
 ## Purpose
-Stores the 20 sample product listings for Showroom Phase 1 of the KCO Global Online Marketplace.
+Stores the 20 sample product listings for Showroom Phase 1 of the Weverse Online Shop.
 Covers Real Estate (apartments, villas, mansions, beach houses, luxury condos, farm houses,
 commercial buildings, hotels) and Vehicles (cars, motorhomes).
 

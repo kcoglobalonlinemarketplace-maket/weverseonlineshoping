@@ -2,7 +2,7 @@
 # Admin Dashboard — Database Schema
 
 ## Purpose
-Supports a full enterprise admin dashboard for KCO Global Online Marketplace.
+Supports a full enterprise admin dashboard for Weverse Online Shop.
 Adds tables for: activity logs, security logs, site settings, payment gateways,
 product reviews, visitor analytics, admin roles, and email templates.
 
@@ -64,7 +64,7 @@ CREATE INDEX IF NOT EXISTS idx_security_logs_created ON public.admin_security_lo
 -- ── Site settings (singleton) ────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.site_settings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  site_name text NOT NULL DEFAULT 'KCO Global Online Marketplace',
+  site_name text NOT NULL DEFAULT 'Weverse Online Shop',
   default_currency text NOT NULL DEFAULT 'USD',
   supported_currencies jsonb NOT NULL DEFAULT '["USD","NGN","GBP","EUR","CAD","AUD","SGD","JPY","MXN","IDR"]'::jsonb,
   supported_languages jsonb NOT NULL DEFAULT '["English"]'::jsonb,
@@ -72,8 +72,8 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
   tax_enabled boolean NOT NULL DEFAULT false,
   tax_rate numeric NOT NULL DEFAULT 0,
   maintenance_mode boolean NOT NULL DEFAULT false,
-  marketplace_name text NOT NULL DEFAULT 'KCO Global Online Marketplace',
-  support_email text NOT NULL DEFAULT 'support@kcoglobalonlinemarket.com',
+  marketplace_name text NOT NULL DEFAULT 'Weverse Online Shop',
+  support_email text NOT NULL DEFAULT 'support@weverseonlineshop.com',
   cloudinary_cloud_name text,
   cloudinary_api_key text,
   cloudinary_api_secret text,
@@ -238,14 +238,14 @@ CREATE POLICY "admin_insert_templates" ON public.email_templates FOR INSERT
   TO authenticated WITH CHECK (public.is_current_user_admin());
 
 INSERT INTO public.email_templates (template_key, subject, body) VALUES
-  ('order_confirmation', 'Order Confirmed - {{order_number}}', 'Your order {{order_number}} has been confirmed. Total: {{amount}} {{currency}}. We will notify you when it ships.'),
-  ('payment_approved', 'Payment Approved - {{order_number}}', 'Your payment for order {{order_number}} has been approved. Amount: {{amount}} {{currency}}.'),
-  ('payment_rejected', 'Payment Update - {{order_number}}', 'Your payment for order {{order_number}} could not be verified. Please contact support.'),
-  ('shipping_update', 'Shipping Update - {{order_number}}', 'Your order {{order_number}} has been shipped via {{courier}}. Tracking: {{tracking_number}}.'),
-  ('delivery_confirmation', 'Delivered - {{order_number}}', 'Your order {{order_number}} has been delivered. Thank you for shopping with KCO Global Online Marketplace!'),
-  ('welcome_email', 'Welcome to KCO Global Online Marketplace', 'Welcome! Your account has been created. Start exploring premium products from around the world.'),
-  ('password_reset', 'Password Reset - KCO Global Online Marketplace', 'Click the link below to reset your password. This link expires in 1 hour.'),
-  ('email_verification', 'Verify Your Email - KCO Global Online Marketplace', 'Please verify your email address to activate your account.')
+  ('order_confirmation', 'Order Confirmed - {{order_number}} - Weverse Online Shop', 'Your order {{order_number}} has been confirmed. Total: {{amount}} {{currency}}. We will notify you when it ships.'),
+  ('payment_approved', 'Payment Approved - {{order_number}} - Weverse Online Shop', 'Your payment for order {{order_number}} has been approved. Amount: {{amount}} {{currency}}.'),
+  ('payment_rejected', 'Payment Update - {{order_number}} - Weverse Online Shop', 'Your payment for order {{order_number}} could not be verified. Please contact support.'),
+  ('shipping_update', 'Shipping Update - {{order_number}} - Weverse Online Shop', 'Your order {{order_number}} has been shipped via {{courier}}. Tracking: {{tracking_number}}.'),
+  ('delivery_confirmation', 'Delivered - {{order_number}}', 'Your order {{order_number}} has been delivered. Thank you for shopping with Weverse Online Shop!'),
+  ('welcome_email', 'Welcome to Weverse Online Shop', 'Welcome! Your account has been created. Start exploring premium products from around the world.'),
+  ('password_reset', 'Password Reset - Weverse Online Shop', 'Click the link below to reset your password. This link expires in 1 hour.'),
+  ('email_verification', 'Verify Your Email - Weverse Online Shop', 'Please verify your email address to activate your account.')
 ON CONFLICT (template_key) DO NOTHING;
 
 -- ── Helper: log admin activity ───────────────────────────────

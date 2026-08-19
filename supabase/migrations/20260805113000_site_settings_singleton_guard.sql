@@ -3,14 +3,14 @@
 
 CREATE TABLE IF NOT EXISTS public.site_settings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  site_name text NOT NULL DEFAULT 'KCO Global Online Marketplace',
+  site_name text NOT NULL DEFAULT 'Weverse Online Shop',
   default_currency text NOT NULL DEFAULT 'USD',
   supported_currencies jsonb NOT NULL DEFAULT '["USD","NGN","GBP","EUR","CAD","AUD","SGD","JPY","MXN","IDR"]'::jsonb,
   supported_languages jsonb NOT NULL DEFAULT '["English"]'::jsonb,
   supported_countries jsonb NOT NULL DEFAULT '[]'::jsonb,
   maintenance_mode boolean NOT NULL DEFAULT false,
-  marketplace_name text NOT NULL DEFAULT 'KCO Global Online Marketplace',
-  support_email text NOT NULL DEFAULT 'support@kcoglobalonlinemarket.com',
+  marketplace_name text NOT NULL DEFAULT 'Weverse Online Shop',
+  support_email text NOT NULL DEFAULT 'support@weverseonlineshop.com',
   updated_at timestamptz NOT NULL DEFAULT now(),
   ai_ad_enabled boolean NOT NULL DEFAULT false,
   ai_ad_video_url text,

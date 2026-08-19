@@ -2,7 +2,7 @@
 # Global Smart Product Search - Database Schema
 
 ## Purpose
-Enables unlimited global product search across the KCO Global Online Marketplace and connected supplier catalogues.
+Enables unlimited global product search across the Weverse Online Shop and connected supplier catalogues.
 Customers can search for almost any product worldwide. If not in the marketplace, the system searches
 connected suppliers and displays items as Special Order / On-Demand listings.
 

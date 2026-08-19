@@ -182,7 +182,12 @@ Deno.serve(async (req) => {
   const site = (siteRes.data || {}) as Record<string, unknown>;
   const listings = (listingRes.data || []) as Array<Record<string, unknown>>;
 
-  const storeName = String(site.brand_name || site.site_name || 'Weverse Online Shop');
+  // The ONLY official brand is "Weverse Online Shop". Whatever the DB says, the
+  // assistant must NEVER introduce itself with an old brand name (KCO, K.C.O,
+  // KCO Global Online Marketplace, etc.) — fall back to the official brand.
+  const BRAND_NAME = 'Weverse Online Shop';
+  const rawStoreName = String(site.brand_name || site.site_name || BRAND_NAME);
+  const storeName = /(kco|k\.c\.o|global online marketplace|global marketplace)/i.test(rawStoreName) ? BRAND_NAME : rawStoreName;
   const contactEmail = String(site.contact_email || site.brand_email || 'support@weverseonlineshop.com');
 
   const inventory = listings
