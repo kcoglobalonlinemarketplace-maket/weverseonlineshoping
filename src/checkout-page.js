@@ -10,6 +10,7 @@ import { PRODUCT_LISTINGS } from './products-data.js';
 import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { detectCurrency, getCountryByCode, COUNTRIES, SUPPORTED_CURRENCIES } from './country-data.js';
 import { buildFallbackNotice, getManualPaymentAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
+import { convertFromUSD, fmtLocal, flwSupportedCurrency, preloadFx } from './fx.js';
 
 const PRODUCT_LOOKUP = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
 function findProductById(id) {
@@ -62,6 +63,7 @@ let state = {
   manualPaymentInstructions: '',
   paymentGateway: 'both',
   autoDetectedCurrency: '',
+  currencyManuallySelected: false,
 };
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -218,6 +220,7 @@ async function init() {
   }
   state.autoDetectedCurrency = detectCurrency(state.countryCode) || '';
   state.selectedCurrency = state.autoDetectedCurrency || 'USD';
+  state.shippingCountry = state.countryCode;
   state.paymentSettings = await loadPaymentSettings();
   state.manualPaymentAccounts = getManualPaymentAccounts(state.paymentSettings);
   state.manualPaymentInstructions = getPaymentInstructions(state.paymentSettings);
@@ -225,6 +228,10 @@ async function init() {
   if (state.paymentGateway === 'manual') state.paymentMethod = 'manual_bank_transfer';
   if (state.paymentGateway === 'flutterwave') state.paymentMethod = 'flutterwave';
   if (!getSupportedCurrenciesFromAccounts(state.manualPaymentAccounts).includes(state.selectedCurrency)) state.selectedCurrency = 'USD';
+
+  // Preload live exchange rates so every amount below is shown in the visitor's
+  // real currency (cached for 24h; falls back to USD numbers offline).
+  await preloadFx();
 
   // Load saved addresses
   if (state.user && !state.isGuest) {
@@ -265,6 +272,32 @@ function getTaxAmount() {
 
 function getTotal() {
   return getSubtotal() + getShippingCost() + getTaxAmount();
+}
+
+// The total shown to the customer, converted from USD to the selected currency
+// using live rates. Falls back to the USD figure when rates are unavailable.
+function getTotalLocal() {
+  return convertFromUSD(getTotal(), state.selectedCurrency);
+}
+
+function fmtLocalTotal() {
+  return fmtLocal(getTotalLocal(), state.selectedCurrency);
+}
+
+// Re-resolve the customer's currency/account when the shipping country changes,
+// unless they picked a currency themselves in step 3.
+function syncRegionFromShippingCountry() {
+  const cc = (state.shippingCountry || '').toUpperCase();
+  if (!cc) return;
+  state.countryCode = cc;
+  localStorage.setItem('kco_country', cc);
+  if (!state.currencyManuallySelected) {
+    state.autoDetectedCurrency = detectCurrency(cc) || '';
+    const supported = getSupportedCurrenciesFromAccounts(state.manualPaymentAccounts);
+    state.selectedCurrency = state.autoDetectedCurrency && supported.includes(state.autoDetectedCurrency)
+      ? state.autoDetectedCurrency
+      : 'USD';
+  }
 }
 
 /* ── Render ──────────────────────────────────────────────────── */
@@ -528,7 +561,7 @@ function renderStep3() {
     <div class="space-y-3">
       ${state.paymentMethod === 'flutterwave' ? `
         <button onclick="payWithFlutterwave()" id="flw-pay-btn" class="btn-press w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">
-          <i data-lucide="zap" class="w-5 h-5"></i> Pay ${fmtMoney(getTotal(), state.selectedCurrency)} with Flutterwave
+          <i data-lucide="zap" class="w-5 h-5"></i> Pay ${fmtLocalTotal()} with Flutterwave
         </button>
       ` : `
         <button onclick="placeOrderManual()" id="manual-pay-btn" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">
@@ -614,10 +647,10 @@ function renderOrderSummary() {
         }).join('')}
       </div>
       <div class="space-y-2 pt-4 border-t border-blue-100">
-        <div class="flex justify-between text-sm"><span class="text-gray-500">Subtotal</span><span class="text-gray-900 font-bold">${fmtMoney(subtotal, state.cartItems[0]?.listing?.currency || 'USD')}</span></div>
-        <div class="flex justify-between text-sm"><span class="text-gray-500">Shipping</span><span class="text-emerald-600 font-bold">${getShippingCost() === 0 ? 'Free' : fmtMoney(getShippingCost(), state.cartItems[0]?.listing?.currency || 'USD')}</span></div>
-        ${getTaxAmount() > 0 ? `<div class="flex justify-between text-sm"><span class="text-gray-500">Tax</span><span class="text-gray-900 font-bold">${fmtMoney(getTaxAmount(), state.cartItems[0]?.listing?.currency || 'USD')}</span></div>` : ''}
-        <div class="flex justify-between text-lg pt-2 border-t border-blue-100"><span class="text-gray-900 font-bold">Total</span><span class="text-amber-600 font-black">${fmtMoney(total, state.cartItems[0]?.listing?.currency || 'USD')}</span></div>
+        <div class="flex justify-between text-sm"><span class="text-gray-500">Subtotal</span><span class="text-gray-900 font-bold">${fmtLocal(convertFromUSD(subtotal, state.selectedCurrency), state.selectedCurrency)}</span></div>
+        <div class="flex justify-between text-sm"><span class="text-gray-500">Shipping</span><span class="text-emerald-600 font-bold">${getShippingCost() === 0 ? 'Free' : fmtLocal(convertFromUSD(getShippingCost(), state.selectedCurrency), state.selectedCurrency)}</span></div>
+        ${getTaxAmount() > 0 ? `<div class="flex justify-between text-sm"><span class="text-gray-500">Tax</span><span class="text-gray-900 font-bold">${fmtLocal(convertFromUSD(getTaxAmount(), state.selectedCurrency), state.selectedCurrency)}</span></div>` : ''}
+        <div class="flex justify-between text-lg pt-2 border-t border-blue-100"><span class="text-gray-900 font-bold">Total</span><span class="text-amber-600 font-black">${fmtLocalTotal()}</span></div>
       </div>
       <div class="mt-4 p-3 bg-gray-50 border border-blue-100 rounded-xl">
         <div class="flex items-center gap-2 text-xs text-gray-600">
@@ -708,6 +741,7 @@ function saveStep2Data() {
     state.shippingState = document.getElementById('ship-state')?.value || '';
     state.shippingPostal = document.getElementById('ship-postal')?.value || '';
     state.shippingCountry = document.getElementById('ship-country')?.value || state.shippingCountry;
+    syncRegionFromShippingCountry();
   }
   state.billingSame = document.getElementById('billing-same')?.checked ?? true;
   if (!state.billingSame) state.billingAddress = document.getElementById('billing-address')?.value || '';
@@ -737,6 +771,7 @@ window.selectAddress = (id) => {
       state.shippingState = a.state;
       state.shippingPostal = a.postal_code;
       state.shippingCountry = a.country_code;
+      syncRegionFromShippingCountry();
     }
   }
   render();
@@ -748,7 +783,7 @@ window.toggleBilling = () => {
 };
 
 window.selectPaymentMethod = (method) => { state.paymentMethod = method; render(); };
-window.selectCurrency = (currency) => { state.selectedCurrency = currency; render(); };
+window.selectCurrency = (currency) => { state.currencyManuallySelected = true; state.selectedCurrency = currency; render(); };
 window.copyToClipboard = copyToClipboard;
 
 /* ── Create order in DB ─────────────────────────────────────── */
@@ -765,14 +800,14 @@ async function createOrder(paymentMethod, extraData = {}) {
     order_number: state.orderNumber,
     listing_id: state.listing.property_id,
     listing_title: state.listing.title,
-    amount: total,
+    amount: getTotalLocal(),
     currency: state.selectedCurrency,
     full_name: state.fullName,
     email: state.email || state.user?.email || '',
     phone: state.phone,
-    status: paymentMethod === 'flutterwave' ? 'order_placed' : 'order_placed',
+    status: 'order_placed',
     payment_method: paymentMethod,
-    subtotal,
+    subtotal: convertFromUSD(getSubtotal(), state.selectedCurrency),
     quantity: state.cartItems.reduce((s, i) => s + i.quantity, 0),
     billing_address: billingAddr,
     ...extraData,
@@ -810,6 +845,11 @@ window.payWithFlutterwave = async () => {
     localStorage.setItem('kco_pending_order', state.orderNumber);
 
     // Initialize Flutterwave via edge function
+    // Flutterwave only supports a fixed set of currencies (NGN/USD/GBP/EUR/GHS/
+    // KES/ZAR/ZMW/TZS/UGX/XAF/XOF); charge in a supported one so ATM/card
+    // payments are never declined for an unsupported currency.
+    const flwCurrency = flwSupportedCurrency(state.selectedCurrency);
+    const flwAmount = convertFromUSD(getTotal(), flwCurrency);
     const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/flutterwave-payment?action=initialize`;
     const res = await fetch(fnUrl, {
       method: 'POST',
@@ -818,8 +858,8 @@ window.payWithFlutterwave = async () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: getTotal(),
-        currency: state.selectedCurrency,
+        amount: flwAmount,
+        currency: flwCurrency,
         customer_name: state.fullName,
         customer_email: state.email || state.user?.email,
         customer_phone: state.phone,

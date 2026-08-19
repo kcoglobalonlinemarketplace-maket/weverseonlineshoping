@@ -10,6 +10,7 @@ import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
 import { detectCurrency, getCountryByCode, SUPPORTED_CURRENCIES } from './country-data.js';
 import { buildFallbackNotice, getManualPaymentAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
+import { convertFromUSD, fmtLocal, preloadFx } from './fx.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 const PRODUCT_LOOKUP = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
@@ -238,8 +239,8 @@ function spawnParticles() {
 spawnParticles();
 
 /* ── Render: Order summary card ────────────────────────────── */
-function renderOrderSummary(listing, cover, isProperty) {
-  const price = formatPrice(listing);
+function renderOrderSummary(listing, cover, isProperty, selectedCurrency) {
+  const price = fmtLocal(convertFromUSD(listing.price, selectedCurrency), selectedCurrency);
   return `
     <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
       <div class="flex items-center gap-2 mb-4">
@@ -637,7 +638,7 @@ function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
 
 /* ── Render: Pending verification state ────────────────────── */
 function renderPendingVerification(orderNumber, listing, amount, currency) {
-  const price = formatPrice(listing);
+  const price = fmtLocal(convertFromUSD(listing.price, currency), currency);
   return `
     <div class="fade-in text-center py-8">
       <div class="inline-flex items-center justify-center w-20 h-20 bg-emerald-50 rounded-full mb-6 check-pop">
@@ -704,7 +705,6 @@ async function init() {
     return;
   }
 
-  const price = formatPrice(listing);
   const isProperty = listing.listing_type === 'property';
   const cover = listing.images?.[0] || FALLBACK_IMG;
 
@@ -727,10 +727,15 @@ async function init() {
   manualPaymentAccounts = getManualPaymentAccounts(paymentSettings);
   manualPaymentInstructions = getPaymentInstructions(paymentSettings);
 
+  // Live exchange rates so the amount paid matches the selected currency
+  // (cached for 24h; falls back to USD numbers offline).
+  await preloadFx();
+
   autoDetectedCurrency = detectedCurrency || '';
   let selectedCurrency = autoDetectedCurrency || 'USD';
   if (!getSupportedCurrenciesFromAccounts(manualPaymentAccounts).includes(selectedCurrency)) selectedCurrency = 'USD';
   const resolved = getResolvedPayment(countryCode, autoDetectedCurrency || '');
+  const localAmount = convertFromUSD(baseAmount, selectedCurrency);
 
   root.innerHTML = `
     <div class="fade-in">
@@ -743,7 +748,7 @@ async function init() {
       <h1 class="text-2xl sm:text-3xl font-black text-gray-900 mb-2">Secure Checkout</h1>
       <p class="text-gray-500 text-sm mb-6">Complete your purchase using manual bank transfer. Upload your receipt after payment for verification.</p>
 
-      ${renderOrderSummary(listing, cover, isProperty)}
+      ${renderOrderSummary(listing, cover, isProperty, selectedCurrency)}
 
       ${renderBankTransferMethod()}
 
@@ -751,7 +756,7 @@ async function init() {
 
       <div id="bank-account-container">${resolved.isFallback ? renderUnsupportedCurrency(resolved.fallbackNotice) : renderBankAccount(resolved.account, null, manualPaymentInstructions)}</div>
 
-      <div id="upload-form-container">${renderUploadForm(orderNumber, listing, baseAmount, selectedCurrency, isGuest)}</div>
+      <div id="upload-form-container">${renderUploadForm(orderNumber, listing, localAmount, selectedCurrency, isGuest)}</div>
 
       ${renderComingSoonMethods()}
 
@@ -800,6 +805,8 @@ function attachEventHandlers(listing, baseAmount, orderNumber, user, isGuest) {
     if (currencyDisplay) currencyDisplay.value = currency;
     const currencyHidden = document.getElementById('form-currency');
     if (currencyHidden) currencyHidden.value = currency;
+    const amountPaid = document.getElementById('form-amount-paid');
+    if (amountPaid) amountPaid.value = convertFromUSD(listing.price, currency);
     if (window.lucide) lucide.createIcons();
   };
 
