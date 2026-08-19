@@ -70,7 +70,8 @@
       </form>
     </div>
   </main>
-<script type="module">
+  <script type="module">
+    import { supabase } from '/src/supabase-client.js';
     document.getElementById('contact-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('cf-submit');
@@ -81,16 +82,28 @@
       const message = document.getElementById('cf-message').value.trim();
       btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i> Sending...'; lucide.createIcons();
       try {
-        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-auth-email`, {
-          method: 'POST', headers: { 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'contact_form', name, email, subject, message }),
+        let userId = null;
+        try { userId = (await supabase.auth.getUser()).data?.user?.id || null; } catch {}
+        // Save to site_feedback so the admin Support/Messages dashboard sees it.
+        const { error } = await supabase.from('site_feedback').insert({
+          user_id: userId,
+          name,
+          email,
+          rating: 5,
+          feedback: `${subject}: ${message}`,
+          is_approved: false,
         });
-        const data = await res.json();
-        if (res.ok && !data.error) {
-          status.className = 'text-center text-sm py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200';
-          status.textContent = 'Message sent! We\'ll get back to you within 24 hours.';
-          document.getElementById('contact-form').reset();
-        } else { throw new Error(data.error || 'Failed to send'); }
+        if (error) throw new Error(error.message);
+        // Best-effort email notification to the support inbox — never blocks the form.
+        try {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-auth-email`, {
+            method: 'POST', headers: { 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'contact_form', name, email, subject, message }),
+          });
+        } catch {}
+        status.className = 'text-center text-sm py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200';
+        status.textContent = 'Message sent! We\'ll get back to you within 24 hours.';
+        document.getElementById('contact-form').reset();
       } catch (err) {
         status.className = 'text-center text-sm py-3 rounded-xl bg-red-50 text-red-600 border border-red-200';
         status.textContent = 'Failed to send message. Please email us directly at support@weverseonlineshop.com';
@@ -112,5 +125,6 @@
   <script type="module" src="/src/app-promo-banner.js"></script>
   <script type="module" src="/src/live-promo-alerts.js"></script>
   <script type="module" src="/src/scroll-progress.js"></script>
+  <script type="module" src="/src/ai-chat.js"></script>
 </body>
 </html>
