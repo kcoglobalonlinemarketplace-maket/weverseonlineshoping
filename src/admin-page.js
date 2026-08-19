@@ -3563,10 +3563,14 @@ window.scanPropertyWithAI = async function() {
   if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
   // Simplified confirmation — the owner reviews what was identified before any fill.
+  // Per owner rule: a FRESH property form (no user edits) is filled automatically
+  // with NO question. The confirmation only appears if the user already typed or
+  // changed something, so a scan never silently overwrites work in progress.
   const choice = await new Promise((resolve) => {
     _scanConfirmResolve = (c) => { _scanConfirmResolve = null; resolve(c); };
     const el = document.getElementById('scan-ai-prop-status');
     if (!el) { resolve({ choice: 'continue' }); return; }
+    if (!window._propFormDirty) { resolve({ choice: 'continue' }); return; }
     el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300');
     const conf = identification.confidence || 'medium';
     const confBadge = { high: 'text-emerald-400 border-emerald-500/20', medium: 'text-amber-400 border-amber-500/20', low: 'text-red-400 border-red-500/20' }[conf] || 'text-amber-400 border-amber-500/20';
@@ -4159,6 +4163,17 @@ window.showAddPropertyModal = function(existing = {}) {
     </div>`);
   setupDropZone(); setupImageSortable();
   configurePriceField('ppf-price');
+  // Track real user edits so the AI scan auto-fills a FRESH form without asking,
+  // but still confirms before overwriting a form the owner has already worked on.
+  // Programmatic fills (scan/template/currency sync) never fire input/change,
+  // so the flag stays false until the owner actually types or changes a control.
+  window._propFormDirty = !!isEdit;
+  const pfEl = document.getElementById('property-form');
+  if (pfEl) {
+    const markPropDirty = () => { window._propFormDirty = true; };
+    pfEl.addEventListener('input', markPropDirty);
+    pfEl.addEventListener('change', markPropDirty);
+  }
   window.syncPropertyCountry = function() { syncCountryAndCurrency('ppf'); };
   syncCountryAndCurrency('ppf');
   applyCatalogDraftToPropertyForm('pricing');
