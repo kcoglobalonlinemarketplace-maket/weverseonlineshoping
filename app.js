@@ -507,6 +507,31 @@ let _panelDept=null;
 let _allPanel=false;
 let _deptLabels={};
 
+// Exact marketplace category order shown in the customer category bar.
+// The authoritative list lives in src/categories.js (window.MARKETPLACE_CATEGORIES
+// on the homepage); this fallback guarantees the bar renders correctly even
+// before the ES modules have executed.
+const CATEGORY_BAR_FALLBACK=[
+  'Women','Men','Kids','Home','Cars','Trucks','Fashion','Jewelry','Beauty','Sports',
+  'Electronics','Phones','Computers','Gaming','Motorcycles','Bicycles','Houses','Land',
+  'Furniture','Kitchen','Home Appliances','Food & Groceries','Baby','Pets','Agriculture',
+  'Books','Office','Business & Industrial','Auto Parts','Health & Medical',
+  'Musical Instruments','Arts & Crafts','Toys & Hobbies','Travel & Luggage',
+  'Watches & Accessories','Garden & Outdoor','Party & Event Supplies','Cameras & Photography',
+  'Software & Digital Products','Jewellery Making Supplies','Collectibles & Memorabilia',
+  'Safety & Security','Fitness Equipment','Camping & Hiking','Pool & Spa',
+  'Industrial Tools & Equipment','Packaging & Shipping Supplies','Cleaning Supplies',
+  'Religious & Spiritual Items','Flowers & Gifts','Luxury Goods','Wedding Supplies',
+  'Costumes & Cosplay','Coins & Bullion','Fireplace & Heating','Marine & Boating',
+  'RV & Camper Accessories','Educational Supplies','Funeral & Memorial Supplies',
+];
+
+function getBarCategories(){
+  const list=window.MARKETPLACE_CATEGORIES;
+  if(list&&Array.isArray(list)&&list.length)return list;
+  return CATEGORY_BAR_FALLBACK.map(name=>({name,icon:"shopping-bag",color:"blue"}));
+}
+
 async function getCategoryInventory(){
   if(window._getShowroomCategoryInventory){
     try{ const inv=await window._getShowroomCategoryInventory(); if(inv&&inv.length)return inv; }catch(e){}
@@ -517,6 +542,12 @@ async function getCategoryInventory(){
 function renderCategories(){
   const c=document.getElementById("category-list");
   if(!c)return;
+  if(!window.MARKETPLACE_CATEGORIES){
+    window.addEventListener("marketplace-categories-ready",function once(){
+      window.removeEventListener("marketplace-categories-ready",once);
+      renderCategories();
+    },{once:true});
+  }
   c.innerHTML="";
   _deptLabels={};
   const all=document.createElement("button");
@@ -525,20 +556,38 @@ function renderCategories(){
   all.innerHTML='<i data-lucide="layout-grid" class="w-3.5 h-3.5"></i><span class="whitespace-nowrap">All</span>';
   all.addEventListener("click",()=>{filterByCategory("All",all);});
   c.appendChild(all);
-  if(window.lucide)lucide.createIcons();
+
+  const known=getBarCategories();
+  const knownNames=new Set(known.map(k=>String(k.name||"").toLowerCase()));
+  known.forEach(cat=>{
+    _deptLabels[cat.name]=cat.name;
+    const chip=document.createElement("button");
+    chip.dataset.dept=cat.name;
+    chip.className="nav-cat-chip";
+    chip.innerHTML='<i data-lucide="'+(cat.icon||"shopping-bag")+'" class="w-3.5 h-3.5"></i><span class="whitespace-nowrap">'+cat.name+'</span>';
+    chip.addEventListener("click",()=>{filterByCategory(cat.name,chip);});
+    c.appendChild(chip);
+  });
+
   getCategoryInventory().then(inv=>{
-    let moreBtn=null;
-    (inv||[]).forEach(d=>{
-      if(d.id==="more"){moreBtn=makeMoreChip(d);c.appendChild(moreBtn);return;}
-      _deptLabels[d.id]=d.label;
+    const extras=[];
+    (inv||[]).forEach(d=>(d.categories||[]).forEach(entry=>{
+      const n=String(entry.name||"").trim();
+      if(n&&!knownNames.has(n.toLowerCase())&&!extras.some(e=>e.name===n)){
+        extras.push({name:n,icon:"shopping-bag",color:"blue"});
+      }
+    }));
+    extras.forEach(cat=>{
+      _deptLabels[cat.name]=cat.name;
       const chip=document.createElement("button");
-      chip.dataset.dept=d.id;
+      chip.dataset.dept=cat.name;
       chip.className="nav-cat-chip";
-      chip.innerHTML='<i data-lucide="'+d.icon+'" class="w-3.5 h-3.5"></i><span class="whitespace-nowrap">'+d.label+'</span>';
-      chip.addEventListener("click",()=>{filterByDepartment(d.id);});
+      chip.innerHTML='<i data-lucide="'+(cat.icon||"shopping-bag")+'" class="w-3.5 h-3.5"></i><span class="whitespace-nowrap">'+cat.name+'</span>';
+      chip.addEventListener("click",()=>{filterByCategory(cat.name,chip);});
       c.appendChild(chip);
     });
-    if(!moreBtn){moreBtn=makeMoreChip({icon:"grid"});c.appendChild(moreBtn);}
+    const moreBtn=makeMoreChip({icon:"grid"});
+    c.appendChild(moreBtn);
     if(window.lucide)lucide.createIcons();
   });
   setupCategoryRowScroll(c);
@@ -725,12 +774,12 @@ function filterByDepartment(deptId){
 
 function filterByCategory(name,el){
   _activeCategory=name;
-  setNavActive(name==="All"?"all":null);
   closeSearchResults();
   if(name==="All"){if(window._clearShowroomFilter)window._clearShowroomFilter();}
   else if(window._filterShowroomByCategory){window._filterShowroomByCategory(name);}
   showToast("Exploring: "+name);
   closeCategoryPanel();
+  setNavActive(name==="All"?"all":name);
 }
 
 // ---- SMART SEARCH ----

@@ -537,6 +537,15 @@ body[class*="bg-[#070b16]"] [class*="bg-[#030712]"] [class*="text-white"] { colo
   color: #2563eb;
 }
 
+/* Empty category state in the showroom grid */
+.category-empty {
+  animation: fadeInUp .3s ease both;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Live date/time/trust bar */
 #trust-bar > div {
   background: #ffffff !important;

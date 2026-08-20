@@ -8,6 +8,7 @@ import { isCatalogListingHidden, loadHiddenCatalogIds } from './catalog-hidden-s
 import { addToCart as cartAddToCart } from './cart.js';
 import { openShareSheet } from './share.js';
 import { renderCardMaps } from './static-map.js';
+import { canonicalCategoriesForLabel } from './categories.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -1301,40 +1302,75 @@ function collectAllRows() {
     .flatMap(s => s.rows.map(r => ({ section: s, row: r })));
 }
 
-function categoryMatches(catName, sectionLabel, rowLabel) {
-  if (catName === 'All') return true;
-  const n = catName.toLowerCase();
-  const s = (sectionLabel || '').toLowerCase();
-  const r = (rowLabel || '').toLowerCase();
-  const keywords = {
-    'women': ['women', 'woman'], 'men': ['men', 'man'], 'kids': ['kids', 'kid', 'child', 'baby'],
-    'home': ['home'], 'sports': ['sport', 'fitness', 'gym', 'athletic'], 'jewellery': ['jewel'],
-    'electronics': ['electronic', 'gadget'], 'cars': ['car'], 'motorcycles': ['motorcycle', 'motor'],
-    'phones': ['phone', 'smartphone', 'mobile'], 'computers': ['computer', 'laptop', 'monitor'],
-    'furniture': ['furniture', 'armchair', 'chair', 'table', 'sofa'], 'beauty': ['beauty', 'cosmetic', 'makeup', 'skincare'],
-    'fashion': ['fashion', 'apparel', 'clothing'],     'real estate': ['real estate', 'house', 'property', 'apartment', 'villa', 'motorhome', 'camper', 'rv'],
-    'bicycles': ['bicycle', 'bike', 'cycling'], 'trucks': ['truck'], 'land': ['land', 'commercial'],
-    'kitchen': ['kitchen', 'cookware', 'utensil'], 'food': ['food', 'grocer', 'groceries'],
-    'pets': ['pet'], 'books': ['book'], 'toys': ['toy', 'game', 'hobby'], 'services': ['service', 'industrial', 'equipment'],
-  };
-  const kws = keywords[n] || [n];
-  return kws.some(k => s.includes(k) || r.includes(k));
+// Canonical marketplace category names a given showroom section/row belongs
+// to. Fixed gathered sections (houses, cars, trucks, motorhomes, land,
+// washing machines) map directly to their canonical bar names; product rows
+// are matched by keyword through the shared canonical category list so the
+// customer bar, admin manager and AI scanner always agree.
+function rowCanonicalNames(section, row) {
+  const sId = section.id || '';
+  if (sId === 'local-houses' || sId === 'modern-luxury') return ['houses'];
+  if (sId === 'commercial-land') return ['land'];
+  if (sId === 'cars') return ['cars'];
+  if (sId === 'trucks-buses') return ['trucks'];
+  if (sId === 'motorhomes-boats') return ['rv & camper accessories'];
+  if (sId === 'washing-machines') return ['home appliances'];
+  return canonicalCategoriesForLabel(row.label);
 }
 
-export function filterShowroomByCategory(categoryName) {
-  const grid = document.querySelector('[data-showroom-grid="real-estate"]');
-  if (!grid) return;
+function rowBelongsToCategory(catName, section, row) {
+  const n = String(catName || '').toLowerCase();
+  if (n === 'all' || !n) return true;
+  const names = rowCanonicalNames(section, row);
+  if (names.includes(n)) return true;
+  const raw = String(row.label || '').toLowerCase();
+  return raw === n || String(section.label || '').toLowerCase() === n;
+}
+
+function categoryMatches(catName, sectionLabel, rowLabel) {
+  if (catName === 'All') return true;
+  const n = String(catName || '').toLowerCase();
+  const s = String(sectionLabel || '').toLowerCase();
+  const r = String(rowLabel || '').toLowerCase();
+  if (s === n || r === n) return true;
+  return canonicalCategoriesForLabel(r).includes(n) || canonicalCategoriesForLabel(s).includes(n);
+}
+
+function applyRowVisibility(grid, predicate) {
   const allRows = collectAllRows();
+  let anyVisible = false;
   allRows.forEach(({ section, row }) => {
     const rowEl = grid.querySelector(`[data-row-id="${row.id}"]`);
     if (!rowEl) return;
-    const match = categoryMatches(categoryName, section.label, row.label);
+    const match = predicate(section, row);
     rowEl.style.display = match ? '' : 'none';
+    if (match) anyVisible = true;
   });
   grid.querySelectorAll('.showroom-section').forEach(sec => {
     const visibleRows = sec.querySelectorAll('.showroom-row:not([style*="display: none"])');
     sec.style.display = visibleRows.length > 0 ? '' : 'none';
   });
+  const empty = grid.querySelector('[data-category-empty]');
+  if (!anyVisible) {
+    if (!empty) {
+      grid.insertAdjacentHTML('beforeend',
+        '<div data-category-empty class="category-empty flex flex-col items-center justify-center text-center py-16 px-4">'
+        + '<span class="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-4">'
+        + '<i data-lucide="package-open" class="w-7 h-7 text-gray-400"></i></span>'
+        + '<p class="text-sm font-bold text-gray-700">No products available in this category yet</p>'
+        + '<p class="text-xs text-gray-500 mt-1">Check back soon — new items are added regularly.</p></div>');
+      if (window.lucide) window.lucide.createIcons();
+    }
+  } else if (empty) {
+    empty.remove();
+  }
+}
+
+export function filterShowroomByCategory(categoryName) {
+  const grid = document.querySelector('[data-showroom-grid="real-estate"]');
+  if (!grid) return;
+  applyRowVisibility(grid, (section, row) => rowBelongsToCategory(categoryName, section, row));
+  grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 export function clearShowroomFilter() {
@@ -1343,6 +1379,8 @@ export function clearShowroomFilter() {
     grid.querySelectorAll('.showroom-row, .showroom-section').forEach(el => {
       el.style.display = '';
     });
+    const empty = grid.querySelector('[data-category-empty]');
+    if (empty) empty.remove();
   });
 }
 
@@ -1386,8 +1424,17 @@ export async function getShowroomCategoryInventory() {
   });
 
   // Display order
+  const deptMeta = {
+    fashion: { label: 'Fashion', icon: 'shopping-bag', color: 'pink' },
+    electronics: { label: 'Electronics', icon: 'smartphone', color: 'blue' },
+    home: { label: 'Home', icon: 'home', color: 'emerald' },
+    vehicles: { label: 'Vehicles', icon: 'car-front', color: 'red' },
+    realestate: { label: 'Real Estate', icon: 'building-2', color: 'slate' },
+    sports: { label: 'Sports', icon: 'dumbbell', color: 'lime' },
+    everyday: { label: 'Everyday', icon: 'shopping-basket', color: 'amber' },
+  };
   const deptIds = ['fashion', 'electronics', 'home', 'vehicles', 'realestate', 'sports', 'everyday'];
-  const depts = deptIds.map(id => ({ id, categories: [] }));
+  const depts = deptIds.map(id => ({ id, ...deptMeta[id], categories: [] }));
   const more = { id: 'more', label: 'More', icon: 'grid', color: 'gray', categories: [] };
   // Match priority (real-estate terms must win over the generic "home" keyword)
   const matchOrder = ['fashion', 'electronics', 'realestate', 'home', 'vehicles', 'sports', 'everyday'];
@@ -1417,17 +1464,10 @@ export async function filterShowroomByDepartment(deptId) {
 export function filterShowroomByCategories(names) {
   const grid = document.querySelector('[data-showroom-grid="real-estate"]');
   if (!grid) return;
-  const allRows = collectAllRows();
   const list = (names || []).map(n => String(n).toLowerCase()).filter(Boolean);
-  allRows.forEach(({ section, row }) => {
-    const rowEl = grid.querySelector(`[data-row-id="${row.id}"]`);
-    if (!rowEl) return;
-    const match = list.length === 0 || list.some(n => categoryMatches(n, section.label, row.label));
-    rowEl.style.display = match ? '' : 'none';
-  });
-  grid.querySelectorAll('.showroom-section').forEach(sec => {
-    const visibleRows = sec.querySelectorAll('.showroom-row:not([style*="display: none"])');
-    sec.style.display = visibleRows.length > 0 ? '' : 'none';
+  applyRowVisibility(grid, (section, row) => {
+    if (list.length === 0) return true;
+    return list.some(n => rowBelongsToCategory(n, section, row));
   });
 }
 

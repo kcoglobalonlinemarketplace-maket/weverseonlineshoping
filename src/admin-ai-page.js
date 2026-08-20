@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { getCurrentUser } from './auth.js';
+import { normalizeToMarketplaceCategory } from './categories.js';
 
 const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
 const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
@@ -644,7 +645,7 @@ function normalizeListingToFullCard(payload) {
   const l = { ...(payload || {}) };
   const listingType = l.listing_type === 'property' ? 'property' : 'product';
   const title = cleanScanString(l.title) || 'Premium Item';
-  const cat = cleanScanString(l.category) || (listingType === 'property' ? 'Real Estate' : 'Home & Kitchen');
+  const cat = normalizeToMarketplaceCategory(cleanScanString(l.category)) || (listingType === 'property' ? 'Real Estate' : 'Home Appliances');
   const stats = curatedRatingValues(title);
 
   l.listing_type = listingType;
@@ -753,7 +754,7 @@ function buildScanListingPayload({ propertyId, listingType, scan, title, images 
   const listing = {
     property_id: propertyId,
     listing_type: isProperty ? 'property' : 'product',
-    category: cleanScanString(s.category) || (isProperty ? 'Real Estate' : 'Home & Kitchen'),
+    category: normalizeToMarketplaceCategory(cleanScanString(s.category)) || (isProperty ? 'Real Estate' : 'Home Appliances'),
     subcategory: cleanScanString(s.subcategory) || (isProperty ? 'House' : 'General'),
     title: cleanScanString(s.title) || title,
     description: cleanScanString(s.description),

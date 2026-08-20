@@ -12,6 +12,7 @@ import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { generateProduct, getCatalogCategories, getCatalogCategory, getHiddenCatalogIds, loadHiddenCatalogIds, resetHiddenCatalogIds, saveCatalogHidden } from './catalog.js';
 import { invalidatePromoBackgrounds } from './promo-backgrounds.js';
 import { invalidateSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
+import { MARKETPLACE_CATEGORIES, MARKETPLACE_AUTOMOTIVE, normalizeToMarketplaceCategory } from './categories.js';
 
 // ══════════════════════════════════════════════════════════
 //  WEVERSE ADMIN DASHBOARD  —  Complete Management Console
@@ -1666,18 +1667,12 @@ function renderRevenueChart(orders) {
 // ══════════════════════════════════════════════════════════
 //  SMART PRODUCT CATEGORY CONFIG
 // ══════════════════════════════════════════════════════════
-const PRODUCT_CATEGORIES = [
-  'Electronics', 'Phones', 'Computers & Laptops', 'Fashion', 'Men\'s Fashion',
-  'Women\'s Fashion', 'Shoes', 'Bags & Accessories', 'Jewelry', 'Beauty & Skincare',
-  'Home & Kitchen', 'Furniture', 'Garden & Outdoor', 'Toys & Games',
-  'Sports & Fitness', 'Food & Groceries', 'Baby & Kids', 'Health & Medical',
-  'Books & Education', 'Office & Stationery', 'Pet Supplies', 'Musical Instruments',
-  'Cameras & Photography', 'Watches', 'Gaming', 'Software & Digital', 'Services',
-  'Cars', 'Luxury Cars', 'Motorcycles', 'Commercial Vehicles', 'Boats & Marine',
-  'Social Media Accounts', 'Other',
-];
+// The exact marketplace category names (src/categories.js) — the same list the
+// customer showroom category bar renders, so admin products always land in a
+// category the showroom actually shows.
+const PRODUCT_CATEGORIES = MARKETPLACE_CATEGORIES.map(c => c.name);
 
-const AUTOMOTIVE_CATEGORIES = ['Cars', 'Luxury Cars', 'Motorcycles', 'Commercial Vehicles', 'Boats & Marine'];
+const AUTOMOTIVE_CATEGORIES = MARKETPLACE_AUTOMOTIVE;
 
 const CAT_FIELDS = {
   default: [
@@ -3047,52 +3042,59 @@ function normalizeDetectedCategory(raw) {
     return { category: null, listing_type: 'property' };
   }
   const map = {
-    bag: 'Bags & Accessories', bags: 'Bags & Accessories', handbag: 'Bags & Accessories', handbags: 'Bags & Accessories',
-    backpack: 'Bags & Accessories', backpacks: 'Bags & Accessories', luggage: 'Bags & Accessories', purse: 'Bags & Accessories',
-    wallet: 'Bags & Accessories', wallets: 'Bags & Accessories',
-    sneaker: 'Shoes', sneakers: 'Shoes', shoe: 'Shoes', shoes: 'Shoes', boot: 'Shoes', boots: 'Shoes', footwear: 'Shoes',
-    sandal: 'Shoes', sandals: 'Shoes', heel: 'Shoes', heels: 'Shoes',
+    bag: 'Fashion', bags: 'Fashion', handbag: 'Fashion', handbags: 'Fashion',
+    backpack: 'Fashion', backpacks: 'Fashion', purse: 'Fashion',
+    wallet: 'Fashion', wallets: 'Fashion', luggage: 'Travel & Luggage',
+    sneaker: 'Fashion', sneakers: 'Fashion', shoe: 'Fashion', shoes: 'Fashion', boot: 'Fashion', boots: 'Fashion', footwear: 'Fashion',
+    sandal: 'Fashion', sandals: 'Fashion', heel: 'Fashion', heels: 'Fashion',
     phone: 'Phones', smartphone: 'Phones', smartphones: 'Phones', iphone: 'Phones', 'mobile phone': 'Phones',
-    laptop: 'Computers & Laptops', laptops: 'Computers & Laptops', computer: 'Computers & Laptops', notebook: 'Computers & Laptops',
-    macbook: 'Computers & Laptops', pc: 'Computers & Laptops', desktop: 'Computers & Laptops',
+    laptop: 'Computers', laptops: 'Computers', computer: 'Computers', notebook: 'Computers',
+    macbook: 'Computers', pc: 'Computers', desktop: 'Computers',
     electronics: 'Electronics', electronic: 'Electronics', gadget: 'Electronics', gadgets: 'Electronics', tv: 'Electronics',
     television: 'Electronics', headphones: 'Electronics', speaker: 'Electronics', speakers: 'Electronics', soundbar: 'Electronics',
-    tablet: 'Electronics', tablet: 'Electronics', earbuds: 'Electronics',
-    camera: 'Cameras & Photography', cameras: 'Cameras & Photography', dslr: 'Cameras & Photography', drone: 'Cameras & Photography', drone: 'Cameras & Photography',
+    tablet: 'Electronics', earbuds: 'Electronics',
+    camera: 'Cameras & Photography', cameras: 'Cameras & Photography', dslr: 'Cameras & Photography', drone: 'Cameras & Photography',
     jewelry: 'Jewelry', jewellery: 'Jewelry', ring: 'Jewelry', necklace: 'Jewelry', earring: 'Jewelry', earrings: 'Jewelry', bracelet: 'Jewelry',
-    watch: 'Watches', watches: 'Watches', wristwatch: 'Watches', 'smart watch': 'Watches',
+    watch: 'Watches & Accessories', watches: 'Watches & Accessories', wristwatch: 'Watches & Accessories', 'smart watch': 'Watches & Accessories',
     clothing: 'Fashion', clothes: 'Fashion', fashion: 'Fashion', shirt: 'Fashion', shirts: 'Fashion', dress: 'Fashion', dresses: 'Fashion',
     jacket: 'Fashion', jackets: 'Fashion', hoodie: 'Fashion', jeans: 'Fashion', 't-shirt': 'Fashion', tshirt: 'Fashion', apparel: 'Fashion',
-    "men's fashion": "Men's Fashion", 'mens fashion': "Men's Fashion",
-    "women's fashion": "Women's Fashion", 'womens fashion': "Women's Fashion",
-    car: 'Cars', cars: 'Cars', vehicle: 'Cars', vehicles: 'Cars', automobile: 'Cars', suv: 'Cars', sedan: 'Cars', 'luxury car': 'Luxury Cars',
-    'luxury cars': 'Luxury Cars',
-    truck: 'Commercial Vehicles', trucks: 'Commercial Vehicles', trailer: 'Commercial Vehicles', bus: 'Commercial Vehicles',
-    motorcycle: 'Motorcycles', motorbike: 'Motorcycles', bike: 'Motorcycles', 'motor bike': 'Motorcycles',
-    boat: 'Boats & Marine', boats: 'Boats & Marine', yacht: 'Boats & Marine', jet: 'Boats & Marine',
-    beauty: 'Beauty & Skincare', skincare: 'Beauty & Skincare', cosmetics: 'Beauty & Skincare', makeup: 'Beauty & Skincare', perfume: 'Beauty & Skincare',
-    kitchen: 'Home & Kitchen', appliance: 'Home & Kitchen', appliances: 'Home & Kitchen', blender: 'Home & Kitchen', kettle: 'Home & Kitchen',
-    cookware: 'Home & Kitchen', vacuum: 'Home & Kitchen',
+    "men's fashion": 'Men', 'mens fashion': 'Men',
+    "women's fashion": 'Women', 'womens fashion': 'Women',
+    car: 'Cars', cars: 'Cars', vehicle: 'Cars', vehicles: 'Cars', automobile: 'Cars', suv: 'Cars', sedan: 'Cars', 'luxury car': 'Cars',
+    'luxury cars': 'Cars',
+    truck: 'Trucks', trucks: 'Trucks', trailer: 'Trucks', bus: 'Trucks',
+    motorcycle: 'Motorcycles', motorbike: 'Motorcycles', 'motor bike': 'Motorcycles',
+    bicycle: 'Bicycles', bicycles: 'Bicycles', cycling: 'Bicycles', bike: 'Bicycles',
+    motorhome: 'RV & Camper Accessories', motorhomes: 'RV & Camper Accessories', camper: 'RV & Camper Accessories', rv: 'RV & Camper Accessories',
+    boat: 'Marine & Boating', boats: 'Marine & Boating', yacht: 'Marine & Boating', jet: 'Marine & Boating',
+    beauty: 'Beauty', skincare: 'Beauty', cosmetics: 'Beauty', makeup: 'Beauty', perfume: 'Beauty',
+    kitchen: 'Kitchen', appliance: 'Home Appliances', appliances: 'Home Appliances', blender: 'Kitchen', kettle: 'Kitchen',
+    cookware: 'Kitchen', vacuum: 'Home Appliances',
     furniture: 'Furniture', sofa: 'Furniture', chair: 'Furniture', chairs: 'Furniture', table: 'Furniture', tables: 'Furniture',
     bed: 'Furniture', mattress: 'Furniture', desk: 'Furniture',
-    toy: 'Toys & Games', toys: 'Toys & Games', game: 'Gaming', games: 'Gaming', gaming: 'Gaming', console: 'Gaming',
+    toy: 'Toys & Hobbies', toys: 'Toys & Hobbies', game: 'Gaming', games: 'Gaming', gaming: 'Gaming', console: 'Gaming',
     food: 'Food & Groceries', groceries: 'Food & Groceries', snack: 'Food & Groceries', snacks: 'Food & Groceries', beverage: 'Food & Groceries',
-    baby: 'Baby & Kids', kids: 'Baby & Kids', stroller: 'Baby & Kids',
+    baby: 'Baby', kids: 'Kids', stroller: 'Baby',
     health: 'Health & Medical', medical: 'Health & Medical', supplement: 'Health & Medical',
-    fitness: 'Sports & Fitness', sport: 'Sports & Fitness', sports: 'Sports & Fitness', gym: 'Sports & Fitness', dumbbell: 'Sports & Fitness',
-    book: 'Books & Education', books: 'Books & Education', textbook: 'Books & Education', novel: 'Books & Education',
-    stationery: 'Office & Stationery', office: 'Office & Stationery', printer: 'Office & Stationery', pen: 'Office & Stationery',
-    pet: 'Pet Supplies', pets: 'Pet Supplies', dog: 'Pet Supplies', cat: 'Pet Supplies',
-    musical: 'Musical Instruments', guitar: 'Musical Instruments', piano: 'Musical Instruments', instrument: 'Musical Instruments',
-    software: 'Software & Digital', digital: 'Software & Digital',
-    account: 'Social Media Accounts', accounts: 'Social Media Accounts', instagram: 'Social Media Accounts', tiktok: 'Social Media Accounts',
+    fitness: 'Sports', sport: 'Sports', sports: 'Sports', gym: 'Sports', dumbbell: 'Sports',
+    book: 'Books', books: 'Books', textbook: 'Books', novel: 'Books',
+    stationery: 'Office', office: 'Office', printer: 'Office', pen: 'Office',
+    pet: 'Pets', pets: 'Pets', dog: 'Pets', cat: 'Pets',
+    musical: 'Musical Instruments', guitar: 'Musical Instruments', piano: 'Musical Instruments', instrument: 'Musical Instruments', drum: 'Musical Instruments',
+    software: 'Software & Digital Products', digital: 'Software & Digital Products',
+    account: 'Software & Digital Products', accounts: 'Software & Digital Products', instagram: 'Software & Digital Products', tiktok: 'Software & Digital Products',
+    camping: 'Camping & Hiking', tent: 'Camping & Hiking', hiking: 'Camping & Hiking',
+    flower: 'Flowers & Gifts', flowers: 'Flowers & Gifts', gift: 'Flowers & Gifts', gifts: 'Flowers & Gifts',
+    wedding: 'Wedding Supplies', party: 'Party & Event Supplies', coin: 'Coins & Bullion', coins: 'Coins & Bullion',
+    art: 'Arts & Crafts', painting: 'Arts & Crafts', craft: 'Arts & Crafts',
   };
   const hit = map[s] || map[s.replace(/s$/, '')] || map[s.replace(/\s+/g, ' ')];
   if (hit) return { category: hit, listing_type: null };
   for (const cat of PRODUCT_CATEGORIES) {
     if (s.includes(cat.toLowerCase()) || (s.length > 2 && cat.toLowerCase().includes(s))) return { category: cat, listing_type: null };
   }
-  return { category: 'Other', listing_type: null };
+  const normalized = normalizeToMarketplaceCategory(s);
+  return { category: normalized || 'Other', listing_type: null };
 }
 
 function mapPropertyType(value) {
@@ -5689,7 +5691,7 @@ IDENTIFY THE REAL BRAND & MODEL (most important):
 Return a single valid JSON object (no markdown, no extra text) with these keys:
 - title (string): a real, professional marketplace product title that matches the actual item (real brand + real model/type + key feature + category). Never use placeholders like "AI Product" or "Premium Item".
 - description (string): a detailed, persuasive 2-4 sentence description.
-- category (string): the best category from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other.
+- category (string): the best category from this list: ${PRODUCT_CATEGORIES.join(', ')}.
 - subcategory (string)
 - brand (string): the EXACT brand name that appears on the product or badge — read the logo/emblem/nameplate and use that name. If none is readable, identify the make from the design and badge shape.
 - model (string): the EXACT model name/number printed on the product or box when visible; otherwise your best professional identification from the design.
@@ -5781,7 +5783,7 @@ IDENTIFICATION RULES (accuracy over guesses — this is the most important step)
 - body_type: only when clearly visible (Sedan, SUV, Hatchback, Coupe, Convertible, Wagon, Pickup, Truck, Van, Sports Car, Luxury Sedan, Motorcycle, Yacht, Other).
 - condition: judge from what is visible (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
 - listing_type: "property" if the photo shows a house, villa, apartment, condo, mansion, land, estate or any building for sale; "vehicle" for cars, motorcycles, boats and other vehicles; otherwise "product".
-- category (for products and vehicles): best match from this list: Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For property photos set category to "Real Estate".
+- category (for products and vehicles): best match from this list: ${PRODUCT_CATEGORIES.join(', ')}. For property photos set category to "Real Estate".
 - For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), half_bathrooms (number or null), building_size (string|null), land_size (string|null), floors (number|null), garage (string|null, e.g. "2-car attached"), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), condition (string|null — only from a visible listing sign, seller notes or obvious visible state: "New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation"), year_built (number|null — only from a visible year, plaque, cornerstone or listing sign), year_renovated (number|null — only if visibly stated), area (neighborhood/district, string|null), address (street + number or landmark when visible in the photo or reliably known, string|null), zip_code (string|null — only if visibly printed), landmarks (string[]|null — only well-known landmarks visible in or clearly indicated by the photo), town (string|null), city (string|null), state (string|null), country (string|null), latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null).
 - LOCATION RULES: use ONLY location information genuinely visible in the photo or reliably known from it (street signs, landmarks, real estate signs, watermarks). NEVER invent a street address, area, city or coordinates. If you cannot determine a location value, return null for that field — the owner will enter it. Latitude/longitude may be derived from a readable address (e.g. a visible street sign); otherwise null.
 - confidence: how certain you are about what this is: "high" | "medium" | "low".
@@ -5817,7 +5819,7 @@ For each distinct product include:
 - model: real model from a visible label when present, otherwise null.
 - year: only from visible text; otherwise null with year_estimated true when estimated from the design.
 - body_type, color, condition (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
-- category: best match from this list — Electronics, Phones, Computers & Laptops, Fashion, Men's Fashion, Women's Fashion, Shoes, Bags & Accessories, Jewelry, Beauty & Skincare, Home & Kitchen, Furniture, Garden & Outdoor, Toys & Games, Sports & Fitness, Food & Groceries, Baby & Kids, Health & Medical, Books & Education, Office & Stationery, Pet Supplies, Musical Instruments, Cameras & Photography, Watches, Gaming, Software & Digital, Services, Social Media Accounts, Cars, Luxury Cars, Motorcycles, Commercial Vehicles, Boats & Marine, Other. For properties set category to "Real Estate".
+- category: best match from this list — ${PRODUCT_CATEGORIES.join(', ')}. For properties set category to "Real Estate".
 - subcategory, property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors (number|null), garage (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), year_built (number|null — only if visible), area (neighborhood/district), address (street + number or landmark when visible/reliably known), zip_code (string|null — only if visible), landmarks (string[]|null — only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null) for properties. LOCATION RULES: only use location genuinely visible in the photo — never invent an address or coordinates; return null when unknown.
 - confidence: "high" | "medium" | "low" for each product.
 - detected_name: a short plain label for each product, e.g. "black leather handbag", "silver wristwatch", "white Nike sneakers", "modern 3-bedroom villa".
