@@ -12,6 +12,12 @@ import { canonicalCategoriesForLabel } from './categories.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 // ── View mode ──────────────────────────────────────────────────
 // The showroom can show products in a compact 2-column grid (default —
 // scroll down to browse), one by one (vertical feed) or in horizontal
@@ -726,7 +732,11 @@ function renderRow(rowDef) {
 
   if (hasItems) {
     const frag = document.createDocumentFragment();
-    listings.forEach(listing => frag.appendChild(isGrid ? renderCard(listing) : lineMode ? renderCard(listing) : renderFeedCard(listing)));
+    listings.forEach(listing => {
+      try {
+        frag.appendChild(isGrid ? renderCard(listing) : lineMode ? renderCard(listing) : renderFeedCard(listing));
+      } catch { /* skip a listing that can't be rendered */ }
+    });
     track.appendChild(frag);
   } else {
     track.innerHTML = `<div class="flex items-center justify-center w-full py-6">
@@ -795,7 +805,9 @@ function renderSection(section, accentColor, maxRows) {
 
   const rowsToShow = (maxRows && maxRows > 0) ? section.rows.slice(0, maxRows) : section.rows;
   rowsToShow.forEach(rowDef => {
-    sec.appendChild(renderRow(rowDef));
+    try {
+      sec.appendChild(renderRow(rowDef));
+    } catch { /* skip a row that can't be rendered */ }
   });
 
   return sec;
@@ -1213,7 +1225,9 @@ function renderGrid(gridName) {
       const alreadyRendered = section.rows.some(r => hasRow(r.id));
       if (!alreadyRendered) {
         const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
-        container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
+        try {
+          container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
+        } catch { /* skip a section that can't be rendered */ }
       }
       if (id === 'motorhomes-boats' && !container.querySelector('[data-viewall="houses"]')) container.appendChild(createViewAllHousesButton());
       if (id === 'cars' && !container.querySelector('[data-viewall="cars"]')) container.appendChild(createViewAllCarsButton());
@@ -1223,7 +1237,9 @@ function renderGrid(gridName) {
     // homepage — every property stays reachable in the All Houses overlay.
   } else {
     sections.forEach(section => {
-      container.appendChild(renderSection(section, accent));
+      try {
+        container.appendChild(renderSection(section, accent));
+      } catch { /* skip a section that can't be rendered */ }
     });
   }
 
@@ -1603,7 +1619,18 @@ export async function initAllShowrooms() {
     delete g.dataset.prerendered;
     g.innerHTML = '';
   });
-  renderAllGrids();
+  try {
+    renderAllGrids();
+  } catch {
+    // Never leave the grid blank. If the fresh render fails on any section,
+    // fall back to the static (pre-DB) state so customers still see products.
+    document.querySelectorAll('[data-showroom-grid]').forEach(g => {
+      delete g.dataset.initialized;
+      delete g.dataset.prerendered;
+      if (g.children.length === 0) g.innerHTML = '';
+    });
+    renderAllGrids();
+  }
 
   window.dispatchEvent(new CustomEvent('showroom-categories-ready'));
 }

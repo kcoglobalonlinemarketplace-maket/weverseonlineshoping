@@ -402,6 +402,11 @@ async function init() {
   let dbListings = [];
   let pool = [];
   try {
+    // Refresh the hidden-catalog rules from the DB first so deleted/hidden
+    // products (static seeds regenerate on every load) are filtered out
+    // before the promo pools are built, even on a brand-new browser.
+    const { loadHiddenCatalogIds } = await import('./catalog-hidden-store.js');
+    await loadHiddenCatalogIds();
     await loadDBListings();
     dbListings = getDBListings() || [];
     pool = getAllListings() || [];
