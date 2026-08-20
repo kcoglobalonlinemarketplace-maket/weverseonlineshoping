@@ -3192,7 +3192,13 @@ window.scanReviewContinue = async function(i) {
     try { localStorage.removeItem(productAutoSaveKey(cat, '')); } catch {}
     step1Images = [];
     scannerImages = [];
-    showAddProductStep2(cat, { images });
+    // Scanned from an existing product (General AI Scanner) — open its EDIT
+    // form so the owner updates that listing instead of creating a duplicate.
+    let existing = p.property_id ? scanReviewSourceProducts[p.property_id] : null;
+    if (existing && existing.specifications && typeof existing.specifications === 'object') {
+      existing = { ...existing, ...existing.specifications };
+    }
+    showAddProductStep2(cat, existing ? { ...existing, images } : { images });
     await completeScanAndFill(p, images, cat);
   } else {
     const form = document.getElementById('product-form');
@@ -3733,14 +3739,39 @@ window.scanFirstWithAI = async function() {
 };
 
 // ── General AI Scanner (Product Manager) ──────────────────────────────
-// Standalone scanner in the Product Manager: upload product photos, scan
-// with AI to detect every distinct product, review each one, then continue
-// straight into that product's Add Product form — already filled by the AI.
-// Nothing is saved or published until the owner presses SAVE.
+// Standalone scanner in the Product Manager: it scans the owner's existing
+// products (database + locally saved) — no image upload required — and uses
+// AI to identify each one, complete its specifications, write the description
+// and features, pick the correct category, and suggest a fair price. Review
+// each result, then continue into that product's form — already filled by the
+// AI. Nothing is saved or published until the owner presses SAVE.
 let scannerImages = [];
+let scanReviewSourceProducts = {};
 
-window.openGeneralAiScanner = function() {
+// Every product the Product Manager shows (database + local fallback store),
+// deduped by id. Properties live in the Properties Manager and products
+// without at least one existing photo cannot be scanned visually.
+async function scannerSourceProducts() {
+  const seen = new Set();
+  const out = [];
+  const add = (p) => {
+    if (!p || !p.property_id || p.listing_type === 'property') return;
+    if (seen.has(p.property_id)) return;
+    if (!Array.isArray(p.images) || !p.images.length) return;
+    seen.add(p.property_id);
+    out.push(p);
+  };
+  try {
+    const { data, error } = await supabase.from('showroom_listings').select('*').neq('listing_type', 'property');
+    (error ? [] : (data || [])).forEach(add);
+  } catch { /* fall through to the local store */ }
+  listLocalShowroomListings().forEach(add);
+  return out;
+}
+
+window.openGeneralAiScanner = async function() {
   scannerImages = [];
+  const products = await scannerSourceProducts();
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box">
@@ -3750,16 +3781,14 @@ window.openGeneralAiScanner = function() {
         </div>
 
         <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3">
-          <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan product photos with AI</p>
-          <p class="text-[11px] text-gray-500">Upload your product photos, then press SCAN WITH AI. It detects EVERY distinct product (a photo with a bag + watch + shoes + phone gives four separate listings; several photos of the same product merge into one). Review each detection and continue to its Add Product form, already filled for you. Nothing is published automatically.</p>
-          <div id="scanner-drop-zone" class="drop-zone" onclick="document.getElementById('scanner-img-upload').click()">
-            <i data-lucide="image-plus" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
-            <p class="text-xs font-bold text-gray-300">Click or drag & drop product images</p>
-            <input type="file" id="scanner-img-upload" class="hidden" multiple accept="image/*" onchange="handleScannerImageUpload(event)">
+          <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan your products with AI</p>
+          <p class="text-[11px] text-gray-500">The scanner works on the products already in your Product Manager — no image upload needed. Press SCAN ALL WITH AI and it reads each product's existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Review every result, then continue to that product's form, already filled for you. Nothing is saved or published automatically.</p>
+          <div class="flex items-center gap-2 text-[11px] font-bold text-gray-300 bg-white/5 border border-violet-500/20 rounded-xl px-3 py-2.5">
+            <i data-lucide="package" class="w-4 h-4 text-violet-400 shrink-0"></i>
+            <span>${products.length} product${products.length === 1 ? '' : 's'} ready to scan in the Product Manager.</span>
           </div>
-          <div id="scanner-image-preview" class="flex flex-wrap gap-2"></div>
-          <button type="button" id="btn-scanner-scan" onclick="scanGeneralWithAI()" disabled class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2" style="opacity:0.5">
-            <i data-lucide="scan-search" class="w-4 h-4"></i> SCAN WITH AI
+          <button type="button" id="btn-scanner-scan" onclick="scanGeneralWithAI()" class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
+            <i data-lucide="scan-search" class="w-4 h-4"></i> SCAN ALL WITH AI
           </button>
           <div id="scanner-scan-status" class="hidden text-xs font-medium"></div>
         </div>
@@ -3768,41 +3797,12 @@ window.openGeneralAiScanner = function() {
   if (window.lucide) lucide.createIcons();
 };
 
-window.handleScannerImageUpload = async function(e) {
-  const files = Array.from(e.target.files || []).slice(0, 10);
-  if (!files.length) return;
-  for (const file of files) {
-    if (!file.type.startsWith('image/')) continue;
-    try {
-      const url = await uploadImageFile(file);
-      if (url) scannerImages.push(url);
-    } catch { /* skip failed uploads */ }
-  }
-  renderScannerPreview();
-  e.target.value = '';
-};
-
-window.removeScannerImage = function(i) {
-  scannerImages.splice(i, 1);
-  renderScannerPreview();
-};
-
-function renderScannerPreview() {
-  const preview = document.getElementById('scanner-image-preview');
-  if (!preview) return;
-  preview.innerHTML = scannerImages.map((u, i) => `
-    <div class="img-thumb" data-index="${i}">
-      <img src="${esc(u)}" onerror="this.src='/fallback.svg'">
-      <button class="rm" onclick="removeScannerImage(${i})" type="button">×</button>
-    </div>`).join('');
-  const btn = document.getElementById('btn-scanner-scan');
-  if (btn) { btn.disabled = scannerImages.length === 0; btn.style.opacity = scannerImages.length ? '' : '0.5'; }
-  if (window.lucide) lucide.createIcons();
-}
-
 window.scanGeneralWithAI = async function() {
-  const images = scannerImages.slice();
-  if (!images.length) { showToast('Upload at least one product image before scanning.', 'error'); return; }
+  const products = await scannerSourceProducts();
+  if (!products.length) {
+    showToast('No products with photos are in the Product Manager yet — add a product first.', 'error');
+    return;
+  }
   const btn = document.getElementById('btn-scanner-scan');
   const status = document.getElementById('scanner-scan-status');
   const original = btn ? btn.innerHTML : '';
@@ -3823,35 +3823,55 @@ window.scanGeneralWithAI = async function() {
   } catch { }
 
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
-  setStatus('Detecting every distinct product in your images…', 'text-blue-300');
+  setStatus(`Detecting and completing ${products.length} product${products.length === 1 ? '' : 's'}…`, 'text-blue-300');
 
-  let detection;
-  try {
-    detection = await aiClient.detectProducts(images, { category: '', maxImages: Math.min(images.length, AI_PRODUCT_SCANNER.maxImages) });
-  } catch (err) {
-    const keyHint = /key|api|configured|settings|vision/i.test(String(err?.message || err));
-    setStatus(keyHint ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.' : `Scan failed: ${String(err?.message || err)}`, 'text-red-400');
-    if (btn) { btn.disabled = false; btn.innerHTML = original; }
-    return;
+  const images = [];
+  const detections = [];
+  const sources = {};
+  let scannedCount = 0;
+  let failedCount = 0;
+  for (const prod of products) {
+    const prodImages = (prod.images || []).slice(0, AI_PRODUCT_SCANNER.maxImages);
+    if (!prodImages.length) continue;
+    const base = images.length;
+    images.push(...prodImages);
+    const indices = prodImages.map((_, i) => base + i);
+    try {
+      const detection = await aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: Math.min(prodImages.length, AI_PRODUCT_SCANNER.maxImages) });
+      const list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
+      if (!list.length) continue;
+      scannedCount++;
+      sources[prod.property_id] = prod;
+      for (const d of list) {
+        detections.push({
+          ...d,
+          property_id: prod.property_id,
+          image_indices: (Array.isArray(d.image_indices) && d.image_indices.length ? d.image_indices.map(i => indices[Number(i)]).filter(i => i !== undefined) : indices),
+          detected_name: d.detected_name || prod.title || prod.property_id,
+          category: d.category || prod.category || 'Other',
+          listing_type: d.listing_type || prod.listing_type || 'product',
+        });
+      }
+    } catch { failedCount++; }
   }
   if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
-  const products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
-  if (!products.length) {
-    setStatus(detection && detection.reason
-      ? `Could not identify any product: ${esc(detection.reason)}`
-      : 'No product could be read from these images. Make sure the photos clearly show the product(s), then try again.', 'text-amber-300');
-    showToast('No products could be identified from the images.', 'error');
+  if (!detections.length) {
+    setStatus(failedCount
+      ? `The scanner could not read any product (${failedCount} scan${failedCount > 1 ? 's' : ''} failed). Make sure your products have clear photos, then try again.`
+      : 'No product could be identified from the photos on your existing products. Make sure each product has clear photos, then try again.', 'text-amber-300');
+    showToast('No products could be scanned.', 'error');
     return;
   }
 
   // REVIEW LIST — the AI never fills or publishes on its own. Continue on a
   // product opens its correct category form with that product's own images.
-  scanReviewProducts = products;
+  scanReviewProducts = detections;
   scanReviewImages = images;
+  scanReviewSourceProducts = sources;
   scanReviewEntry = 'scanner-scan-status';
   scanReviewRender();
-  showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected — review each one, then continue.`, 'info');
+  showToast(`${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned — review each one, then continue.`, 'info');
 };
 
 window.saveProduct = async function(e, category, existingId) {
