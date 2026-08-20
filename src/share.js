@@ -7,7 +7,7 @@ const FALLBACK_IMG = '/fallback.svg';
 // Featured showroom product image (W10000 — first property). Used as the OG
 // preview for the website link (baked into index.html by prerender-home.mjs
 // and mirrored here so the share sheet shows the same image).
-const HOMEPAGE_OG_IMAGE = 'https://images.pexels.com/photos/8583638/pexels-photo-8583638.jpeg?auto=compress&cs=tinysrgb&w=1200';
+const HOMEPAGE_OG_IMAGE = 'https://weverseonlineshop.com/brand-logo.jpeg';
 
 export function absUrl(src) {
   if (!src) return '';

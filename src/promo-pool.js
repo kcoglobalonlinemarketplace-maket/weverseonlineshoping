@@ -4,8 +4,6 @@
 //
 // Only REAL, currently-visible products are ever used:
 //   • live showroom_listings rows from the database,
-//   • the owner's own static catalogs (products, products-extra, trucks,
-//     motorhomes, cars, phones, pets, dogs),
 //   • the seed showroom listings.
 // Hidden catalog IDs are excluded. Everything is deduplicated by property_id.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -81,25 +79,7 @@ export async function loadPromoPool() {
       dbRows = getDBListings() || [];
     } catch { /* keep empty */ }
 
-    const staticRows = [];
-    try {
-      const { PRODUCT_LISTINGS } = await import('./products-data.js');
-      const { PRODUCT_EXTRA_LISTINGS } = await import('./products-extra.js');
-      const { TRUCK_LISTINGS } = await import('./truck-data.js');
-      const { MOTORHOME_LISTINGS } = await import('./motorhome-data.js');
-      const { CAR_LISTINGS } = await import('./car-data.js');
-      const { PHONE_LISTINGS } = await import('./phone-data.js');
-      const { PET_LISTINGS } = await import('./pet-data.js');
-      const { NEW_DOG_LISTINGS } = await import('./dog-data.js');
-      staticRows.push(
-        ...(PRODUCT_LISTINGS || []), ...(PRODUCT_EXTRA_LISTINGS || []),
-        ...(TRUCK_LISTINGS || []), ...(MOTORHOME_LISTINGS || []),
-        ...(CAR_LISTINGS || []), ...(PHONE_LISTINGS || []),
-        ...(PET_LISTINGS || []), ...(NEW_DOG_LISTINGS || []),
-      );
-    } catch { /* catalogs are optional */ }
-
-    let pool = dedupe([...dbRows, ...staticRows, ...(getAllListings() || [])]);
+    let pool = dedupe([...dbRows, ...(getAllListings() || [])]);
 
     // Clean AI-ish text so the promo copy reads like the real marketplace.
     pool = pool.map((l) => {

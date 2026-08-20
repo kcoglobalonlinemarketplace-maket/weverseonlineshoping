@@ -239,167 +239,21 @@ const AD_COPY = {
   hi:{shopNow:"à¤¸à¤‚à¤—à¥à¤°à¤¹ à¤–à¤°à¥€à¤¦à¥‡à¤‚",explore:"à¤¶à¥à¤°à¥‡à¤£à¥€ à¤¦à¥‡à¤–à¥‡à¤‚",learnMore:"à¤”à¤° à¤œà¤¾à¤¨à¥‡à¤‚",worldwide:"à¤µà¤¿à¤¶à¥à¤µà¤µà¥à¤¯à¤¾à¤ªà¥€ à¤¶à¤¿à¤ªà¤¿à¤‚à¤—",worldwideSub:"200+ à¤¦à¥‡à¤¶à¥‹à¤‚ à¤®à¥‡à¤‚ à¤¸à¥‡à¤µà¤¾",delivery:"à¤¤à¥‡à¤œ à¤¡à¤¿à¤²à¥€à¤µà¤°à¥€",deliverySub:"à¤à¤•à¥à¤¸à¤ªà¥à¤°à¥‡à¤¸ à¤µà¤¿à¤•à¤²à¥à¤ª",secure:"à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤–à¤°à¥€à¤¦",secureSub:"SSL à¤à¤¨à¥à¤•à¥à¤°à¤¿à¤ªà¥à¤Ÿà¥‡à¤¡ à¤šà¥‡à¤•à¤†à¤‰à¤Ÿ",support:"24/7 à¤¸à¤¹à¤¾à¤¯à¤¤à¤¾",supportSub:"à¤¹à¤®à¥‡à¤¶à¤¾ à¤†à¤ªà¤•à¥‡ à¤²à¤¿à¤"},
 };
 
-// ---- DATA: Carousel Video Slides ----
-// All categories in a single hero carousel â€” real Pexels stock videos
-// Brand: Weverse Online Shop
-const V = "https://videos.pexels.com/video-files/";
-const BRAND = "Weverse Online Shop";
-const CAROUSEL_SLIDES = [
-  // === TRANSPORTATION & LOGISTICS ===
-  {video:V+"6618332/6618332-sd_640_360_24fps.mp4",badge:"Global Logistics",titles:{en:BRAND+" \u2013 Global Logistics & Shipping"},descs:{en:"DHL, FedEx, UPS & Aramex \u2014 delivering across 200+ countries with cargo ships, aircraft, and distribution hubs."}},
-  {video:V+"3058057/3058057-sd_640_360_30fps.mp4",badge:"Maritime Cargo",titles:{en:BRAND+" \u2013 Cargo Ships & Ports"},descs:{en:"Massive container ships and busy port terminals keep global trade moving day and night."}},
-  {video:V+"4324104/4324104-sd_640_360_24fps.mp4",badge:"Delivery Fleet",titles:{en:BRAND+" \u2013 Delivery Trucks & Last-Mile"},descs:{en:"From warehouse to doorstep \u2014 fleet management, courier services, and last-mile delivery worldwide."}},
-  {video:V+"3289608/3289608-sd_640_360_24fps.mp4",badge:"Smart Warehousing",titles:{en:BRAND+" \u2013 Warehouses & Distribution"},descs:{en:"Smart warehousing, freight forwarding, customs clearance, and cold chain logistics for global commerce."}},
-  {video:V+"31559829/13450487_640_360_60fps.mp4",badge:"Freight & Cargo",titles:{en:BRAND+" \u2013 Air Cargo & Sea Freight"},descs:{en:"Express air cargo, sea freight, rail freight, and shipping containers moving goods across continents."}},
-  // === REAL ESTATE \u2014 INDIVIDUAL CATEGORIES ===
-  {video:V+"30216905/12955636_640_360_60fps.mp4",badge:"Luxury Houses",titles:{en:BRAND+" \u2013 Luxury Houses"},descs:{en:"Discover stunning luxury houses with premium architecture, private pools, and breathtaking views worldwide."}},
-  {video:V+"18531289/18531289-sd_640_360_30fps.mp4",badge:"Family Houses",titles:{en:BRAND+" \u2013 Family Houses"},descs:{en:"Spacious family houses designed for comfort \u2014 multiple bedrooms, modern kitchens, and safe neighborhoods."}},
-  {video:V+"17692984/17692984-sd_640_360_30fps.mp4",badge:"Beach Houses",titles:{en:BRAND+" \u2013 Beach Houses"},descs:{en:"Wake up to ocean views in beautiful beach houses along the world's most stunning coastlines."}},
-  {video:V+"16998369/16998369-sd_640_360_30fps.mp4",badge:"Waterfront Homes",titles:{en:BRAND+" \u2013 Waterfront Homes"},descs:{en:"Premium waterfront properties with private docks, lake access, and panoramic water views."}},
-  {video:V+"11329982/11329982-sd_640_360_30fps.mp4",badge:"Luxury Villas",titles:{en:BRAND+" \u2013 Luxury Villas"},descs:{en:"Exclusive luxury villas featuring private pools, gardens, and world-class amenities in prime destinations."}},
-  {video:V+"27690869/12206171_640_360_30fps.mp4",badge:"Mansions",titles:{en:BRAND+" \u2013 Mansions"},descs:{en:"Grand mansions and estates with expansive grounds, luxury interiors, and unparalleled prestige."}},
-  {video:V+"14408658/14408658-sd_640_360_30fps.mp4",badge:"Smart Homes",titles:{en:BRAND+" \u2013 Smart Homes"},descs:{en:"Connected smart homes with automated lighting, security, climate control, and smart living technology."}},
-  {video:V+"30216901/12955687_640_360_60fps.mp4",badge:"Apartments",titles:{en:BRAND+" \u2013 Apartments"},descs:{en:"Modern apartments in prime city locations with contemporary design and premium amenities."}},
-  {video:V+"30203752/12951125_640_360_60fps.mp4",badge:"Luxury Apartments",titles:{en:BRAND+" \u2013 Luxury Apartments"},descs:{en:"High-end luxury apartments with concierge services, rooftop terraces, and spectacular city views."}},
-  {video:V+"12525959/12525959-sd_640_360_30fps.mp4",badge:"Penthouses",titles:{en:BRAND+" \u2013 Penthouses"},descs:{en:"Exclusive penthouses occupying the top floors of luxury towers with private elevators and panoramic vistas."}},
-  {video:V+"8435818/8435818-sd_640_360_30fps.mp4",badge:"Duplexes",titles:{en:BRAND+" \u2013 Duplexes"},descs:{en:"Spacious duplexes offering two levels of elegant living with modern layouts and private entrances."}},
-  {video:V+"9700254/9700254-sd_640_360_30fps.mp4",badge:"Townhouses",titles:{en:BRAND+" \u2013 Townhouses"},descs:{en:"Charming townhouses in vibrant communities with shared amenities and urban convenience."}},
-  {video:V+"30216893/12955642_640_360_60fps.mp4",badge:"Farm Houses",titles:{en:BRAND+" \u2013 Farm Houses"},descs:{en:"Rustic farm houses with acreage, barns, and pastoral settings for country living and agriculture."}},
-  {video:V+"17692989/17692989-sd_640_360_30fps.mp4",badge:"Vacation Homes",titles:{en:BRAND+" \u2013 Vacation Homes"},descs:{en:"Vacation homes in scenic destinations \u2014 perfect getaways for families and travelers worldwide."}},
-  {video:V+"28448027/12385946_640_360_30fps.mp4",badge:"Resorts",titles:{en:BRAND+" \u2013 Resorts"},descs:{en:"World-class resorts with spas, golf courses, fine dining, and unforgettable vacation experiences."}},
-  {video:V+"5853322/5853322-sd_640_360_25fps.mp4",badge:"Hotels",titles:{en:BRAND+" \u2013 Hotels"},descs:{en:"Luxury hotels and boutique accommodations in prime destinations across every continent."}},
-  {video:V+"6474633/6474633-sd_960_506_25fps.mp4",badge:"Commercial Buildings",titles:{en:BRAND+" \u2013 Commercial Buildings"},descs:{en:"Commercial buildings and retail spaces for businesses seeking prime locations and modern facilities."}},
-  {video:V+"16236366/16236366-sd_640_360_30fps.mp4",badge:"Office Buildings",titles:{en:BRAND+" \u2013 Office Buildings"},descs:{en:"Office buildings and corporate spaces with flexible layouts and premium business amenities."}},
-  {video:V+"5378935/5378935-sd_960_506_25fps.mp4",badge:"Shopping Malls",titles:{en:BRAND+" \u2013 Shopping Malls"},descs:{en:"Shopping malls and retail centers offering world-class shopping and entertainment experiences."}},
-  {video:V+"31618415/13474994_640_360_24fps.mp4",badge:"Land for Sale",titles:{en:BRAND+" \u2013 Land for Sale"},descs:{en:"Prime land for sale \u2014 residential, commercial, and agricultural plots in growing markets worldwide."}},
-  {video:V+"7607084/7607084-sd_640_360_25fps.mp4",badge:"Luxury Estates",titles:{en:BRAND+" \u2013 Luxury Estates"},descs:{en:"Exclusive luxury estates with vast grounds, private gates, and uncompromising elegance and privacy."}},
-  // === AUTOMOTIVE \u2014 INDIVIDUAL CATEGORIES ===
-  {video:V+"4849157/4849157-sd_640_360_24fps.mp4",badge:"Luxury Cars",titles:{en:BRAND+" \u2013 Luxury Cars"},descs:{en:"Premium luxury cars from Bentley, Rolls-Royce, Mercedes, BMW, and the world's finest automakers."}},
-  {video:V+"5309353/5309353-sd_640_360_25fps.mp4",badge:"Sports Cars",titles:{en:BRAND+" \u2013 Sports Cars"},descs:{en:"High-performance sports cars engineered for speed, precision, and adrenaline on every road."}},
-  {video:V+"4281368/4281368-sd_640_360_24fps.mp4",badge:"Supercars",titles:{en:BRAND+" \u2013 Supercars"},descs:{en:"Exclusive supercars from Ferrari, Lamborghini, McLaren, and Pagani \u2014 the pinnacle of automotive engineering."}},
-  {video:V+"8630309/8630309-sd_640_360_25fps.mp4",badge:"Hypercars",titles:{en:BRAND+" \u2013 Hypercars"},descs:{en:"Rare hypercars pushing the boundaries of speed, technology, and design \u2014 limited edition masterpieces."}},
-  {video:V+"3998657/3998657-sd_640_360_24fps.mp4",badge:"Electric Vehicles",titles:{en:BRAND+" \u2013 Electric Vehicles"},descs:{en:"Electric vehicles from Tesla, Rivian, Lucid, and leading brands \u2014 zero emissions, maximum performance."}},
-  {video:V+"4565728/4565728-sd_640_360_25fps.mp4",badge:"Hybrid Vehicles",titles:{en:BRAND+" \u2013 Hybrid Vehicles"},descs:{en:"Hybrid vehicles combining fuel efficiency with performance \u2014 the smart choice for modern drivers."}},
-  {video:V+"6158064/6158064-sd_640_360_30fps.mp4",badge:"SUVs",titles:{en:BRAND+" \u2013 SUVs"},descs:{en:"Luxury SUVs and family SUVs with advanced safety, spacious interiors, and all-terrain capability."}},
-  {video:V+"5309420/5309420-sd_640_360_25fps.mp4",badge:"Pickup Trucks",titles:{en:BRAND+" \u2013 Pickup Trucks"},descs:{en:"Powerful pickup trucks from Ford, Chevrolet, Toyota, and Ram \u2014 built for work and adventure."}},
-  {video:V+"4203572/4203572-sd_640_360_24fps.mp4",badge:"Sedans",titles:{en:BRAND+" \u2013 Sedans"},descs:{en:"Elegant sedans offering comfort, style, and refined performance for executive driving."}},
-  {video:V+"6331328/6331328-sd_960_506_24fps.mp4",badge:"Hatchbacks",titles:{en:BRAND+" \u2013 Hatchbacks"},descs:{en:"Compact hatchbacks perfect for city driving \u2014 efficient, practical, and stylish everyday vehicles."}},
-  {video:V+"13643111/13643111-sd_640_360_24fps.mp4",badge:"Coupes",titles:{en:BRAND+" \u2013 Coupes"},descs:{en:"Sleek coupes with sporty two-door designs \u2014 performance meets elegance on every journey."}},
-  {video:V+"5834300/5834300-sd_640_360_24fps.mp4",badge:"Convertibles",titles:{en:BRAND+" \u2013 Convertibles"},descs:{en:"Open-top convertibles for the ultimate driving experience \u2014 feel the wind and the freedom."}},
-  {video:V+"4281280/4281280-sd_640_360_24fps.mp4",badge:"Vans",titles:{en:BRAND+" \u2013 Vans"},descs:{en:"Passenger vans and cargo vans for families and businesses \u2014 spacious, reliable, and versatile."}},
-  {video:V+"3845373/3845373-sd_640_360_24fps.mp4",badge:"Minivans",titles:{en:BRAND+" \u2013 Minivans"},descs:{en:"Family minivans with flexible seating, entertainment systems, and advanced safety for every journey."}},
-  {video:V+"3817901/3817901-sd_640_360_30fps.mp4",badge:"Commercial Trucks",titles:{en:BRAND+" \u2013 Commercial Trucks"},descs:{en:"Commercial trucks for logistics and construction \u2014 heavy-duty performance for professional use."}},
-  {video:V+"12374292/12374292-sd_640_360_24fps.mp4",badge:"Heavy-Duty Trucks",titles:{en:BRAND+" \u2013 Heavy-Duty Trucks"},descs:{en:"Heavy-duty trucks built for the toughest jobs \u2014 maximum payload, durability, and power."}},
-  {video:V+"35210967/14916434_640_360_60fps.mp4",badge:"Luxury Motorhomes",titles:{en:BRAND+" \u2013 Luxury Motorhomes"},descs:{en:"Luxury motorhomes with premium interiors, full kitchens, and residential comfort on the road."}},
-  {video:V+"18370456/18370456-sd_640_360_30fps.mp4",badge:"Class A Motorhomes",titles:{en:BRAND+" \u2013 Class A Motorhomes"},descs:{en:"Class A motorhomes \u2014 the ultimate in RV luxury with expansive living space and top-tier amenities."}},
-  {video:V+"32731604/13954515_360_640_30fps.mp4",badge:"Class B Camper Vans",titles:{en:BRAND+" \u2013 Class B Camper Vans"},descs:{en:"Class B camper vans \u2014 compact, agile, and fully equipped for spontaneous adventures anywhere."}},
-  {video:V+"17899033/17899033-sd_640_360_24fps.mp4",badge:"Class C Motorhomes",titles:{en:BRAND+" \u2013 Class C Motorhomes"},descs:{en:"Class C motorhomes offering the perfect balance of size, comfort, and drivability for families."}},
-  {video:V+"33870727/14373922_360_640_30fps.mp4",badge:"Luxury Camper Vans",titles:{en:BRAND+" \u2013 Luxury Camper Vans"},descs:{en:"Luxury camper vans with premium finishes, smart technology, and off-grid capability for modern nomads."}},
-  {video:V+"34479230/14610570_360_640_24fps.mp4",badge:"Travel Trailers",titles:{en:BRAND+" \u2013 Travel Trailers"},descs:{en:"Travel trailers for every budget \u2014 lightweight, towable, and ready for your next road trip adventure."}},
-  {video:V+"7018509/7018509-sd_506_960_25fps.mp4",badge:"Fifth-Wheel RVs",titles:{en:BRAND+" \u2013 Fifth-Wheel RVs"},descs:{en:"Fifth-wheel RVs with spacious interiors and residential features \u2014 the ultimate towing experience."}},
-  {video:V+"3530201/3530201-sd_640_360_30fps.mp4",badge:"Off-Road Campers",titles:{en:BRAND+" \u2013 Off-Road Campers"},descs:{en:"Off-road campers built for rugged terrain \u2014 durable, self-contained, and ready for the wilderness."}},
-  {video:V+"18437773/18437773-sd_640_360_25fps.mp4",badge:"Family Motorhomes",titles:{en:BRAND+" \u2013 Family Motorhomes"},descs:{en:"Family motorhomes with bunk beds, entertainment centers, and space for the whole family."}},
-  {video:V+"20260712/20260712-sd_640_360_30fps.mp4",badge:"Adventure RVs",titles:{en:BRAND+" \u2013 Adventure RVs"},descs:{en:"Adventure RVs designed for explorers \u2014 off-grid capable, rugged, and built for the journey."}},
-  {video:V+"8996079/8996079-sd_640_360_30fps.mp4",badge:"Caravan Trailers",titles:{en:BRAND+" \u2013 Caravan Trailers"},descs:{en:"Caravan trailers offering comfortable mobile living \u2014 compact, efficient, and easy to tow."}},
-  {video:V+"11745876/11745876-sd_640_360_30fps.mp4",badge:"Mobile Homes",titles:{en:BRAND+" \u2013 Mobile Homes"},descs:{en:"Mobile homes and manufactured housing providing affordable, comfortable living in communities nationwide."}},
-  // === MOTORCYCLES & BICYCLES ===
-  {video:V+"12165308/12165308-sd_640_360_30fps.mp4",badge:"Motorcycles",titles:{en:BRAND+" \u2013 Motorcycles, Scooters & Bicycles"},descs:{en:"Motorcycles, scooters, bicycles, car accessories, auto parts, tires, and wheels for every rider."}},
-  // === FASHION ===
-  {video:V+"8849053/8849053-sd_640_360_30fps.mp4",badge:"Men's Fashion",titles:{en:BRAND+" \u2013 Men's Fashion"},descs:{en:"Designer menswear, streetwear, sportswear, shoes, sneakers, wallets, and sunglasses from top brands."}},
-  {video:V+"8516555/8516555-sd_360_640_30fps.mp4",badge:"Women's Fashion",titles:{en:BRAND+" \u2013 Women's Fashion"},descs:{en:"Women's clothing, luxury fashion, handbags, shoes, and accessories for every occasion and style."}},
-  {video:V+"6173172/6173172-sd_640_360_25fps.mp4",badge:"Kids Fashion",titles:{en:BRAND+" \u2013 Kids Fashion & Baby Clothing"},descs:{en:"Kids fashion, baby clothing, and children's accessories \u2014 comfortable, stylish, and affordable."}},
-  {video:V+"36976011/15665404_640_360_60fps.mp4",badge:"Shoes & Sneakers",titles:{en:BRAND+" \u2013 Shoes & Sneakers"},descs:{en:"Athletic shoes, designer heels, boots, sneakers, and footwear from leading global brands."}},
-  {video:V+"8346818/8346818-sd_960_506_25fps.mp4",badge:"Jewelry & Watches",titles:{en:BRAND+" \u2013 Luxury Watches & Fine Jewelry"},descs:{en:"Gold jewelry, diamond jewelry, luxury watches, and certified authentic accessories."}},
-  {video:V+"8453909/8453909-sd_506_960_25fps.mp4",badge:"Perfumes",titles:{en:BRAND+" \u2013 Perfumes & Fragrances"},descs:{en:"Luxury perfumes, colognes, and fragrances from the world's most prestigious houses."}},
-  // === BEAUTY ===
-  {video:V+"5084552/5084552-sd_960_506_24fps.mp4",badge:"Skincare & Cosmetics",titles:{en:BRAND+" \u2013 Skincare, Cosmetics & Makeup"},descs:{en:"Skincare, cosmetics, makeup, hair care, barber supplies, and beauty equipment for professionals."}},
-  {video:V+"6802240/6802240-sd_640_360_30fps.mp4",badge:"Beauty & Spa",titles:{en:BRAND+" \u2013 Nail Products & Spa Essentials"},descs:{en:"Nail products, spa products, beauty equipment, and personal care for salons and home use."}},
-  // === ELECTRONICS ===
-  {video:V+"19001684/19001684-sd_640_360_30fps.mp4",badge:"Smartphones",titles:{en:BRAND+" \u2013 Smartphones & Mobile Phones"},descs:{en:"iPhone, Samsung Galaxy, Google Pixel, foldable phones, and the latest smartphone innovations."}},
-  {video:V+"853987/853987-sd_640_360_25fps.mp4",badge:"Tablets",titles:{en:BRAND+" \u2013 Tablets & Smart Watches"},descs:{en:"Tablets, smart watches, and wearable technology from Apple, Samsung, and leading brands."}},
-  {video:V+"38493702/16347971_640_360_25fps.mp4",badge:"Gaming Laptops",titles:{en:BRAND+" \u2013 Gaming & Business Laptops"},descs:{en:"Gaming laptops, business laptops, desktop computers, and high-performance workstations."}},
-  {video:V+"853935/853935-sd_640_360_25fps.mp4",badge:"Smart TVs",titles:{en:BRAND+" \u2013 Smart TVs & Projectors"},descs:{en:"Smart TVs, projectors, home theater systems, and entertainment displays in every size."}},
-  {video:V+"7942902/7942902-sd_960_506_25fps.mp4",badge:"Gaming",titles:{en:BRAND+" \u2013 Gaming Consoles & VR"},descs:{en:"Gaming consoles, VR headsets, gaming accessories, and the future of interactive entertainment."}},
-  {video:V+"12985798/12985798-sd_640_360_24fps.mp4",badge:"Cameras & Drones",titles:{en:BRAND+" \u2013 Cameras, Drones & Headphones"},descs:{en:"Professional cameras, drones, headphones, Bluetooth speakers, and smart home devices."}},
-  {video:V+"4318552/4318552-sd_640_360_30fps.mp4",badge:"Smart Home",titles:{en:BRAND+" \u2013 Smart Home & Connected Devices"},descs:{en:"Smart home devices, connected gadgets, networking equipment, and smart living solutions."}},
-  // === HOME & LIVING ===
-  {video:V+"4193136/4193136-sd_640_360_24fps.mp4",badge:"Furniture",titles:{en:BRAND+" \u2013 Luxury Furniture & Home Decor"},descs:{en:"Luxury furniture, home decor, lighting, curtains, bedding, mattresses, and storage solutions."}},
-  {video:V+"4124932/4124932-sd_640_360_25fps.mp4",badge:"Kitchen",titles:{en:BRAND+" \u2013 Kitchen Appliances & Cookware"},descs:{en:"Kitchen appliances, cookware, dining sets, and smart kitchen products for modern living."}},
-  {video:V+"6862869/6862869-sd_960_506_25fps.mp4",badge:"Home Appliances",titles:{en:BRAND+" \u2013 Home Appliances & Smart Living"},descs:{en:"Home appliances, smart home products, and everyday essentials for comfortable modern living."}},
-  // === FOOD & GROCERY ===
-  {video:V+"2081576/2081576-sd_640_360_30fps.mp4",badge:"Supermarkets",titles:{en:BRAND+" \u2013 Supermarkets & Food Markets"},descs:{en:"Supermarkets, food markets, fresh fruits, fresh vegetables, organic food, and everyday groceries."}},
-  {video:V+"6420982/6420982-sd_506_960_30fps.mp4",badge:"Fresh Food",titles:{en:BRAND+" \u2013 Fresh Food & Beverages"},descs:{en:"Seafood, meat products, bakery, dairy, coffee, tea, beverages, and international cuisine."}},
-  {video:V+"10619422/10619422-sd_360_640_30fps.mp4",badge:"Restaurants",titles:{en:BRAND+" \u2013 Restaurants & Fast Food"},descs:{en:"Restaurants, fast food, international cuisine, and dining experiences from around the world."}},
-  // === HEALTH ===
-  {video:V+"31059637/13273873_360_640_30fps.mp4",badge:"Health & Wellness",titles:{en:BRAND+" \u2013 Health & Wellness"},descs:{en:"Hospitals, pharmacies, medical equipment, vitamins, supplements, dental care, and vision care."}},
-  {video:V+"38222402/16227493_640_360_30fps.mp4",badge:"Personal Care",titles:{en:BRAND+" \u2013 Wellness & Personal Care"},descs:{en:"Wellness products, personal care, health supplements, and medical supplies for everyday needs."}},
-  // === SPORTS & FITNESS ===
-  {video:V+"15436958/15436958-sd_636_360_30fps.mp4",badge:"Sports & Fitness",titles:{en:BRAND+" \u2013 Sports & Fitness"},descs:{en:"Gym equipment, home gym, sportswear, running gear, and fitness accessories for every athlete."}},
-  {video:V+"1340880/1340880-sd_636_360_16fps.mp4",badge:"Team Sports",titles:{en:BRAND+" \u2013 Football, Basketball & Tennis"},descs:{en:"Football, basketball, tennis, golf, cycling, and team sports equipment for all levels."}},
-  {video:V+"29852984/12819165_640_360_30fps.mp4",badge:"Outdoor",titles:{en:BRAND+" \u2013 Cycling & Outdoor Adventure"},descs:{en:"Cycling gear, camping equipment, outdoor adventure supplies, and sporting goods for explorers."}},
-  // === BABY & KIDS ===
-  {video:V+"3875308/3875308-sd_640_360_25fps.mp4",badge:"Baby & Kids",titles:{en:BRAND+" \u2013 Baby Clothing & Toys"},descs:{en:"Baby clothing, baby toys, baby food, strollers, car seats, and educational toys for little ones."}},
-  {video:V+"4586690/4586690-sd_640_360_25fps.mp4",badge:"School Supplies",titles:{en:BRAND+" \u2013 Educational Toys & School Supplies"},descs:{en:"Educational toys, school supplies, kids' books, and learning materials for growing minds."}},
-  // === PETS ===
-  {video:V+"6568934/6568934-sd_960_506_25fps.mp4",badge:"Pet Supplies",titles:{en:BRAND+" \u2013 Dogs, Cats & Pet Care"},descs:{en:"Dog and cat supplies, pet food, pet toys, pet accessories, and veterinary supplies."}},
-  {video:V+"6846022/6846022-sd_360_640_25fps.mp4",badge:"Pet World",titles:{en:BRAND+" \u2013 Birds, Fish & All Pets"},descs:{en:"Birds, fish, reptiles, small pets, aquariums, and everything for your animal companions."}},
-  // === AGRICULTURE ===
-  {video:V+"15959637/15959637-sd_640_360_30fps.mp4",badge:"Agriculture",titles:{en:BRAND+" \u2013 Agriculture"},descs:{en:"Tractors, farm equipment, irrigation systems, seeds, fertilizers, livestock, and greenhouses."}},
-  // === INDUSTRIAL ===
-  {video:V+"32244801/13751979_640_360_50fps.mp4",badge:"Construction",titles:{en:BRAND+" \u2013 Construction Equipment & Heavy Machinery"},descs:{en:"Heavy machinery, generators, power tools, manufacturing equipment, and safety gear for industry."}},
-  {video:V+"11649490/11649490-sd_640_360_24fps.mp4",badge:"Industrial",titles:{en:BRAND+" \u2013 Industrial Equipment & Safety"},descs:{en:"Industrial equipment, manufacturing tools, safety equipment, and professional-grade machinery."}},
-  // === OFFICE & BUSINESS ===
-  {video:V+"36489218/15472805_360_640_50fps.mp4",badge:"Office & Business",titles:{en:BRAND+" \u2013 Office Furniture & Business Supplies"},descs:{en:"Office furniture, office supplies, printers, networking equipment, business software, and POS systems."}},
-  // === ENTERTAINMENT ===
-  {video:V+"7313656/7313656-sd_960_506_25fps.mp4",badge:"Entertainment",titles:{en:BRAND+" \u2013 Movies, Music & Books"},descs:{en:"Movies, music, books, musical instruments, video games, and streaming services for entertainment."}},
-  {video:V+"6695082/6695082-sd_640_360_30fps.mp4",badge:"Musical Instruments",titles:{en:BRAND+" \u2013 Musical Instruments & Streaming"},descs:{en:"Musical instruments, audio equipment, streaming services, and creative tools for artists."}},
-  // === TRAVEL ===
-  {video:V+"8865814/8865814-sd_960_506_25fps.mp4",badge:"Travel & Tourism",titles:{en:BRAND+" \u2013 Travel & Tourism"},descs:{en:"Flights, hotels, resorts, cruises, car rentals, tour packages, and adventure tourism worldwide."}},
-  {video:V+"4254064/4254064-sd_506_960_25fps.mp4",badge:"Adventure Travel",titles:{en:BRAND+" \u2013 Adventure Tourism & Travel Insurance"},descs:{en:"Adventure tourism, travel insurance, vacation packages, and unforgettable experiences across the globe."}},
-  // === FINANCIAL SERVICES ===
-  {video:V+"8174193/8174193-sd_640_360_25fps.mp4",badge:"Financial Services",titles:{en:BRAND+" \u2013 Secure Payments & Digital Wallets"},descs:{en:"Secure payments, digital wallets, international payments, currency exchange, and business banking."}},
-  // === MARKETPLACE SERVICES ===
-  {video:V+"8127822/8127822-sd_640_360_25fps.mp4",badge:"Verified Sellers",titles:{en:BRAND+" \u2013 Verified Sellers & Buyer Protection"},descs:{en:"Verified sellers, buyer protection, secure checkout, global shipping, and real-time order tracking."}},
-  {video:V+"7668013/7668013-sd_640_360_25fps.mp4",badge:"Membership",titles:{en:BRAND+" \u2013 Gift Cards & Membership Benefits"},descs:{en:"Gift cards, membership benefits, flash sales, seasonal promotions, new arrivals, and best sellers."}},
-  {video:V+"4495927/4495927-sd_640_360_25fps.mp4",badge:"Flash Sales",titles:{en:BRAND+" \u2013 Flash Sales & Featured Collections"},descs:{en:"Flash sales, seasonal promotions, featured collections, new arrivals, and best-selling products."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.07_PM_(2).jpeg",badge:"Premium Showroom",titles:{en:BRAND+" \u2013 Premium Showroom Experience"},descs:{en:"Step into our premium showroom featuring the world's finest vehicles in a luxury retail environment."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.08_PM_(1).jpeg",badge:"Luxury Collection",titles:{en:BRAND+" \u2013 Luxury Vehicle Collection"},descs:{en:"Discover an exclusive collection of luxury vehicles from the world's most prestigious manufacturers."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.08_PM.jpeg",badge:"Performance Cars",titles:{en:BRAND+" \u2013 Performance & Sports Cars"},descs:{en:"High-performance sports cars engineered for speed, precision, and adrenaline on every road."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.09_PM_(1).jpeg",badge:"Electric Vehicles",titles:{en:BRAND+" \u2013 Electric & Hybrid Vehicles"},descs:{en:"Next-generation electric and hybrid vehicles combining sustainability with cutting-edge technology."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.09_PM_(2).jpeg",badge:"SUV Showcase",titles:{en:BRAND+" \u2013 Premium SUV Showcase"},descs:{en:"Versatile premium SUVs offering power, comfort, and safety for every terrain and lifestyle."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.09_PM.jpeg",badge:"Classic Cars",titles:{en:BRAND+" \u2013 Classic & Vintage Cars"},descs:{en:"Timeless classic and vintage automobiles restored to perfection for discerning collectors."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.10_PM_(1).jpeg",badge:"Commercial Fleet",titles:{en:BRAND+" \u2013 Commercial Fleet Solutions"},descs:{en:"Reliable commercial fleet vehicles for businesses seeking performance, durability, and value."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.10_PM_(2).jpeg",badge:"Off-Road Vehicles",titles:{en:BRAND+" \u2013 Off-Road & Adventure Vehicles"},descs:{en:"Rugged off-road vehicles built to conquer any terrain with confidence and capability."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.10_PM.jpeg",badge:"City Cars",titles:{en:BRAND+" \u2013 Compact City Cars"},descs:{en:"Stylish and efficient compact city cars designed for urban living and easy parking."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.11_PM_(1).jpeg",badge:"Luxury Sedans",titles:{en:BRAND+" \u2013 Executive Luxury Sedans"},descs:{en:"Executive luxury sedans blending refined comfort, advanced technology, and sophisticated design."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.11_PM.jpeg",badge:"Convertible Cars",titles:{en:BRAND+" \u2013 Convertible & Roadster"},descs:{en:"Open-top convertibles and roadsters for those who crave freedom and the thrill of open-air driving."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.12_PM_(1).jpeg",badge:"Pickup Trucks",titles:{en:BRAND+" \u2013 Heavy-Duty Pickup Trucks"},descs:{en:"Powerful pickup trucks with best-in-class towing, payload, and off-road capability."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.12_PM.jpeg",badge:"Family Minivans",titles:{en:BRAND+" \u2013 Family Minivans & MPVs"},descs:{en:"Spacious family minivans and MPVs with premium seating, entertainment, and safety features."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.13_PM.jpeg",badge:"Auto Accessories",titles:{en:BRAND+" \u2013 Auto Parts & Accessories"},descs:{en:"Genuine auto parts and premium accessories to customize, upgrade, and maintain your vehicle."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.14_PM_(1).jpeg",badge:"Motorcycle Showcase",titles:{en:BRAND+" \u2013 Motorcycles & Two-Wheelers"},descs:{en:"Premium motorcycles and two-wheelers for every rider from street to track to trail."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.14_PM.jpeg",badge:"Marine Vehicles",titles:{en:BRAND+" \u2013 Boats & Marine Vehicles"},descs:{en:"Luxury boats, yachts, and marine vehicles for life on the water with style and performance."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.15_PM_(1).jpeg",badge:"Aviation Showcase",titles:{en:BRAND+" \u2013 Aircraft & Aviation"},descs:{en:"Private aircraft and aviation solutions for those who travel above and beyond."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.15_PM.jpeg",badge:"Concept Cars",titles:{en:BRAND+" \u2013 Concept & Future Vehicles"},descs:{en:"Visionary concept cars and future mobility solutions pushing the boundaries of design."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.16_PM.jpeg",badge:"Auto Financing",titles:{en:BRAND+" \u2013 Auto Finance & Leasing"},descs:{en:"Flexible auto financing and leasing options designed to get you behind the wheel sooner."}},
-  {image:"/videos/WhatsApp_Image_2026-07-24_at_3.51.17_PM_(1).jpeg",badge:"Global Auto Trade",titles:{en:BRAND+" \u2013 Global Auto Trade & Export"},descs:{en:"Seamless global auto trade and export services connecting buyers and sellers across continents."}},
-]
-// The top hero carousel only advertises the four categories that exist in
-// the showroom: Homes (real estate), Trucks, Motorhomes and Cars. Every
-// other slide (fashion, electronics, food, logistics, boats, aviation, …)
-// is dropped so the carousel never shows content that isn't for sale.
-// Built-in video slides are dropped too — the hero banner is a clean image
-// area; the owner's own promo banner (image or video) is injected first and
-// any image/video they upload through the Advertisements manager rotates in.
-.filter((s) => {
-  if (s.promoBanner) return true;
-  if (s.video) return false;
-  const text = [s.badge, s.titles && s.titles.en, s.descs && s.descs.en].filter(Boolean).join(' ').toLowerCase();
-  const isHome = /\b(house|houses|homes|apartment|apartments|villa|villas|condo|condominium|townhouse|townhouses|bungalow|mansion|mansions|penthouse|duplex|resort|resorts|hotels?|estates?|property|real estate|commercial buildings?|office buildings?|shopping malls?|vacation home|waterfront home|farm house|land for sale)\b/.test(text);
-  const isTruck = /\b(trucks?|pickup|delivery trucks?|last-mile)\b/.test(text);
-  const isMotorhome = /\b(motorhomes?|campers?|rvs?|trailers?|fifth-wheel|mobile home|caravan)\b/.test(text);
-  const isCar = /\b(cars?|sedans?|suvs?|coupes?|hatchbacks?|convertibles?|hypercars?|supercars?|electric vehicles?|hybrid vehicles?|vans?|minivans?|autos?|concept cars?|sports car)\b/.test(text);
-  return isHome || isTruck || isMotorhome || isCar;
-});
+// ---- DATA: Carousel slides ----
+// The hero now shows ONLY the owner's own media: the promo banner they
+// upload in Content Settings (image or video) plus any image/video they
+// create through the Advertisements manager. All built-in stock videos and
+// old showroom images have been removed.
+const CAROUSEL_SLIDES = [];
+
+// Clean brand fallback shown only when no promo banner or ad is uploaded.
+const BRAND_FALLBACK_SLIDE = {
+  brandOnly: true,
+  badge: "Weverse Online Shop",
+  titles: { en: "Weverse Online Shop" },
+  descs: { en: "Premium products, delivered worldwide." },
+};
+
 
 // The single word shown over each hero slide: Home, Truck, Motorhome or Car.
 // No long titles, descriptions or badges — just the category name.
@@ -1061,6 +915,7 @@ window.openSlideLink=function(idx){
 // ---- HERO VIDEO CAROUSEL ----
 function renderCarousel(){
   mergeAdSlides();
+  if(!activeCarouselSlides.length) activeCarouselSlides=[BRAND_FALLBACK_SLIDE];
   const slides=activeCarouselSlides;
   const sc=document.getElementById("carousel-slides");
   if(!sc)return;
@@ -1077,6 +932,8 @@ function renderCarousel(){
     }else if(slide.image){
       var kbClass2="kb-"+(((idx%5))+1);
       mediaHtml='<div class="kb-img '+kbClass2+'" style="background-image:url(\''+slide.image+'\');background-size:cover;background-position:center"></div>';
+    }else if(slide.brandOnly){
+      mediaHtml='<div class="brand-hero-bg" style="position:absolute;inset:0;width:100%;height:100%;background:linear-gradient(135deg,#0b1226 0%,#1e3a8a 55%,#0369a1 100%)"></div>';
     }else{
       mediaHtml='<video class="hero-video" muted loop playsinline webkit-playsinline preload="metadata" data-src="'+slide.video+'" style="width:100%;height:100%;object-fit:cover;object-position:center"'+(slide.poster?' poster="'+slide.poster+'"':'')+'>'+
       '</video>';
