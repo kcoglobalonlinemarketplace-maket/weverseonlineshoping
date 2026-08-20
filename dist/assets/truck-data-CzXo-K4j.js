@@ -1,0 +1,1 @@
+const r=[];function c(t){return r.find(n=>n.property_id===t)||null}function e(t){const n=t&&typeof t=="object"?t.price:t;return Number(n||0).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0})}export{r as TRUCK_LISTINGS,e as formatTruckPrice,c as getTruckById};

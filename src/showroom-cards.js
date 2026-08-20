@@ -172,6 +172,33 @@ const PRODUCT_ROWS = buildCategoryRows(
   })
 );
 
+// Rebuild the Products section rows from the owner's live database listings
+// (categories already gathered into their own lines — houses, cars, trucks,
+// motorhomes, washing machines — are excluded so nothing repeats). Called after
+// the DB load so the Products section shows the owner's real items, not old
+// regenerated ones.
+function buildDbCategoryRows() {
+  const db = getDBListings() || [];
+  const byCat = new Map();
+  for (const l of db) {
+    const c = l.category || 'New Arrivals';
+    const id = l.property_id || l.id;
+    if (!id) continue;
+    if (['Houses & Real Estate', 'Real Estate', 'Cars', 'Cars & Vehicles', 'Trucks', 'Motorhomes'].includes(c)) continue;
+    if (WASHING_RE.test(l.title || '')) continue;
+    if (!byCat.has(c)) byCat.set(c, []);
+    byCat.get(c).push(id);
+  }
+  const order = [...byCat.keys()].sort((a, b) => {
+    const ia = PRODUCT_CATEGORY_ORDER.indexOf(a);
+    const ib = PRODUCT_CATEGORY_ORDER.indexOf(b);
+    return (ia === -1 ? PRODUCT_CATEGORY_ORDER.length : ia) - (ib === -1 ? PRODUCT_CATEGORY_ORDER.length : ib);
+  });
+  return order
+    .map(c => ({ id: `products-${productCatSlug(c)}`, label: c, icon: PRODUCT_CAT_ICON[c] || 'package', productCategory: c }))
+    .filter(r => (byCat.get(r.productCategory) || []).length);
+}
+
 // ── Lazy catalog ────────────────────────────────────────────────
 // The generated catalog (src/catalog.js) is the single biggest JS module
 // (~196 kB) but the homepage only needs it for generated real-estate
@@ -663,6 +690,22 @@ function showToast(msg) {
 // ── Row rendering ──
 
 // ── Man row ─────────────────────────────────────────────────────
+// Live database listings that belong to a showroom row. The static catalog has
+// been removed, so the showroom is populated from the owner's real database
+// rows (and any locally-saved listings) instead of regenerated old products.
+function dbListingsForRow(rowDef) {
+  const db = getDBListings() || [];
+  if (rowDef.allTrucks) return db.filter(l => l.category === 'Trucks');
+  if (rowDef.allMotorhomes) return db.filter(l => l.category === 'Motorhomes');
+  if (rowDef.allCars) return db.filter(l => l.category === 'Cars' || l.category === 'Cars & Vehicles');
+  if (rowDef.newHouses) return db.filter(l => l.listing_type === 'property' || l.category === 'Houses & Real Estate' || l.category === 'Real Estate');
+  if (rowDef.allWashingMachines) return db.filter(l => WASHING_RE.test(l.title || ''));
+  if (rowDef.productCategory) return db.filter(l => (l.category || 'New Arrivals') === rowDef.productCategory);
+  if (rowDef.allProducts) return db;
+  if (rowDef.ids) return getListingsByIds(rowDef.ids);
+  return [];
+}
+
 function getRowListings(rowDef) {
   let listings;
   if (rowDef.allTrucks) {
@@ -681,6 +724,16 @@ function getRowListings(rowDef) {
     listings = rowDef.productRange ? ALL_PRODUCTS.slice(rowDef.productRange[0], rowDef.productRange[1]) : ALL_PRODUCTS;
   } else {
     listings = getListingsByIds(rowDef.ids);
+  }
+  // Always merge the owner's live database listings so real products appear
+  // in their correct row (and can never be replaced by regenerated old items).
+  const dbList = dbListingsForRow(rowDef);
+  const seen = new Set(listings.map(l => l.property_id || l.id));
+  for (const l of dbList) {
+    const id = l.property_id || l.id;
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    listings = [...listings, l];
   }
   let catalogExtra = [];
   if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.newHouses && !rowDef.allProducts && !rowDef.productCategory && !rowDef.allWashingMachines) {
@@ -756,11 +809,7 @@ function renderRow(rowDef) {
 function countSectionItems(section) {
   let count = 0;
   section.rows.forEach((r) => {
-    const base = (r.allTrucks ? ALL_TRUCKS : r.allMotorhomes ? ALL_MOTORHOMES : r.allCars ? ALL_CARS : r.newHouses ? ALL_HOUSES : r.allWashingMachines ? ALL_WASHING_MACHINES : r.productCategory ? ALL_PRODUCTS.filter(l => (l.category || 'New Arrivals') === r.productCategory) : r.allProducts ? (r.productRange ? ALL_PRODUCTS.slice(r.productRange[0], r.productRange[1]) : ALL_PRODUCTS) : getListingsByIds(r.ids)).filter(l => l && !isCatalogListingHidden(l.property_id));
-    count += base.length;
-    if (!r.allTrucks && !r.allMotorhomes && !r.allCars && !r.allProducts && !r.productCategory && !r.allWashingMachines) {
-      count += getCatalogListingsForRow(r, base.map(l => l.property_id)).length;
-    }
+    count += getRowListings(r).length;
   });
   return count;
 }
@@ -803,7 +852,8 @@ function renderSection(section, accentColor, maxRows) {
   `;
   sec.appendChild(header);
 
-  const rowsToShow = (maxRows && maxRows > 0) ? section.rows.slice(0, maxRows) : section.rows;
+  const rowsToShow = ((maxRows && maxRows > 0) ? section.rows.slice(0, maxRows) : section.rows)
+    .filter(r => (getRowListings(r) || []).length > 0);
   rowsToShow.forEach(rowDef => {
     try {
       sec.appendChild(renderRow(rowDef));
@@ -1194,6 +1244,10 @@ function createViewAllTrucksButton() {
 }
 
 // ── Grid renderer ───────────────────────────────────────────────
+function sectionHasItems(section) {
+  return section.rows.some(r => (getRowListings(r) || []).length > 0);
+}
+
 function renderGrid(gridName) {
   const container = document.querySelector(`[data-showroom-grid="${gridName}"]`);
   if (!container || container.dataset.initialized) return;
@@ -1205,6 +1259,16 @@ function renderGrid(gridName) {
   const prerendered = container.dataset.prerendered === 'true';
   delete container.dataset.prerendered;
   if (!prerendered) container.innerHTML = '';
+
+  // Remove any stale pre-rendered rows that now hold no items (the static
+  // catalog was removed, so a baked "Coming Soon" row must not linger while
+  // the owner's live database listings take its place).
+  if (prerendered) {
+    container.querySelectorAll('.showroom-row[data-row-id]').forEach(r => {
+      const rowDef = findRowDef(r.dataset.rowId);
+      if (!rowDef || (getRowListings(rowDef) || []).length === 0) r.remove();
+    });
+  }
 
   const preRenderedRowIds = new Set();
   if (prerendered) {
@@ -1223,7 +1287,7 @@ function renderGrid(gridName) {
       const section = byId.get(id);
       if (!section) continue;
       const alreadyRendered = section.rows.some(r => hasRow(r.id));
-      if (!alreadyRendered) {
+      if (!alreadyRendered && sectionHasItems(section)) {
         const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
         try {
           container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
@@ -1237,6 +1301,7 @@ function renderGrid(gridName) {
     // homepage — every property stays reachable in the All Houses overlay.
   } else {
     sections.forEach(section => {
+      if (!sectionHasItems(section)) return;
       try {
         container.appendChild(renderSection(section, accent));
       } catch { /* skip a section that can't be rendered */ }
@@ -1569,9 +1634,8 @@ export async function initAllShowrooms() {
   injectWishStyles();
   wireViewModePicker();
 
-  // Paint the static catalog instantly — no network wait. Every seed
-  // listing (houses, trucks, cars, catalog) is already in the bundle,
-  // so the showrooms appear immediately.
+  // Paint the showroom from the owner's live database listings. Rows with no
+  // items are hidden, so the page never shows regenerated old products.
   renderAllGrids();
 
   // Load DB products + hidden-catalog rules right away. The generated
@@ -1605,9 +1669,18 @@ export async function initAllShowrooms() {
           row.ids.push(listing.property_id);
         }
       }
+
+      // Rebuild the Products section rows from the owner's live database
+      // listings so products like jewelry, watches, phones and fashion
+      // always appear (the old static catalog no longer provides them).
+      const productsSection = REAL_ESTATE_SECTIONS.find(s => s.id === 'products');
+      if (productsSection) {
+        const dbRows = buildDbCategoryRows();
+        if (dbRows.length) productsSection.rows = dbRows;
+      }
     }
   } catch {
-    // Static catalog is already visible; nothing else to do.
+    // DB load failed; the grid simply stays as rendered above.
   }
 
   // Refresh once the DB products are ready, so the final grid shows them.
@@ -1623,7 +1696,7 @@ export async function initAllShowrooms() {
     renderAllGrids();
   } catch {
     // Never leave the grid blank. If the fresh render fails on any section,
-    // fall back to the static (pre-DB) state so customers still see products.
+    // clear flags and retry so the showroom still populates from the DB.
     document.querySelectorAll('[data-showroom-grid]').forEach(g => {
       delete g.dataset.initialized;
       delete g.dataset.prerendered;

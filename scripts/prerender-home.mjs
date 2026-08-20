@@ -462,6 +462,9 @@ function buildGridHtml() {
   // Keep the pre-rendered grid to just the first section's teaser row so
   // index.html stays small for slow connections. The rest of the sections
   // and their view-all buttons are appended by JS in the normal order.
+  // Sections with no baked items (the static catalog is gone — products now
+  // come from the owner's live database) are skipped so a "Coming Soon" row
+  // is never baked into the HTML.
   const order = ['local-houses'];
   const byId = new Map(PRE_RENDER_SECTIONS.map((s) => [s.id, s]));
   let html = '';
@@ -469,6 +472,9 @@ function buildGridHtml() {
     const section = byId.get(id);
     if (!section) continue;
     const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
+    const rowsToShow = (isTeaser ? section.rows.slice(0, 1) : section.rows);
+    const hasItems = rowsToShow.some((r) => getRowListings(r).length > 0);
+    if (!hasItems) continue;
     html += sectionHtml(section, isTeaser ? 1 : undefined);
   }
   return html;
