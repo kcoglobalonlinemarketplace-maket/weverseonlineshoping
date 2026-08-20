@@ -415,6 +415,9 @@ function startPhoneCycling(pool) {
 }
 
 async function init() {
+  // Permanently excluded from the homepage/showroom — this banner belongs on
+  // the details page only. Never render on the homepage.
+  if (document.body && document.body.dataset.homepage === 'true') return;
   const mount = MOUNT();
   if (!mount) return;
 

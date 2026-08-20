@@ -690,6 +690,9 @@ function injectStyle() {
 }
 
 async function init() {
+  // Permanently excluded from the homepage/showroom — these write-up blocks
+  // belong on the details page only. Never render on the homepage.
+  if (document.body && document.body.dataset.homepage === 'true') return;
   const mount = document.getElementById('trust-info-area');
   if (!mount) return;
   injectStyle();
