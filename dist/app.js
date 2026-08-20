@@ -539,9 +539,13 @@ async function getCategoryInventory(){
   return STATIC_DEPARTMENTS.map(d=>({id:d.id,label:d.label,icon:d.icon,color:d.color,categories:d.cats.map(c=>{const base=CATEGORIES.find(x=>x.name===c);return{name:c,count:0,subs:[],icon:base?base.icon:d.icon,color:base?base.color:d.color};})}));
 }
 
+let _catRenderToken=0;
+
 function renderCategories(){
   const c=document.getElementById("category-list");
   if(!c)return;
+  const token=++_catRenderToken;
+  const prevScroll=c.scrollLeft;
   if(!window.MARKETPLACE_CATEGORIES){
     window.addEventListener("marketplace-categories-ready",function once(){
       window.removeEventListener("marketplace-categories-ready",once);
@@ -569,13 +573,25 @@ function renderCategories(){
     c.appendChild(chip);
   });
 
+  // Extras + More are added after the async inventory resolves. The render
+  // token discards stale results from earlier re-renders so chips and the
+  // More button are never duplicated (renderCategories can be re-fired by
+  // several ready events before the promise settles).
   getCategoryInventory().then(inv=>{
+    if(token!==_catRenderToken)return;
     const extras=[];
     (inv||[]).forEach(d=>(d.categories||[]).forEach(entry=>{
       const n=String(entry.name||"").trim();
-      if(n&&!knownNames.has(n.toLowerCase())&&!extras.some(e=>e.name===n)){
-        extras.push({name:n,icon:"shopping-bag",color:"blue"});
-      }
+      if(!n||knownNames.has(n.toLowerCase())||extras.some(e=>e.name===n))return;
+      // Skip categories already covered by a canonical keyword match so the
+      // bar only gets genuinely new categories (no redundant chips).
+      let covered=false;
+      try{
+        const norm=(window.normalizeToMarketplaceCategory||(x=>x))(n);
+        const nl=String(norm||'').toLowerCase();
+        covered=nl!==n.toLowerCase()&&knownNames.has(nl);
+      }catch(e){}
+      if(!covered)extras.push({name:n,icon:"shopping-bag",color:"blue"});
     }));
     extras.forEach(cat=>{
       _deptLabels[cat.name]=cat.name;
@@ -591,6 +607,8 @@ function renderCategories(){
     if(window.lucide)lucide.createIcons();
   });
   setupCategoryRowScroll(c);
+  c.scrollLeft=prevScroll;
+  if(_activeCategory)setNavActive(_activeCategory==="All"?"all":_activeCategory);
 }
 
 function makeMoreChip(d){
