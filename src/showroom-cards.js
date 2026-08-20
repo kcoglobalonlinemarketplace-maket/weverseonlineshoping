@@ -1,4 +1,4 @@
-import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings, cleanListing } from './showroom-data.js';
+import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, getListingsByIds, getDBListings, loadDBListings, hydrateDBListingsFromCache, cleanListing } from './showroom-data.js';
 import { TRUCK_LISTINGS, formatTruckPrice } from './truck-data.js';
 import { MOTORHOME_LISTINGS } from './motorhome-data.js';
 import { PRODUCT_LISTINGS } from './products-data.js';
@@ -1211,6 +1211,11 @@ export async function initAllShowrooms() {
   injectWishStyles();
   wireViewModePicker();
 
+  // Hydrate the owner's products from the localStorage cache (if any) BEFORE
+  // the first paint so the showroom renders real items instantly, without
+  // waiting for the network fetch. The fetch below still refreshes them.
+  hydrateDBListingsFromCache();
+
   // Paint the showroom from the owner's live database listings. Rows with no
   // items are hidden, so the page never shows regenerated old products.
   renderAllGrids();
@@ -1291,6 +1296,11 @@ window._clearShowroomFilter = clearShowroomFilter;
 window._filterShowroomByDepartment = filterShowroomByDepartment;
 window._filterShowroomByCategories = filterShowroomByCategories;
 window._getShowroomCategoryInventory = getShowroomCategoryInventory;
+
+// Eager prefetch: start the Supabase request the moment this module loads (it
+// overlaps with HTML parsing), so by DOMContentLoaded the products may already
+// be here — and cached for the next visit. Never blocks, never throws.
+loadDBListings().catch(() => {});
 
 if (document.querySelector('[data-showroom-grid]')) {
   if (document.readyState === 'loading') {

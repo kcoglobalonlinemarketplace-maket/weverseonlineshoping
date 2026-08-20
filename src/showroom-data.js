@@ -124,6 +124,12 @@ export function getListingsByIds(ids) {
 // showroom_listings table.  We fetch those rows at runtime and merge
 // them with the hardcoded seed data so they appear on the marketplace
 // automatically — no rebuild required.
+//
+// The fetched rows are ALSO cached in localStorage. On the next page load we
+// hydrate from that cache synchronously, so the homepage showroom and category
+// bar paint the owner's products instantly — no network round-trip in front of
+// the first paint. The network fetch still runs in the background and refreshes
+// the cache, so products are always fresh a moment later.
 
 let _dbListings = [];
 let _dbLoaded = false;
@@ -133,10 +139,11 @@ export function getDBListings() { return _dbListings; }
 export function isDBLoaded() { return _dbLoaded; }
 
 // Hard ceiling on how long a database fetch may take. If Supabase is slow or
-// unreachable the page must still render from seed data instead of hanging on
-// "Loading property details..." forever. On timeout we resolve with what we have
-// (seeds) and treat the DB as loaded so callers move on.
+// unreachable the page must still render from cached/seed data instead of
+// hanging on "Loading property details..." forever. On timeout we resolve with
+// what we have (cache/seeds) and treat the DB as loaded so callers move on.
 const DB_FETCH_TIMEOUT_MS = 6000;
+const DB_CACHE_KEY = 'kco_db_listings_cache_v1';
 
 function withTimeout(promise, ms) {
   return new Promise((resolve) => {
@@ -146,6 +153,57 @@ function withTimeout(promise, ms) {
       () => { clearTimeout(timer); resolve('__timeout__'); }
     );
   });
+}
+
+// Turn a raw DB/local-store row into the shape the showroom/details pages read.
+function normalizeDbRow(row) {
+  return {
+    ...row,
+    // Vehicle/product specs are stored in the `specifications` JSONB column
+    // (model_year, engine, transmission, seating_capacity, doors, etc.).
+    // Flatten them to top-level so the showroom/details pages can read them
+    // the same way they read the hardcoded seed data.
+    ...(row.specifications && typeof row.specifications === 'object' ? row.specifications : {}),
+    images: Array.isArray(row.images) ? row.images : [],
+    features: Array.isArray(row.features) ? row.features : [],
+    highlights: Array.isArray(row.highlights) ? row.highlights : [],
+    rating: Number(row.rating) || 0,
+    rating_count: row.rating_count || 0,
+    favorite_count: row.favorite_count || 0,
+    price: Number(row.price) || 0,
+  };
+}
+
+function readDBCache() {
+  try {
+    const raw = localStorage.getItem(DB_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeDBCache(rows) {
+  try { localStorage.setItem(DB_CACHE_KEY, JSON.stringify(rows)); } catch { /* ignore */ }
+}
+
+function applyDbRows(rows) {
+  _dbListings = rows.map(normalizeDbRow).filter(Boolean);
+  // Merge into the listing map (DB entries take priority on duplicate IDs)
+  for (const l of _dbListings) LISTING_MAP.set(l.property_id, l);
+}
+
+// Synchronously load the last-fetched DB rows from localStorage so the homepage
+// can render real products before any network request resolves. Called at the
+// very start of the showroom init (and never throws).
+export function hydrateDBListingsFromCache() {
+  if (_dbLoaded) return;
+  const cached = readDBCache();
+  if (!cached.length) return;
+  applyDbRows(cached);
+  writeDBCache(cached);
 }
 
 // Single shared in-flight request: if the homepage, promo pool, cards, and the
@@ -166,39 +224,34 @@ export function loadDBListings() {
           .order('created_at', { ascending: false }),
         DB_FETCH_TIMEOUT_MS
       );
-      const data = result === '__timeout__' ? null : result.data;
-      const error = result === '__timeout__' ? null : result.error;
+      const ok = result !== '__timeout__' && !result.error;
+      const rows = ok ? (result.data || []) : [];
       // Always merge database rows with the local fallback store so products that
       // were saved locally (while the database was unavailable) still show up on
       // the store. Database rows win on duplicate IDs.
-      const rows = (error || result === '__timeout__' ? [] : (data || []));
       const dbIds = new Set(rows.map(row => row.property_id));
       for (const row of listLocalShowroomListings().filter(item => item.is_active !== false)) {
         if (row && row.property_id && !dbIds.has(row.property_id)) { dbIds.add(row.property_id); rows.push(row); }
       }
-      const source = rows;
-      _dbListings = source.map(row => ({
-        ...row,
-        // Vehicle/product specs are stored in the `specifications` JSONB column
-        // (model_year, engine, transmission, seating_capacity, doors, etc.).
-        // Flatten them to top-level so the showroom/details pages can read them
-        // the same way they read the hardcoded seed data.
-        ...(row.specifications && typeof row.specifications === 'object' ? row.specifications : {}),
-        images: Array.isArray(row.images) ? row.images : [],
-        features: Array.isArray(row.features) ? row.features : [],
-        highlights: Array.isArray(row.highlights) ? row.highlights : [],
-        rating: Number(row.rating) || 0,
-        rating_count: row.rating_count || 0,
-        favorite_count: row.favorite_count || 0,
-        price: Number(row.price) || 0,
-      }));
-      // Merge into the listing map (DB entries take priority on duplicate IDs)
-      for (const l of _dbListings) LISTING_MAP.set(l.property_id, l);
+      if (ok) {
+        // Fresh DB data replaces whatever was hydrated from the cache.
+        applyDbRows(rows);
+        writeDBCache(rows);
+      } else {
+        // Network failed/timed out — keep the cached rows we already have (if
+        // any) and only add any newly-saved local-store rows that are missing.
+        const existing = new Map(_dbListings.map(l => [l.property_id, l]));
+        for (const row of rows) {
+          const norm = normalizeDbRow(row);
+          if (norm && norm.property_id && !existing.has(norm.property_id)) existing.set(norm.property_id, norm);
+        }
+        _dbListings = Array.from(existing.values());
+      }
       _dbLoaded = true;
       return _dbListings;
     } catch {
       _dbLoaded = true;
-      return [];
+      return _dbListings;
     } finally {
       _dbLoading = null;
     }
