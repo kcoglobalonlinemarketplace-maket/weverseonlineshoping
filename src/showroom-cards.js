@@ -818,40 +818,6 @@ function renderSection(section, accentColor, maxRows) {
   const sec = document.createElement('div');
   sec.className = 'showroom-section space-y-3';
 
-  const isCars = section.id === 'cars' || section.id === 'local-houses';
-  const accentText = isCars ? 'text-amber-300' : 'text-blue-300';
-  const accentBorder = isCars ? 'border-amber-400/40' : 'border-blue-500/30';
-  const accentBg = isCars ? 'bg-amber-400/15' : 'bg-blue-500/10';
-  const glow = isCars ? '0 0 26px rgba(251,191,36,0.35)' : '0 0 22px rgba(59,130,246,0.25)';
-  const gradient = isCars ? 'from-amber-100 via-white to-orange-200' : 'from-blue-200 via-white to-blue-300';
-  const itemCount = countSectionItems(section);
-
-  if (isCars) {
-    sec.style.background = 'linear-gradient(180deg, rgba(255,245,215,0.55) 0%, rgba(255,255,255,0) 55%)';
-    sec.style.borderRadius = '1.25rem';
-    sec.style.padding = '0.25rem 0.5rem 0.5rem';
-    sec.style.boxShadow = 'inset 0 0 40px rgba(251,191,36,0.10)';
-  }
-
-  const header = document.createElement('div');
-  header.className = 'relative pt-2 pb-3';
-  header.innerHTML = `
-    <div class="flex items-center gap-3.5">
-      <div class="p-3 rounded-2xl border ${accentBorder} ${accentBg} shrink-0" style="box-shadow:${glow}">
-        <i data-lucide="${section.icon}" class="w-6 h-6 ${accentText}"></i>
-      </div>
-      <div class="flex-1 min-w-0">
-        <h3 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
-          <span class="bg-gradient-to-r ${gradient} bg-clip-text text-transparent">${section.label}</span>
-        </h3>
-        <p class="text-gray-400 text-xs sm:text-[13px] leading-tight mt-1 truncate">${section.subtitle}</p>
-      </div>
-      <span class="hidden sm:inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border ${accentBorder} ${accentBg} ${accentText}">${itemCount} Items</span>
-    </div>
-    <div class="mt-3 h-px bg-gradient-to-r ${isCars ? 'from-amber-400/60 via-orange-300/40' : 'from-blue-500/40 via-gray-700/40'} to-transparent"></div>
-  `;
-  sec.appendChild(header);
-
   const rowsToShow = ((maxRows && maxRows > 0) ? section.rows.slice(0, maxRows) : section.rows)
     .filter(r => (getRowListings(r) || []).length > 0);
   rowsToShow.forEach(rowDef => {
@@ -1293,9 +1259,6 @@ function renderGrid(gridName) {
           container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
         } catch { /* skip a section that can't be rendered */ }
       }
-      if (id === 'motorhomes-boats' && !container.querySelector('[data-viewall="houses"]')) container.appendChild(createViewAllHousesButton());
-      if (id === 'cars' && !container.querySelector('[data-viewall="cars"]')) container.appendChild(createViewAllCarsButton());
-      if (id === 'trucks-buses') container.appendChild(createViewAllTrucksButton());
     }
     // modern-luxury & commercial-land are intentionally left off the
     // homepage — every property stays reachable in the All Houses overlay.
@@ -1483,7 +1446,10 @@ export async function getShowroomCategoryInventory() {
   const counts = new Map();
   const add = (cat, sub, n = 1) => {
     if (!cat) return;
-    const key = String(cat).trim();
+    let key = String(cat).trim();
+    // Merged gathered lines: "Cars & Vehicles" belongs to the Cars chip.
+    const merge = { 'Cars & Vehicles': 'Cars', 'Houses & Real Estate': 'Houses', 'Real Estate': 'Houses' };
+    if (merge[key]) key = merge[key];
     if (!counts.has(key)) counts.set(key, { name: key, count: 0, subs: new Set() });
     const e = counts.get(key);
     e.count += n;
@@ -1494,14 +1460,14 @@ export async function getShowroomCategoryInventory() {
   PRODUCT_LISTINGS.forEach(l => add(l.category, l.subcategory));
   PRODUCT_EXTRA_LISTINGS.forEach(l => add(l.category, l.subcategory));
 
-  // Only categories that actually appear on the homepage (real estate, cars,
-  // trucks, motorhomes, products) are surfaced in the nav.
-  const keptLabels = REAL_ESTATE_SECTIONS.map(s => s.label);
-  const productLabels = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS].map(l => l.category);
+  // Only categories that actually have items are surfaced in the nav. The
+  // owner's live database listings are the source of truth, so every DB
+  // category survives — an old hardcoded whitelist would drop Fashion,
+  // Watches, New Arrivals, Jewelry and Phones.
+  const dbCats = new Set((getDBListings() || []).map(l => String(l.category || '').trim()).filter(Boolean));
   counts.forEach((entry, name) => {
-    const matchesKept = keptLabels.some(label => categoryMatches(name, label, ''))
-      || productLabels.some(label => categoryMatches(name, label, ''));
-    if (!matchesKept) counts.delete(name);
+    const hasItems = dbCats.has(name) || (entry.count || 0) > 0;
+    if (!hasItems) counts.delete(name);
   });
 
   // Display order

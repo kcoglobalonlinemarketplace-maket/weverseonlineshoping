@@ -415,39 +415,23 @@ function renderCategories(){
   all.addEventListener("click",()=>{filterByCategory("All",all);});
   c.appendChild(all);
 
-  const known=getBarCategories();
-  const knownNames=new Set(known.map(k=>String(k.name||"").toLowerCase()));
-  known.forEach(cat=>{
-    _deptLabels[cat.name]=cat.name;
-    const chip=document.createElement("button");
-    chip.dataset.dept=cat.name;
-    chip.className="nav-cat-chip";
-    chip.innerHTML='<i data-lucide="'+(cat.icon||"shopping-bag")+'" class="w-3.5 h-3.5"></i><span class="whitespace-nowrap">'+cat.name+'</span>';
-    chip.addEventListener("click",()=>{filterByCategory(cat.name,chip);});
-    c.appendChild(chip);
-  });
-
-  // Extras + More are added after the async inventory resolves. The render
-  // token discards stale results from earlier re-renders so chips and the
-  // More button are never duplicated (renderCategories can be re-fired by
-  // several ready events before the promise settles).
+  // Only categories that actually have products appear in the bar. The old
+  // hardcoded marketplace list (Women, Men, Kids, Home, Trucks, …) had no
+  // items behind it, so every chip is now driven by the live showroom
+  // inventory. Empty categories never show — the bar only ever lists what the
+  // owner really sells.
   getCategoryInventory().then(inv=>{
     if(token!==_catRenderToken)return;
-    const extras=[];
+    const seen=new Set();
+    const chips=[];
     (inv||[]).forEach(d=>(d.categories||[]).forEach(entry=>{
       const n=String(entry.name||"").trim();
-      if(!n||knownNames.has(n.toLowerCase())||extras.some(e=>e.name===n))return;
-      // Skip categories already covered by a canonical keyword match so the
-      // bar only gets genuinely new categories (no redundant chips).
-      let covered=false;
-      try{
-        const norm=(window.normalizeToMarketplaceCategory||(x=>x))(n);
-        const nl=String(norm||'').toLowerCase();
-        covered=nl!==n.toLowerCase()&&knownNames.has(nl);
-      }catch(e){}
-      if(!covered)extras.push({name:n,icon:"shopping-bag",color:"blue"});
+      if(!n||(entry.count||0)<=0||seen.has(n.toLowerCase()))return;
+      seen.add(n.toLowerCase());
+      const meta=(CATEGORIES.find(x=>x.name.toLowerCase()===n.toLowerCase()))||{name:n,icon:"shopping-bag",color:"blue"};
+      chips.push({name:n,icon:meta.icon||"shopping-bag",color:meta.color||"blue"});
     }));
-    extras.forEach(cat=>{
+    chips.forEach(cat=>{
       _deptLabels[cat.name]=cat.name;
       const chip=document.createElement("button");
       chip.dataset.dept=cat.name;
@@ -456,10 +440,10 @@ function renderCategories(){
       chip.addEventListener("click",()=>{filterByCategory(cat.name,chip);});
       c.appendChild(chip);
     });
-    const moreBtn=makeMoreChip({icon:"grid"});
-    c.appendChild(moreBtn);
+    if(chips.length>6){c.appendChild(makeMoreChip({icon:"grid"}));}
     if(window.lucide)lucide.createIcons();
-  });
+    setNavActive(_activeCategory==="All"?"all":_activeCategory);
+  }).catch(()=>{});
   setupCategoryRowScroll(c);
   c.scrollLeft=prevScroll;
   if(_activeCategory)setNavActive(_activeCategory==="All"?"all":_activeCategory);
