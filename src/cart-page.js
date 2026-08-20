@@ -71,28 +71,30 @@ function renderEmpty() {
 function renderCart(items) {
   const subtotal = items.reduce((sum, it) => sum + ((parseFloat(it.listing.price) || 0) * it.qty), 0);
 
-  const rows = items.map((it, i) => {
+  const rows = items.map((it) => {
     const listing = it.listing;
     const cover = listing.images?.[0] || FALLBACK_IMG;
     return `
-      <div class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-xl" data-cart-row="${listing.property_id}">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-3 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-xl" data-cart-row="${listing.property_id}">
         <a href="/details.html?id=${listing.property_id}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-gray-100 ring-1 ring-gray-200">
           <img src="${cover}" alt="${listing.title}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='${FALLBACK_IMG}'">
         </a>
-        <div class="flex-1 min-w-0">
-          <a href="/details.html?id=${listing.property_id}" class="block text-sm font-bold text-gray-900 truncate hover:text-blue-600 transition">${listing.title}</a>
-          <p class="text-[10px] text-gray-400 mt-0.5">${listing.property_id}</p>
-          <div class="mt-1.5 text-sm">${priceCellHtml(listing)}</div>
+        <div class="flex-1 min-w-[160px] flex flex-col gap-1.5">
+          <a href="/details.html?id=${listing.property_id}" class="text-sm font-bold text-gray-900 break-words hover:text-blue-600 transition">${listing.title}</a>
+          <p class="text-[10px] text-gray-400">${listing.property_id}</p>
+          <div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm leading-snug">${priceCellHtml(listing)}</div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <button onclick="cartPageChangeQty('${listing.property_id}', -1)" class="w-9 h-9 bg-white hover:bg-blue-100 border border-gray-300 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center" aria-label="Decrease quantity"><i data-lucide="minus" class="w-4 h-4"></i></button>
-          <span class="text-sm font-bold text-gray-900 w-8 text-center" data-qty="${listing.property_id}">${it.qty}</span>
-          <button onclick="cartPageChangeQty('${listing.property_id}', 1)" class="w-9 h-9 bg-white hover:bg-blue-100 border border-gray-300 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center" aria-label="Increase quantity"><i data-lucide="plus" class="w-4 h-4"></i></button>
+        <div class="flex items-center gap-3 sm:gap-2 shrink-0 ml-auto sm:ml-0">
+          <div class="flex items-center gap-2">
+            <button onclick="cartPageChangeQty('${listing.property_id}', -1)" class="w-9 h-9 bg-white hover:bg-blue-100 border border-gray-300 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center shrink-0" aria-label="Decrease quantity"><i data-lucide="minus" class="w-4 h-4"></i></button>
+            <span class="text-sm font-bold text-gray-900 w-8 text-center" data-qty="${listing.property_id}">${it.qty}</span>
+            <button onclick="cartPageChangeQty('${listing.property_id}', 1)" class="w-9 h-9 bg-white hover:bg-blue-100 border border-gray-300 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center shrink-0" aria-label="Increase quantity"><i data-lucide="plus" class="w-4 h-4"></i></button>
+          </div>
+          <div class="text-right shrink-0 w-20 sm:w-24">
+            <p class="text-sm font-black text-amber-600 whitespace-nowrap">${fmtMoney((parseFloat(listing.price) || 0) * it.qty, listing.currency || 'USD')}</p>
+          </div>
+          <button onclick="cartPageRemove('${listing.property_id}')" class="p-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-red-600 transition shrink-0" aria-label="Remove item"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
         </div>
-        <div class="text-right shrink-0 w-20 sm:w-24">
-          <p class="text-sm font-black text-amber-600">${fmtMoney((parseFloat(listing.price) || 0) * it.qty, listing.currency || 'USD')}</p>
-        </div>
-        <button onclick="cartPageRemove('${listing.property_id}')" class="p-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-red-600 transition shrink-0" aria-label="Remove item"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
       </div>
     `;
   }).join('');
