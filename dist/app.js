@@ -505,6 +505,7 @@ const STATIC_DEPARTMENTS = [
 let _activeCategory="All";
 let _panelDept=null;
 let _allPanel=false;
+let _deptLabels={};
 
 async function getCategoryInventory(){
   if(window._getShowroomCategoryInventory){
@@ -517,13 +518,79 @@ function renderCategories(){
   const c=document.getElementById("category-list");
   if(!c)return;
   c.innerHTML="";
-  const btn=document.createElement("button");
-  btn.dataset.dept="all";
-  btn.className="nav-dept-btn active flex items-center gap-2 shrink-0 px-4 py-2.5 rounded-xl border border-blue-500/40 bg-blue-500/10 text-blue-600 text-sm font-bold uppercase tracking-wide transition hover:bg-blue-500/20 active:scale-[0.97]";
-  btn.innerHTML='<span class="shrink-0 w-6 h-6 bg-black rounded-md flex items-center justify-center overflow-hidden"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" aria-hidden="true"><path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="whitespace-nowrap">Weverse Shop List</span><i data-lucide="chevron-down" class="w-4 h-4"></i>';
-  btn.addEventListener("click",()=>{toggleAllPanel(btn);});
-  c.appendChild(btn);
+  _deptLabels={};
+  const all=document.createElement("button");
+  all.dataset.dept="all";
+  all.className="nav-cat-chip active";
+  all.innerHTML='<i data-lucide="layout-grid" class="w-3.5 h-3.5"></i><span class="whitespace-nowrap">All</span>';
+  all.addEventListener("click",()=>{filterByCategory("All",all);});
+  c.appendChild(all);
   if(window.lucide)lucide.createIcons();
+  getCategoryInventory().then(inv=>{
+    let moreBtn=null;
+    (inv||[]).forEach(d=>{
+      if(d.id==="more"){moreBtn=makeMoreChip(d);c.appendChild(moreBtn);return;}
+      _deptLabels[d.id]=d.label;
+      const chip=document.createElement("button");
+      chip.dataset.dept=d.id;
+      chip.className="nav-cat-chip";
+      chip.innerHTML='<i data-lucide="'+d.icon+'" class="w-3.5 h-3.5"></i><span class="whitespace-nowrap">'+d.label+'</span>';
+      chip.addEventListener("click",()=>{filterByDepartment(d.id);});
+      c.appendChild(chip);
+    });
+    if(!moreBtn){moreBtn=makeMoreChip({icon:"grid"});c.appendChild(moreBtn);}
+    if(window.lucide)lucide.createIcons();
+  });
+  setupCategoryRowScroll(c);
+}
+
+function makeMoreChip(d){
+  const chip=document.createElement("button");
+  chip.dataset.dept="more";
+  chip.className="nav-cat-chip";
+  chip.innerHTML='<i data-lucide="'+(d.icon||"grid")+'" class="w-3.5 h-3.5"></i><span class="whitespace-nowrap">More</span><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>';
+  chip.addEventListener("click",()=>{toggleAllPanel(chip);});
+  return chip;
+}
+
+function setupCategoryRowScroll(row){
+  if(row._catScrollReady)return;
+  row._catScrollReady=true;
+  let isDown=false,startX=0,scrollLeft=0;
+  row.addEventListener("pointerdown",(e)=>{
+    if(e.pointerType!=="mouse")return;
+    isDown=true;startX=e.clientX;scrollLeft=row.scrollLeft;row._dragMoved=0;
+  });
+  window.addEventListener("pointermove",(e)=>{
+    if(!isDown||e.pointerType!=="mouse")return;
+    const dx=e.clientX-startX;
+    row._dragMoved=Math.max(row._dragMoved||0,Math.abs(dx));
+    row.scrollLeft=scrollLeft-dx;
+  });
+  const endDrag=()=>{isDown=false;};
+  window.addEventListener("pointerup",endDrag);
+  window.addEventListener("pointercancel",endDrag);
+  row.addEventListener("pointerleave",endDrag);
+  row.addEventListener("click",(e)=>{
+    if(row._dragMoved&&row._dragMoved>8){e.preventDefault();e.stopPropagation();row._dragMoved=0;}
+  },true);
+  row.addEventListener("wheel",(e)=>{
+    if(row.scrollWidth<=row.clientWidth)return;
+    const dy=Math.abs(e.deltaY),dx=Math.abs(e.deltaX);
+    if(dy>dx)return;
+    e.preventDefault();
+    row.scrollLeft+=e.deltaX;
+  },{passive:false});
+}
+
+function setNavActive(deptId){
+  document.querySelectorAll("#category-list button").forEach(b=>{
+    const on=b.dataset.dept===deptId;
+    b.classList.toggle("active",on);
+    b.classList.toggle("border-blue-500/40",on);
+    b.classList.toggle("bg-blue-500/10",on);
+    b.classList.toggle("text-blue-600",on);
+  });
 }
 
 function fmtCount(n){ if(n>=1000000)return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M+'; if(n>=1000)return Math.round(n/1000)+'K+'; return n||0; }
@@ -563,8 +630,7 @@ function openDeptPanel(dept,btn){
   const viewAll=panel.querySelector('[data-dept-view]');
   if(viewAll)viewAll.onclick=()=>{filterByDepartment(dept.id);closeCategoryPanel();};
   if(window.lucide)lucide.createIcons();
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"));
-  if(btn)btn.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-600");
+  setNavActive(dept.id);
 }
 function toggleDeptPanel(dept,btn){
   const panel=document.getElementById("category-panel");
@@ -576,7 +642,7 @@ function closeCategoryPanel(){
   if(panel){panel.classList.add("hidden");panel.classList.remove("panel-in");}
   const backTop=document.getElementById("category-back-top");
   if(backTop)backTop.classList.remove("flex");
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"));
+  setNavActive(null);
   _panelDept=null;_allPanel=false;
 }
 function getAllCategoryEntries(){
@@ -617,7 +683,7 @@ function openAllPanel(btn){
     +'<div class="sticky top-0 -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 pt-1 pb-3 bg-white/95 backdrop-blur-xl border-b border-gray-200 mb-4 z-10 flex items-center justify-between gap-3">'
       +'<div class="flex items-center gap-3 min-w-0">'
         +'<span class="w-11 h-11 rounded-xl bg-black flex items-center justify-center overflow-hidden shrink-0"><svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" aria-hidden="true"><path d="M3 5l4.5 14L12 8l4.5 11L21 5" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
-        +'<div class="min-w-0"><h3 class="text-base font-black text-gray-900 tracking-wide truncate">Weverse Shop List</h3><p class="text-[11px] text-gray-500 font-bold uppercase tracking-widest">Shop every category</p></div>'
+        +'<div class="min-w-0"><h3 class="text-base font-black text-gray-900 tracking-wide truncate">All Categories</h3><p class="text-[11px] text-gray-500 font-bold uppercase tracking-widest">Shop every category</p></div>'
       +'</div>'
       +'<div class="flex items-center gap-2 shrink-0">'
         +'<button data-all-view="1" class="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5">View all <i data-lucide="arrow-right" class="w-4 h-4"></i></button>'
@@ -638,8 +704,7 @@ function openAllPanel(btn){
   scroller.addEventListener("scroll",onScroll,{passive:true}); onScroll();
   if(backTop)backTop.onclick=()=>{ scroller.scrollTo({top:0,behavior:"smooth"}); };
   if(window.lucide)lucide.createIcons();
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(x=>x.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"));
-  if(btn)btn.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-600");
+  setNavActive("all");
   });
 }
 function toggleAllPanel(btn){
@@ -654,13 +719,13 @@ function filterByDepartment(deptId){
   closeSearchResults();
   if(window._filterShowroomByDepartment){window._filterShowroomByDepartment(deptId);}
   else if(window._filterShowroomByCategory){window._filterShowroomByCategory(deptId);}
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(b=>{b.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"); if(b.dataset.dept===deptId)b.classList.add("active","border-blue-500/40","bg-blue-500/10","text-blue-600");});
-  showToast("Exploring: "+deptId);
+  setNavActive(deptId);
+  showToast("Exploring: "+(_deptLabels[deptId]||deptId));
 }
 
 function filterByCategory(name,el){
   _activeCategory=name;
-  document.querySelectorAll("#category-list .nav-dept-btn").forEach(b=>b.classList.remove("active","border-blue-500/40","bg-blue-500/10","text-blue-600"));
+  setNavActive(name==="All"?"all":null);
   closeSearchResults();
   if(name==="All"){if(window._clearShowroomFilter)window._clearShowroomFilter();}
   else if(window._filterShowroomByCategory){window._filterShowroomByCategory(name);}

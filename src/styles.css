@@ -464,18 +464,77 @@ body[class*="bg-[#070b16]"] [class*="bg-[#030712]"] [class*="text-white"] { colo
   border-color: #ffffff !important;
 }
 
-/* Weverse Shop List pill -> solid blue, rounded, premium */
-.nav-dept-btn {
-  background: #2563eb !important;
-  border-color: #2563eb !important;
-  color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+/* ── Two-way category carousel (department chips row) ────────────────
+   The category row is a single horizontal scroller: swipe both ways on
+   touch, drag with the mouse, trackpad/mouse-wheel horizontal on desktop.
+   Vertical page scrolling is never hijacked. */
+#category-list {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: .25rem;
 }
-.nav-dept-btn:hover,
-.nav-dept-btn.active {
-  background: #1d4ed8 !important;
-  border-color: #1d4ed8 !important;
-  color: #ffffff !important;
+@media (min-width: 640px) {
+  #category-list {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+  #category-list::-webkit-scrollbar {
+    height: 4px;
+    display: block;
+  }
+  #category-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
+  #category-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  #category-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+.nav-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  flex-shrink: 0;
+  padding: .5rem .9rem;
+  border-radius: .75rem;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s, background .15s, transform .12s;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+.nav-cat-chip i {
+  color: #94a3b8;
+  transition: color .15s;
+}
+.nav-cat-chip:hover {
+  border-color: #93c5fd;
+  color: #2563eb;
+  background: #eff6ff;
+}
+.nav-cat-chip:hover i {
+  color: #2563eb;
+}
+.nav-cat-chip:active {
+  transform: scale(.97);
+}
+.nav-cat-chip.active {
+  border-color: rgba(59, 130, 246, .4);
+  background: rgba(59, 130, 246, .1);
+  color: #2563eb;
+}
+.nav-cat-chip.active i {
+  color: #2563eb;
 }
 
 /* Live date/time/trust bar */
