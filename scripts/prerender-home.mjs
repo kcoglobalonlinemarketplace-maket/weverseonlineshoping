@@ -432,17 +432,6 @@ function sectionHtml(section, maxRows) {
   return `<div class="showroom-section space-y-3">${header}${rowsToShow.map(rowHtml).join('')}</div>`;
 }
 
-function viewAllButton(kind) {
-  const parts = {
-    houses: { label: 'View All Houses &amp; Motorhomes Worldwide <span class="text-lg">→ 🌎</span>', cls: 'view-all-houses-btn bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-600/30' },
-    cars: { label: 'View all Cars <span class="text-lg">→ 🚗</span>', cls: 'view-all-cars-btn bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-600/30' },
-  }[kind];
-  if (!parts) return '';
-  return `<div class="flex justify-center py-1" data-viewall="${kind}" data-prerendered="1">
-    <button type="button" class="${parts.cls} btn-press flex items-center justify-center gap-2 w-full max-w-md py-4 rounded-xl text-white text-base font-extrabold tracking-wide shadow-lg transition active:scale-95">${parts.label}</button>
-  </div>`;
-}
-
 // Hero slide 0 — identical to the first slide renderCarousel builds.
 // All built-in videos and old showroom images have been removed. The hero is
 // a clean brand gradient until the owner uploads their own promo banner
@@ -463,7 +452,7 @@ function heroHtml() {
 function buildGridHtml() {
   // Keep the pre-rendered grid to just the first section's teaser row so
   // index.html stays small for slow connections. The rest of the sections
-  // and their view-all buttons are appended by JS in the normal order.
+  // are appended by JS in the normal order.
   // Sections with no baked items (the static catalog is gone — products now
   // come from the owner's live database) are skipped so a "Coming Soon" row
   // is never baked into the HTML.
