@@ -34,6 +34,7 @@ const NAV = [
   { group: 'Main', items: [
     { id: 'dashboard',   label: 'Dashboard',         icon: 'layout-dashboard' },
     { id: 'products',    label: 'Products',           icon: 'package' },
+    { id: 'content-settings', label: 'Content Settings', icon: 'file-cog' },
     { id: 'properties',  label: 'Properties',         icon: 'home' },
     { id: 'catalog',     label: 'Catalog Manager',    icon: 'boxes' },
     { id: 'orders',      label: 'Orders',             icon: 'shopping-bag' },
@@ -52,7 +53,6 @@ const NAV = [
     { id: 'promo-bg',     label: 'Promo & Backgrounds', icon: 'image' },
     { id: 'brand',        label: 'Brand Manager',      icon: 'palette' },
     { id: 'content',     label: 'Content Manager',    icon: 'file-text' },
-    { id: 'content-settings', label: 'Content Settings', icon: 'file-cog' },
     { id: 'seo',         label: 'SEO Manager',        icon: 'search' },
     { id: 'email',       label: 'Email Settings',     icon: 'mail' },
     { id: 'analytics',   label: 'Analytics',          icon: 'bar-chart-3' },
