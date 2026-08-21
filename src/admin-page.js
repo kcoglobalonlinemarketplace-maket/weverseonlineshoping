@@ -3797,8 +3797,24 @@ window.openGeneralAiScanner = async function() {
   if (window.lucide) lucide.createIcons();
 };
 
+// ── Timeout-safe scan guard ──────────────────────────────────────────────
+// Runs a promise but stops waiting for it if it does not finish within `ms`.
+// The General AI Scanner uses this so a slow, unreachable AI call or image
+// fetch can NEVER leave the scanner stuck on "Scanning…" forever — the scan
+// always moves on and always finishes with a clear success or error message.
+function aiScanTimeout(promise, ms) {
+  const marker = Symbol('ai-scan-timeout');
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => resolve(marker), ms)),
+  ]).then((value) => {
+    if (value === marker) throw new Error('A scan step took too long and timed out.');
+    return value;
+  });
+}
 window.scanGeneralWithAI = async function() {
-  const products = await scannerSourceProducts();
+  let products = [];
+  try { products = await aiScanTimeout(scannerSourceProducts(), 15000); } catch { products = []; }
   if (!products.length) {
     showToast('No products with photos are in the Product Manager yet — add a product first.', 'error');
     return;
@@ -3830,14 +3846,18 @@ window.scanGeneralWithAI = async function() {
   const sources = {};
   let scannedCount = 0;
   let failedCount = 0;
+  let index = 0;
+  const total = products.length;
   for (const prod of products) {
+    index++;
+    setStatus(`Scanning ${index} of ${total}: ${esc(prod?.title || prod?.property_id || 'product')}…`, 'text-blue-300');
     const prodImages = (prod.images || []).slice(0, AI_PRODUCT_SCANNER.maxImages);
     if (!prodImages.length) continue;
     const base = images.length;
     images.push(...prodImages);
     const indices = prodImages.map((_, i) => base + i);
     try {
-      const detection = await aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: Math.min(prodImages.length, AI_PRODUCT_SCANNER.maxImages) });
+      const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: Math.min(prodImages.length, AI_PRODUCT_SCANNER.maxImages) }), 120000);
       const list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
       if (!list.length) continue;
       scannedCount++;
@@ -3858,20 +3878,22 @@ window.scanGeneralWithAI = async function() {
 
   if (!detections.length) {
     setStatus(failedCount
-      ? `The scanner could not read any product (${failedCount} scan${failedCount > 1 ? 's' : ''} failed). Make sure your products have clear photos, then try again.`
+      ? `The scan could not read any product (${failedCount} scan${failedCount > 1 ? 's' : ''} failed or timed out). Make sure your products have clear photos and that your free Gemini key is active in AI Settings, then try again.`
       : 'No product could be identified from the photos on your existing products. Make sure each product has clear photos, then try again.', 'text-amber-300');
     showToast('No products could be scanned.', 'error');
     return;
   }
 
-  // REVIEW LIST — the AI never fills or publishes on its own. Continue on a
-  // product opens its correct category form with that product's own images.
+  // ✅ SUCCESS — the scan always stops right here with a clear result. The AI
+  // never fills, saves or publishes on its own. Review every detected card,
+  // edit / remove as needed, then Continue to open that product's form and
+  // press SAVE to save & publish (one click).
   scanReviewProducts = detections;
   scanReviewImages = images;
   scanReviewSourceProducts = sources;
   scanReviewEntry = 'scanner-scan-status';
   scanReviewRender();
-  showToast(`${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned — review each one, then continue.`, 'info');
+  showToast(`Scan complete — ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned. Review each one below, then Continue to save & publish.`, 'success');
 };
 
 window.saveProduct = async function(e, category, existingId) {
@@ -5980,7 +6002,7 @@ Return ONE valid JSON object (no markdown):
   // Fetch an image URL and return a compressed data URL (keeps edge payloads small).
   async _fetchImageAsDataUrl(url, dim = 1200) {
     try {
-      const blob = await fetch(url).then(r => r.blob());
+      const blob = await fetch(url, { signal: AbortSignal.timeout(25000) }).then(r => r.blob());
       if (!blob || !blob.size) return null;
       if (blob.size < 1_800_000) return `data:${blob.type || 'image/jpeg'};base64,${await blobToBase64(blob)}`;
       return await this._downscaleImage(blob, dim);
