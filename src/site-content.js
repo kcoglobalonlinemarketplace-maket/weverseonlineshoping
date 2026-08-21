@@ -42,6 +42,12 @@ export const DEFAULT_SITE_CONTENT = {
   promo_banner_button_text: 'Shop Now',
   promo_banner_button_link: '/#showroom-directory',
 
+  // Hero Video Banner — an ordered list of the owner's own promotional
+  // slides. Each slide holds its own video, poster, title, subtitle and
+  // button. When empty, the single promo_banner_* fallback is used; when that
+  // is also empty, the built-in brand gradient banner is shown.
+  hero_video_slides: [],
+
   // Home page video advertisement card (below the promo banner)
   video_ad_enabled: false,
   video_ad_video_url: '',
@@ -79,6 +85,7 @@ export async function loadSiteContent() {
         const v = data[key];
         if (typeof v === 'string' && v) merged[key] = v;
         else if (typeof v === 'boolean') merged[key] = v;
+        else if (Array.isArray(v)) merged[key] = v;
       }
     }
   } catch { /* fall back to defaults */ }

@@ -270,6 +270,7 @@ let currentSlide = 0, carouselTimer = null, currentLang = "en", currentCountry =
 let voiceRecognition = null, isListening = false;
 let adminAdSlides = [];
 let promoBannerSlide = null;
+let heroVideoSlides = [];
 let activeCarouselSlides = CAROUSEL_SLIDES;
 
 // Continuous rotation: remember the showcase position so the carousel
@@ -322,12 +323,21 @@ function isAllowedHeroSlide(s) {
 }
 function mergeAdSlides(){
   const seen = new Set();
+  // Owner hero slides (rotating promo videos) come first.
+  const hero = dedupSlides([...heroVideoSlides], seen);
   const banner = promoBannerSlide ? [promoBannerSlide] : [];
   const ads = (window._ads || adminAdSlides).filter(Boolean).filter(isAllowedHeroSlide);
   const priority = dedupSlides(ads, seen);
   const rest = dedupSlides(CAROUSEL_SLIDES, seen);
-  activeCarouselSlides = [...banner, ...priority, ...rest];
+  activeCarouselSlides = [...hero, ...banner, ...priority, ...rest];
 }
+
+window.addEventListener('hero-videos-updated', (e) => {
+  const detail = e.detail || {};
+  heroVideoSlides = Array.isArray(detail.slides) ? detail.slides : (Array.isArray(detail) ? detail : []);
+  mergeAdSlides();
+  renderCarousel();
+});
 
 window.addEventListener('promo-banner-updated', (e) => {
   promoBannerSlide = e.detail || null;
@@ -919,8 +929,14 @@ function renderCarousel(){
     }else if(slide.brandOnly){
       mediaHtml='<div class="brand-hero-bg" style="position:absolute;inset:0;width:100%;height:100%;background:linear-gradient(135deg,#0b1226 0%,#1e3a8a 55%,#0369a1 100%)"></div>';
     }else{
-      mediaHtml='<video class="hero-video" muted loop playsinline webkit-playsinline preload="metadata" data-src="'+slide.video+'" style="width:100%;height:100%;object-fit:cover;object-position:center"'+(slide.poster?' poster="'+slide.poster+'"':'')+'>'+
-      '</video>';
+      // Hero video: fill the whole banner, play muted/autoplay/loop/inline,
+      // show the poster as a cover while it loads, hide the player chrome and
+      // fall back to the poster image if the video ever fails to load.
+      var posterBg=slide.poster?('<div class="hero-poster-bg" style="position:absolute;inset:0;width:100%;height:100%;background-image:url(\''+slide.poster+'\');background-size:cover;background-position:center"></div>'):'';
+      mediaHtml=posterBg+
+        '<video class="hero-video" muted autoplay loop playsinline webkit-playsinline preload="auto" data-src="'+slide.video+'" style="width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none"'+(slide.poster?' poster="'+slide.poster+'"':'')+
+        ' onerror="this.style.display=&quot;none&quot;"></video>'+
+        '<div class="hero-video-overlay" style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.22));pointer-events:none" aria-hidden="true"></div>';
     }
     el.innerHTML=mediaHtml+
       (slide.promoBanner

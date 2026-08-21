@@ -6299,6 +6299,13 @@ window.saveContent = async function(e) {
 // ══════════════════════════════════════════════════════════
 const CONTENT_SETTINGS_SECTIONS = [
   {
+    key: 'hero_videos',
+    custom: true,
+    title: 'HERO VIDEO BANNER (ROTATING)',
+    desc: 'Upload your own promotional videos (MP4 & WebM) to the top homepage banner. Each saved slide becomes its own full-width hero with its title, subtitle and CTA over a soft dark overlay so the text always stays readable. Add one video, one poster, or many rotating slides. If no video is added here, the single promo banner and the built-in brand banner below are shown instead as fallbacks.',
+    accent: 'from-indigo-400 to-violet-500',
+  },
+  {
     key: 'banner',
     title: 'ANDROID APP BANNER',
     desc: 'The mobile-app promotion banner shown at the bottom of every page. Editing these words never changes the banner design, phone image, logo or buttons.',
@@ -6423,12 +6430,187 @@ window.handleContentMediaUpload = async function(e, field) {
     // Update just this field's preview in place so other unsaved edits are kept.
     const slot = document.getElementById('slot-' + field);
     if (slot) {
-      const f = CONTENT_SETTINGS_SECTIONS.flatMap((s) => s.fields).find((x) => x.key === field);
+      const f = CONTENT_SETTINGS_SECTIONS.flatMap((s) => s.fields || []).find((x) => x.key === field);
       if (f) slot.outerHTML = contentMediaSlotHtml(f, url);
     }
     showToast('✓ Uploaded — save to apply', 'success');
   } catch (err) { showToast('Upload failed', 'error'); }
 };
+
+// ── HERO VIDEO BANNER MANAGER ──────────────────────────────────────────────
+// The owner manages a premium full-width rotating video hero. Every slide has
+// its own video (MP4/WebM), optional poster thumbnail, title, subtitle and CTA
+// and can be Upload, Preview, Replace, Delete, Enable/Disable or Reordered.
+// Edits live in window._heroVideoDraft and are written to a hidden JSON field
+// that the Content Settings form saves into site_settings.hero_video_slides.
+const HERO_VIDEO_PRESETS = ['SHOP NOW', 'EXPLORE DEALS', 'VIEW PRODUCTS', 'DISCOVER MORE', 'SEE OFFERS', 'SHOP THE LOOK'];
+window._heroVideoDraft = [];
+
+function heroVideoDraft() {
+  if (!Array.isArray(window._heroVideoDraft)) window._heroVideoDraft = [];
+  return window._heroVideoDraft;
+}
+function heroSyncJson() {
+  const el = document.getElementById('hs-json');
+  if (el) el.value = JSON.stringify(heroVideoDraft());
+}
+function rerenderHeroVideoManager() {
+  heroSyncJson();
+  const host = document.getElementById('hero-videos-manager');
+  if (!host) return;
+  host.innerHTML = heroVideoManagerHtml(heroVideoDraft());
+  if (window.lucide) lucide.createIcons();
+}
+function heroPanelMediaSlot(s, i) {
+  const video = String((s && s.video) || '').trim();
+  const poster = String((s && s.poster) || '').trim();
+  const body = video
+    ? `<video src="${esc(video)}" ${poster ? `poster="${esc(poster)}"` : ''} class="w-full h-40 object-cover" muted controls preload="metadata"></video>`
+    : poster
+      ? `<img src="${esc(poster)}" class="w-full h-40 object-cover" onerror="this.style.display='none'">`
+      : `<div class="w-full h-40 flex items-center justify-center text-[11px] text-gray-500">No media yet — upload a video (MP4/WebM) or a poster below</div>`;
+  return `
+    <div>
+      <div class="w-full overflow-hidden rounded-xl bg-gray-950 border border-indigo-500/20 flex items-center justify-center">${body}</div>
+      <div class="flex flex-wrap gap-1.5 mt-2 justify-end">
+        <button type="button" onclick="heroVideoUpload(${i},'video')" class="px-3 py-1.5 rounded-lg ${video ? 'bg-white/10 text-gray-200 border border-white/10' : 'bg-indigo-600 text-white'} text-[10px] font-bold transition">${video ? 'Replace Video' : 'Upload Video'}</button>
+        ${video ? `<button type="button" onclick="heroVideoRemoveMedia(${i},'video')" class="px-3 py-1.5 rounded-lg bg-red-600/80 text-white text-[10px] font-bold">Remove Video</button>` : ''}
+        <button type="button" onclick="heroVideoUpload(${i},'poster')" class="px-3 py-1.5 rounded-lg bg-white/10 text-gray-200 text-[10px] font-bold border border-white/10 transition">${poster ? 'Replace Poster' : 'Add Poster'}</button>
+        ${poster ? `<button type="button" onclick="heroVideoRemoveMedia(${i},'poster')" class="px-3 py-1.5 rounded-lg bg-red-600/80 text-white text-[10px] font-bold">Remove Poster</button>` : ''}
+      </div>
+    </div>`;
+}
+function heroVideoManagerHtml(arr) {
+  return (arr || []).map((s, i) => {
+    const btn = String((s && s.buttonText) || 'SHOP NOW');
+    const presets = HERO_VIDEO_PRESETS.map(t => `<button type="button" onclick="heroVideoPreset(${i},'${t}')" class="px-2.5 py-1 rounded-full text-[9px] font-black ${btn === t ? 'bg-indigo-600 text-white' : 'bg-white/5 text-gray-400'} border ${btn === t ? 'border-indigo-500' : 'border-white/10'} transition">${t}</button>`).join('');
+    return `
+    <div class="rounded-xl border border-indigo-500/25 bg-violet-500/8 p-4 space-y-3">
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <p class="text-xs font-black text-white flex items-center gap-2"><i data-lucide="video" class="w-4 h-4 text-indigo-400"></i> Slide ${i + 1}</p>
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="heroVideoToggle(${i})" class="text-[10px] font-bold px-2.5 py-1.5 rounded-lg ${s && s.enabled === false ? 'bg-gray-700 text-gray-400' : 'bg-emerald-600 text-white'} transition">${s && s.enabled === false ? 'Disabled' : 'Enabled'}</button>
+          <button type="button" onclick="heroVideoMove(${i},-1)" class="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10" title="Move up"><i data-lucide="arrow-up" class="w-3.5 h-3.5 text-gray-300"></i></button>
+          <button type="button" onclick="heroVideoMove(${i},1)" class="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10" title="Move down"><i data-lucide="arrow-down" class="w-3.5 h-3.5 text-gray-300"></i></button>
+          <button type="button" onclick="heroVideoDelete(${i})" class="px-2 py-1 rounded-lg bg-red-600/80 hover:bg-red-600" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-white"></i></button>
+        </div>
+      </div>
+      ${heroPanelMediaSlot(s, i)}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="lbl">Title</label>
+          <input type="text" value="${esc(s.title || '')}" class="input-field w-full" placeholder="e.g. Season Sale is Live" oninput="heroVideoField(${i},'title',this.value)">
+        </div>
+        <div>
+          <label class="lbl">Subtitle</label>
+          <input type="text" value="${esc(s.subtitle || '')}" class="input-field w-full" placeholder="e.g. Up to 50% off top brands" oninput="heroVideoField(${i},'subtitle',this.value)">
+        </div>
+      </div>
+      <div>
+        <label class="lbl">Button</label>
+        <div class="flex flex-wrap gap-1.5">${presets}</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+          <input type="text" value="${esc(btn)}" class="input-field w-full" placeholder="SHOP NOW" oninput="heroVideoField(${i},'buttonText',this.value)">
+          <input type="text" value="${esc(s.buttonLink || '/#showroom-directory')}" class="input-field w-full" placeholder="/#showroom-directory" oninput="heroVideoField(${i},'buttonLink',this.value)">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.heroVideoUpload = function(i, kind) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = kind === 'video' ? 'video/mp4,video/webm,.mp4,.webm' : 'image/*';
+  inp.onchange = () => {
+    const f = inp.files && inp.files[0];
+    if (f) heroVideoFileChosen(i, kind, f);
+  };
+  inp.click();
+};
+window.heroVideoField = function(i, field, value) {
+  const arr = heroVideoDraft();
+  if (arr[i]) { arr[i][field] = value; heroSyncJson(); }
+};
+window.heroVideoPreset = function(i, preset) {
+  const arr = heroVideoDraft();
+  if (arr[i]) { arr[i].buttonText = preset; rerenderHeroVideoManager(); }
+};
+window.heroVideoToggle = function(i) {
+  const arr = heroVideoDraft();
+  if (arr[i]) { arr[i].enabled = arr[i].enabled === false ? true : false; rerenderHeroVideoManager(); }
+};
+window.heroVideoMove = function(i, dir) {
+  const arr = heroVideoDraft();
+  const j = i + dir;
+  if (j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  rerenderHeroVideoManager();
+};
+window.heroVideoDelete = function(i) {
+  const arr = heroVideoDraft();
+  if (i < 0 || i >= arr.length) return;
+  if (!confirm('Delete this hero video slide?')) return;
+  arr.splice(i, 1);
+  rerenderHeroVideoManager();
+};
+window.heroVideoRemoveMedia = function(i, kind) {
+  const arr = heroVideoDraft();
+  if (!arr[i]) return;
+  if (kind === 'video') arr[i].video = '';
+  else if (kind === 'poster') arr[i].poster = '';
+  rerenderHeroVideoManager();
+};
+window.addHeroVideoSlide = function() {
+  const arr = heroVideoDraft();
+  arr.push({ id: 'hv' + Date.now() + Math.floor(Math.random() * 999), enabled: true, video: '', poster: '', title: '', subtitle: '', buttonText: 'SHOP NOW', buttonLink: '/#showroom-directory' });
+  rerenderHeroVideoManager();
+  showToast('New slide added — upload a video and press Save to show it.', 'info');
+};
+async function heroUploadOne(file, kind) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const ext = (file.name.split('.').pop() || (kind === 'video' ? 'mp4' : 'jpg')).toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!session) return URL.createObjectURL(file); // local preview fallback
+    const path = `hero/${kind}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, cacheControl: '3600', upsert: true });
+    if (error) return URL.createObjectURL(file);
+    const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+    return (data && data.publicUrl) || URL.createObjectURL(file);
+  } catch { return URL.createObjectURL(file); }
+}
+async function heroVideoFileChosen(i, kind, file) {
+  const arr = heroVideoDraft();
+  if (!file || !arr[i]) return;
+  if (kind === 'video') {
+    if (!/video\/(mp4|webm)|\.(mp4|webm)$/i.test(file.type + ' ' + file.name)) { showToast('Please choose an MP4 or WebM video file.', 'error'); return; }
+  } else if (!file.type.startsWith('image/')) {
+    showToast('Please choose an image for the poster.', 'error'); return;
+  }
+  const url = await heroUploadOne(file, kind);
+  if (kind === 'video') arr[i].video = url;
+  else arr[i].poster = url;
+  rerenderHeroVideoManager();
+  showToast('✓ ' + (kind === 'video' ? 'Video' : 'Poster') + ' uploaded — press Save to apply', 'success');
+}
+function renderHeroVideoManagerHtml(slides) {
+  const arr = Array.isArray(slides) ? slides.map(s => ({ ...s })) : [];
+  window._heroVideoDraft = arr;
+  heroSyncJson();
+  const empty = arr.length ? '' : `
+    <div class="rounded-xl border-2 border-dashed border-indigo-500/30 bg-white/5 p-6 text-center">
+      <i data-lucide="video" class="w-8 h-8 text-indigo-400 mx-auto"></i>
+      <p class="text-xs text-gray-400 mt-2 font-bold">No hero videos yet</p>
+      <p class="text-[11px] text-gray-500 mt-1">Add your first promotional video slide to turn the homepage banner into an auto-playing video hero. Until then, the built-in brand banner and any single promo banner below are used.</p>
+    </div>`;
+  return `
+    <div class="space-y-3">
+      <div id="hero-videos-manager" class="space-y-3">${empty}${heroVideoManagerHtml(arr)}</div>
+      <button type="button" onclick="addHeroVideoSlide()" class="btn-press w-full px-4 py-3 border-2 border-dashed border-indigo-500/40 text-indigo-300 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
+        <i data-lucide="plus" class="w-4 h-4"></i> Add Another Hero Video Slide
+      </button>
+    </div>`;
+}
 
 async function renderContentSettings() {
   const content = document.getElementById('content');
@@ -6449,7 +6631,9 @@ async function renderContentSettings() {
                 <h3 class="text-sm font-black text-white tracking-wide">${sec.title}</h3>
               </div>
               <p class="text-[11px] text-gray-400 mb-4">${sec.desc}</p>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              ${sec.custom === 'hero_videos'
+                ? renderHeroVideoManagerHtml(d.hero_video_slides || [])
+                : `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 ${sec.fields.map(f => `
                   <div class="${f.type === 'textarea' || f.type === 'media' ? 'sm:col-span-2' : ''}">
                     ${f.type === 'checkbox'
@@ -6467,11 +6651,13 @@ async function renderContentSettings() {
                           : `<input id="cs-${f.key}" type="text" name="${f.key}" value="${esc(d[f.key] || '')}" class="input-field w-full" placeholder="Enter the current wording…">`}
                     ${f.type === 'text' || f.type === 'textarea' ? `<p class="text-[10px] text-gray-500 mt-1">Current: ${esc((d[f.key] || '').slice(0, 80))}${(d[f.key] || '').length > 80 ? '…' : ''}</p>` : ''}
                   </div>`).join('')}
-              </div>
+              </div>`}
             </div>`).join('')}
+          <input type="hidden" id="hs-json" name="hero_video_slides" value="">
           <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Content</button>
         </form>
       </div>`;
+    heroSyncJson();
     if (window.lucide) lucide.createIcons();
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
@@ -6483,11 +6669,22 @@ window.saveContentSettings = async function(e) {
   for (const [k, v] of fd.entries()) data[k] = v;
   // Unchecked checkboxes are missing from FormData — store them as false.
   for (const sec of CONTENT_SETTINGS_SECTIONS) {
+    if (!sec.fields) continue;
     for (const f of sec.fields) {
       if (f.type === 'checkbox' && !(f.key in data)) data[f.key] = false;
       else if (f.type === 'checkbox') data[f.key] = true;
     }
   }
+  // Hero video slides come from a hidden JSON field — parse it to a real array.
+  let heroSlides = [];
+  try {
+    const raw = fd.get('hero_video_slides');
+    if (String(raw || '').trim()) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) heroSlides = parsed;
+    }
+  } catch { heroSlides = []; }
+  data.hero_video_slides = heroSlides;
   try {
     const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
     let error;
