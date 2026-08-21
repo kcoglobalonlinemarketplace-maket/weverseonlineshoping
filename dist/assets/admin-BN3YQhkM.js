@@ -1650,7 +1650,7 @@ ${a.text}`}catch(a){t.textContent=`❌ ${a.message}`}};function ot(e){if(!e)retu
                 <h3 class="text-sm font-black text-white tracking-wide">${i.title}</h3>
               </div>
               <p class="text-[11px] text-gray-400 mb-4">${i.desc}</p>
-              ${i.custom==="hero_videos"?vo(a.hero_video_slides||[]):`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              ${i.key==="hero_videos"?vo(a.hero_video_slides||[]):`<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 ${i.fields.map(o=>`
                   <div class="${o.type==="textarea"||o.type==="media"?"sm:col-span-2":""}">
                     ${o.type==="checkbox"?`<label class="flex items-center gap-2.5 cursor-pointer select-none py-2">

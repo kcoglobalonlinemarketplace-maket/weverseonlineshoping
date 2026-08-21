@@ -6693,7 +6693,7 @@ async function renderContentSettings() {
                 <h3 class="text-sm font-black text-white tracking-wide">${sec.title}</h3>
               </div>
               <p class="text-[11px] text-gray-400 mb-4">${sec.desc}</p>
-              ${sec.custom === 'hero_videos'
+              ${sec.key === 'hero_videos'
                 ? renderHeroVideoManagerHtml(d.hero_video_slides || [])
                 : `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 ${sec.fields.map(f => `
