@@ -3848,11 +3848,60 @@ window.scanGeneralWithAI = async function() {
   let failedCount = 0;
   let index = 0;
   const total = products.length;
+  // ── Duplicate-image handling ─────────────────────────────────────────────
+  // The FIRST time a product's photos are all duplicates of photos already
+  // scanned, ONE "Continue" button is shown. Pressing it ONCE skips every
+  // remaining duplicate warning automatically — processing (AI detection,
+  // category selection, saving flow) continues for every remaining product.
+  // Duplicate photos are never deleted or replaced; the duplicate product is
+  // simply not re-scanned (the original product with those photos is kept).
+  const seenImages = new Set();
+  let duplicatesSkipped = 0;
+  let duplicateConfirmed = false;
+  window.__scanDupContinue = function() {
+    const r = window.__scanDupResolve;
+    window.__scanDupResolve = null;
+    const b = document.getElementById('btn-scan-dup-continue');
+    if (b) b.disabled = true;
+    if (r) r();
+  };
+  const waitForDuplicateConfirm = (prod) => new Promise((resolve) => {
+    window.__scanDupResolve = resolve;
+    setStatus(`<div class="space-y-2">
+      <p class="font-bold text-amber-300">Duplicate images detected on "${esc(prod?.title || prod?.property_id || 'product')}". This product's photos are the same as a product already scanned.</p>
+      <p class="text-gray-400">Press Continue ONCE to automatically skip ALL remaining duplicate warnings and keep processing every remaining product. No duplicate photos will be deleted or replaced.</p>
+      <button type="button" id="btn-scan-dup-continue" onclick="__scanDupContinue()" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Continue — skip all duplicate warnings</button>
+    </div>`, 'text-amber-300');
+    // Safety: if the scanner modal is closed while waiting, resolve so the scan
+    // can never hang forever on a Continue button that no longer exists.
+    const t = setInterval(() => {
+      if (!document.getElementById('btn-scan-dup-continue')) {
+        clearInterval(t);
+        if (window.__scanDupResolve) { window.__scanDupResolve = null; resolve(); }
+      }
+    }, 500);
+    const orig = window.__scanDupContinue;
+    window.__scanDupContinue = function() { clearInterval(t); orig(); };
+  });
   for (const prod of products) {
     index++;
     setStatus(`Scanning ${index} of ${total}: ${esc(prod?.title || prod?.property_id || 'product')}…`, 'text-blue-300');
     const prodImages = (prod.images || []).slice(0, AI_PRODUCT_SCANNER.maxImages);
     if (!prodImages.length) continue;
+    // Register this product's photos, then check whether ALL of them were
+    // already scanned on an earlier product (a full duplicate).
+    const keys = prodImages.map(u => String(u || '').trim()).filter(Boolean);
+    const allSeen = keys.length > 0 && keys.every(k => seenImages.has(k));
+    for (const k of keys) seenImages.add(k);
+    if (allSeen) {
+      if (!duplicateConfirmed) {
+        await waitForDuplicateConfirm(prod);
+        duplicateConfirmed = true; // one press covers every future duplicate
+      }
+      duplicatesSkipped++;
+      setStatus(`Duplicate images skipped for "${esc(prod?.title || prod?.property_id || 'product')}" — continuing with the remaining products…`, 'text-blue-300');
+      continue; // skip re-scanning this duplicate; do NOT touch its images
+    }
     const base = images.length;
     images.push(...prodImages);
     const indices = prodImages.map((_, i) => base + i);
@@ -3878,8 +3927,8 @@ window.scanGeneralWithAI = async function() {
 
   if (!detections.length) {
     setStatus(failedCount
-      ? `The scan could not read any product (${failedCount} scan${failedCount > 1 ? 's' : ''} failed or timed out). Make sure your products have clear photos and that your free Gemini key is active in AI Settings, then try again.`
-      : 'No product could be identified from the photos on your existing products. Make sure each product has clear photos, then try again.', 'text-amber-300');
+      ? `The scan could not read any product (${failedCount} scan${failedCount > 1 ? 's' : ''} failed or timed out${duplicatesSkipped ? `; ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}). Make sure your products have clear photos and that your free Gemini key is active in AI Settings, then try again.`
+      : `No product could be identified from the photos on your existing products${duplicatesSkipped ? ` (${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped)` : ''}. Make sure each product has clear photos, then try again.`, 'text-amber-300');
     showToast('No products could be scanned.', 'error');
     return;
   }
@@ -3893,7 +3942,7 @@ window.scanGeneralWithAI = async function() {
   scanReviewSourceProducts = sources;
   scanReviewEntry = 'scanner-scan-status';
   scanReviewRender();
-  showToast(`Scan complete — ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned. Review each one below, then Continue to save & publish.`, 'success');
+  showToast(`Scan complete — ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}. Review each one below, then Continue to save & publish.`, 'success');
 };
 
 window.saveProduct = async function(e, category, existingId) {
