@@ -2105,7 +2105,9 @@ function setImageRequirement(prefix, count) {
   if (target) target.value = count ? String(count) : '';
   if (!note) return;
   if (count > 0) {
-    note.textContent = `This listing template requires at least ${count} images.`;
+    // Informational only — never blocks saving or publishing. Any number of
+    // images is fine; the gallery simply shows what is available.
+    note.textContent = `This template fits up to ${count} images. Fewer images are perfectly fine — you can save and publish anytime.`;
     note.classList.remove('hidden');
   } else {
     note.textContent = '';
@@ -2113,10 +2115,12 @@ function setImageRequirement(prefix, count) {
   }
 }
 
+// The 24-image (or any-count) minimum was removed per owner request: listings
+// may always be saved and published with however many images they have. This
+// is kept only as a harmless no-op so existing callers stay valid. No fake or
+// duplicate images are ever generated to pad the count.
 function validateImageRequirement(count, images, label) {
-  if (count > 0 && images.length < count) {
-    throw new Error(`${label} needs at least ${count} images before publishing.`);
-  }
+  return; // never blocks — any image count is allowed
 }
 
 function applyCatalogDraftToProductForm(category, mode = 'full') {
@@ -4071,8 +4075,8 @@ window.saveProduct = async function(e, category, existingId) {
       showToast(isDraft ? 'Draft saved!' : `Published Successfully — your product is updated and live in your showroom (${Object.keys(changes).length} change${Object.keys(changes).length > 1 ? 's' : ''}).`);
     } else {
       // ── NEW PRODUCT → FULL VALIDATION + FULL SAVE ─────────────────
-      const requiredImageCount = parseInt(data.required_image_count || '0', 10) || (AUTOMOTIVE_CATEGORIES.includes(category) ? 24 : 0);
-      validateImageRequirement(requiredImageCount, data.images || [], 'This listing');
+      // No minimum image count — save & publish with however many images
+      // are available (24-image template requirement removed).
       if (!data.title || !data.title.trim()) throw new Error('A product title is required.');
       if (data.price === '' || data.price == null || !isFinite(parseFloat(data.price))) throw new Error('A price is required.');
       const hasConditionField = !!form.querySelector('[name="condition"]');
@@ -4605,8 +4609,8 @@ window.saveProperty = async function(e, existingId) {
   const data = Object.fromEntries(fd.entries());
   const images = fd.getAll('images').filter(u => u && !u.startsWith('blob:'));
   const features = (data.features_text || '').split(',').map(s => s.trim()).filter(Boolean);
-  const requiredImageCount = existingId ? 0 : (parseInt(data.required_image_count || '24', 10) || 24);
-  validateImageRequirement(requiredImageCount, images, 'This property');
+  // No minimum image count — save & publish with however many images are
+  // available (24-image requirement removed).
   const realPriceNum = (data.real_price === '' || data.real_price == null) ? null : Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.real_price) || 0));
   const splitList = (v) => (v || '').split(',').map(s => s.trim()).filter(Boolean);
   const numOrNull = (v) => (v === '' || v == null || !isFinite(parseInt(v, 10))) ? null : parseInt(v, 10);
