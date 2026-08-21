@@ -4011,10 +4011,15 @@ window.saveProduct = async function(e, category, existingId) {
         const handled = handleWriteError(err, () => upsertLocalShowroomListing(payload), 'Product update');
         if (handled) {
           if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
+          // Even when a write is caught (permission / DB-unavailable fallback),
+          // always close the product form and return to the Product Manager
+          // list so the owner is never left stuck inside the product.
+          closeModal();
+          renderProducts();
           return;
         }
       }
-      showToast(isDraft ? 'Draft saved!' : `Saved & published — your showroom shows it now (${Object.keys(changes).length} change${Object.keys(changes).length > 1 ? 's' : ''}).`);
+      showToast(isDraft ? 'Draft saved!' : `Published Successfully — your product is updated and live in your showroom (${Object.keys(changes).length} change${Object.keys(changes).length > 1 ? 's' : ''}).`);
     } else {
       // ── NEW PRODUCT → FULL VALIDATION + FULL SAVE ─────────────────
       const requiredImageCount = parseInt(data.required_image_count || '0', 10) || (AUTOMOTIVE_CATEGORIES.includes(category) ? 24 : 0);
@@ -4062,10 +4067,14 @@ window.saveProduct = async function(e, category, existingId) {
         const handled = handleWriteError(err, () => upsertLocalShowroomListing({ ...payload, property_id: payload.property_id }), 'Product publish');
         if (handled) {
           if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
+          // Always return to the Product Manager so the owner isn't stuck in
+          // the form (permission / DB-unavailable cases included).
+          closeModal();
+          renderProducts();
           return;
         }
       }
-      showToast(isDraft ? 'Draft saved!' : 'Published! Your showroom shows this product now.');
+      showToast(isDraft ? 'Draft saved!' : 'Published Successfully! Your product is now live in your showroom.');
     }
     try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
     closeProductFormModal();
