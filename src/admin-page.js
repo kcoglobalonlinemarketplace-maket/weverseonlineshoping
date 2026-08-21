@@ -9160,8 +9160,30 @@ window.catalogResetHidden = async function() {
 };
 
 // ══════════════════════════════════════════════════════════
-//  INIT
+//  ADMIN BACK / EXIT BEHAVIOR
+//  One press of the browser Back button — from ANY admin section,
+//  no matter how deep (Settings, Content Settings, uploads, etc.)
+//  — always leaves the admin area and returns to the main store
+//  homepage ("/"). Internal section navigation keeps working
+//  normally and never creates history entries, so browser Back
+//  and the admin's own navigation cannot conflict or loop.
 // ══════════════════════════════════════════════════════════
+(function installAdminBackGuard() {
+  if (!window.history || !window.history.pushState) return;
+  try {
+    window.history.replaceState({ adminGuard: 1 }, document.title, window.location.href);
+    window.history.pushState({ adminGuard: 2 }, document.title, window.location.href);
+  } catch (err) { return; }
+  window.addEventListener('popstate', function (e) {
+    // The first Back press pops to adminGuard:1 → leave admin now.
+    // (Going "forward" again pops adminGuard:2 and is simply ignored.)
+    if (e.state && e.state.adminGuard === 1) {
+      window.location.replace('/');
+    }
+  });
+})();
+
+// ── INIT ────────────────────────────────────────────────────
 async function init() {
   if (window.lucide) lucide.createIcons();
   renderSidebar();
