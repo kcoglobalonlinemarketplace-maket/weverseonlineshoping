@@ -2541,13 +2541,28 @@ async function processImageFiles(files) {
 async function uploadImageFile(file) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return URL.createObjectURL(file); // fallback: local preview
-    const ext = file.name.split('.').pop();
-    const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error: upErr } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: false });
-    if (upErr) return URL.createObjectURL(file);
-    const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-    return data.publicUrl;
+    const ext = (file.name || 'photo.jpg').split('.').pop() || 'jpg';
+    const base = `products/${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    // Try twice (fresh unique path each time) so a storage hiccup never loses a photo.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const path = `${base}${attempt ? '-' + Math.random().toString(36).slice(2, 7) : ''}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: false });
+      if (!upErr) {
+        const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+        if (data && data.publicUrl) return data.publicUrl;
+      } else {
+        console.warn('product-images upload failed (attempt ' + (attempt + 1) + '):', upErr.message || upErr);
+      }
+    }
+    // 100% SHOWROOM GUARANTEE: even when storage fails (or no session), embed a
+    // compressed copy of the photo directly with the listing (data URL) so the
+    // image ALWAYS shows in the showroom — never a temporary blob: URL, which
+    // would be silently dropped when the product is saved & published.
+    try {
+      const embedded = await aiClient._downscaleImage(file, 1200);
+      if (embedded) return embedded;
+    } catch { /* fall through */ }
+    return URL.createObjectURL(file);
   } catch { return URL.createObjectURL(file); }
 }
 
@@ -3302,10 +3317,13 @@ window.scanReviewContinueAll = async function() {
     const images = imagesForProduct(p, scanReviewImages);
     setStatus(`<p class="flex items-center gap-2"><i data-lucide="loader" class="w-4 h-4 animate-spin text-blue-300"></i> Completing ${i + 1} of ${total}: <b>${esc(p.detected_name || 'product')}</b>…</p>`, 'text-blue-300');
     try {
-      let specs = {};
-      let price = null;
-      try { specs = (await aiClient.completeProductSpecs(images, p, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages })) || {}; } catch { /* specs optional */ }
-      try { price = await aiClient.estimateProductPrice(images, p, specs, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }); } catch { /* price optional */ }
+      // FAST: specs and price run at the same time (both only need the detection).
+      const [specsRes, priceRes] = await Promise.all([
+        aiClient.completeProductSpecs(images, p, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null),
+        aiClient.estimateProductPrice(images, p, {}, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null),
+      ]);
+      let specs = specsRes || {};
+      let price = priceRes;
       const s = specs || {};
       const src = p.property_id ? (scanReviewSourceProducts[p.property_id] || null) : null;
       const existing = src ? (src.specifications && typeof src.specifications === 'object' ? { ...src, ...src.specifications } : src) : null;
@@ -3622,13 +3640,18 @@ window.scanProductWithAI = async function() {
   }
   if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
-  const products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
+  let products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
   if (!products.length) {
-    setStatus(detection && detection.reason
-      ? `Could not identify any product: ${esc(detection.reason)}`
-      : 'No product could be read from these images. Make sure the photos clearly show the product(s), then try again.', 'text-amber-300');
-    showToast('No products could be identified from the images.', 'error');
-    return;
+    // NEVER REJECT: the AI could not read the photo(s), but the images are real —
+    // create a review card from them so the owner can still fill, save & publish.
+    products = [{
+      detected_name: 'Product from your photos',
+      category: form.dataset.category || 'Other',
+      listing_type: 'product',
+      confidence: 'low',
+      image_indices: images.map((_, i) => i),
+    }];
+    setStatus('The AI could not confidently read these photos — a card was created with all of them. Review, edit the details, then continue to save & publish.', 'text-amber-300');
   }
 
   // REVIEW LIST — the AI never fills or publishes on its own.
@@ -3852,13 +3875,18 @@ window.scanFirstWithAI = async function() {
   }
   if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
-  const products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
+  let products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
   if (!products.length) {
-    setStatus(detection && detection.reason
-      ? `Could not identify any product: ${esc(detection.reason)}`
-      : 'No product could be read from these images. Make sure the photos clearly show the product(s), then try again.', 'text-amber-300');
-    showToast('No products could be identified from the images.', 'error');
-    return;
+    // NEVER REJECT: the AI could not read the photo(s), but the images are real —
+    // create a review card from them so the owner can still fill, save & publish.
+    products = [{
+      detected_name: 'Product from your photos',
+      category: 'Other',
+      listing_type: 'product',
+      confidence: 'low',
+      image_indices: images.map((_, i) => i),
+    }];
+    setStatus('The AI could not confidently read these photos — a card was created with all of them. Review, edit the details, then continue to save & publish.', 'text-amber-300');
   }
 
   // REVIEW LIST — the AI never fills or publishes on its own. Continue on a
@@ -3989,6 +4017,7 @@ window.scanGeneralWithAI = async function() {
   // simply not re-scanned (the original product with those photos is kept).
   const seenImages = new Set();
   let duplicatesSkipped = 0;
+  let fallbacks = 0;
   let duplicateConfirmed = false;
   window.__scanDupContinue = function() {
     const r = window.__scanDupResolve;
@@ -4041,23 +4070,38 @@ window.scanGeneralWithAI = async function() {
     const base = images.length;
     images.push(...prodImages);
     const indices = prodImages.map((_, i) => base + i);
+    let list = [];
     try {
       const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: Math.min(prodImages.length, AI_PRODUCT_SCANNER.maxImages) }), SCAN_TIMEOUT_MS);
-      const list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
-      if (!list.length) return;
-      scannedCount++;
-      sources[prod.property_id] = prod;
-      for (const d of list) {
-        detections.push({
-          ...d,
-          property_id: prod.property_id,
-          image_indices: (Array.isArray(d.image_indices) && d.image_indices.length ? d.image_indices.map(i => indices[Number(i)]).filter(i => i !== undefined) : indices),
-          detected_name: d.detected_name || prod.title || prod.property_id,
-          category: d.category || prod.category || 'Other',
-          listing_type: d.listing_type || prod.listing_type || 'product',
-        });
-      }
-    } catch { failedCount++; }
+      list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
+    } catch { /* fall through to the guaranteed fallback below */ }
+    // NEVER REJECT: if the AI could not read this product (unclear photo, timeout,
+    // service hiccup), still include it in the review list using the product's own
+    // saved info and photos. The owner reviews it, the AI completes specs/price on
+    // Continue, and the product is always saveable & publishable.
+    if (!list.length) {
+      list = [{
+        detected_name: prod.title || prod.property_id || 'Product',
+        category: prod.category || 'Other',
+        listing_type: prod.listing_type || 'product',
+        brand: prod.brand || null,
+        model: (prod.specifications && prod.specifications.model) || prod.model || null,
+        confidence: 'medium',
+      }];
+      fallbacks++;
+    }
+    scannedCount++;
+    sources[prod.property_id] = prod;
+    for (const d of list) {
+      detections.push({
+        ...d,
+        property_id: prod.property_id,
+        image_indices: (Array.isArray(d.image_indices) && d.image_indices.length ? d.image_indices.map(i => indices[Number(i)]).filter(i => i !== undefined) : indices),
+        detected_name: d.detected_name || prod.title || prod.property_id,
+        category: d.category || prod.category || 'Other',
+        listing_type: d.listing_type || prod.listing_type || 'product',
+      });
+    }
   };
   const worker = async () => {
     while (cursor < products.length) {
@@ -4087,7 +4131,7 @@ window.scanGeneralWithAI = async function() {
   scanReviewSourceProducts = sources;
   scanReviewEntry = 'scanner-scan-status';
   scanReviewRender();
-  showToast(`Scan complete — ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}. Press "Continue with ALL" to save & publish everything at once.`, 'success');
+  showToast(`Scan complete — ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}${fallbacks ? `, ${fallbacks} completed from saved details (AI could not read the photo — review ${fallbacks > 1 ? 'those' : 'it'} and edit as needed)` : ''}. Press "Continue with ALL" to save & publish everything at once.`, 'success');
 };
 
 window.saveProduct = async function(e, category, existingId) {
@@ -4099,16 +4143,26 @@ window.saveProduct = async function(e, category, existingId) {
   try {
     const formData = new FormData(form);
     const data = {};
+    let droppedTempImages = 0;
     for (const [k, v] of formData.entries()) {
       if (k === 'images') {
         data.images = data.images || [];
-        if (v && !String(v).startsWith('blob:')) data.images.push(String(v));
+        const sv = String(v);
+        if (v && !sv.startsWith('blob:')) data.images.push(sv);
+        else if (sv.startsWith('blob:')) droppedTempImages++;
       } else if (k === 'tags') {
         data.tags = data.tags || [];
         data.tags.push(v);
       } else {
         data[k] = v;
       }
+    }
+    // Never save & publish silently without photos: if temporary blob: images
+    // were the only ones, block and tell the owner to re-attach/re-upload them.
+    if (droppedTempImages && !(data.images || []).length) {
+      if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
+      showToast('Your images were still uploading — please wait a moment and press Publish again (the photos were not saved with the product).', 'error');
+      return;
     }
     data.is_featured = form.querySelector('[name="is_featured"]')?.checked ? 'on' : '';
     data.is_active = form.querySelector('[name="is_active"]')?.checked ? 'on' : '';
@@ -6053,7 +6107,7 @@ RULES:
 - Photos that show the SAME product from different angles / sides / details are ONE product: give them the same entry and list every image index in image_indices.
 - A single photo can appear in several products' image_indices when it contains several different products.
 - If a photo contains no recognizable product, ignore that photo.
-- If NO product can be identified in any photo, return { "identified": false, "reason": "why you cannot identify anything" }.
+- NEVER reject the scan. Even when a photo is blurry, dark, partial or unusual, ALWAYS give your BEST identification of the most likely product in it and set "confidence" to "low" — the owner reviews and edits everything afterwards. Only return { "identified": false, "reason": ... } when every single photo truly contains no object at all.
 
 For each distinct product include:
 - image_indices: array of the photo indexes (0-based) that show THIS product (used as its own images later). Never combine different products under one entry.
