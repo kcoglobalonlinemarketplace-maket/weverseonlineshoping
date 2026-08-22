@@ -293,7 +293,9 @@ async function callGeminiWithFallback(params: {
 // ── VISION & IMAGE GENERATION (server-side, keys never sent to the browser) ──
 
 const VISION_MODEL_FALLBACKS: Record<string, string[]> = {
-  gemini: ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview'],
+  // FAST: the lightest vision model first — flash-lite answers in a fraction of
+  // the time. Thinking is disabled per-request for models that support it.
+  gemini: ['gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-3-flash-preview'],
 };
 function parseDataUrl(dataUrl: string): { mimeType: string; b64: string } {
   const match = String(dataUrl || '').match(/^data:([^;,]+)[;,]base64,(.+)$/s);
@@ -337,7 +339,13 @@ async function callGeminiVision(params: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ role: 'user', parts }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens || 4096 },
+      // FAST: disable "thinking" on models that support it — thinking tokens
+      // add many seconds of latency without helping a structured scan.
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: maxTokens || 4096,
+        ...(/2\.5|-3/.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      },
     }),
   });
   const raw = await res.text();

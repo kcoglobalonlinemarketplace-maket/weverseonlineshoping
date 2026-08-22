@@ -2833,7 +2833,10 @@ const SCAN_DRIVE_OPTIONS = ['FWD', 'RWD', 'AWD', '4WD'];
 
 const AI_PRODUCT_SCANNER = {
   activeProvider: 'gemini',
-  maxImages: 5,
+  // FAST: the AI only needs up to 3 photos to identify + spec + price a product
+  // — fewer images per request means much smaller uploads and faster scans.
+  // (The saved gallery keeps ALL photos; this limit is only for the AI call.)
+  maxImages: 3,
   PROVIDERS: {
     gemini: {
       label: 'Google Gemini (Free Tier)',
@@ -2846,15 +2849,11 @@ const AI_PRODUCT_SCANNER = {
         report(1, 'Identifying the exact product from your images…');
         const identification = await aiClient.identifyProduct(images, context);
         if (!identification || identification.identified === false) return { identification, specs: null, price: null };
-        // FAST: stages 2 (specs + description) and 3 (price) both depend only on
-        // the identification, so they run AT THE SAME TIME instead of one after
-        // the other — the scan finishes roughly twice as fast.
+        // FAST: stages 2+3 are ONE combined AI request (specs + price together),
+        // so the scan makes half the requests and finishes roughly twice as fast.
         report(2, 'Completing specifications and estimating a fair market price…');
-        const [specs, price] = await Promise.all([
-          aiClient.completeProductSpecs(images, identification, context).catch(() => null),
-          aiClient.estimateProductPrice(images, identification, {}, context).catch(() => null),
-        ]);
-        return { identification, specs, price };
+        const combined = await aiClient.completeSpecsAndPrice(images, identification, context).catch(() => null);
+        return { identification, specs: combined ? combined.specs : null, price: combined ? combined.price : null };
       },
     },
   },
@@ -3317,13 +3316,10 @@ window.scanReviewContinueAll = async function() {
     const images = imagesForProduct(p, scanReviewImages);
     setStatus(`<p class="flex items-center gap-2"><i data-lucide="loader" class="w-4 h-4 animate-spin text-blue-300"></i> Completing ${i + 1} of ${total}: <b>${esc(p.detected_name || 'product')}</b>…</p>`, 'text-blue-300');
     try {
-      // FAST: specs and price run at the same time (both only need the detection).
-      const [specsRes, priceRes] = await Promise.all([
-        aiClient.completeProductSpecs(images, p, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null),
-        aiClient.estimateProductPrice(images, p, {}, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null),
-      ]);
-      let specs = specsRes || {};
-      let price = priceRes;
+      // FAST: specifications + price arrive from ONE combined AI request.
+      const combined = await aiClient.completeSpecsAndPrice(images, p, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null);
+      let specs = (combined && combined.specs) || {};
+      let price = combined ? combined.price : null;
       const s = specs || {};
       const src = p.property_id ? (scanReviewSourceProducts[p.property_id] || null) : null;
       const existing = src ? (src.specifications && typeof src.specifications === 'object' ? { ...src, ...src.specifications } : src) : null;
@@ -3571,11 +3567,10 @@ async function completeScanAndFill(identification, images, category) {
     status.innerHTML = html;
   };
   try {
-    setStatus('Completing the standard specifications for that product…', 'text-blue-300');
-    const specs = await aiClient.completeProductSpecs(images, identification, { category: category || '', maxImages: AI_PRODUCT_SCANNER.maxImages });
-    let price = null;
-    setStatus('Estimating a fair current market price…', 'text-blue-300');
-    try { price = await aiClient.estimateProductPrice(images, identification, specs || {}, { category: category || '', maxImages: AI_PRODUCT_SCANNER.maxImages }); } catch { /* price is optional */ }
+    setStatus('Completing the specifications and market price in one step…', 'text-blue-300');
+    const combined = await aiClient.completeSpecsAndPrice(images, identification, { category: category || '', maxImages: AI_PRODUCT_SCANNER.maxImages });
+    const specs = (combined && combined.specs) || {};
+    let price = combined ? combined.price : null;
     const out = applyScanToProductForm({ identification, specs, price });
     const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'the product';
     let msg = `${esc(idLabel)} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you (including the detailed description and suggested Real + Discount prices). Review and edit everything, then press SAVE / UPDATE.`;
@@ -3681,16 +3676,20 @@ function routePropertyScan(identification, images) {
     if (cls) status.classList.add(cls);
     status.innerHTML = html;
   };
-  setStatus('Completing the standard specifications for this property…', 'text-blue-300');
-  aiClient.completeProductSpecs(images, identification, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages })
-    .then((specs) => aiClient.estimateProductPrice(images, identification, specs || {}, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages })
-      .then((price) => {
-        const out = applyScanToPropertyForm({ identification, specs, price });
+  setStatus('Completing property details and value in one step…', 'text-blue-300');
+  aiClient.completeSpecsAndPrice(images, identification, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages })
+    .then((combined) => {
+      const specs = (combined && combined.specs) || {};
+      const price = combined ? combined.price : null;
+      const out = applyScanToPropertyForm({ identification, specs, price });
+      if (!price) {
+        setStatus(`${esc(identification.detected_name || 'Property')} — ${out.filled.length} fields ready. Price estimate skipped — set the price manually, then press Publish Property.`, 'text-amber-300');
+      } else {
         setStatus(`${esc(identification.detected_name || 'Property')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`, 'text-emerald-300');
-        showToast('Review the property details, then press Publish Property.', 'success');
-        if (window.lucide) lucide.createIcons();
-      })
-      .catch(() => setStatus('Price estimate skipped — review the details and set a price manually.', 'text-amber-300')))
+      }
+      showToast('Review the property details, then press Publish Property.', 'success');
+      if (window.lucide) lucide.createIcons();
+    })
     .catch((err) => {
       const keyHint = /key|api|configured|settings|vision/i.test(String(err?.message || err));
       setStatus(keyHint ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.' : `Scan failed: ${String(err?.message || err)}`, 'text-red-400');
@@ -3785,11 +3784,10 @@ window.scanPropertyWithAI = async function() {
   }
 
   try {
-    setStatus('Completing the standard specifications for this property…', 'text-blue-300');
-    const specs = await aiClient.completeProductSpecs(images, identification, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages });
-    let price = null;
-    setStatus('Estimating a fair market value…', 'text-blue-300');
-    try { price = await aiClient.estimateProductPrice(images, identification, specs || {}, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages }); } catch { }
+    setStatus('Completing property details and market value in one step…', 'text-blue-300');
+    const combined = await aiClient.completeSpecsAndPrice(images, identification, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages });
+    const specs = (combined && combined.specs) || {};
+    let price = combined ? combined.price : null;
     const out = applyScanToPropertyForm({ identification, specs, price });
     setStatus(`${esc(identification.detected_name || 'Property')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`, 'text-emerald-300');
     showToast('Review the property details, then press Publish Property.', 'success');
@@ -6038,7 +6036,7 @@ Rules:
 - Respond with valid JSON only.`;
 
     const images = (await Promise.all(
-      (imageUrls || []).slice(0, context.maxImages || 3).map(u => this._fetchImageAsDataUrl(u, 1024))
+      (imageUrls || []).slice(0, context.maxImages || 3).map(u => this._fetchImageAsDataUrl(u, 768))
     )).filter(Boolean);
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
@@ -6071,7 +6069,7 @@ Rules:
     // FAST: all images are fetched in parallel and cached, so the 3 scan stages
     // reuse the same compressed payloads instead of re-downloading each photo.
     const images = (await Promise.all(
-      (imageUrls || []).slice(0, maxImages).map(u => this._fetchImageAsDataUrl(u, 1024))
+      (imageUrls || []).slice(0, maxImages).map(u => this._fetchImageAsDataUrl(u, 768))
     )).filter(Boolean);
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
@@ -6090,7 +6088,7 @@ Rules:
 
     if (!quotaBlocked || !allowTextFallback) {
       try {
-        const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens }, 25000);
+        const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens }, 15000);
         if (res && res.success && res.text) {
           const parsed = extractJsonFromAiText(res.text);
           if (parsed) return { ...parsed, _aiProvider: res.provider, _aiModel: res.model };
@@ -6292,6 +6290,74 @@ Return ONE valid JSON object (no markdown):
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
   },
 
+  // STAGES 2+3 COMBINED — completes the standard specifications AND estimates
+  // the market price in ONE AI request instead of two. Roughly halves both the
+  // waiting time and the free-tier quota consumed by every scan.
+  async completeSpecsAndPrice(imageUrls, identification, context = {}) {
+    const id = identification || {};
+    const prompt = `STAGES 2+3 — COMPLETE THE SPECIFICATIONS AND ESTIMATE THE PRICE IN ONE STEP.
+The product below was identified from the photos.
+
+IDENTIFIED PRODUCT:
+- listing_type: ${String(id.listing_type || 'product')}
+- brand: ${String(id.brand || 'unknown')}
+- model: ${String(id.model || 'unknown')}
+- year: ${String(id.year || 'unknown')}
+- body_type: ${String(id.body_type || 'unknown')}
+- category: ${String(id.category || 'unknown')}
+- detected_name: ${String(id.detected_name || 'unknown')}
+
+Look at the photo(s), then do BOTH jobs for THIS EXACT identified product.
+
+JOB A — COMPLETE THE STANDARD SPECIFICATIONS using reliable data for that exact brand + model:
+- Vehicles: engine, transmission, fuel_type, drive_type, horsepower, seating_capacity, doors, body_type, model_year, mileage (only if visible/known), safety_features.
+- Phones/Computers: storage, ram, processor, display, graphics, os.
+- Properties: property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition ("New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation" — only from visible state or a listing sign, never inferred as verified), year_built/year_renovated (only if visible/known), area, address (ONLY when genuinely visible/reliably known), zip_code (only if visibly printed), landmarks (only clearly indicated ones), town, city, state, country, country_code, latitude, longitude, listing_status ("sale"/"rent"/null). LOCATION RULES: never invent an address, city or coordinates; return null and list the key in "missing_fields" when undeterminable.
+- Other product types: type, material, size, color, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, assembly, weatherproof, warranty.
+- Listing content: highlights (3-6 genuine selling points), seo_keywords (6-10 keywords), tags (only from "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" — only ones that genuinely apply), availability_status ("In Stock" for a new product, otherwise null), stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle or property, otherwise null).
+
+HARD RULES:
+- ONLY use specifications of the exact brand + model identified above. NEVER swap brands or models.
+- Only return specs that exist for this product type (a bag has no engine; a phone has no transmission; a car has engine/transmission/fuel/drive/horsepower/seats/doors).
+- If the exact year/trim is uncertain use the most common standard spec for that model and list the key in "estimated".
+- "missing_fields": every field that APPLIES to this product type but cannot be determined — list the key there instead of guessing.
+- DESCRIPTION: write a detailed, professional, natural marketplace description (3-6 sentences / 60-140 words) about THIS exact product only, grounded in its real specs. Smooth sentences, no bullet lists, no invented features, never mention AI/scanning/estimates.
+
+JOB B — ESTIMATE THE PRICE: the reasonable CURRENT MARKET SELLING price in USD for this exact product today (brand + model + year + condition + trim), then a promotional DISCOUNT price typically 5-20% BELOW it (null when a discount makes no sense). Never 0, never another product's price, plain numbers without symbols or commas.
+
+Return ONE valid JSON object (no markdown):
+{
+  "title": string|null,
+  "description": string|null,
+  "engine": string|null, "transmission": string|null, "fuel_type": string|null, "drive_type": string|null,
+  "horsepower": string|null, "mileage": string|null, "seating_capacity": string|null, "doors": string|null,
+  "body_type": string|null, "model_year": string|null, "safety_features": string[]|null,
+  "storage": string|null, "ram": string|null, "processor": string|null, "display": string|null, "graphics": string|null, "os": string|null,
+  "material": string|null, "size": string|null, "gender": string|null, "platform": string|null,
+  "type": string|null, "color": string|null, "brand": string|null, "model": string|null,
+  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": string|null, "condition": string|null, "year_built": number|null, "year_renovated": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null,
+  "author": string|null, "publisher": string|null, "language": string|null, "format": string|null, "isbn": string|null, "pages": string|null, "edition": string|null, "quantity": string|null, "age_range": string|null, "skin_type": string|null, "ingredients": string|null, "pet_type": string|null, "lens": string|null, "sensor": string|null, "megapixels": string|null, "video": string|null, "license": string|null, "version": string|null, "duration": string|null, "followers": string|null, "engagement": string|null, "niche": string|null, "usage": string|null, "shelf_life": string|null, "assembly": string|null, "weatherproof": string|null, "warranty": string|null,
+  "features": string[]|null, "highlights": string[]|null, "seo_keywords": string[]|null, "tags": string[]|null,
+  "availability_status": string|null, "stock_quantity": number|null,
+  "estimated": string[],
+  "missing_fields": string[],
+  "price": { "currency": "USD", "estimated_price": number, "suggested_discount_price": number|null, "confidence": "high"|"medium"|"low", "reason": string }
+}`;
+    const parsed = await this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
+    if (!parsed) return null;
+    const { price, ...specs } = parsed;
+    // Safety net: some models return the price fields flat instead of nested.
+    const priceObj = (price && typeof price === 'object') ? price
+      : (parsed.estimated_price != null ? {
+          currency: parsed.currency || 'USD',
+          estimated_price: parsed.estimated_price,
+          suggested_discount_price: parsed.suggested_discount_price ?? null,
+          confidence: parsed.confidence ?? null,
+          reason: parsed.reason ?? '',
+        } : null);
+    return { specs: Object.keys(specs).length ? specs : null, price: priceObj };
+  },
+
   // POST to the Supabase edge function so the Gemini key never leaves the server.
   async _callEdge(body, timeoutMs = 60000) {
     let token = '';
@@ -6310,7 +6376,7 @@ Return ONE valid JSON object (no markdown):
   // re-encoded twice across scan stages) and every image is always downscaled to
   // a compact JPEG so uploads and AI calls stay quick.
   _imageCache: new Map(),
-  async _fetchImageAsDataUrl(url, dim = 1024) {
+  async _fetchImageAsDataUrl(url, dim = 768) {
     const key = String(url);
     if (this._imageCache.has(key)) return this._imageCache.get(key);
     const task = (async () => {
@@ -6318,7 +6384,7 @@ Return ONE valid JSON object (no markdown):
         const blob = await fetch(url, { signal: AbortSignal.timeout(15000) }).then(r => r.blob());
         if (!blob || !blob.size) return null;
         // Always compress large photos down — small payloads = fast AI scans.
-        if (blob.size < 400_000) return `data:${blob.type || 'image/jpeg'};base64,${await blobToBase64(blob)}`;
+        if (blob.size < 150_000) return `data:${blob.type || 'image/jpeg'};base64,${await blobToBase64(blob)}`;
         return await this._downscaleImage(blob, dim);
       } catch { return null; }
     })();
@@ -6339,7 +6405,7 @@ Return ONE valid JSON object (no markdown):
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      return canvas.toDataURL('image/jpeg', 0.78);
+      return canvas.toDataURL('image/jpeg', 0.72);
     } finally { URL.revokeObjectURL(objectUrl); }
   },
 
@@ -6351,9 +6417,17 @@ Return ONE valid JSON object (no markdown):
     const cfg = await this.getConfig();
     const apiKey = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!apiKey) return null;
-    // FAST: fast/lightweight models first, and only a short 15s timeout each so
-    // a slow or unresponsive model can never hold up the scan.
-    const models = [cfg.gemini_vision_model || cfg.gemini_model, 'gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-3-flash-preview'].filter(Boolean);
+    // FAST: the lightest vision model answers first — flash-lite is the fastest
+    // free vision model by far, so it leads unless you explicitly picked a
+    // vision model yourself. Slow "thinking" is disabled (thinkingBudget 0)
+    // because thinking tokens add many seconds and eat the output budget.
+    const preferred = String(cfg.gemini_vision_model || '').trim();
+    const models = [...new Set([
+      preferred || 'gemini-2.0-flash-lite',
+      'gemini-2.0-flash-lite',
+      String(cfg.gemini_model || '').trim(),
+      'gemini-2.5-flash',
+    ].filter(Boolean))];
     for (const model of models) {
       try {
         const parts = [{ text: prompt }];
@@ -6364,19 +6438,24 @@ Return ONE valid JSON object (no markdown):
         }
         if (parts.length < 2) return null;
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const disableThinking = /2\.5|-3/.test(model);
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 4096,
+              ...(disableThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+            },
           }),
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(12000),
         });
         // FAST circuit-breaker: a 429 (quota) or 403 applies to the whole key,
         // so stop trying the remaining models — skip straight to the fallbacks.
         if (res.status === 429 || res.status === 403) {
-          this._geminiQuotaUntil = Date.now() + 5 * 60 * 1000; // retry in 5 min
+          this._geminiQuotaUntil = Date.now() + 60 * 1000; // retry in 60s, not 5 min
           return null;
         }
         if (!res.ok) continue;
