@@ -176,10 +176,46 @@ Deno.serve(async (req) => {
   }
 
   const apiKey = String(settingsRow.gemini_key || settingsRow.gemini_api_key || '').trim();
-  if (!apiKey) {
-    return jsonResponse({
-      response: 'I am not quite ready to chat yet — our team is configuring the assistant. Please email support@weverseonlineshop.com and we will help right away.',
+
+  // ── KEYLESS FREE AI FALLBACK (Pollinations — no API key, no signup, free) ──
+  // Used when there is no Gemini key at all, or when Gemini errors/quota-exhausts,
+  // so the shopper ALWAYS gets a real AI answer instead of an error message.
+  const pollinationsChat = async (): Promise<{ text: string; model: string }> => {
+    const messages = [
+      { role: 'system', content: systemPromptLater },
+      ...history.map((h) => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: String(h.content).slice(0, 2000) })),
+      { role: 'user', content: message },
+    ];
+    const res = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'openai', messages, max_tokens: 900 }),
+      signal: AbortSignal.timeout(45000),
     });
+    if (!res.ok) throw new Error(`Pollinations ${res.status}`);
+    const data = await res.json();
+    const text = String(data?.choices?.[0]?.message?.content || '').trim();
+    if (!text) throw new Error('Pollinations empty reply');
+    return { text, model: String(data?.model || 'pollinations-openai-fast') };
+  };
+  // The system prompt is built later in the request; keep a mutable reference.
+  let systemPromptLater = '';
+  const setSystemPrompt = (p: string) => { systemPromptLater = p; };
+
+  if (!apiKey) {
+    // No Gemini key configured — answer anyway with the free keyless AI.
+    try {
+      setSystemPrompt('You are the friendly customer support assistant for Weverse Online Shop, an online marketplace. Help with products, orders, shipping and returns. If you do not know something, offer to connect the shopper with a human agent at support@weverseonlineshop.com. Keep replies short and friendly.');
+      const r = await pollinationsChat();
+      try {
+        await serviceClient.from('ai_usage_tracking').insert({ session_type: 'customer', provider: 'pollinations', mode: 'marketplace', total_tokens: 0, success: true });
+      } catch { /* non-fatal */ }
+      return jsonResponse({ response: r.text, provider: 'pollinations', model: r.model });
+    } catch {
+      return jsonResponse({
+        response: 'I am not quite ready to chat yet — our team is configuring the assistant. Please email support@weverseonlineshop.com and we will help right away.',
+      });
+    }
   }
 
   // Daily per-shopper rate limit (anon shoppers share the budget; abuse is cut off).
@@ -233,6 +269,7 @@ Deno.serve(async (req) => {
     'When the shopper wants to talk to a human, encourage them to send a message and our support team will reply within 24 hours.',
     `Current inventory:\n${inventory || '(none listed)'}`,
   ].join('\n');
+  setSystemPrompt(systemPrompt);
 
   // Escalations: capture requests to speak with a human for the admin team.
   if (wantsHumanAgent(message)) {
@@ -307,12 +344,25 @@ Deno.serve(async (req) => {
     // Friendlier copy for the most common failure: free-tier daily quota used up.
     const quotaHit = (err as { quotaHit?: boolean })?.quotaHit === true ||
       /quota|rate limit|resource_exhausted|exceeded/i.test(errMsg);
-    const reply = quotaHit
-      ? 'I have reached my free daily message limit just now. Please try again in a little while, or email ' + contactEmail + ' and our team will help you right away.'
-      : 'Sorry, I hit a technical hiccup. Please try again in a moment, or email ' + contactEmail + ' and we will help right away.';
-    return jsonResponse({
-      response: reply,
-      error: errMsg,
-    }, 200);
+    // FREE KEYLESS FALLBACK: Gemini failed (quota/error) — try Pollinations so
+    // the shopper still gets a real AI answer with zero configuration.
+    try {
+      const r = await pollinationsChat();
+      try {
+        await serviceClient.from('ai_chat_history').insert([
+          { role: 'user', content: message, provider: 'pollinations', mode: 'marketplace', tokens_used: 0 },
+          { role: 'assistant', content: r.text, provider: 'pollinations', mode: 'marketplace', tokens_used: 0 },
+        ]);
+      } catch { /* non-fatal */ }
+      return jsonResponse({ response: r.text, provider: 'pollinations', model: r.model, note: 'gemini-unavailable' });
+    } catch (perr) {
+      const reply = quotaHit
+        ? 'I have reached my free daily message limit just now. Please try again in a little while, or email ' + contactEmail + ' and our team will help you right away.'
+        : 'Sorry, I hit a technical hiccup. Please try again in a moment, or email ' + contactEmail + ' and we will help right away.';
+      return jsonResponse({
+        response: reply,
+        error: errMsg + ' | free-ai-fallback: ' + String((perr as Error)?.message || perr),
+      }, 200);
+    }
   }
 });

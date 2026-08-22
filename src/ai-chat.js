@@ -226,20 +226,66 @@ async function sendMessage(text) {
   scrollDown(body);
 
   const context = history.slice(0, -1).slice(-10);
-  try {
-    const res = await fetch(FN_URL, {
+
+  // ── FREE KEYLESS AI FALLBACK (Pollinations — no API key, free forever) ──
+  // Runs in the visitor's own browser (the free anonymous tier only works from
+  // normal visitor IPs). Used whenever the edge-function AI is unavailable:
+  // no Gemini key, quota exhausted, or a server error — so the chat ALWAYS
+  // gives a real AI answer instead of an error message.
+  const freeAIChat = async (message, historyContext) => {
+    const res = await fetch('https://text.pollinations.ai/openai', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message: text, history: context }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are the friendly customer support assistant for Weverse Online Shop, an online marketplace. Help shoppers with products, orders, shipping and returns. Never invent specific order details or prices. If you do not know something, suggest browsing the marketplace or emailing support@weverseonlineshop.com (replies within 24 hours). Keep replies short, warm and helpful.',
+          },
+          ...historyContext.slice(-8).map(h => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: String(h.content || '').slice(0, 1500) })),
+          { role: 'user', content: message },
+        ],
+        max_tokens: 700,
+      }),
+      signal: AbortSignal.timeout(60000),
     });
+    if (!res.ok) throw new Error(`free-ai-${res.status}`);
     const data = await res.json();
-    const reply = String(data?.response || '').trim();
-    if (!reply) {
-      const reason = String(data?.error || '').trim();
-      throw new Error(reason || 'Empty reply');
+    const text = String(data?.choices?.[0]?.message?.content || '').trim();
+    if (!text) throw new Error('free-ai-empty');
+    return text;
+  };
+  // Detect the edge function's "unavailable" canned replies so we can retry
+  // with the free AI instead of showing them to the shopper.
+  const looksUnavailable = (s) =>
+    /daily message limit|technical hiccup|not quite ready|taking a short break/i.test(String(s || ''));
+
+  try {
+    let reply = '';
+    try {
+      const res = await fetch(FN_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: text, history: context }),
+      });
+      const data = await res.json();
+      reply = String(data?.response || '').trim();
+      if (!reply) throw new Error(String(data?.error || 'Empty reply'));
+    } catch (err) {
+      // Edge AI failed entirely — try the free keyless AI before giving up.
+      try { reply = await freeAIChat(text, context); } catch { throw err; }
+    }
+    // The edge function replied with a "quota/unavailable" canned message —
+    // replace it with a real answer from the free keyless AI.
+    if (looksUnavailable(reply)) {
+      try {
+        const free = await freeAIChat(text, context);
+        if (free) reply = free;
+      } catch { /* keep the canned reply */ }
     }
     typing.remove();
     const assistantEl = bubbleHtml(reply);

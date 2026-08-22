@@ -3616,9 +3616,7 @@ window.scanProductWithAI = async function() {
     const cfg = await aiClient.getConfig();
     const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!keyReady) {
-      setStatus('No Gemini key yet. Open AI Settings at the bottom of the Admin Home page, paste your FREE Gemini API key (aistudio.google.com/apikey — no credit card needed), then scan again.', 'text-amber-300');
-      showToast('Add your free Gemini key in AI Settings first.', 'error');
-      return;
+      setStatus('No Gemini key found — scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
     }
   } catch { /* config load failed — let the scan try anyway */ }
 
@@ -3723,9 +3721,7 @@ window.scanPropertyWithAI = async function() {
     const cfg = await aiClient.getConfig();
     const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!keyReady) {
-      setStatus('No Gemini key yet. Open AI Settings at the bottom of the Admin Home page, paste your FREE Gemini API key (aistudio.google.com/apikey — no credit card needed), then scan again.', 'text-amber-300');
-      showToast('Add your free Gemini key in AI Settings first.', 'error');
-      return;
+      setStatus('No Gemini key found — scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
     }
   } catch { }
 
@@ -3855,9 +3851,7 @@ window.scanFirstWithAI = async function() {
     const cfg = await aiClient.getConfig();
     const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!keyReady) {
-      setStatus('No Gemini key yet. Open AI Settings at the bottom of the Admin Home page, paste your FREE Gemini API key (aistudio.google.com/apikey — no credit card needed), then scan again.', 'text-amber-300');
-      showToast('Add your free Gemini key in AI Settings first.', 'error');
-      return;
+      setStatus('No Gemini key found — scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
     }
   } catch { }
 
@@ -3993,9 +3987,7 @@ window.scanGeneralWithAI = async function() {
     const cfg = await aiClient.getConfig();
     const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!keyReady) {
-      setStatus('No Gemini key yet. Open AI Settings at the bottom of the Admin Home page, paste your FREE Gemini API key (aistudio.google.com/apikey — no credit card needed), then scan again.', 'text-amber-300');
-      showToast('Add your free Gemini key in AI Settings first.', 'error');
-      return;
+      setStatus('No Gemini key found — scanning anyway with the FREE built-in AI (no key needed). Products whose photos cannot be read will still be filled from their saved details. For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
     }
   } catch { }
 
@@ -5937,11 +5929,35 @@ const aiClient = {
     return this._cfg;
   },
 
+  // ── FREE KEYLESS AI (Pollinations — no API key, no signup, free forever) ──
+  // OpenAI-compatible endpoint running GPT-OSS-20B. Used automatically as a
+  // fallback whenever Gemini has no key, errors, or hits its quota.
+  async freeChat(messages, { maxTokens = 2000, timeoutMs = 60000 } = {}) {
+    const res = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai',
+        messages: messages.map(m => ({ role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'), content: String(m.content || '').slice(0, 12000) })),
+        max_tokens: maxTokens,
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) throw new Error(`Free AI provider error (${res.status}).`);
+    const data = await res.json();
+    const text = String(data?.choices?.[0]?.message?.content || '').trim();
+    if (!text) throw new Error('Free AI provider returned an empty reply.');
+    return { text, provider: 'Free AI (Pollinations)', model: String(data?.model || 'openai-fast') };
+  },
+
   // Gemini chat via the edge function (server-side, key stays secure).
+  // Falls back to the FREE keyless AI so chat ALWAYS works, even with no key.
   async chat(messages, { maxTokens = 2000 } = {}) {
     const cfg = await this.getConfig();
-    if (!String(cfg.gemini_key || '').trim()) {
-      throw new Error('No AI provider configured. Go to AI Settings and add your Gemini API key.');
+    const keyReady = String(cfg.gemini_key || '').trim();
+    if (!keyReady) {
+      // No Gemini key — use the free keyless AI directly.
+      return this.freeChat(messages, { maxTokens });
     }
     const last = messages[messages.length - 1];
     const body = {
@@ -5951,11 +5967,22 @@ const aiClient = {
       provider_override: 'gemini',
       max_tokens: maxTokens,
     };
-    const res = await this._callEdge(body);
-    if (res && res.response) {
-      return { text: res.response, provider: 'Google Gemini', model: res.model || cfg.gemini_model };
+    try {
+      const res = await this._callEdge(body);
+      if (res && res.response) {
+        return { text: res.response, provider: 'Google Gemini', model: res.model || cfg.gemini_model };
+      }
+      throw new Error(String(res?.error || 'Gemini is unavailable.'));
+    } catch (err) {
+      // Gemini failed (quota/error) — fall back to the free keyless AI.
+      try {
+        const fb = await this.freeChat(messages, { maxTokens });
+        fb.note = 'gemini-unavailable';
+        return fb;
+      } catch {
+        throw err;
+      }
     }
-    throw new Error(String(res?.error || 'Gemini is unavailable.'));
   },
 
   // Convenience: single-turn prompt
@@ -6038,9 +6065,9 @@ Rules:
   },
 
   // Shared vision runner: fetch images → try browser Gemini → try server edge →
-  // returns parsed JSON (with _aiProvider/_aiModel) or null. Never falls back to
-  // a text-only model because it cannot see the photo.
-  async _runVisionPrompt(prompt, imageUrls, { maxImages = 3, maxTokens = 4096 } = {}) {
+  // (optional) free keyless text AI for prompts that already contain the
+  // identification data (specs/price stages). Returns parsed JSON or null.
+  async _runVisionPrompt(prompt, imageUrls, { maxImages = 3, maxTokens = 4096, allowTextFallback = false } = {}) {
     // FAST: all images are fetched in parallel and cached, so the 3 scan stages
     // reuse the same compressed payloads instead of re-downloading each photo.
     const images = (await Promise.all(
@@ -6062,6 +6089,20 @@ Rules:
       }
       throw new Error((res && res.error) || 'Vision service unavailable.');
     } catch { /* no vision */ }
+
+    // FREE KEYLESS FALLBACK (specs/price stages only — the prompt already contains
+    // the full identification data from stage 1, so the text AI can complete the
+    // form without seeing the photo, and it invents nothing about the identity).
+    if (allowTextFallback) {
+      try {
+        const fb = await this.freeChat([
+          { role: 'system', content: 'You complete marketplace listing data. Always reply with ONE valid JSON object only — no markdown, no extra text.' },
+          { role: 'user', content: prompt },
+        ], { maxTokens: 3000 });
+        const parsed = extractJsonFromAiText(fb.text);
+        if (parsed) return { ...parsed, _aiProvider: fb.provider, _aiModel: fb.model };
+      } catch { /* give up gracefully */ }
+    }
 
     return null;
   },
@@ -6185,7 +6226,7 @@ Return ONE valid JSON object (no markdown):
   "estimated": string[] (keys above that are estimates, e.g. ["engine","horsepower"]),
   "missing_fields": string[] (keys above that APPLY to this product type but could not be determined — see HARD RULES)
 }`;
-    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
+    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
   },
 
   // STAGE 3 — ESTIMATE a reasonable current market selling price for the exact
@@ -6238,7 +6279,7 @@ Return ONE valid JSON object (no markdown):
   "confidence": "high" | "medium" | "low",
   "reason": string (one short sentence explaining the estimate)
 }`;
-    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
+    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
   },
 
   // POST to the Supabase edge function so the Gemini key never leaves the server.
