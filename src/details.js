@@ -12,6 +12,7 @@ import { PRODUCT_LISTINGS } from './products-data.js';
 import { renderCard } from './showroom-cards.js';
 import { openShareSheet, setProductMeta } from './share.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
+import { DEFAULT_BRAND_NAME } from './brand.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
 import { addToCart as cartAddToCart } from './cart.js';
@@ -479,7 +480,23 @@ function reviewsSectionHtml(listing) {
         <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 sm:p-6">
           <div id="review-form-wrapper">
             <h4 class="text-[15px] font-black text-gray-900 mb-3 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-500"></i> Write a Review</h4>
-            <div id="review-login-msg" class="text-xs text-gray-500">Please <a href="/auth.html?redirect=${redirect}" class="text-blue-600 hover:underline">sign in</a> to write a review.</div>
+
+            <!-- GUESTS: locked state with a clear, PERSISTENT register prompt -->
+            <div id="review-guest-box" class="hidden space-y-3">
+              <button type="button" id="review-guest-btn" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">
+                <i data-lucide="pen-line" class="w-4 h-4"></i> Write a Review
+              </button>
+              <div id="review-guest-msg" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 space-y-2.5">
+                <p class="text-sm font-bold text-amber-800 flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i> Please register to give a review</p>
+                <p class="text-xs text-amber-700 leading-relaxed">Only customers with a ${DEFAULT_BRAND_NAME} account can post reviews — this keeps our reviews real and verified. It takes less than a minute, and once you're signed in you can rate the product, write your review and even add a photo.</p>
+                <div class="flex flex-wrap items-center gap-2.5 pt-0.5">
+                  <a href="/auth.html?mode=register&redirect=${redirect}" class="inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg px-4 py-2 transition"><i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Create a free account</a>
+                  <a href="/auth.html?redirect=${redirect}" class="inline-flex items-center gap-1.5 bg-white border border-gray-300 hover:border-blue-400 text-gray-700 text-xs font-bold rounded-lg px-4 py-2 transition"><i data-lucide="log-in" class="w-3.5 h-3.5"></i> I already have an account</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- SIGNED-IN USERS: the full working review form -->
             <form id="review-form" class="space-y-3 hidden">
               <div class="flex items-center gap-2">
                 <label class="text-xs text-gray-700 font-bold uppercase">Rating</label>
@@ -1661,14 +1678,32 @@ async function setupWishlistButton(listing) {
 
 async function setupReviewForm(listing) {
   const form = document.getElementById('review-form');
-  const loginMsg = document.getElementById('review-login-msg');
   if (!form) return;
   const user = await getCurrentUser();
+
+  // GUESTS (not signed in / not registered): show the locked "Write a Review"
+  // button. When they try, the register prompt comes up and STAYS (never
+  // auto-hides) — only real, signed-in accounts can post a review.
   if (!user) {
     form.classList.add('hidden');
-    if (loginMsg) loginMsg.classList.remove('hidden');
+    const guestBox = document.getElementById('review-guest-box');
+    const guestBtn = document.getElementById('review-guest-btn');
+    const guestMsg = document.getElementById('review-guest-msg');
+    if (guestBox) guestBox.classList.remove('hidden');
+    if (guestBtn && guestMsg) {
+      guestBtn.addEventListener('click', () => {
+        guestMsg.classList.remove('hidden'); // persistent — no auto-hide
+        guestBtn.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i> Sign in to write a review';
+        if (window.lucide) window.lucide.createIcons();
+      });
+    }
     return;
   }
+
+  // SIGNED-IN users get the full working review form.
+  form.classList.remove('hidden');
+  const guestBox = document.getElementById('review-guest-box');
+  if (guestBox) guestBox.classList.add('hidden');
 
   document.querySelectorAll('.star-btn').forEach(btn => {
     btn.addEventListener('click', () => {
