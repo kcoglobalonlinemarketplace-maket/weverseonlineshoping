@@ -237,7 +237,10 @@ async function sendMessage(text) {
     });
     const data = await res.json();
     const reply = String(data?.response || '').trim();
-    if (!reply) throw new Error(data?.error || 'Empty reply');
+    if (!reply) {
+      const reason = String(data?.error || '').trim();
+      throw new Error(reason || 'Empty reply');
+    }
     typing.remove();
     const assistantEl = bubbleHtml(reply);
     body.appendChild(assistantEl);
@@ -246,9 +249,11 @@ async function sendMessage(text) {
     saveHistory(history);
   } catch (err) {
     typing.remove();
-    const fallback = bubbleHtml(
-      "I'm sorry — I couldn't reach the assistant just now. Please try again in a moment, or email support@weverseonlineshop.com and we'll reply within 24 hours.",
-    );
+    const reason = String(err?.message || '').trim();
+    const shown = reason
+      ? `⚠️ The assistant hit an error: ${reason}`
+      : "I'm sorry — I couldn't reach the assistant just now. Please try again in a moment, or email support@weverseonlineshop.com and we'll reply within 24 hours.";
+    const fallback = bubbleHtml(shown);
     body.appendChild(fallback);
     scrollDown(body);
   }

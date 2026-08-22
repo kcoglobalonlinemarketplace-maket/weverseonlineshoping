@@ -19,11 +19,19 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-const MODEL_FALLBACKS = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview'];
+// Real, widely-available Gemini models. Every model has its own free-tier daily
+// quota, so the chain keeps the assistant alive even when one model is exhausted.
+const MODEL_FALLBACKS = [
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+];
 
 function pickModel(settings: Record<string, unknown>): string {
   const override = String(settings.customer_model_override || '').trim();
-  return override || settings.gemini_model ? String(settings.gemini_model || '') : '';
+  if (override) return override;
+  return String(settings.gemini_model || '').trim();
 }
 
 function modelChain(settings: Record<string, unknown>): string[] {
@@ -90,17 +98,37 @@ async function runGeminiWithFallback(params: {
 }) {
   const chain = modelChain(params.settings);
   let lastError: unknown = null;
+  let quotaHit = false;
   for (const model of chain) {
-    try {
-      return await callGemini({ ...params, model });
-    } catch (err) {
-      lastError = err;
-      const msg = String(err?.message || err).toLowerCase();
-      const retryable = msg.includes('not found') || msg.includes('not supported') || msg.includes('model');
-      if (!retryable) throw err;
+    // Rate-limit errors ("Please retry in Ns") clear after a few seconds, so
+    // wait briefly and retry the SAME model once before moving to the next one.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await callGemini({ ...params, model });
+      } catch (err) {
+        lastError = err;
+        const msg = String(err?.message || err).toLowerCase();
+        const isQuota = msg.includes('quota') || msg.includes('rate limit') ||
+          msg.includes('resource_exhausted') || msg.includes('exceeded') || msg.includes('429');
+        if (isQuota) {
+          quotaHit = true;
+          if (attempt === 0) {
+            await new Promise((r) => setTimeout(r, 6000)); // let the rate limit window reset
+            continue;
+          }
+          break; // try the next model (each model has its own quota)
+        }
+        // Model availability / server errors also fall through to the next model.
+        const retryable = msg.includes('not found') || msg.includes('not supported') || msg.includes('model') ||
+          msg.includes('overload') || msg.includes('503') || msg.includes('500') || msg.includes('unavailable');
+        if (!retryable) throw err;
+        break;
+      }
     }
   }
-  throw lastError || new Error('Gemini call failed.');
+  const e: Error & { quotaHit?: boolean } = new Error(String((lastError as Error)?.message || lastError || 'Gemini call failed.'));
+  e.quotaHit = quotaHit;
+  throw e;
 }
 
 function wantsHumanAgent(message: string): boolean {
@@ -263,6 +291,7 @@ Deno.serve(async (req) => {
       escalated: wantsHumanAgent(message),
     });
   } catch (err) {
+    const errMsg = String(err?.message || err);
     try {
       await serviceClient.from('ai_usage_tracking').insert({
         session_type: 'customer',
@@ -270,14 +299,20 @@ Deno.serve(async (req) => {
         mode: 'marketplace',
         total_tokens: 0,
         success: false,
-        error_message: String(err?.message || err).slice(0, 500),
+        error_message: errMsg.slice(0, 500),
       });
     } catch {
       // non-fatal
     }
+    // Friendlier copy for the most common failure: free-tier daily quota used up.
+    const quotaHit = (err as { quotaHit?: boolean })?.quotaHit === true ||
+      /quota|rate limit|resource_exhausted|exceeded/i.test(errMsg);
+    const reply = quotaHit
+      ? 'I have reached my free daily message limit just now. Please try again in a little while, or email ' + contactEmail + ' and our team will help you right away.'
+      : 'Sorry, I hit a technical hiccup. Please try again in a moment, or email ' + contactEmail + ' and we will help right away.';
     return jsonResponse({
-      response: 'Sorry, I hit a technical hiccup. Please try again in a moment, or email ' + contactEmail + ' and we will help right away.',
-      error: String(err?.message || err),
+      response: reply,
+      error: errMsg,
     }, 200);
   }
 });
