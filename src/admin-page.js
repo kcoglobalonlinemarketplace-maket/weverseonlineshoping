@@ -2831,11 +2831,14 @@ const AI_PRODUCT_SCANNER = {
         report(1, 'Identifying the exact product from your images…');
         const identification = await aiClient.identifyProduct(images, context);
         if (!identification || identification.identified === false) return { identification, specs: null, price: null };
-        report(2, 'Completing the standard specifications for that product…');
-        const specs = await aiClient.completeProductSpecs(images, identification, context);
-        report(3, 'Estimating a fair current market price…');
-        let price = null;
-        try { price = await aiClient.estimateProductPrice(images, identification, specs, context); } catch { /* price is optional */ }
+        // FAST: stages 2 (specs + description) and 3 (price) both depend only on
+        // the identification, so they run AT THE SAME TIME instead of one after
+        // the other — the scan finishes roughly twice as fast.
+        report(2, 'Completing specifications and estimating a fair market price…');
+        const [specs, price] = await Promise.all([
+          aiClient.completeProductSpecs(images, identification, context).catch(() => null),
+          aiClient.estimateProductPrice(images, identification, {}, context).catch(() => null),
+        ]);
         return { identification, specs, price };
       },
     },
@@ -3976,7 +3979,6 @@ window.scanGeneralWithAI = async function() {
   const sources = {};
   let scannedCount = 0;
   let failedCount = 0;
-  let index = 0;
   const total = products.length;
   // ── Duplicate-image handling ─────────────────────────────────────────────
   // The FIRST time a product's photos are all duplicates of photos already
@@ -4013,11 +4015,17 @@ window.scanGeneralWithAI = async function() {
     const orig = window.__scanDupContinue;
     window.__scanDupContinue = function() { clearInterval(t); orig(); };
   });
-  for (const prod of products) {
-    index++;
-    setStatus(`Scanning ${index} of ${total}: ${esc(prod?.title || prod?.property_id || 'product')}…`, 'text-blue-300');
+  // ── FAST concurrent scanning ───────────────────────────────────────────────
+  // Several products are scanned AT THE SAME TIME (not one after another), so a
+  // full catalog scan takes a fraction of the time. Each scan is also bounded by
+  // a shorter timeout so a slow call can never hold up the whole batch.
+  const SCAN_CONCURRENCY = 3;
+  const SCAN_TIMEOUT_MS = 45000;
+  let cursor = 0;
+  let doneCount = 0;
+  const scanOne = async (prod) => {
     const prodImages = (prod.images || []).slice(0, AI_PRODUCT_SCANNER.maxImages);
-    if (!prodImages.length) continue;
+    if (!prodImages.length) return;
     // Register this product's photos, then check whether ALL of them were
     // already scanned on an earlier product (a full duplicate).
     const keys = prodImages.map(u => String(u || '').trim()).filter(Boolean);
@@ -4027,16 +4035,16 @@ window.scanGeneralWithAI = async function() {
       // Duplicate photos of an already-scanned product — skip silently and keep
       // going with the rest. No prompt, nothing deleted or replaced.
       duplicatesSkipped++;
-      setStatus(`Duplicate images skipped for "${esc(prod?.title || prod?.property_id || 'product')}" — continuing with the remaining products…`, 'text-blue-300');
-      continue; // skip re-scanning this duplicate; do NOT touch its images
+      return; // skip re-scanning this duplicate; do NOT touch its images
     }
+    // No await between reading images.length and pushing, so this is race-free.
     const base = images.length;
     images.push(...prodImages);
     const indices = prodImages.map((_, i) => base + i);
     try {
-      const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: Math.min(prodImages.length, AI_PRODUCT_SCANNER.maxImages) }), 120000);
+      const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: Math.min(prodImages.length, AI_PRODUCT_SCANNER.maxImages) }), SCAN_TIMEOUT_MS);
       const list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
-      if (!list.length) continue;
+      if (!list.length) return;
       scannedCount++;
       sources[prod.property_id] = prod;
       for (const d of list) {
@@ -4050,7 +4058,17 @@ window.scanGeneralWithAI = async function() {
         });
       }
     } catch { failedCount++; }
-  }
+  };
+  const worker = async () => {
+    while (cursor < products.length) {
+      const prod = products[cursor++];
+      setStatus(`Scanning ${doneCount + 1} of ${total} product${total === 1 ? '' : 's'} (fast parallel mode)…`, 'text-blue-300');
+      await scanOne(prod);
+      doneCount++;
+      if (doneCount < total) setStatus(`Scanned ${doneCount} of ${total} — continuing…`, 'text-blue-300');
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(SCAN_CONCURRENCY, Math.max(1, products.length)) }, worker));
   if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
   if (!detections.length) {
@@ -5938,11 +5956,9 @@ Rules:
 - NEVER invent exact specs (price, storage size, RAM, horsepower, serial numbers) that are not visible or printed on the product.
 - Respond with valid JSON only.`;
 
-    const images = [];
-    for (const url of (imageUrls || []).slice(0, context.maxImages || 3)) {
-      const dataUrl = await this._fetchImageAsDataUrl(url, 1024);
-      if (dataUrl) images.push(dataUrl);
-    }
+    const images = (await Promise.all(
+      (imageUrls || []).slice(0, context.maxImages || 3).map(u => this._fetchImageAsDataUrl(u, 1024))
+    )).filter(Boolean);
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
     // 1) FAST PATH: browser-side Gemini vision (key already loaded).
@@ -5971,11 +5987,11 @@ Rules:
   // returns parsed JSON (with _aiProvider/_aiModel) or null. Never falls back to
   // a text-only model because it cannot see the photo.
   async _runVisionPrompt(prompt, imageUrls, { maxImages = 3, maxTokens = 4096 } = {}) {
-    const images = [];
-    for (const url of (imageUrls || []).slice(0, maxImages)) {
-      const dataUrl = await this._fetchImageAsDataUrl(url, 1024);
-      if (dataUrl) images.push(dataUrl);
-    }
+    // FAST: all images are fetched in parallel and cached, so the 3 scan stages
+    // reuse the same compressed payloads instead of re-downloading each photo.
+    const images = (await Promise.all(
+      (imageUrls || []).slice(0, maxImages).map(u => this._fetchImageAsDataUrl(u, 1024))
+    )).filter(Boolean);
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
     try {
@@ -6179,19 +6195,32 @@ Return ONE valid JSON object (no markdown):
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(120000),
+      signal: AbortSignal.timeout(60000),
     });
     return await res.json().catch(() => ({}));
   },
 
   // Fetch an image URL and return a compressed data URL (keeps edge payloads small).
-  async _fetchImageAsDataUrl(url, dim = 1200) {
-    try {
-      const blob = await fetch(url, { signal: AbortSignal.timeout(25000) }).then(r => r.blob());
-      if (!blob || !blob.size) return null;
-      if (blob.size < 1_800_000) return `data:${blob.type || 'image/jpeg'};base64,${await blobToBase64(blob)}`;
-      return await this._downscaleImage(blob, dim);
-    } catch { return null; }
+  // FAST: results are cached per URL (the same photo is never downloaded or
+  // re-encoded twice across scan stages) and every image is always downscaled to
+  // a compact JPEG so uploads and AI calls stay quick.
+  _imageCache: new Map(),
+  async _fetchImageAsDataUrl(url, dim = 1024) {
+    const key = String(url);
+    if (this._imageCache.has(key)) return this._imageCache.get(key);
+    const task = (async () => {
+      try {
+        const blob = await fetch(url, { signal: AbortSignal.timeout(15000) }).then(r => r.blob());
+        if (!blob || !blob.size) return null;
+        // Always compress large photos down — small payloads = fast AI scans.
+        if (blob.size < 400_000) return `data:${blob.type || 'image/jpeg'};base64,${await blobToBase64(blob)}`;
+        return await this._downscaleImage(blob, dim);
+      } catch { return null; }
+    })();
+    this._imageCache.set(key, task);
+    const out = await task;
+    if (!out) this._imageCache.delete(key); // allow retrying a failed fetch later
+    return out;
   },
 
   async _downscaleImage(blob, maxDim) {
@@ -6205,7 +6234,7 @@ Return ONE valid JSON object (no markdown):
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      return canvas.toDataURL('image/jpeg', 0.82);
+      return canvas.toDataURL('image/jpeg', 0.78);
     } finally { URL.revokeObjectURL(objectUrl); }
   },
 
