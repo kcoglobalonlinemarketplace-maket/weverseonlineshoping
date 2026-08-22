@@ -2158,10 +2158,10 @@ function applyCatalogDraftToPropertyForm(mode = 'full') {
   const price = parseFloat(document.getElementById('ppf-price')?.value) || GLOBAL_PRICE_MIN;
   const draft = buildCatalogDraft({ templateId, listingType: 'property', category: 'Real Estate', countryCode, currency, price });
   if (!draft) {
-    setImageRequirement('ppf', 24);
+    setImageRequirement('ppf', 0);
     return;
   }
-  setImageRequirement('ppf', draft.requiredImageCount || 24);
+  setImageRequirement('ppf', draft.requiredImageCount || 0);
   setFieldValue('country', draft.country);
   setFieldValue('country_code', draft.country_code);
   setFieldValue('currency', draft.currency);
@@ -2611,20 +2611,17 @@ function updateCoverBadge() {
   });
 }
 
-// Show how many of the 24 gallery slots are filled. Once 24 images are
-// uploaded the product is marked to publish automatically on save.
+// Show how many gallery images are attached. Any count is fine — saving and
+// publishing always works; 24 is only the maximum gallery size.
 function updateGalleryCounter() {
   const preview = document.getElementById('image-preview');
   const counter = document.getElementById('gallery-counter');
   if (!preview || !counter) return;
   const count = preview.querySelectorAll('.img-thumb').length;
-  const full = count >= 24;
-  counter.textContent = full
-    ? '✓ ' + count + ' / 24 images — this product will auto-publish on save'
-    : count + ' / 24 images' + (count >= 12 ? ' — almost there, keep going for a full gallery' : '');
-  counter.className = 'text-sm mt-1 font-bold ' + (full ? 'text-emerald-300' : 'text-gray-400');
-  const active = document.querySelector('#product-form [name="is_active"]');
-  if (full && active && !active.checked) active.checked = true;
+  counter.textContent = count
+    ? `${count} image${count > 1 ? 's' : ''} — you can save and publish anytime`
+    : 'No images yet — you can still save and publish anytime';
+  counter.className = 'text-sm mt-1 font-bold text-gray-400';
 }
 
 function productAutoSaveKey(category, existingId) {
@@ -3173,7 +3170,8 @@ window.scanReviewRender = function() {
     <div class="space-y-3">
       <div>
         <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4 text-violet-400"></i> ${scanReviewProducts.length} distinct product${scanReviewProducts.length > 1 ? 's' : ''} detected</p>
-        <p class="text-[11px] text-gray-400 mt-1">Photos of the same product are grouped into one listing; different products stay separate. Review each one — edit, remove, or continue to its correct form. Nothing is saved or published automatically.</p>
+        <p class="text-[11px] text-gray-400 mt-1">Photos of the same product are grouped into one listing; different products stay separate. Edit or remove cards as needed — then either Continue one-by-one, or press Continue with ALL to save & publish everything in one click.</p>
+        <button type="button" id="btn-scan-continue-all" onclick="scanReviewContinueAll()" class="btn-press mt-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition flex items-center gap-2"><i data-lucide="rocket" class="w-4 h-4"></i> Continue with ALL — Save &amp; Publish Everything</button>
       </div>
       ${scanReviewProducts.map((p, i) => scanReviewCardHtml(p, i)).join('')}
     </div>`;
@@ -3267,6 +3265,132 @@ window.scanReviewCancel = function() {
     el.classList.add('text-gray-400');
     el.textContent = 'Scan cancelled — nothing was changed.';
   }
+};
+
+// ── Continue with ALL: save & publish every detected product in one click ──
+// Loops over every review card, completes each product's specs + price with the
+// AI, and writes it straight to showroom_listings. Existing products (scanned
+// from the General AI Scanner) are UPDATED — never duplicated; brand-new
+// detections are INSERTED as new listings. Any image count is fine.
+window.scanReviewContinueAll = async function() {
+  const el = document.getElementById(scanReviewEntry);
+  const setStatus = (html, cls) => {
+    if (!el) return;
+    el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400', 'text-gray-100');
+    if (cls) el.classList.add(cls);
+    el.innerHTML = html;
+    if (window.lucide) lucide.createIcons();
+  };
+  if (!scanReviewProducts.length) return;
+  const btn = document.getElementById('btn-scan-continue-all');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving everything…'; }
+
+  const total = scanReviewProducts.length;
+  let savedNew = 0, updated = 0, failed = 0;
+  const propertyIndexes = [];
+
+  for (let i = 0; i < total; i++) {
+    const p = scanReviewProducts[i];
+    if (!p) continue;
+    const norm = normalizeDetectedCategory(p.category);
+    const isProperty = p.listing_type === 'property' || (norm && norm.listing_type === 'property');
+    if (isProperty) { propertyIndexes.push(i); continue; }
+    const cat = norm.category || p.category || 'Other';
+    const images = imagesForProduct(p, scanReviewImages);
+    setStatus(`<p class="flex items-center gap-2"><i data-lucide="loader" class="w-4 h-4 animate-spin text-blue-300"></i> Completing ${i + 1} of ${total}: <b>${esc(p.detected_name || 'product')}</b>…</p>`, 'text-blue-300');
+    try {
+      let specs = {};
+      let price = null;
+      try { specs = (await aiClient.completeProductSpecs(images, p, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages })) || {}; } catch { /* specs optional */ }
+      try { price = await aiClient.estimateProductPrice(images, p, specs, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }); } catch { /* price optional */ }
+      const s = specs || {};
+      const src = p.property_id ? (scanReviewSourceProducts[p.property_id] || null) : null;
+      const existing = src ? (src.specifications && typeof src.specifications === 'object' ? { ...src, ...src.specifications } : src) : null;
+      const idLabel = [p.year || s.year, p.brand || s.brand, p.model || s.model].filter(Boolean).join(' ') || p.detected_name || 'Product';
+
+      const est = price ? Number(price.estimated_price ?? price.price ?? price.estimate) : NaN;
+      let finalPrice = (Number.isFinite(est) && est > 0) ? est : (existing ? Number(existing.price) : NaN);
+      if (!Number.isFinite(finalPrice) || finalPrice <= 0) finalPrice = GLOBAL_PRICE_MIN;
+      finalPrice = Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, finalPrice));
+
+      const specPayload = {};
+      for (const k of ['model', 'storage', 'ram', 'processor', 'display', 'material', 'gender', 'platform', 'voltage', 'engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year', 'seating_capacity', 'doors', 'type', 'size', 'age_range', 'skin_type', 'dimensions', 'author', 'publisher', 'language', 'format', 'pages', 'edition', 'quantity', 'pet_type', 'lens', 'sensor', 'megapixels', 'license', 'version', 'duration', 'followers', 'engagement', 'niche', 'usage', 'shelf_life', 'assembly', 'weatherproof', 'movement', 'case_material', 'water_resistance', 'gemstone', 'movement_type', 'warranty_period']) {
+        const v = s[k] ?? p[k];
+        if (v != null && String(v).trim() !== '') specPayload[k] = v;
+      }
+      const specMerged = { ...((existing && existing.specifications && typeof existing.specifications === 'object') ? existing.specifications : {}), ...specPayload };
+
+      const payload = {
+        listing_type: 'product',
+        category: cat,
+        subcategory: existing?.subcategory || null,
+        title: (existing && existing.title) ? existing.title : idLabel,
+        description: s.description || (existing && existing.description) || '',
+        price: finalPrice,
+        currency: (existing && existing.currency) || 'USD',
+        country: (existing && existing.country) || '', country_code: (existing && existing.country_code) || '',
+        listing_status: 'sale', state: '', city: '', product_location: '', latitude: null, longitude: null,
+        is_active: true, // publish — any image count is fine
+        is_featured: !!(existing && existing.is_featured),
+        brand: p.brand || s.brand || (existing && existing.brand) || null,
+        color: s.color || (existing && existing.color) || null,
+        size: s.size || (existing && existing.size) || null,
+        condition: (existing && existing.condition) || null,
+        warranty: (existing && existing.warranty) || null,
+        availability_status: (existing && existing.availability_status) || 'In Stock',
+        stock_quantity: (existing && existing.stock_quantity) ? parseInt(existing.stock_quantity) : null,
+        images: images.length ? images : ((existing && existing.images) || []),
+        features: (Array.isArray(s.features) && s.features.length ? s.features : (existing && existing.features) || []),
+        tags: (Array.isArray(s.tags) && s.tags.length ? s.tags : (existing && existing.tags) || []),
+        highlights: (Array.isArray(s.highlights) && s.highlights.length ? s.highlights : (existing && existing.highlights) || []),
+        seo_keywords: (Array.isArray(s.seo_keywords) && s.seo_keywords.length ? s.seo_keywords : (existing && existing.seo_keywords) || []),
+        is_ai_generated: true,
+        ai_generated_fields: ['title', 'description', 'specifications', 'price'],
+        specifications: specMerged,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existing && existing.property_id) {
+        // UPDATE the scanned product — never create a duplicate of it.
+        payload.property_id = existing.property_id;
+        const { error } = await supabase.from('showroom_listings').upsert(payload, { onConflict: 'property_id' });
+        if (error) throw error;
+        updated++;
+      } else {
+        payload.property_id = genId();
+        const { error } = await supabase.from('showroom_listings').insert(payload);
+        if (error) throw error;
+        savedNew++;
+      }
+    } catch (err) {
+      failed++;
+      setStatus(`<p class="text-amber-300">Could not save "${esc(p.detected_name || 'product')}": ${esc(String(err?.message || err))} — continuing with the rest…</p>`, 'text-amber-300');
+    }
+  }
+
+  // Reset the review list to only what still needs attention (properties).
+  scanReviewProducts = scanReviewProducts.filter((_, i) => propertyIndexes.includes(i));
+  const summary = `${updated} updated, ${savedNew} new${failed ? `, ${failed} failed` : ''}`;
+  if (!scanReviewProducts.length) {
+    scanReviewSourceProducts = {};
+    scanReviewImages = [];
+    setStatus(`<div class="space-y-1">
+      <p class="font-bold text-emerald-300 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Done — everything saved &amp; published: ${summary}.</p>
+      <p class="text-[11px] text-gray-400">Your products are live in the showroom. Use Publish &amp; Deploy to push the site.</p>
+    </div>`, 'text-emerald-300');
+    showToast(`All done — ${summary} saved & published.`, 'success');
+  } else {
+    scanReviewRender();
+    const el2 = document.getElementById(scanReviewEntry);
+    if (el2) {
+      const note = document.createElement('p');
+      note.className = 'text-xs font-bold text-emerald-300';
+      note.textContent = `Saved & published: ${summary}. Property cards below still need Continue.`;
+      el2.prepend(note);
+    }
+    showToast(`Saved ${summary}.`, failed ? 'info' : 'success');
+  }
+  renderProducts();
 };
 
 // Fill the property form from a scan result (title, type, rooms, sizes,
@@ -3507,6 +3631,7 @@ window.scanProductWithAI = async function() {
   // REVIEW LIST — the AI never fills or publishes on its own.
   scanReviewProducts = products;
   scanReviewImages = images;
+  scanReviewSourceProducts = {};
   scanReviewEntry = 'scan-ai-status';
   scanReviewRender();
   showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected — review each one, then continue.`, 'info');
@@ -3737,6 +3862,7 @@ window.scanFirstWithAI = async function() {
   // product opens its correct category form with that product's own images.
   scanReviewProducts = products;
   scanReviewImages = images;
+  scanReviewSourceProducts = {};
   scanReviewEntry = 's1-scan-status';
   scanReviewRender();
   showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected — review each one, then continue.`, 'info');
@@ -3898,10 +4024,8 @@ window.scanGeneralWithAI = async function() {
     const allSeen = keys.length > 0 && keys.every(k => seenImages.has(k));
     for (const k of keys) seenImages.add(k);
     if (allSeen) {
-      if (!duplicateConfirmed) {
-        await waitForDuplicateConfirm(prod);
-        duplicateConfirmed = true; // one press covers every future duplicate
-      }
+      // Duplicate photos of an already-scanned product — skip silently and keep
+      // going with the rest. No prompt, nothing deleted or replaced.
       duplicatesSkipped++;
       setStatus(`Duplicate images skipped for "${esc(prod?.title || prod?.property_id || 'product')}" — continuing with the remaining products…`, 'text-blue-300');
       continue; // skip re-scanning this duplicate; do NOT touch its images
@@ -3937,16 +4061,15 @@ window.scanGeneralWithAI = async function() {
     return;
   }
 
-  // ✅ SUCCESS — the scan always stops right here with a clear result. The AI
-  // never fills, saves or publishes on its own. Review every detected card,
-  // edit / remove as needed, then Continue to open that product's form and
-  // press SAVE to save & publish (one click).
+  // ✅ SUCCESS — the scan stops here with a review list. Press "Continue with
+  // ALL" to save & publish every product in one click, or handle cards
+  // one-by-one. Any image count is fine; 24 is only the gallery maximum.
   scanReviewProducts = detections;
   scanReviewImages = images;
   scanReviewSourceProducts = sources;
   scanReviewEntry = 'scanner-scan-status';
   scanReviewRender();
-  showToast(`Scan complete — ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}. Review each one below, then Continue to save & publish.`, 'success');
+  showToast(`Scan complete — ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}. Press "Continue with ALL" to save & publish everything at once.`, 'success');
 };
 
 window.saveProduct = async function(e, category, existingId) {
@@ -4043,8 +4166,8 @@ window.saveProduct = async function(e, category, existingId) {
 
       const feat = data.is_featured === 'on';
       if (!!base.is_featured !== feat) changes.is_featured = feat;
-      // A complete 24-image gallery auto-publishes the product.
-      const act = isDraft ? false : (data.is_active === 'on' || (data.images || []).length >= 24);
+      // Save & publish works with ANY image count — 24 is only a maximum.
+      const act = isDraft ? false : data.is_active === 'on';
       if (!!base.is_active !== act) changes.is_active = act;
 
       const spec = buildSpecifications(data);
@@ -4095,7 +4218,7 @@ window.saveProduct = async function(e, category, existingId) {
         product_location: '',
         latitude: null,
         longitude: null,
-        is_active: isDraft ? false : (data.is_active === 'on' || (data.images || []).length >= 24),
+        is_active: isDraft ? false : data.is_active === 'on',
         is_featured: data.is_featured === 'on',
         brand: data.brand || null,
         color: data.color || null,
@@ -4278,8 +4401,8 @@ window.showAddPropertyModal = function(existing = {}) {
               <div><label class="lbl">Country</label><select class="input-field" name="country_code" id="ppf-country_code" onchange="syncPropertyCountry(); applyPropertyCatalogTemplate()">${renderCountryOptions(selectedCountryCode)}</select></div>
               <div><label class="lbl">Currency</label><select class="input-field" name="currency" id="ppf-currency" onchange="applyPropertyCatalogTemplate()">${renderCurrencyOptions(selectedCurrency)}</select></div>
             </div>
-            <p id="ppf-image-requirement" class="text-[11px] text-amber-300">This property flow expects 24 images for a complete gallery.</p>
-            <input type="hidden" name="required_image_count" id="ppf-required_image_count" value="24">
+            <p id="ppf-image-requirement" class="text-[11px] text-gray-400">Any number of images is fine — save and publish anytime.</p>
+            <input type="hidden" name="required_image_count" id="ppf-required_image_count" value="">
           </div>
 
           <div class="form-grid form-grid-2">
@@ -6668,11 +6791,39 @@ function renderHeroVideoManagerHtml(slides) {
   return `
     <div class="space-y-3">
       <div id="hero-videos-manager" class="space-y-3">${empty}${heroVideoManagerHtml(arr)}</div>
+      <button type="button" onclick="heroVideoSavePublish(this)" class="btn-press w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 text-white text-xs font-black rounded-xl transition flex items-center justify-center gap-2">
+        <i data-lucide="rocket" class="w-4 h-4"></i> Save &amp; Publish Hero Banner
+      </button>
+      <p class="text-[10px] text-gray-500 text-center">One video is enough — no minimum. Your banner goes live as soon as you press this button.</p>
       <button type="button" onclick="addHeroVideoSlide()" class="btn-press w-full px-4 py-3 border-2 border-dashed border-indigo-500/40 text-indigo-300 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
         <i data-lucide="plus" class="w-4 h-4"></i> Add Another Hero Video Slide
       </button>
     </div>`;
 }
+// Saves ONLY the hero video slides — works with a single video, no minimum required.
+// Keeps the same site_settings row/update pattern as saveContentSettings.
+window.heroVideoSavePublish = async function(btn) {
+  const arr = heroVideoDraft().filter(s => s && (s.video || s.poster || s.title || s.subtitle));
+  if (!arr.length) { showToast('Add at least one video slide before publishing.', 'error'); return; }
+  const withVideo = arr.filter(s => s.video);
+  if (!withVideo.length) { showToast('Please upload a video in at least one slide first.', 'error'); return; }
+  const label = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Publishing…'; }
+  try {
+    heroSyncJson();
+    const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
+    let error;
+    if (existing?.id) ({ error } = await supabase.from('site_settings').update({ hero_video_slides: arr }).eq('id', existing.id));
+    else ({ error } = await supabase.from('site_settings').insert({ id: 1, hero_video_slides: arr }));
+    if (error) throw new Error(error.message);
+    invalidateSiteContent();
+    showToast('✓ Hero video banner published! ' + withVideo.length + (withVideo.length === 1 ? ' video is' : ' videos are') + ' now live on your homepage.', 'success');
+  } catch (err) {
+    showToast(err.message || 'Could not publish the hero banner. Please try again.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = label; if (window.lucide) lucide.createIcons(); }
+  }
+};
 
 async function renderContentSettings() {
   const content = document.getElementById('content');

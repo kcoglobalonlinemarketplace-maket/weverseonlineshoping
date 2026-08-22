@@ -230,6 +230,14 @@ async function callGemini(params: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents,
+      // IMPORTANT: listings/products/properties can ALWAYS be saved and
+      // published with ANY number of images (0–24). Never tell the admin a
+      // 24-image gallery must be finished before saving.
+      systemInstruction: {
+        parts: [{
+          text: 'You are the admin assistant for the Weverse Online Shop marketplace. House rules you must always follow when answering: (1) Listings and products can be SAVED and PUBLISHED with ANY number of gallery images — 0, 1, 5, or 24. There is NO minimum image requirement. Never tell the user to finish, complete, or upload 24 gallery images before saving; saving always works regardless of image count or how complete the form is. (2) The "24 images" figure is only a maximum gallery size, never a requirement. (3) Be concise and action-oriented.',
+        }],
+      },
       generationConfig: {
         temperature: 0.4,
         maxOutputTokens: maxTokens || 1200,

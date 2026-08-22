@@ -483,7 +483,8 @@ async function runLocalBrandImageAutomation(text) {
   };
 }
 
-// ── Auto image pipeline: scan → fill fields → free AI generates 24 images ──
+// ── Auto image pipeline: scan → fill fields → gallery built from uploads ──
+// NOTE: any number of images is fine — saving never requires a full gallery.
 const AUTO_RUN_PIPELINE_ON_UPLOAD = true;
 
 const VISION_SCAN_PROMPT = `You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded photo(s) and identify exactly what the item is.
@@ -1345,7 +1346,7 @@ function parseHouseRequest(text) {
     productLocation: (locationMatch?.[2] || '').trim(),
     latitude: latMatch ? parseFloat(latMatch[1]) : null,
     longitude: lngMatch ? parseFloat(lngMatch[1]) : null,
-    requestedImages: Number.isFinite(requestedImages) ? Math.max(24, requestedImages) : 24,
+    requestedImages: Number.isFinite(requestedImages) ? Math.min(24, Math.max(1, requestedImages)) : 24,
     shouldDeploy: /\bdeploy\b|\bpublish\b.*\bsite\b/i.test(message),
   };
 }
@@ -1436,7 +1437,7 @@ async function runLocalHouseAndDeployAutomation(text) {
       parking_spaces: 2,
       furnished: 'Furnished',
       features: ['Swimming Pool', 'Garage', 'Garden'],
-      highlights: ['Premium location', 'Map-ready', '24-image gallery'],
+      highlights: ['Premium location', 'Map-ready', 'Complete gallery'],
       seo_keywords: ['house', 'real estate', 'villa'],
       images: buildPlaceholderHouseImages(24),
       is_active: true,
