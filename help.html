@@ -80,8 +80,26 @@
     };
     lucide.createIcons();
   </script>
-  <script type="module" src="/src/localization-bootstrap.js"></script>
+  <script>
+    // Live-chat card: opens the floating support chat (powered by the support team).
+    window.openSupportChat = () => {
+      if (window.__kcoAiOpen) window.__kcoAiOpen();
+      else window.location.href = '/contact.html';
+    };
+  </script>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <button onclick="openSupportChat()" class="w-full glass border border-blue-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-blue-300 transition slide-up">
+      <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 rounded-xl shrink-0"><i data-lucide="message-circle" class="w-6 h-6 text-blue-600"></i></div>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-sm font-bold text-gray-900 mb-0.5">Chat with our team</h3>
+        <p class="text-xs text-gray-500">Got a question that's not answered below? Alex from our support team is online and replies instantly.</p>
+      </div>
+      <span class="flex items-center gap-1.5 text-xs font-bold text-emerald-600 shrink-0"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Online</span>
+    </button>
+  </div>
   <script src="/back-button.js" defer></script>
+<script type="module" src="/src/localization-bootstrap.js"></script>
+
   <script type="module" src="/src/brand.js"></script>
   <!-- APP PROMOTION BANNER + LIVE PRODUCT PROMOTIONS -->
   <div id="trust-info-area"></div>

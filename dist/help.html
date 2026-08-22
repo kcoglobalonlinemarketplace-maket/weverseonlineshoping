@@ -21,12 +21,12 @@
   <script src="https://unpkg.com/lucide@0.460.0" defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>*{font-family:'Inter',system-ui,sans-serif}.glass{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}@keyframes fade-in-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.fade-in-up{animation:fade-in-up .8s ease forwards}@keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.slide-up{animation:slide-up .5s ease forwards}.faq-answer{max-height:0;overflow:hidden;transition:max-height .3s ease,opacity .3s ease,padding .3s ease;opacity:0}.faq-answer.open{max-height:500px;opacity:1;padding-top:12px;padding-bottom:12px}.faq-icon{transition:transform .3s ease}.faq-icon.open{transform:rotate(180deg)}</style>
-  <script type="module" crossorigin src="/assets/help-7qx1NVog.js"></script>
+  <script type="module" crossorigin src="/assets/help-CzEgxioB.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/supabase-client-CDm4AUL7.js">
   <link rel="modulepreload" crossorigin href="/assets/localization-RXGsdHK2.js">
   <link rel="modulepreload" crossorigin href="/assets/localization-bootstrap-D677vsZp.js">
   <link rel="modulepreload" crossorigin href="/assets/app-promo-banner-BXjUoacu.js">
-  <link rel="modulepreload" crossorigin href="/assets/ai-chat-D2yoo6LN.js">
+  <link rel="modulepreload" crossorigin href="/assets/ai-chat-lFZUUkuk.js">
   <link rel="stylesheet" crossorigin href="/assets/localization-CejRXKqw.css">
 </head>
 <body class="bg-white text-gray-900 min-h-screen">
@@ -53,7 +53,25 @@
       <div class="space-y-3" id="faq-list"></div>
     </div>
   </main>
+  <script>
+    // Live-chat card: opens the floating support chat (powered by the support team).
+    window.openSupportChat = () => {
+      if (window.__kcoAiOpen) window.__kcoAiOpen();
+      else window.location.href = '/contact.html';
+    };
+  </script>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <button onclick="openSupportChat()" class="w-full glass border border-blue-200 rounded-2xl p-5 flex items-center gap-4 text-left hover:border-blue-300 transition slide-up">
+      <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 rounded-xl shrink-0"><i data-lucide="message-circle" class="w-6 h-6 text-blue-600"></i></div>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-sm font-bold text-gray-900 mb-0.5">Chat with our team</h3>
+        <p class="text-xs text-gray-500">Got a question that's not answered below? Alex from our support team is online and replies instantly.</p>
+      </div>
+      <span class="flex items-center gap-1.5 text-xs font-bold text-emerald-600 shrink-0"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Online</span>
+    </button>
+  </div>
   <script src="/back-button.js" defer></script>
+
   <!-- APP PROMOTION BANNER + LIVE PRODUCT PROMOTIONS -->
   <div id="trust-info-area"></div>
   <div id="app-promo-banner"></div>

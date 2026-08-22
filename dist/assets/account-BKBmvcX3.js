@@ -1,4 +1,4 @@
-import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./localization-RXGsdHK2.js";import{getCurrentUser as W,signOut as V}from"./auth-C74q9RIJ.js";import"./native-bridge-DcgSwSkO.js";import"./localization-bootstrap-D677vsZp.js";import"./app-promo-banner-BXjUoacu.js";import"./ai-chat-D2yoo6LN.js";async function G(){return!1}async function z(){return await G(),null}const b="/fallback.svg",X=[{group:"Overview",items:[{id:"home",label:"Dashboard Home",icon:"layout-dashboard"},{id:"profile",label:"My Profile",icon:"user"},{id:"edit-profile",label:"Edit Profile",icon:"user-cog"},{id:"change-password",label:"Change Password",icon:"key-round"}]},{group:"Orders & Shopping",items:[{id:"orders",label:"My Orders",icon:"shopping-bag"},{id:"special-orders",label:"Special Orders",icon:"package-plus"},{id:"tracking",label:"Order Tracking",icon:"truck"},{id:"history",label:"Order History",icon:"history"},{id:"cart",label:"Shopping Cart",icon:"shopping-cart"},{id:"wishlist",label:"My Wishlist",icon:"heart"}]},{group:"Account",items:[{id:"notifications",label:"Notifications",icon:"bell"},{id:"messages",label:"Messages",icon:"mail"},{id:"payment-methods",label:"Payment Methods",icon:"credit-card"},{id:"payments",label:"Payment History",icon:"receipt"},{id:"addresses",label:"Shipping Addresses",icon:"map-pin"},{id:"receipts",label:"Download Receipts",icon:"download"}]},{group:"Support & Settings",items:[{id:"email-prefs",label:"Email Preferences",icon:"settings"},{id:"support",label:"Contact Us",icon:"headphones"},{id:"help",label:"Help Center",icon:"help-circle"},{id:"privacy",label:"Privacy & Security",icon:"shield-check"}]}],p=[{id:"order_placed",label:"Order Placed",icon:"shopping-bag",color:"text-blue-600",bg:"bg-blue-50"},{id:"payment_received",label:"Payment Received",icon:"credit-card",color:"text-cyan-600",bg:"bg-cyan-50"},{id:"pending_verification",label:"Pending Verification",icon:"shield-alert",color:"text-amber-600",bg:"bg-amber-50"},{id:"payment_approved",label:"Approved",icon:"check-circle",color:"text-emerald-600",bg:"bg-emerald-50"},{id:"order_processing",label:"Processing",icon:"package",color:"text-blue-600",bg:"bg-blue-50"},{id:"order_shipped",label:"Shipped",icon:"truck",color:"text-indigo-600",bg:"bg-indigo-50"},{id:"out_for_delivery",label:"Out for Delivery",icon:"bike",color:"text-blue-600",bg:"bg-blue-50"},{id:"order_delivered",label:"Delivered",icon:"package-check",color:"text-emerald-600",bg:"bg-emerald-50"}],Q={approved:"payment_approved",submitted:"payment_received",placed:"order_placed"};function w(e){return Q[e]||e}function J(e){const t=p.findIndex(r=>r.id===w(e));return t>=0?t:0}function f(e){return e?new Date(e).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}):"—"}function S(e){return e?new Date(e).toLocaleString("en-US",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):"—"}function j(e){return(e||"?").slice(0,2).toUpperCase()}function o(e){return String(e??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function n(e){const t=document.getElementById("toast");document.getElementById("toast-msg").textContent=e,t.classList.remove("translate-y-20","opacity-0"),clearTimeout(t._t),t._t=setTimeout(()=>t.classList.add("translate-y-20","opacity-0"),3e3),window.lucide&&lucide.createIcons()}function K(e){const t=()=>{const r=document.createElement("textarea");r.value=e,document.body.appendChild(r),r.select();try{document.execCommand("copy")}catch{}document.body.removeChild(r)};navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(e).catch(()=>t()):t(),n("Copied to clipboard.")}function $(e){const t=w(e),r=p.find(u=>u.id===t)||p[0],s={"text-blue-600":"bg-blue-50 text-blue-600 border-blue-200","text-cyan-600":"bg-cyan-50 text-cyan-600 border-cyan-200","text-amber-600":"bg-amber-50 text-amber-600 border-amber-200","text-emerald-600":"bg-emerald-50 text-emerald-600 border-emerald-200","text-indigo-600":"bg-indigo-50 text-indigo-600 border-indigo-200","text-blue-600":"bg-blue-50 text-blue-600 border-blue-200","text-red-600":"bg-red-50 text-red-600 border-red-200"},l=s[r.color]||s["text-blue-600"],i=e==="rejected"?"Rejected":r.label;return`<span class="inline-flex items-center gap-1 ${l} border text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">${i}</span>`}function B(e){e.addEventListener("click",function(t){if(this.disabled)return;const r=this.getBoundingClientRect(),s=document.createElement("span");s.className="ripple";const l=Math.max(r.width,r.height);s.style.width=s.style.height=l+"px",s.style.left=t.clientX-r.left-l/2+"px",s.style.top=t.clientY-r.top-l/2+"px",this.appendChild(s),setTimeout(()=>s.remove(),600)})}let a={user:null,profile:null,orders:[],events:{},notifications:[],addresses:[],emailPrefs:null,messages:[],paymentMethods:[],activeSection:"home"};function Z(){const e=document.getElementById("particles");if(e)for(let t=0;t<12;t++){const r=document.createElement("div"),s=Math.random()*3+1;r.className="particle",r.style.width=r.style.height=s+"px",r.style.left=Math.random()*100+"%",r.style.bottom="-10px",r.style.background=Math.random()>.5?"rgba(59,130,246,.4)":"rgba(251,191,36,.3)",r.style.animationDuration=Math.random()*20+15+"s",r.style.animationDelay=Math.random()*20+"s",e.appendChild(r)}}Z();async function ee(){if(document.getElementById("dashboard-root"),a.user=await W(),!a.user){window.location.href="/auth.html?redirect=/account.html";return}await H(),await te(),await q(),await D(),await C(),await I(),await U(),re(),R(),Be(),m("home"),z().then(e=>{e&&console.log("Push notifications enabled")})}async function H(){const{data:e}=await d.from("profiles").select("*").eq("user_id",a.user.id).maybeSingle();a.profile=e}async function te(){const{data:e}=await d.from("payment_receipts").select("*").eq("user_id",a.user.id).order("created_at",{ascending:!1});if(a.orders=e||[],a.orders.length){const t=a.orders.map(l=>l.order_number),{data:r}=await d.from("order_events").select("*").in("order_number",t).order("created_at",{ascending:!0});a.events={},(r||[]).forEach(l=>{(a.events[l.order_number]||=[]).push(l)});const{data:s}=await d.from("notification_log").select("*").in("order_number",t).order("created_at",{ascending:!1});a.notifications=s||[]}}async function q(){const{data:e}=await d.from("shipping_addresses").select("*").eq("user_id",a.user.id).order("created_at",{ascending:!1});a.addresses=e||[]}async function D(){const{data:e}=await d.from("email_preferences").select("*").eq("user_id",a.user.id).maybeSingle();a.emailPrefs=e}async function C(){const{data:e}=await d.from("support_messages").select("*").eq("user_id",a.user.id).order("created_at",{ascending:!1});a.messages=e||[]}async function I(){const{data:e}=await d.from("customer_payment_methods").select("*").eq("user_id",a.user.id).order("is_default",{ascending:!1}).order("created_at",{ascending:!1});a.paymentMethods=e||[]}async function U(){const{data:e}=await d.from("wishlist").select("id, listing_id, showroom_listings(property_id, title, price, currency, images, listing_type, is_active, approval_status)").eq("user_id",a.user.id).order("created_at",{ascending:!1});a.wishlist=e||[]}function re(){const e=X.map(t=>`
+import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as S}from"./localization-RXGsdHK2.js";import{getCurrentUser as G,signOut as z}from"./auth-C74q9RIJ.js";import"./native-bridge-DcgSwSkO.js";import"./localization-bootstrap-D677vsZp.js";import"./app-promo-banner-BXjUoacu.js";import"./ai-chat-lFZUUkuk.js";async function X(){return!1}async function J(){return await X(),null}const Q=`${"https://wttnvwpoqmbxryivcerf.supabase.co".replace(/\/$/,"")}/functions/v1/customer-ai-chat`,K="sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa";async function H(e){let t="";try{const s=await(await fetch(Q,{method:"POST",headers:{Authorization:`Bearer ${K}`,"Content-Type":"application/json"},body:JSON.stringify({message:e,history:[]}),signal:AbortSignal.timeout(45e3)})).json();t=String(s?.response||"").trim()}catch{}if(!t||/daily message limit|technical hiccup|not quite ready|taking a short break/i.test(t))try{const r=await fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"openai",messages:[{role:"system",content:"You are Alex — a real, human customer support agent on the Weverse Online Shop team. NEVER say or hint that you are an AI, chatbot or bot. Write like a real person: warm, casual-professional, contractions, short sentences. Help with products, orders, shipping, payments and returns. Never invent order details or tracking numbers."},{role:"user",content:e}],max_tokens:500}),signal:AbortSignal.timeout(45e3)});r.ok&&(t=String((await r.json())?.choices?.[0]?.message?.content||"").trim())}catch{}return t}async function R(e){if(!e)return;let t=!1;try{const{error:r}=await d.from("support_messages").insert({user_id:a.user.id,subject:"Support",message:e,from_admin:!0,read:!1});t=!r}catch{}if(t){await I(),b("messages");const r=document.getElementById("msg-thread");r&&(r.scrollTop=r.scrollHeight)}else o(e)}const m="/fallback.svg",Z=[{group:"Overview",items:[{id:"home",label:"Dashboard Home",icon:"layout-dashboard"},{id:"profile",label:"My Profile",icon:"user"},{id:"edit-profile",label:"Edit Profile",icon:"user-cog"},{id:"change-password",label:"Change Password",icon:"key-round"}]},{group:"Orders & Shopping",items:[{id:"orders",label:"My Orders",icon:"shopping-bag"},{id:"special-orders",label:"Special Orders",icon:"package-plus"},{id:"tracking",label:"Order Tracking",icon:"truck"},{id:"history",label:"Order History",icon:"history"},{id:"cart",label:"Shopping Cart",icon:"shopping-cart"},{id:"wishlist",label:"My Wishlist",icon:"heart"}]},{group:"Account",items:[{id:"notifications",label:"Notifications",icon:"bell"},{id:"messages",label:"Messages",icon:"mail"},{id:"payment-methods",label:"Payment Methods",icon:"credit-card"},{id:"payments",label:"Payment History",icon:"receipt"},{id:"addresses",label:"Shipping Addresses",icon:"map-pin"},{id:"receipts",label:"Download Receipts",icon:"download"}]},{group:"Support & Settings",items:[{id:"email-prefs",label:"Email Preferences",icon:"settings"},{id:"support",label:"Contact Us",icon:"headphones"},{id:"help",label:"Help Center",icon:"help-circle"},{id:"privacy",label:"Privacy & Security",icon:"shield-check"}]}],p=[{id:"order_placed",label:"Order Placed",icon:"shopping-bag",color:"text-blue-600",bg:"bg-blue-50"},{id:"payment_received",label:"Payment Received",icon:"credit-card",color:"text-cyan-600",bg:"bg-cyan-50"},{id:"pending_verification",label:"Pending Verification",icon:"shield-alert",color:"text-amber-600",bg:"bg-amber-50"},{id:"payment_approved",label:"Approved",icon:"check-circle",color:"text-emerald-600",bg:"bg-emerald-50"},{id:"order_processing",label:"Processing",icon:"package",color:"text-blue-600",bg:"bg-blue-50"},{id:"order_shipped",label:"Shipped",icon:"truck",color:"text-indigo-600",bg:"bg-indigo-50"},{id:"out_for_delivery",label:"Out for Delivery",icon:"bike",color:"text-blue-600",bg:"bg-blue-50"},{id:"order_delivered",label:"Delivered",icon:"package-check",color:"text-emerald-600",bg:"bg-emerald-50"}],ee={approved:"payment_approved",submitted:"payment_received",placed:"order_placed"};function w(e){return ee[e]||e}function te(e){const t=p.findIndex(r=>r.id===w(e));return t>=0?t:0}function f(e){return e?new Date(e).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}):"—"}function E(e){return e?new Date(e).toLocaleString("en-US",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):"—"}function B(e){return(e||"?").slice(0,2).toUpperCase()}function n(e){return String(e??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function o(e){const t=document.getElementById("toast");document.getElementById("toast-msg").textContent=e,t.classList.remove("translate-y-20","opacity-0"),clearTimeout(t._t),t._t=setTimeout(()=>t.classList.add("translate-y-20","opacity-0"),3e3),window.lucide&&lucide.createIcons()}function re(e){const t=()=>{const r=document.createElement("textarea");r.value=e,document.body.appendChild(r),r.select();try{document.execCommand("copy")}catch{}document.body.removeChild(r)};navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(e).catch(()=>t()):t(),o("Copied to clipboard.")}function $(e){const t=w(e),r=p.find(u=>u.id===t)||p[0],s={"text-blue-600":"bg-blue-50 text-blue-600 border-blue-200","text-cyan-600":"bg-cyan-50 text-cyan-600 border-cyan-200","text-amber-600":"bg-amber-50 text-amber-600 border-amber-200","text-emerald-600":"bg-emerald-50 text-emerald-600 border-emerald-200","text-indigo-600":"bg-indigo-50 text-indigo-600 border-indigo-200","text-blue-600":"bg-blue-50 text-blue-600 border-blue-200","text-red-600":"bg-red-50 text-red-600 border-red-200"},l=s[r.color]||s["text-blue-600"],i=e==="rejected"?"Rejected":r.label;return`<span class="inline-flex items-center gap-1 ${l} border text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">${i}</span>`}function A(e){e.addEventListener("click",function(t){if(this.disabled)return;const r=this.getBoundingClientRect(),s=document.createElement("span");s.className="ripple";const l=Math.max(r.width,r.height);s.style.width=s.style.height=l+"px",s.style.left=t.clientX-r.left-l/2+"px",s.style.top=t.clientY-r.top-l/2+"px",this.appendChild(s),setTimeout(()=>s.remove(),600)})}let a={user:null,profile:null,orders:[],events:{},notifications:[],addresses:[],emailPrefs:null,messages:[],paymentMethods:[],activeSection:"home"};function ae(){const e=document.getElementById("particles");if(e)for(let t=0;t<12;t++){const r=document.createElement("div"),s=Math.random()*3+1;r.className="particle",r.style.width=r.style.height=s+"px",r.style.left=Math.random()*100+"%",r.style.bottom="-10px",r.style.background=Math.random()>.5?"rgba(59,130,246,.4)":"rgba(251,191,36,.3)",r.style.animationDuration=Math.random()*20+15+"s",r.style.animationDelay=Math.random()*20+"s",e.appendChild(r)}}ae();async function se(){if(document.getElementById("dashboard-root"),a.user=await G(),!a.user){window.location.href="/auth.html?redirect=/account.html";return}await D(),await le(),await q(),await U(),await I(),await P(),await F(),ie(),Y(),Te(),b("home"),J().then(e=>{e&&console.log("Push notifications enabled")})}async function D(){const{data:e}=await d.from("profiles").select("*").eq("user_id",a.user.id).maybeSingle();a.profile=e}async function le(){const{data:e}=await d.from("payment_receipts").select("*").eq("user_id",a.user.id).order("created_at",{ascending:!1});if(a.orders=e||[],a.orders.length){const t=a.orders.map(l=>l.order_number),{data:r}=await d.from("order_events").select("*").in("order_number",t).order("created_at",{ascending:!0});a.events={},(r||[]).forEach(l=>{(a.events[l.order_number]||=[]).push(l)});const{data:s}=await d.from("notification_log").select("*").in("order_number",t).order("created_at",{ascending:!1});a.notifications=s||[]}}async function q(){const{data:e}=await d.from("shipping_addresses").select("*").eq("user_id",a.user.id).order("created_at",{ascending:!1});a.addresses=e||[]}async function U(){const{data:e}=await d.from("email_preferences").select("*").eq("user_id",a.user.id).maybeSingle();a.emailPrefs=e}async function I(){const{data:e}=await d.from("support_messages").select("*").eq("user_id",a.user.id).order("created_at",{ascending:!1});a.messages=e||[]}async function P(){const{data:e}=await d.from("customer_payment_methods").select("*").eq("user_id",a.user.id).order("is_default",{ascending:!1}).order("created_at",{ascending:!1});a.paymentMethods=e||[]}async function F(){const{data:e}=await d.from("wishlist").select("id, listing_id, showroom_listings(property_id, title, price, currency, images, listing_type, is_active, approval_status)").eq("user_id",a.user.id).order("created_at",{ascending:!1});a.wishlist=e||[]}function ie(){const e=Z.map(t=>`
     <div class="mb-3">
       <p class="text-[10px] font-bold uppercase tracking-wider text-gray-600 px-3 mb-1.5">${t.group}</p>
       ${t.items.map(r=>`
@@ -8,12 +8,12 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </button>
       `).join("")}
     </div>
-  `).join("");document.getElementById("nav-menu").innerHTML=e,document.getElementById("mobile-nav-menu").innerHTML=e,document.querySelectorAll("[data-section]").forEach(t=>{t.addEventListener("click",()=>{const r=t.dataset.section;y(r)})}),window.lucide&&lucide.createIcons()}function y(e){a.activeSection=e,document.querySelectorAll("[data-section]").forEach(t=>{t.classList.toggle("active",t.dataset.section===e)}),m(e),M(),window.scrollTo({top:0,behavior:"smooth"})}function R(){const e=a.profile?.display_name||a.profile?.first_name||"Customer",t=a.user.email,r=a.profile?.avatar_url?`<img src="${a.profile.avatar_url}" class="w-full h-full object-cover" onerror="this.style.display='none'">`:j(t);["sidebar-avatar","mobile-avatar"].forEach(s=>{const l=document.getElementById(s);l&&(l.innerHTML=r)}),["sidebar-name","mobile-name"].forEach(s=>{const l=document.getElementById(s);l&&(l.textContent=e)}),["sidebar-email","mobile-email"].forEach(s=>{const l=document.getElementById(s);l&&(l.textContent=t)})}async function m(e){const t=document.getElementById("dashboard-root");let r="";switch(e){case"home":r=L();break;case"profile":r=se();break;case"edit-profile":r=le();break;case"change-password":r=de();break;case"orders":r=ie();break;case"special-orders":r=await oe();break;case"tracking":r=ne();break;case"history":r=ce();break;case"cart":r=ue();break;case"wishlist":r=await _e();break;case"notifications":r=pe();break;case"messages":r=be();break;case"payments":r=me();break;case"payment-methods":r=ge();break;case"addresses":r=fe();break;case"receipts":r=ve();break;case"email-prefs":r=he();break;case"support":r=we();break;case"help":r=$e();break;case"privacy":r=ke();break;default:r=L()}t.innerHTML=`<div class="section active fade-in">${r}</div>`,window.lucide&&lucide.createIcons(),document.querySelectorAll(".btn-press").forEach(B),Ee(e)}function c(e,t){return`
+  `).join("");document.getElementById("nav-menu").innerHTML=e,document.getElementById("mobile-nav-menu").innerHTML=e,document.querySelectorAll("[data-section]").forEach(t=>{t.addEventListener("click",()=>{const r=t.dataset.section;y(r)})}),window.lucide&&lucide.createIcons()}function y(e){a.activeSection=e,document.querySelectorAll("[data-section]").forEach(t=>{t.classList.toggle("active",t.dataset.section===e)}),b(e),j(),window.scrollTo({top:0,behavior:"smooth"})}function Y(){const e=a.profile?.display_name||a.profile?.first_name||"Customer",t=a.user.email,r=a.profile?.avatar_url?`<img src="${a.profile.avatar_url}" class="w-full h-full object-cover" onerror="this.style.display='none'">`:B(t);["sidebar-avatar","mobile-avatar"].forEach(s=>{const l=document.getElementById(s);l&&(l.innerHTML=r)}),["sidebar-name","mobile-name"].forEach(s=>{const l=document.getElementById(s);l&&(l.textContent=e)}),["sidebar-email","mobile-email"].forEach(s=>{const l=document.getElementById(s);l&&(l.textContent=t)})}async function b(e){const t=document.getElementById("dashboard-root");let r="";switch(e){case"home":r=O();break;case"profile":r=oe();break;case"edit-profile":r=ne();break;case"change-password":r=ce();break;case"orders":r=ue();break;case"special-orders":r=await pe();break;case"tracking":r=be();break;case"history":r=me();break;case"cart":r=ge();break;case"wishlist":r=await Pe();break;case"notifications":r=xe();break;case"messages":r=fe();break;case"payments":r=ye();break;case"payment-methods":r=he();break;case"addresses":r=we();break;case"receipts":r=ke();break;case"email-prefs":r=_e();break;case"support":r=Se();break;case"help":r=Ee();break;case"privacy":r=Ie();break;default:r=O()}t.innerHTML=`<div class="section active fade-in">${r}</div>`,window.lucide&&lucide.createIcons(),document.querySelectorAll(".btn-press").forEach(A),Me(e)}function c(e,t){return`
     <div class="mb-6">
       <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">${e}</h1>
       ${t?`<p class="text-sm text-gray-500 mt-1">${t}</p>`:""}
     </div>
-  `}function ae(){const e=a.orders.length,t=a.orders.filter(l=>["order_placed","payment_received","pending_verification","order_processing"].includes(w(l.status))).length,r=a.orders.filter(l=>w(l.status)==="order_delivered").length,s=a.orders.filter(l=>l.status==="rejected").length;return{total:e,pending:t,completed:r,cancelled:s}}function k(e,t,r,s){return`
+  `}function de(){const e=a.orders.length,t=a.orders.filter(l=>["order_placed","payment_received","pending_verification","order_processing"].includes(w(l.status))).length,r=a.orders.filter(l=>w(l.status)==="order_delivered").length,s=a.orders.filter(l=>l.status==="rejected").length;return{total:e,pending:t,completed:r,cancelled:s}}function k(e,t,r,s){return`
     <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       <div class="flex items-center justify-between mb-3">
         <div class="p-2.5 ${s.bg} rounded-xl"><i data-lucide="${r}" class="w-5 h-5 ${s.text}"></i></div>
@@ -21,7 +21,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
       <p class="text-3xl font-black text-gray-900">${t}</p>
       <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">${e}</p>
     </div>
-  `}function L(){const e=ae(),t=a.profile?.display_name||a.profile?.first_name||"Customer",r=a.profile?.country_code?E(a.profile.country_code):null,s=a.orders.slice(0,4),l=a.notifications.slice(0,5);return`
+  `}function O(){const e=de(),t=a.profile?.display_name||a.profile?.first_name||"Customer",r=a.profile?.country_code?S(a.profile.country_code):null,s=a.orders.slice(0,4),l=a.notifications.slice(0,5);return`
     ${c("Dashboard Home",`Welcome back, ${t}! Here's your account overview.`)}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       ${k("Total Orders",e.total,"shopping-bag",{bg:"bg-blue-50",text:"text-blue-600"})}
@@ -42,7 +42,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         ${s.length===0?'<p class="text-sm text-gray-500 text-center py-8">No orders yet. <a href="/" class="text-blue-600 font-bold">Start shopping</a></p>':s.map(i=>`
           <div class="flex items-center gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl mb-2 hover:border-blue-200 transition cursor-pointer" onclick="navigateTo('orders')">
             <div class="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
-              <img src="${i.listing_image||b}" class="w-full h-full object-cover" onerror="this.src='${b}'">
+              <img src="${i.listing_image||m}" class="w-full h-full object-cover" onerror="this.src='${m}'">
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-bold text-gray-900 truncate">${i.listing_title}</p>
@@ -79,14 +79,14 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
           <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
             <i data-lucide="bell" class="w-4 h-4 text-blue-600"></i> Latest Notifications
           </h3>
-          ${l.length===0?'<p class="text-xs text-gray-500 text-center py-4">No notifications yet.</p>':l.map(i=>{const u=p.find(v=>v.id===i.event_type)||p[0];return`
+          ${l.length===0?'<p class="text-xs text-gray-500 text-center py-4">No notifications yet.</p>':l.map(i=>{const u=p.find(h=>h.id===i.event_type)||p[0];return`
               <div class="flex items-start gap-2.5 p-2.5 hover:bg-blue-50 rounded-xl transition cursor-pointer" onclick="navigateTo('notifications')">
                 <div class="w-7 h-7 ${u.bg} rounded-lg flex items-center justify-center shrink-0">
                   <i data-lucide="${u.icon}" class="w-3.5 h-3.5 ${u.color}"></i>
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="text-xs font-bold text-gray-900 truncate">${i.subject}</p>
-                  <p class="text-[10px] text-gray-500">${S(i.created_at)}</p>
+                  <p class="text-[10px] text-gray-500">${E(i.created_at)}</p>
                 </div>
               </div>
             `}).join("")}
@@ -105,7 +105,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         <div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Member Since</p><p class="text-sm text-gray-900">${f(a.user.created_at)}</p></div>
       </div>
     </div>
-  `}function se(){const e=a.profile||{},t=e.country_code?E(e.country_code):null,r=e.avatar_url?`<img src="${e.avatar_url}" class="w-full h-full object-cover" onerror="this.style.display='none'">`:`<span class="text-2xl font-black">${j(a.user.email)}</span>`;return`
+  `}function oe(){const e=a.profile||{},t=e.country_code?S(e.country_code):null,r=e.avatar_url?`<img src="${e.avatar_url}" class="w-full h-full object-cover" onerror="this.style.display='none'">`:`<span class="text-2xl font-black">${B(a.user.email)}</span>`;return`
     ${c("My Profile","View your account details and personal information.")}
     <div class="glass border border-blue-200 rounded-2xl p-6 slide-up">
       <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-6">
@@ -136,14 +136,14 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
       </div>
       ${e.bio?`<div class="pt-5 border-t border-blue-100 mt-4"><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Bio</p><p class="text-sm text-gray-700">${e.bio}</p></div>`:""}
     </div>
-  `}function x(e,t){return`<div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">${e}</p><p class="text-sm text-gray-900">${t}</p></div>`}function le(){const e=a.profile||{},t=e.country_code?E(e.country_code):null;return`
+  `}function x(e,t){return`<div><p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">${e}</p><p class="text-sm text-gray-900">${t}</p></div>`}function ne(){const e=a.profile||{},t=e.country_code?S(e.country_code):null;return`
     ${c("Edit Profile","Update your personal information and profile picture.")}
     <div class="glass border border-blue-200 rounded-2xl p-6 slide-up max-w-2xl">
       <form id="edit-profile-form" class="space-y-5">
         <!-- Avatar -->
         <div class="flex items-center gap-4">
           <div id="edit-avatar-preview" class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-black text-xl overflow-hidden shrink-0 ring-2 ring-blue-500/20">
-            ${e.avatar_url?`<img src="${e.avatar_url}" class="w-full h-full object-cover" onerror="this.style.display='none'">`:j(a.user.email)}
+            ${e.avatar_url?`<img src="${e.avatar_url}" class="w-full h-full object-cover" onerror="this.style.display='none'">`:B(a.user.email)}
           </div>
           <div>
             <label class="btn-press cursor-pointer inline-flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 text-blue-600 font-bold py-2 px-4 rounded-xl text-xs uppercase tracking-wide transition relative overflow-hidden">
@@ -196,7 +196,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </div>
       </form>
     </div>
-  `}function de(){return`
+  `}function ce(){return`
     ${c("Change Password","Update your account password to keep your account secure.")}
     <div class="glass border border-blue-200 rounded-2xl p-6 slide-up max-w-md">
       <form id="change-password-form" class="space-y-5">
@@ -227,17 +227,17 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </button>
       </form>
     </div>
-  `}function ie(){return`
+  `}function ue(){return`
     ${c("My Orders","View and manage all your orders. Click an order to see full details.")}
     <div id="orders-list" class="space-y-4">
-      ${a.orders.length===0?g("No Orders Yet","You haven't placed any orders yet.","shopping-bag","Start Shopping"):a.orders.map(e=>F(e,!1)).join("")}
+      ${a.orders.length===0?g("No Orders Yet","You haven't placed any orders yet.","shopping-bag","Start Shopping"):a.orders.map(e=>W(e,!1)).join("")}
     </div>
-  `}function F(e,t){const r=e.listing_image||b,s=a.events[e.order_number]||[],l=t===e.order_number;return`
+  `}function W(e,t){const r=e.listing_image||m,s=a.events[e.order_number]||[],l=t===e.order_number;return`
     <div class="glass border border-blue-200 rounded-2xl overflow-hidden slide-up">
       <div class="p-4 sm:p-5 cursor-pointer hover:bg-blue-50 transition" onclick="toggleOrder('${e.order_number}')">
         <div class="flex items-start gap-4">
           <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-gray-50 shrink-0 ring-1 ring-blue-500/10">
-            <img src="${r}" class="w-full h-full object-cover" onerror="this.src='${b}'">
+            <img src="${r}" class="w-full h-full object-cover" onerror="this.src='${m}'">
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-2 mb-1">
@@ -263,7 +263,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div>
             <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2"><i data-lucide="git-branch" class="w-4 h-4 text-blue-600"></i> Order Progress</h4>
-            ${Y(e.status)}
+            ${V(e.status)}
           </div>
           <div>
             <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-blue-600"></i> Order History</h4>
@@ -271,7 +271,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
               ${s.length===0?'<p class="text-xs text-gray-600">No events yet.</p>':s.map(i=>`
                 <div class="flex items-start gap-2.5 p-2.5 bg-gray-50 border border-blue-100 rounded-xl">
                   <div class="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0"></div>
-                  <div class="flex-1 min-w-0"><p class="text-xs text-gray-800 font-medium">${i.message}</p><p class="text-[10px] text-gray-500 mt-0.5">${S(i.created_at)}</p></div>
+                  <div class="flex-1 min-w-0"><p class="text-xs text-gray-800 font-medium">${i.message}</p><p class="text-[10px] text-gray-500 mt-0.5">${E(i.created_at)}</p></div>
                 </div>
               `).join("")}
             </div>
@@ -284,7 +284,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </div>
       </div>
     </div>
-  `}function _(e,t,r){return`<div class="bg-gray-50 border border-blue-100 rounded-xl p-3"><div class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">${e}</div><div class="text-sm ${r==="mono"?"font-mono text-blue-600":r==="amber"?"text-amber-600 font-bold":"text-gray-900"} break-all">${t}</div></div>`}function Y(e){const t=J(e);return`
+  `}function _(e,t,r){return`<div class="bg-gray-50 border border-blue-100 rounded-xl p-3"><div class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">${e}</div><div class="text-sm ${r==="mono"?"font-mono text-blue-600":r==="amber"?"text-amber-600 font-bold":"text-gray-900"} break-all">${t}</div></div>`}function V(e){const t=te(e);return`
     <div class="relative pt-2">
       <div class="absolute left-4 top-6 bottom-6 w-0.5 bg-blue-50"></div>
       <div class="absolute left-4 top-6 w-0.5 bg-blue-500 transition-all duration-500" style="height: calc(${t/(p.length-1)*100}% - 1rem)"></div>
@@ -292,19 +292,19 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         ${p.map((r,s)=>{const l=s<=t,i=s===t;return`<div class="flex items-center gap-3 relative"><div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 transition-all ${l?r.bg+" border border-blue-200":"bg-gray-50 border border-blue-100"} ${i?"pulse-glow":""}"><i data-lucide="${r.icon}" class="w-4 h-4 ${l?r.color:"text-gray-600"} ${i?"animate-pulse":""}"></i></div><div class="flex-1 flex items-center justify-between"><span class="text-sm font-medium ${l?"text-gray-900":"text-gray-600"}">${r.label}</span>${l&&!i?'<i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i>':""}${i?'<span class="text-[10px] text-blue-600 font-bold uppercase shrink-0">Current</span>':""}</div></div>`}).join("")}
       </div>
     </div>
-  `}let P=null;window.toggleOrder=e=>{P=P===e?null:e;const t=document.getElementById("orders-list");t&&(t.innerHTML=a.orders.map(r=>F(r,P)).join(""),window.lucide&&lucide.createIcons(),document.querySelectorAll(".btn-press").forEach(B))};async function oe(){try{const{data:e,error:t}=await d.from("product_requests").select("*").eq("user_id",a.user.id).order("created_at",{ascending:!1});if(t)throw t;const r={pending_review:"bg-yellow-50 text-yellow-600 border-yellow-200",under_review:"bg-blue-50 text-blue-600 border-blue-200",approved:"bg-emerald-50 text-emerald-600 border-emerald-200",rejected:"bg-red-50 text-red-600 border-red-200",quoted:"bg-cyan-50 text-cyan-600 border-cyan-200",fulfilled:"bg-green-50 text-green-600 border-green-200",cancelled:"bg-gray-100 text-gray-600 border-gray-300"};if(!e||e.length===0)return`<div class="text-center py-16"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4"><i data-lucide="package-plus" class="w-8 h-8 text-gray-500"></i></div><h3 class="text-lg font-bold text-gray-900 mb-2">No Special Orders yet</h3><p class="text-sm text-gray-500 mb-5">When you can't find a product in our marketplace, you can request it as a Special Order and we'll source it for you.</p><a href="/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-500/30"><i data-lucide="search" class="w-4 h-4"></i> Search Products</a></div>`;let s='<div class="mb-4"><p class="text-sm text-gray-600">Track your special order requests and their status updates.</p></div><div class="space-y-3">';return e.forEach(l=>{const i=r[l.status]||r.pending_review,u=l.status.replace(/_/g," "),v=l.target_price?`${l.currency} ${Number(l.target_price).toLocaleString()}`:"—",T=l.quoted_price?`${l.quoted_currency} ${Number(l.quoted_price).toLocaleString()}`:null;s+=`<div class="glass border border-gray-200 rounded-xl p-4">
-        <div class="flex items-center gap-2 mb-2"><h4 class="text-sm font-bold text-gray-900 truncate">${o(l.request_title)}</h4><span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${i}">${o(u)}</span></div>
+  `}let M=null;window.toggleOrder=e=>{M=M===e?null:e;const t=document.getElementById("orders-list");t&&(t.innerHTML=a.orders.map(r=>W(r,M)).join(""),window.lucide&&lucide.createIcons(),document.querySelectorAll(".btn-press").forEach(A))};async function pe(){try{const{data:e,error:t}=await d.from("product_requests").select("*").eq("user_id",a.user.id).order("created_at",{ascending:!1});if(t)throw t;const r={pending_review:"bg-yellow-50 text-yellow-600 border-yellow-200",under_review:"bg-blue-50 text-blue-600 border-blue-200",approved:"bg-emerald-50 text-emerald-600 border-emerald-200",rejected:"bg-red-50 text-red-600 border-red-200",quoted:"bg-cyan-50 text-cyan-600 border-cyan-200",fulfilled:"bg-green-50 text-green-600 border-green-200",cancelled:"bg-gray-100 text-gray-600 border-gray-300"};if(!e||e.length===0)return`<div class="text-center py-16"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4"><i data-lucide="package-plus" class="w-8 h-8 text-gray-500"></i></div><h3 class="text-lg font-bold text-gray-900 mb-2">No Special Orders yet</h3><p class="text-sm text-gray-500 mb-5">When you can't find a product in our marketplace, you can request it as a Special Order and we'll source it for you.</p><a href="/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-500/30"><i data-lucide="search" class="w-4 h-4"></i> Search Products</a></div>`;let s='<div class="mb-4"><p class="text-sm text-gray-600">Track your special order requests and their status updates.</p></div><div class="space-y-3">';return e.forEach(l=>{const i=r[l.status]||r.pending_review,u=l.status.replace(/_/g," "),h=l.target_price?`${l.currency} ${Number(l.target_price).toLocaleString()}`:"—",T=l.quoted_price?`${l.quoted_currency} ${Number(l.quoted_price).toLocaleString()}`:null;s+=`<div class="glass border border-gray-200 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2"><h4 class="text-sm font-bold text-gray-900 truncate">${n(l.request_title)}</h4><span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${i}">${n(u)}</span></div>
         <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 mb-2">
-          <span><i data-lucide="tag" class="w-3 h-3 inline mr-1"></i>${o(l.category||"Uncategorized")}</span>
-          <span><i data-lucide="award" class="w-3 h-3 inline mr-1"></i>${o(l.brand||"Any")}</span>
-          <span><i data-lucide="circle-dollar-sign" class="w-3 h-3 inline mr-1"></i>${v}</span>
+          <span><i data-lucide="tag" class="w-3 h-3 inline mr-1"></i>${n(l.category||"Uncategorized")}</span>
+          <span><i data-lucide="award" class="w-3 h-3 inline mr-1"></i>${n(l.brand||"Any")}</span>
+          <span><i data-lucide="circle-dollar-sign" class="w-3 h-3 inline mr-1"></i>${h}</span>
           <span><i data-lucide="hash" class="w-3 h-3 inline mr-1"></i>Qty: ${l.quantity}</span>
           <span><i data-lucide="calendar" class="w-3 h-3 inline mr-1"></i>${new Date(l.created_at).toLocaleDateString()}</span>
         </div>
-        ${l.request_description?`<p class="text-xs text-gray-500 mb-2">${o(l.request_description)}</p>`:""}
-        ${T?`<p class="text-xs text-cyan-600 font-bold mb-2">Quoted Price: ${T} (${o(l.payment_status)})</p>`:""}
-        <div class="text-xs text-gray-500"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${o(l.delivery_full_name||"")}, ${o(l.delivery_city||"")}, ${o(l.delivery_country||"")}</div>
-      </div>`}),s+="</div>",s}catch(e){return`<div class="text-red-600 text-sm p-4">Error loading special orders: ${o(e.message)}</div>`}}function ne(){const e=a.orders.filter(t=>!["order_delivered","rejected"].includes(w(t.status)));return`
+        ${l.request_description?`<p class="text-xs text-gray-500 mb-2">${n(l.request_description)}</p>`:""}
+        ${T?`<p class="text-xs text-cyan-600 font-bold mb-2">Quoted Price: ${T} (${n(l.payment_status)})</p>`:""}
+        <div class="text-xs text-gray-500"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${n(l.delivery_full_name||"")}, ${n(l.delivery_city||"")}, ${n(l.delivery_country||"")}</div>
+      </div>`}),s+="</div>",s}catch(e){return`<div class="text-red-600 text-sm p-4">Error loading special orders: ${n(e.message)}</div>`}}function be(){const e=a.orders.filter(t=>!["order_delivered","rejected"].includes(w(t.status)));return`
     ${c("Order Tracking","Track your active orders in real time.")}
     ${e.length===0?g("No Active Orders","All your orders have been delivered.","check-circle","Browse Marketplace"):`
       <div class="space-y-4">
@@ -313,18 +313,18 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden ring-1 ring-blue-500/10">
-                  <img src="${t.listing_image||b}" class="w-full h-full object-cover" onerror="this.src='${b}'">
+                  <img src="${t.listing_image||m}" class="w-full h-full object-cover" onerror="this.src='${m}'">
                 </div>
                 <div><h3 class="text-sm font-bold text-gray-900">${t.listing_title}</h3><p class="text-xs text-gray-500 font-mono">${t.order_number}</p></div>
               </div>
               ${$(t.status)}
             </div>
-            ${Y(t.status)}
+            ${V(t.status)}
           </div>
         `).join("")}
       </div>
     `}
-  `}function ce(){return`
+  `}function me(){return`
     ${c("Order History","Your complete, permanently saved order history.")}
     <div class="glass border border-blue-200 rounded-2xl overflow-hidden slide-up">
       <div class="overflow-x-auto scrollbar-none">
@@ -353,13 +353,13 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
       </div>
     </div>
     <p class="text-center text-xs text-gray-500 mt-4 flex items-center justify-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> Your complete order history is permanently saved and secured.</p>
-  `}function ue(){const e=JSON.parse(localStorage.getItem("kco_cart")||"[]");return`
+  `}function ge(){const e=JSON.parse(localStorage.getItem("kco_cart")||"[]");return`
     ${c("Shopping Cart","Items in your shopping cart.")}
     ${e.length===0?g("Cart is Empty","Your shopping cart is empty.","shopping-cart","Browse Marketplace"):`
       <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
         <div class="space-y-3">
           ${e.map(t=>{const r=typeof t=="string"?t:t&&t.id,s=t&&typeof t=="object"&&t.qty?Math.max(1,parseInt(t.qty,10)||1):1,l=window.SHOWROOM_LISTINGS?.find(i=>i.property_id===r);return l?`<div class="flex items-center gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl">
-              <div class="w-14 h-14 rounded-lg bg-gray-50 overflow-hidden shrink-0"><img src="${l.images?.[0]||b}" class="w-full h-full object-cover" onerror="this.src='${b}'"></div>
+              <div class="w-14 h-14 rounded-lg bg-gray-50 overflow-hidden shrink-0"><img src="${l.images?.[0]||m}" class="w-full h-full object-cover" onerror="this.src='${m}'"></div>
               <div class="flex-1 min-w-0"><h3 class="text-sm font-bold text-gray-900 truncate">${l.title}</h3><p class="text-xs text-amber-600 font-bold">${l.price} ${l.currency}${s>1?` × ${s}`:""}</p></div>
               <button onclick="removeFromCart('${r}')" class="btn-press p-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>`:""}).join("")}
@@ -368,7 +368,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         <button onclick="clearCart()" class="btn-press w-full mt-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold py-2.5 rounded-xl text-xs uppercase transition relative overflow-hidden">Clear Cart</button>
       </div>
     `}
-  `}window.removeFromCart=e=>{let t=JSON.parse(localStorage.getItem("kco_cart")||"[]");t=t.filter(r=>(typeof r=="string"?r:r&&r.id)!==e),localStorage.setItem("kco_cart",JSON.stringify(t)),window.dispatchEvent(new CustomEvent("kco-cart-changed")),m("cart"),n("Removed from cart.")};window.clearCart=()=>{localStorage.removeItem("kco_cart"),window.dispatchEvent(new CustomEvent("kco-cart-changed")),m("cart"),n("Cart cleared.")};function pe(){return`
+  `}window.removeFromCart=e=>{let t=JSON.parse(localStorage.getItem("kco_cart")||"[]");t=t.filter(r=>(typeof r=="string"?r:r&&r.id)!==e),localStorage.setItem("kco_cart",JSON.stringify(t)),window.dispatchEvent(new CustomEvent("kco-cart-changed")),b("cart"),o("Removed from cart.")};window.clearCart=()=>{localStorage.removeItem("kco_cart"),window.dispatchEvent(new CustomEvent("kco-cart-changed")),b("cart"),o("Cart cleared.")};function xe(){return`
     ${c("Notifications","All email notifications related to your orders.")}
     <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       ${a.notifications.length===0?g("No Notifications","You haven't received any notifications yet.","bell-off",null):`
@@ -378,7 +378,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
                 <div class="w-9 h-9 ${t.bg} rounded-xl flex items-center justify-center shrink-0"><i data-lucide="${t.icon}" class="w-4 h-4 ${t.color}"></i></div>
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-bold text-gray-900 truncate">${e.subject}</p>
-                  <p class="text-xs text-gray-500 mt-0.5">${S(e.created_at)}</p>
+                  <p class="text-xs text-gray-500 mt-0.5">${E(e.created_at)}</p>
                   <div class="flex items-center gap-2 mt-1.5">
                     <span class="text-[10px] ${e.status==="sent"?"text-emerald-600":e.status==="failed"?"text-red-600":"text-amber-600"} font-bold uppercase">${e.status}</span>
                     <span class="text-[10px] text-gray-600">·</span>
@@ -390,7 +390,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </div>
       `}
     </div>
-  `}function be(){return`
+  `}function fe(){return`
     ${c("Messages","Your conversation with customer support.")}
     <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       <!-- Message thread -->
@@ -400,7 +400,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
             <div class="max-w-[80%] ${e.from_admin?"bg-gray-100 border-blue-200":"bg-blue-100 border-blue-200"} border rounded-2xl px-4 py-2.5">
               ${e.subject&&!e.from_admin?`<p class="text-xs font-bold text-blue-600 mb-1">${e.subject}</p>`:""}
               <p class="text-sm text-gray-800">${e.message}</p>
-              <p class="text-[10px] text-gray-500 mt-1">${S(e.created_at)}</p>
+              <p class="text-[10px] text-gray-500 mt-1">${E(e.created_at)}</p>
             </div>
           </div>
         `).join("")}
@@ -414,7 +414,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </button>
       </form>
     </div>
-  `}function me(){return`
+  `}function ye(){return`
     ${c("Payment History","All your payment transactions and their verification status.")}
     <div class="glass border border-blue-200 rounded-2xl overflow-hidden slide-up">
       <div class="overflow-x-auto scrollbar-none">
@@ -440,7 +440,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </table>
       </div>
     </div>
-  `}const A=[{type:"manual_transfer",label:"Manual Bank Transfer",icon:"landmark",color:"text-blue-600",available:!0,desc:"Transfer directly to our bank account"},{type:"atm_card",label:"ATM / Debit Card",icon:"credit-card",color:"text-emerald-600",available:!0,desc:"Visa, Mastercard, Verve"},{type:"bank_transfer",label:"Bank Transfer",icon:"building-2",color:"text-cyan-600",available:!0,desc:"Online banking transfer"},{type:"mobile_money",label:"Mobile Money Transfer",icon:"smartphone",color:"text-blue-600",available:!0,desc:"Send money from your mobile wallet"},{type:"wallet",label:"Wallet",icon:"wallet",color:"text-amber-600",available:!0,desc:"Use your Weverse wallet balance"},{type:"paypal",label:"PayPal",icon:"wallet",color:"text-blue-600",available:!1,desc:"Pay with your PayPal account"}];function ge(){const e=a.paymentMethods||[],t=e.length>0;return`
+  `}const C=[{type:"manual_transfer",label:"Manual Bank Transfer",icon:"landmark",color:"text-blue-600",available:!0,desc:"Transfer directly to our bank account"},{type:"atm_card",label:"ATM / Debit Card",icon:"credit-card",color:"text-emerald-600",available:!0,desc:"Visa, Mastercard, Verve"},{type:"bank_transfer",label:"Bank Transfer",icon:"building-2",color:"text-cyan-600",available:!0,desc:"Online banking transfer"},{type:"mobile_money",label:"Mobile Money Transfer",icon:"smartphone",color:"text-blue-600",available:!0,desc:"Send money from your mobile wallet"},{type:"wallet",label:"Wallet",icon:"wallet",color:"text-amber-600",available:!0,desc:"Use your Weverse wallet balance"},{type:"paypal",label:"PayPal",icon:"wallet",color:"text-blue-600",available:!1,desc:"Pay with your PayPal account"}];function he(){const e=a.paymentMethods||[],t=e.length>0;return`
     ${c("Payment Methods","Manage your saved payment methods and view all available options.")}
     <div class="space-y-5">
       ${t?`
@@ -452,7 +452,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
             </button>
           </div>
           <div class="space-y-3">
-            ${e.map(r=>xe(r)).join("")}
+            ${e.map(r=>ve(r)).join("")}
           </div>
         </div>
       `:`
@@ -465,7 +465,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
           <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Available Payment Options</h3>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          ${A.map(r=>`
+          ${C.map(r=>`
             <div class="relative bg-gray-50 border ${r.available?"border-blue-200":"border-gray-300/40"} rounded-xl p-4 ${r.available?"":"opacity-60"}">
               ${r.available?"":'<span class="absolute top-2 right-2 bg-gray-200 text-gray-600 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full">Soon</span>'}
               <div class="flex items-center gap-3 mb-2">
@@ -481,16 +481,16 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </div>
       </div>
     </div>
-  `}function xe(e){const t=A.find(r=>r.type===e.method_type)||{icon:"credit-card",color:"text-blue-600"};return`
+  `}function ve(e){const t=C.find(r=>r.type===e.method_type)||{icon:"credit-card",color:"text-blue-600"};return`
     <div class="bg-gray-50 border ${e.is_default?"border-blue-300":"border-blue-100"} rounded-xl p-4 flex items-center gap-3">
       <div class="p-2.5 bg-blue-50 rounded-lg shrink-0"><i data-lucide="${t.icon}" class="w-5 h-5 ${t.color}"></i></div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
-          <h4 class="text-sm font-bold text-gray-900 truncate">${o(e.label)}</h4>
+          <h4 class="text-sm font-bold text-gray-900 truncate">${n(e.label)}</h4>
           ${e.is_default?'<span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border border-emerald-200"><i data-lucide="check" class="w-2.5 h-2.5"></i> Default</span>':""}
         </div>
-        <p class="text-xs text-gray-600 mt-0.5 truncate">${o(e.provider||e.method_type)} ${e.identifier?"· "+o(e.identifier):""}</p>
-        ${e.account_holder?`<p class="text-[11px] text-gray-500 mt-0.5">Account Holder: ${o(e.account_holder)}</p>`:""}
+        <p class="text-xs text-gray-600 mt-0.5 truncate">${n(e.provider||e.method_type)} ${e.identifier?"· "+n(e.identifier):""}</p>
+        ${e.account_holder?`<p class="text-[11px] text-gray-500 mt-0.5">Account Holder: ${n(e.account_holder)}</p>`:""}
       </div>
       <div class="flex items-center gap-1 shrink-0">
         ${e.is_default?"":`<button onclick="setDefaultPaymentMethod('${e.id}')" title="Set as default" class="btn-press p-2 bg-gray-100 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition relative overflow-hidden"><i data-lucide="star" class="w-4 h-4 text-gray-600"></i></button>`}
@@ -508,24 +508,24 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         <div>
           <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Method Type</label>
           <select id="pm-type" required class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
-            ${A.filter(s=>s.available).map(s=>`<option value="${s.type}" ${t&&t.method_type===s.type?"selected":""}>${s.label}</option>`).join("")}
+            ${C.filter(s=>s.available).map(s=>`<option value="${s.type}" ${t&&t.method_type===s.type?"selected":""}>${s.label}</option>`).join("")}
           </select>
         </div>
         <div>
           <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nickname / Label</label>
-          <input id="pm-label" type="text" required value="${t?o(t.label):""}" placeholder="e.g. My GTBank Account" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
+          <input id="pm-label" type="text" required value="${t?n(t.label):""}" placeholder="e.g. My GTBank Account" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div>
           <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Provider / Bank Name</label>
-          <input id="pm-provider" type="text" value="${t?o(t.provider||""):""}" placeholder="e.g. GTBank, Visa, MTN Mobile Money" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
+          <input id="pm-provider" type="text" value="${t?n(t.provider||""):""}" placeholder="e.g. GTBank, Visa, MTN Mobile Money" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div>
           <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Account Holder Name</label>
-          <input id="pm-holder" type="text" value="${t?o(t.account_holder||""):""}" placeholder="Account holder name" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
+          <input id="pm-holder" type="text" value="${t?n(t.account_holder||""):""}" placeholder="Account holder name" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div>
           <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Identifier (last 4 digits / masked)</label>
-          <input id="pm-identifier" type="text" value="${t?o(t.identifier||""):""}" placeholder="e.g. ****1234" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
+          <input id="pm-identifier" type="text" value="${t?n(t.identifier||""):""}" placeholder="e.g. ****1234" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
         </div>
         <div class="flex items-center gap-2">
           <input id="pm-default" type="checkbox" ${t&&t.is_default?"checked":""} class="w-4 h-4 rounded border-blue-200 bg-gray-50 text-blue-500 focus:ring-blue-500">
@@ -534,14 +534,14 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         <button type="submit" class="btn-press w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-xl uppercase text-sm tracking-wider transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">${t?"Save Changes":"Add Payment Method"}</button>
       </form>
     </div>
-  `,document.body.appendChild(r),window.lucide&&lucide.createIcons()};window.savePaymentMethod=async function(e,t){e.preventDefault();const r={method_type:document.getElementById("pm-type").value,label:document.getElementById("pm-label").value.trim(),provider:document.getElementById("pm-provider").value.trim()||null,account_holder:document.getElementById("pm-holder").value.trim()||null,identifier:document.getElementById("pm-identifier").value.trim()||null,is_default:document.getElementById("pm-default").checked};e.target.closest(".fixed").remove();try{if(r.is_default&&await d.from("customer_payment_methods").update({is_default:!1}).eq("user_id",a.user.id),t){const{error:s}=await d.from("customer_payment_methods").update({...r,updated_at:new Date().toISOString()}).eq("id",t).eq("user_id",a.user.id);if(s)throw s}else{const{error:s}=await d.from("customer_payment_methods").insert({...r,user_id:a.user.id});if(s)throw s}await I(),y("payment-methods"),n("Payment method saved successfully.")}catch(s){n("Failed to save payment method: "+(s.message||"Unknown error"))}};window.editPaymentMethod=function(e){openPaymentMethodModal(e)};window.deletePaymentMethod=async function(e){if(confirm("Remove this payment method?"))try{const{error:t}=await d.from("customer_payment_methods").delete().eq("id",e).eq("user_id",a.user.id);if(t)throw t;await I(),y("payment-methods"),n("Payment method removed.")}catch(t){n("Failed to remove: "+(t.message||"Unknown error"))}};window.setDefaultPaymentMethod=async function(e){try{await d.from("customer_payment_methods").update({is_default:!1}).eq("user_id",a.user.id).neq("id",e);const{error:t}=await d.from("customer_payment_methods").update({is_default:!0,updated_at:new Date().toISOString()}).eq("id",e).eq("user_id",a.user.id);if(t)throw t;await I(),y("payment-methods"),n("Default payment method updated.")}catch(t){n("Failed to set default: "+(t.message||"Unknown error"))}};function fe(){return`
+  `,document.body.appendChild(r),window.lucide&&lucide.createIcons()};window.savePaymentMethod=async function(e,t){e.preventDefault();const r={method_type:document.getElementById("pm-type").value,label:document.getElementById("pm-label").value.trim(),provider:document.getElementById("pm-provider").value.trim()||null,account_holder:document.getElementById("pm-holder").value.trim()||null,identifier:document.getElementById("pm-identifier").value.trim()||null,is_default:document.getElementById("pm-default").checked};e.target.closest(".fixed").remove();try{if(r.is_default&&await d.from("customer_payment_methods").update({is_default:!1}).eq("user_id",a.user.id),t){const{error:s}=await d.from("customer_payment_methods").update({...r,updated_at:new Date().toISOString()}).eq("id",t).eq("user_id",a.user.id);if(s)throw s}else{const{error:s}=await d.from("customer_payment_methods").insert({...r,user_id:a.user.id});if(s)throw s}await P(),y("payment-methods"),o("Payment method saved successfully.")}catch(s){o("Failed to save payment method: "+(s.message||"Unknown error"))}};window.editPaymentMethod=function(e){openPaymentMethodModal(e)};window.deletePaymentMethod=async function(e){if(confirm("Remove this payment method?"))try{const{error:t}=await d.from("customer_payment_methods").delete().eq("id",e).eq("user_id",a.user.id);if(t)throw t;await P(),y("payment-methods"),o("Payment method removed.")}catch(t){o("Failed to remove: "+(t.message||"Unknown error"))}};window.setDefaultPaymentMethod=async function(e){try{await d.from("customer_payment_methods").update({is_default:!1}).eq("user_id",a.user.id).neq("id",e);const{error:t}=await d.from("customer_payment_methods").update({is_default:!0,updated_at:new Date().toISOString()}).eq("id",e).eq("user_id",a.user.id);if(t)throw t;await P(),y("payment-methods"),o("Default payment method updated.")}catch(t){o("Failed to set default: "+(t.message||"Unknown error"))}};function we(){return`
     ${c("Shipping Addresses","Manage your saved shipping addresses.")}
     <button onclick="showAddressForm()" class="btn-press mb-4 inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 relative overflow-hidden">
       <i data-lucide="plus" class="w-4 h-4"></i> Add New Address
     </button>
     <div id="address-form-container"></div>
     <div id="addresses-list" class="space-y-3">
-      ${a.addresses.length===0?g("No Addresses","You haven't saved any shipping addresses yet.","map-pin",null):a.addresses.map(e=>{const t=E(e.country_code);return`
+      ${a.addresses.length===0?g("No Addresses","You haven't saved any shipping addresses yet.","map-pin",null):a.addresses.map(e=>{const t=S(e.country_code);return`
           <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
             <div class="flex items-start justify-between gap-3 mb-3">
               <div class="flex items-center gap-2">
@@ -593,7 +593,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </div>
       </form>
     </div>
-  `,window.lucide&&lucide.createIcons(),document.querySelectorAll(".btn-press").forEach(B),document.getElementById("address-form").addEventListener("submit",ye)};window.cancelAddressForm=()=>{document.getElementById("address-form-container").innerHTML=""};window.editAddress=e=>{const t=a.addresses.find(r=>r.id===e);showAddressForm(t),document.getElementById("address-form-container").scrollIntoView({behavior:"smooth"})};async function ye(e){e.preventDefault();const t=document.getElementById("addr-id").value,r={user_id:a.user.id,label:document.getElementById("addr-label").value,full_name:document.getElementById("addr-name").value,address_line1:document.getElementById("addr-line1").value,address_line2:document.getElementById("addr-line2").value||null,city:document.getElementById("addr-city").value,state:document.getElementById("addr-state").value,postal_code:document.getElementById("addr-postal").value,country_code:document.getElementById("addr-country").value,phone:document.getElementById("addr-phone").value,is_default:document.getElementById("addr-default").checked};r.is_default&&await d.from("shipping_addresses").update({is_default:!1}).eq("user_id",a.user.id),t?await d.from("shipping_addresses").update(r).eq("id",t):await d.from("shipping_addresses").insert(r),await q(),m("addresses"),n("Address saved successfully.")}window.deleteAddress=async e=>{await d.from("shipping_addresses").delete().eq("id",e),await q(),m("addresses"),n("Address deleted.")};function ve(){const e=a.orders.filter(t=>t.receipt_file_path);return`
+  `,window.lucide&&lucide.createIcons(),document.querySelectorAll(".btn-press").forEach(A),document.getElementById("address-form").addEventListener("submit",$e)};window.cancelAddressForm=()=>{document.getElementById("address-form-container").innerHTML=""};window.editAddress=e=>{const t=a.addresses.find(r=>r.id===e);showAddressForm(t),document.getElementById("address-form-container").scrollIntoView({behavior:"smooth"})};async function $e(e){e.preventDefault();const t=document.getElementById("addr-id").value,r={user_id:a.user.id,label:document.getElementById("addr-label").value,full_name:document.getElementById("addr-name").value,address_line1:document.getElementById("addr-line1").value,address_line2:document.getElementById("addr-line2").value||null,city:document.getElementById("addr-city").value,state:document.getElementById("addr-state").value,postal_code:document.getElementById("addr-postal").value,country_code:document.getElementById("addr-country").value,phone:document.getElementById("addr-phone").value,is_default:document.getElementById("addr-default").checked};r.is_default&&await d.from("shipping_addresses").update({is_default:!1}).eq("user_id",a.user.id),t?await d.from("shipping_addresses").update(r).eq("id",t):await d.from("shipping_addresses").insert(r),await q(),b("addresses"),o("Address saved successfully.")}window.deleteAddress=async e=>{await d.from("shipping_addresses").delete().eq("id",e),await q(),b("addresses"),o("Address deleted.")};function ke(){const e=a.orders.filter(t=>t.receipt_file_path);return`
     ${c("Download Receipts","Download your payment receipts and invoices.")}
     ${e.length===0?g("No Receipts","Receipts from your payments will appear here once available.","file-text",null):`
       <div class="space-y-3">
@@ -610,7 +610,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         `).join("")}
       </div>
     `}
-  `}window.downloadReceipt=async e=>{const t=a.orders.find(l=>l.order_number===e);if(!t?.receipt_file_path){n("Receipt not available.");return}const{data:r,error:s}=await d.storage.from("payment-receipts").createSignedUrl(t.receipt_file_path,300);if(s||!r?.signedUrl){n("Could not generate download link.");return}window.open(r.signedUrl,"_blank")};function he(){const e=a.emailPrefs||{order_updates:!0,payment_updates:!0,shipping_updates:!0,promotional_emails:!1,security_alerts:!0,newsletter:!1},t=[{key:"order_updates",label:"Order Updates",desc:"Notifications about your order status changes",icon:"shopping-bag"},{key:"payment_updates",label:"Payment Updates",desc:"Payment receipt and verification notifications",icon:"credit-card"},{key:"shipping_updates",label:"Shipping Updates",desc:"Shipping and delivery notifications",icon:"truck"},{key:"security_alerts",label:"Security Alerts",desc:"Important account security notifications",icon:"shield-alert"},{key:"promotional_emails",label:"Promotional Emails",desc:"Special offers and promotions",icon:"tag"},{key:"newsletter",label:"Newsletter",desc:"Monthly newsletter with marketplace updates",icon:"newspaper"}];return`
+  `}window.downloadReceipt=async e=>{const t=a.orders.find(l=>l.order_number===e);if(!t?.receipt_file_path){o("Receipt not available.");return}const{data:r,error:s}=await d.storage.from("payment-receipts").createSignedUrl(t.receipt_file_path,300);if(s||!r?.signedUrl){o("Could not generate download link.");return}window.open(r.signedUrl,"_blank")};function _e(){const e=a.emailPrefs||{order_updates:!0,payment_updates:!0,shipping_updates:!0,promotional_emails:!1,security_alerts:!0,newsletter:!1},t=[{key:"order_updates",label:"Order Updates",desc:"Notifications about your order status changes",icon:"shopping-bag"},{key:"payment_updates",label:"Payment Updates",desc:"Payment receipt and verification notifications",icon:"credit-card"},{key:"shipping_updates",label:"Shipping Updates",desc:"Shipping and delivery notifications",icon:"truck"},{key:"security_alerts",label:"Security Alerts",desc:"Important account security notifications",icon:"shield-alert"},{key:"promotional_emails",label:"Promotional Emails",desc:"Special offers and promotions",icon:"tag"},{key:"newsletter",label:"Newsletter",desc:"Monthly newsletter with marketplace updates",icon:"newspaper"}];return`
     ${c("Email Preferences","Choose which email notifications you want to receive.")}
     <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       <div class="space-y-3">
@@ -631,7 +631,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         <i data-lucide="save" class="w-4 h-4"></i> Save Preferences
       </button>
     </div>
-  `}window.saveEmailPrefs=async()=>{const e={user_id:a.user.id};document.querySelectorAll("[data-pref]").forEach(t=>{e[t.dataset.pref]=t.checked}),a.emailPrefs?await d.from("email_preferences").update(e).eq("user_id",a.user.id):await d.from("email_preferences").insert(e),await D(),n("Email preferences saved.")};function we(){return`
+  `}window.saveEmailPrefs=async()=>{const e={user_id:a.user.id};document.querySelectorAll("[data-pref]").forEach(t=>{e[t.dataset.pref]=t.checked}),a.emailPrefs?await d.from("email_preferences").update(e).eq("user_id",a.user.id):await d.from("email_preferences").insert(e),await U(),o("Email preferences saved.")};function Se(){return`
     ${c("Contact Us","Get help with your orders and account.")}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div class="lg:col-span-2 glass border border-blue-200 rounded-2xl p-5 slide-up">
@@ -661,7 +661,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </div>
       </div>
     </div>
-  `}function $e(){const e=[{q:"How do I track my order?",a:"Go to Order Tracking in your dashboard. You'll see a real-time progress tracker showing each stage from Order Placed to Delivered."},{q:"How do I pay for my order?",a:"After clicking Buy Now, you'll be taken to checkout where you can complete a manual bank transfer. Upload your payment receipt for verification."},{q:"How long does payment verification take?",a:"Verification typically takes between a few minutes and 24 hours. You'll receive an email notification once approved."},{q:"Can I change my shipping address?",a:"Yes. Go to Shipping Addresses in your dashboard to add, edit, or set a default address."},{q:"How do I download my receipt?",a:"Go to Download Receipts in your dashboard. Click the Download button next to any order with a receipt on file."},{q:"How do I update my email preferences?",a:"Go to Email Preferences in your dashboard to toggle which notification emails you receive."},{q:"Is my account secure?",a:"Yes. Your account is protected with SSL encryption and secure authentication. We never share your personal information."},{q:"How do I contact support?",a:"Use the Contact Us section in your dashboard to send a message, or email us at support@weverseonlineshop.com."}];return`
+  `}function Ee(){const e=[{q:"How do I track my order?",a:"Go to Order Tracking in your dashboard. You'll see a real-time progress tracker showing each stage from Order Placed to Delivered."},{q:"How do I pay for my order?",a:"After clicking Buy Now, you'll be taken to checkout where you can complete a manual bank transfer. Upload your payment receipt for verification."},{q:"How long does payment verification take?",a:"Verification typically takes between a few minutes and 24 hours. You'll receive an email notification once approved."},{q:"Can I change my shipping address?",a:"Yes. Go to Shipping Addresses in your dashboard to add, edit, or set a default address."},{q:"How do I download my receipt?",a:"Go to Download Receipts in your dashboard. Click the Download button next to any order with a receipt on file."},{q:"How do I update my email preferences?",a:"Go to Email Preferences in your dashboard to toggle which notification emails you receive."},{q:"Is my account secure?",a:"Yes. Your account is protected with SSL encryption and secure authentication. We never share your personal information."},{q:"How do I contact support?",a:"Use the Contact Us section in your dashboard to send a message, or email us at support@weverseonlineshop.com."}];return`
     ${c("Help Center","Frequently asked questions and guides.")}
     <div class="space-y-3">
       ${e.map((t,r)=>`
@@ -674,7 +674,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </div>
       `).join("")}
     </div>
-  `}window.toggleFaq=e=>{const t=document.getElementById(`faq-${e}`),r=document.getElementById(`faq-icon-${e}`);t.classList.toggle("hidden"),r.style.transform=t.classList.contains("hidden")?"":"rotate(180deg)"};function ke(){return`
+  `}window.toggleFaq=e=>{const t=document.getElementById(`faq-${e}`),r=document.getElementById(`faq-icon-${e}`);t.classList.toggle("hidden"),r.style.transform=t.classList.contains("hidden")?"":"rotate(180deg)"};function Ie(){return`
     ${c("Privacy & Security","Your account security and privacy settings.")}
     <div class="space-y-5">
       <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
@@ -729,7 +729,7 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         </button>
       </div>
     </div>
-  `}async function _e(){const e=a.wishlist||[];return e.length?`
+  `}async function Pe(){const e=a.wishlist||[];return e.length?`
     <div class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-bold text-gray-900">My Wishlist</h2>
@@ -739,11 +739,11 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
         ${e.map(t=>{const r=t.showroom_listings;if(!r)return"";const s=r.images&&r.images[0]||"/fallback.svg",l=typeof r.price=="number"?r.price:parseFloat(r.price||0);return`
             <div class="glass border border-blue-100 rounded-2xl overflow-hidden group">
               <div class="relative aspect-square overflow-hidden bg-gray-50">
-                <a href="/details.html?id=${r.property_id}"><img src="${o(s)}" alt="${o(r.title)}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></a>
+                <a href="/details.html?id=${r.property_id}"><img src="${n(s)}" alt="${n(r.title)}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></a>
                 <button onclick="removeFromWishlist('${t.id}')" class="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-red-500/80 rounded-full flex items-center justify-center transition" title="Remove"><i data-lucide="heart-crack" class="w-4 h-4 text-white"></i></button>
               </div>
               <div class="p-3">
-                <a href="/details.html?id=${r.property_id}" class="text-sm text-gray-900 font-bold hover:text-blue-600 transition line-clamp-2">${o(r.title)}</a>
+                <a href="/details.html?id=${r.property_id}" class="text-sm text-gray-900 font-bold hover:text-blue-600 transition line-clamp-2">${n(r.title)}</a>
                 <div class="flex items-center justify-between mt-2">
                   <span class="text-sm text-amber-600 font-bold">${r.currency||"USD"} ${l.toLocaleString()}</span>
                   <a href="/details.html?id=${r.property_id}" class="text-xs font-bold text-blue-600 hover:text-blue-700 transition">View</a>
@@ -752,15 +752,28 @@ import{s as d}from"./supabase-client-CDm4AUL7.js";import{C as N,g as E}from"./lo
             </div>`}).join("")}
       </div>
     </div>
-  `:g("Your Wishlist","Save items you love to find them quickly later.","heart","Browse Products","window.location.href='/'")}window.removeFromWishlist=async e=>{try{await d.from("wishlist").delete().eq("id",e),n("Removed from wishlist."),await U(),m("wishlist")}catch(t){n("Error: "+t.message)}};function g(e,t,r,s,l){return`
+  `:g("Your Wishlist","Save items you love to find them quickly later.","heart","Browse Products","window.location.href='/'")}window.removeFromWishlist=async e=>{try{await d.from("wishlist").delete().eq("id",e),o("Removed from wishlist."),await F(),b("wishlist")}catch(t){o("Error: "+t.message)}};function g(e,t,r,s,l){return`
     <div class="glass border border-blue-200 rounded-2xl p-10 text-center slide-up">
       <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-2xl mb-4"><i data-lucide="${r}" class="w-8 h-8 text-blue-600"></i></div>
       <h3 class="text-lg font-bold text-gray-900 mb-2">${e}</h3>
       <p class="text-sm text-gray-500 mb-6 max-w-sm mx-auto">${t}</p>
       ${s?l?`<button onclick="${l}" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl uppercase text-sm tracking-wider transition shadow-lg shadow-blue-600/30 relative overflow-hidden"><i data-lucide="plus" class="w-4 h-4"></i> ${s}</button>`:`<a href="/" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl uppercase text-sm tracking-wider transition shadow-lg shadow-blue-600/30 relative overflow-hidden"><i data-lucide="shopping-bag" class="w-4 h-4"></i> ${s}</a>`:""}
     </div>
-  `}function Ee(e){if(e==="edit-profile"&&(document.getElementById("avatar-file")?.addEventListener("change",Se),document.getElementById("edit-profile-form")?.addEventListener("submit",Ie)),e==="change-password"&&document.getElementById("change-password-form")?.addEventListener("submit",Pe),e==="messages"){document.getElementById("msg-form")?.addEventListener("submit",Me);const t=document.getElementById("msg-thread");t&&(t.scrollTop=t.scrollHeight)}e==="support"&&document.getElementById("support-form")?.addEventListener("submit",je)}let h=null;async function Se(e){const t=e.target.files[0];if(!t)return;if(t.size>5*1024*1024){n("Image must be 5 MB or less.");return}h=t;const r=document.getElementById("edit-avatar-preview");r.innerHTML=`<img src="${URL.createObjectURL(t)}" class="w-full h-full object-cover">`}async function Ie(e){e.preventDefault();const t=document.getElementById("ep-save-btn");t.disabled=!0,t.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Saving...',window.lucide&&lucide.createIcons();let r=a.profile?.avatar_url;if(h){const l=h.name.split(".").pop(),i=`${a.user.id}/avatar-${Date.now()}.${l}`,{error:u}=await d.storage.from("avatars").upload(i,h,{upsert:!0});if(!u){const{data:v}=d.storage.from("avatars").getPublicUrl(i);r=v.publicUrl}h=null}const s={user_id:a.user.id,first_name:document.getElementById("ep-first-name").value,last_name:document.getElementById("ep-last-name").value,display_name:document.getElementById("ep-display-name").value,phone_code:document.getElementById("ep-phone-code").value,phone_number:document.getElementById("ep-phone-number").value,country_code:document.getElementById("ep-country").value,bio:document.getElementById("ep-bio").value,avatar_url:r};a.profile?await d.from("profiles").update(s).eq("user_id",a.user.id):await d.from("profiles").insert(s),await H(),R(),y("profile"),n("Profile updated successfully.")}async function Pe(e){e.preventDefault();const t=document.getElementById("cp-error");t.classList.add("hidden"),document.getElementById("cp-current").value;const r=document.getElementById("cp-new").value,s=document.getElementById("cp-confirm").value;if(r!==s){t.textContent="New passwords do not match.",t.classList.remove("hidden");return}if(r.length<6){t.textContent="Password must be at least 6 characters.",t.classList.remove("hidden");return}const l=document.getElementById("cp-submit");l.disabled=!0,l.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Updating...',window.lucide&&lucide.createIcons();const{error:i}=await d.auth.updateUser({password:r});if(l.disabled=!1,l.innerHTML='<i data-lucide="key-round" class="w-4 h-4"></i> Update Password',window.lucide&&lucide.createIcons(),i){t.textContent=i.message,t.classList.remove("hidden");return}document.getElementById("change-password-form").reset(),n("Password updated successfully.")}async function Me(e){e.preventDefault();const t=document.getElementById("msg-subject").value.trim(),r=document.getElementById("msg-body").value.trim();if(!r)return;const s=document.getElementById("msg-send-btn");s.disabled=!0,s.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sending...',window.lucide&&lucide.createIcons(),await d.from("support_messages").insert({user_id:a.user.id,subject:t||"Message",message:r,from_admin:!1,read:!1}),await C(),m("messages"),n("Message sent to support.")}async function je(e){e.preventDefault();const t=document.getElementById("support-subject").value.trim(),r=document.getElementById("support-order").value.trim(),s=document.getElementById("support-message").value.trim();if(!t||!s)return;const l=document.getElementById("support-submit");l.disabled=!0,l.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sending...',window.lucide&&lucide.createIcons(),await d.from("support_messages").insert({user_id:a.user.id,order_number:r||null,subject:t,message:s,from_admin:!1,read:!1}),await C(),document.getElementById("support-form").reset(),l.disabled=!1,l.innerHTML='<i data-lucide="send" class="w-4 h-4"></i> Submit Request',window.lucide&&lucide.createIcons(),n("Support request submitted. We'll respond within 24 hours.")}function Be(){document.getElementById("btn-signout-desktop")?.addEventListener("click",O),document.getElementById("btn-signout-mobile")?.addEventListener("click",O),document.getElementById("btn-mobile-menu")?.addEventListener("click",qe),document.getElementById("btn-mobile-close")?.addEventListener("click",M),document.getElementById("mobile-backdrop")?.addEventListener("click",M)}async function O(){await V(),window.location.href="/"}function qe(){document.getElementById("mobile-drawer").classList.remove("hidden")}function M(){document.getElementById("mobile-drawer").classList.add("hidden")}window.navigateTo=y;window.copyToClipboard=K;window.contactSupport=e=>{const t=encodeURIComponent(`Order ${e} — Support Request`),r=encodeURIComponent(`Hello Weverse Online Shop Support,
+  `}function Me(e){if(e==="edit-profile"&&(document.getElementById("avatar-file")?.addEventListener("change",je),document.getElementById("edit-profile-form")?.addEventListener("submit",Be)),e==="change-password"&&document.getElementById("change-password-form")?.addEventListener("submit",Ae),e==="messages"){document.getElementById("msg-form")?.addEventListener("submit",qe);const t=document.getElementById("msg-thread");t&&(t.scrollTop=t.scrollHeight)}e==="support"&&document.getElementById("support-form")?.addEventListener("submit",Ce)}let v=null;async function je(e){const t=e.target.files[0];if(!t)return;if(t.size>5*1024*1024){o("Image must be 5 MB or less.");return}v=t;const r=document.getElementById("edit-avatar-preview");r.innerHTML=`<img src="${URL.createObjectURL(t)}" class="w-full h-full object-cover">`}async function Be(e){e.preventDefault();const t=document.getElementById("ep-save-btn");t.disabled=!0,t.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Saving...',window.lucide&&lucide.createIcons();let r=a.profile?.avatar_url;if(v){const l=v.name.split(".").pop(),i=`${a.user.id}/avatar-${Date.now()}.${l}`,{error:u}=await d.storage.from("avatars").upload(i,v,{upsert:!0});if(!u){const{data:h}=d.storage.from("avatars").getPublicUrl(i);r=h.publicUrl}v=null}const s={user_id:a.user.id,first_name:document.getElementById("ep-first-name").value,last_name:document.getElementById("ep-last-name").value,display_name:document.getElementById("ep-display-name").value,phone_code:document.getElementById("ep-phone-code").value,phone_number:document.getElementById("ep-phone-number").value,country_code:document.getElementById("ep-country").value,bio:document.getElementById("ep-bio").value,avatar_url:r};a.profile?await d.from("profiles").update(s).eq("user_id",a.user.id):await d.from("profiles").insert(s),await D(),Y(),y("profile"),o("Profile updated successfully.")}async function Ae(e){e.preventDefault();const t=document.getElementById("cp-error");t.classList.add("hidden"),document.getElementById("cp-current").value;const r=document.getElementById("cp-new").value,s=document.getElementById("cp-confirm").value;if(r!==s){t.textContent="New passwords do not match.",t.classList.remove("hidden");return}if(r.length<6){t.textContent="Password must be at least 6 characters.",t.classList.remove("hidden");return}const l=document.getElementById("cp-submit");l.disabled=!0,l.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Updating...',window.lucide&&lucide.createIcons();const{error:i}=await d.auth.updateUser({password:r});if(l.disabled=!1,l.innerHTML='<i data-lucide="key-round" class="w-4 h-4"></i> Update Password',window.lucide&&lucide.createIcons(),i){t.textContent=i.message,t.classList.remove("hidden");return}document.getElementById("change-password-form").reset(),o("Password updated successfully.")}async function qe(e){e.preventDefault();const t=document.getElementById("msg-subject").value.trim(),r=document.getElementById("msg-body").value.trim();if(!r)return;const s=document.getElementById("msg-send-btn");s.disabled=!0,s.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sending...',window.lucide&&lucide.createIcons(),await d.from("support_messages").insert({user_id:a.user.id,subject:t||"Message",message:r,from_admin:!1,read:!1}),await I(),b("messages"),o("Message sent to support."),s.disabled=!0,s.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Support is typing...',window.lucide&&lucide.createIcons();const l=await H(`A customer just sent this message through their account Messages inbox:
+
+Subject: ${t||"Message"}
+
+${r}
+
+Reply to them directly, warmly and naturally, as the support agent.`);await R(l);const i=document.getElementById("msg-send-btn");i&&(i.disabled=!1,i.innerHTML='<i data-lucide="send" class="w-4 h-4"></i> Send',window.lucide&&lucide.createIcons())}async function Ce(e){e.preventDefault();const t=document.getElementById("support-subject").value.trim(),r=document.getElementById("support-order").value.trim(),s=document.getElementById("support-message").value.trim();if(!t||!s)return;const l=document.getElementById("support-submit");l.disabled=!0,l.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sending...',window.lucide&&lucide.createIcons(),await d.from("support_messages").insert({user_id:a.user.id,order_number:r||null,subject:t,message:s,from_admin:!1,read:!1}),await I(),document.getElementById("support-form").reset(),l.disabled=!1,l.innerHTML='<i data-lucide="send" class="w-4 h-4"></i> Submit Request',window.lucide&&lucide.createIcons(),o("Support request submitted. We'll respond within 24 hours."),l.disabled=!0,l.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Support is typing...',window.lucide&&lucide.createIcons();const i=await H(`A customer just submitted a support request through their account${r?` for order ${r}`:""}:
+
+Subject: ${t}
+${r?`Order number: ${r}
+`:""}
+${s}
+
+Reply to them directly, warmly and naturally, as the support agent.`);await R(i),l.disabled=!1,l.innerHTML='<i data-lucide="send" class="w-4 h-4"></i> Submit Request',window.lucide&&lucide.createIcons()}function Te(){document.getElementById("btn-signout-desktop")?.addEventListener("click",L),document.getElementById("btn-signout-mobile")?.addEventListener("click",L),document.getElementById("btn-mobile-menu")?.addEventListener("click",Oe),document.getElementById("btn-mobile-close")?.addEventListener("click",j),document.getElementById("mobile-backdrop")?.addEventListener("click",j)}async function L(){await z(),window.location.href="/"}function Oe(){document.getElementById("mobile-drawer").classList.remove("hidden")}function j(){document.getElementById("mobile-drawer").classList.add("hidden")}window.navigateTo=y;window.copyToClipboard=re;window.contactSupport=e=>{const t=encodeURIComponent(`Order ${e} — Support Request`),r=encodeURIComponent(`Hello Weverse Online Shop Support,
 
 I need assistance with my order ${e}.
 
-Thank you.`);window.location.href=`mailto:support@weverseonlineshop.com?subject=${t}&body=${r}`};ee();
+Thank you.`);window.location.href=`mailto:support@weverseonlineshop.com?subject=${t}&body=${r}`};se();

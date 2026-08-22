@@ -4040,7 +4040,7 @@ window.scanGeneralWithAI = async function() {
   // Several products are scanned AT THE SAME TIME (not one after another), so a
   // full catalog scan takes a fraction of the time. Each scan is also bounded by
   // a shorter timeout so a slow call can never hold up the whole batch.
-  const SCAN_CONCURRENCY = 3;
+  const SCAN_CONCURRENCY = 6;
   const SCAN_TIMEOUT_MS = 45000;
   let cursor = 0;
   let doneCount = 0;
@@ -6075,20 +6075,30 @@ Rules:
     )).filter(Boolean);
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
-    try {
-      const fast = await this._tryBrowserGeminiVision(prompt, images);
-      if (fast) return fast;
-    } catch { /* fall through to server vision */ }
+    // FAST: if Gemini already answered 429/quota in this session, skip BOTH the
+    // browser vision call and the server edge vision call entirely (the edge
+    // function uses the same key and would just burn another timeout) and go
+    // straight to the free text fallback / saved-details path.
+    const quotaBlocked = Date.now() < (this._geminiQuotaUntil || 0);
 
-    try {
-      const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens });
-      if (res && res.success && res.text) {
-        const parsed = extractJsonFromAiText(res.text);
-        if (parsed) return { ...parsed, _aiProvider: res.provider, _aiModel: res.model };
-        throw new Error('The AI returned no valid analysis for these images.');
-      }
-      throw new Error((res && res.error) || 'Vision service unavailable.');
-    } catch { /* no vision */ }
+    if (!quotaBlocked) {
+      try {
+        const fast = await this._tryBrowserGeminiVision(prompt, images);
+        if (fast) return fast;
+      } catch { /* fall through to server vision */ }
+    }
+
+    if (!quotaBlocked || !allowTextFallback) {
+      try {
+        const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens }, 25000);
+        if (res && res.success && res.text) {
+          const parsed = extractJsonFromAiText(res.text);
+          if (parsed) return { ...parsed, _aiProvider: res.provider, _aiModel: res.model };
+          throw new Error('The AI returned no valid analysis for these images.');
+        }
+        throw new Error((res && res.error) || 'Vision service unavailable.');
+      } catch { /* no vision */ }
+    }
 
     // FREE KEYLESS FALLBACK (specs/price stages only — the prompt already contains
     // the full identification data from stage 1, so the text AI can complete the
@@ -6098,7 +6108,7 @@ Rules:
         const fb = await this.freeChat([
           { role: 'system', content: 'You complete marketplace listing data. Always reply with ONE valid JSON object only — no markdown, no extra text.' },
           { role: 'user', content: prompt },
-        ], { maxTokens: 3000 });
+        ], { maxTokens: 3000, timeoutMs: 30000 });
         const parsed = extractJsonFromAiText(fb.text);
         if (parsed) return { ...parsed, _aiProvider: fb.provider, _aiModel: fb.model };
       } catch { /* give up gracefully */ }
@@ -6283,14 +6293,14 @@ Return ONE valid JSON object (no markdown):
   },
 
   // POST to the Supabase edge function so the Gemini key never leaves the server.
-  async _callEdge(body) {
+  async _callEdge(body, timeoutMs = 60000) {
     let token = '';
     try { token = (await supabase.auth.getSession())?.data?.session?.access_token || ''; } catch {}
     const res = await fetch(AI_FN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     return await res.json().catch(() => ({}));
   },
@@ -6335,10 +6345,15 @@ Return ONE valid JSON object (no markdown):
 
   // Gemini vision straight from the browser (free tier supports vision).
   async _tryBrowserGeminiVision(prompt, images) {
+    // FAST: if we already know Gemini's quota is exhausted, don't waste time
+    // retrying every model with the same key.
+    if (Date.now() < (this._geminiQuotaUntil || 0)) return null;
     const cfg = await this.getConfig();
     const apiKey = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!apiKey) return null;
-    const models = [cfg.gemini_vision_model || cfg.gemini_model, 'gemini-2.5-flash', 'gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview'].filter(Boolean);
+    // FAST: fast/lightweight models first, and only a short 15s timeout each so
+    // a slow or unresponsive model can never hold up the scan.
+    const models = [cfg.gemini_vision_model || cfg.gemini_model, 'gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-3-flash-preview'].filter(Boolean);
     for (const model of models) {
       try {
         const parts = [{ text: prompt }];
@@ -6356,8 +6371,14 @@ Return ONE valid JSON object (no markdown):
             contents: [{ role: 'user', parts }],
             generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
           }),
-          signal: AbortSignal.timeout(40000),
+          signal: AbortSignal.timeout(15000),
         });
+        // FAST circuit-breaker: a 429 (quota) or 403 applies to the whole key,
+        // so stop trying the remaining models — skip straight to the fallbacks.
+        if (res.status === 429 || res.status === 403) {
+          this._geminiQuotaUntil = Date.now() + 5 * 60 * 1000; // retry in 5 min
+          return null;
+        }
         if (!res.ok) continue;
         const data = await res.json();
         const text = (data?.candidates?.[0]?.content?.parts || []).map(p => p?.text || '').join('\n').trim();

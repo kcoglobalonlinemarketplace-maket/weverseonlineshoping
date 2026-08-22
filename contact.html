@@ -67,6 +67,7 @@
         <div><label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Message *</label><textarea id="cf-message" required rows="5" placeholder="Tell us how we can help..." class="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-none"></textarea></div>
         <button type="submit" id="cf-submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">Send Message</button>
         <div id="cf-status" class="hidden text-center text-sm py-2 rounded-xl"></div>
+        <div id="cf-reply" class="hidden mt-1"></div>
       </form>
     </div>
   </main>
@@ -104,6 +105,51 @@
         status.className = 'text-center text-sm py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200';
         status.textContent = 'Message sent! We\'ll get back to you within 24 hours.';
         document.getElementById('contact-form').reset();
+        // Instant human-like reply from the support team (never blocks the form).
+        const HUMAN_PROMPT = 'You are Alex — a real, human customer support agent on the Weverse Online Shop team. NEVER say or hint that you are an AI, chatbot or bot. Write like a real person: warm, casual-professional, contractions, short sentences. Help with products, orders, shipping, payments and returns. Never invent order details or tracking numbers.';
+        const freeAI = async (prompt) => {
+          const res = await fetch('https://text.pollinations.ai/openai', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'openai', messages: [{ role: 'system', content: HUMAN_PROMPT }, { role: 'user', content: prompt }], max_tokens: 500 }),
+            signal: AbortSignal.timeout(45000),
+          });
+          if (!res.ok) throw new Error('free-ai-' + res.status);
+          return String((await res.json())?.choices?.[0]?.message?.content || '').trim();
+        };
+        try {
+          status.textContent = 'Message sent! One sec, Alex from our support team is typing…';
+          const fullPrompt = `A visitor named ${name} just submitted the contact form on the website.\n\nSubject: ${subject}\n\n${message}\n\nReply to them directly, warmly and naturally, as the support agent.`;
+          let reply = '';
+          try {
+            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/customer-ai-chat`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: fullPrompt, history: [] }),
+              signal: AbortSignal.timeout(45000),
+            });
+            const data = await res.json();
+            reply = String(data?.response || '').trim();
+          } catch {}
+          if (!reply || /daily message limit|technical hiccup|not quite ready|taking a short break/i.test(reply)) {
+            try { reply = await freeAI(fullPrompt); } catch {}
+          }
+          if (reply) {
+            status.className = 'text-center text-sm py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200';
+            status.textContent = 'Message sent!';
+            const box = document.getElementById('cf-reply');
+            box.classList.remove('hidden');
+            box.innerHTML = `
+              <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0"><i data-lucide="headset" class="w-4 h-4 text-blue-600"></i></div>
+                <div>
+                  <div class="text-xs font-bold text-gray-900">Alex · Weverse Support</div>
+                  <div class="text-[10px] text-emerald-600 font-semibold">● Online</div>
+                </div>
+              </div>
+              <div class="bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm text-gray-700 leading-relaxed">${reply.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`;
+            lucide.createIcons();
+          }
+        } catch {}
       } catch (err) {
         status.className = 'text-center text-sm py-3 rounded-xl bg-red-50 text-red-600 border border-red-200';
         status.textContent = 'Failed to send message. Please email us directly at support@weverseonlineshop.com';

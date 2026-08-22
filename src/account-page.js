@@ -4,6 +4,70 @@ import { requestNotificationPermission, onForegroundMessage } from './firebase-c
 import { trackEvent } from './analytics.js';
 import { getCountryByCode, COUNTRIES, searchCountries } from './country-data.js';
 
+const SUPPORT_AI_URL = `${(import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '')}/functions/v1/customer-ai-chat`;
+const SUPPORT_AI_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+/* ── Instant human-like AI reply for customer support messages ── */
+async function getSupportAiReply(prompt) {
+  let reply = '';
+  try {
+    const res = await fetch(SUPPORT_AI_URL, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${SUPPORT_AI_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompt, history: [] }),
+      signal: AbortSignal.timeout(45000),
+    });
+    const data = await res.json();
+    reply = String(data?.response || '').trim();
+  } catch {}
+  // Never surface canned "unavailable" replies as agent answers — retry with the
+  // free keyless AI (Pollinations) straight from the customer's browser.
+  if (!reply || /daily message limit|technical hiccup|not quite ready|taking a short break/i.test(reply)) {
+    try {
+      const res = await fetch('https://text.pollinations.ai/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'openai',
+          messages: [
+            { role: 'system', content: 'You are Alex — a real, human customer support agent on the Weverse Online Shop team. NEVER say or hint that you are an AI, chatbot or bot. Write like a real person: warm, casual-professional, contractions, short sentences. Help with products, orders, shipping, payments and returns. Never invent order details or tracking numbers.' },
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 500,
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+      if (res.ok) reply = String((await res.json())?.choices?.[0]?.message?.content || '').trim();
+    } catch {}
+  }
+  return reply;
+}
+
+async function deliverSupportAiReply(reply) {
+  if (!reply) return;
+  // Try to persist it as a support message so it shows in the thread…
+  let saved = false;
+  try {
+    const { error } = await supabase.from('support_messages').insert({
+      user_id: state.user.id,
+      subject: 'Support',
+      message: reply,
+      from_admin: true,
+      read: false,
+    });
+    saved = !error;
+  } catch {}
+  if (saved) {
+    await loadMessages();
+    renderSection('messages');
+    const thread = document.getElementById('msg-thread');
+    if (thread) thread.scrollTop = thread.scrollHeight;
+  } else {
+    // …otherwise show it as a toast-style instant reply.
+    showToast(reply, 8000);
+  }
+}
+
 const FALLBACK_IMG = '/fallback.svg';
 
 /* ── Navigation config ─────────────────────────────────────── */
@@ -1643,6 +1707,17 @@ async function sendMessage(e) {
   await loadMessages();
   renderSection('messages');
   showToast('Message sent to support.');
+
+  // Instant human-like reply from the support team.
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Support is typing...';
+  if (window.lucide) lucide.createIcons();
+  const reply = await getSupportAiReply(
+    `A customer just sent this message through their account Messages inbox:\n\nSubject: ${subject || 'Message'}\n\n${body}\n\nReply to them directly, warmly and naturally, as the support agent.`
+  );
+  await deliverSupportAiReply(reply);
+  const btn2 = document.getElementById('msg-send-btn');
+  if (btn2) { btn2.disabled = false; btn2.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Send'; if (window.lucide) lucide.createIcons(); }
 }
 
 /* ── Send support request ──────────────────────────────────── */
@@ -1672,6 +1747,18 @@ async function sendSupportRequest(e) {
   btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Submit Request';
   if (window.lucide) lucide.createIcons();
   showToast('Support request submitted. We\'ll respond within 24 hours.');
+
+  // Instant human-like reply from the support team.
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Support is typing...';
+  if (window.lucide) lucide.createIcons();
+  const reply = await getSupportAiReply(
+    `A customer just submitted a support request through their account${orderNumber ? ` for order ${orderNumber}` : ''}:\n\nSubject: ${subject}\n${orderNumber ? `Order number: ${orderNumber}\n` : ''}\n${message}\n\nReply to them directly, warmly and naturally, as the support agent.`
+  );
+  await deliverSupportAiReply(reply);
+  btn.disabled = false;
+  btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Submit Request';
+  if (window.lucide) lucide.createIcons();
 }
 
 /* ── Global handlers ────────────────────────────────────────── */

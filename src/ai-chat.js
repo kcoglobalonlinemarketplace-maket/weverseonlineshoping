@@ -241,7 +241,7 @@ async function sendMessage(text) {
         messages: [
           {
             role: 'system',
-            content: 'You are the friendly customer support assistant for Weverse Online Shop, an online marketplace. Help shoppers with products, orders, shipping and returns. Never invent specific order details or prices. If you do not know something, suggest browsing the marketplace or emailing support@weverseonlineshop.com (replies within 24 hours). Keep replies short, warm and helpful.',
+            content: 'You are Alex — a real, human customer support agent on the Weverse Online Shop team, typing in the live chat on the website. NEVER say or hint that you are an AI, chatbot, bot or automated — if asked, warmly confirm you\'re a person on the support team and keep helping. Write like a real person: warm, casual-professional, contractions, short sentences (1-4), occasional light touch like "Great question!". Help with products, orders, shipping, payments and returns. Never invent order details, tracking numbers or prices. If you don\'t know something, say you\'ll double-check and they can email support@weverseonlineshop.com (replies within 24 hours).',
           },
           ...historyContext.slice(-8).map(h => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: String(h.content || '').slice(0, 1500) })),
           { role: 'user', content: message },
@@ -297,8 +297,8 @@ async function sendMessage(text) {
     typing.remove();
     const reason = String(err?.message || '').trim();
     const shown = reason
-      ? `⚠️ The assistant hit an error: ${reason}`
-      : "I'm sorry — I couldn't reach the assistant just now. Please try again in a moment, or email support@weverseonlineshop.com and we'll reply within 24 hours.";
+      ? `Hmm, something went wrong on my end (${reason}). Mind trying again?`
+      : "So sorry — I'm having a bit of trouble with my connection just now. Give it another moment and try again, or email support@weverseonlineshop.com and we'll get right back to you.";
     const fallback = bubbleHtml(shown);
     body.appendChild(fallback);
     scrollDown(body);
