@@ -849,33 +849,6 @@
 
     </main>
 
-  <!-- AUTH MODAL -->
-  <div id="auth-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-md overflow-hidden relative shadow-2xl p-6">
-      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span>🔙 Back</span></button>
-      <div class="flex border-b border-gray-200 mb-6 text-sm">
-        <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-center text-blue-600 font-bold border-b-2 border-blue-600 uppercase tracking-wider">Login</button>
-        <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-center text-gray-600 font-medium uppercase tracking-wider">Register</button>
-      </div>
-      <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
-        <div id="field-username" class="hidden">
-          <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Username</label>
-          <input type="text" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Email Address</label>
-          <input type="email" required class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Password</label>
-          <input type="password" required class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
-        </div>
-        <button id="auth-submit-btn" type="submit" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 font-bold text-white rounded-lg uppercase text-sm tracking-wider transition mt-2">Sign In</button>
-      </form>
-    </div>
-  </div>
-
-
   <!-- TOAST -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 bg-gray-900 border border-blue-500/30 text-white px-5 py-3 rounded-xl shadow-xl text-xs flex items-center gap-2 font-medium transition-all duration-300">
     <i data-lucide="info" class="w-4 h-4 text-blue-500"></i><span id="toast-message">Action Recorded</span>

@@ -105,12 +105,12 @@
         status.className = 'text-center text-sm py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200';
         status.textContent = 'Message sent! We\'ll get back to you within 24 hours.';
         document.getElementById('contact-form').reset();
-        // Instant human-like reply from the support team (never blocks the form).
-        const HUMAN_PROMPT = 'You are Alex — a real, human customer support agent on the Weverse Online Shop team. NEVER say or hint that you are an AI, chatbot or bot. Write like a real person: warm, casual-professional, contractions, short sentences. Help with products, orders, shipping, payments and returns. Never invent order details or tracking numbers.';
+        // Instant support-assistant reply (never blocks the form).
+        const SUPPORT_PROMPT = 'You are Alex — the friendly customer support assistant for the Weverse Online Shop team. You are an automated assistant: if asked directly, say so honestly and warmly (for example: "I\'m Alex, the shop\'s support assistant — happy to help!") and keep helping. Write like a real person: warm, casual-professional, contractions, short sentences. Help with products, orders, shipping, payments and returns. Never invent order details or tracking numbers.';
         const freeAI = async (prompt) => {
           const res = await fetch('https://text.pollinations.ai/openai', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'openai', messages: [{ role: 'system', content: HUMAN_PROMPT }, { role: 'user', content: prompt }], max_tokens: 500 }),
+            body: JSON.stringify({ model: 'openai', messages: [{ role: 'system', content: SUPPORT_PROMPT }, { role: 'user', content: prompt }], max_tokens: 500 }),
             signal: AbortSignal.timeout(45000),
           });
           if (!res.ok) throw new Error('free-ai-' + res.status);

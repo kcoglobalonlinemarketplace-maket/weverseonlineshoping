@@ -1,4 +1,5 @@
 import { supabase } from './supabase-client.js';
+import { ANON_KEY, SUPABASE_URL } from './supabase-client.js';
 import { getCurrentUser, signOut } from './auth.js';
 import { requestNotificationPermission, onForegroundMessage } from './firebase-config.js';
 import { trackEvent } from './analytics.js';
@@ -30,7 +31,7 @@ async function getSupportAiReply(prompt) {
         body: JSON.stringify({
           model: 'openai',
           messages: [
-            { role: 'system', content: 'You are Alex — a real, human customer support agent on the Weverse Online Shop team. NEVER say or hint that you are an AI, chatbot or bot. Write like a real person: warm, casual-professional, contractions, short sentences. Help with products, orders, shipping, payments and returns. Never invent order details or tracking numbers.' },
+            { role: 'system', content: 'You are Alex — the friendly customer support assistant for the Weverse Online Shop team. You are an automated assistant: if asked directly, say so honestly and warmly (for example: "I\'m Alex, the shop\'s support assistant — happy to help!") and keep helping. Write like a real person: warm, casual-professional, contractions, short sentences. Help with products, orders, shipping, payments and returns. Never invent order details or tracking numbers.' },
             { role: 'user', content: prompt },
           ],
           max_tokens: 500,
@@ -1521,6 +1522,12 @@ function renderPrivacy() {
         <button onclick="doSignOut()" class="btn-press inline-flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold py-2.5 px-5 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
           <i data-lucide="log-out" class="w-4 h-4"></i> Logout
         </button>
+        <div class="border-t border-red-100 mt-5 pt-5">
+          <p class="text-sm text-gray-600 mb-3">Permanently delete your account and all personal data. This cannot be undone.</p>
+          <button onclick="requestAccountDeletion()" class="btn-press inline-flex items-center gap-2 bg-white hover:bg-red-50 border border-red-300 text-red-600 font-bold py-2.5 px-5 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> Delete Account
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -1771,9 +1778,59 @@ function attachGlobalHandlers() {
 }
 
 async function doSignOut() {
+  if (!window.confirm('Sign out of your account?')) return;
   await signOut();
   window.location.href = '/';
 }
+
+/* ── Account deletion (Google Play account-deletion policy) ── */
+// Asks for typed confirmation, then calls the delete-account edge function
+// with the caller's own access token. The function deletes the auth user and
+// all personal data via cascades (order/financial records are retained per the
+// published privacy policy). The client then signs out and returns home.
+function requestAccountDeletion() {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm z-[90] flex items-center justify-center p-4';
+  overlay.innerHTML = `
+    <div class="glass border border-red-200 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(255,255,255,.95)">
+      <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2"><i data-lucide="trash-2" class="w-5 h-5 text-red-600"></i> Delete your account?</h3>
+      <p class="text-sm text-gray-600 mb-3">This permanently removes your profile, addresses, wishlist, notification settings and support messages. It cannot be undone.</p>
+      <p class="text-xs text-gray-500 mb-4">Completed order records are kept only as required for tax and legal purposes. Type <span class="font-bold text-gray-900">DELETE</span> to confirm.</p>
+      <input id="del-confirm" type="text" autocomplete="off" class="input-field w-full bg-white border border-red-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 mb-4" placeholder="Type DELETE">
+      <div class="flex gap-3">
+        <button id="del-go" class="btn-press flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">Delete Forever</button>
+        <button id="del-cancel" class="btn-press px-4 py-2.5 bg-gray-100 border border-blue-200 text-gray-600 font-bold rounded-xl text-sm uppercase transition relative overflow-hidden">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  if (window.lucide) lucide.createIcons();
+  const close = () => overlay.remove();
+  overlay.querySelector('#del-cancel').onclick = close;
+  overlay.querySelector('#del-go').onclick = async () => {
+    const goBtn = overlay.querySelector('#del-go');
+    if (overlay.querySelector('#del-confirm').value.trim().toUpperCase() !== 'DELETE') return;
+    goBtn.disabled = true;
+    goBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Deleting...';
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-account`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session?.access_token || ANON_KEY}`, 'Content-Type': 'application/json' },
+        body: '{}',
+        signal: AbortSignal.timeout(30000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Account deletion failed.');
+      await signOut();
+      window.location.href = '/';
+    } catch (err) {
+      goBtn.disabled = false;
+      goBtn.textContent = 'Delete Forever';
+      showToast(String(err.message || err));
+    }
+  };
+}
+window.requestAccountDeletion = requestAccountDeletion;
 
 function openMobileDrawer() { document.getElementById('mobile-drawer').classList.remove('hidden'); }
 function closeMobileDrawer() { document.getElementById('mobile-drawer').classList.add('hidden'); }

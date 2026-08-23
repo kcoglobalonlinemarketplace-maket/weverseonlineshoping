@@ -1370,13 +1370,6 @@ function showRegionNotification(msg){
 // ---- UI HELPERS ----
 function toggleNotifications(){document.getElementById("notification-panel").classList.toggle("hidden")}
 function openAuthModal(){var cur=window.location.pathname+window.location.search;if(!cur||cur==="/"){window.location.href="/auth.html"}else{window.location.href="/auth.html?redirect="+encodeURIComponent(cur)}}
-function closeAuthModal(){document.getElementById("auth-modal").classList.add("hidden")}
-function switchAuthTab(tab){
-  const lt=document.getElementById("tab-login"),rt=document.getElementById("tab-register"),uf=document.getElementById("field-username"),sb=document.getElementById("auth-submit-btn");
-  if(tab==="login"){lt.classList.add("text-blue-500","border-b-2","border-blue-500");lt.classList.remove("text-gray-400");rt.classList.remove("text-blue-500","border-b-2","border-blue-500");rt.classList.add("text-gray-400");uf.classList.add("hidden");sb.textContent="Sign In"}
-  else{rt.classList.add("text-blue-500","border-b-2","border-blue-500");rt.classList.remove("text-gray-400");lt.classList.remove("text-blue-500","border-b-2","border-blue-500");lt.classList.add("text-gray-400");uf.classList.remove("hidden");sb.textContent="Create Account"}
-}
-function handleAuthSubmit(e){e.preventDefault();closeAuthModal();showToast("Authentication processing...")}
 function showToast(msg){
   const t=document.getElementById("toast");document.getElementById("toast-message").textContent=msg;
   t.classList.remove("translate-y-20","opacity-0");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.add("translate-y-20","opacity-0"),3000);

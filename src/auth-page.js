@@ -1,5 +1,5 @@
 import { supabase } from './supabase-client.js';
-import { signUp, signIn, getRedirectAfterAuth, clearRedirectAfterAuth, resetPassword, sendAuthEmail, updateUserPassword } from './auth.js';
+import { signUp, signIn, getRedirectAfterAuth, clearRedirectAfterAuth, resetPassword, resendVerification, sendAuthEmail, updateUserPassword } from './auth.js';
 import { isSupabaseConfigured } from './supabase-client.js';
 import { trackEvent } from './analytics.js';
 import { COUNTRIES, searchCountries, getCountryByCode, detectCurrency } from './country-data.js';
@@ -303,7 +303,14 @@ function getPostAuthRedirectTarget() {
   const redirect = getRedirectAfterAuth();
   const params = new URLSearchParams(window.location.search);
   const redirectParam = params.get('redirect');
-  return redirect || redirectParam || '/';
+  const target = redirect || redirectParam || '/';
+  // Security: only same-origin relative paths — never send users off-site.
+  if (!target.startsWith('/') || target.startsWith('//')) return '/';
+  return target;
+}
+
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function cleanupAuthCallbackUrl() {
@@ -392,8 +399,8 @@ function showRecoveryPasswordPrompt() {
       <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5 text-blue-600"></i> Set New Password</h3>
       <p class="text-sm text-gray-600 mb-4">Your reset link is verified. Enter a new password below.</p>
       <div class="space-y-3">
-        <input id="rp-new" type="password" minlength="8" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900" placeholder="New password (min 8 chars)">
-        <input id="rp-confirm" type="password" minlength="8" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900" placeholder="Confirm new password">
+        <input id="rp-new" type="password" minlength="6" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900" placeholder="New password (min 6 characters)">
+        <input id="rp-confirm" type="password" minlength="6" class="input-field w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900" placeholder="Confirm new password">
         <button id="rp-save" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm uppercase tracking-wide">Update Password</button>
       </div>
       <p id="rp-error" class="hidden text-xs text-red-600 mt-3"></p>
@@ -411,8 +418,8 @@ function showRecoveryPasswordPrompt() {
     errEl.classList.add('hidden');
     errEl.textContent = '';
 
-    if (np.length < 8) {
-      errEl.textContent = 'Password must be at least 8 characters.';
+    if (np.length < 6) {
+      errEl.textContent = 'Password must be at least 6 characters.';
       errEl.classList.remove('hidden');
       return;
     }
@@ -449,7 +456,7 @@ function showForgotPassword() {
   overlay.innerHTML = `
     <div class="glass border border-blue-200 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(255,255,255,.95)">
       <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2"><i data-lucide="key-round" class="w-5 h-5 text-blue-600"></i> Reset Password</h3>
-      <p class="text-sm text-gray-600 mb-4">We'll send a password reset link to <span class="text-blue-600 font-bold">${email}</span></p>
+      <p class="text-sm text-gray-600 mb-4">We'll send a password reset link to <span class="text-blue-600 font-bold">${escHtml(email)}</span></p>
       <div class="flex gap-3">
         <button id="fp-send" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">Send Reset Link</button>
         <button id="fp-cancel" class="btn-press px-4 py-2.5 bg-gray-100 border border-blue-200 text-gray-600 font-bold rounded-xl text-sm uppercase transition relative overflow-hidden">Cancel</button>
@@ -467,7 +474,7 @@ function showForgotPassword() {
     try {
       const { error } = await resetPassword(email);
       if (error) throw error;
-      overlay.innerHTML = `<div class="glass border border-blue-200 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(255,255,255,.95)"><h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> Check Your Email</h3><p class="text-sm text-gray-600 mb-4">A password reset link has been sent to <span class="text-blue-600 font-bold">${email}</span>. The link expires in 1 hour.</p><button id="fp-close" class="btn-press w-full bg-gray-100 border border-blue-200 text-gray-600 font-bold py-2.5 rounded-xl text-sm uppercase transition relative overflow-hidden">Close</button></div>`;
+      overlay.innerHTML = `<div class="glass border border-blue-200 rounded-2xl p-6 max-w-sm w-full" style="background:rgba(255,255,255,.95)"><h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> Check Your Email</h3><p class="text-sm text-gray-600 mb-4">A password reset link has been sent to <span class="text-blue-600 font-bold">${escHtml(email)}</span>. The link expires in 1 hour.</p><button id="fp-close" class="btn-press w-full bg-gray-100 border border-blue-200 text-gray-600 font-bold py-2.5 rounded-xl text-sm uppercase transition relative overflow-hidden">Close</button></div>`;
       if (window.lucide) lucide.createIcons();
       overlay.querySelector('#fp-close').onclick = () => overlay.remove();
     } catch (err) {
@@ -478,6 +485,37 @@ function showForgotPassword() {
 }
 
 /* ── Remember me restore ────────────────────────────────────── */
+// Persistent "Verify your email" screen shown right after sign-up when the
+// account is waiting for email confirmation. Offers a resend action so a lost
+// email never becomes a dead end.
+function showVerifyEmailScreen(email) {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center p-4';
+  overlay.innerHTML = `
+    <div class="glass border border-blue-200 rounded-2xl p-6 max-w-sm w-full text-center" style="background:rgba(255,255,255,.95)">
+      <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-50 rounded-2xl mb-3"><i data-lucide="mail-check" class="w-7 h-7 text-blue-600"></i></div>
+      <h3 class="text-lg font-bold text-gray-900 mb-1">Verify your email</h3>
+      <p class="text-sm text-gray-600 mb-4">We sent a verification link to <span class="text-blue-600 font-bold">${escHtml(email)}</span>. Open it on this device to activate your account, then sign in.</p>
+      <button id="ve-resend" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm uppercase tracking-wide mb-2 transition relative overflow-hidden">Resend Email</button>
+      <button id="ve-close" class="btn-press w-full bg-gray-100 border border-blue-200 text-gray-600 font-bold py-2.5 rounded-xl text-sm uppercase transition relative overflow-hidden">Back to Sign In</button>
+      <p id="ve-note" class="hidden text-xs text-emerald-600 mt-3 font-semibold">Verification email sent — please check your inbox.</p>
+    </div>`;
+  document.body.appendChild(overlay);
+  if (window.lucide) lucide.createIcons();
+  overlay.querySelector('#ve-close').onclick = () => overlay.remove();
+  overlay.querySelector('#ve-resend').onclick = async () => {
+    const btn = overlay.querySelector('#ve-resend');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    try { await resendVerification(email); } catch { /* surfaced below via note only when it succeeds */ }
+    btn.disabled = false;
+    btn.textContent = 'Resend Email';
+    const note = overlay.querySelector('#ve-note');
+    note.textContent = 'Verification email sent — please check your inbox.';
+    note.classList.remove('hidden');
+  };
+}
+
 const remembered = localStorage.getItem('kco_remember_email');
 if (remembered) {
   emailInput.value = remembered;
@@ -524,8 +562,10 @@ form.addEventListener('submit', async (e) => {
 
     // Save country to profile (register mode)
     if (mode === 'register' && selectedCountry) {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id;
+      // signUp returns the user object even when email confirmation is still
+      // pending, so the chosen username/country are saved right away instead of
+      // being silently discarded until after verification.
+      const userId = result.data?.user?.id;
       if (userId) {
         await supabase.from('profiles').upsert({
           user_id: userId,
@@ -535,10 +575,7 @@ form.addEventListener('submit', async (e) => {
       }
       localStorage.setItem('kco_country', selectedCountry.code);
 
-      const redirect = getRedirectAfterAuth();
-      const params = new URLSearchParams(window.location.search);
-      const redirectParam = params.get('redirect');
-      const targetRedirect = redirect || redirectParam || '/';
+      const targetRedirect = getPostAuthRedirectTarget();
 
       const verifyMail = await sendAuthEmail('verify_email', {
         email,
@@ -546,7 +583,6 @@ form.addEventListener('submit', async (e) => {
         redirect_url: targetRedirect,
       });
       const welcomeMail = await sendAuthEmail('welcome', { email, name: usernameInput.value });
-      showToast('Account created! Check your email for verification link.');
       if (!verifyMail.ok) {
         showToast('Verification email helper endpoint is unavailable. Supabase default verification is still active.');
       }
@@ -554,6 +590,16 @@ form.addEventListener('submit', async (e) => {
         console.warn('Welcome email endpoint failed:', welcomeMail.error);
       }
 
+      // Email confirmation pending (no session yet): stay here and show a
+      // persistent "Verify your email" screen — never redirect away while the
+      // instruction would only live in a toast the user never sees.
+      if (!result.data?.session) {
+        showVerifyEmailScreen(email);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i data-lucide="user-plus" class="w-5 h-5"></i> Create Account';
+        return;
+      }
+      showToast('Account created! Welcome to Weverse Online Shop.');
       clearRedirectAfterAuth();
       window.location.href = targetRedirect;
       return;

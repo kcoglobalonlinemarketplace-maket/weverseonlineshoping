@@ -6873,6 +6873,11 @@ function rerenderHeroVideoManager() {
 function heroPanelMediaSlot(s, i) {
   const video = String((s && s.video) || '').trim();
   const poster = String((s && s.poster) || '').trim();
+  // A blob: URL means the real upload FAILED — show a loud warning so the
+  // owner never mistakes the temporary preview for a saved video.
+  const tempWarning = (video && isTempMediaUrl(video)) || (poster && isTempMediaUrl(poster))
+    ? `<p class="mt-2 text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">⚠ Temporary preview only — the upload FAILED, this will NOT be saved. Re-upload a smaller MP4/WebM.</p>`
+    : '';
   const body = video
     ? `<video src="${esc(video)}" ${poster ? `poster="${esc(poster)}"` : ''} class="w-full h-40 object-cover" muted controls preload="metadata"></video>`
     : poster
@@ -6881,6 +6886,7 @@ function heroPanelMediaSlot(s, i) {
   return `
     <div>
       <div class="w-full overflow-hidden rounded-xl bg-gray-950 border border-indigo-500/20 flex items-center justify-center">${body}</div>
+      ${tempWarning}
       <div class="flex flex-wrap gap-1.5 mt-2 justify-end">
         <button type="button" onclick="heroVideoUpload(${i},'video')" class="px-3 py-1.5 rounded-lg ${video ? 'bg-white/10 text-gray-200 border border-white/10' : 'bg-indigo-600 text-white'} text-[10px] font-bold transition">${video ? 'Replace Video' : 'Upload Video'}</button>
         ${video ? `<button type="button" onclick="heroVideoRemoveMedia(${i},'video')" class="px-3 py-1.5 rounded-lg bg-red-600/80 text-white text-[10px] font-bold">Remove Video</button>` : ''}
@@ -6976,18 +6982,28 @@ window.addHeroVideoSlide = function() {
   rerenderHeroVideoManager();
   showToast('New slide added — upload a video and press Save to show it.', 'info');
 };
+// Uploads one hero file and returns { url, persisted, error }. persisted=false
+// means ONLY a temporary in-browser preview exists (a blob: URL that dies on
+// reload) — callers must surface that instead of pretending the upload worked,
+// otherwise the owner saves dead links into site_settings.hero_video_slides.
 async function heroUploadOne(file, kind) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { url: URL.createObjectURL(file), persisted: false, error: 'You are signed out — sign in again, then re-upload.' };
     const ext = (file.name.split('.').pop() || (kind === 'video' ? 'mp4' : 'jpg')).toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!session) return URL.createObjectURL(file); // local preview fallback
     const path = `hero/${kind}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, cacheControl: '3600', upsert: true });
-    if (error) return URL.createObjectURL(file);
+    if (error) return { url: URL.createObjectURL(file), persisted: false, error: error.message };
     const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-    return (data && data.publicUrl) || URL.createObjectURL(file);
-  } catch { return URL.createObjectURL(file); }
+    const publicUrl = data && data.publicUrl;
+    if (!publicUrl) return { url: URL.createObjectURL(file), persisted: false, error: 'Storage did not return a public URL.' };
+    return { url: publicUrl, persisted: true, error: null };
+  } catch (err) {
+    return { url: URL.createObjectURL(file), persisted: false, error: String((err && err.message) || err) };
+  }
 }
+// Temporary object URLs can never survive a save/reload.
+function isTempMediaUrl(u) { return /^blob:/i.test(String(u || '')); }
 async function heroVideoFileChosen(i, kind, file) {
   const arr = heroVideoDraft();
   if (!file || !arr[i]) return;
@@ -6996,11 +7012,18 @@ async function heroVideoFileChosen(i, kind, file) {
   } else if (!file.type.startsWith('image/')) {
     showToast('Please choose an image for the poster.', 'error'); return;
   }
-  const url = await heroUploadOne(file, kind);
-  if (kind === 'video') arr[i].video = url;
-  else arr[i].poster = url;
+  showToast('⏳ Uploading ' + (kind === 'video' ? 'video' : 'poster') + '…', 'info');
+  const res = await heroUploadOne(file, kind);
+  if (kind === 'video') arr[i].video = res.url;
+  else arr[i].poster = res.url;
   rerenderHeroVideoManager();
-  showToast('✓ ' + (kind === 'video' ? 'Video' : 'Poster') + ' uploaded — press Save to apply', 'success');
+  if (res.persisted) {
+    showToast('✓ ' + (kind === 'video' ? 'Video' : 'Poster') + ' uploaded — press Save & Publish Hero Banner to go live.', 'success');
+  } else {
+    // NEVER pretend a failed upload worked. The preview below is only
+    // temporary and would vanish after reload — tell the owner exactly why.
+    showToast('⚠ UPLOAD FAILED: ' + (res.error || 'unknown reason') + ' — this preview is TEMPORARY and will NOT be saved. Try a smaller MP4/WebM (keep videos under ~50 MB), then re-upload.', 'error');
+  }
 }
 function renderHeroVideoManagerHtml(slides) {
   const arr = Array.isArray(slides) ? slides.map(s => ({ ...s })) : [];
@@ -7027,10 +7050,24 @@ function renderHeroVideoManagerHtml(slides) {
 // Saves ONLY the hero video slides — works with a single video, no minimum required.
 // Keeps the same site_settings row/update pattern as saveContentSettings.
 window.heroVideoSavePublish = async function(btn) {
-  const arr = heroVideoDraft().filter(s => s && (s.video || s.poster || s.title || s.subtitle));
-  if (!arr.length) { showToast('Add at least one video slide before publishing.', 'error'); return; }
+  const isTemp = (u) => /^blob:/i.test(String(u || ''));
+  const draft = heroVideoDraft().filter(s => s && (s.video || s.poster || s.title || s.subtitle));
+  if (!draft.length) { showToast('Add at least one video slide before publishing.', 'error'); return; }
+  // Temporary blob: previews can never go live — strip dead posters and REFUSE
+  // to publish slides whose video upload failed, instead of saving dead links.
+  draft.forEach((s) => { if (s.poster && isTemp(s.poster)) s.poster = ''; });
+  const failedSlides = draft.filter((s) => s.video && isTemp(s.video));
+  const publishable = draft.filter((s) => s.video && !isTemp(s.video));
+  if (failedSlides.length && !publishable.length) {
+    showToast(`Upload FAILED for your video${failedSlides.length > 1 ? 's' : ''} — temporary previews cannot go live. Re-upload a smaller MP4/WebM (under ~50 MB), then press this button again.`, 'error');
+    return;
+  }
+  if (failedSlides.length) {
+    if (!confirm(`${failedSlides.length} slide${failedSlides.length > 1 ? 's' : ''} had a FAILED upload and will be LEFT OUT. Publish the remaining ${publishable.length} slide${publishable.length === 1 ? '' : 's'} now?`)) return;
+  }
+  const arr = publishable;
   const withVideo = arr.filter(s => s.video);
-  if (!withVideo.length) { showToast('Please upload a video in at least one slide first.', 'error'); return; }
+  if (!arr.length) { showToast('Please upload a video in at least one slide first.', 'error'); return; }
   const label = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Publishing…'; }
   try {

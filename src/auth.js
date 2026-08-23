@@ -1,5 +1,15 @@
 import { ANON_KEY, SUPABASE_URL, isSupabaseConfigured, supabase } from './supabase-client.js';
 
+// Email links (verification / password reset) must open the LIVE site — never
+// Capacitor's local app origin (https://localhost), which dies outside the app.
+const NATIVE_APP_ORIGIN = 'https://weverseonlineshop.com';
+export function appOrigin() {
+  try {
+    if (window.Capacitor?.isNativePlatform?.()) return NATIVE_APP_ORIGIN;
+  } catch { /* web fallback below */ }
+  return window.location.origin;
+}
+
 export async function getCurrentUser() {
   // Use getSession() for reliable session restoration across refresh/navigation.
   // getUser() can return null on cold loads even when a valid session exists.
@@ -15,7 +25,7 @@ export async function isAdmin() {
 }
 
 export async function signUp(email, password) {
-  const redirectUrl = `${window.location.origin}/auth.html`;
+  const redirectUrl = `${appOrigin()}/auth.html`;
   return supabase.auth.signUp({
     email,
     password,
@@ -35,7 +45,7 @@ export async function signOut() {
 
 export async function resetPassword(email) {
   return supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/auth.html?reset=1`,
+    redirectTo: `${appOrigin()}/auth.html?reset=1`,
   });
 }
 
