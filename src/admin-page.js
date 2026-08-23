@@ -13,14 +13,15 @@ import { generateProduct, getCatalogCategories, getCatalogCategory, getHiddenCat
 import { invalidatePromoBackgrounds } from './promo-backgrounds.js';
 import { invalidateSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
 import { MARKETPLACE_CATEGORIES, MARKETPLACE_AUTOMOTIVE, normalizeToMarketplaceCategory } from './categories.js';
+import { looksLikePdf, pdfToPageDataUrls } from './pdf-pages.js';
 
-// ══════════════════════════════════════════════════════════
-//  WEVERSE ADMIN DASHBOARD  —  Complete Management Console
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  WEVERSE ADMIN DASHBOARD  â€”  Complete Management Console
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 const ADMIN_EMAIL = 'weverseonlineshop@gmail.com';
 const DEFAULT_BRAND_NAME = 'Weverse Online Shop';
-const DEFAULT_BRAND_SLOGAN = 'GLOBAL SHOPPING • WORLDWIDE DELIVERY';
+const DEFAULT_BRAND_SLOGAN = 'GLOBAL SHOPPING â€¢ WORLDWIDE DELIVERY';
 
 // Supabase edge function that proxies AI providers server-side so API keys
 // never leave the server or appear in browser network calls.
@@ -29,7 +30,7 @@ const AI_FN_URL = import.meta.env.DEV
   ? '/_supabase/functions/v1/ai-admin-assistant'
   : `${SUPABASE_BASE_URL}/functions/v1/ai-admin-assistant`;
 
-// ── Navigation config ──────────────────────────────────────
+// â”€â”€ Navigation config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const NAV = [
   { group: 'Main', items: [
     { id: 'dashboard',   label: 'Dashboard',         icon: 'layout-dashboard' },
@@ -83,10 +84,10 @@ messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement 
 
 const SORTED_CURRENCIES = [...ALL_CURRENCIES].sort();
 
-// ── State ──────────────────────────────────────────────────
+// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let state = { user: null, section: 'dashboard' };
 
-// ── Helpers ────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function esc(t) {
   if (t == null) return '';
   const d = document.createElement('div'); d.textContent = String(t); return d.innerHTML;
@@ -94,8 +95,8 @@ function esc(t) {
 function fmtMoney(n, cur = 'USD') {
   return `${(parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`;
 }
-function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'; }
-function fmtDT(d) { return d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'â€”'; }
+function fmtDT(d) { return d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'â€”'; }
 function genId() { return 'W-' + String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0'); }
 
 // Whitelist of showroom_listings columns known to exist in the live DB.
@@ -147,7 +148,7 @@ function badge(status) {
     true: ['bg-emerald-500/10 text-emerald-400 border-emerald-500/20', 'Active'],
     false: ['bg-gray-500/10 text-gray-400 border-gray-500/20', 'Inactive'],
   };
-  const [cls, label] = map[String(status)] || ['bg-gray-500/10 text-gray-400 border-gray-500/20', esc(status) || '—'];
+  const [cls, label] = map[String(status)] || ['bg-gray-500/10 text-gray-400 border-gray-500/20', esc(status) || 'â€”'];
   return `<span class="badge ${cls}">${label}</span>`;
 }
 
@@ -166,10 +167,10 @@ function statCard(label, value, icon, color, sub = '') {
   </div>`;
 }
 
-function loading() { return `<div class="flex items-center justify-center py-24"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loading…</div></div>`; }
+function loading() { return `<div class="flex items-center justify-center py-24"><div class="flex items-center gap-3 text-gray-500 text-sm"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i> Loadingâ€¦</div></div>`; }
 function emptyState(icon, title, sub, btnHtml = '') { return `<div class="flex flex-col items-center justify-center py-20 text-center"><div class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-4"><i data-lucide="${icon}" class="w-8 h-8 text-blue-400"></i></div><h3 class="text-base font-black text-white mb-1">${esc(title)}</h3><p class="text-sm text-gray-500 max-w-xs">${esc(sub)}</p>${btnHtml ? `<div class="mt-5">${btnHtml}</div>` : ''}</div>`; }
 
-// ── Sidebar ────────────────────────────────────────────────
+// â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderSidebar() {
   const nav = document.getElementById('sidebar-nav');
   if (!nav) return;
@@ -185,7 +186,7 @@ function renderSidebar() {
   if (window.lucide) lucide.createIcons();
 }
 
-// ── Navigation ─────────────────────────────────────────────
+// â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.navigate = function(section) {
   state.section = section;
   const title = PAGE_TITLES[section] || section;
@@ -244,27 +245,27 @@ window.openSidebar = () => { document.getElementById('sidebar').classList.add('o
 window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.add('hidden'); };
 document.getElementById('close-sidebar')?.addEventListener('click', closeSidebar);
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  AUTH
-// ══════════════════════════════════════════════════════════
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  SECURE AUTH SYSTEM
-//  • Email + password login
-//  • Supabase MFA (TOTP) 2FA with backup codes
-//  • Remember me (30-day persistent session)
-//  • Forgot / reset password
-//  • Change password
-//  • Login history stored in admin_security_logs
-//  • Logout from all devices
-//  • Brute-force lockout (5 failed attempts → 15 min lock)
-// ══════════════════════════════════════════════════════════
+//  â€¢ Email + password login
+//  â€¢ Supabase MFA (TOTP) 2FA with backup codes
+//  â€¢ Remember me (30-day persistent session)
+//  â€¢ Forgot / reset password
+//  â€¢ Change password
+//  â€¢ Login history stored in admin_security_logs
+//  â€¢ Logout from all devices
+//  â€¢ Brute-force lockout (5 failed attempts â†’ 15 min lock)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 const REMEMBER_KEY = 'kco_admin_remember';
 const LOGIN_ATTEMPTS_KEY = 'kco_login_attempts';
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
 
-// ── Helpers ────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function loginError(msg) {
   const el = document.getElementById('login-error');
   const txt = document.getElementById('login-error-text');
@@ -351,14 +352,14 @@ function setLoginBusy(btnId, busy, idleHtml = '') {
   if (!btn) return;
   btn.disabled = busy;
   if (busy) {
-    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline-block mr-1"></i> Please wait…';
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline-block mr-1"></i> Please waitâ€¦';
   } else if (idleHtml) {
     btn.innerHTML = idleHtml;
   }
   if (window.lucide) lucide.createIcons();
 }
 
-// ── Brute-force lockout ───────────────────────────────────
+// â”€â”€ Brute-force lockout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getLockoutState() {
   try { return JSON.parse(localStorage.getItem(LOGIN_ATTEMPTS_KEY) || '{"count":0}'); } catch { return { count: 0 }; }
 }
@@ -378,7 +379,7 @@ function checkLockout() {
   return Math.ceil(remaining / 60000); // minutes remaining
 }
 
-// ── Login history ─────────────────────────────────────────
+// â”€â”€ Login history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function logLoginEvent(userId, event, extra = {}) {
   try {
     await supabase.from('admin_security_logs').insert({
@@ -399,7 +400,7 @@ async function getClientIP() {
   } catch { return 'unknown'; }
 }
 
-// ── Admin access check — tries 3 ways, most to least reliable ─
+// â”€â”€ Admin access check â€” tries 3 ways, most to least reliable â”€
 async function checkAdminAccess(user) {
   if (!user) return false;
   // Primary path: rely on the RLS-facing admin check so the user can both see
@@ -421,7 +422,7 @@ async function checkAdminAccess(user) {
   return normalizeEmail(user.email) === ADMIN_EMAIL;
 }
 
-// ── Init auth (called on page load) ──────────────────────
+// â”€â”€ Init auth (called on page load) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function initAuth() {
   // Handle password reset callback (user clicked email link)
   const hash = window.location.hash;
@@ -462,7 +463,7 @@ function showLoginScreenOnly() {
   if (ls) ls.style.display = 'flex';
 }
 
-// ── Login UI setup ────────────────────────────────────────
+// â”€â”€ Login UI setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showLoginUI() {
   showLoginScreenOnly();
   setLoginStep('login');
@@ -585,7 +586,7 @@ async function handleLoginSubmit(e) {
   showAdminUI();
 }
 
-// ── 2FA verification listeners ─────────────────────────────
+// â”€â”€ 2FA verification listeners â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function setup2FAVerifyListeners() {
   const verifyBtn = document.getElementById('verify-2fa-btn');
   if (verifyBtn && !verifyBtn._bound) {
@@ -669,7 +670,7 @@ async function handleBackupCodeVerify() {
   } catch (err) { loginError(err.message); setLoginBusy('verify-backup-btn', false, 'Use Backup Code'); }
 }
 
-// ── Forgot password listeners ─────────────────────────────
+// â”€â”€ Forgot password listeners â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function setupForgotListeners() {
   document.getElementById('back-to-login')?.addEventListener('click', () => setLoginStep('login'));
   document.getElementById('send-reset-btn')?.addEventListener('click', handleForgotPassword);
@@ -692,7 +693,7 @@ async function handleForgotPassword() {
   loginSuccess('Reset link sent! Check your inbox and open it from this device to continue.');
 }
 
-// ── Password reset flow (after clicking email link) ───────
+// â”€â”€ Password reset flow (after clicking email link) â”€â”€â”€â”€â”€â”€â”€
 function showPasswordResetFlow() {
   const ls = document.getElementById('login-screen');
   if (!ls) return;
@@ -734,7 +735,7 @@ window.handlePasswordResetSubmit = async function() {
   setTimeout(() => window.location.reload(), 1500);
 };
 
-// ── Show admin dashboard ──────────────────────────────────
+// â”€â”€ Show admin dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showAdminUI() {
   const ls = document.getElementById('login-screen');
   if (ls) ls.style.display = 'none';
@@ -744,7 +745,7 @@ function showAdminUI() {
   navigate('dashboard');
 }
 
-// ── Sign out ──────────────────────────────────────────────
+// â”€â”€ Sign out â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.adminSignOut = async function() {
   if (state.user) await logLoginEvent(state.user.id, 'logout');
   await supabase.auth.signOut();
@@ -756,7 +757,7 @@ window.adminSignOut = async function() {
   setupForgotListeners();
 };
 
-// ── Logout from ALL devices ───────────────────────────────
+// â”€â”€ Logout from ALL devices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.logoutAllDevices = async function() {
   if (!confirm('This will sign you out on ALL devices. Continue?')) return;
   if (state.user) await logLoginEvent(state.user.id, 'logout_all_devices');
@@ -766,9 +767,9 @@ window.logoutAllDevices = async function() {
   setTimeout(() => window.location.reload(), 1200);
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  1. DASHBOARD
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderDashboard() {
   const content = document.getElementById('content');
   try {
@@ -874,16 +875,16 @@ async function renderDashboard() {
   }
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  2. PRODUCTS MANAGER
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderProducts() {
   const content = document.getElementById('content');
   try {
     const { data: products, error } = await supabase.from('showroom_listings')
       .select('*').neq('listing_type', 'property').order('created_at', { ascending: false });
-    // Show EVERY product from every source — database, the local fallback store,
-    // and the static showroom seed — so nothing is ever missing from the manager.
+    // Show EVERY product from every source â€” database, the local fallback store,
+    // and the static showroom seed â€” so nothing is ever missing from the manager.
     // DB/local rows win over seed on duplicate IDs (dedupe by property_id).
     const seen = new Set();
     const items = [];
@@ -907,7 +908,7 @@ async function renderProducts() {
     }
     items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     // Hide any listing the admin deleted (seed items are tombstones in the
-    // hidden list — see deleteProduct) so deleted products never come back.
+    // hidden list â€” see deleteProduct) so deleted products never come back.
     try { await loadHiddenCatalogIds(); } catch {}
     const hiddenIds = new Set(getHiddenCatalogIds());
     if (hiddenIds.size) {
@@ -937,7 +938,7 @@ async function renderProducts() {
               <button onclick="showAddProductStep1()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-black px-6 py-3.5 rounded-2xl transition shadow-xl shadow-blue-700/25">
                 <i data-lucide="plus" class="w-5 h-5"></i> Add Product
               </button>
-              <button onclick="openGeneralAiScanner()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition shadow-xl shadow-violet-700/25" title="Scan product photos with AI — detect, analyze and add products to your manager">
+              <button onclick="openGeneralAiScanner()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition shadow-xl shadow-violet-700/25" title="Scan product photos with AI â€” detect, analyze and add products to your manager">
                 <i data-lucide="scan-search" class="w-5 h-5"></i> General AI Scanner
               </button>
               <button onclick="clearAllProducts()" class="btn-press flex items-center justify-center gap-2 bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition" title="Delete every product from the manager & database. Your showroom catalog stays.">
@@ -1362,7 +1363,7 @@ function isRlsDenied(error) {
 // of silently falling back to local storage.
 function handleWriteError(error, fallbackFn, actionLabel) {
   if (error && isRlsDenied(error)) {
-    showToast(`⚠️ ${actionLabel} blocked: Your account is signed in but the database admin role is not active. Re-run the admin permission migration, or contact the owner.`, 'error');
+    showToast(`âš ï¸ ${actionLabel} blocked: Your account is signed in but the database admin role is not active. Re-run the admin permission migration, or contact the owner.`, 'error');
     return true; // handled - do NOT fall back to local storage
   }
   if (error) {
@@ -1384,7 +1385,7 @@ window.bulkToggleActive = async function(active) {
   }));
   const denied = results.some(r => r.error && isRlsDenied(r.error));
   if (denied) {
-    showToast(`⚠️ ${ids.length} products NOT ${active ? 'published' : 'unpublished'}: database admin role blocked the write. Re-run the admin permission migration.`, 'error');
+    showToast(`âš ï¸ ${ids.length} products NOT ${active ? 'published' : 'unpublished'}: database admin role blocked the write. Re-run the admin permission migration.`, 'error');
     window._productSelection = new Set();
     renderProducts();
     return;
@@ -1413,7 +1414,7 @@ window.bulkArchive = async function() {
   const results = await Promise.all(ids.map(id => supabase.from('showroom_listings').update({ is_active: false, availability_status: 'Archived' }).eq('property_id', id)));
   const denied = results.some(r => r.error && isRlsDenied(r.error));
   if (denied) {
-    showToast('⚠️ Archive blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+    showToast('âš ï¸ Archive blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
     window._productSelection = new Set();
     renderProducts();
     return;
@@ -1431,7 +1432,7 @@ window.bulkDeleteProducts = async function() {
   const results = await Promise.all(ids.map(id => supabase.from('showroom_listings').delete().eq('property_id', id)));
   const denied = results.some(r => r.error && isRlsDenied(r.error));
   if (denied) {
-    showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+    showToast('âš ï¸ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
     window._productSelection = new Set();
     renderProducts();
     return;
@@ -1451,7 +1452,7 @@ window.previewProduct = async function(pid) {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">Product Live Preview</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">ðŸ”™ Back</button>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="space-y-2">
@@ -1504,8 +1505,8 @@ window.quickEditProduct = async function(pid) {
             <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
               <i data-lucide="image-plus" class="w-10 h-10 text-blue-400 mx-auto mb-2"></i>
               <p class="text-base font-bold text-gray-300">Tap to add photos (up to 24)</p>
-              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP. First image is the cover. ✕ deletes any image (even the main/cover).</p>
-              <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
+              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP. First image is the cover. âœ• deletes any image (even the main/cover).</p>
+              <input type="file" id="img-upload" class="hidden" multiple accept="image/*,application/pdf" onchange="handleImageUpload(event)">
             </div>
             <div id="image-preview" class="flex flex-wrap gap-2.5 mt-3">
               ${imgs.map((url, i) => imageThumbHtml(url, i)).join('')}
@@ -1527,7 +1528,9 @@ window.quickEditProduct = async function(pid) {
 window.saveQuickEditProduct = async function(e, pid) {
   e.preventDefault();
   const fd = new FormData(e.target);
-  const imgs = [...document.querySelectorAll('#image-preview .img-thumb img')].map(i => i.getAttribute('src')).filter(s => s && !String(s).startsWith('blob:'));
+  const imgs = [...document.querySelectorAll('#image-preview .img-thumb')]
+    .map(t => t.dataset.url || (t.querySelector('img') ? t.querySelector('img').getAttribute('src') : ''))
+    .filter(s => s && !String(s).startsWith('blob:'));
   const patch = {
     title: fd.get('title') || 'Untitled Product',
     price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(fd.get('price')) || 0)),
@@ -1546,7 +1549,7 @@ window.saveQuickEditProduct = async function(e, pid) {
   const { error } = await supabase.from('showroom_listings').upsert({ ...full, ...patch, property_id: pid }, { onConflict: 'property_id' });
   if (error) {
     if (isRlsDenied(error)) {
-      showToast('⚠️ Save blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+      showToast('âš ï¸ Save blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
       closeModal();
       renderProducts();
       return;
@@ -1554,7 +1557,7 @@ window.saveQuickEditProduct = async function(e, pid) {
     patchLocalShowroomListing(pid, patch);
     showToast('Quick edit saved locally', 'info');
   } else {
-    showToast(patch.is_active ? 'Saved & published — your showroom shows it now' : 'Quick edit saved (draft)');
+    showToast(patch.is_active ? 'Saved & published â€” your showroom shows it now' : 'Quick edit saved (draft)');
   }
   closeModal();
   renderProducts();
@@ -1589,12 +1592,12 @@ window.deleteProduct = async function(pid) {
   removeLocalShowroomListing(pid);
   // Seed listings (the built-in catalog) are not rows in the database, so a
   // DB delete can never remove them. Tombstone the id in the persisted hidden
-  // list instead — the storefront checks it site-wide (cards, details, search,
+  // list instead â€” the storefront checks it site-wide (cards, details, search,
   // promo pool, checkout) and every manager render filters it below.
   try {
     const res = await saveCatalogHidden(pid, true);
     if (res && res.error && isRlsDenied(res.error)) {
-      showToast('⚠️ Deleted, but the site-wide hidden list could not be saved: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+      showToast('âš ï¸ Deleted, but the site-wide hidden list could not be saved: database admin role rejected the write. Re-run the admin permission migration.', 'error');
     } else {
       showToast('Product deleted');
     }
@@ -1613,7 +1616,7 @@ window.clearAllProducts = async function() {
   if (!confirm(`Delete ALL ${total} product(s) from the Product Manager and the database now?\n\nThis is permanent and cannot be undone. Your built-in showroom catalog will stay.`)) return;
   const { error } = await supabase.from('showroom_listings').delete().neq('property_id', '__none__');
   if (error) {
-    if (isRlsDenied(error)) return showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+    if (isRlsDenied(error)) return showToast('âš ï¸ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
     return showToast('Clear failed: ' + error.message, 'error');
   }
   try { localStorage.removeItem('kco_local_showroom_listings_v1'); } catch {}
@@ -1627,7 +1630,7 @@ window.openProductMoreActions = function(pid) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">More Actions</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">ðŸ”™ Back</button>
         </div>
         <div class="grid grid-cols-1 gap-2">
           <button onclick="previewProduct('${pid}');closeModal();" class="btn-press text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-semibold text-gray-200">Live Preview</button>
@@ -1664,10 +1667,10 @@ function renderRevenueChart(orders) {
   });
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  SMART PRODUCT CATEGORY CONFIG
-// ══════════════════════════════════════════════════════════
-// The exact marketplace category names (src/categories.js) — the same list the
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// The exact marketplace category names (src/categories.js) â€” the same list the
 // customer showroom category bar renders, so admin products always land in a
 // category the showroom actually shows.
 const PRODUCT_CATEGORIES = MARKETPLACE_CATEGORIES.map(c => c.name);
@@ -1767,7 +1770,7 @@ const CAT_FIELDS = {
   Gaming: [
     { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
     { key: 'brand', label: 'Brand', type: 'text' },
-    { key: 'platform', label: 'Platform (PS5, Xbox, PC…)', type: 'text' },
+    { key: 'platform', label: 'Platform (PS5, Xbox, PCâ€¦)', type: 'text' },
     { key: 'model', label: 'Game / Model', type: 'text' },
     { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Used'], required: true },
     { key: 'price', label: 'Price (USD)', type: 'number', required: true },
@@ -1790,7 +1793,7 @@ const CAT_FIELDS = {
 ['Men\'s Fashion', 'Women\'s Fashion', 'Fashion'].forEach(k => CAT_FIELDS[k] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (T-Shirt, Dress…)', type: 'text' },
+  { key: 'type', label: 'Type (T-Shirt, Dressâ€¦)', type: 'text' },
   { key: 'size', label: 'Size', type: 'text' },
   { key: 'color', label: 'Color', type: 'text' },
   { key: 'material', label: 'Material', type: 'text' },
@@ -1801,14 +1804,14 @@ const CAT_FIELDS = {
   { key: 'description', label: 'Description', type: 'textarea', span: 2 },
 ]);
 
-// ── Category-specific field templates for EVERY product category ────────────
+// â”€â”€ Category-specific field templates for EVERY product category â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Each template gives the AI scanner + the manual form the exact fields for
 // that kind of product, so a bag scan fills bag fields, a book scan book
 // fields, etc. Non-column keys are stored in the `specifications` JSONB.
 CAT_FIELDS['Bags & Accessories'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (Handbag, Backpack, Luggage…)', type: 'text' },
+  { key: 'type', label: 'Type (Handbag, Backpack, Luggageâ€¦)', type: 'text' },
   { key: 'size', label: 'Size / Dimensions', type: 'text' },
   { key: 'material', label: 'Material (e.g. Leather)', type: 'text' },
   { key: 'color', label: 'Color', type: 'text' },
@@ -1822,7 +1825,7 @@ CAT_FIELDS['Bags & Accessories'] = [
 CAT_FIELDS['Beauty & Skincare'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (Serum, Cream, Makeup…)', type: 'text' },
+  { key: 'type', label: 'Type (Serum, Cream, Makeupâ€¦)', type: 'text' },
   { key: 'size', label: 'Size (ml / g)', type: 'text' },
   { key: 'skin_type', label: 'Skin Type', type: 'text' },
   { key: 'ingredients', label: 'Key Ingredients', type: 'text' },
@@ -1836,7 +1839,7 @@ CAT_FIELDS['Home & Kitchen'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
   { key: 'model', label: 'Model', type: 'text' },
-  { key: 'type', label: 'Type (Appliance, Cookware, Decor…)', type: 'text' },
+  { key: 'type', label: 'Type (Appliance, Cookware, Decorâ€¦)', type: 'text' },
   { key: 'color', label: 'Color', type: 'text' },
   { key: 'material', label: 'Material', type: 'text' },
   { key: 'dimensions', label: 'Dimensions', type: 'text' },
@@ -1850,7 +1853,7 @@ CAT_FIELDS['Home & Kitchen'] = [
 CAT_FIELDS['Furniture'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (Sofa, Table, Chair…)', type: 'text' },
+  { key: 'type', label: 'Type (Sofa, Table, Chairâ€¦)', type: 'text' },
   { key: 'material', label: 'Material', type: 'text' },
   { key: 'color', label: 'Color', type: 'text' },
   { key: 'dimensions', label: 'Dimensions', type: 'text' },
@@ -1864,7 +1867,7 @@ CAT_FIELDS['Furniture'] = [
 CAT_FIELDS['Garden & Outdoor'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (Mower, Grill, Furniture…)', type: 'text' },
+  { key: 'type', label: 'Type (Mower, Grill, Furnitureâ€¦)', type: 'text' },
   { key: 'material', label: 'Material', type: 'text' },
   { key: 'color', label: 'Color', type: 'text' },
   { key: 'dimensions', label: 'Dimensions', type: 'text' },
@@ -1889,7 +1892,7 @@ CAT_FIELDS['Toys & Games'] = [
 CAT_FIELDS['Food & Groceries'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (Snack, Beverage, Pantry…)', type: 'text' },
+  { key: 'type', label: 'Type (Snack, Beverage, Pantryâ€¦)', type: 'text' },
   { key: 'size', label: 'Size / Weight', type: 'text' },
   { key: 'shelf_life', label: 'Shelf Life', type: 'text' },
   { key: 'storage', label: 'Storage Instructions', type: 'text' },
@@ -1901,7 +1904,7 @@ CAT_FIELDS['Food & Groceries'] = [
 CAT_FIELDS['Baby & Kids'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (Stroller, Clothing, Toy…)', type: 'text' },
+  { key: 'type', label: 'Type (Stroller, Clothing, Toyâ€¦)', type: 'text' },
   { key: 'age_range', label: 'Age Range', type: 'text' },
   { key: 'size', label: 'Size', type: 'text' },
   { key: 'material', label: 'Material', type: 'text' },
@@ -1915,7 +1918,7 @@ CAT_FIELDS['Baby & Kids'] = [
 CAT_FIELDS['Health & Medical'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (Device, Supplement, Care…)', type: 'text' },
+  { key: 'type', label: 'Type (Device, Supplement, Careâ€¦)', type: 'text' },
   { key: 'size', label: 'Size / Quantity', type: 'text' },
   { key: 'usage', label: 'Usage / Dosage', type: 'text' },
   { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used'] },
@@ -1941,7 +1944,7 @@ CAT_FIELDS['Books & Education'] = [
 CAT_FIELDS['Office & Stationery'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (Notebook, Pen, Printer…)', type: 'text' },
+  { key: 'type', label: 'Type (Notebook, Pen, Printerâ€¦)', type: 'text' },
   { key: 'material', label: 'Material', type: 'text' },
   { key: 'color', label: 'Color', type: 'text' },
   { key: 'size', label: 'Size', type: 'text' },
@@ -1954,8 +1957,8 @@ CAT_FIELDS['Office & Stationery'] = [
 CAT_FIELDS['Pet Supplies'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text' },
-  { key: 'type', label: 'Type (Food, Toy, Bed, Collar…)', type: 'text' },
-  { key: 'pet_type', label: 'Pet Type (Dog, Cat, Bird…)', type: 'text' },
+  { key: 'type', label: 'Type (Food, Toy, Bed, Collarâ€¦)', type: 'text' },
+  { key: 'pet_type', label: 'Pet Type (Dog, Cat, Birdâ€¦)', type: 'text' },
   { key: 'size', label: 'Size / Weight', type: 'text' },
   { key: 'material', label: 'Material', type: 'text' },
   { key: 'color', label: 'Color', type: 'text' },
@@ -1968,7 +1971,7 @@ CAT_FIELDS['Musical Instruments'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand', type: 'text', required: true },
   { key: 'model', label: 'Model', type: 'text' },
-  { key: 'type', label: 'Type (Guitar, Piano, Drums…)', type: 'text' },
+  { key: 'type', label: 'Type (Guitar, Piano, Drumsâ€¦)', type: 'text' },
   { key: 'material', label: 'Material', type: 'text' },
   { key: 'color', label: 'Color / Finish', type: 'text' },
   { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'], required: true },
@@ -1995,7 +1998,7 @@ CAT_FIELDS['Cameras & Photography'] = [
 CAT_FIELDS['Software & Digital'] = [
   { key: 'title', label: 'Product Title', type: 'text', required: true, span: 2 },
   { key: 'brand', label: 'Brand / Developer', type: 'text' },
-  { key: 'type', label: 'Type (Software, App, License…)', type: 'text' },
+  { key: 'type', label: 'Type (Software, App, Licenseâ€¦)', type: 'text' },
   { key: 'platform', label: 'Platform', type: 'text' },
   { key: 'license', label: 'License Type', type: 'text' },
   { key: 'version', label: 'Version', type: 'text' },
@@ -2016,7 +2019,7 @@ CAT_FIELDS['Services'] = [
 ];
 CAT_FIELDS['Social Media Accounts'] = [
   { key: 'title', label: 'Account Title', type: 'text', required: true, span: 2 },
-  { key: 'type', label: 'Platform (Instagram, TikTok…)', type: 'text' },
+  { key: 'type', label: 'Platform (Instagram, TikTokâ€¦)', type: 'text' },
   { key: 'followers', label: 'Followers', type: 'text' },
   { key: 'engagement', label: 'Engagement Rate', type: 'text' },
   { key: 'niche', label: 'Niche', type: 'text' },
@@ -2040,7 +2043,7 @@ AUTOMOTIVE_CATEGORIES.forEach(k => CAT_FIELDS[k] = [
   { key: 'fuel_type', label: 'Fuel Type', type: 'select', options: ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-in Hybrid', 'LPG', 'Bio-diesel'] },
   { key: 'seating_capacity', label: 'Seating Capacity', type: 'text', placeholder: 'e.g. 5 seats' },
   { key: 'doors', label: 'Number of Doors', type: 'text', placeholder: 'e.g. 4' },
-  { key: 'safety_features', label: 'Safety Features (comma separated)', type: 'text', placeholder: 'ABS, Airbags, Lane Assist, Traction Control…' },
+  { key: 'safety_features', label: 'Safety Features (comma separated)', type: 'text', placeholder: 'ABS, Airbags, Lane Assist, Traction Controlâ€¦' },
   { key: 'color', label: 'Color', type: 'text' },
   { key: 'condition', label: 'Condition', type: 'select', options: ['New', 'Refurbished', 'Used - Like New', 'Used - Good', 'Used - Fair'], required: true },
   { key: 'price', label: 'Price', type: 'number', required: true },
@@ -2057,8 +2060,8 @@ for (const key of Object.keys(CAT_FIELDS)) {
   CAT_FIELDS[key] = CAT_FIELDS[key].flatMap(f => {
     if (f.key !== 'price') return [f];
     return [
-      { key: 'real_price', label: 'Real Price (USD) — crossed out when a discount is active', type: 'number', placeholder: 'e.g. 250000 — original price before discount' },
-      { ...f, label: 'Discount Price (USD) — the price customers pay', placeholder: 'e.g. 200000 — the price customers actually pay' },
+      { key: 'real_price', label: 'Real Price (USD) â€” crossed out when a discount is active', type: 'number', placeholder: 'e.g. 250000 â€” original price before discount' },
+      { ...f, label: 'Discount Price (USD) â€” the price customers pay', placeholder: 'e.g. 200000 â€” the price customers actually pay' },
     ];
   });
 }
@@ -2105,9 +2108,9 @@ function setImageRequirement(prefix, count) {
   if (target) target.value = count ? String(count) : '';
   if (!note) return;
   if (count > 0) {
-    // Informational only — never blocks saving or publishing. Any number of
+    // Informational only â€” never blocks saving or publishing. Any number of
     // images is fine; the gallery simply shows what is available.
-    note.textContent = `This template fits up to ${count} images. Fewer images are perfectly fine — you can save and publish anytime.`;
+    note.textContent = `This template fits up to ${count} images. Fewer images are perfectly fine â€” you can save and publish anytime.`;
     note.classList.remove('hidden');
   } else {
     note.textContent = '';
@@ -2120,7 +2123,7 @@ function setImageRequirement(prefix, count) {
 // is kept only as a harmless no-op so existing callers stay valid. No fake or
 // duplicate images are ever generated to pad the count.
 function validateImageRequirement(count, images, label) {
-  return; // never blocks — any image count is allowed
+  return; // never blocks â€” any image count is allowed
 }
 
 function applyCatalogDraftToProductForm(category, mode = 'full') {
@@ -2201,17 +2204,17 @@ function renderProductFieldsForm(category, existing = {}, isEdit = false) {
   return fields.map(f => {
     const val = existing[f.key] || '';
     const gridSpan = f.span === 2 ? 'sm:col-span-2' : '';
-    // Existing products support partial updates — never force required fields on edit.
+    // Existing products support partial updates â€” never force required fields on edit.
     const req = (!isEdit && f.required) ? 'required' : '';
     const ph = f.placeholder || f.label;
     let input = '';
     if (f.type === 'select') {
       input = `<select class="input-field" name="${f.key}" id="pf-${f.key}" ${req}>
-        <option value="">Select…</option>
+        <option value="">Selectâ€¦</option>
         ${f.options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
       </select>`;
     } else if (f.type === 'textarea') {
-      input = `<textarea class="input-field" name="${f.key}" id="pf-${f.key}" rows="3" placeholder="Write a detailed description…">${esc(val)}</textarea>`;
+      input = `<textarea class="input-field" name="${f.key}" id="pf-${f.key}" rows="3" placeholder="Write a detailed descriptionâ€¦">${esc(val)}</textarea>`;
     } else {
       const searchableKeys = ['brand', 'model', 'color', 'size', 'material', 'platform'];
       const listId = searchableKeys.includes(f.key) ? `pf-list-${f.key}` : '';
@@ -2237,17 +2240,17 @@ window.showAddProductStep1 = function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Add New Product</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">ðŸ”™ Back</button>
         </div>
 
-        <!-- Scan first — let AI pick the category -->
+        <!-- Scan first â€” let AI pick the category -->
         <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3 mb-4">
-          <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan First — let AI pick the category</p>
+          <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan First â€” let AI pick the category</p>
           <p class="text-[11px] text-gray-500">Upload your product photos, press SCAN WITH AI. It detects EVERY distinct product (a photo with a bag + watch + shoes + phone gives four separate listings; several photos of the same product merge into one). Review each detection, then the correct category form opens filled for you. Nothing is published automatically.</p>
           <div id="s1-drop-zone" class="drop-zone" onclick="document.getElementById('s1-img-upload').click()">
             <i data-lucide="image-plus" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
             <p class="text-xs font-bold text-gray-300">Click or drag & drop product images</p>
-            <input type="file" id="s1-img-upload" class="hidden" multiple accept="image/*" onchange="handleStep1ImageUpload(event)">
+            <input type="file" id="s1-img-upload" class="hidden" multiple accept="image/*,application/pdf" onchange="handleStep1ImageUpload(event)">
           </div>
           <div id="s1-image-preview" class="flex flex-wrap gap-2"></div>
           <button type="button" id="btn-s1-scan" onclick="scanFirstWithAI()" disabled class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2" style="opacity:0.5">
@@ -2296,12 +2299,12 @@ window.showAddProductStep2 = function(category, existingData = {}) {
       <div class="modal-box wide">
         <div class="flex items-center justify-between gap-3 mb-6">
           <div class="min-w-0">
-            <h3 class="text-2xl font-black text-white">${isEdit ? 'Edit Product' : 'Add Product'} — ${esc(category)}</h3>
+            <h3 class="text-2xl font-black text-white">${isEdit ? 'Edit Product' : 'Add Product'} â€” ${esc(category)}</h3>
             <p class="text-sm text-gray-500 mt-1 truncate">${isEdit ? `Editing: ${esc(existingData.property_id)}` : 'Fill in the product details below'}</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
             ${isEdit ? `<button type="button" onclick="closeProductFormModal()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Product Manager</button>` : `<button type="button" onclick="showAddProductStep1()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5" title="Change category"><i data-lucide="arrow-left" class="w-4 h-4"></i> Category</button>`}
-            <button type="button" onclick="closeProductFormModal()" class="btn-press px-4 h-11 flex items-center justify-center rounded-xl text-sm font-bold uppercase tracking-wide text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Close (X) — return to Product Manager">
+            <button type="button" onclick="closeProductFormModal()" class="btn-press px-4 h-11 flex items-center justify-center rounded-xl text-sm font-bold uppercase tracking-wide text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Close (X) â€” return to Product Manager">
               Back
             </button>
           </div>
@@ -2336,24 +2339,24 @@ window.showAddProductStep2 = function(category, existingData = {}) {
               <i data-lucide="image-plus" class="w-12 h-12 text-blue-400 mx-auto mb-3"></i>
               <p class="text-lg font-bold text-gray-300">Click or drag & drop images here</p>
               <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP up to 5MB each. First image = cover.</p>
-              <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
+              <input type="file" id="img-upload" class="hidden" multiple accept="image/*,application/pdf" onchange="handleImageUpload(event)">
             </div>
             <div id="image-preview" class="flex flex-wrap gap-2.5 mt-3">
               ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
             </div>
-            <p class="text-sm text-gray-500 mt-1">Drag to reorder • ✕ deletes any image (even the main/cover — the next image becomes the cover) • ↻ replaces • Upload up to 24 gallery images</p>
+            <p class="text-sm text-gray-500 mt-1">Drag to reorder â€¢ âœ• deletes any image (even the main/cover â€” the next image becomes the cover) â€¢ â†» replaces â€¢ Upload up to 24 gallery images</p>
             <p id="gallery-counter" class="text-sm mt-1 font-bold text-gray-400"></p>
             <div id="image-url-inputs">
               ${(existingData.images || []).map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}
             </div>
           </div>
 
-          <!-- AI Product Scanner (manual only — never auto-scans on upload) -->
+          <!-- AI Product Scanner (manual only â€” never auto-scans on upload) -->
           <div class="glass-soft border border-violet-500/25 rounded-2xl p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Product Scanner</p>
-                <p class="text-xs text-gray-500 mt-1">Reads your uploaded images and fills the form for you. Detects every distinct product (multiple products in one photo = separate listings; several photos of the same product = one listing). Powered by Google Gemini free tier — add your FREE key in AI Settings if not set. Only runs when you press the button.</p>
+                <p class="text-xs text-gray-500 mt-1">Reads your uploaded images and fills the form for you. Detects every distinct product (multiple products in one photo = separate listings; several photos of the same product = one listing). Powered by Google Gemini free tier â€” add your FREE key in AI Settings if not set. Only runs when you press the button.</p>
               </div>
               <button type="button" id="btn-scan-ai" onclick="scanProductWithAI()" class="btn-press px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl transition flex items-center gap-2 shrink-0">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
@@ -2490,11 +2493,15 @@ window.switchProductFormCategory = function(newCategory) {
 
 
 function imageThumbHtml(url, i) {
-  return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}" title="${i === 0 ? 'Cover Image (main photo)' : 'Image ' + (i + 1)}">
-    <img src="${esc(url)}" onerror="this.src='/fallback.svg'">
+  const isPdf = looksLikePdf(url);
+  const media = isPdf
+    ? `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-gray-300 select-none"><span class="text-2xl leading-none">📄</span><span class="text-[10px] font-bold mt-1">PDF</span></div>`
+    : `<img src="${esc(url)}" onerror="this.src='/fallback.svg'">`;
+  return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}" data-url="${esc(url)}" title="${i === 0 ? 'Cover Image (main photo)' : 'Image ' + (i + 1)}">
+    ${media}
     <button class="rm" onclick="removeImage(${i})" type="button" title="Delete this image (cover can be deleted too)">✕</button>
     <button class="rp" onclick="document.getElementById('rp-input-${i}').click()" type="button" title="Replace image">↻</button>
-    <input type="file" accept="image/*" class="rp-input" id="rp-input-${i}" onchange="replaceImage(${i}, this)">
+    <input type="file" accept="image/*,application/pdf" class="rp-input" id="rp-input-${i}" onchange="replaceImage(${i}, this)">
   </div>`;
 }
 
@@ -2523,7 +2530,10 @@ async function processImageFiles(files) {
   const preview = document.getElementById('image-preview');
   if (!preview) return;
   for (const file of files) {
-    if (!file.type.startsWith('image/')) continue;
+    // Photos AND PDF documents (multi-page listings, invoices, spec sheets,
+    // certificates) are accepted â€” the scanner renders every PDF page itself.
+    const isPdf = file.type === 'application/pdf' || looksLikePdf(file.name);
+    if (!file.type.startsWith('image/') && !isPdf) continue;
     const url = await uploadImageFile(file);
     if (url) {
       const i = preview.children.length;
@@ -2556,7 +2566,7 @@ async function uploadImageFile(file) {
     }
     // 100% SHOWROOM GUARANTEE: even when storage fails (or no session), embed a
     // compressed copy of the photo directly with the listing (data URL) so the
-    // image ALWAYS shows in the showroom — never a temporary blob: URL, which
+    // image ALWAYS shows in the showroom â€” never a temporary blob: URL, which
     // would be silently dropped when the product is saved & published.
     try {
       const embedded = await aiClient._downscaleImage(file, 1200);
@@ -2581,18 +2591,20 @@ window.replaceImage = async function(index, input) {
   const preview = document.getElementById('image-preview');
   if (!preview || !input || !input.files || !input.files[0]) return;
   const file = input.files[0];
-  if (!file.type.startsWith('image/')) { showToast('Please choose an image file.', 'error'); return; }
+  const isPdf = file.type === 'application/pdf' || looksLikePdf(file.name);
+  if (!file.type.startsWith('image/') && !isPdf) { showToast('Please choose an image or PDF file.', 'error'); return; }
   const url = await uploadImageFile(file);
   if (!url) return;
   const items = [...preview.querySelectorAll('.img-thumb')];
   const thumb = items[index];
   if (!thumb) return;
-  const img = thumb.querySelector('img');
-  if (img) img.src = url;
+  // Re-render the whole thumb so photos AND PDF documents are handled the
+  // same way (PDF thumbs have no <img>, they render a document badge).
+  thumb.outerHTML = imageThumbHtml(url, index);
   rebuildImageInputs();
   updateCoverBadge();
   updateGalleryCounter();
-  showToast('Image replaced. Save changes to apply.', 'info');
+  showToast(isPdf ? 'Document replaced. Save changes to apply.' : 'Image replaced. Save changes to apply.', 'info');
 };
 
 function rebuildImageInputs() {
@@ -2601,12 +2613,13 @@ function rebuildImageInputs() {
   if (!preview || !container) return;
   container.innerHTML = '';
   [...preview.querySelectorAll('.img-thumb')].forEach((thumb, i) => {
-    const img = thumb.querySelector('img');
-    if (!img) return;
+    // data-url covers PDF thumbs too (they contain no <img> element).
+    const url = thumb.dataset.url || (thumb.querySelector('img') ? thumb.querySelector('img').src : '');
+    if (!url) return;
     const inp = document.createElement('input');
-    inp.type = 'hidden'; inp.name = 'images'; inp.id = `img-url-${i}`; inp.value = img.src;
+    inp.type = 'hidden'; inp.name = 'images'; inp.id = `img-url-${i}`; inp.value = url;
     container.appendChild(inp);
-thumb.dataset.index = i;
+  thumb.dataset.index = i;
     // Update remove + replace buttons and their hidden file input
     const rm = thumb.querySelector('.rm');
     if (rm) rm.setAttribute('onclick', `removeImage(${i})`);
@@ -2626,7 +2639,7 @@ function updateCoverBadge() {
   });
 }
 
-// Show how many gallery images are attached. Any count is fine — saving and
+// Show how many gallery images are attached. Any count is fine â€” saving and
 // publishing always works; 24 is only the maximum gallery size.
 function updateGalleryCounter() {
   const preview = document.getElementById('image-preview');
@@ -2634,8 +2647,8 @@ function updateGalleryCounter() {
   if (!preview || !counter) return;
   const count = preview.querySelectorAll('.img-thumb').length;
   counter.textContent = count
-    ? `${count} image${count > 1 ? 's' : ''} — you can save and publish anytime`
-    : 'No images yet — you can still save and publish anytime';
+    ? `${count} image${count > 1 ? 's' : ''} â€” you can save and publish anytime`
+    : 'No images yet â€” you can still save and publish anytime';
   counter.className = 'text-sm mt-1 font-bold text-gray-400';
 }
 
@@ -2735,7 +2748,7 @@ window.previewProductDraft = function() {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">Live Draft Preview</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">ðŸ”™ Back</button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <img src="${esc(image)}" class="w-full h-64 object-cover rounded-xl border border-blue-500/20" onerror="this.src='/fallback.svg'">
@@ -2804,12 +2817,12 @@ function setupProductFormExperience(category, existingId) {
   updateGalleryCounter();
 }
 
-// ── AI PRODUCT SCANNER ───────────────────────────────────────────────
-// The "SCAN WITH AI" button on the product form. It NEVER runs on upload —
+// â”€â”€ AI PRODUCT SCANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// The "SCAN WITH AI" button on the product form. It NEVER runs on upload â€”
 // it only runs when you press the button:
-// Upload → SCAN WITH AI → Identify Product → Complete Specifications →
-// Estimate Price → Fill Form → Generate Detailed Description →
-// I review/edit everything → SAVE/UPDATE → Showroom.
+// Upload â†’ SCAN WITH AI â†’ Identify Product â†’ Complete Specifications â†’
+// Estimate Price â†’ Fill Form â†’ Generate Detailed Description â†’
+// I review/edit everything â†’ SAVE/UPDATE â†’ Showroom.
 //
 // Three stages, in order:
 //   1) IDENTIFY the exact product from the photo (never swap brands).
@@ -2831,12 +2844,246 @@ const SCAN_TRANSMISSION_OPTIONS = ['Automatic', 'Manual', 'CVT', 'Dual-Clutch', 
 const SCAN_FUEL_OPTIONS = ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-in Hybrid', 'LPG', 'Bio-diesel'];
 const SCAN_DRIVE_OPTIONS = ['FWD', 'RWD', 'AWD', '4WD'];
 
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  SCAN COMPLETENESS ENGINE
+//  Every field of the open form is registered, extracted against, validated
+//  and accounted for. No field can silently stay unprocessed: after the first
+//  extraction pass a SECOND verification pass re-reads the document pages,
+//  hunts for missed/unmapped/misplaced values, and only then is anything
+//  filled. The owner always sees the full per-field checklist.
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+// Keys the scanner may fill on saved products when no form is open (General AI
+// Scanner â†’ "Continue with ALL"). This is the FULL superset across categories.
+const SCAN_KNOWN_SPEC_KEYS = [
+  'title', 'description', 'brand', 'model', 'model_year', 'color', 'condition', 'subcategory',
+  'engine', 'transmission', 'fuel_type', 'drive_type', 'horsepower', 'mileage', 'seating_capacity', 'doors',
+  'body_type', 'safety_features', 'storage', 'ram', 'processor', 'display', 'graphics', 'os',
+  'material', 'size', 'gender', 'platform', 'voltage', 'type', 'dimensions',
+  'property_type', 'bedrooms', 'bathrooms', 'half_bathrooms', 'building_size', 'land_size', 'floors',
+  'garage', 'parking_spaces', 'furnished', 'year_built', 'year_renovated', 'area', 'address', 'zip_code',
+  'landmarks', 'town', 'city', 'state', 'country', 'country_code', 'latitude', 'longitude', 'listing_status',
+  'interior_features', 'exterior_features', 'home_systems',
+  'author', 'publisher', 'language', 'format', 'isbn', 'pages', 'edition', 'quantity',
+  'age_range', 'skin_type', 'ingredients', 'pet_type', 'lens', 'sensor', 'megapixels', 'video',
+  'license', 'version', 'duration', 'followers', 'engagement', 'niche', 'usage', 'shelf_life',
+  'assembly', 'weatherproof', 'warranty', 'availability_status',
+];
+
+// Fields that are never auto-filled from a document (owner-entered by design).
+const SCAN_OWNER_ONLY_KEYS = new Set([
+  'price', 'real_price', 'stock_quantity', 'currency', 'images', 'tags', 'verification_status',
+  'is_featured', 'is_active', 'sku',
+]);
+
+function _scanFieldLabel(el) {
+  const id = el.id ? `label[for="${el.id}"]` : null;
+  const labelEl = id ? document.querySelector(id) : null;
+  if (labelEl) return labelEl.textContent.replace(/\s+/g, ' ').trim().slice(0, 60);
+  const wrap = el.closest('div');
+  if (wrap) {
+    const lab = wrap.querySelector('label');
+    if (lab) return lab.textContent.replace(/\s+/g, ' ').trim().slice(0, 60);
+  }
+  return String(el.name || '').replace(/_/g, ' ');
+}
+
+// Register EVERY fillable control in a form: text/number/textarea/select plus
+// checkbox groups (e.g. tags). Hidden/file/submit controls are not fields.
+function collectFormFields(formSelector) {
+  const form = typeof formSelector === 'string' ? document.querySelector(formSelector) : formSelector;
+  if (!form) return [];
+  const seen = new Set();
+  const fields = [];
+  form.querySelectorAll('input[name], select[name], textarea[name]').forEach((el) => {
+    const key = String(el.name || '');
+    if (!key || key === 'images' || seen.has(key)) return;
+    if (['hidden', 'file', 'submit', 'button'].includes(el.type)) return;
+    seen.add(key);
+    if (el.type === 'checkbox') {
+      // Checkbox GROUP (several inputs sharing one name) = multi-select badges.
+      const boxes = [...form.querySelectorAll(`input[name="${key}"]`)];
+      fields.push({ key, label: _scanFieldLabel(el), type: 'checkbox-group', options: boxes.map(b => b.value).filter(Boolean), required: el.required });
+      return;
+    }
+    if (el.type === 'radio') return; // radio groups are handled as selects below when named uniquely
+    const type = el.tagName === 'SELECT' ? 'select' : el.tagName === 'TEXTAREA' ? 'textarea' : (el.type === 'number' ? 'number' : 'text');
+    fields.push({
+      key,
+      label: _scanFieldLabel(el),
+      type,
+      options: el.tagName === 'SELECT' ? [...el.options].map(o => o.value).filter(Boolean) : null,
+      required: !!el.required,
+    });
+  });
+  return fields;
+}
+
+// Compact schema listing for prompts so the AI knows EVERY field that exists
+// and can plan a value (or an honest "not present") for each one. Owner-only
+// fields (price, stock, currency…) are never listed — the owner enters those.
+function buildFieldSchemaSection(fields) {
+  if (!fields || !fields.length) return '';
+  const lines = fields.filter(f => !SCAN_OWNER_ONLY_KEYS.has(f.key)).map((f) => {
+    let spec = f.type;
+    if (f.type === 'select' && f.options && f.options.length <= 24) spec += ` [options: ${f.options.join(' | ')}]`;
+    else if (f.type === 'checkbox-group' && f.options && f.options.length) spec += ` [multi-select: ${f.options.join(' | ')}]`;
+    else if (f.type === 'number') spec = 'number';
+    else if (f.type === 'textarea') spec = 'long text';
+    return `- "${f.key}" (${f.label}) — ${spec}`;
+  });
+  return `\nTHE COMPLETE LIST OF FORM FIELDS (every single one MUST be accounted for):\n${lines.join('\n')}\n`;
+}
+
+const _SCAN_BAD_VALUE = /^(n\/?a|none|unknown|not (available|specified|found|visible|applicable)|null|undefined|-{1,}|no data)$/i;
+
+// Validation layer â€” runs BEFORE anything touches the form. Returns a cleaned
+// copy plus a per-field checklist. Never invents values; it only normalizes
+// formats, matches dropdown options, coerces numbers/dates and flags problems.
+function validateScanExtraction(fields, rawSpecs) {
+  const specs = { ...(rawSpecs || {}) };
+  const estimatedKeys = new Set(Array.isArray(specs.estimated) ? specs.estimated.map(k => String(k)) : []);
+  const missingKeys = new Set(Array.isArray(specs.missing_fields) ? specs.missing_fields.map(k => String(k)) : []);
+  const checklist = [];
+  const flags = [];
+
+  const cleanTextValue = (v) => {
+    if (v == null) return '';
+    if (Array.isArray(v)) v = v.filter(x => x != null && String(x).trim() !== '').join(', ');
+    let s = String(v).replace(/\s+/g, ' ').trim();
+    // Strip accidental AI commentary prefixes like "Answer:" or "Value: ...".
+    s = s.replace(/^(answer|value|result|extracted)\s*[:\-]\s*/i, '');
+    return s;
+  };
+
+  const coerceNumber = (v) => {
+    const s = cleanTextValue(v).replace(/[^0-9.,\-]/g, '').replace(/,(?=\d{3}\b)/g, '').replace(',', '.');
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : NaN;
+  };
+
+  for (const f of (fields || [])) {
+    if (SCAN_OWNER_ONLY_KEYS.has(f.key)) continue;
+    const entry = { key: f.key, label: f.label, status: 'empty-ok', value: null, note: '' };
+    if (f.type === 'checkbox-group') {
+      const arr = Array.isArray(specs[f.key]) ? specs[f.key].map(cleanTextValue).filter(Boolean) : [];
+      const valid = f.options && f.options.length ? arr.filter(v => f.options.includes(v)) : arr;
+      if (valid.length) { specs[f.key] = valid; entry.status = 'filled'; entry.value = valid.join(', '); }
+      else {
+        // Nothing valid: drop the key entirely (invalid selections are never
+        // written into the form).
+        delete specs[f.key];
+        if (arr.length) { entry.status = 'flagged'; entry.note = 'values not in the allowed badge list were dropped'; flags.push(`${f.label}: invalid selection ignored`); }
+      }
+      checklist.push(entry);
+      continue;
+    }
+    const hasValue = specs[f.key] != null && cleanTextValue(specs[f.key]) !== '';
+    if (!hasValue) {
+      entry.status = missingKeys.has(f.key) ? 'missing' : 'empty-ok';
+      checklist.push(entry);
+      continue;
+    }
+    if (_SCAN_BAD_VALUE.test(cleanTextValue(specs[f.key]))) {
+      delete specs[f.key];
+      missingKeys.add(f.key);
+      entry.status = 'missing';
+      entry.note = 'document/AI said the value is unavailable';
+      checklist.push(entry);
+      continue;
+    }
+    if (f.type === 'number') {
+      const rawText = cleanTextValue(specs[f.key]);
+      const n = coerceNumber(specs[f.key]);
+      if (!Number.isFinite(n)) {
+        delete specs[f.key]; missingKeys.add(f.key);
+        entry.status = 'flagged'; entry.note = `"${rawText}" is not a valid number`;
+        flags.push(`${f.label}: not a valid number`);
+        checklist.push(entry); continue;
+      }
+      const yearish = /year/.test(f.key);
+      if (yearish && (n < 1800 || n > new Date().getFullYear() + 2)) {
+        delete specs[f.key]; missingKeys.add(f.key);
+        entry.status = 'flagged'; entry.note = `${n} is outside the plausible range`;
+        flags.push(`${f.label}: implausible value ${n}`);
+        checklist.push(entry); continue;
+      }
+      specs[f.key] = n;
+      entry.status = 'filled'; entry.value = String(n);
+      if (estimatedKeys.has(f.key)) { entry.status = 'estimated'; entry.note = 'AI estimate â€” confirm'; }
+      checklist.push(entry); continue;
+    }
+    if (f.type === 'select' && f.options && f.options.length) {
+      const mapped = mapSelectValue({ options: f.options.map(o => ({ value: o })) }, cleanTextValue(specs[f.key]));
+      if (mapped == null) {
+        entry.status = 'flagged'; entry.note = `"${cleanTextValue(specs[f.key])}" does not match any option â€” left empty`;
+        flags.push(`${f.label}: no matching option`);
+        delete specs[f.key]; missingKeys.add(f.key);
+        checklist.push(entry); continue;
+      }
+      specs[f.key] = mapped; entry.status = 'filled'; entry.value = mapped;
+      if (mapped !== cleanTextValue(rawSpecs?.[f.key])) entry.note = 'matched to the closest option';
+      checklist.push(entry); continue;
+    }
+    // text / textarea / long text
+    let s = cleanTextValue(specs[f.key]);
+    if (f.type !== 'textarea' && f.type !== 'text-long' && s.length > 120 && !['title'].includes(f.key)) {
+      entry.status = 'flagged'; entry.note = 'unusually long â€” check it landed in the right field';
+      flags.push(`${f.label}: suspiciously long value`);
+    }
+    specs[f.key] = s;
+    entry.status = 'filled'; entry.value = s.length > 48 ? s.slice(0, 48) + 'â€¦' : s;
+    if (estimatedKeys.has(f.key)) { entry.status = 'estimated'; entry.note = 'AI estimate â€” confirm'; }
+    checklist.push(entry);
+  }
+
+  // Drop keys that belong to NO current form field so stray AI output can never
+  // leak into the payload (prevents wrong-field mappings at the source). When
+  // NO form is registered (e.g. a headless scan), keep everything instead.
+  if (fields && fields.length) {
+    const knownKeys = new Set([...fields.map(f => f.key), 'estimated', 'missing_fields', 'features', 'highlights', 'seo_keywords']);
+    Object.keys(specs).forEach((k) => { if (!knownKeys.has(k)) delete specs[k]; });
+  }
+
+  // The checklist is now the single source of truth: rebuild the AI's
+  // bookkeeping arrays so downstream consumers ("Not specified" policy,
+  // estimates badge) always match what was actually extracted & verified.
+  specs.missing_fields = checklist.filter(c => c.status === 'missing').map(c => c.key);
+  specs.estimated = checklist.filter(c => c.status === 'estimated').map(c => c.key);
+
+  const summary = {
+    total: checklist.length,
+    filled: checklist.filter(c => c.status === 'filled').length,
+    estimated: checklist.filter(c => c.status === 'estimated').length,
+    flagged: checklist.filter(c => c.status === 'flagged').length,
+    missing: checklist.filter(c => c.status === 'missing').length,
+  };
+  return { specs, checklist, flags, summary };
+}
+
+// The user-visible field checklist â€” every field, its status, nothing hidden.
+function renderScanChecklistReport(checklist, summary) {
+  if (!checklist || !checklist.length) return '';
+  const icon = { filled: '<span class="text-emerald-400 font-bold">âœ“</span>', estimated: '<span class="text-blue-300 font-bold">â‰ˆ</span>', flagged: '<span class="text-red-400 font-bold">!</span>', missing: '<span class="text-gray-500">â€”</span>', 'empty-ok': '<span class="text-gray-700">Â·</span>' };
+  const rows = checklist.filter(c => c.status !== 'empty-ok').map((c) =>
+    `<li class="flex items-start gap-2"><span class="shrink-0 w-4">${icon[c.status] || ''}</span><span><b>${esc(c.label)}</b> <span class="text-gray-600">(${esc(c.key)})</span>${c.value ? ` â€” <span class="text-gray-300">${esc(String(c.value))}</span>` : ''}${c.note ? ` <span class="text-gray-500">${esc(c.note)}</span>` : ''}</span></li>`).join('');
+  const notApplicable = summary.total - summary.filled - summary.estimated - summary.flagged - summary.missing;
+  return `<details class="mt-2 rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
+    <summary class="cursor-pointer text-[11px] font-bold text-violet-300 select-none">Field checklist â€” ${summary.filled} filled Â· ${summary.missing} not present in document Â· ${summary.flagged} need review${summary.estimated ? ` Â· ${summary.estimated} estimates` : ''}${notApplicable > 0 ? ` Â· ${notApplicable} not applicable to this listing type` : ''}</summary>
+    <ul class="mt-2 space-y-1.5 text-[11px] text-gray-300 max-h-64 overflow-y-auto pr-1">${rows || '<li class="text-gray-500">No applicable fields found.</li>'}</ul>
+  </details>`;
+}
+
+
 const AI_PRODUCT_SCANNER = {
   activeProvider: 'gemini',
-  // FAST: the AI only needs up to 3 photos to identify + spec + price a product
-  // — fewer images per request means much smaller uploads and faster scans.
-  // (The saved gallery keeps ALL photos; this limit is only for the AI call.)
-  maxImages: 3,
+  // COMPLETENESS FIRST: every uploaded image / document page is scanned —
+  // nothing is skipped. `maxImages` is the number of images sent PER AI
+  // REQUEST (batch size); larger sets are processed in parallel batches and
+  // the results are merged, so a 30-page document is read end-to-end.
+  // 4 per batch keeps every request well inside the free edge-function
+  // payload limit even with high-resolution document pages.
+  maxImages: 4,
   PROVIDERS: {
     gemini: {
       label: 'Google Gemini (Free Tier)',
@@ -2846,12 +3093,12 @@ const AI_PRODUCT_SCANNER = {
       // browser-side Gemini vision first, then the server edge function.
       scan: async (images, context) => {
         const report = typeof context.onProgress === 'function' ? context.onProgress : () => {};
-        report(1, 'Identifying the exact product from your images…');
+        report(1, 'Identifying the exact product from your imagesâ€¦');
         const identification = await aiClient.identifyProduct(images, context);
         if (!identification || identification.identified === false) return { identification, specs: null, price: null };
         // FAST: stages 2+3 are ONE combined AI request (specs + price together),
         // so the scan makes half the requests and finishes roughly twice as fast.
-        report(2, 'Completing specifications and estimating a fair market price…');
+        report(2, 'Completing specifications and estimating a fair market priceâ€¦');
         const combined = await aiClient.completeSpecsAndPrice(images, identification, context).catch(() => null);
         return { identification, specs: combined ? combined.specs : null, price: combined ? combined.price : null };
       },
@@ -2860,11 +3107,11 @@ const AI_PRODUCT_SCANNER = {
   async scan(images, context) {
     const provider = this.PROVIDERS[this.activeProvider];
     if (!provider) throw new Error(`Scanner provider "${this.activeProvider}" is not configured.`);
-    return provider.scan((images || []).slice(0, this.maxImages), context);
+    return provider.scan(images || [], context); // ALL images/pages â€” batched inside the client
   },
 };
 
-// Best-match a free-text value to a select field's options (e.g. "Petrol" → "Gasoline").
+// Best-match a free-text value to a select field's options (e.g. "Petrol" â†’ "Gasoline").
 function mapSelectValue(field, value) {
   const options = [...(field.options || [])].map(o => o.value).filter(Boolean);
   if (options.includes(String(value))) return String(value);
@@ -2881,7 +3128,7 @@ function mapSelectValue(field, value) {
     rwd: 'RWD', 'rear-wheel drive': 'RWD', 'rear wheel drive': 'RWD',
     awd: 'AWD', 'all-wheel drive': 'AWD', 'all wheel drive': 'AWD',
     '4wd': '4WD', 'four-wheel drive': '4WD', 'four wheel drive': '4WD', '4x4': '4WD',
-    sedan: 'Sedan', saloon: 'Sedan', suv: 'SUV', hatchback: 'Hatchback', coupe: 'Coupe', 'coupé': 'Coupe',
+    sedan: 'Sedan', saloon: 'Sedan', suv: 'SUV', hatchback: 'Hatchback', coupe: 'Coupe', 'coupÃ©': 'Coupe',
     convertible: 'Convertible', wagon: 'Wagon', estate: 'Wagon', pickup: 'Pickup', 'pick up': 'Pickup',
     van: 'Van', truck: 'Truck', 'sports car': 'Sports Car', motorcycle: 'Motorcycle', yacht: 'Yacht',
     'like new': 'Used - Like New', 'used - like new': 'Used - Like New',
@@ -2930,9 +3177,11 @@ function applyScanToProductForm(result) {
   set('condition', identification.condition, SCAN_CONDITION_OPTIONS);
   set('subcategory', identification.subcategory);
   set('body_type', identification.body_type || specs.body_type, SCAN_BODY_OPTIONS);
-  set('model_year', identification.year || specs.model_year);
+  // model_year prefers the validated extraction: it went through the
+  // verification pass, so a corrected year always beats the stage-1 estimate.
+  set('model_year', specs.model_year || identification.year);
 
-  // Completed specifications — the always-fill list.
+  // Completed specifications â€” the always-fill list.
   set('title', specs.title || buildScanTitle(identification));
   set('description', specs.description);
   set('engine', specs.engine);
@@ -2955,7 +3204,7 @@ function applyScanToProductForm(result) {
   set('gender', specs.gender);
   set('platform', specs.platform);
 
-  // Category-specific fields — only filled when the current form has them, so a
+  // Category-specific fields â€” only filled when the current form has them, so a
   // bag scan fills bag fields, a book scan fills book fields, etc.
   set('type', specs.type || identification.type);
   set('age_range', specs.age_range);
@@ -2988,7 +3237,7 @@ function applyScanToProductForm(result) {
   set('warranty', specs.warranty || identification.warranty);
   set('availability_status', specs.availability_status);
 
-  // Listing content fields — the customer-facing extras for the identified product.
+  // Listing content fields â€” the customer-facing extras for the identified product.
   set('features_text', text(specs.features));
   set('highlights_text', text(identification.highlights || specs.highlights));
   set('seo_keywords_text', text(specs.seo_keywords));
@@ -2999,7 +3248,7 @@ function applyScanToProductForm(result) {
   const stock = Number(specs.stock_quantity);
   if (Number.isFinite(stock) && stock > 0) { set('stock_quantity', stock); }
 
-  // "Not specified" policy — any relevant field the AI could not determine is
+  // "Not specified" policy â€” any relevant field the AI could not determine is
   // marked clearly instead of being left blank or guessed, per the owner's rules.
   const missing = new Set((Array.isArray(specs.missing_fields) ? specs.missing_fields : []).map(k => String(k)));
   const NOT_SPECIFIED_SKIP = new Set(['title', 'description', 'price', 'real_price', 'stock_quantity', 'images', 'features', 'highlights', 'seo_keywords', 'tags', 'safety_features']);
@@ -3017,10 +3266,10 @@ function applyScanToProductForm(result) {
     filled.push(`${key} (Not specified)`);
   });
 
-  // Estimated market prices from stage 3 — the REAL price always goes into the
+  // Estimated market prices from stage 3 â€” the REAL price always goes into the
   // Real Price field (crossed out on the store), and the suggested discount
   // price goes into the Discount Price field (what customers pay). If no
-  // discount was suggested, the real price is used for both. Fully editable —
+  // discount was suggested, the real price is used for both. Fully editable â€”
   // no auto-save, no auto-publish.
   const priceField = document.querySelector('#product-form [name="price"]');
   const realPriceField = document.querySelector('#product-form [name="real_price"]');
@@ -3045,7 +3294,7 @@ function applyScanToProductForm(result) {
   return { filled };
 }
 
-// ── General AI Product Scanner ──────────────────────────────────────────────
+// â”€â”€ General AI Product Scanner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // ONE scanner for EVERY category: it identifies the product first, asks the
 // owner to confirm the detected category (and lets them pick a different one),
 // switches the form to the right category template, fills only the fields of
@@ -3129,7 +3378,7 @@ window._resolveScanConfirm = function(choice, category) {
   if (typeof _scanConfirmResolve === 'function') _scanConfirmResolve({ choice, category });
 };
 
-// ── Multi-product review list ──────────────────────────────────────────────
+// â”€â”€ Multi-product review list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // After detection, every distinct product is shown as its own card so the owner
 // can review, edit, remove or continue each one. Different products are never
 // merged; the same product across several photos stays as one entry.
@@ -3162,7 +3411,7 @@ function scanReviewCardHtml(p, i) {
     </div>
     <div class="flex items-center gap-2 flex-wrap">
       ${thumbs.map(u => `<img src="${esc(u)}" class="w-10 h-10 rounded-lg object-cover border border-violet-500/20" onerror="this.src='/fallback.svg'">`).join('')}
-      <span class="text-[11px] text-gray-400">${isProperty ? 'Real Estate' : esc(cat)} · ${(p.image_indices || []).length || 1} image(s)</span>
+      <span class="text-[11px] text-gray-400">${isProperty ? 'Real Estate' : esc(cat)} Â· ${(p.image_indices || []).length || 1} image(s)</span>
     </div>
     <div class="flex flex-wrap gap-2">
       <button type="button" onclick="scanReviewContinue(${i})" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Continue to ${isProperty ? 'Properties Manager' : 'its form'}</button>
@@ -3179,7 +3428,7 @@ window.scanReviewRender = function() {
   el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
   if (!scanReviewProducts.length) {
     el.classList.add('text-gray-400');
-    el.textContent = 'All detected products were removed — nothing was changed.';
+    el.textContent = 'All detected products were removed â€” nothing was changed.';
     return;
   }
   el.classList.add('text-gray-100');
@@ -3187,8 +3436,8 @@ window.scanReviewRender = function() {
     <div class="space-y-3">
       <div>
         <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4 text-violet-400"></i> ${scanReviewProducts.length} distinct product${scanReviewProducts.length > 1 ? 's' : ''} detected</p>
-        <p class="text-[11px] text-gray-400 mt-1">Photos of the same product are grouped into one listing; different products stay separate. Edit or remove cards as needed — then either Continue one-by-one, or press Continue with ALL to save & publish everything in one click.</p>
-        <button type="button" id="btn-scan-continue-all" onclick="scanReviewContinueAll()" class="btn-press mt-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition flex items-center gap-2"><i data-lucide="rocket" class="w-4 h-4"></i> Continue with ALL — Save &amp; Publish Everything</button>
+        <p class="text-[11px] text-gray-400 mt-1">Photos of the same product are grouped into one listing; different products stay separate. Edit or remove cards as needed â€” then either Continue one-by-one, or press Continue with ALL to save & publish everything in one click.</p>
+        <button type="button" id="btn-scan-continue-all" onclick="scanReviewContinueAll()" class="btn-press mt-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition flex items-center gap-2"><i data-lucide="rocket" class="w-4 h-4"></i> Continue with ALL â€” Save &amp; Publish Everything</button>
       </div>
       ${scanReviewProducts.map((p, i) => scanReviewCardHtml(p, i)).join('')}
     </div>`;
@@ -3211,7 +3460,7 @@ window.scanReviewContinue = async function(i) {
     try { localStorage.removeItem(productAutoSaveKey(cat, '')); } catch {}
     step1Images = [];
     scannerImages = [];
-    // Scanned from an existing product (General AI Scanner) — open its EDIT
+    // Scanned from an existing product (General AI Scanner) â€” open its EDIT
     // form so the owner updates that listing instead of creating a duplicate.
     let existing = p.property_id ? scanReviewSourceProducts[p.property_id] : null;
     if (existing && existing.specifications && typeof existing.specifications === 'object') {
@@ -3226,7 +3475,7 @@ window.scanReviewContinue = async function(i) {
       try { localStorage.removeItem(productAutoSaveKey(cat, '')); } catch {}
       switchProductFormCategory(cat);
       const el2 = document.getElementById(scanReviewEntry);
-      if (el2) { el2.classList.remove('hidden'); el2.classList.add('text-blue-300'); el2.textContent = `Category changed to ${cat} — finishing the scan…`; }
+      if (el2) { el2.classList.remove('hidden'); el2.classList.add('text-blue-300'); el2.textContent = `Category changed to ${cat} â€” finishing the scanâ€¦`; }
       if (window.lucide) lucide.createIcons();
     }
     await completeScanAndFill(p, images, cat);
@@ -3280,14 +3529,14 @@ window.scanReviewCancel = function() {
   if (el) {
     el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300');
     el.classList.add('text-gray-400');
-    el.textContent = 'Scan cancelled — nothing was changed.';
+    el.textContent = 'Scan cancelled â€” nothing was changed.';
   }
 };
 
-// ── Continue with ALL: save & publish every detected product in one click ──
+// â”€â”€ Continue with ALL: save & publish every detected product in one click â”€â”€
 // Loops over every review card, completes each product's specs + price with the
 // AI, and writes it straight to showroom_listings. Existing products (scanned
-// from the General AI Scanner) are UPDATED — never duplicated; brand-new
+// from the General AI Scanner) are UPDATED â€” never duplicated; brand-new
 // detections are INSERTED as new listings. Any image count is fine.
 window.scanReviewContinueAll = async function() {
   const el = document.getElementById(scanReviewEntry);
@@ -3300,7 +3549,7 @@ window.scanReviewContinueAll = async function() {
   };
   if (!scanReviewProducts.length) return;
   const btn = document.getElementById('btn-scan-continue-all');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving everything…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving everythingâ€¦'; }
 
   const total = scanReviewProducts.length;
   let savedNew = 0, updated = 0, failed = 0;
@@ -3314,12 +3563,51 @@ window.scanReviewContinueAll = async function() {
     if (isProperty) { propertyIndexes.push(i); continue; }
     const cat = norm.category || p.category || 'Other';
     const images = imagesForProduct(p, scanReviewImages);
-    setStatus(`<p class="flex items-center gap-2"><i data-lucide="loader" class="w-4 h-4 animate-spin text-blue-300"></i> Completing ${i + 1} of ${total}: <b>${esc(p.detected_name || 'product')}</b>…</p>`, 'text-blue-300');
+    setStatus(`<p class="flex items-center gap-2"><i data-lucide="loader" class="w-4 h-4 animate-spin text-blue-300"></i> Completing ${i + 1} of ${total}: <b>${esc(p.detected_name || 'product')}</b>â€¦</p>`, 'text-blue-300');
     try {
-      // FAST: specifications + price arrive from ONE combined AI request.
+      // COMPLETENESS: specifications + price from ALL of this product's photos
+      // (batched inside the client), then a second-pass verification, then
+      // validation â€” only a validated extraction is ever saved.
       const combined = await aiClient.completeSpecsAndPrice(images, p, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null);
       let specs = (combined && combined.specs) || {};
       let price = combined ? combined.price : null;
+      // SECOND PASS â€” verify every extracted value against the document again.
+      try {
+        const verdict = await aiClient.verifyExtraction(images, p, specs, [], { maxImages: AI_PRODUCT_SCANNER.maxImages });
+        if (verdict && verdict.corrections && typeof verdict.corrections === 'object') {
+          for (const [k, v] of Object.entries(verdict.corrections)) {
+            if (v == null || String(Array.isArray(v) ? v.join(', ') : v).trim() === '') continue;
+            if (!SCAN_KNOWN_SPEC_KEYS.includes(k)) continue;
+            specs[k] = v;
+          }
+          for (const [fromKey, toKey] of (Array.isArray(verdict.wrong_mapping) ? verdict.wrong_mapping : [])) {
+            if (!SCAN_KNOWN_SPEC_KEYS.includes(toKey)) continue;
+            if (specs[fromKey] != null && (specs[toKey] == null || String(specs[toKey]).trim() === '')) {
+              specs[toKey] = specs[fromKey];
+              delete specs[fromKey];
+            }
+          }
+        }
+      } catch { /* verification unavailable â€” validated first pass stands */ }
+
+      // VALIDATION before save: strip junk values ("n/a", "unknown", AI
+      // commentary), coerce years/numbers into sane ranges and keep only keys
+      // that belong to the known spec superset.
+      const cleanSpecs = {};
+      for (const [k, raw] of Object.entries(specs)) {
+        if (!SCAN_KNOWN_SPEC_KEYS.includes(k) || SCAN_OWNER_ONLY_KEYS.has(k)) continue;
+        const v = Array.isArray(raw)
+          ? raw.map(x => String(x ?? '').replace(/\s+/g, ' ').trim()).filter(Boolean)
+          : String(raw ?? '').replace(/\s+/g, ' ').trim();
+        if (!v.length || (Array.isArray(v) ? v.join(' ') : v).match(_SCAN_BAD_VALUE)) continue;
+        if (/^(model_)?year/.test(k)) {
+          const n = parseInt(v, 10);
+          if (!Number.isFinite(n) || n < 1800 || n > new Date().getFullYear() + 2) continue;
+        }
+        cleanSpecs[k] = v;
+      }
+      specs = cleanSpecs;
+
       const s = specs || {};
       const src = p.property_id ? (scanReviewSourceProducts[p.property_id] || null) : null;
       const existing = src ? (src.specifications && typeof src.specifications === 'object' ? { ...src, ...src.specifications } : src) : null;
@@ -3330,24 +3618,29 @@ window.scanReviewContinueAll = async function() {
       if (!Number.isFinite(finalPrice) || finalPrice <= 0) finalPrice = GLOBAL_PRICE_MIN;
       finalPrice = Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, finalPrice));
 
+      // FULL SPEC PAYLOAD: every validated key returned by the AI is kept â€”
+      // nothing is dropped because it was missing from a hardcoded list.
+      const TOP_LEVEL_HANDLED = new Set(['title', 'description', 'brand', 'color', 'size', 'condition', 'warranty', 'availability_status']);
       const specPayload = {};
-      for (const k of ['model', 'storage', 'ram', 'processor', 'display', 'material', 'gender', 'platform', 'voltage', 'engine', 'transmission', 'fuel_type', 'horsepower', 'mileage', 'drive_type', 'body_type', 'model_year', 'seating_capacity', 'doors', 'type', 'size', 'age_range', 'skin_type', 'dimensions', 'author', 'publisher', 'language', 'format', 'pages', 'edition', 'quantity', 'pet_type', 'lens', 'sensor', 'megapixels', 'license', 'version', 'duration', 'followers', 'engagement', 'niche', 'usage', 'shelf_life', 'assembly', 'weatherproof', 'movement', 'case_material', 'water_resistance', 'gemstone', 'movement_type', 'warranty_period']) {
-        const v = s[k] ?? p[k];
-        if (v != null && String(v).trim() !== '') specPayload[k] = v;
+      for (const [k, v] of Object.entries({ ...Object.fromEntries(SCAN_IDENTIFICATION_KEYS.filter(k => k !== 'year_estimated' && k !== 'listing_status').map(k => [k, p[k] ?? null])), ...s })) {
+        if (TOP_LEVEL_HANDLED.has(k) || SCAN_OWNER_ONLY_KEYS.has(k)) continue;
+        const val = Array.isArray(v) ? v.filter(x => x != null && String(x).trim() !== '') : v;
+        if (val == null || (typeof val === 'string' && !val.trim())) continue;
+        specPayload[k] = val;
       }
       const specMerged = { ...((existing && existing.specifications && typeof existing.specifications === 'object') ? existing.specifications : {}), ...specPayload };
 
       const payload = {
         listing_type: 'product',
         category: cat,
-        subcategory: existing?.subcategory || null,
-        title: (existing && existing.title) ? existing.title : idLabel,
+        subcategory: existing?.subcategory || s.subcategory || null,
+        title: s.title || (existing && existing.title) || idLabel,
         description: s.description || (existing && existing.description) || '',
         price: finalPrice,
         currency: (existing && existing.currency) || 'USD',
         country: (existing && existing.country) || '', country_code: (existing && existing.country_code) || '',
         listing_status: 'sale', state: '', city: '', product_location: '', latitude: null, longitude: null,
-        is_active: true, // publish — any image count is fine
+        is_active: true, // publish â€” any image count is fine
         is_featured: !!(existing && existing.is_featured),
         brand: p.brand || s.brand || (existing && existing.brand) || null,
         color: s.color || (existing && existing.color) || null,
@@ -3368,7 +3661,7 @@ window.scanReviewContinueAll = async function() {
       };
 
       if (existing && existing.property_id) {
-        // UPDATE the scanned product — never create a duplicate of it.
+        // UPDATE the scanned product â€” never create a duplicate of it.
         payload.property_id = existing.property_id;
         const { error } = await supabase.from('showroom_listings').upsert(payload, { onConflict: 'property_id' });
         if (error) throw error;
@@ -3381,7 +3674,7 @@ window.scanReviewContinueAll = async function() {
       }
     } catch (err) {
       failed++;
-      setStatus(`<p class="text-amber-300">Could not save "${esc(p.detected_name || 'product')}": ${esc(String(err?.message || err))} — continuing with the rest…</p>`, 'text-amber-300');
+      setStatus(`<p class="text-amber-300">Could not save "${esc(p.detected_name || 'product')}": ${esc(String(err?.message || err))} â€” continuing with the restâ€¦</p>`, 'text-amber-300');
     }
   }
 
@@ -3392,10 +3685,10 @@ window.scanReviewContinueAll = async function() {
     scanReviewSourceProducts = {};
     scanReviewImages = [];
     setStatus(`<div class="space-y-1">
-      <p class="font-bold text-emerald-300 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Done — everything saved &amp; published: ${summary}.</p>
+      <p class="font-bold text-emerald-300 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Done â€” everything saved &amp; published: ${summary}.</p>
       <p class="text-[11px] text-gray-400">Your products are live in the showroom. Use Publish &amp; Deploy to push the site.</p>
     </div>`, 'text-emerald-300');
-    showToast(`All done — ${summary} saved & published.`, 'success');
+    showToast(`All done â€” ${summary} saved & published.`, 'success');
   } else {
     scanReviewRender();
     const el2 = document.getElementById(scanReviewEntry);
@@ -3411,7 +3704,7 @@ window.scanReviewContinueAll = async function() {
 };
 
 // Fill the property form from a scan result (title, type, rooms, sizes,
-// location, description, features and a suggested price). Fully editable —
+// location, description, features and a suggested price). Fully editable â€”
 // no auto-save, no auto-publish.
 function applyScanToPropertyForm(result) {
   const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
@@ -3519,7 +3812,7 @@ function applyScanToPropertyForm(result) {
   const vs = document.querySelector('#property-form [name="verification_status"]');
   if (vs) { vs.value = 'Not verified'; filled.push('verification_status'); }
 
-  // "Not specified" policy — any relevant field the AI could not determine is
+  // "Not specified" policy â€” any relevant field the AI could not determine is
   // marked clearly instead of being left blank or guessed, per the owner's rules.
   const missing = new Set((Array.isArray(specs.missing_fields) ? specs.missing_fields : []).map(k => String(k)));
   const NOT_SPECIFIED_SKIP = new Set(['title', 'description', 'price', 'real_price', 'features', 'highlights', 'seo_keywords',
@@ -3557,8 +3850,90 @@ function applyScanToPropertyForm(result) {
   return { filled };
 }
 
+// THE COMPLETE SCAN PIPELINE â€” used by every fill-a-form flow (product form,
+// property form). Guarantees, in order:
+//   1. EVERY page/image is read (batched inside the AI client â€” nothing skipped).
+//   2. The prompt knows EVERY field of the open form and must account for each.
+//   3. A validation layer normalizes/coerces/matches values BEFORE they touch
+//      the form and produces the per-field checklist.
+//   4. A SECOND verification pass re-reads the document, corrects wrong values,
+//      recovers missed ones and unmaps misplaced ones.
+//   5. Corrections are merged in and everything is re-validated.
+// Only then is anything written to the form. The checklist is returned so the
+// owner sees exactly what was filled, what was not found, and what needs review.
+const SCAN_IDENTIFICATION_KEYS = ['brand', 'model', 'year', 'year_estimated', 'body_type', 'color', 'condition', 'subcategory',
+  'property_type', 'bedrooms', 'bathrooms', 'half_bathrooms', 'building_size', 'land_size', 'floors', 'garage',
+  'parking_spaces', 'furnished', 'year_built', 'year_renovated', 'area', 'address', 'zip_code', 'landmarks',
+  'town', 'city', 'state', 'country', 'latitude', 'longitude', 'listing_status'];
+async function runVerifiedScan({ imageUrls, identification, category, formSelector }) {
+  const fields = collectFormFields(formSelector);
+  const fieldsSchema = buildFieldSchemaSection(fields);
+
+  // PASS 1 â€” extract against every known form field.
+  const combined = await aiClient.completeSpecsAndPrice(imageUrls, identification, {
+    category: category || '',
+    maxImages: AI_PRODUCT_SCANNER.maxImages,
+    fieldsSchema,
+  });
+  const price = combined ? combined.price : null;
+  const specs1 = (combined && combined.specs) || {};
+
+  // Full extraction view = identification keys relevant to form fields + specs.
+  let extractionView = {};
+  for (const k of SCAN_IDENTIFICATION_KEYS) {
+    if (identification && identification[k] != null && identification[k] !== '') extractionView[k] = identification[k];
+  }
+  extractionView = { ...extractionView, ...specs1 };
+
+  // Validate pass 1 (normalizes formats, matches options, flags problems).
+  let validated = validateScanExtraction(fields, extractionView);
+
+  // PASS 2 â€” verification against ALL pages/images again.
+  let verified = false;
+  try {
+    const verdict = await aiClient.verifyExtraction(imageUrls, identification, validated.specs, fields, { maxImages: AI_PRODUCT_SCANNER.maxImages });
+    if (verdict) {
+      const corrections = verdict.corrections && typeof verdict.corrections === 'object' ? verdict.corrections : {};
+      const appliedKeys = Object.keys(corrections);
+      if (appliedKeys.length) {
+        const corrected = { ...validated.specs };
+        for (const [k, v] of Object.entries(corrections)) {
+          if (!fields.some(f => f.key === k)) continue;          // only real form fields
+          if (v == null || String(Array.isArray(v) ? v.join(', ') : v).trim() === '') continue;
+          corrected[k] = v;
+        }
+        // wrong_mapping: move a value from one field to another.
+        for (const [fromKey, toKey] of (Array.isArray(verdict.wrong_mapping) ? verdict.wrong_mapping : [])) {
+          if (corrected[fromKey] != null && (corrected[toKey] == null || String(corrected[toKey]).trim() === '')) {
+            corrected[toKey] = corrected[fromKey];
+            delete corrected[fromKey];
+          }
+        }
+        validated = validateScanExtraction(fields, corrected);
+        // Keep identification consistent where a correction overrode it.
+        identification = { ...identification };
+        for (const k of appliedKeys) {
+          if (SCAN_IDENTIFICATION_KEYS.includes(k) && validated.specs[k] != null) identification[k] = validated.specs[k];
+        }
+      }
+      verified = true;
+      validated.verificationNotes = Array.isArray(verdict.notes) ? verdict.notes.slice(0, 4) : [];
+    }
+  } catch { /* verification unavailable â€” pass-1 data (already validated) stands */ }
+
+  return {
+    specs: validated.specs,
+    price,
+    checklist: validated.checklist,
+    summary: validated.summary,
+    verified,
+    verificationNotes: validated.verificationNotes || [],
+    identification,
+  };
+}
+
 // STAGES 2+3 for a product form that is already open on the right category.
-async function completeScanAndFill(identification, images, category) {
+async function completeScanAndFill(identification0, images, category) {
   const status = document.getElementById('scan-ai-status');
   const setStatus = (html, cls) => {
     if (!status) return;
@@ -3567,14 +3942,19 @@ async function completeScanAndFill(identification, images, category) {
     status.innerHTML = html;
   };
   try {
-    setStatus('Completing the specifications and market price in one step…', 'text-blue-300');
-    const combined = await aiClient.completeSpecsAndPrice(images, identification, { category: category || '', maxImages: AI_PRODUCT_SCANNER.maxImages });
-    const specs = (combined && combined.specs) || {};
-    let price = combined ? combined.price : null;
-    const out = applyScanToProductForm({ identification, specs, price });
+    setStatus('Reading every image/page, completing all specifications and pricesâ€¦', 'text-blue-300');
+    let identification = identification0;
+    const res = await runVerifiedScan({ imageUrls: images, identification, category, formSelector: '#product-form' });
+    identification = res.identification || identification;
+    const out = applyScanToProductForm({ identification, specs: res.specs, price: res.price });
     const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'the product';
-    let msg = `${esc(idLabel)} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you (including the detailed description and suggested Real + Discount prices). Review and edit everything, then press SAVE / UPDATE.`;
+    let msg = `${esc(idLabel)} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you (including the detailed description and suggested Real + Discount prices). Review and edit everything, then press SAVE / UPDATE.`;
     if (identification.year_estimated) msg += ' Confirm the model year before saving.';
+    msg += res.verified
+      ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
+      : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
+    if (res.summary.flagged) msg += `<p class="text-[11px] text-red-300 mt-1">${res.summary.flagged} value${res.summary.flagged > 1 ? 's need' : ' needs'} your attention below.</p>`;
+    msg += renderScanChecklistReport(res.checklist, res.summary);
     setStatus(msg, 'text-emerald-300');
     showToast(`Review ${idLabel}, then press SAVE / UPDATE.`, 'success');
   } catch (err) {
@@ -3588,7 +3968,7 @@ async function completeScanAndFill(identification, images, category) {
   if (window.lucide) lucide.createIcons();
 }
 
-// Manual trigger only — never called from any image-upload handler.
+// Manual trigger only â€” never called from any image-upload handler.
 window.scanProductWithAI = async function() {
   const form = document.getElementById('product-form');
   if (!form) { showToast('Open the product form first.', 'error'); return; }
@@ -3611,16 +3991,16 @@ window.scanProductWithAI = async function() {
     const cfg = await aiClient.getConfig();
     const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!keyReady) {
-      setStatus('No Gemini key found — scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
+      setStatus('No Gemini key found â€” scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
     }
-  } catch { /* config load failed — let the scan try anyway */ }
+  } catch { /* config load failed â€” let the scan try anyway */ }
 
-  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
-  setStatus('Detecting every distinct product in your images…', 'text-blue-300');
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
+  setStatus('Detecting every distinct product in your imagesâ€¦', 'text-blue-300');
 
   let detection;
   try {
-    detection = await aiClient.detectProducts(images, { category: form.dataset.category || '', maxImages: Math.min(images.length, AI_PRODUCT_SCANNER.maxImages) });
+    detection = await aiClient.detectProducts(images, { category: form.dataset.category || '', maxImages: AI_PRODUCT_SCANNER.maxImages });
   } catch (err) {
     const msg = String(err?.message || err);
     const keyHint = /key|api|configured|settings|vision/i.test(msg);
@@ -3635,7 +4015,7 @@ window.scanProductWithAI = async function() {
 
   let products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
   if (!products.length) {
-    // NEVER REJECT: the AI could not read the photo(s), but the images are real —
+    // NEVER REJECT: the AI could not read the photo(s), but the images are real â€”
     // create a review card from them so the owner can still fill, save & publish.
     products = [{
       detected_name: 'Product from your photos',
@@ -3644,20 +4024,20 @@ window.scanProductWithAI = async function() {
       confidence: 'low',
       image_indices: images.map((_, i) => i),
     }];
-    setStatus('The AI could not confidently read these photos — a card was created with all of them. Review, edit the details, then continue to save & publish.', 'text-amber-300');
+    setStatus('The AI could not confidently read these photos â€” a card was created with all of them. Review, edit the details, then continue to save & publish.', 'text-amber-300');
   }
 
-  // REVIEW LIST — the AI never fills or publishes on its own.
+  // REVIEW LIST â€” the AI never fills or publishes on its own.
   scanReviewProducts = products;
   scanReviewImages = images;
   scanReviewSourceProducts = {};
   scanReviewEntry = 'scan-ai-status';
   scanReviewRender();
-  showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected — review each one, then continue.`, 'info');
+  showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected â€” review each one, then continue.`, 'info');
 };
 
 // Route an identified property into the Properties Manager with its images and
-// the same scan → confirm → fill → review flow (still never auto-publishes).
+// the same scan â†’ confirm â†’ fill â†’ review flow (still never auto-publishes).
 function routePropertyScan(identification, images) {
   if (window._pfEscapeHandler) { document.removeEventListener('keydown', window._pfEscapeHandler); window._pfEscapeHandler = null; }
   showAddPropertyModal();
@@ -3676,28 +4056,34 @@ function routePropertyScan(identification, images) {
     if (cls) status.classList.add(cls);
     status.innerHTML = html;
   };
-  setStatus('Completing property details and value in one step…', 'text-blue-300');
-  aiClient.completeSpecsAndPrice(images, identification, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages })
-    .then((combined) => {
-      const specs = (combined && combined.specs) || {};
-      const price = combined ? combined.price : null;
-      const out = applyScanToPropertyForm({ identification, specs, price });
-      if (!price) {
-        setStatus(`${esc(identification.detected_name || 'Property')} — ${out.filled.length} fields ready. Price estimate skipped — set the price manually, then press Publish Property.`, 'text-amber-300');
+  setStatus('Reading every page, completing property details and valueâ€¦', 'text-blue-300');
+  (async () => {
+    try {
+      const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
+      const id2 = res.identification || identification;
+      const out = applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price });
+      let msg;
+      if (!res.price) {
+        msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} fields ready. Price estimate skipped â€” set the price manually, then press Publish Property.`;
       } else {
-        setStatus(`${esc(identification.detected_name || 'Property')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`, 'text-emerald-300');
+        msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`;
       }
+      msg += res.verified
+        ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
+        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
+      msg += renderScanChecklistReport(res.checklist, res.summary);
+      setStatus(msg, res.price ? 'text-emerald-300' : 'text-amber-300');
       showToast('Review the property details, then press Publish Property.', 'success');
       if (window.lucide) lucide.createIcons();
-    })
-    .catch((err) => {
+    } catch (err) {
       const keyHint = /key|api|configured|settings|vision/i.test(String(err?.message || err));
       setStatus(keyHint ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.' : `Scan failed: ${String(err?.message || err)}`, 'text-red-400');
       showToast('AI scan failed.', 'error');
-    });
+    }
+  })();
 }
 
-// ── AI Property Scanner (Properties Manager) ───────────────────────────────
+// â”€â”€ AI Property Scanner (Properties Manager) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.scanPropertyWithAI = async function() {
   const form = document.getElementById('property-form');
   if (!form) { showToast('Open the property form first.', 'error'); return; }
@@ -3720,12 +4106,12 @@ window.scanPropertyWithAI = async function() {
     const cfg = await aiClient.getConfig();
     const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!keyReady) {
-      setStatus('No Gemini key found — scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
+      setStatus('No Gemini key found â€” scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
     }
   } catch { }
 
-  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
-  setStatus('Identifying this property from your images…', 'text-blue-300');
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
+  setStatus('Identifying this property from your imagesâ€¦', 'text-blue-300');
 
   let identification;
   try {
@@ -3751,7 +4137,7 @@ window.scanPropertyWithAI = async function() {
   }
   if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
-  // Simplified confirmation — the owner reviews what was identified before any fill.
+  // Simplified confirmation â€” the owner reviews what was identified before any fill.
   // Per owner rule: a FRESH property form (no user edits) is filled automatically
   // with NO question. The confirmation only appears if the user already typed or
   // changed something, so a scan never silently overwrites work in progress.
@@ -3767,7 +4153,7 @@ window.scanPropertyWithAI = async function() {
       <div class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 space-y-2 fade-in">
         <p class="text-xs font-bold text-white">AI identified: <span class="text-violet-300">${esc(identification.detected_name || 'this property')}</span></p>
         <p class="text-[11px] text-gray-400">
-          ${identification.property_type ? 'Type: ' + esc(identification.property_type) + ' • ' : ''}${identification.bedrooms ? esc(identification.bedrooms) + ' bed • ' : ''}${identification.bathrooms ? esc(identification.bathrooms) + ' bath • ' : ''}${[identification.city, identification.state, identification.country].filter(Boolean).join(', ') || 'location not visible'}
+          ${identification.property_type ? 'Type: ' + esc(identification.property_type) + ' â€¢ ' : ''}${identification.bedrooms ? esc(identification.bedrooms) + ' bed â€¢ ' : ''}${identification.bathrooms ? esc(identification.bathrooms) + ' bath â€¢ ' : ''}${[identification.city, identification.state, identification.country].filter(Boolean).join(', ') || 'location not visible'}
           <span class="ml-1 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${confBadge}">${esc(conf).toUpperCase()} confidence</span>
         </p>
         <div class="flex flex-wrap gap-2">
@@ -3778,18 +4164,22 @@ window.scanPropertyWithAI = async function() {
   });
 
   if (!choice || choice.choice === 'cancel') {
-    setStatus('Scan cancelled — nothing was changed.', 'text-gray-400');
+    setStatus('Scan cancelled â€” nothing was changed.', 'text-gray-400');
     showToast('Scan cancelled.', 'info');
     return;
   }
 
   try {
-    setStatus('Completing property details and market value in one step…', 'text-blue-300');
-    const combined = await aiClient.completeSpecsAndPrice(images, identification, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages });
-    const specs = (combined && combined.specs) || {};
-    let price = combined ? combined.price : null;
-    const out = applyScanToPropertyForm({ identification, specs, price });
-    setStatus(`${esc(identification.detected_name || 'Property')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`, 'text-emerald-300');
+    setStatus('Reading every page, completing property details and market valueâ€¦', 'text-blue-300');
+    const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
+    const id2 = res.identification || identification;
+    const out = applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price });
+    let msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`;
+    msg += res.verified
+      ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
+      : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
+    msg += renderScanChecklistReport(res.checklist, res.summary);
+    setStatus(msg, 'text-emerald-300');
     showToast('Review the property details, then press Publish Property.', 'success');
   } catch (err) {
     const msg = String(err?.message || err);
@@ -3802,7 +4192,7 @@ window.scanPropertyWithAI = async function() {
   if (window.lucide) lucide.createIcons();
 };
 
-// ── Scan-first panel on the category picker (Add Product step 1) ───────────
+// â”€â”€ Scan-first panel on the category picker (Add Product step 1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let step1Images = [];
 window.handleStep1ImageUpload = async function(e) {
   const files = Array.from(e.target.files || []).slice(0, 10);
@@ -3826,7 +4216,7 @@ function renderStep1Preview() {
   preview.innerHTML = step1Images.map((u, i) => `
     <div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}">
       <img src="${esc(u)}" onerror="this.src='/fallback.svg'">
-      <button class="rm" onclick="removeStep1Image(${i})" type="button">🔙</button>
+      <button class="rm" onclick="removeStep1Image(${i})" type="button">ðŸ”™</button>
     </div>`).join('');
   const btn = document.getElementById('btn-s1-scan');
   if (btn) { btn.disabled = step1Images.length === 0; btn.style.opacity = step1Images.length ? '' : '0.5'; }
@@ -3849,16 +4239,16 @@ window.scanFirstWithAI = async function() {
     const cfg = await aiClient.getConfig();
     const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!keyReady) {
-      setStatus('No Gemini key found — scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
+      setStatus('No Gemini key found â€” scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
     }
   } catch { }
 
-  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
-  setStatus('Detecting every distinct product in your images…', 'text-blue-300');
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
+  setStatus('Detecting every distinct product in your imagesâ€¦', 'text-blue-300');
 
   let detection;
   try {
-    detection = await aiClient.detectProducts(images, { category: '', maxImages: Math.min(images.length, AI_PRODUCT_SCANNER.maxImages) });
+    detection = await aiClient.detectProducts(images, { category: '', maxImages: AI_PRODUCT_SCANNER.maxImages });
   } catch (err) {
     const keyHint = /key|api|configured|settings|vision/i.test(String(err?.message || err));
     setStatus(keyHint ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.' : `Scan failed: ${String(err?.message || err)}`, 'text-red-400');
@@ -3869,7 +4259,7 @@ window.scanFirstWithAI = async function() {
 
   let products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
   if (!products.length) {
-    // NEVER REJECT: the AI could not read the photo(s), but the images are real —
+    // NEVER REJECT: the AI could not read the photo(s), but the images are real â€”
     // create a review card from them so the owner can still fill, save & publish.
     products = [{
       detected_name: 'Product from your photos',
@@ -3878,25 +4268,25 @@ window.scanFirstWithAI = async function() {
       confidence: 'low',
       image_indices: images.map((_, i) => i),
     }];
-    setStatus('The AI could not confidently read these photos — a card was created with all of them. Review, edit the details, then continue to save & publish.', 'text-amber-300');
+    setStatus('The AI could not confidently read these photos â€” a card was created with all of them. Review, edit the details, then continue to save & publish.', 'text-amber-300');
   }
 
-  // REVIEW LIST — the AI never fills or publishes on its own. Continue on a
+  // REVIEW LIST â€” the AI never fills or publishes on its own. Continue on a
   // product opens its correct category form with that product's own images.
   scanReviewProducts = products;
   scanReviewImages = images;
   scanReviewSourceProducts = {};
   scanReviewEntry = 's1-scan-status';
   scanReviewRender();
-  showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected — review each one, then continue.`, 'info');
+  showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected â€” review each one, then continue.`, 'info');
 };
 
-// ── General AI Scanner (Product Manager) ──────────────────────────────
+// â”€â”€ General AI Scanner (Product Manager) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Standalone scanner in the Product Manager: it scans the owner's existing
-// products (database + locally saved) — no image upload required — and uses
+// products (database + locally saved) â€” no image upload required â€” and uses
 // AI to identify each one, complete its specifications, write the description
 // and features, pick the correct category, and suggest a fair price. Review
-// each result, then continue into that product's form — already filled by the
+// each result, then continue into that product's form â€” already filled by the
 // AI. Nothing is saved or published until the owner presses SAVE.
 let scannerImages = [];
 let scanReviewSourceProducts = {};
@@ -3930,12 +4320,12 @@ window.openGeneralAiScanner = async function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> General AI Scanner</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">✕ Close</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">âœ• Close</button>
         </div>
 
         <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3">
           <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan your products with AI</p>
-          <p class="text-[11px] text-gray-500">The scanner works on the products already in your Product Manager — no image upload needed. Press SCAN ALL WITH AI and it reads each product's existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Review every result, then continue to that product's form, already filled for you. Nothing is saved or published automatically.</p>
+          <p class="text-[11px] text-gray-500">The scanner works on the products already in your Product Manager â€” no image upload needed. Press SCAN ALL WITH AI and it reads each product's existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Review every result, then continue to that product's form, already filled for you. Nothing is saved or published automatically.</p>
           <div class="flex items-center gap-2 text-[11px] font-bold text-gray-300 bg-white/5 border border-violet-500/20 rounded-xl px-3 py-2.5">
             <i data-lucide="package" class="w-4 h-4 text-violet-400 shrink-0"></i>
             <span>${products.length} product${products.length === 1 ? '' : 's'} ready to scan in the Product Manager.</span>
@@ -3950,10 +4340,10 @@ window.openGeneralAiScanner = async function() {
   if (window.lucide) lucide.createIcons();
 };
 
-// ── Timeout-safe scan guard ──────────────────────────────────────────────
+// â”€â”€ Timeout-safe scan guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Runs a promise but stops waiting for it if it does not finish within `ms`.
 // The General AI Scanner uses this so a slow, unreachable AI call or image
-// fetch can NEVER leave the scanner stuck on "Scanning…" forever — the scan
+// fetch can NEVER leave the scanner stuck on "Scanningâ€¦" forever â€” the scan
 // always moves on and always finishes with a clear success or error message.
 function aiScanTimeout(promise, ms) {
   const marker = Symbol('ai-scan-timeout');
@@ -3969,7 +4359,7 @@ window.scanGeneralWithAI = async function() {
   let products = [];
   try { products = await aiScanTimeout(scannerSourceProducts(), 15000); } catch { products = []; }
   if (!products.length) {
-    showToast('No products with photos are in the Product Manager yet — add a product first.', 'error');
+    showToast('No products with photos are in the Product Manager yet â€” add a product first.', 'error');
     return;
   }
   const btn = document.getElementById('btn-scanner-scan');
@@ -3985,12 +4375,12 @@ window.scanGeneralWithAI = async function() {
     const cfg = await aiClient.getConfig();
     const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!keyReady) {
-      setStatus('No Gemini key found — scanning anyway with the FREE built-in AI (no key needed). Products whose photos cannot be read will still be filled from their saved details. For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
+      setStatus('No Gemini key found â€” scanning anyway with the FREE built-in AI (no key needed). Products whose photos cannot be read will still be filled from their saved details. For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
     }
   } catch { }
 
-  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
-  setStatus(`Detecting and completing ${products.length} product${products.length === 1 ? '' : 's'}…`, 'text-blue-300');
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
+  setStatus(`Detecting and completing ${products.length} product${products.length === 1 ? '' : 's'}â€¦`, 'text-blue-300');
 
   const images = [];
   const detections = [];
@@ -3998,10 +4388,10 @@ window.scanGeneralWithAI = async function() {
   let scannedCount = 0;
   let failedCount = 0;
   const total = products.length;
-  // ── Duplicate-image handling ─────────────────────────────────────────────
+  // â”€â”€ Duplicate-image handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // The FIRST time a product's photos are all duplicates of photos already
   // scanned, ONE "Continue" button is shown. Pressing it ONCE skips every
-  // remaining duplicate warning automatically — processing (AI detection,
+  // remaining duplicate warning automatically â€” processing (AI detection,
   // category selection, saving flow) continues for every remaining product.
   // Duplicate photos are never deleted or replaced; the duplicate product is
   // simply not re-scanned (the original product with those photos is kept).
@@ -4021,7 +4411,7 @@ window.scanGeneralWithAI = async function() {
     setStatus(`<div class="space-y-2">
       <p class="font-bold text-amber-300">Duplicate images detected on "${esc(prod?.title || prod?.property_id || 'product')}". This product's photos are the same as a product already scanned.</p>
       <p class="text-gray-400">Press Continue ONCE to automatically skip ALL remaining duplicate warnings and keep processing every remaining product. No duplicate photos will be deleted or replaced.</p>
-      <button type="button" id="btn-scan-dup-continue" onclick="__scanDupContinue()" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Continue — skip all duplicate warnings</button>
+      <button type="button" id="btn-scan-dup-continue" onclick="__scanDupContinue()" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Continue â€” skip all duplicate warnings</button>
     </div>`, 'text-amber-300');
     // Safety: if the scanner modal is closed while waiting, resolve so the scan
     // can never hang forever on a Continue button that no longer exists.
@@ -4034,16 +4424,19 @@ window.scanGeneralWithAI = async function() {
     const orig = window.__scanDupContinue;
     window.__scanDupContinue = function() { clearInterval(t); orig(); };
   });
-  // ── FAST concurrent scanning ───────────────────────────────────────────────
+  // â”€â”€ FAST concurrent scanning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Several products are scanned AT THE SAME TIME (not one after another), so a
-  // full catalog scan takes a fraction of the time. Each scan is also bounded by
-  // a shorter timeout so a slow call can never hold up the whole batch.
-  const SCAN_CONCURRENCY = 6;
-  const SCAN_TIMEOUT_MS = 45000;
+  // full catalog scan takes a fraction of the time. Each scan processes ALL of
+  // the product's photos/pages (batched inside the AI client â€” nothing skipped)
+  // and is bounded by a generous timeout so a slow call can never hold up the
+  // whole batch.
+  const SCAN_CONCURRENCY = 4;
+  const SCAN_TIMEOUT_MS = 90000;
   let cursor = 0;
   let doneCount = 0;
   const scanOne = async (prod) => {
-    const prodImages = (prod.images || []).slice(0, AI_PRODUCT_SCANNER.maxImages);
+    // COMPLETENESS: every photo/page of the product is scanned â€” no slicing.
+    const prodImages = (prod.images || []).filter(Boolean);
     if (!prodImages.length) return;
     // Register this product's photos, then check whether ALL of them were
     // already scanned on an earlier product (a full duplicate).
@@ -4051,7 +4444,7 @@ window.scanGeneralWithAI = async function() {
     const allSeen = keys.length > 0 && keys.every(k => seenImages.has(k));
     for (const k of keys) seenImages.add(k);
     if (allSeen) {
-      // Duplicate photos of an already-scanned product — skip silently and keep
+      // Duplicate photos of an already-scanned product â€” skip silently and keep
       // going with the rest. No prompt, nothing deleted or replaced.
       duplicatesSkipped++;
       return; // skip re-scanning this duplicate; do NOT touch its images
@@ -4062,7 +4455,7 @@ window.scanGeneralWithAI = async function() {
     const indices = prodImages.map((_, i) => base + i);
     let list = [];
     try {
-      const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: Math.min(prodImages.length, AI_PRODUCT_SCANNER.maxImages) }), SCAN_TIMEOUT_MS);
+      const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: AI_PRODUCT_SCANNER.maxImages }), SCAN_TIMEOUT_MS);
       list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
     } catch { /* fall through to the guaranteed fallback below */ }
     // NEVER REJECT: if the AI could not read this product (unclear photo, timeout,
@@ -4096,10 +4489,10 @@ window.scanGeneralWithAI = async function() {
   const worker = async () => {
     while (cursor < products.length) {
       const prod = products[cursor++];
-      setStatus(`Scanning ${doneCount + 1} of ${total} product${total === 1 ? '' : 's'} (fast parallel mode)…`, 'text-blue-300');
+      setStatus(`Scanning ${doneCount + 1} of ${total} product${total === 1 ? '' : 's'} (fast parallel mode)â€¦`, 'text-blue-300');
       await scanOne(prod);
       doneCount++;
-      if (doneCount < total) setStatus(`Scanned ${doneCount} of ${total} — continuing…`, 'text-blue-300');
+      if (doneCount < total) setStatus(`Scanned ${doneCount} of ${total} â€” continuingâ€¦`, 'text-blue-300');
     }
   };
   await Promise.all(Array.from({ length: Math.min(SCAN_CONCURRENCY, Math.max(1, products.length)) }, worker));
@@ -4113,7 +4506,7 @@ window.scanGeneralWithAI = async function() {
     return;
   }
 
-  // ✅ SUCCESS — the scan stops here with a review list. Press "Continue with
+  // âœ… SUCCESS â€” the scan stops here with a review list. Press "Continue with
   // ALL" to save & publish every product in one click, or handle cards
   // one-by-one. Any image count is fine; 24 is only the gallery maximum.
   scanReviewProducts = detections;
@@ -4121,7 +4514,7 @@ window.scanGeneralWithAI = async function() {
   scanReviewSourceProducts = sources;
   scanReviewEntry = 'scanner-scan-status';
   scanReviewRender();
-  showToast(`Scan complete — ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}${fallbacks ? `, ${fallbacks} completed from saved details (AI could not read the photo — review ${fallbacks > 1 ? 'those' : 'it'} and edit as needed)` : ''}. Press "Continue with ALL" to save & publish everything at once.`, 'success');
+  showToast(`Scan complete â€” ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}${fallbacks ? `, ${fallbacks} completed from saved details (AI could not read the photo â€” review ${fallbacks > 1 ? 'those' : 'it'} and edit as needed)` : ''}. Press "Continue with ALL" to save & publish everything at once.`, 'success');
 };
 
 window.saveProduct = async function(e, category, existingId) {
@@ -4129,7 +4522,7 @@ window.saveProduct = async function(e, category, existingId) {
   const form = e.target;
   const btn = form.querySelector('[type=submit][name=action][value=publish]');
   const publishLabel = existingId ? 'One-Click Publish Changes' : 'One-Click Publish Product';
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Savingâ€¦'; }
   try {
     const formData = new FormData(form);
     const data = {};
@@ -4151,7 +4544,7 @@ window.saveProduct = async function(e, category, existingId) {
     // were the only ones, block and tell the owner to re-attach/re-upload them.
     if (droppedTempImages && !(data.images || []).length) {
       if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
-      showToast('Your images were still uploading — please wait a moment and press Publish again (the photos were not saved with the product).', 'error');
+      showToast('Your images were still uploading â€” please wait a moment and press Publish again (the photos were not saved with the product).', 'error');
       return;
     }
     data.is_featured = form.querySelector('[name="is_featured"]')?.checked ? 'on' : '';
@@ -4180,7 +4573,7 @@ window.saveProduct = async function(e, category, existingId) {
 
     let err;
     if (existingId) {
-      // ── EXISTING PRODUCT → PARTIAL UPDATE ─────────────────────────
+      // â”€â”€ EXISTING PRODUCT â†’ PARTIAL UPDATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // Only save what actually changed. Nothing is required in edit mode.
       let base = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === existingId));
       if (!base) {
@@ -4198,7 +4591,7 @@ window.saveProduct = async function(e, category, existingId) {
 
       // NOTE: vehicle/spec fields (model_year, body_type, mileage, engine,
       // horsepower, transmission, drive_type, fuel_type, seating_capacity,
-      // doors, safety_features) are NOT top-level columns on showroom_listings —
+      // doors, safety_features) are NOT top-level columns on showroom_listings â€”
       // they live in the `specifications` JSONB column (see buildSpecifications
       // below). Writing them top-level makes the upsert fail with "column does
       // not exist", so they must never be added to `changes`.
@@ -4228,7 +4621,7 @@ window.saveProduct = async function(e, category, existingId) {
 
       const feat = data.is_featured === 'on';
       if (!!base.is_featured !== feat) changes.is_featured = feat;
-      // Save & publish works with ANY image count — 24 is only a maximum.
+      // Save & publish works with ANY image count â€” 24 is only a maximum.
       const act = isDraft ? false : data.is_active === 'on';
       if (!!base.is_active !== act) changes.is_active = act;
 
@@ -4237,7 +4630,7 @@ window.saveProduct = async function(e, category, existingId) {
       if (JSON.stringify(specMerged) !== JSON.stringify(base.specifications || {})) changes.specifications = specMerged;
 
       if (Object.keys(changes).length === 0) {
-        showToast('No changes detected — nothing was saved.', 'info');
+        showToast('No changes detected â€” nothing was saved.', 'info');
         try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
         if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
         return;
@@ -4257,10 +4650,10 @@ window.saveProduct = async function(e, category, existingId) {
           return;
         }
       }
-      showToast(isDraft ? 'Draft saved!' : `Published Successfully — your product is updated and live in your showroom (${Object.keys(changes).length} change${Object.keys(changes).length > 1 ? 's' : ''}).`);
+      showToast(isDraft ? 'Draft saved!' : `Published Successfully â€” your product is updated and live in your showroom (${Object.keys(changes).length} change${Object.keys(changes).length > 1 ? 's' : ''}).`);
     } else {
-      // ── NEW PRODUCT → FULL VALIDATION + FULL SAVE ─────────────────
-      // No minimum image count — save & publish with however many images
+      // â”€â”€ NEW PRODUCT â†’ FULL VALIDATION + FULL SAVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // No minimum image count â€” save & publish with however many images
       // are available (24-image template requirement removed).
       if (!data.title || !data.title.trim()) throw new Error('A product title is required.');
       if (data.price === '' || data.price == null || !isFinite(parseFloat(data.price))) throw new Error('A price is required.');
@@ -4339,7 +4732,7 @@ window.toggleProductActive = async function(pid, active) {
   const full = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === pid));
   const { error } = await supabase.from('showroom_listings').upsert({ ...full, property_id: pid, is_active: active, availability_status: active ? 'In Stock' : 'Out of Stock' }, { onConflict: 'property_id' });
   if (error) {
-    if (isRlsDenied(error)) return showToast(`⚠️ ${active ? 'Publish' : 'Unpublish'} blocked: database admin role rejected the write. Re-run the admin permission migration.`, 'error');
+    if (isRlsDenied(error)) return showToast(`âš ï¸ ${active ? 'Publish' : 'Unpublish'} blocked: database admin role rejected the write. Re-run the admin permission migration.`, 'error');
     return showToast(`${active ? 'Publish' : 'Unpublish'} failed: ${error.message}`, 'error');
   }
   showToast(active ? 'Product published' : 'Product unpublished');
@@ -4365,9 +4758,9 @@ window.archiveProduct = async function(pid) {
   renderProducts();
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  3. PROPERTIES MANAGER
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const PROPERTY_TYPES = ['Single-Family Home', 'Apartment', 'Condo', 'Townhouse', 'Villa', 'Mansion', 'Beach House', 'Farm House', 'Commercial Building', 'Hotel', 'Land', 'Other'];
 const PROP_STATUSES = ['sale', 'rent'];
 
@@ -4384,7 +4777,7 @@ async function renderProperties() {
       if (seedProps.length) items = items.concat(seedProps);
     }
     items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    // Hide deleted properties the same way — tombstones never resurrect.
+    // Hide deleted properties the same way â€” tombstones never resurrect.
     try { await loadHiddenCatalogIds(); } catch {}
     const hiddenIds = new Set(getHiddenCatalogIds());
     items = items.filter(p => !(p && p.property_id && hiddenIds.has(p.property_id)));
@@ -4417,7 +4810,7 @@ async function renderProperties() {
                       </div>
                     </td>
                     <td><span class="text-xs text-gray-300">${esc(p.property_type || p.category)}</span></td>
-                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-400">${esc([p.city, p.state, p.country].filter(Boolean).join(', ') || '—')}</span></td>
+                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-400">${esc([p.city, p.state, p.country].filter(Boolean).join(', ') || 'â€”')}</span></td>
                     <td class="hidden md:table-cell"><span class="text-xs font-bold text-emerald-400">$${parseFloat(p.price || 0).toLocaleString()}</span></td>
                     <td>${badge(p.listing_status || 'sale')} ${badge(p.is_active ? 'active' : 'inactive')}</td>
                     <td>
@@ -4447,7 +4840,7 @@ window.showAddPropertyModal = function(existing = {}) {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Property</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
         </div>
         <form id="property-form" onsubmit="saveProperty(event,'${isEdit ? existing.property_id : ''}')" class="space-y-4">
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-3">
@@ -4463,7 +4856,7 @@ window.showAddPropertyModal = function(existing = {}) {
               <div><label class="lbl">Country</label><select class="input-field" name="country_code" id="ppf-country_code" onchange="syncPropertyCountry(); applyPropertyCatalogTemplate()">${renderCountryOptions(selectedCountryCode)}</select></div>
               <div><label class="lbl">Currency</label><select class="input-field" name="currency" id="ppf-currency" onchange="applyPropertyCatalogTemplate()">${renderCurrencyOptions(selectedCurrency)}</select></div>
             </div>
-            <p id="ppf-image-requirement" class="text-[11px] text-gray-400">Any number of images is fine — save and publish anytime.</p>
+            <p id="ppf-image-requirement" class="text-[11px] text-gray-400">Any number of images is fine â€” save and publish anytime.</p>
             <input type="hidden" name="required_image_count" id="ppf-required_image_count" value="">
           </div>
 
@@ -4488,7 +4881,7 @@ window.showAddPropertyModal = function(existing = {}) {
             <div class="sm:col-span-2">
               <div class="rounded-xl border border-gray-200 overflow-hidden" style="height:250px;background:#e2e8f0"><div id="property-map-preview" style="width:100%;height:100%"></div></div>
               <div class="flex flex-wrap items-center justify-between gap-2 mt-2">
-                <div class="text-[11px] text-gray-500" id="property-map-status">Map preview — fill the location fields or click the map to drop a pin.</div>
+                <div class="text-[11px] text-gray-500" id="property-map-status">Map preview â€” fill the location fields or click the map to drop a pin.</div>
                 <div class="flex items-center gap-2">
                   <button type="button" id="btn-geocode-property" class="btn-press text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition">Locate from fields</button>
                   <a id="btn-open-google-map" href="#" target="_blank" rel="noopener" class="text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-200 transition">Open in Google Maps</a>
@@ -4514,8 +4907,8 @@ window.showAddPropertyModal = function(existing = {}) {
             <div><label class="lbl">Half Bathrooms</label><input type="number" class="input-field" name="half_bathrooms" value="${existing.half_bathrooms ?? ''}" placeholder="1"></div>
             <div><label class="lbl">Floors / Levels</label><input type="number" class="input-field" name="floors" value="${existing.floors ?? ''}" placeholder="2"></div>
             <div><label class="lbl">Garage</label><input class="input-field" name="garage" value="${esc(existing.garage || '')}" placeholder="e.g. 2-car attached, None"></div>
-            <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the property…">${esc(existing.description || '')}</textarea></div>
-            <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Swimming Pool, Garden, Garage…"></div>
+            <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the propertyâ€¦">${esc(existing.description || '')}</textarea></div>
+            <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Swimming Pool, Garden, Garageâ€¦"></div>
             <div class="sm:col-span-2"><label class="lbl">Highlights (comma separated)</label><input class="input-field" name="highlights_text" value="${esc((existing.highlights || []).join(', '))}" placeholder="Prime location, map-ready post, 24-image gallery"></div>
             <div class="sm:col-span-2"><label class="lbl">SEO Keywords (comma separated)</label><input class="input-field" name="seo_keywords_text" value="${esc((existing.seo_keywords || []).join(', '))}" placeholder="mansion, villa, property investment"></div>
             <div class="sm:col-span-2"><label class="lbl">Property Location</label><input class="input-field" name="product_location" value="${esc(existing.product_location || '')}" placeholder="Estate, district, city, landmark"></div>
@@ -4527,46 +4920,46 @@ window.showAddPropertyModal = function(existing = {}) {
           <div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
             <div class="flex items-center gap-2"><i data-lucide="home" class="w-4 h-4 text-emerald-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Interior &amp; Exterior Features</p></div>
             <div class="form-grid form-grid-2">
-              <div class="sm:col-span-2"><label class="lbl">Interior Features (comma separated)</label><input class="input-field" name="interior_features_text" value="${esc((existing.interior_features || []).join(', '))}" placeholder="Open plan kitchen, Walk-in closet, Fireplace…"></div>
-              <div class="sm:col-span-2"><label class="lbl">Exterior Features (comma separated)</label><input class="input-field" name="exterior_features_text" value="${esc((existing.exterior_features || []).join(', '))}" placeholder="Swimming pool, Garden, Balcony, Patio…"></div>
-              <div class="sm:col-span-2"><label class="lbl">Home Systems (comma separated)</label><input class="input-field" name="home_systems_text" value="${esc((existing.home_systems || []).join(', '))}" placeholder="Central heating, Air conditioning, Solar panels…"></div>
+              <div class="sm:col-span-2"><label class="lbl">Interior Features (comma separated)</label><input class="input-field" name="interior_features_text" value="${esc((existing.interior_features || []).join(', '))}" placeholder="Open plan kitchen, Walk-in closet, Fireplaceâ€¦"></div>
+              <div class="sm:col-span-2"><label class="lbl">Exterior Features (comma separated)</label><input class="input-field" name="exterior_features_text" value="${esc((existing.exterior_features || []).join(', '))}" placeholder="Swimming pool, Garden, Balcony, Patioâ€¦"></div>
+              <div class="sm:col-span-2"><label class="lbl">Home Systems (comma separated)</label><input class="input-field" name="home_systems_text" value="${esc((existing.home_systems || []).join(', '))}" placeholder="Central heating, Air conditioning, Solar panelsâ€¦"></div>
             </div>
           </div>
 
           <div class="glass-soft border border-violet-500/25 rounded-2xl p-4 space-y-3">
             <div class="flex items-center gap-2"><i data-lucide="layout-dashboard" class="w-4 h-4 text-violet-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Floor Plan</p></div>
             <div class="form-grid form-grid-2">
-              <div class="sm:col-span-2"><label class="lbl">Floor Plan Image URL</label><input class="input-field" name="floor_plan_image" value="${esc(existing.floor_plan?.image || '')}" placeholder="https://…/floor-plan.png"></div>
+              <div class="sm:col-span-2"><label class="lbl">Floor Plan Image URL</label><input class="input-field" name="floor_plan_image" value="${esc(existing.floor_plan?.image || '')}" placeholder="https://â€¦/floor-plan.png"></div>
               <div><label class="lbl">Levels</label><input class="input-field" name="floor_plan_levels" value="${esc(existing.floor_plan?.levels || '')}" placeholder="e.g. Ground + 1"></div>
               <div><label class="lbl">Total Area</label><input class="input-field" name="floor_plan_total_area" value="${esc(existing.floor_plan?.total_area || '')}" placeholder="e.g. 2,500 sqft"></div>
-              <div class="sm:col-span-2"><label class="lbl">Rooms (comma separated — Name: dimensions)</label><input class="input-field" name="floor_plan_rooms" value="${esc((existing.floor_plan?.rooms || []).map(r => (r.name || '') + (r.dimensions ? ': ' + r.dimensions : '')).join(', '))}" placeholder="Living Room: 15x12, Kitchen: 10x10…"></div>
+              <div class="sm:col-span-2"><label class="lbl">Rooms (comma separated â€” Name: dimensions)</label><input class="input-field" name="floor_plan_rooms" value="${esc((existing.floor_plan?.rooms || []).map(r => (r.name || '') + (r.dimensions ? ': ' + r.dimensions : '')).join(', '))}" placeholder="Living Room: 15x12, Kitchen: 10x10â€¦"></div>
             </div>
           </div>
 
           <div class="glass-soft border border-amber-500/25 rounded-2xl p-4 space-y-3">
             <div class="flex items-center gap-2"><i data-lucide="school" class="w-4 h-4 text-amber-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Nearby Area</p></div>
             <div class="form-grid form-grid-2">
-              <div><label class="lbl">Schools (comma separated)</label><input class="input-field" name="nearby_schools_text" value="${esc((existing.nearby_area?.schools || []).join(', '))}" placeholder="Riverside Elementary…"></div>
-              <div><label class="lbl">Hospitals / Clinics</label><input class="input-field" name="nearby_hospitals_text" value="${esc((existing.nearby_area?.hospitals || []).join(', '))}" placeholder="City General Hospital…"></div>
-              <div><label class="lbl">Shopping / Markets</label><input class="input-field" name="nearby_shopping_text" value="${esc((existing.nearby_area?.shopping || []).join(', '))}" placeholder="Maple Mall, Farmers Market…"></div>
-              <div><label class="lbl">Transportation</label><input class="input-field" name="nearby_transportation_text" value="${esc((existing.nearby_area?.transportation || []).join(', '))}" placeholder="Metro Station, Bus Stop…"></div>
-              <div class="sm:col-span-2"><label class="lbl">Distances (comma separated)</label><input class="input-field" name="nearby_distances_text" value="${esc((existing.nearby_area?.distances || []).join(', '))}" placeholder="0.5 mi to school, 1 mi to hospital…"></div>
+              <div><label class="lbl">Schools (comma separated)</label><input class="input-field" name="nearby_schools_text" value="${esc((existing.nearby_area?.schools || []).join(', '))}" placeholder="Riverside Elementaryâ€¦"></div>
+              <div><label class="lbl">Hospitals / Clinics</label><input class="input-field" name="nearby_hospitals_text" value="${esc((existing.nearby_area?.hospitals || []).join(', '))}" placeholder="City General Hospitalâ€¦"></div>
+              <div><label class="lbl">Shopping / Markets</label><input class="input-field" name="nearby_shopping_text" value="${esc((existing.nearby_area?.shopping || []).join(', '))}" placeholder="Maple Mall, Farmers Marketâ€¦"></div>
+              <div><label class="lbl">Transportation</label><input class="input-field" name="nearby_transportation_text" value="${esc((existing.nearby_area?.transportation || []).join(', '))}" placeholder="Metro Station, Bus Stopâ€¦"></div>
+              <div class="sm:col-span-2"><label class="lbl">Distances (comma separated)</label><input class="input-field" name="nearby_distances_text" value="${esc((existing.nearby_area?.distances || []).join(', '))}" placeholder="0.5 mi to school, 1 mi to hospitalâ€¦"></div>
             </div>
           </div>
 
           <div class="glass-soft border border-blue-500/20 rounded-2xl p-4 space-y-3">
             <div class="flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Legal, Verification &amp; Trust</p></div>
             <div class="form-grid form-grid-2">
-              <div class="sm:col-span-2"><label class="lbl">Legal / Financial Info (comma separated — add source tag)</label><input class="input-field" name="legal_info_text" value="${esc((existing.legal_info || []).map(i => (i.label || '') + (i.value ? ': ' + i.value : '') + (i.source ? ` (${i.source})` : '')).join(', '))}" placeholder="Ownership: Clear title (Seller provided), Property taxes: (Not verified)…"></div>
+              <div class="sm:col-span-2"><label class="lbl">Legal / Financial Info (comma separated â€” add source tag)</label><input class="input-field" name="legal_info_text" value="${esc((existing.legal_info || []).map(i => (i.label || '') + (i.value ? ': ' + i.value : '') + (i.source ? ` (${i.source})` : '')).join(', '))}" placeholder="Ownership: Clear title (Seller provided), Property taxes: (Not verified)â€¦"></div>
               <div><label class="lbl">Verification Status</label><select class="input-field" name="verification_status">
                 <option value="Not verified" ${(existing.verification_status || 'Not verified') === 'Not verified' ? 'selected' : ''}>Not verified</option>
                 <option value="Pending verification" ${existing.verification_status === 'Pending verification' ? 'selected' : ''}>Pending verification</option>
                 <option value="Verified" ${existing.verification_status === 'Verified' ? 'selected' : ''}>Verified</option>
               </select></div>
               <div><label class="lbl">Verification Date</label><input type="date" class="input-field" name="verification_date" value="${esc(existing.verification_date || '')}"></div>
-              <div class="sm:col-span-2"><label class="lbl">Inspection Info</label><input class="input-field" name="inspection_info" value="${esc(existing.inspection_info || '')}" placeholder="Inspected on date by company — result"></div>
-              <div class="sm:col-span-2"><label class="lbl">Documents (comma separated URLs)</label><input class="input-field" name="documents_text" value="${esc((existing.documents || []).join(', '))}" placeholder="https://…/title.pdf, https://…/inspection.pdf"></div>
-              <div class="sm:col-span-2"><label class="lbl">Condition / Risk Notes</label><textarea class="input-field" name="risk_notes" rows="2" placeholder="Any known issues, renovation needs, or risk notes…">${esc(existing.risk_notes || '')}</textarea></div>
+              <div class="sm:col-span-2"><label class="lbl">Inspection Info</label><input class="input-field" name="inspection_info" value="${esc(existing.inspection_info || '')}" placeholder="Inspected on date by company â€” result"></div>
+              <div class="sm:col-span-2"><label class="lbl">Documents (comma separated URLs)</label><input class="input-field" name="documents_text" value="${esc((existing.documents || []).join(', '))}" placeholder="https://â€¦/title.pdf, https://â€¦/inspection.pdf"></div>
+              <div class="sm:col-span-2"><label class="lbl">Condition / Risk Notes</label><textarea class="input-field" name="risk_notes" rows="2" placeholder="Any known issues, renovation needs, or risk notesâ€¦">${esc(existing.risk_notes || '')}</textarea></div>
             </div>
           </div>
 
@@ -4580,7 +4973,7 @@ window.showAddPropertyModal = function(existing = {}) {
             <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
               <i data-lucide="image-plus" class="w-7 h-7 text-blue-400 mx-auto mb-2"></i>
               <p class="text-xs font-bold text-gray-300">Click or drag & drop images</p>
-              <input type="file" id="img-upload" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)">
+              <input type="file" id="img-upload" class="hidden" multiple accept="image/*,application/pdf" onchange="handleImageUpload(event)">
             </div>
             <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
               ${(existing.images || []).map((u, i) => imageThumbHtml(u, i)).join('')}
@@ -4594,7 +4987,7 @@ window.showAddPropertyModal = function(existing = {}) {
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Property Scanner</p>
-                <p class="text-[11px] text-gray-500 mt-1">Reads your uploaded images and fills the property form for you. Only runs when you press the button — you review everything before publishing.</p>
+                <p class="text-[11px] text-gray-500 mt-1">Reads your uploaded images and fills the property form for you. Only runs when you press the button â€” you review everything before publishing.</p>
               </div>
               <button type="button" id="btn-scan-ai-prop" onclick="scanPropertyWithAI()" class="btn-press px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shrink-0">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
@@ -4604,7 +4997,7 @@ window.showAddPropertyModal = function(existing = {}) {
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button type="submit" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition">${isEdit ? '💾 Save Changes' : '🚀 Publish Property'}</button>
+            <button type="submit" class="btn-press flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition">${isEdit ? 'ðŸ’¾ Save Changes' : 'ðŸš€ Publish Property'}</button>
           </div>
         </form>
       </div>
@@ -4629,7 +5022,7 @@ window.showAddPropertyModal = function(existing = {}) {
   initPropertyMapPreview();
 };
 
-// ── Live map preview for the property form ────────────────────────────────
+// â”€â”€ Live map preview for the property form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Shows the property's OWN real map location. It geocodes from the location
 // fields (address / area / town / city / state / country), fills Latitude +
 // Longitude automatically, lets the owner click the map to drop a pin
@@ -4669,7 +5062,7 @@ function setPropertyMapPin(lat, lng, { reverse = false } = {}) {
 async function geocodePropertyFromFields() {
   const q = buildPropertyMapQuery();
   if (!q) { updatePropertyMapStatus('Enter a location (address, area, city, state, country), then press Locate from fields.'); return; }
-  updatePropertyMapStatus('Searching location…');
+  updatePropertyMapStatus('Searching locationâ€¦');
   try {
     const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
     const data = await res.json();
@@ -4715,7 +5108,7 @@ async function reverseGeocodeProperty(lat, lng) {
         if (m && m.code && !cc.value) cc.value = m.code;
       }
     }
-    updatePropertyMapStatus('Pin set at ' + lat.toFixed(5) + ', ' + lng.toFixed(5) + (data.display_name ? ' — ' + data.display_name : ''));
+    updatePropertyMapStatus('Pin set at ' + lat.toFixed(5) + ', ' + lng.toFixed(5) + (data.display_name ? ' â€” ' + data.display_name : ''));
   } catch { updatePropertyMapStatus('Pin set. Could not reverse-geocode the address.', true); }
 }
 
@@ -4729,7 +5122,7 @@ window.refreshPropertyMapFromForm = function() {
 
 function initPropertyMapPreview() {
   const el = document.getElementById('property-map-preview');
-  if (!el || !window.L) { updatePropertyMapStatus('Map unavailable right now — your location fields still save normally.'); return; }
+  if (!el || !window.L) { updatePropertyMapStatus('Map unavailable right now â€” your location fields still save normally.'); return; }
   if (_propMap) { _propMap.remove(); _propMap = null; _propMarker = null; }
   const lat = parseFloat(document.querySelector('#property-form [name="latitude"]')?.value);
   const lng = parseFloat(document.querySelector('#property-form [name="longitude"]')?.value);
@@ -4768,7 +5161,7 @@ window.fixPropertyMaps = async function() {
     return !(Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) && Boolean(q);
   });
   if (!needsFix.length) { showToast('All properties already have map coordinates.', 'success'); return; }
-  showToast(`Fixing maps for ${needsFix.length} propert${needsFix.length > 1 ? 'ies' : 'y'}…`, 'success');
+  showToast(`Fixing maps for ${needsFix.length} propert${needsFix.length > 1 ? 'ies' : 'y'}â€¦`, 'success');
   let updated = 0, failed = 0;
   for (const p of needsFix) {
     const q = [p.product_location, p.town, p.city, p.state, p.country].filter(Boolean).join(', ');
@@ -4794,7 +5187,7 @@ window.saveProperty = async function(e, existingId) {
   const data = Object.fromEntries(fd.entries());
   const images = fd.getAll('images').filter(u => u && !u.startsWith('blob:'));
   const features = (data.features_text || '').split(',').map(s => s.trim()).filter(Boolean);
-  // No minimum image count — save & publish with however many images are
+  // No minimum image count â€” save & publish with however many images are
   // available (24-image requirement removed).
   const realPriceNum = (data.real_price === '' || data.real_price == null) ? null : Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.real_price) || 0));
   const splitList = (v) => (v || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -4886,9 +5279,9 @@ window.editProperty = async function(pid) {
   if (resolved) showAddPropertyModal(resolved);
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  4. ORDERS MANAGER
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const ORDER_STATUSES = ['pending_verification', 'payment_received', 'payment_approved', 'processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'rejected'];
 
 async function renderOrders() {
@@ -4907,7 +5300,7 @@ async function renderOrders() {
         <div class="flex gap-3">
           <div class="flex-1 relative">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
-            <input type="search" class="input-field pl-9" placeholder="Search order, email, name…" oninput="searchOrders(this.value)">
+            <input type="search" class="input-field pl-9" placeholder="Search order, email, nameâ€¦" oninput="searchOrders(this.value)">
           </div>
         </div>
         <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
@@ -4938,7 +5331,7 @@ function orderRow(o) {
       <p class="text-xs font-bold text-white">${esc(o.full_name || 'Guest')}</p>
       <p class="text-[10px] text-gray-500">${esc(o.email)}</p>
     </td>
-    <td><p class="text-xs text-gray-300 truncate max-w-[140px]">${esc(o.listing_title || o.listing_id || '—')}</p></td>
+    <td><p class="text-xs text-gray-300 truncate max-w-[140px]">${esc(o.listing_title || o.listing_id || 'â€”')}</p></td>
     <td class="hidden sm:table-cell"><span class="text-xs font-bold text-emerald-400">$${parseFloat(o.amount || 0).toLocaleString()}</span></td>
     <td>${badge(o.status)}</td>
     <td class="hidden md:table-cell"><span class="text-xs text-gray-500">${fmtDate(o.created_at)}</span></td>
@@ -4980,11 +5373,11 @@ window.viewOrder = async function(id) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Order ${esc(o.order_number)}</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
         </div>
         <div class="space-y-3 text-sm">
           <div class="grid grid-cols-2 gap-3">
-            ${[['Customer', o.full_name], ['Email', o.email], ['Phone', o.phone], ['Amount', fmtMoney(o.amount, o.currency)], ['Product', o.listing_title || o.listing_id], ['Date', fmtDT(o.created_at)]].map(([l, v]) => `<div><p class="text-[10px] text-gray-500 uppercase font-bold mb-0.5">${l}</p><p class="text-xs text-white font-medium">${esc(v) || '—'}</p></div>`).join('')}
+            ${[['Customer', o.full_name], ['Email', o.email], ['Phone', o.phone], ['Amount', fmtMoney(o.amount, o.currency)], ['Product', o.listing_title || o.listing_id], ['Date', fmtDT(o.created_at)]].map(([l, v]) => `<div><p class="text-[10px] text-gray-500 uppercase font-bold mb-0.5">${l}</p><p class="text-xs text-white font-medium">${esc(v) || 'â€”'}</p></div>`).join('')}
           </div>
           ${o.transaction_reference ? `<div class="p-3 glass-soft border border-blue-500/15 rounded-xl"><p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Transaction Reference</p><p class="text-xs font-mono text-blue-300">${esc(o.transaction_reference)}</p></div>` : ''}
           ${o.additional_notes ? `<div class="p-3 glass-soft border border-amber-500/15 rounded-xl"><p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Notes</p><p class="text-xs text-gray-300">${esc(o.additional_notes)}</p></div>` : ''}
@@ -5011,9 +5404,9 @@ window.updateOrderStatus = async function(id) {
   closeModal(); renderOrders();
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  5. CUSTOMERS MANAGER
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderCustomers() {
   const content = document.getElementById('content');
   try {
@@ -5027,7 +5420,7 @@ async function renderCustomers() {
         </div>
         <div class="relative">
           <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
-          <input type="search" class="input-field pl-9" placeholder="Search customers…" oninput="searchCustomers(this.value)">
+          <input type="search" class="input-field pl-9" placeholder="Search customersâ€¦" oninput="searchCustomers(this.value)">
         </div>
         <div class="glass-soft border border-blue-500/15 rounded-2xl overflow-hidden">
           <div class="overflow-x-auto scrollbar-thin">
@@ -5043,11 +5436,11 @@ async function renderCustomers() {
                         </div>
                         <div>
                           <p class="text-xs font-bold text-white">${esc(c.display_name || 'Anonymous')}</p>
-                          <p class="text-[10px] font-mono text-gray-500">${esc(c.user_id?.slice(0, 12))}…</p>
+                          <p class="text-[10px] font-mono text-gray-500">${esc(c.user_id?.slice(0, 12))}â€¦</p>
                         </div>
                       </div>
                     </td>
-                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-300">${esc(c.country_code || '—')}</span></td>
+                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-300">${esc(c.country_code || 'â€”')}</span></td>
                     <td class="hidden md:table-cell"><span class="text-xs text-gray-500">${fmtDate(c.created_at)}</span></td>
                     <td>
                       <button onclick="viewCustomer('${c.user_id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition"><i data-lucide="eye" class="w-3.5 h-3.5"></i></button>
@@ -5079,7 +5472,7 @@ window.viewCustomer = async function(uid) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Customer Profile</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
         </div>
         <div class="flex items-center gap-4 mb-5 p-4 glass-soft border border-blue-500/15 rounded-xl">
           <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
@@ -5087,7 +5480,7 @@ window.viewCustomer = async function(uid) {
           </div>
           <div>
             <p class="font-black text-white">${esc(c.display_name || 'Anonymous')}</p>
-            <p class="text-xs text-gray-400 mt-0.5">Joined ${fmtDate(c.created_at)} · ${esc(c.country_code || 'Unknown country')}</p>
+            <p class="text-xs text-gray-400 mt-0.5">Joined ${fmtDate(c.created_at)} Â· ${esc(c.country_code || 'Unknown country')}</p>
           </div>
         </div>
         <h4 class="text-xs font-bold text-gray-400 uppercase mb-3">Purchase History</h4>
@@ -5100,9 +5493,9 @@ window.viewCustomer = async function(uid) {
     </div>`);
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  6. REVIEWS MANAGER
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderReviews() {
   const content = document.getElementById('content');
   try {
@@ -5151,17 +5544,17 @@ async function renderReviews() {
 }
 
 function feedbackAdminCard(f) {
-  const stars = Array.from({ length: 5 }, (_, i) => i < (f.rating || 5) ? '★' : '☆').join('');
+  const stars = Array.from({ length: 5 }, (_, i) => i < (f.rating || 5) ? 'â˜…' : 'â˜†').join('');
   return `<div class="glass-soft border ${f.is_approved ? 'border-emerald-500/15' : 'border-amber-500/20'} rounded-xl p-4" data-fb-approved="${f.is_approved}">
     <div class="flex items-start justify-between gap-3">
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 mb-1 flex-wrap">
           <span class="text-amber-400 font-bold text-sm">${stars}</span>
           <span class="text-xs font-black text-white">${esc(f.name || 'Anonymous shopper')}</span>
-          <span class="text-xs text-gray-500">${esc(f.email || 'no email')} · ${fmtDate(f.created_at)}</span>
+          <span class="text-xs text-gray-500">${esc(f.email || 'no email')} Â· ${fmtDate(f.created_at)}</span>
           ${!f.is_approved ? `<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">Pending</span>` : `<span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Approved</span>`}
         </div>
-        <p class="text-sm text-gray-200 leading-relaxed">${esc(f.feedback || '—')}</p>
+        <p class="text-sm text-gray-200 leading-relaxed">${esc(f.feedback || 'â€”')}</p>
       </div>
       <div class="flex gap-1 shrink-0">
         ${!f.is_approved ? `<button onclick="approveFeedback('${f.id}')" class="btn-press p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition" title="Approve"><i data-lucide="check" class="w-4 h-4"></i></button>` : ''}
@@ -5173,7 +5566,7 @@ function feedbackAdminCard(f) {
 
 window.approveFeedback = async function(id) {
   const { error } = await supabase.from('site_feedback').update({ is_approved: true }).eq('id', id);
-  if (error) showToast(error.message, 'error'); else showToast('Feedback approved — it now shows on every page.');
+  if (error) showToast(error.message, 'error'); else showToast('Feedback approved â€” it now shows on every page.');
   renderReviews();
 };
 
@@ -5185,7 +5578,7 @@ window.deleteFeedback = async function(id) {
 };
 
 function reviewCard(r) {
-  const stars = Array.from({length: 5}, (_, i) => i < r.rating ? '★' : '☆').join('');
+  const stars = Array.from({length: 5}, (_, i) => i < r.rating ? 'â˜…' : 'â˜†').join('');
   return `<div class="review-card glass-soft border ${r.is_approved ? 'border-blue-500/15' : 'border-amber-500/20'} rounded-xl p-4" data-approved="${r.is_approved}">
     <div class="flex items-start justify-between gap-3">
       <div class="flex-1 min-w-0">
@@ -5194,7 +5587,7 @@ function reviewCard(r) {
           <span class="text-xs text-gray-500">${fmtDate(r.created_at)}</span>
           ${!r.is_approved ? `<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">Pending Approval</span>` : `<span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Approved</span>`}
         </div>
-        <p class="text-sm text-gray-200 leading-relaxed">${esc(r.comment || r.review_text || '—')}</p>
+        <p class="text-sm text-gray-200 leading-relaxed">${esc(r.comment || r.review_text || 'â€”')}</p>
         <p class="text-[11px] text-blue-400 mt-1.5">On: ${esc(r.showroom_listings?.title || r.listing_id)}</p>
       </div>
       <div class="flex gap-1 shrink-0">
@@ -5226,9 +5619,9 @@ window.deleteReview = async function(id) {
   renderReviews();
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  7. MESSAGES
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderMessages() {
   const content = document.getElementById('content');
   try {
@@ -5248,8 +5641,8 @@ async function renderMessages() {
                       ${!m.is_read ? `<span class="badge bg-blue-500/15 text-blue-400 border-blue-500/20">New</span>` : ''}
                       <span class="text-[10px] text-gray-500 ml-auto">${fmtDT(m.created_at)}</span>
                     </div>
-                    <p class="text-[11px] text-blue-400 mb-1">${esc(m.email || '—')}</p>
-                    <p class="text-xs text-gray-300">${esc(m.message || m.body || '—')}</p>
+                    <p class="text-[11px] text-blue-400 mb-1">${esc(m.email || 'â€”')}</p>
+                    <p class="text-xs text-gray-300">${esc(m.message || m.body || 'â€”')}</p>
                     ${m.subject ? `<p class="text-[11px] text-gray-500 mt-1">Subject: ${esc(m.subject)}</p>` : ''}
                   </div>
                   <div class="flex gap-1 shrink-0">
@@ -5269,9 +5662,9 @@ window.markMsgRead = async function(id) {
   renderMessages();
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  8. COUPONS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderCoupons() {
   const content = document.getElementById('content');
   try {
@@ -5295,7 +5688,7 @@ async function renderCoupons() {
                     <td><code class="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">${esc(c.code)}</code></td>
                     <td><span class="text-xs text-gray-300">${c.discount_type === 'percent' ? 'Percentage' : 'Fixed Amount'}</span></td>
                     <td><span class="text-xs font-bold text-emerald-400">${c.discount_type === 'percent' ? c.discount_value + '%' : '$' + c.discount_value}</span></td>
-                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-400">${c.min_amount ? '$' + c.min_amount : '—'}</span></td>
+                    <td class="hidden sm:table-cell"><span class="text-xs text-gray-400">${c.min_amount ? '$' + c.min_amount : 'â€”'}</span></td>
                     <td>${badge(c.is_active ? 'active' : 'inactive')}</td>
                     <td class="hidden md:table-cell"><span class="text-xs text-gray-500">${fmtDate(c.expires_at)}</span></td>
                     <td>
@@ -5320,7 +5713,7 @@ window.showAddCouponModal = function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Create Coupon</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
         </div>
         <form id="coupon-form" onsubmit="saveCoupon(event)" class="space-y-4">
           <div class="form-grid form-grid-2">
@@ -5364,9 +5757,9 @@ window.deleteCoupon = async function(id) {
   renderCoupons();
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  9. NOTIFICATIONS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderNotifications() {
   const content = document.getElementById('content');
   try {
@@ -5397,9 +5790,9 @@ async function renderNotifications() {
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  10. ADVERTISEMENTS  (homepage showcase ad manager)
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const AD_LABEL_OPTIONS = ['Featured', 'Sponsored', 'Featured Collection', 'Discover', 'Promotion'];
 const AD_SECTION_OPTIONS = [
   { id: 'real-estate', name: 'Real Estate & Properties' },
@@ -5421,9 +5814,9 @@ function adLabelPill(label) {
 
 function adLinkLabel(p) {
   if (!p || !p.link_type || p.link_type === 'none') return '<span class="text-[10px] text-gray-500">No link</span>';
-  if (p.link_type === 'product') return `<span class="text-[10px] text-blue-300"><i data-lucide="package" class="w-3 h-3 inline mr-1"></i>Product · ${esc(p.link_target || '')}</span>`;
-  if (p.link_type === 'category') return `<span class="text-[10px] text-emerald-300"><i data-lucide="tag" class="w-3 h-3 inline mr-1"></i>Category · ${esc(p.link_target || '')}</span>`;
-  return `<span class="text-[10px] text-amber-300"><i data-lucide="layout-grid" class="w-3 h-3 inline mr-1"></i>Section · ${esc(p.link_target || '')}</span>`;
+  if (p.link_type === 'product') return `<span class="text-[10px] text-blue-300"><i data-lucide="package" class="w-3 h-3 inline mr-1"></i>Product Â· ${esc(p.link_target || '')}</span>`;
+  if (p.link_type === 'category') return `<span class="text-[10px] text-emerald-300"><i data-lucide="tag" class="w-3 h-3 inline mr-1"></i>Category Â· ${esc(p.link_target || '')}</span>`;
+  return `<span class="text-[10px] text-amber-300"><i data-lucide="layout-grid" class="w-3 h-3 inline mr-1"></i>Section Â· ${esc(p.link_target || '')}</span>`;
 }
 
 function adMediaThumb(p) {
@@ -5506,11 +5899,11 @@ function setupAdLinkFields(cache, type, selected) {
   if (!type || type === 'none') { wrap.innerHTML = '<p class="text-[10px] text-gray-500">This ad is informational and will not be clickable.</p>'; return; }
   let opts = '';
   if (type === 'product') {
-    opts = '<option value="">Select a product…</option>' + cache.products.map(p => `<option value="${esc(p.id)}" ${String(selected) === String(p.id) ? 'selected' : ''}>${esc(p.id)} — ${esc((p.title || '').slice(0, 60))}</option>`).join('');
+    opts = '<option value="">Select a productâ€¦</option>' + cache.products.map(p => `<option value="${esc(p.id)}" ${String(selected) === String(p.id) ? 'selected' : ''}>${esc(p.id)} â€” ${esc((p.title || '').slice(0, 60))}</option>`).join('');
   } else if (type === 'category') {
-    opts = '<option value="">Select a category…</option>' + cache.categories.map(c => `<option value="${esc(c)}" ${selected === c ? 'selected' : ''}>${esc(c)}</option>`).join('');
+    opts = '<option value="">Select a categoryâ€¦</option>' + cache.categories.map(c => `<option value="${esc(c)}" ${selected === c ? 'selected' : ''}>${esc(c)}</option>`).join('');
   } else if (type === 'section') {
-    opts = '<option value="">Select a section…</option>' + cache.sections.map(s => `<option value="${esc(s.id)}" ${selected === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+    opts = '<option value="">Select a sectionâ€¦</option>' + cache.sections.map(s => `<option value="${esc(s.id)}" ${selected === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
   }
   wrap.innerHTML = `<label class="lbl">Target</label><select class="input-field" name="link_target">${opts}</select>`;
 }
@@ -5521,7 +5914,7 @@ function adFormHtml(ad) {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">${ad ? 'Edit Advertisement' : 'Add Advertisement'}</h3>
-          <button onclick="closeModal()" class="btn-press text-xs font-bold text-gray-400 hover:text-white transition">✕ Close</button>
+          <button onclick="closeModal()" class="btn-press text-xs font-bold text-gray-400 hover:text-white transition">âœ• Close</button>
         </div>
         <form id="ad-form" onsubmit="saveAd(event)" class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
           <input type="hidden" name="id" value="${ad ? ad.id : ''}">
@@ -5533,7 +5926,7 @@ function adFormHtml(ad) {
               </select>
             </div>
           </div>
-          <div><label class="lbl">Message</label><textarea class="input-field" name="description" rows="2" placeholder="Short message shown on the ad…">${esc(ad && ad.description ? ad.description : '')}</textarea></div>
+          <div><label class="lbl">Message</label><textarea class="input-field" name="description" rows="2" placeholder="Short message shown on the adâ€¦">${esc(ad && ad.description ? ad.description : '')}</textarea></div>
 
           <div class="glass-soft border border-blue-500/15 rounded-xl p-4 space-y-3">
             <label class="lbl">Image / Video</label>
@@ -5543,7 +5936,7 @@ function adFormHtml(ad) {
                 <i data-lucide="upload" class="w-4 h-4"></i> Upload File
                 <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime" class="hidden" onchange="onAdMediaPicked(this)">
               </label>
-              <input id="ad-media-url" class="input-field flex-1 min-w-[160px]" placeholder="…or paste media URL" oninput="onAdMediaUrl(this)">
+              <input id="ad-media-url" class="input-field flex-1 min-w-[160px]" placeholder="â€¦or paste media URL" oninput="onAdMediaUrl(this)">
             </div>
             <p class="text-[10px] text-gray-500">Videos play muted in the showcase. Images are cropped to fill (object-fit: cover).</p>
             <input type="hidden" name="image_url" id="ad-hidden-image">
@@ -5692,14 +6085,14 @@ async function renderAds() {
         <div class="flex items-center gap-3 flex-wrap">
           <div class="flex-1 min-w-0">
             <h2 class="text-xl font-black text-white">Advertisement Manager</h2>
-            <p class="text-xs text-gray-500 mt-0.5">Create professional showcase ads that appear on the homepage — with labels, media and product links.</p>
+            <p class="text-xs text-gray-500 mt-0.5">Create professional showcase ads that appear on the homepage â€” with labels, media and product links.</p>
           </div>
           <button onclick="showAddAdModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
             <i data-lucide="plus" class="w-4 h-4"></i> Add Advertisement
           </button>
         </div>
         <div class="grid gap-3">
-          ${items.length === 0 ? emptyState('megaphone', 'No Ads', 'Create your first showcase ad — add a title, image or video, label, and optional product link.', `<button onclick="showAddAdModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i data-lucide="plus" class="w-4 h-4"></i> Add Advertisement</button>`) :
+          ${items.length === 0 ? emptyState('megaphone', 'No Ads', 'Create your first showcase ad â€” add a title, image or video, label, and optional product link.', `<button onclick="showAddAdModal()" class="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"><i data-lucide="plus" class="w-4 h-4"></i> Add Advertisement</button>`) :
             items.map((p, i) => `
               <div class="glass-soft border border-blue-500/15 rounded-xl p-4 flex items-center gap-4">
                 ${adMediaThumb(p)}
@@ -5712,7 +6105,7 @@ async function renderAds() {
                   <div class="flex items-center gap-2 mt-1.5 flex-wrap">
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${p.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}">${p.is_active ? 'Active' : 'Inactive'}</span>
                     ${adLinkLabel(p)}
-                    <span class="text-[10px] text-gray-500">${fmtDate(p.start_date)}${p.start_date ? ' → ' : ''}${fmtDate(p.end_date)}</span>
+                    <span class="text-[10px] text-gray-500">${fmtDate(p.start_date)}${p.start_date ? ' â†’ ' : ''}${fmtDate(p.end_date)}</span>
                   </div>
                 </div>
                 <div class="flex gap-1 shrink-0 flex-wrap justify-end">
@@ -5730,13 +6123,13 @@ async function renderAds() {
 }
 window.renderAds = renderAds;
 
-// ══════════════════════════════════════════════════════════
-// ══════════════════════════════════════════════════════════
-//  11. AI SETTINGS  — GOOGLE GEMINI ONLY
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  11. AI SETTINGS  â€” GOOGLE GEMINI ONLY
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 const ALL_AI_PROVIDERS = [
-  { id:'gemini', name:'Google Gemini', tag:'FREE', color:'blue', icon:'sparkles', kf:'gemini_key', ph:'AIzaSy…', signup:'https://aistudio.google.com/apikey', models:['gemini-3-flash-preview','gemini-3.1-flash-lite-preview'], mf:'gemini_model', dm:'gemini-3-flash-preview', desc:'Google\'s best free AI. Great for coding, writing apps & websites.', free_tier:'15 req/min · 1M tokens/day — Free forever' },
+  { id:'gemini', name:'Google Gemini', tag:'FREE', color:'blue', icon:'sparkles', kf:'gemini_key', ph:'AIzaSyâ€¦', signup:'https://aistudio.google.com/apikey', models:['gemini-3-flash-preview','gemini-3.1-flash-lite-preview'], mf:'gemini_model', dm:'gemini-3-flash-preview', desc:'Google\'s best free AI. Great for coding, writing apps & websites.', free_tier:'15 req/min Â· 1M tokens/day â€” Free forever' },
 ];
 
 const AI_CLR = {
@@ -5787,8 +6180,8 @@ async function renderAiSettings() {
             </div>
             <div class="relative">
               <input type="password" class="input-field pr-16 text-xs" name="${p.kf}"
-                placeholder="${savedKey ? '••••'+savedKey.slice(-4) : p.ph}">
-              ${savedKey ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
+                placeholder="${savedKey ? 'â€¢â€¢â€¢â€¢'+savedKey.slice(-4) : p.ph}">
+              ${savedKey ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">âœ“ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
             </div>
           </div>
           <div>
@@ -5815,8 +6208,8 @@ async function renderAiSettings() {
         <div class="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-xs text-emerald-300 flex items-start gap-3">
           <i data-lucide="gift" class="w-5 h-5 shrink-0 text-emerald-400 mt-0.5"></i>
           <div>
-            <p class="font-black mb-0.5">Google Gemini has a FREE tier — no payment required to start!</p>
-            <p class="text-emerald-400/70">Click "Get Free Key" → sign up at Google AI Studio → paste key below → Save. The key is stored securely in your database.</p>
+            <p class="font-black mb-0.5">Google Gemini has a FREE tier â€” no payment required to start!</p>
+            <p class="text-emerald-400/70">Click "Get Free Key" â†’ sign up at Google AI Studio â†’ paste key below â†’ Save. The key is stored securely in your database.</p>
           </div>
         </div>
 
@@ -5841,7 +6234,7 @@ async function renderAiSettings() {
           </div>
 
           <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition">
-            💾 Save AI Settings
+            ðŸ’¾ Save AI Settings
           </button>
         </form>
       </div>`;
@@ -5872,14 +6265,14 @@ window.saveAiSettings = async function(e) {
     ai_moderation:       data.ai_moderation        === 'on',
   };
 
-  // Collect key + model — only save if user typed a new non-masked value
+  // Collect key + model â€” only save if user typed a new non-masked value
   ALL_AI_PROVIDERS.forEach(p => {
     if (data[p.mf]) payload[p.mf] = data[p.mf];
     const v = (data[p.kf] || '').trim();
-    if (v && !v.startsWith('••••') && v !== '') payload[p.kf] = v;
+    if (v && !v.startsWith('â€¢â€¢â€¢â€¢') && v !== '') payload[p.kf] = v;
   });
 
-  // Also mirror gemini_key → gemini_api_key for backwards compat
+  // Also mirror gemini_key â†’ gemini_api_key for backwards compat
   if (payload.gemini_key) payload.gemini_api_key = payload.gemini_key;
 
   try {
@@ -5896,7 +6289,7 @@ window.saveAiSettings = async function(e) {
       return;
     }
     await aiClient.reload();
-    showToast('✅ AI settings saved!', 'success');
+    showToast('âœ… AI settings saved!', 'success');
     setTimeout(() => renderAiSettings(), 600);
   } catch (err) {
     showToast('Unexpected error: ' + err.message, 'error');
@@ -5904,12 +6297,12 @@ window.saveAiSettings = async function(e) {
   }
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  GEMINI AI CLIENT
 //  Reads the saved Gemini key from the DB. Browser calls go straight
 //  to Google Gemini; chat/vision can also go through the Supabase
 //  edge function so the key never leaves the server.
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 const aiClient = {
   _cfg: null,
@@ -5927,7 +6320,7 @@ const aiClient = {
     return this._cfg;
   },
 
-  // ── FREE KEYLESS AI (Pollinations — no API key, no signup, free forever) ──
+  // â”€â”€ FREE KEYLESS AI (Pollinations â€” no API key, no signup, free forever) â”€â”€
   // OpenAI-compatible endpoint running GPT-OSS-20B. Used automatically as a
   // fallback whenever Gemini has no key, errors, or hits its quota.
   async freeChat(messages, { maxTokens = 2000, timeoutMs = 60000 } = {}) {
@@ -5954,7 +6347,7 @@ const aiClient = {
     const cfg = await this.getConfig();
     const keyReady = String(cfg.gemini_key || '').trim();
     if (!keyReady) {
-      // No Gemini key — use the free keyless AI directly.
+      // No Gemini key â€” use the free keyless AI directly.
       return this.freeChat(messages, { maxTokens });
     }
     const last = messages[messages.length - 1];
@@ -5972,7 +6365,7 @@ const aiClient = {
       }
       throw new Error(String(res?.error || 'Gemini is unavailable.'));
     } catch (err) {
-      // Gemini failed (quota/error) — fall back to the free keyless AI.
+      // Gemini failed (quota/error) â€” fall back to the free keyless AI.
       try {
         const fb = await this.freeChat(messages, { maxTokens });
         fb.note = 'gemini-unavailable';
@@ -6000,14 +6393,14 @@ const aiClient = {
     }));
   },
 
-  // ── VISION: analyze uploaded product images via Gemini ──
+  // â”€â”€ VISION: analyze uploaded product images via Gemini â”€â”€
   // Returns a parsed JSON object or null when vision is unavailable.
   async analyzeImages(imageUrls, context = {}) {
-    const prompt = `You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded product photo(s) and identify exactly what the product is — the REAL brand, model and year that actually appear in the photos, never a guessed one.
+    const prompt = `You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded product photo(s) and identify exactly what the product is â€” the REAL brand, model and year that actually appear in the photos, never a guessed one.
 
 IDENTIFY THE REAL BRAND & MODEL (most important):
 - Find the brand badge, emblem, logo, nameplate or label in the photo and read its exact letters and symbols, character by character.
-- For vehicles, cross-check the badge against the design: grille shape, headlight and taillight design, body lines, wheels, interior and steering wheel. A BMW grille/kidney badge, Mercedes three-pointed star, Audi four rings, Toyota, Honda, Ford, Tesla, etc. are visually distinct — match what you actually see.
+- For vehicles, cross-check the badge against the design: grille shape, headlight and taillight design, body lines, wheels, interior and steering wheel. A BMW grille/kidney badge, Mercedes three-pointed star, Audi four rings, Toyota, Honda, Ford, Tesla, etc. are visually distinct â€” match what you actually see.
 - Use the EXACT brand name that is printed on the product. NEVER swap it for a different brand (e.g. never call a BMW a Mercedes-Benz, never call an iPhone a Samsung).
 - If the exact model number is printed (e.g. "X5", "C300", "iPhone 15 Pro Max", "MacBook Pro"), use that exact text.
 - The year must come from a visible printed date/serial when present; otherwise give your best estimate from the design era and never invent a specific year you cannot support.
@@ -6017,9 +6410,9 @@ Return a single valid JSON object (no markdown, no extra text) with these keys:
 - description (string): a detailed, persuasive 2-4 sentence description.
 - category (string): the best category from this list: ${PRODUCT_CATEGORIES.join(', ')}.
 - subcategory (string)
-- brand (string): the EXACT brand name that appears on the product or badge — read the logo/emblem/nameplate and use that name. If none is readable, identify the make from the design and badge shape.
+- brand (string): the EXACT brand name that appears on the product or badge â€” read the logo/emblem/nameplate and use that name. If none is readable, identify the make from the design and badge shape.
 - model (string): the EXACT model name/number printed on the product or box when visible; otherwise your best professional identification from the design.
-- year (string or null): the real model/manufacturing year — read the printed year/serial if visible, otherwise your best estimate from the design era. Only null for items with no meaningful year.
+- year (string or null): the real model/manufacturing year â€” read the printed year/serial if visible, otherwise your best estimate from the design era. Only null for items with no meaningful year.
 - model_year (string or null): same as year when the product has a model year.
 - color (string): ALWAYS the dominant color of the item.
 - condition (string; from: New, Refurbished, Used - Like New, Used - Good, Used - Fair)
@@ -6057,22 +6450,65 @@ Rules:
       throw new Error((res && res.error) || 'Vision service unavailable.');
     } catch { /* no vision */ }
 
-    // 3) No vision at all: NEVER fall back to a text-only model here — it cannot
+    // 3) No vision at all: NEVER fall back to a text-only model here â€” it cannot
     //    see the photo and would just invent a fake product. Return null.
     return null;
   },
 
-  // Shared vision runner: fetch images → try browser Gemini → try server edge →
+  // Shared vision runner: fetch images â†’ try browser Gemini â†’ try server edge â†’
   // (optional) free keyless text AI for prompts that already contain the
   // identification data (specs/price stages). Returns parsed JSON or null.
-  async _runVisionPrompt(prompt, imageUrls, { maxImages = 3, maxTokens = 4096, allowTextFallback = false } = {}) {
-    // FAST: all images are fetched in parallel and cached, so the 3 scan stages
-    // reuse the same compressed payloads instead of re-downloading each photo.
-    const images = (await Promise.all(
-      (imageUrls || []).slice(0, maxImages).map(u => this._fetchImageAsDataUrl(u, 768))
-    )).filter(Boolean);
+  //
+  // COMPLETENESS: EVERY provided URL is processed. PDFs are expanded into one
+  // image per page; sets larger than `batchSize` are split into parallel
+  // batches whose results are merged with `mergeResults` (stage-specific), so
+  // no page is ever skipped just because a document has many pages.
+  async _runVisionPrompt(prompt, imageUrls, { maxImages = 5, maxTokens = 4096, allowTextFallback = false, mergeResults = null, onProgress = () => {} } = {}) {
+    const batchSize = Math.max(1, Number(maxImages) || 5);
+    // ALL pages/images are collected â€” PDFs become one image per page.
+    const images = await this._collectScanImages(imageUrls, { onProgress });
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
+    const runOne = async (batch) => this._runSingleVisionCall(prompt, batch, { maxTokens, allowTextFallback });
+
+    let parsed;
+    if (images.length <= batchSize) {
+      parsed = await runOne(images);
+    } else {
+      // Multi-batch: process in limited parallel groups so free-tier rate
+      // limits are respected while still reading every page.
+      const batches = [];
+      for (let i = 0; i < images.length; i += batchSize) batches.push(images.slice(i, i + batchSize));
+      onProgress(0, batches.length);
+      const CONCURRENCY = 3;
+      const results = new Array(batches.length).fill(null);
+      let cursor = 0;
+      const worker = async () => {
+        while (cursor < batches.length) {
+          const idx = cursor++;
+          results[idx] = await runOne(batches[idx]).catch(() => null);
+          onProgress(Math.min(cursor, batches.length), batches.length);
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, batches.length) }, worker));
+      // Entries carry each batch's start index so stage-specific mergers can
+      // re-map things like per-batch image_indices back to global indices.
+      const entries = [];
+      results.forEach((r, i) => { if (r) entries.push({ result: r, startIndex: i * batchSize }); });
+      if (!entries.length) return null;
+      parsed = mergeResults ? mergeResults(entries, { batchSize, totalImages: images.length })
+        : entries.reduce((acc, e) => this._mergeJsonResults(acc, e.result), null);
+    }
+    if (!parsed) return null;
+
+    // Quota circuit-breaker state lives in _runSingleVisionCall via the browser/
+    // edge paths below â€” nothing extra to do here.
+    return parsed;
+  },
+
+  // One vision call against ONE batch of images: browser Gemini â†’ server edge â†’
+  // (optional) free keyless text fallback. Returns parsed JSON or null.
+  async _runSingleVisionCall(prompt, images, { maxTokens = 4096, allowTextFallback = false } = {}) {
     // FAST: if Gemini already answered 429/quota in this session, skip BOTH the
     // browser vision call and the server edge vision call entirely (the edge
     // function uses the same key and would just burn another timeout) and go
@@ -6088,7 +6524,7 @@ Rules:
 
     if (!quotaBlocked || !allowTextFallback) {
       try {
-        const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens }, 15000);
+        const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens }, 30000);
         if (res && res.success && res.text) {
           const parsed = extractJsonFromAiText(res.text);
           if (parsed) return { ...parsed, _aiProvider: res.provider, _aiModel: res.model };
@@ -6098,13 +6534,13 @@ Rules:
       } catch { /* no vision */ }
     }
 
-    // FREE KEYLESS FALLBACK (specs/price stages only — the prompt already contains
+    // FREE KEYLESS FALLBACK (specs/price stages only â€” the prompt already contains
     // the full identification data from stage 1, so the text AI can complete the
     // form without seeing the photo, and it invents nothing about the identity).
     if (allowTextFallback) {
       try {
         const fb = await this.freeChat([
-          { role: 'system', content: 'You complete marketplace listing data. Always reply with ONE valid JSON object only — no markdown, no extra text.' },
+          { role: 'system', content: 'You complete marketplace listing data. Always reply with ONE valid JSON object only â€” no markdown, no extra text.' },
           { role: 'user', content: prompt },
         ], { maxTokens: 3000, timeoutMs: 30000 });
         const parsed = extractJsonFromAiText(fb.text);
@@ -6115,13 +6551,64 @@ Rules:
     return null;
   },
 
-  // STAGE 1 — IDENTIFY the exact product shown in the photo (brand/model/year/
+  // Collect scan input as data URLs: photos are fetched+compressed (cached),
+  // PDFs are rendered page-by-page into one image per page so multi-page
+  // documents are read completely. Returns a flat array of data URLs.
+  _pdfPageCache: new Map(),
+  async _collectScanImages(urls, { onProgress = () => {} } = {}) {
+    const list = Array.isArray(urls) ? urls : [urls];
+    const out = [];
+    for (const url of list) {
+      const u = String(url || '');
+      if (!u) continue;
+      if (/^data:application\/pdf/.test(u) || looksLikePdf(u)) {
+        let pages = this._pdfPageCache.get(u) || null;
+        if (!pages) {
+          pages = await pdfToPageDataUrls(u, { maxDim: 1300 }).catch(() => []);
+          if (pages.length) this._pdfPageCache.set(u, pages);
+        }
+        out.push(...pages);
+      } else {
+        const img = await this._fetchImageAsDataUrl(u, 1024);
+        if (img) out.push(img);
+      }
+    }
+    return out;
+  },
+
+  // Default cross-batch merger: first non-null value wins per key; arrays are
+  // concatenated and de-duplicated; bookkeeping keys are unioned.
+  _mergeJsonResults(a, b) {
+    if (!a) return b ? { ...b } : null;
+    if (!b) return a;
+    const out = { ...a };
+    for (const [k, v] of Object.entries(b)) {
+      if (k.startsWith('_')) continue;
+      if (v == null || (typeof v === 'string' && !v.trim())) continue;
+      if (!(k in out) || out[k] == null || out[k] === '') { out[k] = v; continue; }
+      if (Array.isArray(out[k]) || Array.isArray(v)) {
+        const merged = [...(Array.isArray(out[k]) ? out[k] : [out[k]]), ...(Array.isArray(v) ? v : [v])]
+          .map(x => (typeof x === 'string' ? x.trim() : x))
+          .filter(x => x != null && x !== '');
+        out[k] = [...new Set(merged)];
+      } else if (typeof out[k] === 'object' && typeof v === 'object') {
+        out[k] = { ...out[k], ...v };
+      } else if (String(out[k]).trim() === String(v).trim()) {
+        /* identical â€” keep */
+      } else {
+        /* conflict between batches: keep the FIRST (earliest pages win) */
+      }
+    }
+    return out;
+  },
+
+  // STAGE 1 â€” IDENTIFY the exact product shown in the photo (brand/model/year/
   // body type/color/condition). Strict: never swap one brand for another.
   async identifyProduct(imageUrls, context = {}) {
-    const prompt = `STAGE 1 — IDENTIFY THE EXACT PRODUCT.
-Look at the photo(s) and state exactly what product is shown. Identification ONLY — do not complete any specifications yet.
+    const prompt = `STAGE 1 â€” IDENTIFY THE EXACT PRODUCT.
+Look at the photo(s) and state exactly what product is shown. Identification ONLY â€” do not complete any specifications yet.
 
-IDENTIFICATION RULES (accuracy over guesses — this is the most important step):
+IDENTIFICATION RULES (accuracy over guesses â€” this is the most important step):
 - Read the real brand badge / logo / emblem / nameplate / label in the photo character by character and use the EXACT brand that is printed. NEVER swap brands: a BMW must never be called Mercedes-Benz, an iPhone never Samsung, a Toyota never Honda or any other brand.
 - The model must come from a visible nameplate / label / badging when present. Otherwise identify the exact design (grille, headlights, taillights, wheels, body lines, interior, silhouette, box, packaging) and give your best professional identification, or give the brand + product type (e.g. "BMW SUV" or "Levi's jeans") instead of inventing a specific model.
 - year: only from a visible printed year, serial, badge or registration. Otherwise estimate from the design era and set "year_estimated": true.
@@ -6130,8 +6617,8 @@ IDENTIFICATION RULES (accuracy over guesses — this is the most important step)
 - condition: judge from what is visible (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
 - listing_type: "property" if the photo shows a house, villa, apartment, condo, mansion, land, estate or any building for sale; "vehicle" for cars, motorcycles, boats and other vehicles; otherwise "product".
 - category (for products and vehicles): best match from this list: ${PRODUCT_CATEGORIES.join(', ')}. For property photos set category to "Real Estate".
-- For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), half_bathrooms (number or null), building_size (string|null), land_size (string|null), floors (number|null), garage (string|null, e.g. "2-car attached"), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), condition (string|null — only from a visible listing sign, seller notes or obvious visible state: "New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation"), year_built (number|null — only from a visible year, plaque, cornerstone or listing sign), year_renovated (number|null — only if visibly stated), area (neighborhood/district, string|null), address (street + number or landmark when visible in the photo or reliably known, string|null), zip_code (string|null — only if visibly printed), landmarks (string[]|null — only well-known landmarks visible in or clearly indicated by the photo), town (string|null), city (string|null), state (string|null), country (string|null), latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null).
-- LOCATION RULES: use ONLY location information genuinely visible in the photo or reliably known from it (street signs, landmarks, real estate signs, watermarks). NEVER invent a street address, area, city or coordinates. If you cannot determine a location value, return null for that field — the owner will enter it. Latitude/longitude may be derived from a readable address (e.g. a visible street sign); otherwise null.
+- For properties also give: property_type (House, Villa, Apartment, Condo, Land, Commercial, Farm, Other), bedrooms (number or null), bathrooms (number or null), half_bathrooms (number or null), building_size (string|null), land_size (string|null), floors (number|null), garage (string|null, e.g. "2-car attached"), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), condition (string|null â€” only from a visible listing sign, seller notes or obvious visible state: "New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation"), year_built (number|null â€” only from a visible year, plaque, cornerstone or listing sign), year_renovated (number|null â€” only if visibly stated), area (neighborhood/district, string|null), address (street + number or landmark when visible in the photo or reliably known, string|null), zip_code (string|null â€” only if visibly printed), landmarks (string[]|null â€” only well-known landmarks visible in or clearly indicated by the photo), town (string|null), city (string|null), state (string|null), country (string|null), latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null).
+- LOCATION RULES: use ONLY location information genuinely visible in the photo or reliably known from it (street signs, landmarks, real estate signs, watermarks). NEVER invent a street address, area, city or coordinates. If you cannot determine a location value, return null for that field â€” the owner will enter it. Latitude/longitude may be derived from a readable address (e.g. a visible street sign); otherwise null.
 - confidence: how certain you are about what this is: "high" | "medium" | "low".
 - alternate_categories: up to 2 other plausible category matches from the list above, or [].
 - detected_name: a short plain label of what you actually see, e.g. "white Toyota Camry sedan", "black leather handbag", "modern 4-bedroom villa".
@@ -6142,43 +6629,72 @@ Return ONE valid JSON object (no markdown) with only these keys:
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
   },
 
-  // STAGE 0 — DETECT EVERY DISTINCT PRODUCT across one photo or many photos.
+  // STAGE 0 â€” DETECT EVERY DISTINCT PRODUCT across one photo or many photos.
   // Multiple different products in a single photo = separate entries. Multiple
   // photos of the SAME product = one entry with all its image indices. This is
   // the grouping step so the scanner never merges different products into one
   // listing and never splits one product into several.
   async detectProducts(imageUrls, context = {}) {
-    const prompt = `STAGE 0 — DETECT EVERY DISTINCT PRODUCT.
+    const prompt = `STAGE 0 â€” DETECT EVERY DISTINCT PRODUCT.
 Look carefully at ALL of the photo(s) uploaded and detect EVERY distinct product shown.
 
 RULES:
-- Every DIFFERENT product must be its own entry. If one photo shows a bag, a watch, shoes and a phone, that is FOUR separate products — one entry per product.
+- Every DIFFERENT product must be its own entry. If one photo shows a bag, a watch, shoes and a phone, that is FOUR separate products â€” one entry per product.
 - Photos that show the SAME product from different angles / sides / details are ONE product: give them the same entry and list every image index in image_indices.
 - A single photo can appear in several products' image_indices when it contains several different products.
 - If a photo contains no recognizable product, ignore that photo.
-- NEVER reject the scan. Even when a photo is blurry, dark, partial or unusual, ALWAYS give your BEST identification of the most likely product in it and set "confidence" to "low" — the owner reviews and edits everything afterwards. Only return { "identified": false, "reason": ... } when every single photo truly contains no object at all.
+- NEVER reject the scan. Even when a photo is blurry, dark, partial or unusual, ALWAYS give your BEST identification of the most likely product in it and set "confidence" to "low" â€” the owner reviews and edits everything afterwards. Only return { "identified": false, "reason": ... } when every single photo truly contains no object at all.
 
 For each distinct product include:
 - image_indices: array of the photo indexes (0-based) that show THIS product (used as its own images later). Never combine different products under one entry.
 - listing_type: "property" if it is a house, villa, apartment, condo, mansion, land, estate or building; "vehicle" for cars, motorcycles, boats; otherwise "product".
-- brand: the real brand printed on the product when visible — never swap one brand for another.
+- brand: the real brand printed on the product when visible â€” never swap one brand for another.
 - model: real model from a visible label when present, otherwise null.
 - year: only from visible text; otherwise null with year_estimated true when estimated from the design.
 - body_type, color, condition (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
-- category: best match from this list — ${PRODUCT_CATEGORIES.join(', ')}. For properties set category to "Real Estate".
-- subcategory, property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors (number|null), garage (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), year_built (number|null — only if visible), area (neighborhood/district), address (street + number or landmark when visible/reliably known), zip_code (string|null — only if visible), landmarks (string[]|null — only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null) for properties. LOCATION RULES: only use location genuinely visible in the photo — never invent an address or coordinates; return null when unknown.
+- category: best match from this list â€” ${PRODUCT_CATEGORIES.join(', ')}. For properties set category to "Real Estate".
+- subcategory, property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors (number|null), garage (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), year_built (number|null â€” only if visible), area (neighborhood/district), address (street + number or landmark when visible/reliably known), zip_code (string|null â€” only if visible), landmarks (string[]|null â€” only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null) for properties. LOCATION RULES: only use location genuinely visible in the photo â€” never invent an address or coordinates; return null when unknown.
 - confidence: "high" | "medium" | "low" for each product.
 - detected_name: a short plain label for each product, e.g. "black leather handbag", "silver wristwatch", "white Nike sneakers", "modern 3-bedroom villa".
 
 Return ONE valid JSON object (no markdown):
-{ "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": string|null, "year_built": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
-    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
+{ "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": "Furnished"|"Unfurnished"|null, "year_built": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
+    // Multi-batch merge: every batch reports image indices relative to its own
+    // pages, so each entry's indices are shifted by that batch's start index
+    // before all products are concatenated. The same product split across two
+    // batches (e.g. a long PDF) is unified by detected_name + brand + model.
+    return this._runVisionPrompt(prompt, imageUrls, {
+      maxImages: context.maxImages || 5,
+      mergeResults: (entries) => {
+        const products = [];
+        for (const { result, startIndex } of entries) {
+          for (const p of (result && Array.isArray(result.products) ? result.products : [])) {
+            const idx = Array.isArray(p.image_indices)
+              ? [...new Set(p.image_indices.map(n => parseInt(n, 10)).filter(Number.isFinite).map(n => n + startIndex))]
+              : [startIndex];
+            const dupe = products.find(q =>
+              String(q.detected_name || '').toLowerCase() === String(p.detected_name || '').toLowerCase()
+              && String(q.brand || '').toLowerCase() === String(p.brand || '').toLowerCase()
+              && String(q.model || '').toLowerCase() === String(p.model || '').toLowerCase());
+            if (dupe) {
+              dupe.image_indices = [...new Set([...(dupe.image_indices || []), ...idx])];
+              if ((p.confidence === 'high' && dupe.confidence !== 'high') || (!dupe.detected_name && p.detected_name)) {
+                dupe.confidence = p.confidence; dupe.detected_name = p.detected_name || dupe.detected_name;
+              }
+              continue;
+            }
+            products.push({ ...p, image_indices: idx });
+          }
+        }
+        return { identified: products.length > 0, products };
+      },
+    });
   },
 
-  // STAGE 2 — COMPLETE standard specifications ONLY for the identified product.
+  // STAGE 2 â€” COMPLETE standard specifications ONLY for the identified product.
   async completeProductSpecs(imageUrls, identification, context = {}) {
     const id = identification || {};
-    const prompt = `STAGE 2 — COMPLETE THE STANDARD SPECIFICATIONS.
+    const prompt = `STAGE 2 â€” COMPLETE THE STANDARD SPECIFICATIONS.
 The product below was identified in STAGE 1 from the photos.
 
 IDENTIFIED PRODUCT:
@@ -6195,55 +6711,55 @@ Look at the photo(s) again, then complete the standard specifications for THIS E
 ALWAYS fill every relevant specification when you can determine it for the identified product:
 - Vehicles: Engine, Transmission, Fuel, Drive type, Horsepower, Seats (seating capacity), Doors, Body type, Model year, Mileage (only if visible/known), Safety features.
 - Phones/Computers: storage, ram, processor, display, graphics, os.
-- Properties (house/villa/land): property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition (string|null — "New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation"; only from visible state or a listing sign, never inferred as verified), year_built (number|null — only if visible/known), year_renovated (number|null — only if visible/known), area (neighborhood/district), address (street + number or landmark when visible/reliably known), zip_code (string|null — only if visibly printed), landmarks (string[]|null — only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, country_code, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null), interior_features (string[]|null — only interior elements actually visible in the photos), exterior_features (string[]|null — only exterior elements actually visible), home_systems (string[]|null — only systems visibly present, e.g. air conditioning units, solar panels, radiators), nearby_area (only genuinely known from the photo/listing sign: schools/hospitals/shopping/transportation/distances — otherwise null), floor_plan (only if a floor plan is actually visible in the photos, otherwise null), legal_info (NEVER claim ownership/title/permits/taxes/legal status as verified from a photo — only mention something clearly printed on a visible listing/sign as source "Seller provided", otherwise null), inspection_info (string|null — only if visibly stated), verification_status (always null here — stays "Not verified" unless the owner verifies), risk_notes (string|null — only clearly visible issues). LOCATION RULES: only use location genuinely visible in the photo or reliably known — never invent an address, city, coordinates, landmarks or nearby places; return null (and list the key in "missing_fields") when you cannot determine it. latitude/longitude may be derived from a readable address; otherwise null.
-- Other product types: fill whatever genuinely applies — type (e.g. Handbag, Sneaker, Textbook), material, size, color, brand, model, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, storage, assembly, weatherproof, warranty.
-- Also complete the listing content for the exact identified product: highlights (3-6 genuine selling points), seo_keywords (6-10 relevant search keywords for the identified product), tags (from the allowed badge set — "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" — only the ones that genuinely apply to this exact product), warranty (only when the identified product type genuinely carries one, e.g. electronics, vehicles, appliances), availability_status ("In Stock" for a new product, otherwise null if not determinable), and stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle, property or single specimen — otherwise null, because stock cannot be known from a photo).
+- Properties (house/villa/land): property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition (string|null â€” "New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation"; only from visible state or a listing sign, never inferred as verified), year_built (number|null â€” only if visible/known), year_renovated (number|null â€” only if visible/known), area (neighborhood/district), address (street + number or landmark when visible/reliably known), zip_code (string|null â€” only if visibly printed), landmarks (string[]|null â€” only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, country_code, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null), interior_features (string[]|null â€” only interior elements actually visible in the photos), exterior_features (string[]|null â€” only exterior elements actually visible), home_systems (string[]|null â€” only systems visibly present, e.g. air conditioning units, solar panels, radiators), nearby_area (only genuinely known from the photo/listing sign: schools/hospitals/shopping/transportation/distances â€” otherwise null), floor_plan (only if a floor plan is actually visible in the photos, otherwise null), legal_info (NEVER claim ownership/title/permits/taxes/legal status as verified from a photo â€” only mention something clearly printed on a visible listing/sign as source "Seller provided", otherwise null), inspection_info (string|null â€” only if visibly stated), verification_status (always null here â€” stays "Not verified" unless the owner verifies), risk_notes (string|null â€” only clearly visible issues). LOCATION RULES: only use location genuinely visible in the photo or reliably known â€” never invent an address, city, coordinates, landmarks or nearby places; return null (and list the key in "missing_fields") when you cannot determine it. latitude/longitude may be derived from a readable address; otherwise null.
+- Other product types: fill whatever genuinely applies â€” type (e.g. Handbag, Sneaker, Textbook), material, size, color, brand, model, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, storage, assembly, weatherproof, warranty.
+- Also complete the listing content for the exact identified product: highlights (3-6 genuine selling points), seo_keywords (6-10 relevant search keywords for the identified product), tags (from the allowed badge set â€” "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" â€” only the ones that genuinely apply to this exact product), warranty (only when the identified product type genuinely carries one, e.g. electronics, vehicles, appliances), availability_status ("In Stock" for a new product, otherwise null if not determinable), and stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle, property or single specimen â€” otherwise null, because stock cannot be known from a photo).
 
 HARD RULES:
-- ONLY use specifications for the exact brand + model identified above. A Toyota photo must produce TOYOTA specifications. NEVER use specifications from a different brand or model (never a Toyota image → Mercedes specs, never an iPhone image → Samsung specs, never a bag image → car specs).
+- ONLY use specifications for the exact brand + model identified above. A Toyota photo must produce TOYOTA specifications. NEVER use specifications from a different brand or model (never a Toyota image â†’ Mercedes specs, never an iPhone image â†’ Samsung specs, never a bag image â†’ car specs).
 - If the exact year or trim is uncertain, use the most common / standard specification for that identified model and list that key in "estimated". Do not randomly invent values that are not reasonable for that model.
 - Only return specs that exist for the product type: a bag has no engine/transmission/horsepower (leave those null); a phone has no transmission or doors (leave those null); a car has engine/transmission/fuel/drive/horsepower/seats/doors; a house has bedrooms/bathrooms/sizes but no engine or storage.
-- Never return price in this stage — price is handled in a separate stage.
-- "missing_fields" is the ONLY place where uncertainty is recorded: for every field in this JSON that APPLIES to the identified product type but that you genuinely cannot determine or reliably verify (from the photos or reliable product data), list that key in "missing_fields". NEVER guess a value for a field you cannot determine — put its key in "missing_fields" instead. NEVER list a field that does not apply to this product type. The owner will see "Not specified" for those fields and can review/edit them before publishing.
+- Never return price in this stage â€” price is handled in a separate stage.
+- "missing_fields" is the ONLY place where uncertainty is recorded: for every field in this JSON that APPLIES to the identified product type but that you genuinely cannot determine or reliably verify (from the photos or reliable product data), list that key in "missing_fields". NEVER guess a value for a field you cannot determine â€” put its key in "missing_fields" instead. NEVER list a field that does not apply to this product type. The owner will see "Not specified" for those fields and can review/edit them before publishing.
 
 DESCRIPTION REQUIREMENTS (the description is a MAJOR part of the listing):
 - Write a detailed, professional, natural, trustworthy and enjoyable marketplace description that is clearly about THIS exact identified product and nothing else.
-- For vehicles, naturally explain the engine, performance, transmission, drivetrain, fuel type, comfort, interior, exterior, safety, technology and practicality — always grounded in the reliable specifications you returned above.
-- For properties, describe the home/land, its layout, rooms, size, location, surroundings and notable features — grounded in the property details returned above.
+- For vehicles, naturally explain the engine, performance, transmission, drivetrain, fuel type, comfort, interior, exterior, safety, technology and practicality â€” always grounded in the reliable specifications you returned above.
+- For properties, describe the home/land, its layout, rooms, size, location, surroundings and notable features â€” grounded in the property details returned above.
 - For other product types, cover the product's most relevant, genuine attributes (design, materials, build quality, usability, and key specs) based only on the identified product and its reliable specs.
 - Write in smooth, complete sentences and short paragraphs (roughly 3-6 sentences / 60-140 words). Never sound robotic, never use bullet lists, never invent features, prices, bundles or promises that are not true of the identified product, and NEVER mention AI, scanning, estimates, specification lookup or any internal process.
 
 Return ONE valid JSON object (no markdown):
 {
   "title": string|null (professional listing title: year + real brand + real model + product type, e.g. "2023 Toyota Camry SE Sedan" or "Black Leather Crossbody Handbag"),
-  "description": string|null (the detailed, professional description described above — based ONLY on the identified product and its standard specs),
+  "description": string|null (the detailed, professional description described above â€” based ONLY on the identified product and its standard specs),
   "engine": string|null, "transmission": string|null, "fuel_type": string|null, "drive_type": string|null,
   "horsepower": string|null, "mileage": string|null, "seating_capacity": string|null, "doors": string|null,
   "body_type": string|null, "model_year": string|null, "safety_features": string[]|null,
   "storage": string|null, "ram": string|null, "processor": string|null, "display": string|null, "graphics": string|null, "os": string|null,
   "material": string|null, "size": string|null, "gender": string|null, "platform": string|null,
   "type": string|null, "color": string|null, "brand": string|null, "model": string|null,
-  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": string|null, "condition": string|null, "year_built": number|null, "year_renovated": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "interior_features": string[]|null, "exterior_features": string[]|null, "home_systems": string[]|null, "nearby_area": { "schools": string[]|null, "hospitals": string[]|null, "shopping": string[]|null, "transportation": string[]|null, "distances": string[]|null }|null, "floor_plan": { "image": string|null, "rooms": string[]|null, "levels": string|null, "total_area": string|null }|null, "legal_info": string[]|null (each item like "Ownership: Clear title (Seller provided)" or "Property taxes (Not verified)" — NEVER verified from a photo), "inspection_info": string|null, "risk_notes": string|null,
+  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": string|null, "condition": string|null, "year_built": number|null, "year_renovated": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "interior_features": string[]|null, "exterior_features": string[]|null, "home_systems": string[]|null, "nearby_area": { "schools": string[]|null, "hospitals": string[]|null, "shopping": string[]|null, "transportation": string[]|null, "distances": string[]|null }|null, "floor_plan": { "image": string|null, "rooms": string[]|null, "levels": string|null, "total_area": string|null }|null, "legal_info": string[]|null (each item like "Ownership: Clear title (Seller provided)" or "Property taxes (Not verified)" â€” NEVER verified from a photo), "inspection_info": string|null, "risk_notes": string|null,
   "author": string|null, "publisher": string|null, "language": string|null, "format": string|null, "isbn": string|null, "pages": string|null, "edition": string|null, "quantity": string|null, "age_range": string|null, "skin_type": string|null, "ingredients": string|null, "pet_type": string|null, "lens": string|null, "sensor": string|null, "megapixels": string|null, "video": string|null, "license": string|null, "version": string|null, "duration": string|null, "followers": string|null, "engagement": string|null, "niche": string|null, "usage": string|null, "shelf_life": string|null, "assembly": string|null, "weatherproof": string|null, "warranty": string|null,
   "features": string[]|null (notable features, e.g. ["OLED display","5G"] or ["Swimming pool","Double garage"]),
   "highlights": string[]|null (3-6 genuine selling points of this exact product),
   "seo_keywords": string[]|null (6-10 relevant search keywords for this exact product),
-  "tags": string[]|null (only from: "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" — only ones that genuinely apply),
+  "tags": string[]|null (only from: "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" â€” only ones that genuinely apply),
   "availability_status": "In Stock"|"Out of Stock"|"Pre-order"|"Limited Stock"|null,
   "stock_quantity": number|null (1 only for unique one-of-a-kind items, otherwise null),
   "estimated": string[] (keys above that are estimates, e.g. ["engine","horsepower"]),
-  "missing_fields": string[] (keys above that APPLY to this product type but could not be determined — see HARD RULES)
+  "missing_fields": string[] (keys above that APPLY to this product type but could not be determined â€” see HARD RULES)
 }`;
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
   },
 
-  // STAGE 3 — ESTIMATE a reasonable current market selling price for the exact
+  // STAGE 3 â€” ESTIMATE a reasonable current market selling price for the exact
   // identified product (model/year/condition/trim), so it can be placed into the
   // form's Price field. Never a price from a different product.
   async estimateProductPrice(imageUrls, identification, specs = {}, context = {}) {
     const id = identification || {};
     const sp = specs || {};
-    const prompt = `STAGE 3 — ESTIMATE THE REAL MARKET PRICE AND A PROMOTIONAL DISCOUNT PRICE.
+    const prompt = `STAGE 3 â€” ESTIMATE THE REAL MARKET PRICE AND A PROMOTIONAL DISCOUNT PRICE.
 The exact product below was identified from the photos in STAGE 1, and its standard specifications were completed in STAGE 2.
 
 IDENTIFIED PRODUCT:
@@ -6265,14 +6781,14 @@ KNOWN SPECIFICATIONS:
 - storage/ram: ${String(sp.storage || '')}${sp.ram ? ' / ' + sp.ram : ''}
 - property: ${String(id.property_type || sp.property_type || '')}${sp.bedrooms ? ` ${sp.bedrooms} beds` : ''}${sp.half_bathrooms ? ` / ${sp.half_bathrooms} half baths` : ''}${sp.bathrooms ? ` / ${sp.bathrooms} baths` : ''}${sp.building_size ? ` / ${sp.building_size}` : ''}${sp.land_size ? ` / ${sp.land_size} land` : ''}${sp.year_built ? ` / built ${sp.year_built}` : ''}${sp.condition ? ` / ${sp.condition}` : ''}${sp.city ? ` / ${sp.city}` : ''}
 
-Estimate the reasonable CURRENT MARKET SELLING PRICE (in USD) for THIS EXACT identified product — the price a real buyer would realistically pay for it today, in the condition shown in the photo. Use reliable current market data for that exact brand + model + year + condition + trim.
+Estimate the reasonable CURRENT MARKET SELLING PRICE (in USD) for THIS EXACT identified product â€” the price a real buyer would realistically pay for it today, in the condition shown in the photo. Use reliable current market data for that exact brand + model + year + condition + trim.
 
 Then suggest a promotional DISCOUNT PRICE: a compelling sale price BELOW the real price (typically 5-20% off) that the customer would actually pay, to make the listing attractive. If a discount does not make sense for this product, set suggested_discount_price to null.
 
 HARD RULES:
 - ONLY price the exact product identified above. A Toyota photo must get a TOYOTA price, an iPhone photo an iPhone price, a Gucci bag a Gucci bag price. NEVER use the price of a different brand or model.
 - Base the price on the identified product's real market value: for a car use current market value of that model/year/condition (consider trim, engine, mileage, condition); for a house/property use typical values for the identified property type and location when visible; for a bag use the market price of that brand/model/type/condition; for a phone use the current market price of that model/storage/condition.
-- If the exact value cannot be determined, give the best reasonable market estimate — never 0, never a random invented number, and never a price for a different product.
+- If the exact value cannot be determined, give the best reasonable market estimate â€” never 0, never a random invented number, and never a price for a different product.
 - Never include currency symbols or commas in the numbers; both prices must be plain numbers (e.g. 24500).
 - Never return a price range as the main value.
 - suggested_discount_price must be strictly LESS than estimated_price, or null when no discount applies.
@@ -6290,12 +6806,12 @@ Return ONE valid JSON object (no markdown):
     return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
   },
 
-  // STAGES 2+3 COMBINED — completes the standard specifications AND estimates
+  // STAGES 2+3 COMBINED â€” completes the standard specifications AND estimates
   // the market price in ONE AI request instead of two. Roughly halves both the
   // waiting time and the free-tier quota consumed by every scan.
   async completeSpecsAndPrice(imageUrls, identification, context = {}) {
     const id = identification || {};
-    const prompt = `STAGES 2+3 — COMPLETE THE SPECIFICATIONS AND ESTIMATE THE PRICE IN ONE STEP.
+    const prompt = `STAGES 2+3 â€” COMPLETE THE SPECIFICATIONS AND ESTIMATE THE PRICE IN ONE STEP.
 The product below was identified from the photos.
 
 IDENTIFIED PRODUCT:
@@ -6309,21 +6825,21 @@ IDENTIFIED PRODUCT:
 
 Look at the photo(s), then do BOTH jobs for THIS EXACT identified product.
 
-JOB A — COMPLETE THE STANDARD SPECIFICATIONS using reliable data for that exact brand + model:
+JOB A â€” COMPLETE THE STANDARD SPECIFICATIONS using reliable data for that exact brand + model:
 - Vehicles: engine, transmission, fuel_type, drive_type, horsepower, seating_capacity, doors, body_type, model_year, mileage (only if visible/known), safety_features.
 - Phones/Computers: storage, ram, processor, display, graphics, os.
-- Properties: property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition ("New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation" — only from visible state or a listing sign, never inferred as verified), year_built/year_renovated (only if visible/known), area, address (ONLY when genuinely visible/reliably known), zip_code (only if visibly printed), landmarks (only clearly indicated ones), town, city, state, country, country_code, latitude, longitude, listing_status ("sale"/"rent"/null). LOCATION RULES: never invent an address, city or coordinates; return null and list the key in "missing_fields" when undeterminable.
+- Properties: property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition ("New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation" â€” only from visible state or a listing sign, never inferred as verified), year_built/year_renovated (only if visible/known), area, address (ONLY when genuinely visible/reliably known), zip_code (only if visibly printed), landmarks (only clearly indicated ones), town, city, state, country, country_code, latitude, longitude, listing_status ("sale"/"rent"/null). LOCATION RULES: never invent an address, city or coordinates; return null and list the key in "missing_fields" when undeterminable.
 - Other product types: type, material, size, color, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, assembly, weatherproof, warranty.
-- Listing content: highlights (3-6 genuine selling points), seo_keywords (6-10 keywords), tags (only from "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" — only ones that genuinely apply), availability_status ("In Stock" for a new product, otherwise null), stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle or property, otherwise null).
+- Listing content: highlights (3-6 genuine selling points), seo_keywords (6-10 keywords), tags (only from "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" â€” only ones that genuinely apply), availability_status ("In Stock" for a new product, otherwise null), stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle or property, otherwise null).
 
 HARD RULES:
 - ONLY use specifications of the exact brand + model identified above. NEVER swap brands or models.
 - Only return specs that exist for this product type (a bag has no engine; a phone has no transmission; a car has engine/transmission/fuel/drive/horsepower/seats/doors).
 - If the exact year/trim is uncertain use the most common standard spec for that model and list the key in "estimated".
-- "missing_fields": every field that APPLIES to this product type but cannot be determined — list the key there instead of guessing.
+- "missing_fields": every field that APPLIES to this product type but cannot be determined â€” list the key there instead of guessing.
 - DESCRIPTION: write a detailed, professional, natural marketplace description (3-6 sentences / 60-140 words) about THIS exact product only, grounded in its real specs. Smooth sentences, no bullet lists, no invented features, never mention AI/scanning/estimates.
 
-JOB B — ESTIMATE THE PRICE: the reasonable CURRENT MARKET SELLING price in USD for this exact product today (brand + model + year + condition + trim), then a promotional DISCOUNT price typically 5-20% BELOW it (null when a discount makes no sense). Never 0, never another product's price, plain numbers without symbols or commas.
+JOB B â€” ESTIMATE THE PRICE: the reasonable CURRENT MARKET SELLING price in USD for this exact product today (brand + model + year + condition + trim), then a promotional DISCOUNT price typically 5-20% BELOW it (null when a discount makes no sense). Never 0, never another product's price, plain numbers without symbols or commas.
 
 Return ONE valid JSON object (no markdown):
 {
@@ -6342,7 +6858,7 @@ Return ONE valid JSON object (no markdown):
   "estimated": string[],
   "missing_fields": string[],
   "price": { "currency": "USD", "estimated_price": number, "suggested_discount_price": number|null, "confidence": "high"|"medium"|"low", "reason": string }
-}`;
+}${context.fieldsSchema || ''}${context.fieldsSchema ? `\nFORM-FIELD COMPLETENESS RULE: the form-field list above is binding. EVERY key in that list that is not already covered by the JSON keys above MUST also appear as a top-level key in your returned JSON with its extracted value (or null when genuinely not present anywhere in the document/photos â€” never guess). Use each field's exact quoted key. Match select options exactly.` : ''}`;
     const parsed = await this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
     if (!parsed) return null;
     const { price, ...specs } = parsed;
@@ -6355,7 +6871,74 @@ Return ONE valid JSON object (no markdown):
           confidence: parsed.confidence ?? null,
           reason: parsed.reason ?? '',
         } : null);
+    // Price sanity: clamp absurd/out-of-range prices to the global bounds so a
+    // hallucinated number can never reach the form or the database.
+    if (priceObj && Number.isFinite(Number(priceObj.estimated_price))) {
+      const p = Number(priceObj.estimated_price);
+      if (p <= 0) priceObj.estimated_price = GLOBAL_PRICE_MIN;
+      priceObj.estimated_price = Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, p));
+    }
     return { specs: Object.keys(specs).length ? specs : null, price: priceObj };
+  },
+
+  // VERIFICATION PASS â€” the mandatory second read of ALL pages/images. Every
+  // form field's current value is compared against the document again; the AI
+  // reports corrections for wrong values, values found on later pages that the
+  // first pass missed, fields filled with data that actually belongs elsewhere,
+  // and anything still missing. Returns { corrections, still_missing,
+  // wrong_mapping, notes } or null when verification could not run.
+  async verifyExtraction(imageUrls, identification, currentValues, fields = [], context = {}) {
+    const id = identification || {};
+    const fieldLines = (fields || []).map((f) => `- "${f.key}" (${f.label})`).join('\n');
+    const valueLines = Object.entries(currentValues || {})
+      .filter(([, v]) => v != null && String(Array.isArray(v) ? v.join(', ') : v).trim() !== '')
+      .map(([k, v]) => `"${k}": ${JSON.stringify(Array.isArray(v) ? v.join(', ') : String(v).slice(0, 160))}`)
+      .join(',\n');
+    const prompt = `VERIFICATION PASS â€” CHECK EVERY EXTRACTED VALUE AGAINST THE DOCUMENT.
+A first extraction pass produced the values below from these same photo(s)/document page(s). Your job is to RE-READ every page carefully and audit EACH value.
+
+IDENTIFIED ITEM: ${[id.year, id.brand, id.model].filter(Boolean).join(' ') || id.detected_name || 'unknown'}
+
+CURRENT EXTRACTED VALUES:
+${valueLines || '(none yet)'}
+
+AUDIT INSTRUCTIONS â€” check all of these, one by one:
+1. WRONG VALUES: any current value that contradicts what the document actually says (misread digit/letter, wrong model variant, wrong date format, swapped fields like engine size vs horsepower, price in the wrong currency) â†’ put the CORRECT value in "corrections" under that exact key.
+2. MISSED VALUES: information present somewhere in the document (any page, including fine print, tables, stamps, serials, labels, footers) that has NO current value above but belongs to one of the known fields â†’ add it under that exact key in "corrections".
+3. MISPLACED VALUES ("wrong_mapping"): a value that was put in the wrong FIELD (e.g. VIN stored as mileage, a person's name stored as publisher) â†’ list [wrong_key, right_key] pairs.
+4. STILL MISSING: fields that genuinely apply to this item type but have no value and are nowhere in the document â†’ list their keys in "still_missing". NEVER invent or guess a value â€” only report what is actually written in the document.
+${fieldLines ? `\nKNOWN FORM FIELDS:\n${fieldLines}\nUse ONLY these keys (or keys already present above) in corrections.\n` : ''}
+Return ONE valid JSON object (no markdown):
+{ "corrections": { "<key>": <corrected or newly found value â€” exact JSON type for that field> }, "still_missing": ["key"], "wrong_mapping": [["from_key","to_key"]], "notes": ["short factual observations, e.g. 'VIN appears on page 2 footer'"] }`;
+    try {
+      const parsed = await this._runVisionPrompt(prompt, imageUrls, {
+        maxImages: context.maxImages || 5,
+        maxTokens: 2500,
+        allowTextFallback: false,
+        mergeResults: (entries) => {
+          const out = { corrections: {}, still_missing: [], wrong_mapping: [], notes: [] };
+          for (const { result } of entries) {
+            const r = result || {};
+            if (r.corrections && typeof r.corrections === 'object') {
+              // Later batches win: they may contain values from pages the
+              // earlier batches never saw.
+              Object.assign(out.corrections, r.corrections);
+            }
+            for (const k of (Array.isArray(r.still_missing) ? r.still_missing : [])) {
+              const key = String(k); if (key && !out.still_missing.includes(key)) out.still_missing.push(key);
+            }
+            for (const pair of (Array.isArray(r.wrong_mapping) ? r.wrong_mapping : [])) {
+              if (Array.isArray(pair) && pair.length >= 2 && !out.wrong_mapping.some(q => q[0] === pair[0] && q[1] === pair[1])) out.wrong_mapping.push([String(pair[0]), String(pair[1])]);
+            }
+            for (const n of (Array.isArray(r.notes) ? r.notes : [])) {
+              const s = String(n || '').trim(); if (s && !out.notes.includes(s)) out.notes.push(s);
+            }
+          }
+          return out;
+        },
+      });
+      return parsed;
+    } catch { return null; }
   },
 
   // POST to the Supabase edge function so the Gemini key never leaves the server.
@@ -6383,7 +6966,7 @@ Return ONE valid JSON object (no markdown):
       try {
         const blob = await fetch(url, { signal: AbortSignal.timeout(15000) }).then(r => r.blob());
         if (!blob || !blob.size) return null;
-        // Always compress large photos down — small payloads = fast AI scans.
+        // Always compress large photos down â€” small payloads = fast AI scans.
         if (blob.size < 150_000) return `data:${blob.type || 'image/jpeg'};base64,${await blobToBase64(blob)}`;
         return await this._downscaleImage(blob, dim);
       } catch { return null; }
@@ -6417,7 +7000,7 @@ Return ONE valid JSON object (no markdown):
     const cfg = await this.getConfig();
     const apiKey = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
     if (!apiKey) return null;
-    // FAST: the lightest vision model answers first — flash-lite is the fastest
+    // FAST: the lightest vision model answers first â€” flash-lite is the fastest
     // free vision model by far, so it leads unless you explicitly picked a
     // vision model yourself. Slow "thinking" is disabled (thinkingBudget 0)
     // because thinking tokens add many seconds and eat the output budget.
@@ -6453,7 +7036,7 @@ Return ONE valid JSON object (no markdown):
           signal: AbortSignal.timeout(12000),
         });
         // FAST circuit-breaker: a 429 (quota) or 403 applies to the whole key,
-        // so stop trying the remaining models — skip straight to the fallbacks.
+        // so stop trying the remaining models â€” skip straight to the fallbacks.
         if (res.status === 429 || res.status === 403) {
           this._geminiQuotaUntil = Date.now() + 60 * 1000; // retry in 60s, not 5 min
           return null;
@@ -6488,7 +7071,7 @@ function blobToBase64(blob) {
 // Expose globally so other parts of the app can call aiClient.chat(...)
 window.aiClient = aiClient;
 
-// ── AI Status Widget (Gemini) ──
+// â”€â”€ AI Status Widget (Gemini) â”€â”€
 window.showAiStatusModal = async function() {
   const statuses = await aiClient.getStatus();
   const configured = statuses.filter(s => s.hasKey);
@@ -6497,11 +7080,11 @@ window.showAiStatusModal = async function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="activity" class="w-5 h-5 text-emerald-400"></i> AI Provider Status</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
         </div>
         <div class="mb-4 p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300">
           ${configured.length === 0
-            ? '⚠ No key configured. Go to AI Settings and add your Google Gemini API key.'
+            ? 'âš  No key configured. Go to AI Settings and add your Google Gemini API key.'
             : 'Google Gemini is configured and ready.'}
         </div>
         <div class="space-y-2">
@@ -6511,7 +7094,7 @@ window.showAiStatusModal = async function() {
               <span class="text-xs font-bold text-white flex-1">${esc(s.name)}</span>
               ${s.isActive ? '<span class="text-[9px] font-black text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full">ACTIVE</span>' : ''}
               ${!s.hasKey ? '<span class="text-[9px] text-gray-600">No key</span>' : ''}
-              ${s.hasKey ? '<span class="text-[9px] text-emerald-400">Ready ✓</span>' : ''}
+              ${s.hasKey ? '<span class="text-[9px] text-emerald-400">Ready âœ“</span>' : ''}
             </div>`).join('')}
         </div>
         <div class="mt-4 p-3 bg-gray-900 rounded-xl">
@@ -6534,12 +7117,12 @@ window.testAiCall = async function() {
   if (!input) return;
   const output = document.getElementById('ai-test-output');
   output.classList.remove('hidden');
-  output.textContent = '⏳ Asking Gemini…';
+  output.textContent = 'â³ Asking Geminiâ€¦';
   try {
     const result = await aiClient.prompt(input);
-    output.textContent = `✓ [${result.provider} · ${result.model}]\n\n${result.text}`;
+    output.textContent = `âœ“ [${result.provider} Â· ${result.model}]\n\n${result.text}`;
   } catch (err) {
-    output.textContent = `❌ ${err.message}`;
+    output.textContent = `âŒ ${err.message}`;
   }
 };
 
@@ -6557,9 +7140,9 @@ function extractJsonFromAiText(text) {
 }
 
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  12. CONTENT MANAGER
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderContent() {
   const content = document.getElementById('content');
   try {
@@ -6574,14 +7157,14 @@ async function renderContent() {
         <div class="mt-4">
           <label class="lbl">Which products appear in the Live Promotions (Featured Product Alerts)?</label>
           <p class="text-[11px] text-gray-400 mb-2">Leave all unchecked to let the store pick real products automatically.</p>
-          <input id="promo-picker-search" type="search" class="input-field mb-2" placeholder="Search products to choose…" oninput="filterPromoPicker(this.value)">
+          <input id="promo-picker-search" type="search" class="input-field mb-2" placeholder="Search products to chooseâ€¦" oninput="filterPromoPicker(this.value)">
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-1.5 max-h-72 overflow-y-auto pr-1" id="promo-picker-list">
             ${promoPool.map(p => {
               const id = p.property_id || p.id;
               const checked = promoIds.has(id) ? 'checked' : '';
               return `<label class="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:border-blue-400/40 transition" data-promo-search="${esc((p.title || p.name || '') + ' ' + (p.category || ''))}">
                 <input type="checkbox" name="live_promo_product_ids" value="${esc(id)}" ${checked} class="accent-blue-500 w-4 h-4">
-                <span class="min-w-0"><span class="block text-xs font-bold text-white truncate">${esc(p.title || p.name || id)}</span><span class="block text-[10px] text-gray-400">${esc(p.category || p.listing_type || '')} · ${esc(id)}</span></span>
+                <span class="min-w-0"><span class="block text-xs font-bold text-white truncate">${esc(p.title || p.name || id)}</span><span class="block text-[10px] text-gray-400">${esc(p.category || p.listing_type || '')} Â· ${esc(id)}</span></span>
               </label>`;
             }).join('')}
           </div>
@@ -6599,7 +7182,7 @@ async function renderContent() {
             { section: 'Site Identity', fields: [
                { key: 'site_name', label: 'Site Name', type: 'text', placeholder: 'Weverse Online Shop' },
               { key: 'site_tagline', label: 'Tagline / Slogan', type: 'text', placeholder: 'Premium International Commerce' },
-              { key: 'site_description', label: 'Site Description (SEO)', type: 'textarea', placeholder: 'Your trusted global shop…' },
+              { key: 'site_description', label: 'Site Description (SEO)', type: 'textarea', placeholder: 'Your trusted global shopâ€¦' },
             ]},
             { section: 'Contact Information', fields: [
               { key: 'contact_email', label: 'Contact Email', type: 'email', placeholder: 'support@example.com' },
@@ -6609,20 +7192,20 @@ async function renderContent() {
             ]},
             { section: 'Hero Section', fields: [
               { key: 'hero_headline', label: 'Hero Headline', type: 'text', placeholder: 'Weverse Online Shop' },
-              { key: 'hero_subtext', label: 'Hero Subtext', type: 'textarea', placeholder: 'Shop premium products…' },
+              { key: 'hero_subtext', label: 'Hero Subtext', type: 'textarea', placeholder: 'Shop premium productsâ€¦' },
               { key: 'hero_cta_text', label: 'CTA Button Text', type: 'text', placeholder: 'Shop Now' },
             ]},
             { section: 'Social Media', fields: [
-              { key: 'facebook_url', label: 'Facebook URL', type: 'url', placeholder: 'https://facebook.com/…' },
-              { key: 'instagram_url', label: 'Instagram URL', type: 'url', placeholder: 'https://instagram.com/…' },
-              { key: 'twitter_url', label: 'Twitter / X URL', type: 'url', placeholder: 'https://twitter.com/…' },
-              { key: 'youtube_url', label: 'YouTube URL', type: 'url', placeholder: 'https://youtube.com/…' },
-              { key: 'tiktok_url', label: 'TikTok URL', type: 'url', placeholder: 'https://tiktok.com/…' },
+              { key: 'facebook_url', label: 'Facebook URL', type: 'url', placeholder: 'https://facebook.com/â€¦' },
+              { key: 'instagram_url', label: 'Instagram URL', type: 'url', placeholder: 'https://instagram.com/â€¦' },
+              { key: 'twitter_url', label: 'Twitter / X URL', type: 'url', placeholder: 'https://twitter.com/â€¦' },
+              { key: 'youtube_url', label: 'YouTube URL', type: 'url', placeholder: 'https://youtube.com/â€¦' },
+              { key: 'tiktok_url', label: 'TikTok URL', type: 'url', placeholder: 'https://tiktok.com/â€¦' },
             ]},
             { section: 'Mobile App Promotion Banner', fields: [
               { key: 'app_banner_enabled', label: 'Show the App Promotion banner at the bottom of every page', type: 'checkbox' },
               { key: 'app_banner_headline', label: 'Banner Headline', type: 'text', placeholder: 'Discover More with the Weverse Online Shop App' },
-              { key: 'app_play_store_url', label: 'Google Play Store URL (real app listing — leave empty while unpublished)', type: 'url', placeholder: 'https://play.google.com/store/apps/details?id=…' },
+              { key: 'app_play_store_url', label: 'Google Play Store URL (real app listing â€” leave empty while unpublished)', type: 'url', placeholder: 'https://play.google.com/store/apps/details?id=â€¦' },
             ]},
             { section: 'Live Product Promotions (Featured Product Alerts)', fields: [
               { key: 'live_promo_enabled', label: 'Show Live Product Promotions (small alerts at the bottom corner)', type: 'checkbox' },
@@ -6644,7 +7227,7 @@ async function renderContent() {
               </div>
               ${sec.extra || ''}
             </div>`).join('')}
-          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Content Settings</button>
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">ðŸ’¾ Save Content Settings</button>
         </form>
       </div>`;
     if (window.lucide) lucide.createIcons();
@@ -6701,11 +7284,11 @@ window.saveContent = async function(e) {
   showToast('Content settings saved!');
 };
 
-// ══════════════════════════════════════════════════════════
-//  CONTENT SETTINGS — edit the wording of the Android App
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  CONTENT SETTINGS â€” edit the wording of the Android App
 //  banner + the final bottom / end-of-page closing section.
-//  Save once → every page updates automatically.
-// ══════════════════════════════════════════════════════════
+//  Save once â†’ every page updates automatically.
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const CONTENT_SETTINGS_SECTIONS = [
   {
     key: 'hero_videos',
@@ -6729,7 +7312,7 @@ const CONTENT_SETTINGS_SECTIONS = [
   {
     key: 'bottom',
     title: 'BOTTOM / END-OF-PAGE SECTION',
-    desc: 'The final professional closing area of the website — thank-you message, customer support, footer links and copyright. The polished design stays; only these words change.',
+    desc: 'The final professional closing area of the website â€” thank-you message, customer support, footer links and copyright. The polished design stays; only these words change.',
     accent: 'from-emerald-400 to-cyan-500',
     fields: [
       { key: 'bottom_heading', label: 'Bottom Section Heading', type: 'text' },
@@ -6740,13 +7323,13 @@ const CONTENT_SETTINGS_SECTIONS = [
       { key: 'bottom_support_button_text', label: 'Support Button Text', type: 'text' },
       { key: 'bottom_footer_text', label: 'Footer Section Text', type: 'text' },
       { key: 'bottom_footer_closing', label: 'Footer Closing Message', type: 'text' },
-      { key: 'bottom_copyright', label: 'Copyright Text (empty = automatic “© year Brand” line)', type: 'text' },
+      { key: 'bottom_copyright', label: 'Copyright Text (empty = automatic â€œÂ© year Brandâ€ line)', type: 'text' },
     ],
   },
   {
     key: 'promo_banner',
     title: 'HOME PAGE PROMO BANNER',
-    desc: 'The main rotating banner at the top of the homepage. Upload your own image or video and write your own words — the clean design stays. If empty, the built-in image banners rotate.',
+    desc: 'The main rotating banner at the top of the homepage. Upload your own image or video and write your own words â€” the clean design stays. If empty, the built-in image banners rotate.',
     accent: 'from-fuchsia-400 to-purple-500',
     fields: [
       { key: 'promo_banner_enabled', label: 'Show my promo banner', type: 'checkbox' },
@@ -6775,7 +7358,7 @@ const CONTENT_SETTINGS_SECTIONS = [
   },
 ];
 
-// Content Settings media field — upload your own image/video from the panel.
+// Content Settings media field â€” upload your own image/video from the panel.
 function contentMediaSlotHtml(f, value) {
   const isImg = f.kind === 'image';
   const current = value || '';
@@ -6822,7 +7405,7 @@ window.handleContentMediaUpload = async function(e, field) {
   const file = e.target.files?.[0];
   if (!file) return;
   const isVideo = file.type.startsWith('video/');
-  showToast(`Uploading ${file.name}…`, 'info');
+  showToast(`Uploading ${file.name}â€¦`, 'info');
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { showToast('Sign in to upload media', 'error'); return; }
@@ -6842,11 +7425,11 @@ window.handleContentMediaUpload = async function(e, field) {
       const f = CONTENT_SETTINGS_SECTIONS.flatMap((s) => s.fields || []).find((x) => x.key === field);
       if (f) slot.outerHTML = contentMediaSlotHtml(f, url);
     }
-    showToast('✓ Uploaded — save to apply', 'success');
+    showToast('âœ“ Uploaded â€” save to apply', 'success');
   } catch (err) { showToast('Upload failed', 'error'); }
 };
 
-// ── HERO VIDEO BANNER MANAGER ──────────────────────────────────────────────
+// â”€â”€ HERO VIDEO BANNER MANAGER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // The owner manages a premium full-width rotating video hero. Every slide has
 // its own video (MP4/WebM), optional poster thumbnail, title, subtitle and CTA
 // and can be Upload, Preview, Replace, Delete, Enable/Disable or Reordered.
@@ -6873,16 +7456,16 @@ function rerenderHeroVideoManager() {
 function heroPanelMediaSlot(s, i) {
   const video = String((s && s.video) || '').trim();
   const poster = String((s && s.poster) || '').trim();
-  // A blob: URL means the real upload FAILED — show a loud warning so the
+  // A blob: URL means the real upload FAILED â€” show a loud warning so the
   // owner never mistakes the temporary preview for a saved video.
   const tempWarning = (video && isTempMediaUrl(video)) || (poster && isTempMediaUrl(poster))
-    ? `<p class="mt-2 text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">⚠ Temporary preview only — the upload FAILED, this will NOT be saved. Re-upload a smaller MP4/WebM.</p>`
+    ? `<p class="mt-2 text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">âš  Temporary preview only â€” the upload FAILED, this will NOT be saved. Re-upload a smaller MP4/WebM.</p>`
     : '';
   const body = video
     ? `<video src="${esc(video)}" ${poster ? `poster="${esc(poster)}"` : ''} class="w-full h-40 object-cover" muted controls preload="metadata"></video>`
     : poster
       ? `<img src="${esc(poster)}" class="w-full h-40 object-cover" onerror="this.style.display='none'">`
-      : `<div class="w-full h-40 flex items-center justify-center text-[11px] text-gray-500">No media yet — upload a video (MP4/WebM) or a poster below</div>`;
+      : `<div class="w-full h-40 flex items-center justify-center text-[11px] text-gray-500">No media yet â€” upload a video (MP4/WebM) or a poster below</div>`;
   return `
     <div>
       <div class="w-full overflow-hidden rounded-xl bg-gray-950 border border-indigo-500/20 flex items-center justify-center">${body}</div>
@@ -6980,16 +7563,16 @@ window.addHeroVideoSlide = function() {
   const arr = heroVideoDraft();
   arr.push({ id: 'hv' + Date.now() + Math.floor(Math.random() * 999), enabled: true, video: '', poster: '', title: '', subtitle: '', buttonText: 'SHOP NOW', buttonLink: '/#showroom-directory' });
   rerenderHeroVideoManager();
-  showToast('New slide added — upload a video and press Save to show it.', 'info');
+  showToast('New slide added â€” upload a video and press Save to show it.', 'info');
 };
 // Uploads one hero file and returns { url, persisted, error }. persisted=false
 // means ONLY a temporary in-browser preview exists (a blob: URL that dies on
-// reload) — callers must surface that instead of pretending the upload worked,
+// reload) â€” callers must surface that instead of pretending the upload worked,
 // otherwise the owner saves dead links into site_settings.hero_video_slides.
 async function heroUploadOne(file, kind) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { url: URL.createObjectURL(file), persisted: false, error: 'You are signed out — sign in again, then re-upload.' };
+    if (!session) return { url: URL.createObjectURL(file), persisted: false, error: 'You are signed out â€” sign in again, then re-upload.' };
     const ext = (file.name.split('.').pop() || (kind === 'video' ? 'mp4' : 'jpg')).toLowerCase().replace(/[^a-z0-9]/g, '');
     const path = `hero/${kind}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, cacheControl: '3600', upsert: true });
@@ -7012,17 +7595,17 @@ async function heroVideoFileChosen(i, kind, file) {
   } else if (!file.type.startsWith('image/')) {
     showToast('Please choose an image for the poster.', 'error'); return;
   }
-  showToast('⏳ Uploading ' + (kind === 'video' ? 'video' : 'poster') + '…', 'info');
+  showToast('â³ Uploading ' + (kind === 'video' ? 'video' : 'poster') + 'â€¦', 'info');
   const res = await heroUploadOne(file, kind);
   if (kind === 'video') arr[i].video = res.url;
   else arr[i].poster = res.url;
   rerenderHeroVideoManager();
   if (res.persisted) {
-    showToast('✓ ' + (kind === 'video' ? 'Video' : 'Poster') + ' uploaded — press Save & Publish Hero Banner to go live.', 'success');
+    showToast('âœ“ ' + (kind === 'video' ? 'Video' : 'Poster') + ' uploaded â€” press Save & Publish Hero Banner to go live.', 'success');
   } else {
     // NEVER pretend a failed upload worked. The preview below is only
-    // temporary and would vanish after reload — tell the owner exactly why.
-    showToast('⚠ UPLOAD FAILED: ' + (res.error || 'unknown reason') + ' — this preview is TEMPORARY and will NOT be saved. Try a smaller MP4/WebM (keep videos under ~50 MB), then re-upload.', 'error');
+    // temporary and would vanish after reload â€” tell the owner exactly why.
+    showToast('âš  UPLOAD FAILED: ' + (res.error || 'unknown reason') + ' â€” this preview is TEMPORARY and will NOT be saved. Try a smaller MP4/WebM (keep videos under ~50 MB), then re-upload.', 'error');
   }
 }
 function renderHeroVideoManagerHtml(slides) {
@@ -7041,25 +7624,25 @@ function renderHeroVideoManagerHtml(slides) {
       <button type="button" onclick="heroVideoSavePublish(this)" class="btn-press w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 text-white text-xs font-black rounded-xl transition flex items-center justify-center gap-2">
         <i data-lucide="rocket" class="w-4 h-4"></i> Save &amp; Publish Hero Banner
       </button>
-      <p class="text-[10px] text-gray-500 text-center">One video is enough — no minimum. Your banner goes live as soon as you press this button.</p>
+      <p class="text-[10px] text-gray-500 text-center">One video is enough â€” no minimum. Your banner goes live as soon as you press this button.</p>
       <button type="button" onclick="addHeroVideoSlide()" class="btn-press w-full px-4 py-3 border-2 border-dashed border-indigo-500/40 text-indigo-300 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
         <i data-lucide="plus" class="w-4 h-4"></i> Add Another Hero Video Slide
       </button>
     </div>`;
 }
-// Saves ONLY the hero video slides — works with a single video, no minimum required.
+// Saves ONLY the hero video slides â€” works with a single video, no minimum required.
 // Keeps the same site_settings row/update pattern as saveContentSettings.
 window.heroVideoSavePublish = async function(btn) {
   const isTemp = (u) => /^blob:/i.test(String(u || ''));
   const draft = heroVideoDraft().filter(s => s && (s.video || s.poster || s.title || s.subtitle));
   if (!draft.length) { showToast('Add at least one video slide before publishing.', 'error'); return; }
-  // Temporary blob: previews can never go live — strip dead posters and REFUSE
+  // Temporary blob: previews can never go live â€” strip dead posters and REFUSE
   // to publish slides whose video upload failed, instead of saving dead links.
   draft.forEach((s) => { if (s.poster && isTemp(s.poster)) s.poster = ''; });
   const failedSlides = draft.filter((s) => s.video && isTemp(s.video));
   const publishable = draft.filter((s) => s.video && !isTemp(s.video));
   if (failedSlides.length && !publishable.length) {
-    showToast(`Upload FAILED for your video${failedSlides.length > 1 ? 's' : ''} — temporary previews cannot go live. Re-upload a smaller MP4/WebM (under ~50 MB), then press this button again.`, 'error');
+    showToast(`Upload FAILED for your video${failedSlides.length > 1 ? 's' : ''} â€” temporary previews cannot go live. Re-upload a smaller MP4/WebM (under ~50 MB), then press this button again.`, 'error');
     return;
   }
   if (failedSlides.length) {
@@ -7069,7 +7652,7 @@ window.heroVideoSavePublish = async function(btn) {
   const withVideo = arr.filter(s => s.video);
   if (!arr.length) { showToast('Please upload a video in at least one slide first.', 'error'); return; }
   const label = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Publishing…'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = 'â³ Publishingâ€¦'; }
   try {
     heroSyncJson();
     const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
@@ -7078,7 +7661,7 @@ window.heroVideoSavePublish = async function(btn) {
     else ({ error } = await supabase.from('site_settings').insert({ id: 1, hero_video_slides: arr }));
     if (error) throw new Error(error.message);
     invalidateSiteContent();
-    showToast('✓ Hero video banner published! ' + withVideo.length + (withVideo.length === 1 ? ' video is' : ' videos are') + ' now live on your homepage.', 'success');
+    showToast('âœ“ Hero video banner published! ' + withVideo.length + (withVideo.length === 1 ? ' video is' : ' videos are') + ' now live on your homepage.', 'success');
   } catch (err) {
     showToast(err.message || 'Could not publish the hero banner. Please try again.', 'error');
   } finally {
@@ -7095,7 +7678,7 @@ async function renderContentSettings() {
       <div class="space-y-6 fade-in">
         <div>
           <h2 class="text-xl font-black text-white">Content Settings</h2>
-          <p class="text-xs text-gray-400 mt-1">Edit the wording of the two shared sections below. Save once and every page updates automatically — no code needed. Your products, prices, reviews, orders and design are never touched.</p>
+          <p class="text-xs text-gray-400 mt-1">Edit the wording of the two shared sections below. Save once and every page updates automatically â€” no code needed. Your products, prices, reviews, orders and design are never touched.</p>
         </div>
         <form id="content-settings-form" onsubmit="saveContentSettings(event)" class="space-y-5">
           ${CONTENT_SETTINGS_SECTIONS.map(sec => `
@@ -7117,18 +7700,18 @@ async function renderContentSettings() {
                          </label>`
                       : `<label class="lbl" for="cs-${f.key}">${f.label}</label>`}
                     ${f.type === 'textarea'
-                      ? `<textarea id="cs-${f.key}" name="${f.key}" rows="3" class="input-field w-full" placeholder="Enter the current wording…">${esc(d[f.key] || '')}</textarea>`
+                      ? `<textarea id="cs-${f.key}" name="${f.key}" rows="3" class="input-field w-full" placeholder="Enter the current wordingâ€¦">${esc(d[f.key] || '')}</textarea>`
                       : f.type === 'media'
                         ? contentMediaSlotHtml(f, d[f.key] || '')
                         : f.type === 'checkbox'
                           ? ''
-                          : `<input id="cs-${f.key}" type="text" name="${f.key}" value="${esc(d[f.key] || '')}" class="input-field w-full" placeholder="Enter the current wording…">`}
-                    ${f.type === 'text' || f.type === 'textarea' ? `<p class="text-[10px] text-gray-500 mt-1">Current: ${esc((d[f.key] || '').slice(0, 80))}${(d[f.key] || '').length > 80 ? '…' : ''}</p>` : ''}
+                          : `<input id="cs-${f.key}" type="text" name="${f.key}" value="${esc(d[f.key] || '')}" class="input-field w-full" placeholder="Enter the current wordingâ€¦">`}
+                    ${f.type === 'text' || f.type === 'textarea' ? `<p class="text-[10px] text-gray-500 mt-1">Current: ${esc((d[f.key] || '').slice(0, 80))}${(d[f.key] || '').length > 80 ? 'â€¦' : ''}</p>` : ''}
                   </div>`).join('')}
               </div>`}
             </div>`).join('')}
           <input type="hidden" id="hs-json" name="hero_video_slides" value="">
-          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Content</button>
+          <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-bold py-3 rounded-xl text-sm transition">ðŸ’¾ Save Content</button>
         </form>
       </div>`;
     heroSyncJson();
@@ -7141,7 +7724,7 @@ window.saveContentSettings = async function(e) {
   const fd = new FormData(e.target);
   const data = {};
   for (const [k, v] of fd.entries()) data[k] = v;
-  // Unchecked checkboxes are missing from FormData — store them as false.
+  // Unchecked checkboxes are missing from FormData â€” store them as false.
   for (const sec of CONTENT_SETTINGS_SECTIONS) {
     if (!sec.fields) continue;
     for (const f of sec.fields) {
@@ -7149,7 +7732,7 @@ window.saveContentSettings = async function(e) {
       else if (f.type === 'checkbox') data[f.key] = true;
     }
   }
-  // Hero video slides come from a hidden JSON field — parse it to a real array.
+  // Hero video slides come from a hidden JSON field â€” parse it to a real array.
   let heroSlides = [];
   try {
     const raw = fd.get('hero_video_slides');
@@ -7166,15 +7749,15 @@ window.saveContentSettings = async function(e) {
     else ({ error } = await supabase.from('site_settings').insert({ id: 1, ...data }));
     if (error) throw new Error(error.message);
     invalidateSiteContent();
-    showToast('Content updated — the banners now use your new words and uploads.', 'success');
+    showToast('Content updated â€” the banners now use your new words and uploads.', 'success');
   } catch (err) {
     showToast(err.message || 'Could not save content. Please try again.', 'error');
   }
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  13. ANALYTICS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderAnalytics() {
   const content = document.getElementById('content');
   try {
@@ -7220,9 +7803,9 @@ async function renderAnalytics() {
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  14. SEO
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderSeo() {
   const content = document.getElementById('content');
   const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
@@ -7234,14 +7817,14 @@ async function renderSeo() {
         <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
           <h3 class="text-sm font-black text-white">Homepage SEO</h3>
           <div><label class="lbl">Meta Title</label><input class="input-field" name="meta_title" value="${esc(d.meta_title || '')}" placeholder="Weverse Online Shop | Premium International Commerce"></div>
-          <div><label class="lbl">Meta Description</label><textarea class="input-field" name="meta_description" rows="2" placeholder="Your trusted global shop…">${esc(d.meta_description || '')}</textarea></div>
-          <div><label class="lbl">Meta Keywords (comma separated)</label><input class="input-field" name="meta_keywords" value="${esc(d.meta_keywords || '')}" placeholder="global marketplace, online shopping, …"></div>
+          <div><label class="lbl">Meta Description</label><textarea class="input-field" name="meta_description" rows="2" placeholder="Your trusted global shopâ€¦">${esc(d.meta_description || '')}</textarea></div>
+          <div><label class="lbl">Meta Keywords (comma separated)</label><input class="input-field" name="meta_keywords" value="${esc(d.meta_keywords || '')}" placeholder="global marketplace, online shopping, â€¦"></div>
           <div><label class="lbl">Canonical URL</label><input class="input-field" name="canonical_url" value="${esc(d.canonical_url || '')}" placeholder="https://yoursite.com"></div>
-          <div><label class="lbl">OG Image URL (Social share image)</label><input class="input-field" name="og_image" value="${esc(d.og_image || '')}" placeholder="https://…/og-image.jpg"></div>
+          <div><label class="lbl">OG Image URL (Social share image)</label><input class="input-field" name="og_image" value="${esc(d.og_image || '')}" placeholder="https://â€¦/og-image.jpg"></div>
           <div><label class="lbl">Google Analytics ID</label><input class="input-field" name="ga_id" value="${esc(d.ga_id || '')}" placeholder="G-XXXXXXXXXX"></div>
           <div><label class="lbl">Google Search Console Verification</label><input class="input-field" name="gsc_verify" value="${esc(d.gsc_verify || '')}" placeholder="Verification meta tag content"></div>
         </div>
-        <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save SEO Settings</button>
+        <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">ðŸ’¾ Save SEO Settings</button>
       </form>
     </div>`;
   if (window.lucide) lucide.createIcons();
@@ -7254,9 +7837,9 @@ window.saveSeo = async function(e) {
   showToast('SEO settings saved!');
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  15. EMAIL SETTINGS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderEmail() {
   const content = document.getElementById('content');
   const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
@@ -7264,7 +7847,7 @@ async function renderEmail() {
   content.innerHTML = `
     <div class="space-y-5 fade-in">
       <h2 class="text-xl font-black text-white">Email Settings</h2>
-      <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl text-xs text-blue-300">Email is handled by Supabase Auth's built-in SMTP. Configure SMTP in your Supabase project → Auth → SMTP Settings.</div>
+      <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl text-xs text-blue-300">Email is handled by Supabase Auth's built-in SMTP. Configure SMTP in your Supabase project â†’ Auth â†’ SMTP Settings.</div>
       <form id="email-form" onsubmit="saveEmailSettings(event)" class="space-y-4">
         <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
           <h3 class="text-sm font-black text-white">Email Notifications</h3>
@@ -7284,7 +7867,7 @@ async function renderEmail() {
           <div><label class="lbl">Sender Name</label><input class="input-field" name="email_from_name" value="${esc(d.email_from_name || '')}" placeholder="Weverse Online Shop"></div>
           <div><label class="lbl">Reply-To Email</label><input type="email" class="input-field" name="email_reply_to" value="${esc(d.email_reply_to || '')}" placeholder="support@example.com"></div>
         </div>
-        <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Email Settings</button>
+        <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">ðŸ’¾ Save Email Settings</button>
       </form>
     </div>`;
   if (window.lucide) lucide.createIcons();
@@ -7301,9 +7884,9 @@ window.saveEmailSettings = async function(e) {
   showToast('Email settings saved!');
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  16. SECURITY  (2FA setup + login history + logout all)
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderSecurity() {
   const content = document.getElementById('content');
   if (content) content.innerHTML = loading();
@@ -7329,8 +7912,8 @@ async function renderSecurity() {
             <i data-lucide="${is2FAEnrolled ? 'shield-check' : 'shield-alert'}" class="w-5 h-5 ${is2FAEnrolled ? 'text-emerald-400' : 'text-amber-400'}"></i>
           </div>
           <div class="flex-1">
-            <p class="text-sm font-black ${is2FAEnrolled ? 'text-emerald-300' : 'text-amber-300'}">Two-Factor Authentication is ${is2FAEnrolled ? 'ENABLED ✓' : 'NOT ENABLED'}</p>
-            <p class="text-xs text-gray-400 mt-0.5">${is2FAEnrolled ? `Backup codes available: ${backupCount} · Enrolled: ${fmtDate(twofa.created_at)}` : 'Enable 2FA to protect your admin account with an authenticator app.'}</p>
+            <p class="text-sm font-black ${is2FAEnrolled ? 'text-emerald-300' : 'text-amber-300'}">Two-Factor Authentication is ${is2FAEnrolled ? 'ENABLED âœ“' : 'NOT ENABLED'}</p>
+            <p class="text-xs text-gray-400 mt-0.5">${is2FAEnrolled ? `Backup codes available: ${backupCount} Â· Enrolled: ${fmtDate(twofa.created_at)}` : 'Enable 2FA to protect your admin account with an authenticator app.'}</p>
           </div>
           ${is2FAEnrolled
             ? `<button onclick="disable2FA()" class="btn-press flex-shrink-0 text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-xl transition">Disable 2FA</button>`
@@ -7382,7 +7965,7 @@ async function renderSecurity() {
             <div class="flex items-center justify-between p-3 glass-soft border border-blue-500/10 rounded-xl">
               <div>
                 <p class="text-xs font-bold text-white">Current Session</p>
-                <p class="text-[11px] text-gray-500">${esc(navigator.userAgent.slice(0, 60))}…</p>
+                <p class="text-[11px] text-gray-500">${esc(navigator.userAgent.slice(0, 60))}â€¦</p>
               </div>
               <span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Active</span>
             </div>
@@ -7407,11 +7990,11 @@ async function renderSecurity() {
                     const isSuccess = ['login_success','login_2fa_success'].includes(l.event_type);
                     const isWarning = ['login_failed','login_denied','login_backup_code_used'].includes(l.event_type);
                     const eventColor = isSuccess ? 'text-emerald-400' : isWarning ? 'text-red-400' : 'text-gray-300';
-                    const eventLabel = { login_success:'Login ✓', login_failed:'Failed Login ✗', login_denied:'Access Denied ✗', login_2fa_success:'2FA Verified ✓', login_backup_code_used:'Backup Code Used', logout:'Logged Out', logout_all_devices:'Logout All Devices' }[l.event_type] || l.event_type;
+                    const eventLabel = { login_success:'Login âœ“', login_failed:'Failed Login âœ—', login_denied:'Access Denied âœ—', login_2fa_success:'2FA Verified âœ“', login_backup_code_used:'Backup Code Used', logout:'Logged Out', logout_all_devices:'Logout All Devices' }[l.event_type] || l.event_type;
                     return `<tr>
                       <td><span class="text-xs font-bold ${eventColor}">${esc(eventLabel)}</span></td>
-                      <td><span class="text-xs font-mono text-gray-300">${esc(l.ip_address || '—')}</span></td>
-                      <td class="hidden sm:table-cell"><span class="text-xs text-gray-500 max-w-[160px] block truncate">${esc((l.user_agent || '—').slice(0, 50))}</span></td>
+                      <td><span class="text-xs font-mono text-gray-300">${esc(l.ip_address || 'â€”')}</span></td>
+                      <td class="hidden sm:table-cell"><span class="text-xs text-gray-500 max-w-[160px] block truncate">${esc((l.user_agent || 'â€”').slice(0, 50))}</span></td>
                       <td><span class="text-xs text-gray-500">${fmtDT(l.created_at)}</span></td>
                     </tr>`;
                   }).join('')}
@@ -7459,14 +8042,14 @@ window.changePassword = async function(e) {
   document.getElementById('pw-strength').innerHTML = '';
 };
 
-// ── 2FA Setup Flow ────────────────────────────────────────
+// â”€â”€ 2FA Setup Flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.setup2FAFlow = async function() {
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="shield-plus" class="w-5 h-5 text-emerald-400"></i> Enable Two-Factor Authentication</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">🔙 Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
         </div>
         <div id="2fa-setup-content">
           <div class="flex items-center justify-center py-8"><i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-400"></i></div>
@@ -7560,7 +8143,7 @@ function showBackupCodesModal(codes) {
           <div class="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center shrink-0"><i data-lucide="key" class="w-5 h-5 text-amber-400"></i></div>
           <div>
             <h3 class="text-base font-black text-white">Save Your Backup Codes</h3>
-            <p class="text-xs text-red-400 font-bold">⚠ These will not be shown again!</p>
+            <p class="text-xs text-red-400 font-bold">âš  These will not be shown again!</p>
           </div>
         </div>
         <p class="text-xs text-gray-400 mb-4">Store these codes somewhere safe. If you lose your authenticator, use one of these to log in. Each code works once.</p>
@@ -7608,9 +8191,9 @@ window.disable2FA = async function() {
   } catch (err) { showToast(err.message, 'error'); }
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  17. ACTIVITY LOGS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderActivity() {
   const content = document.getElementById('content');
   try {
@@ -7626,8 +8209,8 @@ async function renderActivity() {
                 ${(logs || []).length === 0 ? '<tr><td colspan="4" class="text-center text-gray-500 py-8">No activity yet</td></tr>' :
                   (logs || []).map(l => `<tr>
                     <td><span class="text-xs font-bold text-white">${esc(l.action)}</span></td>
-                    <td><span class="text-xs text-gray-400">${esc(l.entity_type || '—')} <span class="text-gray-600">${esc(l.entity_id?.slice(0, 8) || '')}</span></span></td>
-                    <td class="hidden sm:table-cell"><span class="text-xs text-blue-400">${esc(l.user_email || l.user_id?.slice(0, 8) || '—')}</span></td>
+                    <td><span class="text-xs text-gray-400">${esc(l.entity_type || 'â€”')} <span class="text-gray-600">${esc(l.entity_id?.slice(0, 8) || '')}</span></span></td>
+                    <td class="hidden sm:table-cell"><span class="text-xs text-blue-400">${esc(l.user_email || l.user_id?.slice(0, 8) || 'â€”')}</span></td>
                     <td><span class="text-xs text-gray-500">${fmtDT(l.created_at)}</span></td>
                   </tr>`).join('')}
               </tbody>
@@ -7639,9 +8222,9 @@ async function renderActivity() {
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  18. BACKUP & RESTORE
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderBackup() {
   const content = document.getElementById('content');
   try {
@@ -7706,9 +8289,9 @@ window.exportOrders = async function() {
   showToast('Orders exported!');
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  19. SETTINGS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderSettings() {
   const content = document.getElementById('content');
   const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
@@ -7743,7 +8326,7 @@ async function renderSettings() {
               <label class="toggle-switch"><input type="checkbox" name="${f.key}" ${d[f.key] !== false && (d[f.key] || f.default) ? 'checked' : ''}><span class="toggle-slider"></span></label>
             </div>`).join('')}
         </div>
-        <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">💾 Save Settings</button>
+        <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl text-sm transition">ðŸ’¾ Save Settings</button>
       </form>
     </div>`;
   if (window.lucide) lucide.createIcons();
@@ -7759,9 +8342,9 @@ window.saveSettings = async function(e) {
   showToast('Settings saved!');
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  HOMEPAGE BRANDING  (banner image for the homepage header)
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderHomepageBrandingManager() {
   const content = document.getElementById('content');
   if (content) content.innerHTML = loading();
@@ -7816,7 +8399,7 @@ async function renderHomepageBrandingManager() {
 
             <div id="homepage-banner-status" class="hidden p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300 flex items-center gap-2">
               <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i>
-              <span id="homepage-banner-msg">Uploading…</span>
+              <span id="homepage-banner-msg">Uploadingâ€¦</span>
             </div>
 
             <div class="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
@@ -7868,9 +8451,9 @@ async function renderHomepageBrandingManager() {
   }
 }
 
-// ══════════════════════════════════════════════════════════
-//  BRAND MANAGER  (name · slogan · logo · verified badge · live preview)
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  BRAND MANAGER  (name Â· slogan Â· logo Â· verified badge Â· live preview)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderBrandManager() {
   const content = document.getElementById('content');
   if (content) content.innerHTML = loading();
@@ -7887,7 +8470,7 @@ async function renderBrandManager() {
         <div class="glass-soft border border-${accent}-500/15 rounded-xl p-4 space-y-3">
           <div class="flex items-center justify-between">
             <p class="text-xs font-black text-white">${esc(label)}</p>
-            ${hasImg ? `<span class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">✓ Uploaded</span>` : `<span class="text-[9px] text-gray-600">Empty</span>`}
+            ${hasImg ? `<span class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">âœ“ Uploaded</span>` : `<span class="text-[9px] text-gray-600">Empty</span>`}
           </div>
           ${hasImg
             ? `<div class="relative group w-full h-24 rounded-xl overflow-hidden bg-gray-900 border border-blue-500/10 flex items-center justify-center">
@@ -7922,9 +8505,9 @@ async function renderBrandManager() {
           </div>
         </div>
 
-        <!-- ── LIVE PREVIEW PANEL ── -->
+        <!-- â”€â”€ LIVE PREVIEW PANEL â”€â”€ -->
         <div id="live-preview-panel" class="hidden glass-soft border border-violet-500/20 rounded-2xl p-5 space-y-3">
-          <h3 class="text-xs font-black text-violet-300 uppercase tracking-wider flex items-center gap-2"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Live Preview — updates as you type</h3>
+          <h3 class="text-xs font-black text-violet-300 uppercase tracking-wider flex items-center gap-2"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Live Preview â€” updates as you type</h3>
           <!-- Header preview -->
           <div class="rounded-xl overflow-hidden border border-blue-500/10">
             <div id="preview-header" class="flex items-center gap-3 px-4 py-3" style="background:#0f172a">
@@ -7941,7 +8524,7 @@ async function renderBrandManager() {
             </div>
             <div class="px-4 py-2 border-t border-gray-800 text-[11px] text-gray-500" style="background:#070b16">
               <span id="preview-btn" style="background:${esc(d.brand_primary_color||'#f97316')};color:#000;padding:4px 12px;border-radius:8px;font-weight:700;font-size:11px">Shop Now</span>
-              <span class="ml-3" style="color:${esc(d.brand_secondary_color||'#3b82f6')}">All Products →</span>
+              <span class="ml-3" style="color:${esc(d.brand_secondary_color||'#3b82f6')}">All Products â†’</span>
             </div>
           </div>
           <!-- Footer preview -->
@@ -7953,14 +8536,14 @@ async function renderBrandManager() {
               <p id="preview-footer-name" class="text-xs font-black text-white">${esc(fallbackBrandName)}</p>
               <p id="preview-footer-slogan" class="text-[10px] text-gray-500">${esc(fallbackBrandSlogan)}</p>
             </div>
-            <p class="ml-auto text-[10px] text-gray-600">© 2026 <span id="preview-copy-name">${esc(fallbackBrandName)}</span></p>
+            <p class="ml-auto text-[10px] text-gray-600">Â© 2026 <span id="preview-copy-name">${esc(fallbackBrandName)}</span></p>
           </div>
           <p class="text-[10px] text-gray-500">This is how your brand will appear on every page. Click Save to apply everywhere.</p>
         </div>
 
         <form id="brand-form" onsubmit="saveBrandSettings(event)" class="space-y-5">
 
-          <!-- ── Brand Identity ── -->
+          <!-- â”€â”€ Brand Identity â”€â”€ -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
             <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="type" class="w-4 h-4 text-blue-400"></i> Brand Identity</h3>
             <div class="form-grid form-grid-2">
@@ -7974,16 +8557,16 @@ async function renderBrandManager() {
               </div>
               <div class="sm:col-span-2">
                 <label class="lbl">Slogan / Tagline *</label>
-                <input class="input-field" name="brand_slogan" id="inp-brand-slogan" value="${esc(fallbackBrandSlogan)}" placeholder="e.g. Global Shopping • Worldwide Delivery" oninput="updateLivePreview()">
+                <input class="input-field" name="brand_slogan" id="inp-brand-slogan" value="${esc(fallbackBrandSlogan)}" placeholder="e.g. Global Shopping â€¢ Worldwide Delivery" oninput="updateLivePreview()">
               </div>
               <div class="sm:col-span-2">
                 <label class="lbl">Brand Description</label>
-                <textarea class="input-field" name="brand_description" rows="2" placeholder="Short description…">${esc(d.brand_description||'')}</textarea>
+                <textarea class="input-field" name="brand_description" rows="2" placeholder="Short descriptionâ€¦">${esc(d.brand_description||'')}</textarea>
               </div>
             </div>
           </div>
 
-          <!-- ── Brand Colors ── -->
+          <!-- â”€â”€ Brand Colors â”€â”€ -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
             <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="palette" class="w-4 h-4 text-violet-400"></i> Brand Colors</h3>
             <div class="form-grid form-grid-2">
@@ -8018,7 +8601,7 @@ async function renderBrandManager() {
             </div>
           </div>
 
-          <!-- ── Brand Font ── -->
+          <!-- â”€â”€ Brand Font â”€â”€ -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
             <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="type" class="w-4 h-4 text-amber-400"></i> Brand Font</h3>
             <div class="form-grid form-grid-2">
@@ -8034,11 +8617,11 @@ async function renderBrandManager() {
               </div>
             </div>
             <div id="font-preview" class="p-3 rounded-xl bg-gray-900 border border-blue-500/10">
-              <p id="font-sample" class="text-sm text-white font-bold" style="font-family:'${esc(d.brand_font||'Inter')}',sans-serif">The quick brown fox jumps — 0123456789 · Weverse Online Shop</p>
+              <p id="font-sample" class="text-sm text-white font-bold" style="font-family:'${esc(d.brand_font||'Inter')}',sans-serif">The quick brown fox jumps â€” 0123456789 Â· Weverse Online Shop</p>
             </div>
           </div>
 
-          <!-- ── Logo & Verified Badge ── -->
+          <!-- â”€â”€ Logo & Verified Badge â”€â”€ -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-emerald-400"></i> Logos & Verified Badge</h3>
@@ -8046,45 +8629,45 @@ async function renderBrandManager() {
             </div>
             <div id="brand-upload-status" class="hidden p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300 flex items-center gap-2">
               <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i>
-              <span id="brand-upload-msg">Uploading…</span>
+              <span id="brand-upload-msg">Uploadingâ€¦</span>
             </div>
 
-            <!-- Verified Badge — highlighted at top -->
+            <!-- Verified Badge â€” highlighted at top -->
             <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl space-y-3">
               <div class="flex items-center gap-2 mb-1">
                 <i data-lucide="badge-check" class="w-4 h-4 text-blue-400"></i>
                 <p class="text-xs font-black text-white">Verified Badge</p>
                 <span class="text-[9px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full font-bold">Shows next to your brand name</span>
               </div>
-              ${imgSlot('Verification Badge Image', 'brand_badge', d.brand_badge, 'Upload your blue checkmark or any verification badge. Recommended: 64×64px PNG with transparent background.', 'blue')}
+              ${imgSlot('Verification Badge Image', 'brand_badge', d.brand_badge, 'Upload your blue checkmark or any verification badge. Recommended: 64Ã—64px PNG with transparent background.', 'blue')}
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               ${imgSlot('Brand Logo / Banner Image', 'brand_logo',        fallbackBrandLogo,   'Upload your image here. This changes only the logo/banner image and keeps the other brand fields as they are.')}
-              ${imgSlot('Favicon / Tab Icon',   'brand_favicon',     d.brand_favicon,     'Browser tab icon. 32×32 or 64×64px.')}
-              ${imgSlot('Mobile Logo',          'brand_mobile_logo', d.brand_mobile_logo, 'Smaller logo for phones. 120×40px.')}
+              ${imgSlot('Favicon / Tab Icon',   'brand_favicon',     d.brand_favicon,     'Browser tab icon. 32Ã—32 or 64Ã—64px.')}
+              ${imgSlot('Mobile Logo',          'brand_mobile_logo', d.brand_mobile_logo, 'Smaller logo for phones. 120Ã—40px.')}
               ${imgSlot('Header Logo',          'brand_header_logo', d.brand_header_logo, 'Top navigation bar.')}
               ${imgSlot('Footer Logo',          'brand_footer_logo', d.brand_footer_logo, 'Website footer.')}
               ${imgSlot('Login Page Logo',      'brand_login_logo',  d.brand_login_logo,  'Shown on auth/login page.')}
               ${imgSlot('Admin Dashboard Logo', 'brand_admin_logo',  d.brand_admin_logo,  'Admin sidebar header.')}
-              ${imgSlot('OG / Social Image',    'brand_og_image',    d.brand_og_image,    '1200×630px — shown when sharing links.')}
+              ${imgSlot('OG / Social Image',    'brand_og_image',    d.brand_og_image,    '1200Ã—630px â€” shown when sharing links.')}
             </div>
           </div>
 
-          <!-- ── Contact ── -->
+          <!-- â”€â”€ Contact â”€â”€ -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
             <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-blue-400"></i> Website & Contact</h3>
             <div class="form-grid form-grid-2">
-              <div><label class="lbl">Website URL</label><input class="input-field" name="brand_website_url" value="${esc(d.brand_website_url||d.production_url||'https://weverseonlineshop.com')}" placeholder="https://…"></div>
-              <div><label class="lbl">Support Email</label><input type="email" class="input-field" name="brand_email" value="${esc(d.brand_email||d.contact_email||'')}" placeholder="support@…"></div>
-              <div><label class="lbl">Phone / WhatsApp</label><input class="input-field" name="brand_phone" value="${esc(d.brand_phone||d.contact_phone||'')}" placeholder="+1 234…"></div>
+              <div><label class="lbl">Website URL</label><input class="input-field" name="brand_website_url" value="${esc(d.brand_website_url||d.production_url||'https://weverseonlineshop.com')}" placeholder="https://â€¦"></div>
+              <div><label class="lbl">Support Email</label><input type="email" class="input-field" name="brand_email" value="${esc(d.brand_email||d.contact_email||'')}" placeholder="support@â€¦"></div>
+              <div><label class="lbl">Phone / WhatsApp</label><input class="input-field" name="brand_phone" value="${esc(d.brand_phone||d.contact_phone||'')}" placeholder="+1 234â€¦"></div>
               <div><label class="lbl">Business Address</label><input class="input-field" name="brand_address" value="${esc(d.brand_address||d.contact_address||'')}" placeholder="City, Country"></div>
             </div>
           </div>
 
           <div class="p-4 bg-blue-500/5 border border-blue-500/15 rounded-xl text-xs text-blue-300 flex items-start gap-3">
             <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5 text-blue-400"></i>
-            <p>After saving, your brand name, logo image, slogan, and verified badge will automatically appear on <strong>every page</strong> — Header, Footer, Login, Checkout, Contact, Admin, and all future pages. Uploading the image does not change your other brand settings.</p>
+            <p>After saving, your brand name, logo image, slogan, and verified badge will automatically appear on <strong>every page</strong> â€” Header, Footer, Login, Checkout, Contact, Admin, and all future pages. Uploading the image does not change your other brand settings.</p>
           </div>
 
           <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2">
@@ -8232,7 +8815,7 @@ window.handleBrandImgUpload = async function(e, field) {
   const statusEl = document.getElementById(isHomepageBanner ? 'homepage-banner-status' : 'brand-upload-status');
   const msgEl    = document.getElementById(isHomepageBanner ? 'homepage-banner-msg' : 'brand-upload-msg');
   if (statusEl) statusEl.classList.remove('hidden');
-  if (msgEl)    msgEl.textContent = `Uploading ${file.name}…`;
+  if (msgEl)    msgEl.textContent = `Uploading ${file.name}â€¦`;
   try {
     const ext  = file.name.split('.').pop();
     const path = `brand/${field}-${Date.now()}.${ext}`;
@@ -8244,7 +8827,7 @@ window.handleBrandImgUpload = async function(e, field) {
     } else {
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
       url = data.publicUrl;
-      if (msgEl) msgEl.textContent = `✓ ${file.name} uploaded`;
+      if (msgEl) msgEl.textContent = `âœ“ ${file.name} uploaded`;
     }
     const valEl = document.getElementById('val-' + field);
     const urlEl = document.getElementById('url-' + field);
@@ -8281,7 +8864,7 @@ window.saveBrandSettings = async function(e) {
   if (font) previewFont(font);
 
   const btn = e.target.querySelector('[type=submit]');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Saving…'; if (window.lucide) lucide.createIcons(); }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Savingâ€¦'; if (window.lucide) lucide.createIcons(); }
 
   const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
   let error;
@@ -8293,7 +8876,7 @@ window.saveBrandSettings = async function(e) {
     showToast('Brand saved locally because the live settings table rejected part of the update. The site now uses the override immediately.', 'success');
   } else {
     persistBrandState(payload);
-    showToast('✅ Brand saved! All pages will now show your updated brand.', 'success');
+    showToast('âœ… Brand saved! All pages will now show your updated brand.', 'success');
   }
   setTimeout(() => renderBrandManager(), 500);
 };
@@ -8334,7 +8917,7 @@ window.saveHomepageBranding = async function(e) {
   const btn = e.target.querySelector('[type=submit]');
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Publishing…';
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Publishingâ€¦';
     if (window.lucide) lucide.createIcons();
   }
 
@@ -8364,11 +8947,11 @@ window.saveHomepageBranding = async function(e) {
   setTimeout(() => renderHomepageBrandingManager(), 500);
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  PROMO & BACKGROUNDS  (image/video backgrounds for the
 //  trust promo hero, the Weverse Mobile App banner and the
-//  Customer Reviews section — applied across every page)
-// ══════════════════════════════════════════════════════════
+//  Customer Reviews section â€” applied across every page)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const PROMO_BG_SLOTS = [
   { key: 'trust_promo', label: 'Promotional Hero (Trust & Info Area)', icon: 'sparkles', desc: 'The family-receives-orders section above the app banner. Show it as-is for the built-in design, or upload the real photo/video.' },
   { key: 'app_banner',  label: 'Weverse Mobile App Banner',           icon: 'smartphone', desc: 'The dark app banner at the very bottom of every page.' },
@@ -8397,7 +8980,7 @@ async function renderPromoBackgrounds(seed) {
 
         <div id="promo-bg-status" class="hidden p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300 flex items-center gap-2">
           <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i>
-          <span id="promo-bg-msg">Uploading…</span>
+          <span id="promo-bg-msg">Uploadingâ€¦</span>
         </div>
 
         <form id="promo-bg-form" onsubmit="savePromoBackgrounds(event)" class="space-y-5">
@@ -8435,8 +9018,8 @@ function promoBgSlot(slot, vals) {
           </div>
         </div>
         <div class="flex gap-1.5">
-          ${hasImg ? '<span class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">✓ Image</span>' : ''}
-          ${hasVid ? '<span class="text-[9px] font-bold text-violet-500 bg-violet-500/10 px-1.5 py-0.5 rounded-full">✓ Video</span>' : ''}
+          ${hasImg ? '<span class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">âœ“ Image</span>' : ''}
+          ${hasVid ? '<span class="text-[9px] font-bold text-violet-500 bg-violet-500/10 px-1.5 py-0.5 rounded-full">âœ“ Video</span>' : ''}
           ${(hasImg || hasVid) ? '' : '<span class="text-[9px] text-gray-600">Built-in design</span>'}
         </div>
       </div>
@@ -8509,7 +9092,7 @@ window.handlePromoBgUpload = async function(e, field) {
   const statusEl = document.getElementById('promo-bg-status');
   const msgEl = document.getElementById('promo-bg-msg');
   if (statusEl) statusEl.classList.remove('hidden');
-  if (msgEl) msgEl.textContent = `Uploading ${file.name}…`;
+  if (msgEl) msgEl.textContent = `Uploading ${file.name}â€¦`;
   try {
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
     const path = `promo/${field}-${Date.now()}.${ext}`;
@@ -8521,7 +9104,7 @@ window.handlePromoBgUpload = async function(e, field) {
     } else {
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
       url = data.publicUrl;
-      if (msgEl) msgEl.textContent = `✓ ${file.name} uploaded`;
+      if (msgEl) msgEl.textContent = `âœ“ ${file.name} uploaded`;
     }
     const valEl = document.getElementById('val-' + field);
     const urlEl = document.getElementById('url-' + field);
@@ -8543,7 +9126,7 @@ window.savePromoBackgrounds = async function(e) {
     payload[slot.key + '_bg_video'] = document.getElementById('val-' + slot.key + '_bg_video')?.value || '';
   }
   const btn = e.target.querySelector('[type=submit]');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Publishing…'; if (window.lucide) lucide.createIcons(); }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Publishingâ€¦'; if (window.lucide) lucide.createIcons(); }
 
   const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
   let error;
@@ -8551,7 +9134,7 @@ window.savePromoBackgrounds = async function(e) {
   else ({ error } = await supabase.from('site_settings').insert(payload));
   invalidatePromoBackgrounds();
   if (error) {
-    showToast('Publish failed — the settings table rejected the update. Make sure the new promo-background columns are migrated, then try again.', 'error');
+    showToast('Publish failed â€” the settings table rejected the update. Make sure the new promo-background columns are migrated, then try again.', 'error');
     renderPromoBackgrounds(payload);
   } else {
     showToast('Promo & backgrounds published across all pages.', 'success');
@@ -8560,7 +9143,7 @@ window.savePromoBackgrounds = async function(e) {
 };
 
 //  PAYMENT SETTINGS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 window._manualPaymentAccounts = [];
 
 function blankManualPaymentAccount(currency = 'USD') {
@@ -8684,7 +9267,7 @@ async function renderPaymentSettings() {
           <h2 class="text-xl font-black text-white">Payment Settings</h2>
           <div class="flex items-center gap-2 flex-wrap">
             ${d.payment_gateway ? `<span class="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Active: ${esc(d.payment_gateway)}</span>` : '<span class="badge bg-amber-500/10 text-amber-400 border-amber-500/20">Not configured</span>'}
-            ${d.payment_mode === 'live' ? '<span class="badge bg-red-500/10 text-red-400 border-red-500/20">🔴 LIVE MODE</span>' : '<span class="badge bg-blue-500/10 text-blue-400 border-blue-500/20">🔧 Test Mode</span>'}
+            ${d.payment_mode === 'live' ? '<span class="badge bg-red-500/10 text-red-400 border-red-500/20">ðŸ”´ LIVE MODE</span>' : '<span class="badge bg-blue-500/10 text-blue-400 border-blue-500/20">ðŸ”§ Test Mode</span>'}
           </div>
         </div>
 
@@ -8743,25 +9326,25 @@ async function renderPaymentSettings() {
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label class="flex items-center gap-3 p-3 glass-soft border ${(d.payment_mode||'test')==='test' ? 'border-blue-500/40 bg-blue-500/5' : 'border-blue-500/10'} rounded-xl cursor-pointer">
                   <input type="radio" name="payment_mode" value="test" ${(d.payment_mode||'test')==='test'?'checked':''} class="accent-blue-500">
-                  <div><p class="text-xs font-black text-white">🔧 Test Mode</p><p class="text-[11px] text-gray-500">Use sandbox keys — no real money</p></div>
+                  <div><p class="text-xs font-black text-white">ðŸ”§ Test Mode</p><p class="text-[11px] text-gray-500">Use sandbox keys â€” no real money</p></div>
                 </label>
                 <label class="flex items-center gap-3 p-3 glass-soft border ${d.payment_mode==='live' ? 'border-red-500/40 bg-red-500/5' : 'border-blue-500/10'} rounded-xl cursor-pointer">
                   <input type="radio" name="payment_mode" value="live" ${d.payment_mode==='live'?'checked':''} class="accent-red-500">
-                  <div><p class="text-xs font-black text-white">🔴 Live Mode</p><p class="text-[11px] text-red-400 font-bold">Real money — use production keys</p></div>
+                  <div><p class="text-xs font-black text-white">ðŸ”´ Live Mode</p><p class="text-[11px] text-red-400 font-bold">Real money â€” use production keys</p></div>
                 </label>
               </div>
               <div class="form-grid form-grid-2">
-                <div><label class="lbl">Public Key *</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_public_key" placeholder="${d.flutterwave_public_key ? '••••'+d.flutterwave_public_key.slice(-4) : 'FLWPUBK_TEST-… or FLWPUBK-…'}">${d.flutterwave_public_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}</div></div>
-                <div><label class="lbl">Secret Key *</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_secret_key" placeholder="${d.flutterwave_secret_key ? '••••'+d.flutterwave_secret_key.slice(-4) : 'FLWSECK_TEST-… or FLWSECK-…'}">${d.flutterwave_secret_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}</div></div>
-                <div><label class="lbl">Encryption Key</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_encryption_key" placeholder="${d.flutterwave_encryption_key ? '••••'+d.flutterwave_encryption_key.slice(-4) : 'Encryption key from dashboard'}">${d.flutterwave_encryption_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}</div></div>
-                <div><label class="lbl">Webhook Secret</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_webhook_secret" placeholder="${d.flutterwave_webhook_secret ? '••••'+d.flutterwave_webhook_secret.slice(-4) : 'Secret hash for webhook verification'}">${d.flutterwave_webhook_secret ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}</div></div>
+                <div><label class="lbl">Public Key *</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_public_key" placeholder="${d.flutterwave_public_key ? 'â€¢â€¢â€¢â€¢'+d.flutterwave_public_key.slice(-4) : 'FLWPUBK_TEST-â€¦ or FLWPUBK-â€¦'}">${d.flutterwave_public_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">âœ“ Saved</span>' : ''}</div></div>
+                <div><label class="lbl">Secret Key *</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_secret_key" placeholder="${d.flutterwave_secret_key ? 'â€¢â€¢â€¢â€¢'+d.flutterwave_secret_key.slice(-4) : 'FLWSECK_TEST-â€¦ or FLWSECK-â€¦'}">${d.flutterwave_secret_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">âœ“ Saved</span>' : ''}</div></div>
+                <div><label class="lbl">Encryption Key</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_encryption_key" placeholder="${d.flutterwave_encryption_key ? 'â€¢â€¢â€¢â€¢'+d.flutterwave_encryption_key.slice(-4) : 'Encryption key from dashboard'}">${d.flutterwave_encryption_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">âœ“ Saved</span>' : ''}</div></div>
+                <div><label class="lbl">Webhook Secret</label><div class="relative"><input type="password" class="input-field pr-16" name="flutterwave_webhook_secret" placeholder="${d.flutterwave_webhook_secret ? 'â€¢â€¢â€¢â€¢'+d.flutterwave_webhook_secret.slice(-4) : 'Secret hash for webhook verification'}">${d.flutterwave_webhook_secret ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">âœ“ Saved</span>' : ''}</div></div>
                 <div><label class="lbl">Accepted Currency</label><select class="input-field" name="flutterwave_currency">${['NGN','USD','GBP','EUR','GHS','KES','ZAR','ZMW','TZS','UGX','XAF','XOF'].map(c=>`<option value="${c}" ${(d.flutterwave_currency||'NGN')===c?'selected':''}>${c}</option>`).join('')}</select></div>
                 <div><label class="lbl">Redirect URL (after payment)</label><input class="input-field" name="flutterwave_redirect_url" value="${esc(d.flutterwave_redirect_url||'')}" placeholder="${window.location.origin}/payment.html"></div>
               </div>
               <div class="p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl text-[11px] text-amber-300 space-y-1">
-                <p><strong>Where to get keys:</strong> <a href="https://dashboard.flutterwave.com/dashboard/settings/apis" target="_blank" class="underline hover:text-amber-200">dashboard.flutterwave.com → Settings → API</a></p>
+                <p><strong>Where to get keys:</strong> <a href="https://dashboard.flutterwave.com/dashboard/settings/apis" target="_blank" class="underline hover:text-amber-200">dashboard.flutterwave.com â†’ Settings â†’ API</a></p>
                 <p><strong>Webhook URL to add in Flutterwave:</strong> <code class="bg-black/30 px-1 rounded">${window.location.origin}/api/flutterwave-webhook</code></p>
-                <p>Test cards: Visa <code class="bg-black/30 px-1 rounded">4187 4274 1556 4246</code> · PIN: <code class="bg-black/30 px-1 rounded">3310</code> · OTP: <code class="bg-black/30 px-1 rounded">12345</code></p>
+                <p>Test cards: Visa <code class="bg-black/30 px-1 rounded">4187 4274 1556 4246</code> Â· PIN: <code class="bg-black/30 px-1 rounded">3310</code> Â· OTP: <code class="bg-black/30 px-1 rounded">12345</code></p>
               </div>
               <button type="button" onclick="testFlutterwaveKeys()" class="btn-press flex items-center gap-2 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-2 rounded-xl transition"><i data-lucide="plug" class="w-4 h-4"></i> Test Flutterwave Connection</button>
             </div>
@@ -8793,7 +9376,7 @@ window.savePaymentSettings = async function(e) {
 
   for (const [k, v] of Object.entries(data)) {
     if (secretFields.includes(k)) {
-      if (v && !v.startsWith('••••') && v.trim() !== '') payload[k] = v.trim();
+      if (v && !v.startsWith('â€¢â€¢â€¢â€¢') && v.trim() !== '') payload[k] = v.trim();
     } else {
       payload[k] = v;
     }
@@ -8838,7 +9421,7 @@ window.savePaymentSettings = async function(e) {
     }
     showToast('Save failed: ' + error.message, 'error'); console.error(error); return;
   }
-  showToast('✅ Payment settings saved successfully!', 'success');
+  showToast('âœ… Payment settings saved successfully!', 'success');
   setTimeout(() => renderPaymentSettings(), 500);
 };
 
@@ -8848,9 +9431,9 @@ window.testFlutterwaveKeys = async function() {
   showToast('Flutterwave key is saved. Use test mode + test card to verify a payment flow.', 'info');
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  20. PUBLISH & DEPLOY  (GitHub + Payment + Webhooks)
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function renderPublish() {
   const content = document.getElementById('content');
   try {
@@ -8908,7 +9491,7 @@ async function renderPublish() {
         <!-- Settings Form -->
         <form id="deploy-form" onsubmit="saveDeploySettings(event)" class="space-y-5">
 
-          <!-- ── GitHub Integration ── -->
+          <!-- â”€â”€ GitHub Integration â”€â”€ -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
             <h3 class="text-sm font-black text-white flex items-center gap-2">
               <i data-lucide="github" class="w-4 h-4 text-white"></i> GitHub Integration
@@ -8933,8 +9516,8 @@ async function renderPublish() {
               <div>
                 <label class="lbl">GitHub Personal Access Token</label>
                 <div class="relative">
-                  <input type="password" class="input-field pr-16" name="github_token" placeholder="${d.github_token ? '••••' + d.github_token.slice(-4) : 'ghp_…paste your token'}">
-                  ${d.github_token ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                  <input type="password" class="input-field pr-16" name="github_token" placeholder="${d.github_token ? 'â€¢â€¢â€¢â€¢' + d.github_token.slice(-4) : 'ghp_â€¦paste your token'}">
+                  ${d.github_token ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">âœ“ Saved</span>' : ''}
                 </div>
                 <p class="text-[10px] text-gray-500 mt-1">Generate at: <a href="https://github.com/settings/tokens" target="_blank" class="text-blue-400 hover:underline">github.com/settings/tokens</a> (needs repo scope)</p>
               </div>
@@ -8944,7 +9527,7 @@ async function renderPublish() {
             </button>
           </div>
 
-          <!-- ── Hosting & Deploy Webhook ── -->
+          <!-- â”€â”€ Hosting & Deploy Webhook â”€â”€ -->
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
             <h3 class="text-sm font-black text-white flex items-center gap-2">
               <i data-lucide="cloud-upload" class="w-4 h-4 text-blue-400"></i> Hosting & Auto-Deploy
@@ -8959,8 +9542,8 @@ async function renderPublish() {
             </div>
             <div>
               <label class="lbl">Deploy Webhook URL</label>
-              <input class="input-field" name="deploy_webhook" value="${esc(d.deploy_webhook||'')}" placeholder="https://api.netlify.com/build_hooks/…">
-              <p class="text-[10px] text-gray-500 mt-1">Netlify: Site Settings → Build hooks · Vercel: Project → Settings → Git → Deploy Hooks</p>
+              <input class="input-field" name="deploy_webhook" value="${esc(d.deploy_webhook||'')}" placeholder="https://api.netlify.com/build_hooks/â€¦">
+              <p class="text-[10px] text-gray-500 mt-1">Netlify: Site Settings â†’ Build hooks Â· Vercel: Project â†’ Settings â†’ Git â†’ Deploy Hooks</p>
             </div>
             <div>
               <label class="lbl">Production URL</label>
@@ -8968,7 +9551,7 @@ async function renderPublish() {
             </div>
           </div>
 
-          <!-- ── Payment Settings ── -->
+          <!-- â”€â”€ Payment Settings â”€â”€ -->
           <div class="glass-soft border border-amber-500/15 rounded-2xl p-5 space-y-4">
             <h3 class="text-sm font-black text-white flex items-center gap-2">
               <i data-lucide="credit-card" class="w-4 h-4 text-amber-400"></i> Payment Gateway Settings
@@ -8984,15 +9567,15 @@ async function renderPublish() {
               <div>
                 <label class="lbl">Public / Publishable Key</label>
                 <div class="relative">
-                  <input type="password" class="input-field pr-16" name="payment_public_key" placeholder="${d.payment_public_key ? '••••' + d.payment_public_key.slice(-4) : 'Paste public key…'}">
-                  ${d.payment_public_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                  <input type="password" class="input-field pr-16" name="payment_public_key" placeholder="${d.payment_public_key ? 'â€¢â€¢â€¢â€¢' + d.payment_public_key.slice(-4) : 'Paste public keyâ€¦'}">
+                  ${d.payment_public_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">âœ“ Saved</span>' : ''}
                 </div>
               </div>
               <div>
                 <label class="lbl">Secret / Private Key</label>
                 <div class="relative">
-                  <input type="password" class="input-field pr-16" name="payment_secret_key" placeholder="${d.payment_secret_key ? '••••' + d.payment_secret_key.slice(-4) : 'Paste secret key…'}">
-                  ${d.payment_secret_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>' : ''}
+                  <input type="password" class="input-field pr-16" name="payment_secret_key" placeholder="${d.payment_secret_key ? 'â€¢â€¢â€¢â€¢' + d.payment_secret_key.slice(-4) : 'Paste secret keyâ€¦'}">
+                  ${d.payment_secret_key ? '<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">âœ“ Saved</span>' : ''}
                 </div>
               </div>
               <div>
@@ -9004,24 +9587,24 @@ async function renderPublish() {
               <div>
                 <label class="lbl">Test / Live Mode</label>
                 <select class="input-field" name="payment_mode">
-                  <option value="test" ${(d.payment_mode||'test')==='test'?'selected':''}>🔧 Test Mode (sandbox)</option>
-                  <option value="live" ${d.payment_mode==='live'?'selected':''}>🚀 Live Mode (real money)</option>
+                  <option value="test" ${(d.payment_mode||'test')==='test'?'selected':''}>ðŸ”§ Test Mode (sandbox)</option>
+                  <option value="live" ${d.payment_mode==='live'?'selected':''}>ðŸš€ Live Mode (real money)</option>
                 </select>
               </div>
               <div class="sm:col-span-2">
                 <label class="lbl">Webhook Secret (for payment verification)</label>
-                <input type="password" class="input-field" name="payment_webhook_secret" placeholder="${d.payment_webhook_secret ? '••••' + d.payment_webhook_secret.slice(-4) : 'Paste webhook secret…'}">
+                <input type="password" class="input-field" name="payment_webhook_secret" placeholder="${d.payment_webhook_secret ? 'â€¢â€¢â€¢â€¢' + d.payment_webhook_secret.slice(-4) : 'Paste webhook secretâ€¦'}">
               </div>
             </div>
             <div class="p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl text-[11px] text-amber-300">
-              <strong>Flutterwave:</strong> flutterwave.com → Dashboard → API Settings<br>
-              <strong>Stripe:</strong> dashboard.stripe.com → Developers → API Keys<br>
-              <strong>PayPal:</strong> developer.paypal.com → My Apps → Create App<br>
-              <strong>Paystack:</strong> dashboard.paystack.com → Settings → API Keys
+              <strong>Flutterwave:</strong> flutterwave.com â†’ Dashboard â†’ API Settings<br>
+              <strong>Stripe:</strong> dashboard.stripe.com â†’ Developers â†’ API Keys<br>
+              <strong>PayPal:</strong> developer.paypal.com â†’ My Apps â†’ Create App<br>
+              <strong>Paystack:</strong> dashboard.paystack.com â†’ Settings â†’ API Keys
             </div>
           </div>
 
-          <!-- ── Environment Variables Guide ── -->
+          <!-- â”€â”€ Environment Variables Guide â”€â”€ -->
           <div class="glass-soft border border-gray-500/15 rounded-2xl p-5">
             <h3 class="text-sm font-black text-white mb-3 flex items-center gap-2">
               <i data-lucide="terminal" class="w-4 h-4 text-gray-400"></i> Environment Variables (.env)
@@ -9032,15 +9615,15 @@ async function renderPublish() {
               <p>VITE_SUPABASE_URL=<span class="text-blue-400">https://your-project.supabase.co</span></p>
               <p>VITE_SUPABASE_ANON_KEY=<span class="text-blue-400">your-anon-key</span></p>
               <p class="text-gray-600 mt-2"># Payment</p>
-              <p>VITE_FLUTTERWAVE_PUBLIC_KEY=<span class="text-amber-400">FLWPUBK_TEST-…</span></p>
-              <p>VITE_STRIPE_PUBLIC_KEY=<span class="text-amber-400">pk_test_…</span></p>
-              <p class="text-gray-600 mt-2"># AI (server-side only — Edge Functions)</p>
-              <p>GEMINI_API_KEY=<span class="text-emerald-400">AIzaSy…</span></p>
+              <p>VITE_FLUTTERWAVE_PUBLIC_KEY=<span class="text-amber-400">FLWPUBK_TEST-â€¦</span></p>
+              <p>VITE_STRIPE_PUBLIC_KEY=<span class="text-amber-400">pk_test_â€¦</span></p>
+              <p class="text-gray-600 mt-2"># AI (server-side only â€” Edge Functions)</p>
+              <p>GEMINI_API_KEY=<span class="text-emerald-400">AIzaSyâ€¦</span></p>
             </div>
           </div>
 
           <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition">
-            💾 Save Deploy & Payment Settings
+            ðŸ’¾ Save Deploy & Payment Settings
           </button>
         </form>
       </div>`;
@@ -9053,7 +9636,7 @@ window.saveDeploySettings = async function(e) {
   const submitBtn = e.target?.querySelector('[type=submit]');
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.innerHTML = 'Saving…';
+    submitBtn.innerHTML = 'Savingâ€¦';
   }
   const fd = new FormData(e.target);
   const data = Object.fromEntries(fd.entries());
@@ -9062,7 +9645,7 @@ window.saveDeploySettings = async function(e) {
   const secretFields = ['github_token','payment_public_key','payment_secret_key','payment_webhook_secret'];
   for (const [k, v] of Object.entries(data)) {
     if (secretFields.includes(k)) {
-      if (v && !v.startsWith('•') && v.trim() !== '') payload[k] = v.trim();
+      if (v && !v.startsWith('â€¢') && v.trim() !== '') payload[k] = v.trim();
     } else {
       payload[k] = v;
     }
@@ -9070,7 +9653,7 @@ window.saveDeploySettings = async function(e) {
   const { error } = await supabase.from('site_settings').upsert({ id: 1, ...payload });
   if (submitBtn) {
     submitBtn.disabled = false;
-    submitBtn.innerHTML = '💾 Save Deploy & Payment Settings';
+    submitBtn.innerHTML = 'ðŸ’¾ Save Deploy & Payment Settings';
   }
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Deploy & payment settings saved!');
@@ -9132,7 +9715,7 @@ function setActionButtonBusy(btn, busy, busyLabel, idleLabel) {
 
 window.triggerDeploy = async function(ev) {
   const btn = ev?.currentTarget || document.querySelector('[data-deploy-btn]');
-  setActionButtonBusy(btn, true, 'Deploying…', 'Deploy Now');
+  setActionButtonBusy(btn, true, 'Deployingâ€¦', 'Deploy Now');
   try {
     const prep = await runWebhookDeploy('deploy');
     if (!prep.ok) return;
@@ -9152,7 +9735,7 @@ window.triggerDeploy = async function(ev) {
     });
 
     if (res.ok) {
-      showToast('🚀 Deployment triggered! Your site will be live in ~2 minutes.');
+      showToast('ðŸš€ Deployment triggered! Your site will be live in ~2 minutes.');
       await insertDeploymentHistory('deploying', {
         mode: 'deploy',
         productionUrl: s.production_url,
@@ -9176,13 +9759,13 @@ window.triggerDeploy = async function(ev) {
     showToast('Deploy failed: ' + err.message, 'error');
     await insertDeploymentHistory('failed', { mode: 'deploy', errorMessage: err.message });
   } finally {
-    setActionButtonBusy(btn, false, 'Deploying…', 'Deploy Now');
+    setActionButtonBusy(btn, false, 'Deployingâ€¦', 'Deploy Now');
   }
 };
 
 window.triggerRebuild = async function(ev) {
   const btn = ev?.currentTarget || document.querySelector('[data-rebuild-btn]');
-  setActionButtonBusy(btn, true, 'Rebuilding…', 'Rebuild Site');
+  setActionButtonBusy(btn, true, 'Rebuildingâ€¦', 'Rebuild Site');
   try {
     const prep = await runWebhookDeploy('rebuild');
     if (!prep.ok) return;
@@ -9200,7 +9783,7 @@ window.triggerRebuild = async function(ev) {
       body: JSON.stringify({ trigger: 'rebuild', source: 'admin-dashboard', at: new Date().toISOString() }),
     });
     if (res.ok) {
-      showToast('🔄 Rebuild triggered successfully.');
+      showToast('ðŸ”„ Rebuild triggered successfully.');
       await insertDeploymentHistory('deploying', {
         mode: 'rebuild',
         productionUrl: s.production_url,
@@ -9224,13 +9807,13 @@ window.triggerRebuild = async function(ev) {
     showToast('Rebuild failed: ' + err.message, 'error');
     await insertDeploymentHistory('failed', { mode: 'rebuild', errorMessage: err.message });
   } finally {
-    setActionButtonBusy(btn, false, 'Rebuilding…', 'Rebuild Site');
+    setActionButtonBusy(btn, false, 'Rebuildingâ€¦', 'Rebuild Site');
   }
 };
 
 window.publishAndDeploy = async function(ev) {
   const btn = ev?.currentTarget || document.querySelector('[data-publish-easy-btn]');
-  setActionButtonBusy(btn, true, 'Publishing…', 'One-Click Publish');
+  setActionButtonBusy(btn, true, 'Publishingâ€¦', 'One-Click Publish');
   try {
     const form = document.getElementById('deploy-form');
     if (!form) {
@@ -9242,11 +9825,11 @@ window.publishAndDeploy = async function(ev) {
   } catch (err) {
     showToast('Publish failed: ' + err.message, 'error');
   } finally {
-    setActionButtonBusy(btn, false, 'Publishing…', 'One-Click Publish');
+    setActionButtonBusy(btn, false, 'Publishingâ€¦', 'One-Click Publish');
   }
 };
 
-// ── Reindex Search ─────────────────────────────────────────
+// â”€â”€ Reindex Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Manually rebuilds the search index for all listings. The DB has an automatic
 // AFTER INSERT/UPDATE/DELETE trigger (sync_search_index) on showroom_listings,
 // so touching each row (updated_at) forces the index to rebuild for every item.
@@ -9254,7 +9837,7 @@ window.reindexSearch = async function() {
   const btn = document.querySelector('[data-publish-easy-btn]') || document.querySelector('[data-rebuild-btn]');
   const label = btn?.querySelector('p.text-xs.font-black');
   const origLabel = label?.textContent || '';
-  if (label) label.textContent = 'Reindexing…';
+  if (label) label.textContent = 'Reindexingâ€¦';
   try {
     const { data: listings, error } = await supabase
       .from('showroom_listings')
@@ -9262,7 +9845,7 @@ window.reindexSearch = async function() {
       .order('updated_at', { ascending: false });
 
     if (error) {
-      if (isRlsDenied(error)) return showToast('⚠️ Reindex blocked: database admin role rejected the read. Re-run the admin permission migration.', 'error');
+      if (isRlsDenied(error)) return showToast('âš ï¸ Reindex blocked: database admin role rejected the read. Re-run the admin permission migration.', 'error');
       return showToast('Could not load listings to reindex: ' + error.message, 'error');
     }
 
@@ -9292,11 +9875,11 @@ window.reindexSearch = async function() {
         success += batch.length;
       }
       // Update the button label so the admin sees live progress.
-      if (label) label.textContent = `Reindexing… ${Math.min(i + BATCH, ids.length)}/${ids.length}`;
+      if (label) label.textContent = `Reindexingâ€¦ ${Math.min(i + BATCH, ids.length)}/${ids.length}`;
     }
 
     if (denied) {
-      showToast(`⚠️ Reindex partially blocked: database admin role rejected some writes. Re-run the admin permission migration. (${success}/${ids.length} done)`, 'error');
+      showToast(`âš ï¸ Reindex partially blocked: database admin role rejected some writes. Re-run the admin permission migration. (${success}/${ids.length} done)`, 'error');
       return;
     }
     showToast(`Search index rebuilt for ${success} listing${success !== 1 ? 's' : ''}${failed ? ` (${failed} failed)` : ''}.`, failed ? 'error' : 'success');
@@ -9307,7 +9890,7 @@ window.reindexSearch = async function() {
   }
 };
 
-// ── Sync Showroom To DB ────────────────────────────────────
+// â”€â”€ Sync Showroom To DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Reads the static SHOWROOM_LISTINGS fallback catalog (showroom-data.js) and
 // inserts any items that are missing from the database by property_id. This
 // keeps the admin's editable showroom populated even after a fresh DB reset.
@@ -9319,7 +9902,7 @@ window.syncShowroomToDB = async function() {
   const btn = document.querySelector('[data-publish-easy-btn]') || document.querySelector('[data-rebuild-btn]');
   const label = btn?.querySelector('p.text-xs.font-black');
   const origLabel = label?.textContent || '';
-  if (label) label.textContent = 'Syncing…';
+  if (label) label.textContent = 'Syncingâ€¦';
   try {
     // Load existing property_ids so we only insert missing items.
     const { data: existing, error: readErr } = await supabase
@@ -9327,7 +9910,7 @@ window.syncShowroomToDB = async function() {
       .select('property_id');
 
     if (readErr) {
-      if (isRlsDenied(readErr)) return showToast('⚠️ Sync blocked: database admin role rejected the read. Re-run the admin permission migration.', 'error');
+      if (isRlsDenied(readErr)) return showToast('âš ï¸ Sync blocked: database admin role rejected the read. Re-run the admin permission migration.', 'error');
       return showToast('Could not load existing listings: ' + readErr.message, 'error');
     }
 
@@ -9335,7 +9918,7 @@ window.syncShowroomToDB = async function() {
     const missing = SHOWROOM_LISTINGS.filter(item => item && item.property_id && !existingIds.has(item.property_id));
 
     if (!missing.length) {
-      showToast('Showroom already in sync — no new listings to add.');
+      showToast('Showroom already in sync â€” no new listings to add.');
       return;
     }
 
@@ -9398,11 +9981,11 @@ window.syncShowroomToDB = async function() {
       } else {
         inserted += batch.length;
       }
-      if (label) label.textContent = `Syncing… ${Math.min(i + BATCH, missing.length)}/${missing.length}`;
+      if (label) label.textContent = `Syncingâ€¦ ${Math.min(i + BATCH, missing.length)}/${missing.length}`;
     }
 
     if (denied) {
-      showToast(`⚠️ Sync partially blocked: database admin role rejected some inserts. Re-run the admin permission migration. (${inserted}/${missing.length} added)`, 'error');
+      showToast(`âš ï¸ Sync partially blocked: database admin role rejected some inserts. Re-run the admin permission migration. (${inserted}/${missing.length} added)`, 'error');
       return;
     }
     showToast(`Showroom synced: ${inserted} new listing${inserted !== 1 ? 's' : ''} added to the database${failed ? ` (${failed} failed)` : ''}.`, failed ? 'error' : 'success');
@@ -9421,7 +10004,7 @@ window.testGitHubConnection = async function() {
     const res = await fetch(`https://api.github.com/repos/${username}/${repo}`);
     if (res.ok) {
       const data = await res.json();
-      showToast(`✓ Connected: ${data.full_name} (${data.visibility})`);
+      showToast(`âœ“ Connected: ${data.full_name} (${data.visibility})`);
     } else if (res.status === 404) {
       showToast('Repository not found. Check username and repo name.', 'error');
     } else {
@@ -9433,9 +10016,9 @@ window.testGitHubConnection = async function() {
 window.deployToProduction = window.triggerDeploy;
 window.rebuildSite = window.triggerRebuild;
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  CATALOG MANAGER
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // The generated catalog (catalog.js) fills homepage rows with deterministic
 // listings. Because they regenerate on every page load, the admin hides them
 // via a persisted hidden-ids list (site_settings.hidden_catalog_ids) instead
@@ -9460,7 +10043,7 @@ async function renderCatalogManager() {
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 class="text-xl font-black text-white">Generated Catalog</h2>
-        <p class="text-xs text-gray-500 mt-1">Deterministic storefront items. Hiding a listing removes it from the site everywhere — including direct links.</p>
+        <p class="text-xs text-gray-500 mt-1">Deterministic storefront items. Hiding a listing removes it from the site everywhere â€” including direct links.</p>
       </div>
       <button onclick="catalogResetHidden()" class="btn-press px-3 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-300 border border-red-500/25 hover:bg-red-500/20 transition">Show All Hidden</button>
     </div>`;
@@ -9472,7 +10055,7 @@ async function renderCatalogManager() {
 
   const search = `
     <div class="flex flex-wrap items-center gap-2">
-      <input id="catalog-search-input" class="input-field flex-1 min-w-[220px]" placeholder="Search title, id or subcategory…" value="${esc(catalogUi.query)}" onkeyup="if (event.key === 'Enter') catalogSearch()">
+      <input id="catalog-search-input" class="input-field flex-1 min-w-[220px]" placeholder="Search title, id or subcategoryâ€¦" value="${esc(catalogUi.query)}" onkeyup="if (event.key === 'Enter') catalogSearch()">
       <button onclick="catalogSearch()" class="btn-press px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition">Search</button>
     </div>`;
 
@@ -9506,7 +10089,7 @@ async function renderCatalogManager() {
             <img src="${esc(cover)}" alt="" class="w-12 h-12 rounded-lg object-cover bg-gray-800 shrink-0" loading="lazy">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold text-white truncate">${esc(p.title)}</p>
-              <p class="text-[11px] text-gray-500 truncate">${esc(p.property_id)} · ${esc(p.subcategory || p.category || '')} · ${fmtMoney(p.price, 'USD')}</p>
+              <p class="text-[11px] text-gray-500 truncate">${esc(p.property_id)} Â· ${esc(p.subcategory || p.category || '')} Â· ${fmtMoney(p.price, 'USD')}</p>
             </div>
             ${isHidden ? badge(false) : badge(true)}
             <button onclick="catalogToggle('${esc(p.property_id)}')" class="btn-press px-3 py-1.5 rounded-xl text-xs font-bold border transition ${isHidden ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25' : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'}">
@@ -9519,7 +10102,7 @@ async function renderCatalogManager() {
   const totalPages = q ? 1 : Math.max(1, Math.ceil(count / CATALOG_PAGE_SIZE));
   const pager = `
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <p class="text-xs text-gray-500">${q ? `${filtered.length} match` : `${count.toLocaleString()} items in ${esc(def?.name || '')}`} · ${hidden.size} hidden</p>
+      <p class="text-xs text-gray-500">${q ? `${filtered.length} match` : `${count.toLocaleString()} items in ${esc(def?.name || '')}`} Â· ${hidden.size} hidden</p>
       <div class="flex items-center gap-2">
         <button onclick="catalogPage(-1)" ${catalogUi.page <= 0 ? 'disabled' : ''} class="btn-press px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 text-gray-300 border border-white/10 hover:text-white disabled:opacity-40">Prev</button>
         <span class="text-xs text-gray-500">Page ${catalogUi.page + 1} / ${totalPages}</span>
@@ -9571,15 +10154,15 @@ window.catalogResetHidden = async function() {
   renderCatalogManager();
 };
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  ADMIN BACK / EXIT BEHAVIOR
-//  One press of the browser Back button — from ANY admin section,
+//  One press of the browser Back button â€” from ANY admin section,
 //  no matter how deep (Settings, Content Settings, uploads, etc.)
-//  — always leaves the admin area and returns to the main store
+//  â€” always leaves the admin area and returns to the main store
 //  homepage ("/"). Internal section navigation keeps working
 //  normally and never creates history entries, so browser Back
 //  and the admin's own navigation cannot conflict or loop.
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 (function installAdminBackGuard() {
   if (!window.history || !window.history.pushState) return;
   try {
@@ -9587,7 +10170,7 @@ window.catalogResetHidden = async function() {
     window.history.pushState({ adminGuard: 2 }, document.title, window.location.href);
   } catch (err) { return; }
   window.addEventListener('popstate', function (e) {
-    // The first Back press pops to adminGuard:1 → leave admin now.
+    // The first Back press pops to adminGuard:1 â†’ leave admin now.
     // (Going "forward" again pops adminGuard:2 and is simply ignored.)
     if (e.state && e.state.adminGuard === 1) {
       window.location.replace('/');
@@ -9595,7 +10178,7 @@ window.catalogResetHidden = async function() {
   });
 })();
 
-// ── INIT ────────────────────────────────────────────────────
+// â”€â”€ INIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function init() {
   if (window.lucide) lucide.createIcons();
   renderSidebar();

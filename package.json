@@ -28,6 +28,7 @@
     "@capacitor/status-bar": "^8.0.3",
     "@supabase/supabase-js": "^2.110.8",
     "lucide": "^1.27.0",
+    "pdfjs-dist": "^4.10.38",
     "vite": "^5.4.0"
   },
   "devDependencies": {
