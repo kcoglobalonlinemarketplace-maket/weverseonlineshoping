@@ -2461,6 +2461,9 @@ window.showAddProductStep2 = function(category, existingData = {}) {
 
 window.closeProductFormModal = function() {
   if (window._pfEscapeHandler) { document.removeEventListener('keydown', window._pfEscapeHandler); window._pfEscapeHandler = null; }
+  // Form closed without saving — forget which review card was being filled so a
+  // later manual publish doesn't jump back to a stale scan list.
+  scanReviewActiveIndex = -1;
   closeModal();
   renderProducts();
 };
@@ -3445,6 +3448,11 @@ window._resolveScanConfirm = function(choice, category) {
 let scanReviewProducts = [];
 let scanReviewImages = [];
 let scanReviewEntry = '';
+// Index of the review card currently being filled in the product form. Set when
+// "Continue to its form" is pressed, so that after Save & Publish the owner is
+// returned to the SAME review list (with the saved card removed) to pick the
+// next product instead of landing on the plain Product Manager.
+let scanReviewActiveIndex = -1;
 
 function imagesForProduct(p, images) {
   const idxs = Array.isArray(p.image_indices) ? p.image_indices : [];
@@ -3507,6 +3515,7 @@ window.scanReviewRender = function() {
 window.scanReviewContinue = async function(i) {
   const p = scanReviewProducts[i];
   if (!p) return;
+  scanReviewActiveIndex = i;
   const images = imagesForProduct(p, scanReviewImages);
   const norm = normalizeDetectedCategory(p.category);
   const isProperty = p.listing_type === 'property' || (norm && norm.listing_type === 'property');
@@ -4399,6 +4408,42 @@ async function scannerSourceProducts() {
   return out;
 }
 
+// After a successful Save & Publish, bring the owner straight back to the scan
+// review list (with the just-saved card removed) so they can select the next
+// detected product. Returns true when the list was reopened; false when nothing
+// is left to review (caller then falls back to the Product Manager).
+window.returnToScanReviewAfterSave = function(activeIndex = scanReviewActiveIndex) {
+  scanReviewActiveIndex = -1;
+  if (!scanReviewProducts.length) return false;
+  if (Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < scanReviewProducts.length) {
+    scanReviewProducts.splice(activeIndex, 1);
+  }
+  if (!scanReviewProducts.length) {
+    scanReviewImages = [];
+    scanReviewSourceProducts = {};
+    return false;
+  }
+  scanReviewEntry = 'scanner-scan-status';
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> General AI Scanner</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">âœ• Close</button>
+        </div>
+        <div class="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-3 mb-3">
+          <p class="text-xs font-bold text-emerald-300 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Saved & published! Select the next product below to keep going.</p>
+        </div>
+        <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3">
+          <div id="scanner-scan-status" class="hidden text-xs font-medium"></div>
+        </div>
+      </div>
+    </div>`);
+  scanReviewRender();
+  if (window.lucide) lucide.createIcons();
+  return true;
+};
+
 window.openGeneralAiScanner = async function() {
   scannerImages = [];
   const products = await scannerSourceProducts();
@@ -4799,7 +4844,16 @@ window.saveProduct = async function(e, category, existingId) {
       showToast(isDraft ? 'Draft saved!' : 'Published Successfully! Your product is now live in your showroom.');
     }
     try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
+    // Capture BEFORE closeProductFormModal() resets it (the close handler clears
+    // the tracking for the not-saved case).
+    const savedScanIndex = scanReviewActiveIndex;
     closeProductFormModal();
+    // If this product came from a scan review list, go straight back to the
+    // remaining detected products so the owner can select the next one.
+    if (typeof window.returnToScanReviewAfterSave === 'function' && window.returnToScanReviewAfterSave(savedScanIndex)) {
+      renderProducts(); // keep the manager list fresh in the background
+      return;
+    }
     renderProducts();
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
