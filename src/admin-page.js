@@ -3865,6 +3865,15 @@ const SCAN_IDENTIFICATION_KEYS = ['brand', 'model', 'year', 'year_estimated', 'b
   'property_type', 'bedrooms', 'bathrooms', 'half_bathrooms', 'building_size', 'land_size', 'floors', 'garage',
   'parking_spaces', 'furnished', 'year_built', 'year_renovated', 'area', 'address', 'zip_code', 'landmarks',
   'town', 'city', 'state', 'country', 'latitude', 'longitude', 'listing_status'];
+// Honest status: when the Gemini key hit its free limit mid-scan (or none is
+// set), say so plainly instead of letting results silently look thin.
+function scanAiLimitNotice() {
+  if (Date.now() < (typeof aiClient !== 'undefined' ? (aiClient._geminiQuotaUntil || 0) : 0)) {
+    return `<p class="text-[11px] text-amber-300 mt-1">⚠ Your Gemini key hit its FREE rate limit during this scan — parts were completed from saved details only. Wait ~1 minute and scan again for full AI reading.</p>`;
+  }
+  return '';
+}
+
 async function runVerifiedScan({ imageUrls, identification, category, formSelector }) {
   const fields = collectFormFields(formSelector);
   const fieldsSchema = buildFieldSchemaSection(fields);
@@ -3888,10 +3897,15 @@ async function runVerifiedScan({ imageUrls, identification, category, formSelect
   // Validate pass 1 (normalizes formats, matches options, flags problems).
   let validated = validateScanExtraction(fields, extractionView);
 
-  // PASS 2 â€” verification against ALL pages/images again.
+  // PASS 2 — verification against ALL pages/images again. Skipped when the
+  // first pass never saw the document (quota blocked → text-only fallback):
+  // there would be nothing visual to verify against.
   let verified = false;
-  try {
-    const verdict = await aiClient.verifyExtraction(imageUrls, identification, validated.specs, fields, { maxImages: AI_PRODUCT_SCANNER.maxImages });
+  const passProvider = `${(combined && combined.specs && combined.specs._aiProvider) || ''} ${(combined && combined.specs && combined.specs._aiModel) || ''}`;
+  const visionWasUsed = !/pollinations|free ai/i.test(passProvider);
+  if (visionWasUsed) {
+    try {
+      const verdict = await aiClient.verifyExtraction(imageUrls, identification, validated.specs, fields, { maxImages: AI_PRODUCT_SCANNER.maxImages });
     if (verdict) {
       const corrections = verdict.corrections && typeof verdict.corrections === 'object' ? verdict.corrections : {};
       const appliedKeys = Object.keys(corrections);
@@ -3919,7 +3933,8 @@ async function runVerifiedScan({ imageUrls, identification, category, formSelect
       verified = true;
       validated.verificationNotes = Array.isArray(verdict.notes) ? verdict.notes.slice(0, 4) : [];
     }
-  } catch { /* verification unavailable â€” pass-1 data (already validated) stands */ }
+    } catch { /* verification unavailable â€” pass-1 data (already validated) stands */ }
+  }
 
   return {
     specs: validated.specs,
@@ -3954,6 +3969,7 @@ async function completeScanAndFill(identification0, images, category) {
       ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
       : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
     if (res.summary.flagged) msg += `<p class="text-[11px] text-red-300 mt-1">${res.summary.flagged} value${res.summary.flagged > 1 ? 's need' : ' needs'} your attention below.</p>`;
+    msg += scanAiLimitNotice();
     msg += renderScanChecklistReport(res.checklist, res.summary);
     setStatus(msg, 'text-emerald-300');
     showToast(`Review ${idLabel}, then press SAVE / UPDATE.`, 'success');
@@ -4069,8 +4085,9 @@ function routePropertyScan(identification, images) {
         msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`;
       }
       msg += res.verified
-        ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
-        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
+        ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your document.</p>`
+        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
+      msg += scanAiLimitNotice();
       msg += renderScanChecklistReport(res.checklist, res.summary);
       setStatus(msg, res.price ? 'text-emerald-300' : 'text-amber-300');
       showToast('Review the property details, then press Publish Property.', 'success');
@@ -4178,6 +4195,7 @@ window.scanPropertyWithAI = async function() {
     msg += res.verified
       ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
       : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
+    msg += scanAiLimitNotice();
     msg += renderScanChecklistReport(res.checklist, res.summary);
     setStatus(msg, 'text-emerald-300');
     showToast('Review the property details, then press Publish Property.', 'success');
@@ -4430,8 +4448,11 @@ window.scanGeneralWithAI = async function() {
   // the product's photos/pages (batched inside the AI client â€” nothing skipped)
   // and is bounded by a generous timeout so a slow call can never hold up the
   // whole batch.
-  const SCAN_CONCURRENCY = 4;
-  const SCAN_TIMEOUT_MS = 90000;
+  // PACED: only TWO products scan at once now. Every AI call is rate-limited
+  // through the global pacer, so higher concurrency would just queue anyway —
+  // two workers keep the pipeline full without bursting free-tier limits.
+  const SCAN_CONCURRENCY = 2;
+  const SCAN_TIMEOUT_MS = 120000;
   let cursor = 0;
   let doneCount = 0;
   const scanOne = async (prod) => {
@@ -6522,7 +6543,7 @@ Rules:
       } catch { /* fall through to server vision */ }
     }
 
-    if (!quotaBlocked || !allowTextFallback) {
+    if (!quotaBlocked) {
       try {
         const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens }, 30000);
         if (res && res.success && res.text) {
@@ -6553,26 +6574,28 @@ Rules:
 
   // Collect scan input as data URLs: photos are fetched+compressed (cached),
   // PDFs are rendered page-by-page into one image per page so multi-page
-  // documents are read completely. Returns a flat array of data URLs.
+  // documents are read completely. Photos download IN PARALLEL so a big
+  // document set is ready quickly. Returns a flat array of data URLs.
   _pdfPageCache: new Map(),
   async _collectScanImages(urls, { onProgress = () => {} } = {}) {
-    const list = Array.isArray(urls) ? urls : [urls];
-    const out = [];
-    for (const url of list) {
-      const u = String(url || '');
-      if (!u) continue;
-      if (/^data:application\/pdf/.test(u) || looksLikePdf(u)) {
-        let pages = this._pdfPageCache.get(u) || null;
-        if (!pages) {
-          pages = await pdfToPageDataUrls(u, { maxDim: 1300 }).catch(() => []);
-          if (pages.length) this._pdfPageCache.set(u, pages);
+    const list = (Array.isArray(urls) ? urls : [urls]).map(u => String(u || '')).filter(Boolean);
+    if (!list.length) return [];
+    const results = await Promise.all(list.map(async (u) => {
+      try {
+        if (/^data:application\/pdf/.test(u) || looksLikePdf(u)) {
+          let pages = this._pdfPageCache.get(u) || null;
+          if (!pages) {
+            pages = await pdfToPageDataUrls(u, { maxDim: 1300 }).catch(() => []);
+            if (pages.length) this._pdfPageCache.set(u, pages);
+          }
+          return pages;
         }
-        out.push(...pages);
-      } else {
         const img = await this._fetchImageAsDataUrl(u, 1024);
-        if (img) out.push(img);
-      }
-    }
+        return img ? [img] : [];
+      } catch { return []; }
+    }));
+    const out = [];
+    for (const r of results) out.push(...r);
     return out;
   },
 
@@ -6888,6 +6911,9 @@ Return ONE valid JSON object (no markdown):
   // and anything still missing. Returns { corrections, still_missing,
   // wrong_mapping, notes } or null when verification could not run.
   async verifyExtraction(imageUrls, identification, currentValues, fields = [], context = {}) {
+    // Quota already burned this minute — a vision-only pass cannot succeed and
+    // would just burn 30s per product on the doomed edge call. Bail instantly.
+    if (Date.now() < (this._geminiQuotaUntil || 0)) return null;
     const id = identification || {};
     const fieldLines = (fields || []).map((f) => `- "${f.key}" (${f.label})`).join('\n');
     const valueLines = Object.entries(currentValues || {})
@@ -6993,6 +7019,26 @@ Return ONE valid JSON object (no markdown):
   },
 
   // Gemini vision straight from the browser (free tier supports vision).
+  // FREE-TIER PACER — every Gemini vision call goes through this gate. Free
+  // keys allow only ~10-15 requests/minute; firing batches in parallel bursts
+  // burns that in seconds and then EVERY later call 429s (which is why scans
+  // used to come back with empty forms). The gate queues calls and keeps a
+  // safe minimum gap between them, so big multi-batch scans take longer but
+  // actually SUCCEED instead of mass-failing.
+  _geminiCallChain: Promise.resolve(),
+  _lastGeminiCallAt: 0,
+  _paceGeminiCall(task) {
+    const MIN_GAP_MS = 6000;
+    const run = this._geminiCallChain.then(async () => {
+      const waitMs = (this._lastGeminiCallAt || 0) + MIN_GAP_MS - Date.now();
+      if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+      this._lastGeminiCallAt = Date.now();
+      return task();
+    });
+    this._geminiCallChain = run.then(() => {}, () => {});
+    return run;
+  },
+
   async _tryBrowserGeminiVision(prompt, images) {
     // FAST: if we already know Gemini's quota is exhausted, don't waste time
     // retrying every model with the same key.
@@ -7022,7 +7068,8 @@ Return ONE valid JSON object (no markdown):
         if (parts.length < 2) return null;
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
         const disableThinking = /2\.5|-3/.test(model);
-        const res = await fetch(endpoint, {
+        // PACED: this fetch waits its turn in the global rate-limit queue.
+        const res = await this._paceGeminiCall(() => fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -7033,12 +7080,12 @@ Return ONE valid JSON object (no markdown):
               ...(disableThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
             },
           }),
-          signal: AbortSignal.timeout(12000),
-        });
+          signal: AbortSignal.timeout(20000),
+        }));
         // FAST circuit-breaker: a 429 (quota) or 403 applies to the whole key,
         // so stop trying the remaining models â€” skip straight to the fallbacks.
         if (res.status === 429 || res.status === 403) {
-          this._geminiQuotaUntil = Date.now() + 60 * 1000; // retry in 60s, not 5 min
+          this._geminiQuotaUntil = Date.now() + 65 * 1000; // wait out the per-minute window
           return null;
         }
         if (!res.ok) continue;
