@@ -4535,7 +4535,8 @@ window.scanGeneralWithAI = async function() {
   scanReviewSourceProducts = sources;
   scanReviewEntry = 'scanner-scan-status';
   scanReviewRender();
-  showToast(`Scan complete â€” ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}${fallbacks ? `, ${fallbacks} completed from saved details (AI could not read the photo â€” review ${fallbacks > 1 ? 'those' : 'it'} and edit as needed)` : ''}. Press "Continue with ALL" to save & publish everything at once.`, 'success');
+  const quotaHit = Date.now() < (aiClient._geminiQuotaUntil || 0);
+  showToast(`Scan complete â€” ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}${fallbacks ? `, ${fallbacks} completed from saved details (AI could not read the photo â€” review ${fallbacks > 1 ? 'those' : 'it'} and edit as needed)` : ''}${quotaHit ? '. Your Gemini key hit its FREE rate limit during the scan â€” wait about 1 minute, then continue for full AI reading.' : ''}. Press "Continue with ALL" to save & publish everything at once.`, 'success');
 };
 
 window.saveProduct = async function(e, category, existingId) {
