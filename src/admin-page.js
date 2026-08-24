@@ -3148,6 +3148,56 @@ function buildScanTitle(identification) {
   return parts.join(' ') || identification.detected_name || '';
 }
 
+// â”€â”€ GUARANTEED COMPLETENESS PASS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Runs LAST, after every AI value has been applied. Any user-editable field that
+// is STILL empty (because the AI failed, hit its free quota, returned junk, or
+// simply could not see the value in the photo) receives an honest "Not
+// specified" placeholder or a safe default (price/stock/title/description).
+// AI values ALWAYS win â€” this pass only touches genuinely empty fields, so a
+// scan can never leave the form partially blank and the owner can always
+// review, edit and publish.
+const GUARANTEED_FILL_SKIP = new Set([
+  'images', 'tags', 'currency', 'catalog_template_id', 'country_code',
+  'listing_type', 'category', 'property_id', 'id', 'slug', 'user_id',
+  'latitude', 'longitude', 'cover_image', 'video_url',
+]);
+function guaranteeCompleteFormFill(formSelector, { titleFallback = 'Product', descriptionFallback = '' } = {}) {
+  const form = document.querySelector(formSelector);
+  if (!form) return 0;
+  let count = 0;
+  form.querySelectorAll('input, textarea, select').forEach((field) => {
+    const name = String(field.name || '').trim();
+    if (!name || GUARANTEED_FILL_SKIP.has(name)) return;
+    const type = String(field.type || '').toLowerCase();
+    if (['hidden', 'checkbox', 'radio', 'file', 'submit', 'button', 'image', 'password'].includes(type)) return;
+    if (field.disabled) return;
+    if (String(field.value || '').trim() !== '') return; // AI value already there â€” never touch it
+    // Publishing-gating fields always get a safe, valid default.
+    if (name === 'price' || name === 'real_price') {
+      const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 1;
+      field.value = String(min);
+      count++;
+      return;
+    }
+    if (name === 'stock_quantity') { field.value = '1'; count++; return; }
+    if (name === 'title') { field.value = titleFallback; count++; return; }
+    if (name === 'description') {
+      field.value = descriptionFallback || `${titleFallback} â€” full details to be confirmed by the seller. Review and edit everything before publishing.`;
+      count++;
+      return;
+    }
+    if (type === 'number' || type === 'range' || type === 'tel') { field.value = '0'; count++; return; }
+    if (field.tagName === 'SELECT' && ![...field.options].some(o => o.value === 'Not specified')) {
+      const opt = document.createElement('option');
+      opt.value = 'Not specified'; opt.textContent = 'Not specified';
+      field.appendChild(opt);
+    }
+    field.value = 'Not specified';
+    count++;
+  });
+  return count;
+}
+
 // Fill the product form fields from the two-stage result. Only sets fields
 // that exist in the current form and never guesses price/stock.
 function applyScanToProductForm(result) {
@@ -3289,6 +3339,16 @@ function applyScanToProductForm(result) {
       filled.push('price');
     }
   }
+
+  // GUARANTEED COMPLETENESS PASS â€” runs last, so every AI value wins and only
+  // genuinely empty fields (AI failure / quota / not visible in the photo)
+  // receive the honest "Not specified" placeholder or a safe default. The form
+  // can never be left partially blank after a scan.
+  const titleFallback = buildScanTitle(identification) || identification.detected_name || 'Product';
+  const descFallback = specs.description
+    || `${titleFallback} for sale on Weverse Online Shop. Review the details below and edit anything before publishing.`;
+  const guaranteed = guaranteeCompleteFormFill('#product-form', { titleFallback, descriptionFallback: descFallback });
+  if (guaranteed) filled.push(`${guaranteed} auto-completed (Not specified / safe defaults)`);
 
   updateProductReviewPanel();
   return { filled };
@@ -3846,6 +3906,15 @@ function applyScanToPropertyForm(result) {
     const discount = Number.isFinite(estDiscount) && estDiscount > 0 && estDiscount < est ? estDiscount : est;
     set('price', String(clamp(discount)));
   }
+  // GUARANTEED COMPLETENESS PASS â€” same rule as the product form: AI values win,
+  // anything still empty gets "Not specified" / a safe default, so the property
+  // form is never left partially blank after a scan.
+  const propTitleFallback = String(specs.title || identification.detected_name || 'Property').trim() || 'Property';
+  const propDescFallback = specs.description
+    || `${propTitleFallback} available on Weverse Online Shop. Review the details below and edit anything before publishing.`;
+  const propGuaranteed = guaranteeCompleteFormFill('#property-form', { titleFallback: propTitleFallback, descriptionFallback: propDescFallback });
+  if (propGuaranteed) filled.push(`${propGuaranteed} auto-completed (Not specified / safe defaults)`);
+
   if (typeof window.refreshPropertyMapFromForm === 'function') window.refreshPropertyMapFromForm();
   return { filled };
 }
