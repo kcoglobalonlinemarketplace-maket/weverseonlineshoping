@@ -1376,6 +1376,43 @@ function handleWriteError(error, fallbackFn, actionLabel) {
   return false;
 }
 
+// Turns a raw Supabase/DB error into a clear, actionable message for the owner.
+// Used by the One-Click Publish flow so failures are NEVER silent and never
+// reported as success.
+function describeWriteError(err, actionLabel) {
+  if (!err) return `${actionLabel} failed for an unknown reason. Please try again.`;
+  const msg = String(err.message || '');
+  const code = err.code || '';
+  if (isRlsDenied(err)) {
+    return `${actionLabel} was BLOCKED: your account is signed in but the database admin role is not active. Re-run the admin permission migration (or contact the owner), then press Publish again.`;
+  }
+  if (String(code) === '401' || /jwt|token|not authenticated|unauthorized|invalid api key/i.test(msg)) {
+    return `${actionLabel} failed: your sign-in session expired or is invalid. Please sign out and sign back in, then try again. Your changes are still in the form.`;
+  }
+  if (String(code) === '23505' || /duplicate key|unique constraint/i.test(msg)) {
+    return `${actionLabel} failed: a duplicate-record conflict occurred in the database. Refresh the page and try again.`;
+  }
+  if (String(code) === '23503' || /foreign key/i.test(msg)) {
+    return `${actionLabel} failed: the database rejected a reference (foreign key). Refresh the page, re-open the product and try again.`;
+  }
+  if (String(code) === '42P01' || /column .* does not exist|relation .* does not exist/i.test(msg)) {
+    return `${actionLabel} failed: the database schema is out of date. Run the latest database migration, then try again.`;
+  }
+  if (String(code) === '23502' || /null value in column .* violates/i.test(msg)) {
+    return `${actionLabel} failed: a required field was rejected by the database. Fill in every required field, then try again.`;
+  }
+  if (/failed to fetch|networkerror|network request|fetch failed|load failed|offline|ERR_NAME|ERR_CONNECTION|timeout/i.test(msg)) {
+    return `${actionLabel} failed: no connection to the server. Check your internet connection and press Publish again. Your changes are still in the form.`;
+  }
+  if (String(code) === '42501' || /permission denied|row-level security/i.test(msg)) {
+    return `${actionLabel} was BLOCKED by database permissions. Re-run the admin permission migration (or contact the owner), then try again.`;
+  }
+  if (/rate limit|too many requests/i.test(msg)) {
+    return `${actionLabel} failed: too many requests were sent at once. Wait a few seconds and press Publish again.`;
+  }
+  return `${actionLabel} failed: ${msg || 'an unexpected database error occurred'}. Nothing was saved — your changes are still in the form, so you can press Publish again.`;
+}
+
 window.bulkToggleActive = async function(active) {
   const ids = getSelectedIds();
   if (!ids.length) return;
@@ -2461,6 +2498,8 @@ window.showAddProductStep2 = function(category, existingData = {}) {
 
 window.closeProductFormModal = function() {
   if (window._pfEscapeHandler) { document.removeEventListener('keydown', window._pfEscapeHandler); window._pfEscapeHandler = null; }
+  // Safety net: the form is gone, so no publish can still be in flight.
+  window._productPublishInFlight = false;
   // Form closed without saving — forget which review card was being filled so a
   // later manual publish doesn't jump back to a stale scan list.
   scanReviewActiveIndex = -1;
@@ -4658,7 +4697,20 @@ window.saveProduct = async function(e, category, existingId) {
   const form = e.target;
   const btn = form.querySelector('[type=submit][name=action][value=publish]');
   const publishLabel = existingId ? 'One-Click Publish Changes' : 'One-Click Publish Product';
-  if (btn) { btn.disabled = true; btn.textContent = 'Savingâ€¦'; }
+  // ---- DOUBLE-SUBMIT GUARD: a second tap/Enter while publishing must never re-fire ----
+  if (window._productPublishInFlight) return;
+  window._productPublishInFlight = true;
+  // ---- LOADING STATE: visible spinner while publishing ----
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.75';
+    btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:_pubspin .7s linear infinite;vertical-align:-2px;margin-right:8px;"></span>Publishing…';
+  }
+  try { if (!document.getElementById('_pubspin-style')) { const st = document.createElement('style'); st.id = '_pubspin-style'; st.textContent = '@keyframes _pubspin{to{transform:rotate(360deg)}}'; document.head.appendChild(st); } } catch {}
+  const resetBtn = () => {
+    window._productPublishInFlight = false;
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.textContent = publishLabel; }
+  };
   try {
     const formData = new FormData(form);
     const data = {};
@@ -4679,7 +4731,7 @@ window.saveProduct = async function(e, category, existingId) {
     // Never save & publish silently without photos: if temporary blob: images
     // were the only ones, block and tell the owner to re-attach/re-upload them.
     if (droppedTempImages && !(data.images || []).length) {
-      if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
+      resetBtn();
       showToast('Your images were still uploading â€” please wait a moment and press Publish again (the photos were not saved with the product).', 'error');
       return;
     }
@@ -4711,12 +4763,16 @@ window.saveProduct = async function(e, category, existingId) {
     if (existingId) {
       // â”€â”€ EXISTING PRODUCT â†’ PARTIAL UPDATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // Only save what actually changed. Nothing is required in edit mode.
-      let base = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === existingId));
-      if (!base) {
+      // Fresh DB row first (window._productsData can be stale and would make
+      // changes get missed or wrongly reported as 'No changes detected').
+      let base = null;
+      try {
         const { data: fresh } = await supabase.from('showroom_listings').select('*').eq('property_id', existingId).maybeSingle();
-        base = fresh ? sanitizeShowroomPayload(fresh) : null;
-      }
-      if (!base) throw new Error('Could not load the current product. Refresh the page and try again.');
+        if (fresh) base = sanitizeShowroomPayload(fresh);
+      } catch {}
+      if (!base) base = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === existingId));
+      if (!base) base = sanitizeShowroomPayload(getLocalShowroomListingById ? getLocalShowroomListingById(existingId) : null);
+      if (!base) throw new Error('Could not load the current product to compare your changes against. Refresh the page, re-open the product and try again.');
 
       const eq = (a, b) => {
         const na = (a === '' || a == null) ? '' : a;
@@ -4768,24 +4824,33 @@ window.saveProduct = async function(e, category, existingId) {
       if (Object.keys(changes).length === 0) {
         showToast('No changes detected â€” nothing was saved.', 'info');
         try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
-        if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
+        showToast('No changes were needed — this product is already published with exactly these details.', 'info');
+        resetBtn();
+        closeProductFormModal();
+        renderProducts();
         return;
       }
 
       const payload = { ...base, ...changes, property_id: existingId, updated_at: new Date().toISOString() };
+      // Never send the serial `id` on update — a stale id can trigger a
+      // duplicate-key conflict instead of updating the row keyed by property_id.
+      delete payload.id;
       ({ error: err } = await supabase.from('showroom_listings').upsert(payload, { onConflict: 'property_id' }));
       if (err) {
-        const handled = handleWriteError(err, () => upsertLocalShowroomListing(payload), 'Product update');
-        if (handled) {
-          if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
-          // Even when a write is caught (permission / DB-unavailable fallback),
-          // always close the product form and return to the Product Manager
-          // list so the owner is never left stuck inside the product.
-          closeModal();
-          renderProducts();
-          return;
-        }
+        // FAILED — do NOT pretend it succeeded. Keep the form open (nothing is
+        // lost) and tell the owner exactly what went wrong and how to fix it.
+        resetBtn();
+        showToast(describeWriteError(err, isDraft ? 'Draft save' : 'Product publish'), 'error');
+        return;
       }
+      // Keep the local mirror in sync so every screen shows the same data.
+      try { upsertLocalShowroomListing(payload); } catch {}
+      // Refresh the in-memory cache so the product list shows the new
+      // Published/Active status immediately after the modal closes.
+      try {
+        const idx = (window._productsData || []).findIndex(i => i.property_id === existingId);
+        if (idx >= 0) window._productsData[idx] = payload;
+      } catch {}
       showToast(isDraft ? 'Draft saved!' : `Published Successfully â€” your product is updated and live in your showroom (${Object.keys(changes).length} change${Object.keys(changes).length > 1 ? 's' : ''}).`);
     } else {
       // â”€â”€ NEW PRODUCT â†’ FULL VALIDATION + FULL SAVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -4831,18 +4896,18 @@ window.saveProduct = async function(e, category, existingId) {
       payload.property_id = pid;
       ({ error: err } = await supabase.from('showroom_listings').insert(payload));
       if (err) {
-        const handled = handleWriteError(err, () => upsertLocalShowroomListing({ ...payload, property_id: payload.property_id }), 'Product publish');
-        if (handled) {
-          if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
-          // Always return to the Product Manager so the owner isn't stuck in
-          // the form (permission / DB-unavailable cases included).
-          closeModal();
-          renderProducts();
-          return;
-        }
+        // FAILED — do NOT pretend it succeeded and do NOT fall back to a
+        // local-only copy the live site would never show. Keep the form open
+        // and explain exactly what went wrong and how to fix it.
+        resetBtn();
+        showToast(describeWriteError(err, 'Product publish'), 'error');
+        return;
       }
+      try { upsertLocalShowroomListing({ ...payload, property_id: payload.property_id }); } catch {}
+      try { (window._productsData = window._productsData || []).unshift({ ...payload }); } catch {}
       showToast(isDraft ? 'Draft saved!' : 'Published Successfully! Your product is now live in your showroom.');
     }
+    resetBtn(); // publish finished — release the double-submit guard
     try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
     // Capture BEFORE closeProductFormModal() resets it (the close handler clears
     // the tracking for the not-saved case).
@@ -4856,8 +4921,12 @@ window.saveProduct = async function(e, category, existingId) {
     }
     renderProducts();
   } catch (err) {
-    showToast('Error: ' + err.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = publishLabel; }
+    // Validation errors carry a clear message; anything else gets described.
+    const msg = (err && err.message && !/failed to fetch|networkerror/i.test(String(err.message)))
+      ? err.message
+      : describeWriteError(err, 'Product publish');
+    resetBtn();
+    showToast(msg, 'error');
   }
 };
 
