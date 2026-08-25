@@ -2363,7 +2363,7 @@ window.showAddProductStep1 = function() {
         <!-- Scan first â€” let AI pick the category -->
         <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3 mb-4">
           <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan First â€” let AI pick the category</p>
-          <p class="text-[11px] text-gray-500">Upload your product photos, press SCAN WITH AI. It detects EVERY distinct product (a photo with a bag + watch + shoes + phone gives four separate listings; several photos of the same product merge into one). Review each detection, then the correct category form opens filled for you. Nothing is published automatically.</p>
+          <p class="text-[11px] text-gray-500">Upload your product photos, press SCAN WITH AI. It detects EVERY distinct product (a photo with a bag + watch + shoes + phone gives four separate listings; each detection fills its own listing). Review each detection, then the correct category form opens filled for you. Nothing is published automatically.</p>
           <div id="s1-drop-zone" class="drop-zone" onclick="document.getElementById('s1-img-upload').click()">
             <i data-lucide="image-plus" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
             <p class="text-xs font-bold text-gray-300">Click or drag & drop product images</p>
@@ -2473,7 +2473,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Product Scanner</p>
-                <p class="text-xs text-gray-500 mt-1">Reads your uploaded images and fills the form for you. Detects every distinct product (multiple products in one photo = separate listings; several photos of the same product = one listing). Powered by Google Gemini free tier â€” add your FREE key in AI Settings if not set. Only runs when you press the button.</p>
+                <p class="text-xs text-gray-500 mt-1">Reads your uploaded images and fills the form for you. Detects every distinct product (each detection fills its own listing). Powered by Google Gemini free tier â€” add your FREE key in AI Settings if not set. Only runs when you press the button.</p>
               </div>
               <button type="button" id="btn-scan-ai" onclick="scanProductWithAI()" class="btn-press px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl transition flex items-center gap-2 shrink-0">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
@@ -3626,8 +3626,7 @@ window.scanReviewRender = function() {
     <div class="space-y-3">
       <div>
         <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4 text-violet-400"></i> ${scanReviewProducts.length} distinct product${scanReviewProducts.length > 1 ? 's' : ''} detected</p>
-        <p class="text-[11px] text-gray-400 mt-1">Photos of the same product are grouped into one listing; different products stay separate. Edit or remove cards as needed â€” then either Continue one-by-one, or press Continue with ALL to save & publish everything in one click.</p>
-        <button type="button" id="btn-scan-continue-all" onclick="scanReviewContinueAll()" class="btn-press mt-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition flex items-center gap-2"><i data-lucide="rocket" class="w-4 h-4"></i> Continue with ALL â€” Save &amp; Publish Everything</button>
+        <p class="text-[11px] text-gray-400 mt-1">Review each card below. Edit or remove as needed, then press Continue to open each product's form and publish it.</p>
       </div>
       ${scanReviewProducts.map((p, i) => scanReviewCardHtml(p, i)).join('')}
     </div>`;
@@ -3724,176 +3723,9 @@ window.scanReviewCancel = function() {
   }
 };
 
-// â”€â”€ Continue with ALL: save & publish every detected product in one click â”€â”€
-// Loops over every review card, completes each product's specs + price with the
-// AI, and writes it straight to showroom_listings. Existing products (scanned
-// from the General AI Scanner) are UPDATED â€” never duplicated; brand-new
-// detections are INSERTED as new listings. Any image count is fine.
-window.scanReviewContinueAll = async function() {
-  const el = document.getElementById(scanReviewEntry);
-  const setStatus = (html, cls) => {
-    if (!el) return;
-    el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400', 'text-gray-100');
-    if (cls) el.classList.add(cls);
-    el.innerHTML = html;
-    if (window.lucide) lucide.createIcons();
-  };
-  if (!scanReviewProducts.length) return;
-  const btn = document.getElementById('btn-scan-continue-all');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving everythingâ€¦'; }
 
-  const total = scanReviewProducts.length;
-  let savedNew = 0, updated = 0, failed = 0;
-  const propertyIndexes = [];
+// (scanReviewContinueAll removed — each product is published individually via scanReviewContinue)
 
-  for (let i = 0; i < total; i++) {
-    const p = scanReviewProducts[i];
-    if (!p) continue;
-    const norm = normalizeDetectedCategory(p.category);
-    const isProperty = p.listing_type === 'property' || (norm && norm.listing_type === 'property');
-    if (isProperty) { propertyIndexes.push(i); continue; }
-    const cat = norm.category || p.category || 'Other';
-    const images = imagesForProduct(p, scanReviewImages);
-    setStatus(`<p class="flex items-center gap-2"><i data-lucide="loader" class="w-4 h-4 animate-spin text-blue-300"></i> Completing ${i + 1} of ${total}: <b>${esc(p.detected_name || 'product')}</b>â€¦</p>`, 'text-blue-300');
-    try {
-      // COMPLETENESS: specifications + price from ALL of this product's photos
-      // (batched inside the client), then a second-pass verification, then
-      // validation â€” only a validated extraction is ever saved.
-      const combined = await aiClient.completeSpecsAndPrice(images, p, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null);
-      let specs = (combined && combined.specs) || {};
-      let price = combined ? combined.price : null;
-      // SECOND PASS (optional toggle â€” General AI Scanner modal): re-reads all
-      // pages to fix mistakes. DOUBLES quota use, so it defaults to OFF here.
-      if (scanVerifyPassEnabled()) {
-        const verdict = await aiClient.verifyExtraction(images, p, specs, [], { maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null);
-        if (verdict && verdict.corrections && typeof verdict.corrections === 'object') {
-          for (const [k, v] of Object.entries(verdict.corrections)) {
-            if (v == null || String(Array.isArray(v) ? v.join(', ') : v).trim() === '') continue;
-            if (!SCAN_KNOWN_SPEC_KEYS.includes(k)) continue;
-            specs[k] = v;
-          }
-          for (const [fromKey, toKey] of (Array.isArray(verdict.wrong_mapping) ? verdict.wrong_mapping : [])) {
-            if (!SCAN_KNOWN_SPEC_KEYS.includes(toKey)) continue;
-            if (specs[fromKey] != null && (specs[toKey] == null || String(specs[toKey]).trim() === '')) {
-              specs[toKey] = specs[fromKey];
-              delete specs[fromKey];
-            }
-          }
-        }
-      }
-
-      // VALIDATION before save: strip junk values ("n/a", "unknown", AI
-      // commentary), coerce years/numbers into sane ranges and keep only keys
-      // that belong to the known spec superset.
-      const cleanSpecs = {};
-      for (const [k, raw] of Object.entries(specs)) {
-        if (!SCAN_KNOWN_SPEC_KEYS.includes(k) || SCAN_OWNER_ONLY_KEYS.has(k)) continue;
-        const v = Array.isArray(raw)
-          ? raw.map(x => String(x ?? '').replace(/\s+/g, ' ').trim()).filter(Boolean)
-          : String(raw ?? '').replace(/\s+/g, ' ').trim();
-        if (!v.length || (Array.isArray(v) ? v.join(' ') : v).match(_SCAN_BAD_VALUE)) continue;
-        if (/^(model_)?year/.test(k)) {
-          const n = parseInt(v, 10);
-          if (!Number.isFinite(n) || n < 1800 || n > new Date().getFullYear() + 2) continue;
-        }
-        cleanSpecs[k] = v;
-      }
-      specs = cleanSpecs;
-
-      const s = specs || {};
-      const src = p.property_id ? (scanReviewSourceProducts[p.property_id] || null) : null;
-      const existing = src ? (src.specifications && typeof src.specifications === 'object' ? { ...src, ...src.specifications } : src) : null;
-      const idLabel = [p.year || s.year, p.brand || s.brand, p.model || s.model].filter(Boolean).join(' ') || p.detected_name || 'Product';
-
-      const est = price ? Number(price.estimated_price ?? price.price ?? price.estimate) : NaN;
-      let finalPrice = (Number.isFinite(est) && est > 0) ? est : (existing ? Number(existing.price) : NaN);
-      if (!Number.isFinite(finalPrice) || finalPrice <= 0) finalPrice = GLOBAL_PRICE_MIN;
-      finalPrice = Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, finalPrice));
-
-      // FULL SPEC PAYLOAD: every validated key returned by the AI is kept â€”
-      // nothing is dropped because it was missing from a hardcoded list.
-      const TOP_LEVEL_HANDLED = new Set(['title', 'description', 'brand', 'color', 'size', 'condition', 'warranty', 'availability_status']);
-      const specPayload = {};
-      for (const [k, v] of Object.entries({ ...Object.fromEntries(SCAN_IDENTIFICATION_KEYS.filter(k => k !== 'year_estimated' && k !== 'listing_status').map(k => [k, p[k] ?? null])), ...s })) {
-        if (TOP_LEVEL_HANDLED.has(k) || SCAN_OWNER_ONLY_KEYS.has(k)) continue;
-        const val = Array.isArray(v) ? v.filter(x => x != null && String(x).trim() !== '') : v;
-        if (val == null || (typeof val === 'string' && !val.trim())) continue;
-        specPayload[k] = val;
-      }
-      const specMerged = { ...((existing && existing.specifications && typeof existing.specifications === 'object') ? existing.specifications : {}), ...specPayload };
-
-      const payload = {
-        listing_type: 'product',
-        category: cat,
-        subcategory: existing?.subcategory || s.subcategory || null,
-        title: s.title || (existing && existing.title) || idLabel,
-        description: s.description || (existing && existing.description) || '',
-        price: finalPrice,
-        currency: (existing && existing.currency) || 'USD',
-        country: (existing && existing.country) || '', country_code: (existing && existing.country_code) || '',
-        listing_status: 'sale', state: '', city: '', product_location: '', latitude: null, longitude: null,
-        is_active: true, // publish â€” any image count is fine
-        is_featured: !!(existing && existing.is_featured),
-        brand: p.brand || s.brand || (existing && existing.brand) || null,
-        color: s.color || (existing && existing.color) || null,
-        size: s.size || (existing && existing.size) || null,
-        condition: (existing && existing.condition) || null,
-        warranty: (existing && existing.warranty) || null,
-        availability_status: (existing && existing.availability_status) || 'In Stock',
-        stock_quantity: (existing && existing.stock_quantity) ? parseInt(existing.stock_quantity) : null,
-        images: images.length ? images : ((existing && existing.images) || []),
-        features: (Array.isArray(s.features) && s.features.length ? s.features : (existing && existing.features) || []),
-        tags: (Array.isArray(s.tags) && s.tags.length ? s.tags : (existing && existing.tags) || []),
-        highlights: (Array.isArray(s.highlights) && s.highlights.length ? s.highlights : (existing && existing.highlights) || []),
-        seo_keywords: (Array.isArray(s.seo_keywords) && s.seo_keywords.length ? s.seo_keywords : (existing && existing.seo_keywords) || []),
-        is_ai_generated: true,
-        ai_generated_fields: ['title', 'description', 'specifications', 'price'],
-        specifications: specMerged,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (existing && existing.property_id) {
-        // UPDATE the scanned product — never create a duplicate of it.
-        payload.property_id = existing.property_id;
-        const { error } = await safePublishShowroom(payload);
-        if (error) throw error;
-        updated++;
-      } else {
-        payload.property_id = genId();
-        const { error } = await safePublishShowroom(payload);
-        if (error) throw error;
-        savedNew++;
-      }
-    } catch (err) {
-      failed++;
-      setStatus(`<p class="text-amber-300">Could not save "${esc(p.detected_name || 'product')}": ${esc(String(err?.message || err))} â€” continuing with the restâ€¦</p>`, 'text-amber-300');
-    }
-  }
-
-  // Reset the review list to only what still needs attention (properties).
-  scanReviewProducts = scanReviewProducts.filter((_, i) => propertyIndexes.includes(i));
-  const summary = `${updated} updated, ${savedNew} new${failed ? `, ${failed} failed` : ''}`;
-  if (!scanReviewProducts.length) {
-    scanReviewSourceProducts = {};
-    scanReviewImages = [];
-    setStatus(`<div class="space-y-1">
-      <p class="font-bold text-emerald-300 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Done â€” everything saved &amp; published: ${summary}.</p>
-      <p class="text-[11px] text-gray-400">Your products are live in the showroom. Use Publish &amp; Deploy to push the site.</p>
-    </div>`, 'text-emerald-300');
-    showToast(`All done â€” ${summary} saved & published.`, 'success');
-  } else {
-    scanReviewRender();
-    const el2 = document.getElementById(scanReviewEntry);
-    if (el2) {
-      const note = document.createElement('p');
-      note.className = 'text-xs font-bold text-emerald-300';
-      note.textContent = `Saved & published: ${summary}. Property cards below still need Continue.`;
-      el2.prepend(note);
-    }
-    showToast(`Saved ${summary}.`, failed ? 'info' : 'success');
-  }
-  renderProducts();
-};
 
 // Fill the property form from a scan result (title, type, rooms, sizes,
 // location, description, features and a suggested price). Fully editable â€”
@@ -4838,7 +4670,7 @@ window.scanGeneralWithAI = async function() {
     ${topIssue ? `<p class="text-[11px] text-gray-500 mt-1">Last issue: ${esc(topIssue.reason)}${topIssue.count > 1 ? ` (×${topIssue.count})` : ''}</p>` : ''}
     <p class="text-[11px] text-gray-400 mt-1">Review each card below (cards marked PHOTO NOT READ used only saved details), then Continue to save &amp; publish.</p>
   `, failedCount || quotaHit ? 'text-amber-300' : 'text-emerald-300');
-  showToast(`Scan complete â€” ${summaryBits.join(', ')}.${quotaHit ? ' Gemini free limit hit mid-scan; the scanner will wait out short limits and retry.' : ''}${topIssue ? ` Last issue: ${topIssue.reason}.` : ''} Press "Continue with ALL" to save & publish everything at once.`, (fallbacks || failedCount) ? 'info' : 'success');
+  showToast(`Scan complete â€” ${summaryBits.join(', ')}.${quotaHit ? ' Gemini free limit hit mid-scan; the scanner will wait out short limits and retry.' : ''}${topIssue ? ` Last issue: ${topIssue.reason}.` : ''} Review each card and press Continue to save & publish.`, (fallbacks || failedCount) ? 'info' : 'success');
 };
 
 window.saveProduct = async function(e, category, existingId) {
@@ -7052,8 +6884,8 @@ Return ONE valid JSON object (no markdown) with only these keys:
 Look carefully at ALL of the photo(s) uploaded and detect EVERY distinct product shown.
 
 RULES:
-- Every DIFFERENT product must be its own entry. If one photo shows a bag, a watch, shoes and a phone, that is FOUR separate products â€” one entry per product.
-- Photos that show the SAME product from different angles / sides / details are ONE product: give them the same entry and list every image index in image_indices.
+- Every detected product must be its own entry. If one photo shows a bag, a watch, shoes and a phone, that is FOUR separate products.
+- Even when multiple photos show the SAME product, create a SEPARATE entry for each detection. Each photo that shows a product must result in its own listing. The owner reviews every single one.
 - A single photo can appear in several products' image_indices when it contains several different products.
 - If a photo contains no recognizable product, ignore that photo.
 - NEVER reject the scan. Even when a photo is blurry, dark, partial or unusual, ALWAYS give your BEST identification of the most likely product in it and set "confidence" to "low" â€” the owner reviews and edits everything afterwards. Only return { "identified": false, "reason": ... } when every single photo truly contains no object at all.
@@ -7074,8 +6906,8 @@ Return ONE valid JSON object (no markdown):
 { "identified": true, "products": [ { "image_indices": number[], "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": "Furnished"|"Unfurnished"|null, "year_built": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "detected_name": string } ] }`;
     // Multi-batch merge: every batch reports image indices relative to its own
     // pages, so each entry's indices are shifted by that batch's start index
-    // before all products are concatenated. The same product split across two
-    // batches (e.g. a long PDF) is unified by detected_name + brand + model.
+    // before all products are concatenated. No deduplication — every detection
+    // fills its own form regardless of whether it looks like a previous one.
     return this._runVisionPrompt(prompt, imageUrls, {
       maxImages: context.maxImages || 5,
       stageLabel: 'detect',
@@ -7086,17 +6918,6 @@ Return ONE valid JSON object (no markdown):
             const idx = Array.isArray(p.image_indices)
               ? [...new Set(p.image_indices.map(n => parseInt(n, 10)).filter(Number.isFinite).map(n => n + startIndex))]
               : [startIndex];
-            const dupe = products.find(q =>
-              String(q.detected_name || '').toLowerCase() === String(p.detected_name || '').toLowerCase()
-              && String(q.brand || '').toLowerCase() === String(p.brand || '').toLowerCase()
-              && String(q.model || '').toLowerCase() === String(p.model || '').toLowerCase());
-            if (dupe) {
-              dupe.image_indices = [...new Set([...(dupe.image_indices || []), ...idx])];
-              if ((p.confidence === 'high' && dupe.confidence !== 'high') || (!dupe.detected_name && p.detected_name)) {
-                dupe.confidence = p.confidence; dupe.detected_name = p.detected_name || dupe.detected_name;
-              }
-              continue;
-            }
             products.push({ ...p, image_indices: idx });
           }
         }
