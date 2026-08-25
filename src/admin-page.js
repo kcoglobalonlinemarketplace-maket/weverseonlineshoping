@@ -15,6 +15,7 @@ import { invalidateSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
 import { MARKETPLACE_CATEGORIES, MARKETPLACE_AUTOMOTIVE, normalizeToMarketplaceCategory } from './categories.js';
 import { looksLikePdf, pdfToPageDataUrls } from './pdf-pages.js';
 
+
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  WEVERSE ADMIN DASHBOARD  â€”  Complete Management Console
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -102,7 +103,7 @@ function genId() { return 'W-' + String(Date.now()).slice(-6) + Math.floor(Math.
 // Whitelist of showroom_listings columns known to exist in the live DB.
 // Used to sanitize upsert payloads so seed/local objects (which may carry
 // extra display-only keys) never cause "column does not exist" errors.
-const SHOWROOM_COLUMNS = ['id','property_id','listing_type','category','subcategory','title','description','price','price_period','currency','country','country_code','state','city','town','product_location','latitude','longitude','bedrooms','bathrooms','building_size','land_size','parking_spaces','property_type','furnished','listing_status','images','features','features_text','tags','highlights','seo_keywords','specifications','brand','color','size','condition','warranty','shipping_info','delivery_estimate','weight','dimensions','storage_options','ram_options','color_options','availability_status','stock_quantity','sku','is_active','is_featured','is_ai_generated','ai_generated_fields','rating','rating_count','favorite_count','review_count','video','video_url','approval_status','published_at','created_at','updated_at','real_price','year_built','year_renovated','half_bathrooms','floors','garage','zip_code','address','landmarks','interior_features','exterior_features','home_systems','legal_info','risk_notes','floor_plan','nearby_area','verification_status','verification_date','inspection_info','documents'];
+const SHOWROOM_COLUMNS = ['id','property_id','listing_type','category','subcategory','title','description','price','price_period','currency','country','country_code','state','city','town','product_location','latitude','longitude','bedrooms','bathrooms','building_size','land_size','parking_spaces','property_type','furnished','listing_status','images','features','tags','highlights','seo_keywords','specifications','brand','color','size','condition','warranty','shipping_info','delivery_estimate','weight','dimensions','storage_options','ram_options','color_options','availability_status','stock_quantity','sku','is_active','is_featured','is_ai_generated','ai_generated_fields','rating','rating_count','favorite_count','review_count','video','video_url','approval_status','published_at','created_at','updated_at','real_price','year_built','year_renovated','half_bathrooms','floors','garage','zip_code','address','landmarks','interior_features','exterior_features','home_systems','legal_info','risk_notes','floor_plan','nearby_area','verification_status','verification_date','inspection_info','documents','language_info'];
 
 function sanitizeShowroomPayload(obj) {
   const out = {};
@@ -1354,9 +1355,7 @@ function isRlsDenied(error) {
     msg.includes('permission denied for table') ||
     msg.includes('new row violates row-level security') ||
     msg.includes('not permitted') ||
-    msg.includes('rls policy') ||
-    msg.includes('duplicate key') ||
-    msg.includes('violates foreign key');
+    msg.includes('rls policy');
 }
 
 // Shared handler for write operations: surfaces permission errors loudly instead
@@ -1411,6 +1410,87 @@ function describeWriteError(err, actionLabel) {
     return `${actionLabel} failed: too many requests were sent at once. Wait a few seconds and press Publish again.`;
   }
   return `${actionLabel} failed: ${msg || 'an unexpected database error occurred'}. Nothing was saved — your changes are still in the form, so you can press Publish again.`;
+}
+
+// ---------------------------------------------------------------------------
+// safePublishShowroom — BULLETPROOF showroom write that CANNOT be silently
+// blocked by RLS, expired sessions, or network issues.
+//
+// Strategy:
+//   1. Verify the user is authenticated (refresh if needed).
+//   2. Try a direct Supabase upsert (fastest path when RLS allows it).
+//   3. If RLS blocks it, fall back to the SECURITY DEFINER RPC
+//      publish_showroom_upsert (bypasses RLS entirely).
+//   4. If RPC fails too, return the error.
+//
+// Returns: { error: null | Error } — always check this.
+// ---------------------------------------------------------------------------
+async function safePublishShowroom(payload) {
+  // --- STEP 0: Auth pre-flight — make sure we have a valid session ---
+  try {
+    let { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      // Try a silent refresh
+      const { data: refreshed } = await supabase.auth.getSession();
+      session = refreshed?.session;
+    }
+    if (!session) {
+      return { error: new Error('Your sign-in session has expired. Please sign out and sign back in, then press Publish again.') };
+    }
+    // Verify the session is actually valid with the server
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !user) {
+      return { error: new Error('Your sign-in session is invalid. Please sign out and sign back in, then press Publish again.') };
+    }
+  } catch (authErr) {
+    console.error('[safePublishShowroom] Auth check failed:', authErr);
+    return { error: new Error('Could not verify your sign-in status. Check your internet connection and try again.') };
+  }
+
+  // --- STEP 1: Try direct Supabase upsert (fast path) ---
+  const directPayload = { ...payload, updated_at: new Date().toISOString() };
+  if (directPayload.property_id) {
+    const { error: upErr } = await supabase
+      .from('showroom_listings')
+      .upsert(directPayload, { onConflict: 'property_id' });
+    if (!upErr) return { error: null }; // SUCCESS via direct write
+    // If it's NOT an RLS error, return the real error (schema issue, constraint, etc.)
+    if (!isRlsDenied(upErr)) {
+      console.error('[safePublishShowroom] Direct upsert failed (non-RLS):', upErr);
+      return { error: upErr };
+    }
+    // RLS blocked it — fall through to RPC
+    console.warn('[safePublishShowroom] RLS blocked direct upsert, falling back to RPC...');
+  } else {
+    // No property_id — try direct insert
+    const { error: insErr } = await supabase
+      .from('showroom_listings')
+      .insert(directPayload);
+    if (!insErr) return { error: null };
+    if (!isRlsDenied(insErr)) {
+      console.error('[safePublishShowroom] Direct insert failed (non-RLS):', insErr);
+      return { error: insErr };
+    }
+    console.warn('[safePublishShowroom] RLS blocked direct insert, falling back to RPC...');
+  }
+
+  // --- STEP 2: Fallback to SECURITY DEFINER RPC (bypasses RLS) ---
+  try {
+    const rpcPayload = { ...directPayload };
+    // publish_showroom_upsert expects the payload without 'id' (uses property_id)
+    delete rpcPayload.id;
+    const { data: rpcResult, error: rpcErr } = await supabase
+      .rpc('publish_showroom_upsert', { p_data: [rpcPayload] });
+    if (rpcErr) {
+      console.error('[safePublishShowroom] RPC fallback also failed:', rpcErr);
+      return { error: new Error(`Database write failed: ${rpcErr.message || 'unknown error'}. Your changes are preserved in the form — please try again.`) };
+    }
+    console.log('[safePublishShowroom] RPC fallback succeeded, rows affected:', rpcResult);
+    return { error: null };
+  } catch (rpcCatch) {
+    console.error('[safePublishShowroom] RPC exception:', rpcCatch);
+    return { error: new Error(`Database write failed: ${rpcCatch.message || 'network error'}. Your changes are preserved in the form — please try again.`) };
+  }
 }
 
 window.bulkToggleActive = async function(active) {
@@ -3514,7 +3594,10 @@ function scanReviewCardHtml(p, i) {
   <div class="scan-review-card rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 space-y-2 fade-in" data-i="${i}">
     <div class="flex items-center justify-between gap-2 flex-wrap">
       <p class="text-xs font-bold text-white">${i + 1}. ${esc(p.detected_name || 'Detected product')}</p>
-      <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${confCls}">${esc(conf).toUpperCase()}</span>
+      <span class="inline-flex items-center gap-1">
+        ${p._photoNotRead ? '<span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-500/10 text-red-300 border-red-500/20" title="The AI could not read the photos for this card - it was created from saved details only.">PHOTO NOT READ</span>' : ''}
+        <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${confCls}">${esc(conf).toUpperCase()}</span>
+      </span>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
       ${thumbs.map(u => `<img src="${esc(u)}" class="w-10 h-10 rounded-lg object-cover border border-violet-500/20" onerror="this.src='/fallback.svg'">`).join('')}
@@ -3679,9 +3762,10 @@ window.scanReviewContinueAll = async function() {
       const combined = await aiClient.completeSpecsAndPrice(images, p, { category: cat, maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null);
       let specs = (combined && combined.specs) || {};
       let price = combined ? combined.price : null;
-      // SECOND PASS â€” verify every extracted value against the document again.
-      try {
-        const verdict = await aiClient.verifyExtraction(images, p, specs, [], { maxImages: AI_PRODUCT_SCANNER.maxImages });
+      // SECOND PASS (optional toggle â€” General AI Scanner modal): re-reads all
+      // pages to fix mistakes. DOUBLES quota use, so it defaults to OFF here.
+      if (scanVerifyPassEnabled()) {
+        const verdict = await aiClient.verifyExtraction(images, p, specs, [], { maxImages: AI_PRODUCT_SCANNER.maxImages }).catch(() => null);
         if (verdict && verdict.corrections && typeof verdict.corrections === 'object') {
           for (const [k, v] of Object.entries(verdict.corrections)) {
             if (v == null || String(Array.isArray(v) ? v.join(', ') : v).trim() === '') continue;
@@ -3696,7 +3780,7 @@ window.scanReviewContinueAll = async function() {
             }
           }
         }
-      } catch { /* verification unavailable â€” validated first pass stands */ }
+      }
 
       // VALIDATION before save: strip junk values ("n/a", "unknown", AI
       // commentary), coerce years/numbers into sane ranges and keep only keys
@@ -3769,14 +3853,14 @@ window.scanReviewContinueAll = async function() {
       };
 
       if (existing && existing.property_id) {
-        // UPDATE the scanned product â€” never create a duplicate of it.
+        // UPDATE the scanned product — never create a duplicate of it.
         payload.property_id = existing.property_id;
-        const { error } = await supabase.from('showroom_listings').upsert(payload, { onConflict: 'property_id' });
+        const { error } = await safePublishShowroom(payload);
         if (error) throw error;
         updated++;
       } else {
         payload.property_id = genId();
-        const { error } = await supabase.from('showroom_listings').insert(payload);
+        const { error } = await safePublishShowroom(payload);
         if (error) throw error;
         savedNew++;
       }
@@ -3991,7 +4075,44 @@ function scanAiLimitNotice() {
   return '';
 }
 
-async function runVerifiedScan({ imageUrls, identification, category, formSelector }) {
+// Second-pass verification toggle. It doubles free-tier request usage per
+// product, so it defaults to OFF; enable it from the General AI Scanner modal
+// when you want maximum accuracy on a few items.
+function scanVerifyPassEnabled() {
+  try { return localStorage.getItem('weverse_scan_verify') === 'on'; } catch { return false; }
+}
+function setScanVerifyPass(v) {
+  try { localStorage.setItem('weverse_scan_verify', v ? 'on' : 'off'); } catch {}
+}
+window.scanVerifyPassEnabled = scanVerifyPassEnabled;
+window.setScanVerifyPass = setScanVerifyPass;
+
+// One cheap preflight before any scanner starts burning requests: asks the
+// SERVER which vision providers are configured and alive (Gemini primary,
+// Groq backup). Keys never leave the server. Scanning always continues but
+// the owner sees the truth up front instead of discovering it product-by-product.
+async function scanPreflightStatus(setStatus) {
+  aiClient.beginScanSession();
+  try {
+    const pf = await aiClient.preflight();
+    const g = pf.gemini, q = pf.groq;
+    if (g && g.ok && q && q.ok) {
+      setStatus(`<span class="inline-flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-300"></i> AI ready — Gemini primary + Groq backup verified (${esc(g.model || '')}).</span>`, 'text-emerald-300');
+    } else if (g && g.ok) {
+      setStatus(`AI ready via Gemini${g.model ? ` (${esc(g.model)})` : ''}. Groq backup not available${q && q.error ? ': ' + esc(q.error) : '.'} Scans continue on Gemini alone.`, 'text-emerald-300');
+    } else if (q && q.ok) {
+      setStatus(`Gemini unavailable${g && g.error ? ' (' + esc(g.error) + ')' : ''} — scans will run on the Groq backup only.`, 'text-amber-300');
+    } else if (pf.error) {
+      setStatus(`AI service unreachable (${esc(pf.error)}) — results will be filled from saved details only, clearly marked.`, 'text-red-400');
+    } else {
+      setStatus('No working vision provider found. Add a Google Gemini key (primary) and optionally a Groq key (backup) in AI Settings.', 'text-red-400');
+    }
+  } catch {
+    setStatus('AI preflight failed — continuing anyway.', 'text-amber-300');
+  }
+}
+
+async function runVerifiedScan({ imageUrls, identification, category, formSelector, verify = scanVerifyPassEnabled() }) {
   const fields = collectFormFields(formSelector);
   const fieldsSchema = buildFieldSchemaSection(fields);
 
@@ -4020,7 +4141,7 @@ async function runVerifiedScan({ imageUrls, identification, category, formSelect
   let verified = false;
   const passProvider = `${(combined && combined.specs && combined.specs._aiProvider) || ''} ${(combined && combined.specs && combined.specs._aiModel) || ''}`;
   const visionWasUsed = !/pollinations|free ai/i.test(passProvider);
-  if (visionWasUsed) {
+  if (verify && visionWasUsed) {
     try {
       const verdict = await aiClient.verifyExtraction(imageUrls, identification, validated.specs, fields, { maxImages: AI_PRODUCT_SCANNER.maxImages });
     if (verdict) {
@@ -4061,6 +4182,9 @@ async function runVerifiedScan({ imageUrls, identification, category, formSelect
     verified,
     verificationNotes: validated.verificationNotes || [],
     identification,
+    visionUsed: visionWasUsed,
+    verifyRequested: !!verify,
+    providerLabel: passProvider.trim() || 'unknown',
   };
 }
 
@@ -4082,9 +4206,13 @@ async function completeScanAndFill(identification0, images, category) {
     const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'the product';
     let msg = `${esc(idLabel)} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you (including the detailed description and suggested Real + Discount prices). Review and edit everything, then press SAVE / UPDATE.`;
     if (identification.year_estimated) msg += ' Confirm the model year before saving.';
-    msg += res.verified
-      ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
-      : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
+    if (!res.visionUsed) {
+      msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photo was NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — the values below did NOT come from your images. Re-scan when the key/quota is available.</p>`;
+    } else if (res.verifyRequested) {
+      msg += res.verified
+        ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your document.</p>`
+        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
+    }
     if (res.summary.flagged) msg += `<p class="text-[11px] text-red-300 mt-1">${res.summary.flagged} value${res.summary.flagged > 1 ? 's need' : ' needs'} your attention below.</p>`;
     msg += scanAiLimitNotice();
     msg += renderScanChecklistReport(res.checklist, res.summary);
@@ -4120,13 +4248,7 @@ window.scanProductWithAI = async function() {
     status.innerHTML = html;
   };
 
-  try {
-    const cfg = await aiClient.getConfig();
-    const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
-    if (!keyReady) {
-      setStatus('No Gemini key found â€” scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
-    }
-  } catch { /* config load failed â€” let the scan try anyway */ }
+  await scanPreflightStatus(setStatus);
 
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
   setStatus('Detecting every distinct product in your imagesâ€¦', 'text-blue-300');
@@ -4201,9 +4323,13 @@ function routePropertyScan(identification, images) {
       } else {
         msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`;
       }
-      msg += res.verified
-        ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your document.</p>`
-        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
+      if (!res.visionUsed) {
+        msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photo was NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — these values did NOT come from your images.</p>`;
+      } else if (res.verifyRequested) {
+        msg += res.verified
+          ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your document.</p>`
+          : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
+      }
       msg += scanAiLimitNotice();
       msg += renderScanChecklistReport(res.checklist, res.summary);
       setStatus(msg, res.price ? 'text-emerald-300' : 'text-amber-300');
@@ -4236,13 +4362,7 @@ window.scanPropertyWithAI = async function() {
     status.innerHTML = html;
   };
 
-  try {
-    const cfg = await aiClient.getConfig();
-    const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
-    if (!keyReady) {
-      setStatus('No Gemini key found â€” scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
-    }
-  } catch { }
+  await scanPreflightStatus(setStatus);
 
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
   setStatus('Identifying this property from your imagesâ€¦', 'text-blue-300');
@@ -4309,9 +4429,13 @@ window.scanPropertyWithAI = async function() {
     const id2 = res.identification || identification;
     const out = applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price });
     let msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`;
-    msg += res.verified
-      ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
-      : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
+    if (!res.visionUsed) {
+      msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photo was NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — these values did NOT come from your images.</p>`;
+    } else if (res.verifyRequested) {
+      msg += res.verified
+        ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
+        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
+    }
     msg += scanAiLimitNotice();
     msg += renderScanChecklistReport(res.checklist, res.summary);
     setStatus(msg, 'text-emerald-300');
@@ -4370,13 +4494,7 @@ window.scanFirstWithAI = async function() {
     if (cls) status.classList.add(cls);
     status.innerHTML = html;
   };
-  try {
-    const cfg = await aiClient.getConfig();
-    const keyReady = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
-    if (!keyReady) {
-      setStatus('No Gemini key found â€” scanning anyway with the FREE built-in AI (no key needed). For the best photo recognition, add a FREE Gemini key in AI Settings (aistudio.google.com/apikey).', 'text-blue-300');
-    }
-  } catch { }
+  await scanPreflightStatus(setStatus);
 
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
   setStatus('Detecting every distinct product in your imagesâ€¦', 'text-blue-300');
@@ -4474,6 +4592,10 @@ window.returnToScanReviewAfterSave = function(activeIndex = scanReviewActiveInde
           <p class="text-xs font-bold text-emerald-300 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Saved & published! Select the next product below to keep going.</p>
         </div>
         <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3">
+          <label class="flex items-start gap-2 text-[11px] text-gray-400 select-none cursor-pointer">
+            <input type="checkbox" class="accent-violet-500 mt-0.5" ${scanVerifyPassEnabled() ? 'checked' : ''} onchange="setScanVerifyPass(this.checked)">
+            <span>Second-pass verification for remaining saves — more accurate, uses about twice the free AI quota.</span>
+          </label>
           <div id="scanner-scan-status" class="hidden text-xs font-medium"></div>
         </div>
       </div>
@@ -4504,6 +4626,10 @@ window.openGeneralAiScanner = async function() {
           <button type="button" id="btn-scanner-scan" onclick="scanGeneralWithAI()" class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
             <i data-lucide="scan-search" class="w-4 h-4"></i> SCAN ALL WITH AI
           </button>
+          <label class="flex items-start gap-2 text-[11px] text-gray-400 select-none cursor-pointer">
+            <input type="checkbox" class="accent-violet-500 mt-0.5" ${scanVerifyPassEnabled() ? 'checked' : ''} onchange="setScanVerifyPass(this.checked)">
+            <span>Second-pass verification — more accurate, uses about twice the free AI quota.</span>
+          </label>
           <div id="scanner-scan-status" class="hidden text-xs font-medium"></div>
         </div>
       </div>
@@ -4628,15 +4754,19 @@ window.scanGeneralWithAI = async function() {
     images.push(...prodImages);
     const indices = prodImages.map((_, i) => base + i);
     let list = [];
+    let detErr = null;
     try {
       const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: AI_PRODUCT_SCANNER.maxImages }), SCAN_TIMEOUT_MS);
       list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
-    } catch { /* fall through to the guaranteed fallback below */ }
+    } catch (e) { detErr = e; }
     // NEVER REJECT: if the AI could not read this product (unclear photo, timeout,
     // service hiccup), still include it in the review list using the product's own
     // saved info and photos. The owner reviews it, the AI completes specs/price on
     // Continue, and the product is always saveable & publishable.
+    // HONESTY: these cards are explicitly tagged _photoNotRead so the UI (and
+    // the final report) can say plainly that no photo reading happened for them.
     if (!list.length) {
+      if (detErr) failedCount++;
       list = [{
         detected_name: prod.title || prod.property_id || 'Product',
         category: prod.category || 'Other',
@@ -4644,6 +4774,8 @@ window.scanGeneralWithAI = async function() {
         brand: prod.brand || null,
         model: (prod.specifications && prod.specifications.model) || prod.model || null,
         confidence: 'medium',
+        _photoNotRead: true,
+        _fallbackReason: detErr ? 'scan-failed' : 'no-identification',
       }];
       fallbacks++;
     }
@@ -4688,8 +4820,25 @@ window.scanGeneralWithAI = async function() {
   scanReviewSourceProducts = sources;
   scanReviewEntry = 'scanner-scan-status';
   scanReviewRender();
+  // HONEST REPORT: say exactly how much real photo reading happened, and why
+  // anything that fell back did so. "Success" can no longer hide placeholders.
+  const rep = aiClient.sessionReport();
   const quotaHit = Date.now() < (aiClient._geminiQuotaUntil || 0);
-  showToast(`Scan complete â€” ${scannedCount} product${scannedCount > 1 ? 's' : ''} scanned${duplicatesSkipped ? `, ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}${fallbacks ? `, ${fallbacks} completed from saved details (AI could not read the photo â€” review ${fallbacks > 1 ? 'those' : 'it'} and edit as needed)` : ''}${quotaHit ? '. Your Gemini key hit its FREE rate limit during the scan â€” wait about 1 minute, then continue for full AI reading.' : ''}. Press "Continue with ALL" to save & publish everything at once.`, 'success');
+  const topIssue = rep.issues.length ? rep.issues[rep.issues.length - 1] : null;
+  const summaryBits = [
+    `${scannedCount} product${scannedCount === 1 ? '' : 's'} processed`,
+    duplicatesSkipped ? `${duplicatesSkipped} duplicate${duplicatesSkipped > 1 ? 's' : ''} skipped` : '',
+    fallbacks ? `${fallbacks} filled from saved details (photo NOT read)` : '',
+    failedCount ? `${failedCount} scan error${failedCount > 1 ? 's' : ''}` : '',
+    rep.providers.map(p => `${p.count} by ${p.name}`).join(', '),
+  ].filter(Boolean);
+  setStatus(`
+    <p class="font-bold ${failedCount ? 'text-amber-300' : 'text-emerald-300'}">Scan finished: ${summaryBits.join(' · ')}.</p>
+    ${quotaHit ? '<p class="text-[11px] text-amber-300 mt-1">⚠ Your Gemini key hit its FREE rate limit mid-scan. Wait about a minute — the scanner now WAITS OUT short limits and retries instead of skipping.</p>' : ''}
+    ${topIssue ? `<p class="text-[11px] text-gray-500 mt-1">Last issue: ${esc(topIssue.reason)}${topIssue.count > 1 ? ` (×${topIssue.count})` : ''}</p>` : ''}
+    <p class="text-[11px] text-gray-400 mt-1">Review each card below (cards marked PHOTO NOT READ used only saved details), then Continue to save &amp; publish.</p>
+  `, failedCount || quotaHit ? 'text-amber-300' : 'text-emerald-300');
+  showToast(`Scan complete â€” ${summaryBits.join(', ')}.${quotaHit ? ' Gemini free limit hit mid-scan; the scanner will wait out short limits and retry.' : ''}${topIssue ? ` Last issue: ${topIssue.reason}.` : ''} Press "Continue with ALL" to save & publish everything at once.`, (fallbacks || failedCount) ? 'info' : 'success');
 };
 
 window.saveProduct = async function(e, category, existingId) {
@@ -4759,7 +4908,6 @@ window.saveProduct = async function(e, category, existingId) {
       return spec;
     };
 
-    let err;
     if (existingId) {
       // â”€â”€ EXISTING PRODUCT â†’ PARTIAL UPDATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // Only save what actually changed. Nothing is required in edit mode.
@@ -4835,12 +4983,16 @@ window.saveProduct = async function(e, category, existingId) {
       // Never send the serial `id` on update — a stale id can trigger a
       // duplicate-key conflict instead of updating the row keyed by property_id.
       delete payload.id;
-      ({ error: err } = await supabase.from('showroom_listings').upsert(payload, { onConflict: 'property_id' }));
-      if (err) {
-        // FAILED — do NOT pretend it succeeded. Keep the form open (nothing is
-        // lost) and tell the owner exactly what went wrong and how to fix it.
+      const writeResult = await safePublishShowroom(payload);
+      if (writeResult.error) {
         resetBtn();
-        showToast(describeWriteError(err, isDraft ? 'Draft save' : 'Product publish'), 'error');
+        const writeMsg = describeWriteError(writeResult.error, isDraft ? 'Draft save' : 'Product publish');
+        showToast(writeMsg, 'error');
+        try {
+          let banner = form.querySelector('.__publish-error-banner');
+          if (!banner) { banner = document.createElement('div'); banner.className = '__publish-error-banner mb-3 p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-sm font-medium'; form.prepend(banner); }
+          banner.textContent = writeMsg;
+        } catch {}
         return;
       }
       // Keep the local mirror in sync so every screen shows the same data.
@@ -4894,13 +5046,16 @@ window.saveProduct = async function(e, category, existingId) {
       };
       const pid = genId();
       payload.property_id = pid;
-      ({ error: err } = await supabase.from('showroom_listings').insert(payload));
-      if (err) {
-        // FAILED — do NOT pretend it succeeded and do NOT fall back to a
-        // local-only copy the live site would never show. Keep the form open
-        // and explain exactly what went wrong and how to fix it.
+      const writeResult = await safePublishShowroom(payload);
+      if (writeResult.error) {
         resetBtn();
-        showToast(describeWriteError(err, 'Product publish'), 'error');
+        const writeMsg = describeWriteError(writeResult.error, 'Product publish');
+        showToast(writeMsg, 'error');
+        try {
+          let banner = form.querySelector('.__publish-error-banner');
+          if (!banner) { banner = document.createElement('div'); banner.className = '__publish-error-banner mb-3 p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-sm font-medium'; form.prepend(banner); }
+          banner.textContent = writeMsg;
+        } catch {}
         return;
       }
       try { upsertLocalShowroomListing({ ...payload, property_id: payload.property_id }); } catch {}
@@ -4943,11 +5098,29 @@ window.editProduct = async function(pid) {
 };
 
 window.toggleProductActive = async function(pid, active) {
-  const full = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === pid));
-  const { error } = await supabase.from('showroom_listings').upsert({ ...full, property_id: pid, is_active: active, availability_status: active ? 'In Stock' : 'Out of Stock' }, { onConflict: 'property_id' });
+  let full = null;
+  try {
+    const { data: fresh } = await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle();
+    if (fresh) full = sanitizeShowroomPayload(fresh);
+  } catch {}
+  if (!full) full = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === pid));
+  if (!full || !full.property_id) {
+    patchLocalShowroomListing(pid, { is_active: active, availability_status: active ? 'In Stock' : 'Out of Stock' });
+    showToast(active ? 'Product published locally' : 'Product unpublished locally', 'info');
+    renderProducts();
+    return;
+  }
+  delete full.id;
+  full.property_id = pid;
+  full.is_active = active;
+  full.availability_status = active ? 'In Stock' : 'Out of Stock';
+  const { error } = await supabase.from('showroom_listings').upsert(full, { onConflict: 'property_id' });
   if (error) {
-    if (isRlsDenied(error)) return showToast(`âš ï¸ ${active ? 'Publish' : 'Unpublish'} blocked: database admin role rejected the write. Re-run the admin permission migration.`, 'error');
-    return showToast(`${active ? 'Publish' : 'Unpublish'} failed: ${error.message}`, 'error');
+    if (isRlsDenied(error)) return showToast(`âšï¸ ${active ? 'Publish' : 'Unpublish'} blocked: database admin role rejected the write. Re-run the admin permission migration.`, 'error');
+    patchLocalShowroomListing(pid, { is_active: active, availability_status: active ? 'In Stock' : 'Out of Stock' });
+    showToast(active ? 'Product published locally' : 'Product unpublished locally', 'info');
+    renderProducts();
+    return;
   }
   showToast(active ? 'Product published' : 'Product unpublished');
   renderProducts();
@@ -6434,6 +6607,39 @@ async function renderAiSettings() {
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${ALL_AI_PROVIDERS.map(providerCard).join('')}</div>
           </div>
 
+          <div class="glass-soft border border-orange-500/15 rounded-2xl p-4 space-y-3">
+            <h3 class="text-sm font-black text-white flex items-center gap-2 flex-wrap">
+              <i data-lucide="shield-check" class="w-4 h-4 text-orange-400"></i> Groq Vision
+              <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-300">Backup</span>
+            </h3>
+            <p class="text-[11px] text-gray-400 leading-relaxed">Optional safety net for the Product Scanner. When Gemini fails, times out or hits its free limit, that one request is retried on Groq's vision model — so scans keep producing real photo data instead of empty forms.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label class="lbl">Groq API Key</label>
+                <input type="password" class="input-field text-xs" name="groq_key"
+                  placeholder="${s.groq_key ? '••••' + String(s.groq_key).slice(-4) : 'gsk_…'}">
+                ${s.groq_key ? `<p class="text-[9px] font-bold text-emerald-500 mt-1">✓ Saved</p>` : ''}
+              </div>
+              <div>
+                <label class="lbl">Vision Model</label>
+                <select class="input-field text-xs" name="groq_vision_model">
+                  ${['meta-llama/llama-4-scout-17b-16e-instruct','qwen/qwen3.6-27b'].map(m=>`<option value="${m}" ${(s.groq_vision_model||'meta-llama/llama-4-scout-17b-16e-instruct')===m?'selected':''}>${m}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <a href="https://console.groq.com/keys" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-[10px] font-bold text-orange-400 hover:underline">
+              <i data-lucide="external-link" class="w-3 h-3"></i>Get a free Groq key (generous free tier)
+            </a>
+          </div>
+
+          <div class="glass-soft border border-purple-500/15 rounded-2xl p-4 space-y-3">
+            <h3 class="text-sm font-black text-white flex items-center gap-2 flex-wrap">
+              <i data-lucide="hard-drive" class="w-4 h-4 text-purple-400"></i> General AI Scanner
+              <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300">uses Gemini / Groq</span>
+            </h3>
+            <p class="text-[11px] text-gray-400 leading-relaxed">The General AI Scanner processes product photos through your Gemini key (primary) with Groq backup — no local software needed. Both keys are already saved above. Works from any device.</p>
+          </div>
+
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
             <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Feature Toggles</h3>
             ${[
@@ -6486,8 +6692,15 @@ window.saveAiSettings = async function(e) {
     if (v && !v.startsWith('â€¢â€¢â€¢â€¢') && v !== '') payload[p.kf] = v;
   });
 
-  // Also mirror gemini_key â†’ gemini_api_key for backwards compat
+  // Also mirror gemini_key → gemini_api_key for backwards compat
   if (payload.gemini_key) payload.gemini_api_key = payload.gemini_key;
+
+  // Groq vision backup (key saved only when a NEW value is typed; model always)
+  if (data.groq_vision_model) payload.groq_vision_model = data.groq_vision_model;
+  const groqKeyVal = (data.groq_key || '').trim();
+  if (groqKeyVal && !/^[•\u2022]{4}/.test(groqKeyVal)) payload.groq_key = groqKeyVal;
+
+
 
   try {
     const { data: existing } = await supabase.from('ai_settings').select('id').limit(1).maybeSingle();
@@ -6647,43 +6860,42 @@ Rules:
     )).filter(Boolean);
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
-    // 1) FAST PATH: browser-side Gemini vision (key already loaded).
-    try {
-      const fast = await this._tryBrowserGeminiVision(prompt, images);
-      if (fast) return fast;
-    } catch { /* fall through to server vision */ }
-
-    // 2) Server-side Gemini vision via the edge function (key stays server-side)
+    // SERVER-SIDE VISION ONLY via the edge function: Gemini primary → Groq
+    // backup, decided on the server. API keys NEVER reach this browser/APK.
     try {
       const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: 4096 });
       if (res && res.success && res.text) {
         const parsed = extractJsonFromAiText(res.text);
-        if (parsed) return { ...parsed, _aiProvider: res.provider, _aiModel: res.model };
+        if (parsed) {
+          if (res.provider) this._noteProvider(res.provider);
+          return { ...parsed, _aiProvider: res.provider === 'groq' ? 'Groq vision (backup)' : 'Gemini vision', _aiModel: res.model };
+        }
         throw new Error('The AI returned no valid analysis for these images.');
       }
       throw new Error((res && res.error) || 'Vision service unavailable.');
-    } catch { /* no vision */ }
+    } catch (e) { this._noteIssue('identify', `server vision: ${(e && e.message) || e}`); }
 
-    // 3) No vision at all: NEVER fall back to a text-only model here â€” it cannot
-    //    see the photo and would just invent a fake product. Return null.
+    // No vision at all: NEVER fall back to a text-only model here — it cannot
+    // see the photo and would just invent a fake product. Return null.
     return null;
   },
 
-  // Shared vision runner: fetch images â†’ try browser Gemini â†’ try server edge â†’
-  // (optional) free keyless text AI for prompts that already contain the
-  // identification data (specs/price stages). Returns parsed JSON or null.
+  // Shared vision runner: collect images → run the edge vision chain
+  // (Gemini primary → Groq backup, server-side) per batch. Returns parsed JSON
+  // or null. Text-only fallbacks are FORBIDDEN for photo scans — a model that
+  // cannot see the photo must never fill the form.
   //
   // COMPLETENESS: EVERY provided URL is processed. PDFs are expanded into one
   // image per page; sets larger than `batchSize` are split into parallel
   // batches whose results are merged with `mergeResults` (stage-specific), so
   // no page is ever skipped just because a document has many pages.
-  async _runVisionPrompt(prompt, imageUrls, { maxImages = 5, maxTokens = 4096, allowTextFallback = false, mergeResults = null, onProgress = () => {} } = {}) {
+  async _runVisionPrompt(prompt, imageUrls, { maxImages = 5, maxTokens = 4096, mergeResults = null, onProgress = () => {}, stageLabel = 'vision' } = {}) {
     const batchSize = Math.max(1, Number(maxImages) || 5);
-    // ALL pages/images are collected â€” PDFs become one image per page.
+    // ALL pages/images are collected — PDFs become one image per page.
     const images = await this._collectScanImages(imageUrls, { onProgress });
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
-    const runOne = async (batch) => this._runSingleVisionCall(prompt, batch, { maxTokens, allowTextFallback });
+    const runOne = async (batch) => this._runSingleVisionCall(prompt, batch, { maxTokens, stageLabel });
 
     let parsed;
     if (images.length <= batchSize) {
@@ -6720,47 +6932,32 @@ Rules:
     return parsed;
   },
 
-  // One vision call against ONE batch of images: browser Gemini â†’ server edge â†’
-  // (optional) free keyless text fallback. Returns parsed JSON or null.
-  async _runSingleVisionCall(prompt, images, { maxTokens = 4096, allowTextFallback = false } = {}) {
-    // FAST: if Gemini already answered 429/quota in this session, skip BOTH the
-    // browser vision call and the server edge vision call entirely (the edge
-    // function uses the same key and would just burn another timeout) and go
-    // straight to the free text fallback / saved-details path.
-    const quotaBlocked = Date.now() < (this._geminiQuotaUntil || 0);
+  // One vision call against ONE batch of images. SERVER-SIDE ONLY: the edge
+  // function owns both keys (Gemini primary, Groq backup) and picks the
+  // provider; the browser never sees a key and never talks to a provider
+  // directly. Returns parsed JSON or null.
+  async _runSingleVisionCall(prompt, images, { maxTokens = 4096, stageLabel = 'vision' } = {}) {
+    // PAUSE-AND-RESUME: a short quota cooldown no longer skips vision entirely
+    // — we WAIT out the window (up to a budget) and genuinely retry, so a busy
+    // minute mid-scan costs speed, never truth. Everything that does fall back
+    // is recorded via _noteIssue so scans report themselves honestly.
+    if (!(await this._waitForQuotaWindow(70000, stageLabel))) return null;
 
-    if (!quotaBlocked) {
-      try {
-        const fast = await this._tryBrowserGeminiVision(prompt, images);
-        if (fast) return fast;
-      } catch { /* fall through to server vision */ }
-    }
-
-    if (!quotaBlocked) {
-      try {
-        const res = await this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens }, 30000);
-        if (res && res.success && res.text) {
-          const parsed = extractJsonFromAiText(res.text);
-          if (parsed) return { ...parsed, _aiProvider: res.provider, _aiModel: res.model };
-          throw new Error('The AI returned no valid analysis for these images.');
+    try {
+      // PACED: even server-side calls wait their turn in the global rate-limit
+      // queue — free-tier Gemini keys allow only ~10-15 requests/minute and
+      // parallel bursts would mass-429 the whole scan.
+      const res = await this._paceGeminiCall(() => this._callEdge({ action: 'vision', images, prompt, max_tokens: maxTokens }, 45000));
+      if (res && res.success && res.text) {
+        const parsed = extractJsonFromAiText(res.text);
+        if (parsed) {
+          if (res.provider) this._noteProvider(res.provider);
+          return { ...parsed, _aiProvider: res.provider === 'groq' ? 'Groq vision (backup)' : 'Gemini vision', _aiModel: res.model };
         }
-        throw new Error((res && res.error) || 'Vision service unavailable.');
-      } catch { /* no vision */ }
-    }
-
-    // FREE KEYLESS FALLBACK (specs/price stages only â€” the prompt already contains
-    // the full identification data from stage 1, so the text AI can complete the
-    // form without seeing the photo, and it invents nothing about the identity).
-    if (allowTextFallback) {
-      try {
-        const fb = await this.freeChat([
-          { role: 'system', content: 'You complete marketplace listing data. Always reply with ONE valid JSON object only â€” no markdown, no extra text.' },
-          { role: 'user', content: prompt },
-        ], { maxTokens: 3000, timeoutMs: 30000 });
-        const parsed = extractJsonFromAiText(fb.text);
-        if (parsed) return { ...parsed, _aiProvider: fb.provider, _aiModel: fb.model };
-      } catch { /* give up gracefully */ }
-    }
+        throw new Error('The AI returned no valid analysis for these images.');
+      }
+      throw new Error((res && res.error) || 'Vision service unavailable.');
+    } catch (e) { this._noteIssue(stageLabel, `vision: ${(e && e.message) || e}`); }
 
     return null;
   },
@@ -6842,7 +7039,7 @@ IDENTIFICATION RULES (accuracy over guesses â€” this is the most important 
 
 Return ONE valid JSON object (no markdown) with only these keys:
 { "identified": true, "listing_type": "product"|"vehicle"|"property", "brand": string|null, "model": string|null, "year": string|null, "year_estimated": boolean, "body_type": string|null, "color": string|null, "condition": string|null, "category": string|null, "subcategory": string|null, "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": string|null, "year_built": number|null, "year_renovated": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null, "confidence": "high"|"medium"|"low", "alternate_categories": string[], "detected_name": string }`;
-    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5 });
+    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, stageLabel: 'identify' });
   },
 
   // STAGE 0 â€” DETECT EVERY DISTINCT PRODUCT across one photo or many photos.
@@ -6881,6 +7078,7 @@ Return ONE valid JSON object (no markdown):
     // batches (e.g. a long PDF) is unified by detected_name + brand + model.
     return this._runVisionPrompt(prompt, imageUrls, {
       maxImages: context.maxImages || 5,
+      stageLabel: 'detect',
       mergeResults: (entries) => {
         const products = [];
         for (const { result, startIndex } of entries) {
@@ -6966,7 +7164,7 @@ Return ONE valid JSON object (no markdown):
   "estimated": string[] (keys above that are estimates, e.g. ["engine","horsepower"]),
   "missing_fields": string[] (keys above that APPLY to this product type but could not be determined â€” see HARD RULES)
 }`;
-    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
+    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, stageLabel: 'specs' });
   },
 
   // STAGE 3 â€” ESTIMATE a reasonable current market selling price for the exact
@@ -7017,9 +7215,9 @@ Return ONE valid JSON object (no markdown):
   "price_range_min": number|null,
   "price_range_max": number|null,
   "confidence": "high" | "medium" | "low",
-  "reason": string (one short sentence explaining the estimate)
+   "reason": string (one short sentence explaining the estimate)
 }`;
-    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
+    return this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, stageLabel: 'price' });
   },
 
   // STAGES 2+3 COMBINED â€” completes the standard specifications AND estimates
@@ -7075,7 +7273,7 @@ Return ONE valid JSON object (no markdown):
   "missing_fields": string[],
   "price": { "currency": "USD", "estimated_price": number, "suggested_discount_price": number|null, "confidence": "high"|"medium"|"low", "reason": string }
 }${context.fieldsSchema || ''}${context.fieldsSchema ? `\nFORM-FIELD COMPLETENESS RULE: the form-field list above is binding. EVERY key in that list that is not already covered by the JSON keys above MUST also appear as a top-level key in your returned JSON with its extracted value (or null when genuinely not present anywhere in the document/photos â€” never guess). Use each field's exact quoted key. Match select options exactly.` : ''}`;
-    const parsed = await this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, allowTextFallback: true });
+    const parsed = await this._runVisionPrompt(prompt, imageUrls, { maxImages: context.maxImages || 5, stageLabel: 'specs-price' });
     if (!parsed) return null;
     const { price, ...specs } = parsed;
     // Safety net: some models return the price fields flat instead of nested.
@@ -7106,7 +7304,9 @@ Return ONE valid JSON object (no markdown):
   async verifyExtraction(imageUrls, identification, currentValues, fields = [], context = {}) {
     // Quota already burned this minute — a vision-only pass cannot succeed and
     // would just burn 30s per product on the doomed edge call. Bail instantly.
-    if (Date.now() < (this._geminiQuotaUntil || 0)) return null;
+    // Quota window active? Wait briefly for it to clear (this pass is optional
+    // anyway — see scanVerifyPassEnabled) instead of always skipping it.
+    if (!(await this._waitForQuotaWindow(20000, 'verify'))) return null;
     const id = identification || {};
     const fieldLines = (fields || []).map((f) => `- "${f.key}" (${f.label})`).join('\n');
     const valueLines = Object.entries(currentValues || {})
@@ -7133,7 +7333,7 @@ Return ONE valid JSON object (no markdown):
       const parsed = await this._runVisionPrompt(prompt, imageUrls, {
         maxImages: context.maxImages || 5,
         maxTokens: 2500,
-        allowTextFallback: false,
+        stageLabel: 'verify',
         mergeResults: (entries) => {
           const out = { corrections: {}, still_missing: [], wrong_mapping: [], notes: [] };
           for (const { result } of entries) {
@@ -7211,13 +7411,76 @@ Return ONE valid JSON object (no markdown):
     } finally { URL.revokeObjectURL(objectUrl); }
   },
 
-  // Gemini vision straight from the browser (free tier supports vision).
-  // FREE-TIER PACER — every Gemini vision call goes through this gate. Free
-  // keys allow only ~10-15 requests/minute; firing batches in parallel bursts
-  // burns that in seconds and then EVERY later call 429s (which is why scans
-  // used to come back with empty forms). The gate queues calls and keeps a
-  // safe minimum gap between them, so big multi-batch scans take longer but
-  // actually SUCCEED instead of mass-failing.
+  // FREE-TIER PACER — every vision call (server-side too, it uses the same
+  // free key) goes through this gate. Free keys allow only ~10-15 requests/
+  // minute; firing batches in parallel bursts burns that in seconds and then
+  // EVERY later call 429s. The gate queues calls and keeps a safe minimum gap,
+  // so big multi-batch scans take longer but actually SUCCEED.
+  // ---- Scan-session honesty ledger --------------------------------------
+  // Each top-level scanner resets this once (beginScanSession); every vision
+  // success/fallback/failure appends here; scanners surface it in their final
+  // status/toast so "success" can never silently mean placeholder data again.
+  _visionIssues: [],
+  _providerCounts: {},
+  beginScanSession() {
+    this._visionIssues = [];
+    this._providerCounts = {};
+    this._lastGoodModel = '';
+  },
+  _noteProvider(provider) {
+    const p = String(provider || '').toLowerCase().includes('groq') ? 'groq' : 'gemini';
+    this._providerCounts[p] = (this._providerCounts[p] || 0) + 1;
+    if (p === 'groq') this._noteIssue('vision', 'Gemini did not answer — Groq vision backup handled this request');
+  },
+  _noteIssue(stage, reason) {
+    const s = String(reason || '').slice(0, 220);
+    if (!s) return;
+    const issues = this._visionIssues || (this._visionIssues = []);
+    const last = issues[issues.length - 1];
+    if (last && last.stage === stage && last.reason === s) { last.count = (last.count || 1) + 1; return; }
+    issues.push({ stage, reason: s, count: 1 });
+  },
+  sessionReport() {
+    return {
+      providers: Object.entries(this._providerCounts || {}).map(([name, count]) => ({ name, count })),
+      issues: (this._visionIssues || []).slice(),
+      lastGoodModel: this._lastGoodModel || '',
+    };
+  },
+
+  // Wait out an ACTIVE quota window instead of skipping the call. Returns true
+  // when a real vision attempt should be made now; false when the remaining
+  // cooldown exceeds the wait budget (caller then uses fallbacks + says why).
+  async _waitForQuotaWindow(maxWaitMs = 70000, stageLabel = 'vision') {
+    const remain = (this._geminiQuotaUntil || 0) - Date.now();
+    if (remain <= 0) return true;
+    if (remain > maxWaitMs) {
+      this._noteIssue(stageLabel, `quota cooldown ${Math.round(remain / 1000)}s > ${Math.round(maxWaitMs / 1000)}s budget — completed without photo reading`);
+      return false;
+    }
+    await new Promise(r => setTimeout(r, remain + 300));
+    return true;
+  },
+
+  // One-shot health probe used by every scanner before it starts burning
+  // requests: asks the SERVER which vision providers are configured and alive
+  // (Gemini primary, Groq backup). Keys stay server-side; no tokens are burned.
+  async preflight() {
+    const out = { gemini: null, groq: null, error: null };
+    try {
+      const r = await this._callEdge({ action: 'test_providers' }, 25000);
+      if (r && r.providers) {
+        out.gemini = r.providers.gemini || null;
+        out.groq = r.providers.groq || null;
+      } else {
+        out.error = (r && r.error) || 'Unexpected response from the AI service.';
+      }
+    } catch (e) {
+      out.error = String((e && e.message) || e);
+    }
+    return out;
+  },
+
   _geminiCallChain: Promise.resolve(),
   _lastGeminiCallAt: 0,
   _paceGeminiCall(task) {
@@ -7230,66 +7493,6 @@ Return ONE valid JSON object (no markdown):
     });
     this._geminiCallChain = run.then(() => {}, () => {});
     return run;
-  },
-
-  async _tryBrowserGeminiVision(prompt, images) {
-    // FAST: if we already know Gemini's quota is exhausted, don't waste time
-    // retrying every model with the same key.
-    if (Date.now() < (this._geminiQuotaUntil || 0)) return null;
-    const cfg = await this.getConfig();
-    const apiKey = String(cfg.gemini_key || cfg.gemini_api_key || '').trim();
-    if (!apiKey) return null;
-    // FAST: the lightest vision model answers first â€” flash-lite is the fastest
-    // free vision model by far, so it leads unless you explicitly picked a
-    // vision model yourself. Slow "thinking" is disabled (thinkingBudget 0)
-    // because thinking tokens add many seconds and eat the output budget.
-    const preferred = String(cfg.gemini_vision_model || '').trim();
-    const models = [...new Set([
-      preferred || 'gemini-2.0-flash-lite',
-      'gemini-2.0-flash-lite',
-      String(cfg.gemini_model || '').trim(),
-      'gemini-2.5-flash',
-    ].filter(Boolean))];
-    for (const model of models) {
-      try {
-        const parts = [{ text: prompt }];
-        for (const url of images) {
-          const match = String(url).match(/^data:([^;,]+)[;,]base64,(.+)$/s);
-          if (!match) continue;
-          parts.push({ inlineData: { mimeType: match[1].trim(), data: match[2].trim() } });
-        }
-        if (parts.length < 2) return null;
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-        const disableThinking = /2\.5|-3/.test(model);
-        // PACED: this fetch waits its turn in the global rate-limit queue.
-        const res = await this._paceGeminiCall(() => fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts }],
-            generationConfig: {
-              temperature: 0.2,
-              maxOutputTokens: 4096,
-              ...(disableThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
-            },
-          }),
-          signal: AbortSignal.timeout(20000),
-        }));
-        // FAST circuit-breaker: a 429 (quota) or 403 applies to the whole key,
-        // so stop trying the remaining models â€” skip straight to the fallbacks.
-        if (res.status === 429 || res.status === 403) {
-          this._geminiQuotaUntil = Date.now() + 65 * 1000; // wait out the per-minute window
-          return null;
-        }
-        if (!res.ok) continue;
-        const data = await res.json();
-        const text = (data?.candidates?.[0]?.content?.parts || []).map(p => p?.text || '').join('\n').trim();
-        if (!text) continue;
-        const parsed = extractJsonFromAiText(text);
-        if (parsed) return { ...parsed, _aiProvider: 'Gemini (browser)', _aiModel: model };
-      } catch { /* try next model */ }
-    }
-    return null;
   },
 };
 
@@ -7338,6 +7541,13 @@ window.showAiStatusModal = async function() {
             </div>`).join('')}
         </div>
         <div class="mt-4 p-3 bg-gray-900 rounded-xl">
+          <p class="text-[10px] text-gray-400 font-bold uppercase mb-2">Test All Providers</p>
+          <button onclick="testScanProviders()" id="btn-test-providers" class="btn-press w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1.5">
+            <i data-lucide="stethoscope" class="w-3.5 h-3.5"></i> Test Gemini / Groq now
+          </button>
+          <div id="provider-test-output" class="hidden mt-3 space-y-1.5"></div>
+        </div>
+        <div class="mt-4 p-3 bg-gray-900 rounded-xl">
           <p class="text-[10px] text-gray-400 font-bold uppercase mb-2">Test AI Response</p>
           <div class="flex gap-2">
             <input id="ai-test-input" class="input-field flex-1 text-xs" placeholder="Type anything, e.g. 'Write hello world in Python'">
@@ -7357,13 +7567,57 @@ window.testAiCall = async function() {
   if (!input) return;
   const output = document.getElementById('ai-test-output');
   output.classList.remove('hidden');
-  output.textContent = 'â³ Asking Geminiâ€¦';
+  output.textContent = '⏳ Asking Gemini…';
   try {
     const result = await aiClient.prompt(input);
-    output.textContent = `âœ“ [${result.provider} Â· ${result.model}]\n\n${result.text}`;
+    output.textContent = `✓ [${result.provider} · ${result.model}]\n\n${result.text}`;
   } catch (err) {
-    output.textContent = `âŒ ${err.message}`;
+    output.textContent = `✖ ${err.message}`;
   }
+};
+
+// Test all three vision paths and report which ones actually work.
+// Keys are NEVER displayed — only ok/fail + model names.
+window.testScanProviders = async function() {
+  const box = document.getElementById('provider-test-output');
+  const btn = document.getElementById('btn-test-providers');
+  if (!box) return;
+  box.classList.remove('hidden');
+  btn.disabled = true;
+  const row = (icon, color, name, detail) => `
+    <div class="flex items-start gap-2 p-2 glass-soft border border-gray-800 rounded-lg">
+      <span class="w-2 h-2 rounded-full shrink-0 mt-1 ${color}"></span>
+      <div class="min-w-0">
+        <p class="text-[11px] font-bold text-white">${icon} ${esc(name)}</p>
+        <p class="text-[10px] ${color === 'bg-emerald-400' ? 'text-emerald-300' : color === 'bg-red-500' ? 'text-red-400' : 'text-amber-300'} break-words">${esc(detail)}</p>
+      </div>
+    </div>`;
+  box.innerHTML = `<p class="text-[11px] text-gray-400">Testing providers…</p>`;
+  let html = '';
+
+  // Gemini + Groq — decided by the server (keys never leave it).
+  try {
+    const pf = await aiClient.preflight();
+    const g = pf.gemini || {};
+    html += g.ok
+      ? row('✓', 'bg-emerald-400', 'Gemini (Product Scanner — primary)', `Working${g.model ? ' · ' + g.model : ''}`)
+      : row('✖', 'bg-red-500', 'Gemini (Product Scanner — primary)', g.error || pf.error || 'Not working');
+    const q = pf.groq || {};
+    html += q.ok
+      ? row('✓', 'bg-emerald-400', 'Groq (Product Scanner — backup)', `Working · ${q.model || 'vision model found'}`)
+      : (q.configured
+          ? row('✖', 'bg-red-500', 'Groq (Product Scanner — backup)', q.error || 'Key saved but not usable')
+          : row('—', 'bg-yellow-400', 'Groq (Product Scanner — backup)', 'Optional backup not configured (no key)'));
+  } catch (e) {
+    html += row('✖', 'bg-red-500', 'Cloud providers (server test)', String((e && e.message) || e));
+  }
+
+  // General AI Scanner — now uses the same Gemini/Groq edge function as Product Scanner.
+  html += row('✓', 'bg-purple-400', 'General AI Scanner (via edge function)', 'Uses Gemini primary + Groq backup through server — no local install needed.');
+
+  box.innerHTML = html;
+  btn.disabled = false;
+  if (window.lucide) lucide.createIcons();
 };
 
 function extractJsonFromAiText(text) {

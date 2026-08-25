@@ -17,8 +17,8 @@ function normalizeModel(settings: Record<string, unknown>, developerMode = false
   const override = developerMode
     ? (settings.developer_model_override as string | null)
     : (settings.admin_model_override as string | null);
-  const fallback = (settings.gemini_model as string | null) || 'gemini-3-flash-preview';
-  return (override || fallback || 'gemini-3-flash-preview').trim();
+  const fallback = (settings.gemini_model as string | null) || 'gemini-3.5-flash-lite';
+  return (override || fallback || 'gemini-3.5-flash-lite').trim();
 }
 
 function genPropertyId() {
@@ -261,6 +261,24 @@ async function callGemini(params: {
   return text;
 }
 
+// DRIFT PROTECTION: ask Google which models this key can actually use right
+// now, and pick a fast GA (non-preview) flash model. Used as a last resort when
+// every configured/fallback model name has been retired.
+async function listLiveFlashModel(apiKey: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${encodeURIComponent(apiKey)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const names: string[] = ((data?.models || []) as Array<{ name?: string; supportedGenerationMethods?: string[] }>)
+      .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map((m) => String(m.name || '').replace(/^models\//, ''))
+      .filter((n) => n && /flash/i.test(n) && !/preview|exp|embed|imagen|veo|tts|image|thinking/i.test(n));
+    return names.length ? names[0] : null;
+  } catch {
+    return null;
+  }
+}
+
 async function callGeminiWithFallback(params: {
   apiKey: string;
   model: string;
@@ -269,7 +287,7 @@ async function callGeminiWithFallback(params: {
   maxTokens?: number;
 }) {
   const preferred = (params.model || '').trim();
-  const fallbacks = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview'];
+  const fallbacks = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
   const tried = new Set<string>();
 
   const queue = [preferred, ...fallbacks].filter(Boolean);
@@ -287,15 +305,23 @@ async function callGeminiWithFallback(params: {
       if (!retryable) throw err;
     }
   }
+  // All known names failed — likely model drift. Resolve a LIVE model from the
+  // key's own ListModels and try it before giving up.
+  const live = await listLiveFlashModel(params.apiKey);
+  if (live && !tried.has(live)) {
+    try {
+      const response = await callGemini({ ...params, model: live });
+      return { response, modelUsed: live };
+    } catch { /* fall through to the real error */ }
+  }
   throw lastError || new Error('Gemini call failed.');
 }
 
 // ── VISION & IMAGE GENERATION (server-side, keys never sent to the browser) ──
 
 const VISION_MODEL_FALLBACKS: Record<string, string[]> = {
-  // FAST: the lightest vision model first — flash-lite answers in a fraction of
-  // the time. Thinking is disabled per-request for models that support it.
-  gemini: ['gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-3-flash-preview'],
+  // GA-stable names only — retired *-preview snapshots must never break vision.
+  gemini: ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'],
 };
 function parseDataUrl(dataUrl: string): { mimeType: string; b64: string } {
   const match = String(dataUrl || '').match(/^data:([^;,]+)[;,]base64,(.+)$/s);
@@ -363,6 +389,64 @@ async function callGeminiVision(params: {
   return text;
 }
 
+// ── GROQ VISION BACKUP (OpenAI-compatible endpoint; key stays server-side) ──
+const GROQ_VISION_DEFAULTS = [
+  'qwen/qwen3.6-27b',
+];
+
+function groqVisionChain(settings: Record<string, unknown>): string[] {
+  const configured = String(settings.groq_vision_model || '').trim();
+  return [...new Set([configured, ...GROQ_VISION_DEFAULTS].filter(Boolean))];
+}
+
+async function callGroqVision(params: {
+  apiKey: string;
+  model: string;
+  prompt: string;
+  images: string[];
+  maxTokens?: number;
+}) {
+  const { apiKey, model, prompt, images, maxTokens } = params;
+  const content: Array<Record<string, unknown>> = [{ type: 'text', text: prompt }];
+  // Groq multimodal models accept up to 5 images per request.
+  for (const url of images.slice(0, 4)) {
+    if (!/^data:image\//i.test(String(url))) continue;
+    content.push({ type: 'image_url', image_url: { url } });
+  }
+  if (content.length < 2) throw new Error('No readable image data reached the Groq vision model.');
+  let res: Response;
+  try {
+    res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content }],
+        temperature: 0.3,
+        max_tokens: maxTokens || 4096,
+      }),
+      signal: AbortSignal.timeout(45000),
+    });
+  } catch (err) {
+    const e = new Error(`Groq vision unreachable: ${String((err as any)?.message || err)}`);
+    (e as any).status = 599;
+    throw e;
+  }
+  const raw = await res.text();
+  let data: any = {};
+  try { data = raw ? JSON.parse(raw) : {}; } catch { /* keep {} */ }
+  if (!res.ok) {
+    const e = new Error(
+      (data as any)?.error?.message || raw?.slice(0, 200) || `Groq vision request failed (${res.status})`
+    );
+    (e as any).status = res.status;
+    throw e;
+  }
+  const text = String((data as any)?.choices?.[0]?.message?.content || '').trim();
+  if (!text) throw new Error('Groq vision returned an empty response.');
+  return text;
+}
+
 async function runCloudVision(params: {
   settings: Record<string, unknown>;
   prompt: string;
@@ -370,21 +454,56 @@ async function runCloudVision(params: {
   maxTokens?: number;
 }): Promise<{ text: string; provider: string; model: string }> {
   const { settings, prompt, images, maxTokens } = params;
-  const apiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
-  if (!apiKey) throw new Error('Gemini API key is not set in AI Settings.');
+  const geminiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
+  const groqKey = String(settings.groq_key || '').trim();
+  if (!geminiKey && !groqKey) {
+    throw new Error('No vision provider is configured. Add a Gemini key (primary) or Groq key (backup) in AI Settings.');
+  }
+
+  const tried: string[] = [];
   let lastError: unknown = null;
-  for (const model of visionModelChain('gemini', settings)) {
-    try {
-      const text = await callGeminiVision({ apiKey, model, prompt, images, maxTokens });
-      return { text, provider: 'gemini', model };
-    } catch (err) {
-      lastError = err;
-      const status = errorStatus(err);
-      if (isRetryableStatus(status) || String(err?.message || '').toLowerCase().includes('model')) continue;
-      continue;
+
+  // PRIMARY — Google Gemini (GA-stable chain, drift-rescued).
+  if (geminiKey) {
+    for (const model of visionModelChain('gemini', settings)) {
+      tried.push(`gemini:${model}`);
+      try {
+        const text = await callGeminiVision({ apiKey: geminiKey, model, prompt, images, maxTokens });
+        return { text, provider: 'gemini', model };
+      } catch (err) {
+        lastError = err;
+        continue;
+      }
+    }
+    // Model-drift rescue for Gemini.
+    const live = await listLiveFlashModel(geminiKey);
+    if (live && !tried.includes(`gemini:${live}`)) {
+      tried.push(`gemini:${live}`);
+      try {
+        const text = await callGeminiVision({ apiKey: geminiKey, model: live, prompt, images, maxTokens });
+        return { text, provider: 'gemini', model: live };
+      } catch (err) { lastError = err; }
     }
   }
-  throw lastError || new Error('No vision-capable provider is configured. Add your Google Gemini key in AI Settings.');
+
+  // BACKUP — Groq vision, used ONLY when Gemini failed/timed out/quota'd.
+  if (groqKey) {
+    for (const model of groqVisionChain(settings)) {
+      tried.push(`groq:${model}`);
+      try {
+        const text = await callGroqVision({ apiKey: groqKey, model, prompt, images, maxTokens });
+        return { text, provider: 'groq', model };
+      } catch (err) {
+        lastError = err;
+        const status = errorStatus(err);
+        // Bad Groq key → no point trying its remaining models.
+        if (status === 401 || status === 403) break;
+        continue;
+      }
+    }
+  }
+
+  throw lastError || new Error(`No vision provider answered (tried: ${tried.join(', ') || 'none'}).`);
 }
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -457,7 +576,7 @@ Deno.serve(async (req) => {
     return { response, provider: 'gemini', model: modelUsed };
   }
   const isEnabled = settings.is_enabled !== false;
-  if (!isEnabled && !['test_connection', 'vision'].includes(action)) {
+  if (!isEnabled && !['test_connection', 'test_providers', 'vision'].includes(action)) {
     return jsonResponse({ error: 'AI assistant is disabled in settings.' }, 400);
   }
 
@@ -554,6 +673,52 @@ Deno.serve(async (req) => {
     } catch (err) {
       return jsonResponse({ success: false, error: String(err?.message || err), provider: 'gemini' }, 400);
     }
+  }
+
+  // Health check for the Product Scanner vision chain (Gemini primary, Groq
+  // backup). Uses free metadata endpoints only — no tokens are burned and no
+  // key material is ever echoed back.
+  if (action === 'test_providers') {
+    const cfg = settings as Record<string, unknown>;
+    const geminiKey = String(cfg.gemini_api_key || cfg.gemini_key || '').trim();
+    const groqKey = String(cfg.groq_key || '').trim();
+    const result: Record<string, unknown> = {};
+
+    if (!geminiKey) {
+      result.gemini = { ok: false, error: 'No Gemini key saved in AI Settings.', model: null };
+    } else {
+      const live = await listLiveFlashModel(geminiKey);
+      result.gemini = live
+        ? { ok: true, error: null, model: live }
+        : { ok: false, error: 'Gemini reachable but no usable vision/chat model found for this key.', model: null };
+    }
+
+    if (!groqKey) {
+      result.groq = { ok: false, configured: false, error: null, note: 'No Groq key — backup disabled (optional).', model: null };
+    } else {
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: { Authorization: `Bearer ${groqKey}` },
+          signal: AbortSignal.timeout(15000),
+        });
+        const data = res.ok ? ((await res.json()) as any) : {};
+        const ids: string[] = Array.isArray(data?.data) ? data.data.map((m: any) => String(m?.id || '')) : [];
+        const visionModel = groqVisionChain(cfg).find(v => ids.includes(v)) || null;
+        if (res.status === 401 || res.status === 403) {
+          result.groq = { ok: false, configured: true, error: `Groq rejected this API key (HTTP ${res.status}).`, model: null };
+        } else if (!res.ok) {
+          result.groq = { ok: false, configured: true, error: `Groq answered HTTP ${res.status}.`, model: null };
+        } else if (!visionModel) {
+          result.groq = { ok: false, configured: true, error: 'Groq key works but no supported vision model is available on this account.', model: null };
+        } else {
+          result.groq = { ok: true, configured: true, error: null, model: visionModel };
+        }
+      } catch (err) {
+        result.groq = { ok: false, configured: true, error: `Groq unreachable: ${String((err as any)?.message || err).slice(0, 160)}`, model: null };
+      }
+    }
+
+    return jsonResponse({ success: true, providers: result });
   }
 
   if (action === 'vision') {

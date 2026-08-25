@@ -2,6 +2,7 @@ import { supabase } from './supabase-client.js';
 import { getCurrentUser } from './auth.js';
 import { normalizeToMarketplaceCategory } from './categories.js';
 
+
 const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
 const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
 const AI_FUNCTION_URL = LOCAL_DEV_HOSTS.has(window.location.hostname)
@@ -534,6 +535,20 @@ async function callAiEdge(body) {
   return await res.json().catch(() => ({}));
 }
 
+// Vision via edge function (Gemini primary → Groq backup): no local install needed.
+async function callEdgeVision(prompt, images, maxTokens = 4096) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || ANON_KEY;
+  const res = await fetch(AI_FUNCTION_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action: 'vision', prompt, images, max_tokens: maxTokens }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (data.error) throw new Error(data.error);
+  return { text: data.text || data.response || '', provider: data.provider || 'gemini', model: data.model || '' };
+}
+
 function extractJsonFromAiText(text) {
   if (!text) return null;
   let t = String(text).trim();
@@ -837,24 +852,49 @@ async function runAutoImagePipeline() {
       };
     }
 
-    // 1) Gemini scans the photo and fills the fields.
+    // 1) VISION via edge function (Gemini primary → Groq backup).
     let scan = null;
     let scanProvider = 'unavailable';
+    let visionError = '';
     try {
-      const scanRes = await callAiEdge({
-        action: 'vision',
-        images: [firstDataUrl],
-        prompt: VISION_SCAN_PROMPT,
-        max_tokens: 4096,
-      });
-      if (scanRes?.success && scanRes.text) {
-        const parsed = extractJsonFromAiText(scanRes.text);
-        if (parsed) {
-          scan = parsed;
-          scanProvider = scanRes.provider || 'gemini';
-        }
+      let parsed = null;
+      try {
+        const vision = await callEdgeVision(VISION_SCAN_PROMPT, [firstDataUrl], 4096);
+        parsed = extractJsonFromAiText(vision.text);
+        if (parsed) scanProvider = `${vision.provider} (${vision.model})`;
+      } catch (e) { throw e; }
+      if (!parsed) {
+        const retry = await callEdgeVision(
+          `${VISION_SCAN_PROMPT}\n\nIMPORTANT: reply with ONE valid JSON object only — no markdown, no commentary.`,
+          [firstDataUrl],
+          4096,
+        );
+        parsed = extractJsonFromAiText(retry.text);
+        if (parsed) scanProvider = `${retry.provider} (${retry.model})`;
       }
-    } catch { scan = null; }
+      if (parsed) scan = parsed;
+      else throw new Error('The AI did not return a valid analysis. Try again.');
+    } catch (e) {
+      visionError = String((e && e.message) || e);
+    }
+
+    // HARD STOP: vision unavailable → clear error, NO estimated card.
+    if (!scan) {
+      return {
+        ok: false,
+        content: [
+          '❌ **The General AI Scanner could not read your photos.**',
+          '',
+          `\`${visionError}\``,
+          '',
+          '**Try these steps:**',
+          '1. Make sure your photos are clear and well-lit.',
+          '2. Check AI Settings → "Live Status & Test" to verify Gemini/Groq are active.',
+          '3. Upload the photo(s) again.',
+        ].join('\n'),
+        tool_results: [{ tool: 'scan_image', result: { success: false, provider: 'unavailable', error: visionError } }],
+      };
+    }
 
     const listingType = scan?.listing_type === 'property' ? 'property' : 'product';
     const title = cleanScanString(scan?.title) || deriveTitleFromFileName(firstItem.name);
@@ -875,7 +915,7 @@ async function runAutoImagePipeline() {
     return {
       ok: true,
       reviewCard: true,
-      content: `✅ **Scan complete.** I filled **${filledFields.length} fields** in your exact showroom format (${filledFields.join(', ')}) and arranged a **${arrangedImages.length}-image** gallery. **Review the card above, confirm the price, then Save.**${scanProvider !== 'unavailable' ? `\n\n*Scan provider: ${scanProvider}*` : ''}`,
+      content: `✅ **Scan complete.** I filled **${filledFields.length} fields** in your exact showroom format (${filledFields.join(', ')}) and arranged a **${arrangedImages.length}-image** gallery. **Review the card above, confirm the price, then Save.**\n\n*Scan provider: ${scanProvider} — processed via ${scanProvider.includes('groq') ? 'Groq' : 'Gemini'} (server-side, keys stay private).*`,
       tool_results: [
         { tool: 'upload_images', result: { success: true, total: uploadResult.total, saved: baseUrls.length } },
         { tool: 'scan_image', result: { success: true, provider: scanProvider, fields_filled: filledFields } },
@@ -959,7 +999,7 @@ function openListingReviewCard(listing, meta = {}) {
   const typeBadge = document.getElementById('review-type-badge');
   if (typeBadge) typeBadge.textContent = isProperty ? 'PROPERTY' : 'PRODUCT';
   const providerLine = document.getElementById('review-provider');
-  if (providerLine) providerLine.textContent = meta.scanProvider && meta.scanProvider !== 'unavailable' ? `Scanned by: ${meta.scanProvider}` : 'Scanned by: local AI';
+  if (providerLine) providerLine.textContent = meta.scanProvider && meta.scanProvider !== 'unavailable' ? `Scanned by: ${meta.scanProvider}` : 'Photo NOT read — card filled with estimates';
 
   document.getElementById('review-property-fields')?.classList.toggle('hidden', !isProperty);
   document.getElementById('review-product-fields')?.classList.toggle('hidden', isProperty);
@@ -1833,24 +1873,21 @@ window.sendMessage = async () => {
       }
       if (images.length > 0) {
         usedVision = true;
-        const visionRes = await fetch(AI_FUNCTION_URL, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            action: 'vision',
-            images,
-            prompt: text || 'Describe these images in detail.',
-            max_tokens: 4096,
-          }),
-        });
         try {
-          data = await visionRes.json();
-        } catch {
-          data = {};
-        }
-        if (visionRes.ok && data.text) {
-          data.response = data.text;
+          const v = await callEdgeVision(text || 'Describe these images in detail.', images, 4096);
+          data = { response: v.text, provider: v.provider };
           clearPendingUploadsLocal();
+        } catch (e) {
+          data = {
+            response: [
+              '❌ **Could not read your photos:**',
+              '',
+              `\`${String((e && e.message) || e)}\``,
+              '',
+              'Check AI Settings → "Live Status & Test" to verify your Gemini/Groq keys are active, then try again.',
+            ].join('\n'),
+            provider: 'unavailable',
+          };
         }
       }
     }
@@ -2014,6 +2051,18 @@ window.handleAiImageUpload = async (event) => {
     showToast(`${added} image(s) attached (${formatBytes(totalBytes)}). Type a message and send — the AI sees them.`);
     const input = document.getElementById('chat-input');
     if (input) input.focus();
+  }
+  // AUTO SCAN: newly attached images are scanned immediately (the pipeline was
+  // previously defined but never wired up, so uploads were never auto-scanned).
+  if (added > 0 && AUTO_RUN_PIPELINE_ON_UPLOAD) {
+    try {
+      const result = await runAutoImagePipeline();
+      if (result) {
+        const aiMsg = { role: 'assistant', content: result.content, ...(result.tool_results ? { tool_results: result.tool_results } : {}) };
+        state.history.push(aiMsg);
+        renderMessage(aiMsg);
+      }
+    } catch { /* errors are reported inside runAutoImagePipeline */ }
   }
   if (rejected > 0) {
     showToast(`${rejected} file(s) skipped. Use images under 8MB each.`);
