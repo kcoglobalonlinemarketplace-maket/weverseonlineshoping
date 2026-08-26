@@ -337,6 +337,7 @@ window.addEventListener('hero-videos-updated', (e) => {
   heroVideoSlides = Array.isArray(detail.slides) ? detail.slides : (Array.isArray(detail) ? detail : []);
   mergeAdSlides();
   renderCarousel();
+  var hc=document.getElementById('hero-carousel');if(hc){hc.style.opacity='1';}
 });
 
 window.addEventListener('promo-banner-updated', (e) => {
@@ -1453,6 +1454,9 @@ document.addEventListener("DOMContentLoaded",()=>{
   populateSelectors();loadRegionSettings();detectRegionAuto();renderCategories();setupSearchSuggestions();
   renderCarousel();updateBadgeLanguage();
   lucide.createIcons();
+  // Reveal hero carousel after timeout if hero-videos-updated hasn't fired yet
+  // (no published media → show the blue fallback; published media → event handler above already revealed it)
+  setTimeout(function(){var hc=document.getElementById('hero-carousel');if(hc&&hc.style.opacity==='0')hc.style.opacity='1';},2500);
   // The live date/time/location bar is intentionally hidden (not removed). When
   // hidden we skip the ticking clock and the IP/GPS location requests so they
   // never hang the network or distract the customer.
