@@ -1377,6 +1377,77 @@ function showToast(msg){
 window.showToast=showToast;
 window._showToast=showToast;
 
+// ---- HERO VIDEO LOADING (Supabase REST) ----
+// homepage-promo.js is a Vite module that gets stripped during build, so we
+// load hero video slides directly via a plain fetch() here in app.js.
+(function loadHeroVideos(){
+  const SUPABASE_URL='https://wttnvwpoqmbxryivcerf.supabase.co';
+  const SUPABASE_ANON='sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
+  function buildSlide(s,fallback){
+    var video=String((s&&s.video)||'').trim();
+    var poster=String((s&&s.poster)||'').trim();
+    var title=String((s&&s.title)||'').trim();
+    var subtitle=String((s&&s.subtitle)||'').trim();
+    var slide={
+      adId:(s&&s.id)||('hero-'+(video||poster||Math.random().toString(36).slice(2))),
+      promoBanner:true,
+      badge:title||'Feature',
+      title:title||'Weverse Online Shop',
+      subtitle:subtitle,
+      buttonText:String((s&&s.buttonText)||'SHOP NOW').trim(),
+      buttonLink:String((s&&s.buttonLink)||'/#showroom-directory').trim()
+    };
+    if(video){slide.video=video;if(poster)slide.poster=poster;}
+    else if(poster){slide.image=poster;}
+    return slide;
+  }
+  async function fetchAndPush(){
+    try{
+      var r=await fetch(SUPABASE_URL+'/rest/v1/site_settings?select=hero_video_slides,promo_banner_enabled,promo_banner_image,promo_banner_video,promo_banner_title,promo_banner_subtitle,promo_banner_button_text,promo_banner_button_link&limit=1',{
+        headers:{apikey:SUPABASE_ANON,Authorization:'Bearer '+SUPABASE_ANON}
+      });
+      if(!r.ok)return;
+      var rows=await r.json();
+      var s=rows&&rows[0];
+      if(!s)return;
+      var raw=Array.isArray(s.hero_video_slides)?s.hero_video_slides:[];
+      var slides=[];
+      for(var i=0;i<raw.length;i++){
+        var item=raw[i];
+        if(!item||item.enabled===false)continue;
+        var hasV=String(item.video||'').trim();
+        var hasP=String(item.poster||'').trim();
+        if(!hasV&&!hasP)continue;
+        slides.push(buildSlide(item,s));
+      }
+      if(!slides.length){
+        // Legacy single promo banner fallback
+        if(s.promo_banner_enabled!==false){
+          var img=(s.promo_banner_image||'').trim();
+          var vid=(s.promo_banner_video||'').trim();
+          if(img||vid){
+            var legacy={
+              promoBanner:true,
+              badge:(s.promo_banner_title||'Promo Banner').trim(),
+              title:(s.promo_banner_title||'Weverse Online Shop').trim(),
+              subtitle:(s.promo_banner_subtitle||'').trim(),
+              buttonText:(s.promo_banner_button_text||'').trim(),
+              buttonLink:(s.promo_banner_button_link||'/#showroom-directory').trim()
+            };
+            if(vid){legacy.video=vid;if(img)legacy.poster=img;}
+            else if(img){legacy.image=img;}
+            slides.push(legacy);
+          }
+        }
+      }
+      if(slides.length){
+        window.dispatchEvent(new CustomEvent('hero-videos-updated',{detail:{slides:slides}}));
+      }
+    }catch(e){}
+  }
+  fetchAndPush();
+})();
+
 // ---- BOOTSTRAP ----
 document.addEventListener("DOMContentLoaded",()=>{
   populateSelectors();loadRegionSettings();detectRegionAuto();renderCategories();setupSearchSuggestions();
