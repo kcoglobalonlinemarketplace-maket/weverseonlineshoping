@@ -3573,6 +3573,14 @@ let scanReviewEntry = '';
 // next product instead of landing on the plain Product Manager.
 let scanReviewActiveIndex = -1;
 
+// ── Auto-scan state ──────────────────────────────────────────────────
+// When the General AI Scanner runs in fully autonomous mode, it fills and
+// publishes every product without showing a review list or asking questions.
+let _autoScannerActive = false;
+let _autoScannerPublished = 0;
+let _autoScannerErrors = 0;
+let _autoScannerTotal = 0;
+
 function imagesForProduct(p, images) {
   const idxs = Array.isArray(p.image_indices) ? p.image_indices : [];
   const out = idxs.map(i => images[i]).filter(Boolean);
@@ -4401,16 +4409,46 @@ async function scannerSourceProducts() {
 // review list (with the just-saved card removed) so they can select the next
 // detected product. Returns true when the list was reopened; false when nothing
 // is left to review (caller then falls back to the Product Manager).
+// In autonomous mode, it auto-processes the next product without asking.
 window.returnToScanReviewAfterSave = function(activeIndex = scanReviewActiveIndex) {
   scanReviewActiveIndex = -1;
-  if (!scanReviewProducts.length) return false;
+  if (!scanReviewProducts.length) {
+    if (_autoScannerActive) {
+      _autoScannerActive = false;
+      const el = document.getElementById('scanner-scan-status');
+      if (el) {
+        el.classList.remove('hidden', 'text-red-400', 'text-amber-300', 'text-blue-300');
+        el.classList.add('text-emerald-300');
+        el.innerHTML = `<p class="font-bold">Auto-scan complete: ${_autoScannerPublished} published, ${_autoScannerErrors} error${_autoScannerErrors !== 1 ? 's' : ''}.</p>`;
+      }
+      showToast(`Auto-scan complete: ${_autoScannerPublished} published, ${_autoScannerErrors} error${_autoScannerErrors !== 1 ? 's' : ''}.`, _autoScannerPublished > 0 ? 'success' : 'info');
+      renderProducts();
+    }
+    return false;
+  }
   if (Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < scanReviewProducts.length) {
     scanReviewProducts.splice(activeIndex, 1);
   }
   if (!scanReviewProducts.length) {
     scanReviewImages = [];
     scanReviewSourceProducts = {};
+    if (_autoScannerActive) {
+      _autoScannerActive = false;
+      const el = document.getElementById('scanner-scan-status');
+      if (el) {
+        el.classList.remove('hidden', 'text-red-400', 'text-amber-300', 'text-blue-300');
+        el.classList.add('text-emerald-300');
+        el.innerHTML = `<p class="font-bold">Auto-scan complete: ${_autoScannerPublished} published, ${_autoScannerErrors} error${_autoScannerErrors !== 1 ? 's' : ''}.</p>`;
+      }
+      showToast(`Auto-scan complete: ${_autoScannerPublished} published, ${_autoScannerErrors} error${_autoScannerErrors !== 1 ? 's' : ''}.`, _autoScannerPublished > 0 ? 'success' : 'info');
+      renderProducts();
+    }
     return false;
+  }
+  // ── Autonomous mode: skip the review list, process next product ──
+  if (_autoScannerActive) {
+    autoScanOne(scanReviewProducts[0], 0);
+    return true;
   }
   scanReviewEntry = 'scanner-scan-status';
   openModal(`
@@ -4437,6 +4475,61 @@ window.returnToScanReviewAfterSave = function(activeIndex = scanReviewActiveInde
   return true;
 };
 
+// ── Autonomous scan: fill + publish one product, then chain to the next ──
+// Called by returnToScanReviewAfterSave when _autoScannerActive is true.
+// Opens the product form, runs AI fill, auto-clicks Publish, and the save
+// handler chains back here via returnToScanReviewAfterSave for the next item.
+async function autoScanOne(det, index) {
+  const images = imagesForProduct(det, scanReviewImages);
+  const norm = normalizeDetectedCategory(det.category);
+  const isProperty = det.listing_type === 'property' || (norm && norm.listing_type === 'property');
+  const cat = isProperty ? 'Real Estate' : (norm.category || det.category || 'Other');
+  const total = _autoScannerTotal;
+  const done = total - scanReviewProducts.length;
+  const setStatusAuto = (html, cls) => {
+    const el = document.getElementById('scanner-scan-status');
+    if (!el) return;
+    el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+    if (cls) el.classList.add(cls);
+    el.innerHTML = html;
+  };
+  setStatusAuto(`Processing ${done + 1} of ${total}: ${esc(det.detected_name || det.title || 'product')}â€¦`, 'text-blue-300');
+  try {
+    if (isProperty) {
+      _autoScannerErrors++;
+      scanReviewProducts.splice(index, 1);
+      if (scanReviewProducts.length) { autoScanOne(scanReviewProducts[0], 0); }
+      else { window.returnToScanReviewAfterSave(-1); }
+      return;
+    }
+    let existing = det.property_id ? scanReviewSourceProducts[det.property_id] : null;
+    if (existing && existing.specifications && typeof existing.specifications === 'object') {
+      existing = { ...existing, ...existing.specifications };
+    }
+    showAddProductStep2(cat, existing ? { ...existing, images } : { images });
+    await new Promise(r => setTimeout(r, 250));
+    await completeScanAndFill(det, images, cat);
+    const form = document.getElementById('product-form');
+    const publishBtn = form?.querySelector('[type=submit][name=action][value=publish]');
+    if (publishBtn) {
+      scanReviewActiveIndex = index;
+      publishBtn.click();
+    } else {
+      _autoScannerErrors++;
+      closeProductFormModal();
+      scanReviewProducts.splice(index, 1);
+      if (scanReviewProducts.length) { autoScanOne(scanReviewProducts[0], 0); }
+      else { window.returnToScanReviewAfterSave(-1); }
+    }
+  } catch (err) {
+    _autoScannerErrors++;
+    closeProductFormModal();
+    scanReviewProducts.splice(index, 1);
+    if (scanReviewProducts.length) { autoScanOne(scanReviewProducts[0], 0); }
+    else { window.returnToScanReviewAfterSave(-1); }
+  }
+}
+
 window.openGeneralAiScanner = async function() {
   scannerImages = [];
   const products = await scannerSourceProducts();
@@ -4450,7 +4543,7 @@ window.openGeneralAiScanner = async function() {
 
         <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3">
           <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan your products with AI</p>
-          <p class="text-[11px] text-gray-500">The scanner works on the products already in your Product Manager â€” no image upload needed. Press SCAN ALL WITH AI and it reads each product's existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Review every result, then continue to that product's form, already filled for you. Nothing is saved or published automatically.</p>
+          <p class="text-[11px] text-gray-500">The scanner works on the products already in your Product Manager â€” no image upload needed. Press SCAN ALL WITH AI and it reads each product's existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Everything is filled and published automatically \u2014 no questions asked. Duplicates are skipped silently.</p>
           <div class="flex items-center gap-2 text-[11px] font-bold text-gray-300 bg-white/5 border border-violet-500/20 rounded-xl px-3 py-2.5">
             <i data-lucide="package" class="w-4 h-4 text-violet-400 shrink-0"></i>
             <span>${products.length} product${products.length === 1 ? '' : 's'} ready to scan in the Product Manager.</span>
@@ -4527,32 +4620,6 @@ window.scanGeneralWithAI = async function() {
   const seenImages = new Set();
   let duplicatesSkipped = 0;
   let fallbacks = 0;
-  let duplicateConfirmed = false;
-  window.__scanDupContinue = function() {
-    const r = window.__scanDupResolve;
-    window.__scanDupResolve = null;
-    const b = document.getElementById('btn-scan-dup-continue');
-    if (b) b.disabled = true;
-    if (r) r();
-  };
-  const waitForDuplicateConfirm = (prod) => new Promise((resolve) => {
-    window.__scanDupResolve = resolve;
-    setStatus(`<div class="space-y-2">
-      <p class="font-bold text-amber-300">Duplicate images detected on "${esc(prod?.title || prod?.property_id || 'product')}". This product's photos are the same as a product already scanned.</p>
-      <p class="text-gray-400">Press Continue ONCE to automatically skip ALL remaining duplicate warnings and keep processing every remaining product. No duplicate photos will be deleted or replaced.</p>
-      <button type="button" id="btn-scan-dup-continue" onclick="__scanDupContinue()" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Continue â€” skip all duplicate warnings</button>
-    </div>`, 'text-amber-300');
-    // Safety: if the scanner modal is closed while waiting, resolve so the scan
-    // can never hang forever on a Continue button that no longer exists.
-    const t = setInterval(() => {
-      if (!document.getElementById('btn-scan-dup-continue')) {
-        clearInterval(t);
-        if (window.__scanDupResolve) { window.__scanDupResolve = null; resolve(); }
-      }
-    }, 500);
-    const orig = window.__scanDupContinue;
-    window.__scanDupContinue = function() { clearInterval(t); orig(); };
-  });
   // â”€â”€ FAST concurrent scanning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Several products are scanned AT THE SAME TIME (not one after another), so a
   // full catalog scan takes a fraction of the time. Each scan processes ALL of
@@ -4664,13 +4731,21 @@ window.scanGeneralWithAI = async function() {
     failedCount ? `${failedCount} scan error${failedCount > 1 ? 's' : ''}` : '',
     rep.providers.map(p => `${p.count} by ${p.name}`).join(', '),
   ].filter(Boolean);
+  // ── AUTONOMOUS MODE: fill + publish every product without asking ──
+  scanReviewProducts = detections;
+  scanReviewImages = images;
+  scanReviewSourceProducts = sources;
+  scanReviewEntry = 'scanner-scan-status';
+  _autoScannerActive = true;
+  _autoScannerPublished = 0;
+  _autoScannerErrors = 0;
+  _autoScannerTotal = detections.length;
   setStatus(`
-    <p class="font-bold ${failedCount ? 'text-amber-300' : 'text-emerald-300'}">Scan finished: ${summaryBits.join(' · ')}.</p>
-    ${quotaHit ? '<p class="text-[11px] text-amber-300 mt-1">⚠ Your Gemini key hit its FREE rate limit mid-scan. Wait about a minute — the scanner now WAITS OUT short limits and retries instead of skipping.</p>' : ''}
-    ${topIssue ? `<p class="text-[11px] text-gray-500 mt-1">Last issue: ${esc(topIssue.reason)}${topIssue.count > 1 ? ` (×${topIssue.count})` : ''}</p>` : ''}
-    <p class="text-[11px] text-gray-400 mt-1">Review each card below (cards marked PHOTO NOT READ used only saved details), then Continue to save &amp; publish.</p>
-  `, failedCount || quotaHit ? 'text-amber-300' : 'text-emerald-300');
-  showToast(`Scan complete â€” ${summaryBits.join(', ')}.${quotaHit ? ' Gemini free limit hit mid-scan; the scanner will wait out short limits and retry.' : ''}${topIssue ? ` Last issue: ${topIssue.reason}.` : ''} Review each card and press Continue to save & publish.`, (fallbacks || failedCount) ? 'info' : 'success');
+    <p class="font-bold text-blue-300">Scan finished: ${summaryBits.join(' · ')}.</p>
+    <p class="text-[11px] text-blue-300 mt-1">Auto-publishing ${detections.length} product${detections.length > 1 ? 's' : ''}â€¦</p>
+  `, 'text-blue-300');
+  showToast(`Scan done — auto-publishing ${detections.length} product${detections.length > 1 ? 's' : ''}â€¦`, 'info');
+  autoScanOne(detections[0], 0);
 };
 
 window.saveProduct = async function(e, category, existingId) {
@@ -4894,6 +4969,7 @@ window.saveProduct = async function(e, category, existingId) {
       try { (window._productsData = window._productsData || []).unshift({ ...payload }); } catch {}
       showToast(isDraft ? 'Draft saved!' : 'Published Successfully! Your product is now live in your showroom.');
     }
+    if (_autoScannerActive) _autoScannerPublished++;
     resetBtn(); // publish finished — release the double-submit guard
     try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
     // Capture BEFORE closeProductFormModal() resets it (the close handler clears
@@ -4912,6 +4988,7 @@ window.saveProduct = async function(e, category, existingId) {
     const msg = (err && err.message && !/failed to fetch|networkerror/i.test(String(err.message)))
       ? err.message
       : describeWriteError(err, 'Product publish');
+    if (_autoScannerActive) _autoScannerErrors++;
     resetBtn();
     showToast(msg, 'error');
   }
