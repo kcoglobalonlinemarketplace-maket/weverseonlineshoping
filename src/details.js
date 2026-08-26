@@ -23,6 +23,11 @@ const FALLBACK_IMG = '/fallback.svg';
 
 function safeRating(r) { return (typeof r === 'number' && !isNaN(r)) ? r.toFixed(1) : '0.0'; }
 function safeImages(imgs) { return (Array.isArray(imgs) && imgs.length > 0) ? imgs : [FALLBACK_IMG]; }
+function isVideoUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (url.startsWith('blob:') || url.startsWith('data:')) return false;
+  return /\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(url);
+}
 
 // ── Professional app-style building blocks ─────────────────────
 // Shared pieces used across every details page renderer so the whole
@@ -1171,11 +1176,16 @@ function render(listing) {
   const availabilityStatus = listing.availability_status || (listing.listing_type === 'product' ? 'In Stock' : 'Available');
 
   const imgs2 = safeImages(listing.images);
-  const galleryThumbs = imgs2.map((img, i) =>
-    `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
-      <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-    </button>`
-  ).join('');
+  const galleryThumbs = imgs2.map((img, i) => {
+    const isVid = isVideoUrl(img);
+    const thumbContent = isVid
+      ? `<video src="${escapeHtml(img)}" muted preload="metadata" playsinline class="w-20 h-16 object-cover"></video>
+         <div class="absolute inset-0 flex items-center justify-center"><div class="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center"><svg class="w-2.5 h-2.5 text-gray-800 ml-px" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
+      : `<img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`;
+    return `<button class="gallery-thumb relative rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
+      ${thumbContent}
+    </button>`;
+  }).join('');
 
   let locationBlock = '';
   if (isProperty) {
@@ -1313,10 +1323,15 @@ function render(listing) {
       </div>
 
       <div id="hero-wrap" class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 cursor-zoom-in group" role="button" tabindex="0" aria-label="Open image gallery">
-        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+        ${isVideoUrl(listing.images[0])
+          ? `<video id="hero-image" src="${escapeHtml(listing.images[0])}" muted loop preload="metadata" playsinline class="w-full h-full object-cover" onerror="this.style.display='none'"></video>
+             <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-7 h-7 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
+          : `<img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
+        }
         <div class="absolute inset-0 flex items-end justify-between p-3 opacity-0 group-hover:opacity-100 transition pointer-events-none">
           <span class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-black/50 backdrop-blur px-3 py-1.5 rounded-full"><i data-lucide="expand" class="w-3.5 h-3.5"></i> Tap to enlarge</span>
         </div>
+      </div>
       </div>
 
       <div class="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-8">
@@ -1355,7 +1370,39 @@ function render(listing) {
       root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-200'));
       thumb.classList.add('active', 'border-blue-500');
       thumb.classList.remove('border-gray-200');
-      hero.src = thumb.dataset.img;
+      const src = thumb.dataset.img;
+      const wasVideo = isVideoUrl(src);
+      const wrap = document.getElementById('hero-wrap');
+      if (!wrap) return;
+      const existingVideoOverlay = wrap.querySelector('.hero-video-overlay');
+      if (existingVideoOverlay) existingVideoOverlay.remove();
+      const currentHero = document.getElementById('hero-image');
+      if (wasVideo) {
+        if (currentHero && currentHero.tagName === 'VIDEO') { currentHero.src = src; }
+        else {
+          const v = document.createElement('video');
+          v.id = 'hero-image'; v.src = src; v.muted = true; v.loop = true;
+          v.preload = 'metadata'; v.playsInline = true;
+          v.className = 'w-full h-full object-cover';
+          v.onerror = function() { this.style.display = 'none'; };
+          wrap.insertBefore(v, wrap.firstChild);
+          if (currentHero && currentHero.remove) currentHero.remove();
+          const ov = document.createElement('div');
+          ov.className = 'hero-video-overlay absolute inset-0 flex items-center justify-center pointer-events-none';
+          ov.innerHTML = '<div class="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-7 h-7 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>';
+          wrap.insertBefore(ov, wrap.firstChild?.nextSibling);
+        }
+      } else {
+        if (currentHero && currentHero.tagName === 'IMG') { currentHero.src = src; }
+        else {
+          const img = document.createElement('img');
+          img.id = 'hero-image'; img.src = src;
+          img.alt = listing.title; img.className = 'w-full h-full object-cover';
+          img.onerror = function() { this.onerror = null; this.src = FALLBACK_IMG; };
+          wrap.insertBefore(img, wrap.firstChild);
+          if (currentHero && currentHero.remove) currentHero.remove();
+        }
+      }
     });
   });
 
@@ -1451,15 +1498,15 @@ function openGalleryLightbox(listing, imgs) {
   root.className = 'fixed inset-0 z-[500] bg-black/95 flex flex-col';
   root.innerHTML = `
     <style>
-      #gallery-lightbox .lb-img{transition:opacity .18s ease}
-      #gallery-lightbox .lb-img.lb-fade{opacity:0}
+      #gallery-lightbox .lb-media{transition:opacity .18s ease}
+      #gallery-lightbox .lb-media.lb-fade{opacity:0}
     </style>
     <div class="flex items-center justify-between px-4 py-3 text-white">
       <span class="text-xs font-bold text-gray-300 truncate">${escapeHtml(listing.title)}</span>
       <button type="button" id="lb-close" class="shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" aria-label="Close">✕</button>
     </div>
     <div id="lb-viewport" class="relative flex-1 flex items-center justify-center overflow-hidden select-none">
-      <img id="lb-img" src="" alt="Gallery" class="lb-img max-w-full max-h-full object-contain px-4" draggable="false">
+      <div id="lb-media-container" class="max-w-full max-h-full px-4 flex items-center justify-center"></div>
       <button type="button" id="lb-prev" class="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center text-2xl" aria-label="Previous">‹</button>
       <button type="button" id="lb-next" class="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center text-2xl" aria-label="Next">›</button>
     </div>
@@ -1470,18 +1517,33 @@ function openGalleryLightbox(listing, imgs) {
   `;
   document.body.appendChild(root);
   document.body.style.overflow = 'hidden';
-  const imgEl = root.querySelector('#lb-img');
+  const mediaContainer = root.querySelector('#lb-media-container');
   const countEl = root.querySelector('#lb-count');
   const thumbsEl = root.querySelector('#lb-thumbs');
   let startX = null;
   const render = () => {
-    imgEl.classList.add('lb-fade');
+    mediaContainer.classList.add('lb-fade');
     setTimeout(() => {
-      imgEl.src = images[current];
-      imgEl.onerror = () => { imgEl.onerror = null; imgEl.src = FALLBACK_IMG; };
-      imgEl.classList.remove('lb-fade');
+      const src = images[current];
+      if (isVideoUrl(src)) {
+        mediaContainer.innerHTML = `<video src="${escapeHtml(src)}" controls playsinline class="lb-media max-w-full max-h-[70vh] object-contain rounded-lg" onerror="this.style.display='none'"></video>`;
+      } else {
+        const img = document.createElement('img');
+        img.src = src; img.alt = 'Gallery'; img.draggable = false;
+        img.className = 'lb-media max-w-full max-h-[70vh] object-contain';
+        img.onerror = function() { this.onerror = null; this.src = FALLBACK_IMG; };
+        mediaContainer.innerHTML = '';
+        mediaContainer.appendChild(img);
+      }
+      mediaContainer.classList.remove('lb-fade');
       countEl.textContent = `${current + 1} / ${images.length}`;
-      thumbsEl.innerHTML = images.map((u, i) => `<button type="button" data-i="${i}" class="w-12 h-9 rounded-lg overflow-hidden border-2 ${i === current ? 'border-blue-500' : 'border-transparent'}" aria-label="Image ${i + 1}"><img src="${escapeHtml(u)}" class="w-full h-full object-cover" onerror="this.style.display='none'"></button>`).join('');
+      thumbsEl.innerHTML = images.map((u, i) => {
+        const isVid = isVideoUrl(u);
+        const thumbContent = isVid
+          ? `<div class="w-full h-full flex items-center justify-center bg-gray-800"><svg class="w-3 h-3 text-white ml-px" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>`
+          : `<img src="${escapeHtml(u)}" class="w-full h-full object-cover" onerror="this.style.display='none'">`;
+        return `<button type="button" data-i="${i}" class="relative w-12 h-9 rounded-lg overflow-hidden border-2 ${i === current ? 'border-blue-500' : 'border-transparent'}" aria-label="Item ${i + 1}">${thumbContent}</button>`;
+      }).join('');
       thumbsEl.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => { current = parseInt(b.dataset.i, 10); render(); }));
     }, 90);
   };

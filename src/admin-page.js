@@ -129,6 +129,35 @@ function showToast(msg, type = 'success') {
   t._t = setTimeout(() => { t.style.transform = 'translateY(20px)'; t.style.opacity = '0'; }, 3000);
 }
 
+// ── Video helpers ──────────────────────────────────────────────────────────
+function isVideoUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (url.startsWith('blob:') || url.startsWith('data:')) return false;
+  return /\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(url);
+}
+function isVideoFile(file) {
+  return file && file.type && file.type.startsWith('video/');
+}
+function generateVideoThumbnail(file) {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata'; video.muted = true; video.playsInline = true;
+    const objectUrl = URL.createObjectURL(file);
+    video.src = objectUrl;
+    video.onloadeddata = () => { video.currentTime = Math.min(0.5, video.duration * 0.1); };
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 320; canvas.height = video.videoHeight || 240;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(objectUrl); resolve(canvas.toDataURL('image/jpeg', 0.7));
+      } catch { URL.revokeObjectURL(objectUrl); resolve(''); }
+    };
+    video.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(''); };
+    setTimeout(() => { try { URL.revokeObjectURL(objectUrl); } catch {} resolve(''); }, 5000);
+  });
+}
+
 function badge(status) {
   const map = {
     pending_verification: ['bg-amber-500/10 text-amber-400 border-amber-500/20', 'Pending'],
@@ -1618,12 +1647,12 @@ window.quickEditProduct = async function(pid) {
           <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10"><span class="text-sm text-gray-300">Featured</span><input type="checkbox" name="is_featured" ${data.is_featured ? 'checked' : ''} class="accent-blue-500 w-5 h-5"></div>
           <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10"><span class="text-sm text-gray-300">Published</span><input type="checkbox" name="is_active" ${data.is_active ? 'checked' : ''} class="accent-blue-500 w-5 h-5"></div>
           <div>
-            <label class="lbl">Gallery Images (up to 24)</label>
+            <label class="lbl">Gallery Images & Videos (up to 24)</label>
             <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
               <i data-lucide="image-plus" class="w-10 h-10 text-blue-400 mx-auto mb-2"></i>
-              <p class="text-base font-bold text-gray-300">Tap to add photos (up to 24)</p>
-              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP. First image is the cover. âœ• deletes any image (even the main/cover).</p>
-              <input type="file" id="img-upload" class="hidden" multiple accept="image/*,application/pdf" onchange="handleImageUpload(event)">
+              <p class="text-base font-bold text-gray-300">Tap to add photos or videos (up to 24)</p>
+              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP, MP4, WebM. First item is the cover.</p>
+              <input type="file" id="img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onchange="handleImageUpload(event)">
             </div>
             <div id="image-preview" class="flex flex-wrap gap-2.5 mt-3">
               ${imgs.map((url, i) => imageThumbHtml(url, i)).join('')}
@@ -2366,8 +2395,8 @@ window.showAddProductStep1 = function() {
           <p class="text-[11px] text-gray-500">Upload your product photos, press SCAN WITH AI. It detects EVERY distinct product (a photo with a bag + watch + shoes + phone gives four separate listings; each detection fills its own listing). Review each detection, then the correct category form opens filled for you. Nothing is published automatically.</p>
           <div id="s1-drop-zone" class="drop-zone" onclick="document.getElementById('s1-img-upload').click()">
             <i data-lucide="image-plus" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
-            <p class="text-xs font-bold text-gray-300">Click or drag & drop product images</p>
-            <input type="file" id="s1-img-upload" class="hidden" multiple accept="image/*,application/pdf" onchange="handleStep1ImageUpload(event)">
+            <p class="text-xs font-bold text-gray-300">Click or drag & drop product images or videos</p>
+            <input type="file" id="s1-img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onchange="handleStep1ImageUpload(event)">
           </div>
           <div id="s1-image-preview" class="flex flex-wrap gap-2"></div>
           <button type="button" id="btn-s1-scan" onclick="scanFirstWithAI()" disabled class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2" style="opacity:0.5">
@@ -2449,19 +2478,19 @@ window.showAddProductStep2 = function(category, existingData = {}) {
           <!-- Step 1: Image Upload -->
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <label class="lbl !mb-0">Step 1: Upload Product Images</label>
+              <label class="lbl !mb-0">Step 1: Upload Product Images or Videos</label>
               <span class="text-sm text-gray-500">Upload one or multiple images before publishing</span>
             </div>
             <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
               <i data-lucide="image-plus" class="w-12 h-12 text-blue-400 mx-auto mb-3"></i>
-              <p class="text-lg font-bold text-gray-300">Click or drag & drop images here</p>
-              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP up to 5MB each. First image = cover.</p>
-              <input type="file" id="img-upload" class="hidden" multiple accept="image/*,application/pdf" onchange="handleImageUpload(event)">
+              <p class="text-lg font-bold text-gray-300">Click or drag & drop images or videos here</p>
+              <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP, MP4, WebM. First item = cover.</p>
+                             <input type="file" id="img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onchange="handleImageUpload(event)">
             </div>
             <div id="image-preview" class="flex flex-wrap gap-2.5 mt-3">
               ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
             </div>
-            <p class="text-sm text-gray-500 mt-1">Drag to reorder â€¢ âœ• deletes any image (even the main/cover â€” the next image becomes the cover) â€¢ â†» replaces â€¢ Upload up to 24 gallery images</p>
+            <p class="text-sm text-gray-500 mt-1">Drag to reorder â€¢ âœ• deletes any image (even the main/cover â€” the next image becomes the cover) â€¢ â†» replaces â€¢ Upload up to 24 gallery images + videos</p>
             <p id="gallery-counter" class="text-sm mt-1 font-bold text-gray-400"></p>
             <div id="image-url-inputs">
               ${(existingData.images || []).map((url, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(url)}">`).join('')}
@@ -2616,14 +2645,21 @@ window.switchProductFormCategory = function(newCategory) {
 
 function imageThumbHtml(url, i) {
   const isPdf = looksLikePdf(url);
-  const media = isPdf
-    ? `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-gray-300 select-none"><span class="text-2xl leading-none">📄</span><span class="text-[10px] font-bold mt-1">PDF</span></div>`
-    : `<img src="${esc(url)}" onerror="this.src='/fallback.svg'">`;
-  return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}" data-url="${esc(url)}" title="${i === 0 ? 'Cover Image (main photo)' : 'Image ' + (i + 1)}">
+  const isVid = isVideoUrl(url);
+  let media;
+  if (isPdf) {
+    media = `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-gray-300 select-none"><span class="text-2xl leading-none">📄</span><span class="text-[10px] font-bold mt-1">PDF</span></div>`;
+  } else if (isVid) {
+    media = `<video src="${esc(url)}" muted loop preload="metadata" playsinline class="w-full h-full object-cover" onerror="this.style.display='none'"></video>
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center shadow"><svg class="w-4 h-4 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`;
+  } else {
+    media = `<img src="${esc(url)}" onerror="this.src='/fallback.svg'">`;
+  }
+  return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}" data-url="${esc(url)}" title="${i === 0 ? 'Cover (main)' : (isVid ? 'Video ' : 'Image ') + (i + 1)}">
     ${media}
-    <button class="rm" onclick="removeImage(${i})" type="button" title="Delete this image (cover can be deleted too)">✕</button>
-    <button class="rp" onclick="document.getElementById('rp-input-${i}').click()" type="button" title="Replace image">↻</button>
-    <input type="file" accept="image/*,application/pdf" class="rp-input" id="rp-input-${i}" onchange="replaceImage(${i}, this)">
+    <button class="rm" onclick="removeImage(${i})" type="button" title="Delete">✕</button>
+    <button class="rp" onclick="document.getElementById('rp-input-${i}').click()" type="button" title="Replace">↻</button>
+    <input type="file" accept="image/*,video/mp4,video/webm,video/*,application/pdf" class="rp-input" id="rp-input-${i}" onchange="replaceImage(${i}, this)">
   </div>`;
 }
 
@@ -2652,17 +2688,25 @@ async function processImageFiles(files) {
   const preview = document.getElementById('image-preview');
   if (!preview) return;
   for (const file of files) {
-    // Photos AND PDF documents (multi-page listings, invoices, spec sheets,
-    // certificates) are accepted â€” the scanner renders every PDF page itself.
     const isPdf = file.type === 'application/pdf' || looksLikePdf(file.name);
-    if (!file.type.startsWith('image/') && !isPdf) continue;
+    const isVid = isVideoFile(file);
+    if (!file.type.startsWith('image/') && !isPdf && !isVid) continue;
+    if (isVid && file.size > 100 * 1024 * 1024) { showToast('Video must be under 100 MB.', 'error'); continue; }
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'img-thumb uploading';
+    loadingDiv.style.cssText = 'min-width:90px;min-height:80px;';
+    loadingDiv.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-gray-400"><div class="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mb-1.5"></div><span class="text-[10px] font-bold">Uploading…</span></div>`;
+    preview.appendChild(loadingDiv);
     const url = await uploadImageFile(file);
+    loadingDiv.remove();
     if (url) {
       const i = preview.children.length;
       const div = document.createElement('div');
       div.innerHTML = imageThumbHtml(url, i);
       preview.appendChild(div.firstElementChild);
       rebuildImageInputs();
+    } else {
+      showToast(`Failed to upload ${isVid ? 'video' : 'image'}. Try a smaller file.`, 'error');
     }
   }
   updateCoverBadge();
@@ -2714,19 +2758,19 @@ window.replaceImage = async function(index, input) {
   if (!preview || !input || !input.files || !input.files[0]) return;
   const file = input.files[0];
   const isPdf = file.type === 'application/pdf' || looksLikePdf(file.name);
-  if (!file.type.startsWith('image/') && !isPdf) { showToast('Please choose an image or PDF file.', 'error'); return; }
+  const isVid = isVideoFile(file);
+  if (!file.type.startsWith('image/') && !isPdf && !isVid) { showToast('Please choose an image, video, or PDF file.', 'error'); return; }
+  if (isVid && file.size > 100 * 1024 * 1024) { showToast('Video must be under 100 MB.', 'error'); return; }
   const url = await uploadImageFile(file);
   if (!url) return;
   const items = [...preview.querySelectorAll('.img-thumb')];
   const thumb = items[index];
   if (!thumb) return;
-  // Re-render the whole thumb so photos AND PDF documents are handled the
-  // same way (PDF thumbs have no <img>, they render a document badge).
   thumb.outerHTML = imageThumbHtml(url, index);
   rebuildImageInputs();
   updateCoverBadge();
   updateGalleryCounter();
-  showToast(isPdf ? 'Document replaced. Save changes to apply.' : 'Image replaced. Save changes to apply.', 'info');
+  showToast(isPdf ? 'Document replaced. Save to apply.' : (isVid ? 'Video replaced. Save to apply.' : 'Image replaced. Save to apply.'), 'info');
 };
 
 function rebuildImageInputs() {
@@ -2757,7 +2801,8 @@ function updateCoverBadge() {
   if (!preview) return;
   [...preview.querySelectorAll('.img-thumb')].forEach((t, i) => {
     t.classList.toggle('cover-img', i === 0);
-    t.title = i === 0 ? 'Cover Image' : `Image ${i + 1}`;
+    const isVid = isVideoUrl(t.dataset.url);
+    t.title = i === 0 ? 'Cover (main)' : (isVid ? 'Video ' : 'Image ') + (i + 1);
   });
 }
 
@@ -2767,10 +2812,18 @@ function updateGalleryCounter() {
   const preview = document.getElementById('image-preview');
   const counter = document.getElementById('gallery-counter');
   if (!preview || !counter) return;
-  const count = preview.querySelectorAll('.img-thumb').length;
-  counter.textContent = count
-    ? `${count} image${count > 1 ? 's' : ''} â€” you can save and publish anytime`
-    : 'No images yet â€” you can still save and publish anytime';
+  const thumbs = [...preview.querySelectorAll('.img-thumb')];
+  const count = thumbs.length;
+  const videoCount = thumbs.filter(t => isVideoUrl(t.dataset.url)).length;
+  const imageCount = count - videoCount;
+  if (count === 0) {
+    counter.textContent = 'No media yet — you can still save and publish anytime';
+  } else {
+    const parts = [];
+    if (imageCount > 0) parts.push(`${imageCount} image${imageCount > 1 ? 's' : ''}`);
+    if (videoCount > 0) parts.push(`${videoCount} video${videoCount > 1 ? 's' : ''}`);
+    counter.textContent = `${parts.join(' + ')} — you can save and publish anytime`;
+  }
   counter.className = 'text-sm mt-1 font-bold text-gray-400';
 }
 
@@ -2845,7 +2898,7 @@ function updateProductReviewPanel() {
       <div><span class="text-gray-500">Brand</span><p class="text-white font-semibold">${esc(brand)}</p></div>
       <div><span class="text-gray-500">Price</span><p class="text-emerald-300 font-semibold">${realPrice > price ? `<span class="line-through text-gray-500 mr-1">$${realPrice.toLocaleString()}</span>` : ''}$${price.toLocaleString()}</p></div>
       <div><span class="text-gray-500">Stock</span><p class="text-white font-semibold">${esc(stock)}</p></div>
-      <div><span class="text-gray-500">Images</span><p class="text-white font-semibold">${imageCount}</p></div>
+      <div><span class="text-gray-500">Media</span><p class="text-white font-semibold">${imageCount}</p></div>
       <div><span class="text-gray-500">Status</span><p class="${isActive ? 'text-emerald-300' : 'text-amber-300'} font-semibold">${isActive ? 'Published' : 'Draft / Hidden'}</p></div>
     </div>
     <div class="mt-2 text-gray-400">Tags: ${tags.length ? esc(tags.join(', ')) : 'No tags selected'}</div>
@@ -4312,11 +4365,17 @@ window.removeStep1Image = function(i) {
 function renderStep1Preview() {
   const preview = document.getElementById('s1-image-preview');
   if (!preview) return;
-  preview.innerHTML = step1Images.map((u, i) => `
-    <div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}">
-      <img src="${esc(u)}" onerror="this.src='/fallback.svg'">
-      <button class="rm" onclick="removeStep1Image(${i})" type="button">ðŸ”™</button>
-    </div>`).join('');
+  preview.innerHTML = step1Images.map((u, i) => {
+    const isVid = isVideoUrl(u);
+    const media = isVid
+      ? `<video src="${esc(u)}" muted loop preload="metadata" playsinline class="w-full h-full object-cover"></video>
+         <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-7 h-7 rounded-full bg-white/80 flex items-center justify-center"><svg class="w-3.5 h-3.5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
+      : `<img src="${esc(u)}" onerror="this.src='/fallback.svg'">`;
+    return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}">
+      ${media}
+      <button class="rm" onclick="removeStep1Image(${i})" type="button">✕</button>
+    </div>`;
+  }).join('');
   const btn = document.getElementById('btn-s1-scan');
   if (btn) { btn.disabled = step1Images.length === 0; btn.style.opacity = step1Images.length ? '' : '0.5'; }
   if (window.lucide) lucide.createIcons();
@@ -5265,11 +5324,11 @@ window.showAddPropertyModal = function(existing = {}) {
           </div>
 
           <div>
-            <label class="lbl">Property Images</label>
+            <label class="lbl">Property Images & Videos</label>
             <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
               <i data-lucide="image-plus" class="w-7 h-7 text-blue-400 mx-auto mb-2"></i>
-              <p class="text-xs font-bold text-gray-300">Click or drag & drop images</p>
-              <input type="file" id="img-upload" class="hidden" multiple accept="image/*,application/pdf" onchange="handleImageUpload(event)">
+              <p class="text-xs font-bold text-gray-300">Click or drag & drop images or videos</p>
+              <input type="file" id="img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onchange="handleImageUpload(event)">
             </div>
             <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
               ${(existing.images || []).map((u, i) => imageThumbHtml(u, i)).join('')}

@@ -12,6 +12,12 @@ import { canonicalCategoriesForLabel } from './categories.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
+function isVideoUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (url.startsWith('blob:') || url.startsWith('data:')) return false;
+  return /\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(url);
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -433,6 +439,7 @@ function cardParts(listing) {
   const isCar = listing.listing_type === 'vehicle' && listing.category === 'Cars';
   const listingId = listing.id || listing.property_id;
   const cover = listing.images?.[0] || FALLBACK_IMG;
+  const isCoverVideo = isVideoUrl(cover);
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
   const statusBadge = listing.listing_type === 'product' ? 'New' : ((isProperty || isPet) ? 'For Sale' : '');
 
@@ -508,7 +515,7 @@ function cardParts(listing) {
 
   return {
     isProperty, isPet, isTruck, isMotorhome, isCar,
-    listingId, cover, price, statusBadge,
+    listingId, cover, isCoverVideo, price, statusBadge,
     locationHtml, specsHtml, ratingStars, mapPreviewHtml,
     discountBadge, originalPriceHtml,
   };
@@ -525,9 +532,13 @@ export function renderCard(listing) {
 
   card.innerHTML = `
     <div class="relative aspect-[6/5] overflow-hidden bg-gray-100">
-      <img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
-           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-           onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${p.isCoverVideo
+        ? `<video src="${escapeHtml(p.cover)}" muted loop preload="metadata" playsinline class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
+           <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
+        : `<img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
+             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+             onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
+      }
       ${p.statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${p.statusBadge}</span>` : ''}
       ${p.discountBadge}
       <div class="absolute top-2 right-2 flex flex-col gap-1.5">
@@ -583,9 +594,13 @@ export function renderFeedCard(listing) {
 
   card.innerHTML = `
     <div class="relative shrink-0 sm:w-[42%] lg:w-[38%] xl:w-[34%] aspect-[7/5] sm:aspect-auto sm:min-h-[300px] overflow-hidden bg-gray-100">
-      <img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
-           class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-           onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${p.isCoverVideo
+        ? `<video src="${escapeHtml(p.cover)}" muted loop preload="metadata" playsinline class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
+           <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
+        : `<img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
+             class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+             onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
+      }
       ${p.statusBadge ? `<span class="absolute top-2.5 left-2.5 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${p.statusBadge}</span>` : ''}
       ${p.discountBadge}
       <span class="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
