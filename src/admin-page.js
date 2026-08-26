@@ -1483,27 +1483,20 @@ async function safePublishShowroom(payload) {
       .from('showroom_listings')
       .upsert(directPayload, { onConflict: 'property_id' });
     if (!upErr) return { error: null }; // SUCCESS via direct write
-    // If it's NOT an RLS error, return the real error (schema issue, constraint, etc.)
-    if (!isRlsDenied(upErr)) {
-      console.error('[safePublishShowroom] Direct upsert failed (non-RLS):', upErr);
-      return { error: upErr };
-    }
-    // RLS blocked it — fall through to RPC
-    console.warn('[safePublishShowroom] RLS blocked direct upsert, falling back to RPC...');
+    // Log the error but ALWAYS fall through to RPC — the RPC uses a
+    // controlled column set so it succeeds even when the direct write
+    // fails due to missing columns, type mismatches, or RLS.
+    console.warn('[safePublishShowroom] Direct upsert failed, trying RPC fallback:', upErr?.message || upErr);
   } else {
     // No property_id — try direct insert
     const { error: insErr } = await supabase
       .from('showroom_listings')
       .insert(directPayload);
     if (!insErr) return { error: null };
-    if (!isRlsDenied(insErr)) {
-      console.error('[safePublishShowroom] Direct insert failed (non-RLS):', insErr);
-      return { error: insErr };
-    }
-    console.warn('[safePublishShowroom] RLS blocked direct insert, falling back to RPC...');
+    console.warn('[safePublishShowroom] Direct insert failed, trying RPC fallback:', insErr?.message || insErr);
   }
 
-  // --- STEP 2: Fallback to SECURITY DEFINER RPC (bypasses RLS) ---
+  // --- STEP 2: Fallback to SECURITY DEFINER RPC (bypasses RLS + schema) ---
   try {
     const rpcPayload = { ...directPayload };
     // publish_showroom_upsert expects the payload without 'id' (uses property_id)
