@@ -7973,7 +7973,7 @@ window.heroVideoSavePublish = async function(btn) {
     const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
     let error;
     if (existing?.id) ({ error } = await supabase.from('site_settings').update({ hero_video_slides: arr }).eq('id', existing.id));
-    else ({ error } = await supabase.from('site_settings').insert({ id: 1, hero_video_slides: arr }));
+    else ({ error } = await supabase.from('site_settings').insert({ id: crypto.randomUUID(), hero_video_slides: arr }));
     if (error) throw new Error(error.message);
     invalidateSiteContent();
     showToast('âœ“ Hero video banner published! ' + withVideo.length + (withVideo.length === 1 ? ' video is' : ' videos are') + ' now live on your homepage.', 'success');
@@ -8061,7 +8061,7 @@ window.saveContentSettings = async function(e) {
     const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
     let error;
     if (existing?.id) ({ error } = await supabase.from('site_settings').update(data).eq('id', existing.id));
-    else ({ error } = await supabase.from('site_settings').insert({ id: 1, ...data }));
+    else ({ error } = await supabase.from('site_settings').insert({ id: crypto.randomUUID(), ...data }));
     if (error) throw new Error(error.message);
     invalidateSiteContent();
     showToast('Content updated â€” the banners now use your new words and uploads.', 'success');
