@@ -1176,13 +1176,16 @@ function render(listing) {
   const availabilityStatus = listing.availability_status || (listing.listing_type === 'product' ? 'In Stock' : 'Available');
 
   const imgs2 = safeImages(listing.images);
+  const firstVideoIdx = imgs2.findIndex(u => isVideoUrl(u));
+  const heroMedia = firstVideoIdx >= 0 ? imgs2[firstVideoIdx] : imgs2[0];
+  const heroIsVideo = firstVideoIdx >= 0;
   const galleryThumbs = imgs2.map((img, i) => {
     const isVid = isVideoUrl(img);
     const thumbContent = isVid
-      ? `<video src="${escapeHtml(img)}" muted preload="metadata" playsinline class="w-20 h-16 object-cover"></video>
+      ? `<video src="${escapeHtml(img)}" muted preload="auto" playsinline class="w-20 h-16 object-cover"></video>
          <div class="absolute inset-0 flex items-center justify-center"><div class="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center"><svg class="w-2.5 h-2.5 text-gray-800 ml-px" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
       : `<img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`;
-    return `<button class="gallery-thumb relative rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
+    return `<button class="gallery-thumb relative rounded-lg overflow-hidden border-2 ${(heroIsVideo ? i === firstVideoIdx : i === 0) ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
       ${thumbContent}
     </button>`;
   }).join('');
@@ -1323,15 +1326,14 @@ function render(listing) {
       </div>
 
       <div id="hero-wrap" class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 cursor-zoom-in group" role="button" tabindex="0" aria-label="Open image gallery">
-        ${isVideoUrl(listing.images[0])
-          ? `<video id="hero-image" src="${escapeHtml(listing.images[0])}" muted loop preload="metadata" playsinline class="w-full h-full object-cover" onerror="this.style.display='none'"></video>
+        ${heroIsVideo
+          ? `<video id="hero-image" src="${escapeHtml(heroMedia)}" autoplay muted loop preload="auto" playsinline class="w-full h-full object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video>
              <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-7 h-7 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
-          : `<img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
+          : `<img id="hero-image" src="${heroMedia}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
         }
         <div class="absolute inset-0 flex items-end justify-between p-3 opacity-0 group-hover:opacity-100 transition pointer-events-none">
           <span class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-black/50 backdrop-blur px-3 py-1.5 rounded-full"><i data-lucide="expand" class="w-3.5 h-3.5"></i> Tap to enlarge</span>
         </div>
-      </div>
       </div>
 
       <div class="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-8">
@@ -1382,9 +1384,8 @@ function render(listing) {
         else {
           const v = document.createElement('video');
           v.id = 'hero-image'; v.src = src; v.muted = true; v.loop = true;
-          v.preload = 'metadata'; v.playsInline = true;
+          v.autoplay = true; v.preload = 'auto'; v.playsInline = true;
           v.className = 'w-full h-full object-cover';
-          v.onerror = function() { this.style.display = 'none'; };
           wrap.insertBefore(v, wrap.firstChild);
           if (currentHero && currentHero.remove) currentHero.remove();
           const ov = document.createElement('div');
@@ -1526,7 +1527,7 @@ function openGalleryLightbox(listing, imgs) {
     setTimeout(() => {
       const src = images[current];
       if (isVideoUrl(src)) {
-        mediaContainer.innerHTML = `<video src="${escapeHtml(src)}" controls playsinline class="lb-media max-w-full max-h-[70vh] object-contain rounded-lg" onerror="this.style.display='none'"></video>`;
+        mediaContainer.innerHTML = `<video src="${escapeHtml(src)}" controls playsinline preload="auto" class="lb-media max-w-full max-h-[70vh] object-contain rounded-lg"></video>`;
       } else {
         const img = document.createElement('img');
         img.src = src; img.alt = 'Gallery'; img.draggable = false;
