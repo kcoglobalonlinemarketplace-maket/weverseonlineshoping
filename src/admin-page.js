@@ -4924,6 +4924,8 @@ window.saveProduct = async function(e, category, existingId) {
 
       const formImages = data.images || [];
       if (!eq(formImages.join('||'), (Array.isArray(base.images) ? base.images : []).join('||'))) changes.images = formImages;
+      const firstVideoUrl = formImages.find(u => typeof u === 'string' && isVideoUrl(u)) || null;
+      if (!eq(firstVideoUrl, base.video_url)) changes.video_url = firstVideoUrl;
 
       const feat = data.is_featured === 'on';
       if (!!base.is_featured !== feat) changes.is_featured = feat;
@@ -5002,6 +5004,7 @@ window.saveProduct = async function(e, category, existingId) {
         availability_status: data.availability_status || 'In Stock',
         stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
         images: data.images || [],
+        video_url: (data.images || []).find(u => typeof u === 'string' && isVideoUrl(u)) || null,
         features: normalizeComma(data.features_text).length ? normalizeComma(data.features_text) : (data.tags || []),
         tags: data.tags || [],
         highlights: normalizeComma(data.highlights_text),

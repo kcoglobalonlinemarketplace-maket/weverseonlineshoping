@@ -157,6 +157,12 @@ function withTimeout(promise, ms) {
 
 // Turn a raw DB/local-store row into the shape the showroom/details pages read.
 function normalizeDbRow(row) {
+  const images = Array.isArray(row.images) ? [...row.images] : [];
+  // Merge standalone video/video_url columns into images[] so every renderer
+  // that iterates `listing.images` automatically picks up the product video.
+  for (const v of [row.video, row.video_url]) {
+    if (v && typeof v === 'string' && !images.includes(v)) images.push(v);
+  }
   return {
     ...row,
     // Vehicle/product specs are stored in the `specifications` JSONB column
@@ -164,7 +170,7 @@ function normalizeDbRow(row) {
     // Flatten them to top-level so the showroom/details pages can read them
     // the same way they read the hardcoded seed data.
     ...(row.specifications && typeof row.specifications === 'object' ? row.specifications : {}),
-    images: Array.isArray(row.images) ? row.images : [],
+    images,
     features: Array.isArray(row.features) ? row.features : [],
     highlights: Array.isArray(row.highlights) ? row.highlights : [],
     rating: Number(row.rating) || 0,

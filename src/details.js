@@ -1175,7 +1175,11 @@ function render(listing) {
   }
   const availabilityStatus = listing.availability_status || (listing.listing_type === 'product' ? 'In Stock' : 'Available');
 
-  const imgs2 = safeImages(listing.images);
+  const rawImages = safeImages(listing.images);
+  // Also check standalone video/video_url columns (may not be in images[])
+  const extraVideo = [listing.video, listing.video_url].find(u => u && typeof u === 'string' && isVideoUrl(u));
+  const imgs2 = [...rawImages];
+  if (extraVideo && !imgs2.includes(extraVideo)) imgs2.unshift(extraVideo);
   const firstVideoIdx = imgs2.findIndex(u => isVideoUrl(u));
   const heroMedia = firstVideoIdx >= 0 ? imgs2[firstVideoIdx] : imgs2[0];
   const heroIsVideo = firstVideoIdx >= 0;
