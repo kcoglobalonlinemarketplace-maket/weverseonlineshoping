@@ -3635,7 +3635,7 @@ function imagesForProduct(p, images) {
   return out.length ? out : images;
 }
 
-function scanReviewCardHtml(p, i) {
+function scanReviewCardHtml(p, i, isDuplicate) {
   const norm = normalizeDetectedCategory(p.category);
   const isProperty = p.listing_type === 'property' || (norm && norm.listing_type === 'property');
   const cat = !isProperty ? (norm.category || p.category || 'Other') : 'Real Estate';
@@ -3652,16 +3652,18 @@ function scanReviewCardHtml(p, i) {
       <p class="text-xs font-bold text-white">${i + 1}. ${esc(p.detected_name || 'Detected product')}</p>
       <span class="inline-flex items-center gap-1">
         ${p._photoNotRead ? '<span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-500/10 text-red-300 border-red-500/20" title="The AI could not read the photos for this card - it was created from saved details only.">PHOTO NOT READ</span>' : ''}
+        ${isDuplicate ? '<span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border bg-orange-500/10 text-orange-300 border-orange-500/20" title="This product appears more than once — consider deleting the duplicate.">DUPLICATE</span>' : ''}
         <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${confCls}">${esc(conf).toUpperCase()}</span>
       </span>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
       ${thumbs.map(u => `<img src="${esc(u)}" class="w-10 h-10 rounded-lg object-cover border border-violet-500/20" onerror="this.src='/fallback.svg'">`).join('')}
-      <span class="text-[11px] text-gray-400">${isProperty ? 'Real Estate' : esc(cat)} Â· ${(p.image_indices || []).length || 1} image(s)</span>
+      <span class="text-[11px] text-gray-400">${isProperty ? 'Real Estate' : esc(cat)} &middot; ${(p.image_indices || []).length || 1} image(s)</span>
     </div>
     <div class="flex flex-wrap gap-2">
       <button type="button" onclick="scanReviewContinue(${i})" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Continue to ${isProperty ? 'Properties Manager' : 'its form'}</button>
       <button type="button" onclick="scanReviewEdit(${i})" class="btn-press px-4 py-2 bg-gray-700/60 hover:bg-gray-600 text-gray-200 text-xs font-bold rounded-lg transition">Edit</button>
+      <button type="button" onclick="scanReviewDelete(${i})" class="btn-press px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition" title="Permanently delete this product from the database">Delete</button>
       <button type="button" onclick="scanReviewRemove(${i})" class="btn-press px-4 py-2 bg-red-900/40 hover:bg-red-800/60 text-red-200 text-xs font-bold rounded-lg transition">Remove</button>
       <button type="button" onclick="scanReviewCancel()" class="btn-press px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs font-bold rounded-lg transition">Cancel</button>
     </div>
@@ -3674,17 +3676,33 @@ window.scanReviewRender = function() {
   el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
   if (!scanReviewProducts.length) {
     el.classList.add('text-gray-400');
-    el.textContent = 'All detected products were removed â€” nothing was changed.';
+    el.textContent = 'All detected products were removed \u2014 nothing was changed.';
     return;
+  }
+  // Precompute duplicate flags: mark any product whose brand+model (or name)
+  // matches another product in the same scan batch.
+  const dupCounts = {};
+  for (const p of scanReviewProducts) {
+    const brand = normalizeDupKey(p.brand);
+    const model = normalizeDupKey(p.model);
+    const name  = normalizeDupKey(p.detected_name);
+    const key = (brand && model) ? `${brand}::${model}` : (name || `${brand}::${model}`);
+    if (key) dupCounts[key] = (dupCounts[key] || 0) + 1;
   }
   el.classList.add('text-gray-100');
   el.innerHTML = `
     <div class="space-y-3">
       <div>
         <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4 text-violet-400"></i> ${scanReviewProducts.length} distinct product${scanReviewProducts.length > 1 ? 's' : ''} detected</p>
-        <p class="text-[11px] text-gray-400 mt-1">Review each card below. Edit or remove as needed, then press Continue to open each product's form and publish it.</p>
+        <p class="text-[11px] text-gray-400 mt-1">Review each card below. Edit, remove or delete duplicates as needed, then press Continue to open each product's form and publish it.</p>
       </div>
-      ${scanReviewProducts.map((p, i) => scanReviewCardHtml(p, i)).join('')}
+      ${scanReviewProducts.map((p, i) => {
+        const brand = normalizeDupKey(p.brand);
+        const model = normalizeDupKey(p.model);
+        const name  = normalizeDupKey(p.detected_name);
+        const key = (brand && model) ? `${brand}::${model}` : (name || `${brand}::${model}`);
+        return scanReviewCardHtml(p, i, key && dupCounts[key] > 1);
+      }).join('')}
     </div>`;
   if (window.lucide) lucide.createIcons();
 };
@@ -3768,6 +3786,22 @@ window.scanReviewApplyEdit = function(i) {
 window.scanReviewRemove = function(i) {
   scanReviewProducts.splice(i, 1);
   scanReviewRender();
+};
+
+window.scanReviewDelete = async function(i) {
+  const p = scanReviewProducts[i];
+  if (!p) return;
+  const pid = p.property_id;
+  if (!pid) { scanReviewProducts.splice(i, 1); scanReviewRender(); return; }
+  if (!confirm(`Permanently delete "${p.detected_name || 'this product'}" from the database and showroom?`)) return;
+  try {
+    await supabase.from('showroom_listings').delete().eq('property_id', pid);
+    removeLocalShowroomListing(pid);
+    try { await saveCatalogHidden(pid, true); } catch {}
+  } catch {}
+  scanReviewProducts.splice(i, 1);
+  scanReviewRender();
+  showToast(`${p.detected_name || 'Product'} deleted`);
 };
 
 window.scanReviewCancel = function() {
