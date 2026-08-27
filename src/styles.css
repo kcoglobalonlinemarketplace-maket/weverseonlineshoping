@@ -692,10 +692,6 @@ footer {
   background: #ffffff !important;
   border-color: rgba(59, 130, 246, 0.3) !important;
 }
-#kco-ai-panel > div:first-child {
-  background: #ffffff !important;
-  border-bottom-color: #e2e8f0 !important;
-}
 #kco-ai-panel [class*="text-blue-100"],
 #kco-ai-panel [class*="text-blue-200"] {
   color: #2563eb !important;

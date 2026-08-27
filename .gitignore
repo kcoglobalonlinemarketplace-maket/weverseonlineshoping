@@ -9,3 +9,4 @@ api/details-static.html
 # Local dev server log
 dev-server.log
 
+.env*

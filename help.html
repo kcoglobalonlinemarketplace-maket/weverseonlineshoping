@@ -20,7 +20,28 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <script src="https://unpkg.com/lucide@0.460.0" defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>*{font-family:'Inter',system-ui,sans-serif}.glass{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}@keyframes fade-in-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.fade-in-up{animation:fade-in-up .8s ease forwards}@keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.slide-up{animation:slide-up .5s ease forwards}.faq-answer{max-height:0;overflow:hidden;transition:max-height .3s ease,opacity .3s ease,padding .3s ease;opacity:0}.faq-answer.open{max-height:500px;opacity:1;padding-top:12px;padding-bottom:12px}.faq-icon{transition:transform .3s ease}.faq-icon.open{transform:rotate(180deg)}</style>
+  <style>
+    *{font-family:'Inter',system-ui,sans-serif}
+    .glass{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
+    /* ── CRITICAL FALLBACK STYLES (Help Center page) ─────────────────────
+       Keep the page readable with a visible header even if the hashed
+       /assets/*.css bundle fails to load. The Tailwind stylesheet is
+       linked AFTER this block, so it wins whenever it loads. */
+    body{margin:0;background:#f9fafb;color:#111827;-webkit-font-smoothing:antialiased}
+    header{position:fixed;top:0;left:0;right:0;z-index:40;background:rgba(255,255,255,.95);border-bottom:1px solid #e5e7eb;box-shadow:0 1px 8px rgba(0,0,0,.08)}
+    header>div{display:flex;align-items:center;justify-content:space-between;height:64px;max-width:1280px;margin:0 auto;padding:0 16px}
+    header a{text-decoration:none;color:#374151}
+    main{position:relative;z-index:10;max-width:896px;margin:0 auto;padding:96px 16px 48px}
+    main h1{font-size:2rem;font-weight:900;margin:0 0 12px;text-align:center}
+    main h2{font-size:1.25rem;font-weight:700;margin:0 0 16px}
+    main h3{font-size:.875rem;font-weight:700;margin:0 0 4px}
+    main p{margin:0 0 8px;color:#6b7280}
+    form input,form select,form textarea{width:100%;box-sizing:border-box;background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:10px 16px;font-size:14px;color:#111827}
+    form button[type=submit]{border:none;border-radius:12px;padding:12px;background:linear-gradient(90deg,#2563eb,#1d4ed8);color:#fff;font-weight:700;font-size:13px;cursor:pointer}
+    /* ── END CRITICAL FALLBACK STYLES ─────────────────────────────────── */
+    @keyframes fade-in-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.fade-in-up{animation:fade-in-up .8s ease forwards}
+    @keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.slide-up{animation:slide-up .5s ease forwards}.faq-answer{max-height:0;overflow:hidden;transition:max-height .3s ease,opacity .3s ease,padding .3s ease;opacity:0}.faq-answer.open{max-height:500px;opacity:1;padding-top:12px;padding-bottom:12px}.faq-icon{transition:transform .3s ease}.faq-icon.open{transform:rotate(180deg)}
+  </style>
   <link rel="modulepreload" crossorigin href="/assets/supabase-client-DvCmNkpI-BFHnnn3M.js">
   <link rel="modulepreload" crossorigin href="/assets/localization-XLaEvqbL-DEyIhb6U.js">
   <link rel="modulepreload" crossorigin href="/assets/localization-bootstrap-BhglmvwT-BZ_21NL6.js">

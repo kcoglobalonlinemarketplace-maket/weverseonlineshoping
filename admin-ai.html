@@ -21,7 +21,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/src/styles.css">
   <script src="https://unpkg.com/lucide@0.460.0" defer></script>
   <style>
     * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
@@ -54,6 +53,18 @@
     .msg-bubble-user { font-size: 1.05rem; line-height: 1.5; }
     #chat-messages::-webkit-scrollbar { width: 8px; }
   </style>
+  <link rel="modulepreload" crossorigin href="/assets/supabase-client-DvCmNkpI-BFHnnn3M.js">
+  <link rel="modulepreload" crossorigin href="/assets/localization-XLaEvqbL-DEyIhb6U.js">
+  <link rel="modulepreload" crossorigin href="/assets/localization-bootstrap-BhglmvwT-BZ_21NL6.js">
+  <link rel="modulepreload" crossorigin href="/assets/categories-BEuiwWw5-DvU_r1Ww.js">
+  <link rel="modulepreload" crossorigin href="/assets/app-promo-banner-VTpzwpvR-1NxFCIXH.js">
+  <script type="module" crossorigin src="/assets/adminAi-CgeYkUbn.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/supabase-client-DvCmNkpI-BBtcpOs0.js">
+  <link rel="modulepreload" crossorigin href="/assets/localization-B_HxL1KQ-Do35V_4n.js">
+  <link rel="modulepreload" crossorigin href="/assets/localization-bootstrap-BhglmvwT-CYE5uVRZ.js">
+  <link rel="modulepreload" crossorigin href="/assets/categories-BEuiwWw5-Dd8DYwb8.js">
+  <link rel="modulepreload" crossorigin href="/assets/app-promo-banner-VTpzwpvR-CiDTzVNv.js">
+  <link rel="stylesheet" crossorigin href="/assets/localization-B_HxL1KQ-B_HxL1KQ.css">
 </head>
 <body class="bg-[#070b16] text-gray-100 min-h-screen overflow-hidden">
   <div class="fixed inset-0 pointer-events-none">
@@ -331,17 +342,10 @@
     <i data-lucide="info" class="w-4 h-4 text-blue-400"></i><span id="toast-msg">Action</span>
   </div>
 
-  <script type="module" src="/src/localization-bootstrap.js"></script>
-  <script type="module" src="/src/admin-ai-page.js"></script>
   <script src="/back-button.js" defer></script>
-  <script type="module" src="/src/brand.js"></script>
   <!-- APP PROMOTION BANNER + LIVE PRODUCT PROMOTIONS -->
   <div id="trust-info-area"></div>
-  <script type="module" src="/src/trust-info-area.js"></script>
   <div id="app-promo-banner"></div>
   <div id="live-promo-alerts" class="fixed bottom-4 right-4 z-50 w-[340px] max-w-[90vw] space-y-3 pointer-events-none" aria-live="polite"></div>
-  <script type="module" src="/src/app-promo-banner.js"></script>
-  <script type="module" src="/src/live-promo-alerts.js"></script>
-  <script type="module" src="/src/scroll-progress.js"></script>
 </body>
 </html>
