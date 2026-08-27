@@ -61,6 +61,7 @@ function iconSvg(name, size = 20) {
     message: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
     send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
     close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    arrowleft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
     headset: '<path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Z"/><path d="M21 11h-3a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-5Z"/><path d="M3 11v-1a9 9 0 0 1 18 0v1"/><path d="M21 16v2a4 4 0 0 1-4 4h-5"/>',
   };
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.message}</svg>`;
@@ -85,6 +86,8 @@ function injectStyles() {
     .kco-ai-dot{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.25)}
     .kco-ai-close{margin-left:auto;width:30px;height:30px;flex-shrink:0;border:none;border-radius:9px;background:rgba(255,255,255,.15);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s}
     .kco-ai-close:hover{background:rgba(255,255,255,.3)}
+    .kco-ai-back{width:32px;height:32px;flex-shrink:0;border:none;border-radius:9px;background:rgba(255,255,255,.18);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .15s;margin-right:-.25rem}
+    .kco-ai-back:hover{background:rgba(255,255,255,.35);transform:scale(1.08)}
     .kco-ai-body{flex:1;min-height:0;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.6rem;background:#f8fafc;scroll-behavior:smooth}
     .kco-ai-msg{max-width:82%;padding:.55rem .8rem;border-radius:1rem;font-size:13px;line-height:1.5;word-break:break-word}
     .kco-ai-msg b{font-weight:700}
@@ -124,6 +127,7 @@ function buildDom() {
   panel.setAttribute('aria-label', 'Weverse Online Shop assistant chat');
   panel.innerHTML = `
     <div class="kco-ai-head">
+      <button class="kco-ai-back" aria-label="Go back">${iconSvg('arrowleft', 18)}</button>
       <div class="kco-ai-avatar">${iconSvg('headset', 20)}</div>
       <div>
         <div class="kco-ai-title">Weverse Online Shop</div>
@@ -145,6 +149,7 @@ function buildDom() {
   const input = panel.querySelector('.kco-ai-input');
   const sendBtn = panel.querySelector('.kco-ai-send');
   const closeBtn = panel.querySelector('.kco-ai-close');
+  const backBtn = panel.querySelector('.kco-ai-back');
 
   SUGGESTIONS.forEach((text) => {
     const chip = document.createElement('button');
@@ -169,6 +174,7 @@ function buildDom() {
     if (e.key === 'Enter') send();
   });
   closeBtn.addEventListener('click', close);
+  backBtn.addEventListener('click', close);
 
   document.body.appendChild(btn);
   document.body.appendChild(panel);
