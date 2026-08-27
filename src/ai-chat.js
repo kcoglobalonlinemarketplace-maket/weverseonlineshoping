@@ -72,10 +72,13 @@ function injectStyles() {
   const style = document.createElement('style');
   style.id = 'kco-ai-chat-style';
   style.textContent = `
-    #kco-ai-btn{position:fixed;right:1.1rem;bottom:1.1rem;z-index:95;width:56px;height:56px;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 10px 30px rgba(37,99,235,.45);transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent}
-    #kco-ai-btn:hover{transform:scale(1.06);box-shadow:0 14px 38px rgba(37,99,235,.55)}
-    #kco-ai-btn:active{transform:scale(.94)}
-    #kco-ai-btn::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(59,130,246,.5);animation:kco-ai-ping 2s cubic-bezier(0,0,.2,1) infinite}
+    #kco-ai-btn{position:fixed;right:1.1rem;bottom:1.1rem;z-index:95;min-height:48px;min-width:48px;padding:0 1.15rem;border:none;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.55rem;color:#fff;font-size:14px;font-weight:700;letter-spacing:.01em;background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 10px 30px rgba(37,99,235,.45);transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent}
+    #kco-ai-btn:hover{transform:scale(1.04);box-shadow:0 14px 38px rgba(37,99,235,.55)}
+    #kco-ai-btn:active{transform:scale(.96)}
+    #kco-ai-btn-label{display:inline-block;white-space:nowrap}
+    #kco-ai-btn-dot{position:relative;width:9px;height:9px;flex-shrink:0;border-radius:50%;background:#34d399;box-shadow:0 0 0 2px rgba(52,211,153,.35)}
+    #kco-ai-btn-dot::before{content:"";position:absolute;inset:0;border-radius:50%;background:#34d399;animation:kco-ai-dot-ping 1.8s cubic-bezier(0,0,.2,1) infinite}
+    @keyframes kco-ai-dot-ping{0%{transform:scale(1);opacity:.8}70%,100%{transform:scale(2.4);opacity:0}}
     @keyframes kco-ai-ping{0%{transform:scale(1);opacity:.7}70%,100%{transform:scale(1.65);opacity:0}}
     #kco-ai-panel{position:fixed;right:1.1rem;bottom:5.4rem;z-index:96;width:380px;max-width:calc(100vw - 1.6rem);height:560px;max-height:calc(100dvh - 7rem);display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:1.25rem;box-shadow:0 24px 70px rgba(15,23,42,.28);overflow:hidden;opacity:0;transform:translateY(14px) scale(.97);pointer-events:none;transition:opacity .22s ease,transform .22s ease}
     #kco-ai-panel.kco-ai-open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
@@ -117,8 +120,8 @@ function injectStyles() {
 function buildDom() {
   const btn = document.createElement('button');
   btn.id = 'kco-ai-btn';
-  btn.setAttribute('aria-label', 'Open chat');
-  btn.innerHTML = iconSvg('message', 24);
+  btn.setAttribute('aria-label', 'Contact Us — chat with customer support');
+  btn.innerHTML = '<span class="kco-ai-btn-label">Contact Us</span><span class="kco-ai-btn-dot" aria-hidden="true"></span>';
   btn.addEventListener('click', () => toggle());
 
   const panel = document.createElement('div');
@@ -126,12 +129,12 @@ function buildDom() {
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', 'Weverse Online Shop assistant chat');
   panel.innerHTML = `
-    <div class="kco-ai-head">
+    <div class="kco-ai-head" style="display:flex;align-items:center;gap:.75rem;padding:.9rem 1rem;color:#fff;background:linear-gradient(135deg,#2563eb,#3b82f6)">
       <button class="kco-ai-back" aria-label="Go back">${iconSvg('arrowleft', 18)}</button>
-      <div class="kco-ai-avatar">${iconSvg('headset', 20)}</div>
+      <div class="kco-ai-avatar" style="width:38px;height:38px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center">${iconSvg('headset', 20)}</div>
       <div>
-        <div class="kco-ai-title">Weverse Online Shop</div>
-        <div class="kco-ai-status"><span class="kco-ai-dot"></span> Online — replies instantly</div>
+        <div class="kco-ai-title" style="font-size:14px;font-weight:800;line-height:1.1;color:#fff">Weverse Online Shop</div>
+        <div class="kco-ai-status" style="display:flex;align-items:center;gap:.35rem;font-size:11px;opacity:.92;margin-top:2px;color:#fff"><span class="kco-ai-dot"></span> Online — replies instantly</div>
       </div>
       <button class="kco-ai-close" aria-label="Close chat">${iconSvg('close', 16)}</button>
     </div>
