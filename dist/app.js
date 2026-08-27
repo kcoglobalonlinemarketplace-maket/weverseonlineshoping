@@ -337,6 +337,7 @@ window.addEventListener('hero-videos-updated', (e) => {
   heroVideoSlides = Array.isArray(detail.slides) ? detail.slides : (Array.isArray(detail) ? detail : []);
   mergeAdSlides();
   renderCarousel();
+  var hc=document.getElementById('hero-carousel');if(hc){hc.style.opacity='1';}
 });
 
 window.addEventListener('promo-banner-updated', (e) => {
@@ -771,7 +772,8 @@ function renderSearchResults(query,results,meta){
       const price=r.price!=null?(r.currency||"USD")+" "+Number(r.price).toLocaleString():"";
       const isSpecial=r.is_special_order||r.entity_type==="special_order";
       const typeBadge=isSpecial?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-blue-500/80 text-white border border-blue-400 z-10">Special Order</span>`:(r.entity_type?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-white/90 text-blue-700 border border-blue-200 z-10">${escapeHtmlAttr(r.entity_type)}</span>`:"");
-      const imgHtml=img?`<img src="${escapeHtmlAttr(img)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'">`:`<div class="w-full h-full flex items-center justify-center"><i data-lucide="package" class="w-10 h-10 text-gray-700"></i></div>`;
+      const isVid=img&&/\.(mp4|webm|mov)(\?|#|$)/i.test(img);
+      const imgHtml=img?(isVid?`<video src="${escapeHtmlAttr(img)}" muted loop preload="metadata" playsinline class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'"></video><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center shadow"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`:`<img src="${escapeHtmlAttr(img)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'">`):`<div class="w-full h-full flex items-center justify-center"><i data-lucide="package" class="w-10 h-10 text-gray-700"></i></div>`;
       const deliveryInfo=isSpecial&&r.estimated_delivery_days?`<p class="text-[10px] text-gray-500 flex items-center gap-1"><i data-lucide="truck" class="w-3 h-3"></i>${r.estimated_delivery_days} days delivery</p>`:"";
       const brandText=r.brand?`<p class="text-[10px] text-gray-500 truncate">${escapeHtmlAttr(r.brand)}</p>`:"";
       const clickAction=isSpecial?`openSpecialOrderFromSearch('${escapeHtmlAttr(r.title||"").replace(/'/g,"\\'")}','${escapeHtmlAttr(r.brand||"").replace(/'/g,"\\'")}','${escapeHtmlAttr(r.category||"").replace(/'/g,"\\'")}',${r.price||0},'${escapeHtmlAttr(r.currency||"USD").replace(/'/g,"\\'")}')`:`openProductFromSearch('${escapeHtmlAttr(r.property_id||"").replace(/'/g,"\\'")}')`;
@@ -1377,11 +1379,85 @@ function showToast(msg){
 window.showToast=showToast;
 window._showToast=showToast;
 
+// ---- HERO VIDEO LOADING (Supabase REST) ----
+// homepage-promo.js is a Vite module that gets stripped during build, so we
+// load hero video slides directly via a plain fetch() here in app.js.
+(function loadHeroVideos(){
+  const SUPABASE_URL='https://wttnvwpoqmbxryivcerf.supabase.co';
+  const SUPABASE_ANON='sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
+  function buildSlide(s,fallback){
+    var video=String((s&&s.video)||'').trim();
+    var poster=String((s&&s.poster)||'').trim();
+    var title=String((s&&s.title)||'').trim();
+    var subtitle=String((s&&s.subtitle)||'').trim();
+    var slide={
+      adId:(s&&s.id)||('hero-'+(video||poster||Math.random().toString(36).slice(2))),
+      promoBanner:true,
+      badge:title||'Feature',
+      title:title||'Weverse Online Shop',
+      subtitle:subtitle,
+      buttonText:String((s&&s.buttonText)||'SHOP NOW').trim(),
+      buttonLink:String((s&&s.buttonLink)||'/#showroom-directory').trim()
+    };
+    if(video){slide.video=video;if(poster)slide.poster=poster;}
+    else if(poster){slide.image=poster;}
+    return slide;
+  }
+  async function fetchAndPush(){
+    try{
+      var r=await fetch(SUPABASE_URL+'/rest/v1/site_settings?select=hero_video_slides,promo_banner_enabled,promo_banner_image,promo_banner_video,promo_banner_title,promo_banner_subtitle,promo_banner_button_text,promo_banner_button_link&limit=1',{
+        headers:{apikey:SUPABASE_ANON,Authorization:'Bearer '+SUPABASE_ANON}
+      });
+      if(!r.ok)return;
+      var rows=await r.json();
+      var s=rows&&rows[0];
+      if(!s)return;
+      var raw=Array.isArray(s.hero_video_slides)?s.hero_video_slides:[];
+      var slides=[];
+      for(var i=0;i<raw.length;i++){
+        var item=raw[i];
+        if(!item||item.enabled===false)continue;
+        var hasV=String(item.video||'').trim();
+        var hasP=String(item.poster||'').trim();
+        if(!hasV&&!hasP)continue;
+        slides.push(buildSlide(item,s));
+      }
+      if(!slides.length){
+        // Legacy single promo banner fallback
+        if(s.promo_banner_enabled!==false){
+          var img=(s.promo_banner_image||'').trim();
+          var vid=(s.promo_banner_video||'').trim();
+          if(img||vid){
+            var legacy={
+              promoBanner:true,
+              badge:(s.promo_banner_title||'Promo Banner').trim(),
+              title:(s.promo_banner_title||'Weverse Online Shop').trim(),
+              subtitle:(s.promo_banner_subtitle||'').trim(),
+              buttonText:(s.promo_banner_button_text||'').trim(),
+              buttonLink:(s.promo_banner_button_link||'/#showroom-directory').trim()
+            };
+            if(vid){legacy.video=vid;if(img)legacy.poster=img;}
+            else if(img){legacy.image=img;}
+            slides.push(legacy);
+          }
+        }
+      }
+      if(slides.length){
+        window.dispatchEvent(new CustomEvent('hero-videos-updated',{detail:{slides:slides}}));
+      }
+    }catch(e){}
+  }
+  fetchAndPush();
+})();
+
 // ---- BOOTSTRAP ----
 document.addEventListener("DOMContentLoaded",()=>{
   populateSelectors();loadRegionSettings();detectRegionAuto();renderCategories();setupSearchSuggestions();
   renderCarousel();updateBadgeLanguage();
   lucide.createIcons();
+  // Reveal hero carousel after timeout if hero-videos-updated hasn't fired yet
+  // (no published media → show the blue fallback; published media → event handler above already revealed it)
+  setTimeout(function(){var hc=document.getElementById('hero-carousel');if(hc&&hc.style.opacity==='0')hc.style.opacity='1';},2500);
   // The live date/time/location bar is intentionally hidden (not removed). When
   // hidden we skip the ticking clock and the IP/GPS location requests so they
   // never hang the network or distract the customer.
