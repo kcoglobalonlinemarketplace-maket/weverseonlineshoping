@@ -3619,6 +3619,8 @@ let scanReviewEntry = '';
 // next product instead of landing on the plain Product Manager.
 let scanReviewActiveIndex = -1;
 
+const scannerReviewId = 'scanner-scan-status';
+
 // ── Auto-scan state ──────────────────────────────────────────────────
 // When the General AI Scanner runs in fully autonomous mode, it fills and
 // publishes every product without showing a review list or asking questions.
@@ -3773,7 +3775,206 @@ window.scanReviewCancel = function() {
   if (el) {
     el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300');
     el.classList.add('text-gray-400');
-    el.textContent = 'Scan cancelled â€” nothing was changed.';
+    el.textContent = 'Scan cancelled — nothing was changed.';
+  }
+};
+
+// ── DUPLICATE DETECTION ──────────────────────────────────────────────
+// After the AI scanner identifies all products, this compares every
+// detection by normalised brand + model + name and groups potential
+// duplicates together.  A group with 2+ entries means the same product
+// was listed more than once.
+function normalizeDupKey(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+}
+function findDuplicateGroups(detections) {
+  const groups = {};
+  for (const d of detections) {
+    const brand = normalizeDupKey(d.brand);
+    const model = normalizeDupKey(d.model);
+    const name  = normalizeDupKey(d.detected_name);
+    // Key: brand+model if both exist, otherwise name (catches name-only dupes too)
+    const key = (brand && model) ? `${brand}::${model}` : (name || `${brand}::${model}`);
+    if (!key) continue;
+    (groups[key] = groups[key] || []).push(d);
+  }
+  // Only return groups with 2+ members (actual duplicates)
+  return Object.values(groups).filter(g => g.length > 1);
+}
+
+// Track which duplicate indices the user selected for deletion.
+let _dupReviewGroups = [];
+let _dupReviewRemaining = [];
+let _dupReviewAllDetections = [];
+
+function renderDuplicateReview() {
+  const el = document.getElementById(scannerReviewId);
+  if (!el) return;
+  el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+  el.classList.add('text-gray-100');
+  const totalDupes = _dupReviewRemaining.reduce((s, g) => s + g.length - 1, 0);
+  el.innerHTML = `
+    <div class="space-y-3">
+      <div class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3">
+        <p class="text-xs font-bold text-rose-300 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> ${_dupReviewRemaining.length} duplicate product group${_dupReviewRemaining.length > 1 ? 's' : ''} found — ${totalDupes} extra listing${totalDupes > 1 ? 's' : ''} to delete</p>
+        <p class="text-[11px] text-gray-400 mt-1">The AI found products that look the same (same brand + model or name). Review each group below — keep one copy, delete the rest. You can also delete entire groups.</p>
+      </div>
+      ${_dupReviewGroups.map((group, gi) => {
+        const norm = normalizeDetectedCategory(group[0].category);
+        const cat = norm && !norm.listing_type ? (norm.category || group[0].category || 'Other') : 'Other';
+        return `
+        <div class="rounded-xl border border-amber-500/25 bg-amber-500/8 p-3 space-y-2">
+          <p class="text-[11px] font-bold text-amber-300 uppercase tracking-wide">Group ${gi + 1}: ${esc(group[0].detected_name || 'Unknown product')} (${cat})</p>
+          ${group.map((d, di) => {
+            const globalIdx = _dupReviewAllDetections.indexOf(d);
+            return `
+            <div class="flex items-center gap-3 rounded-lg bg-white/5 border border-white/10 p-2">
+              <img src="${esc((d.image_indices || [0]).map(ii => scanReviewImages[ii]).filter(Boolean)[0] || '')}" class="w-10 h-10 rounded-lg object-cover border border-white/10" onerror="this.src='/fallback.svg'">
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold text-white truncate">${esc(d.detected_name || 'Product')}</p>
+                <p class="text-[10px] text-gray-400">${esc(d.brand || '—')} ${esc(d.model || '')} · ${esc(d.property_id || '')}</p>
+              </div>
+              ${d._photoNotRead ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/15 text-red-300 border border-red-500/20">NOT READ</span>' : ''}
+              <button type="button" onclick="dupReviewDelete(${gi},${di},${globalIdx})" class="btn-press px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg transition shrink-0">Delete</button>
+            </div>`;
+          }).join('')}
+          <button type="button" onclick="dupReviewDeleteGroup(${gi})" class="btn-press w-full px-3 py-1.5 bg-rose-900/40 hover:bg-rose-800/60 text-red-200 text-[11px] font-bold rounded-lg transition">Delete ALL ${group.length} in this group</button>
+        </div>`;
+      }).join('')}
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button type="button" onclick="dupReviewFinish()" class="btn-press flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition">Keep & continue publishing</button>
+        <button type="button" onclick="dupReviewDeleteAll()" class="btn-press px-4 py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-200 text-xs font-bold rounded-xl transition">Delete ALL duplicates</button>
+      </div>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.dupReviewDelete = async function(groupIdx, di, globalIdx) {
+  const group = _dupReviewGroups[groupIdx];
+  const det = group[di];
+  if (!det) return;
+  const pid = det.property_id;
+  // Delete from DB + showroom if it's a saved product (not just a detection)
+  if (pid) {
+    try {
+      await supabase.from('showroom_listings').delete().eq('property_id', pid);
+      removeLocalShowroomListing(pid);
+      try { await saveCatalogHidden(pid, true); } catch {}
+    } catch {}
+  }
+  // Remove from groups
+  group.splice(di, 1);
+  if (group.length < 2) _dupReviewGroups.splice(groupIdx, 1);
+  // Remove from remaining
+  _dupReviewRemaining = _dupReviewGroups.filter(g => g.length > 1);
+  // Remove from master detections list
+  _dupReviewAllDetections.splice(globalIdx, 1);
+  // Rebuild group indices after splice
+  _dupReviewGroups = [];
+  const byKey = {};
+  for (const d of _dupReviewAllDetections) {
+    const brand = normalizeDupKey(d.brand);
+    const model = normalizeDupKey(d.model);
+    const name  = normalizeDupKey(d.detected_name);
+    const key = (brand && model) ? `${brand}::${model}` : (name || `${brand}::${model}`);
+    if (!key) continue;
+    (byKey[key] = byKey[key] || []).push(d);
+  }
+  _dupReviewGroups = Object.values(byKey).filter(g => g.length > 1);
+  _dupReviewRemaining = _dupReviewGroups;
+  showToast(`${esc(det.detected_name || 'Product')} deleted`);
+  if (!_dupReviewRemaining.length) { dupReviewFinish(); return; }
+  renderDuplicateReview();
+};
+
+window.dupReviewDeleteGroup = async function(groupIdx) {
+  const group = _dupReviewGroups[groupIdx];
+  if (!group) return;
+  // Delete all but the first (keep the original)
+  for (let i = group.length - 1; i >= 1; i--) {
+    const det = group[i];
+    const pid = det.property_id;
+    if (pid) {
+      try {
+        await supabase.from('showroom_listings').delete().eq('property_id', pid);
+        removeLocalShowroomListing(pid);
+        try { await saveCatalogHidden(pid, true); } catch {}
+      } catch {}
+    }
+    const gi = _dupReviewAllDetections.indexOf(det);
+    if (gi >= 0) _dupReviewAllDetections.splice(gi, 1);
+  }
+  showToast(`Deleted ${group.length - 1} duplicate${group.length > 2 ? 's' : ''} from group ${groupIdx + 1}`);
+  // Rebuild groups
+  _dupReviewGroups = [];
+  const byKey = {};
+  for (const d of _dupReviewAllDetections) {
+    const brand = normalizeDupKey(d.brand);
+    const model = normalizeDupKey(d.model);
+    const name  = normalizeDupKey(d.detected_name);
+    const key = (brand && model) ? `${brand}::${model}` : (name || `${brand}::${model}`);
+    if (!key) continue;
+    (byKey[key] = byKey[key] || []).push(d);
+  }
+  _dupReviewGroups = Object.values(byKey).filter(g => g.length > 1);
+  _dupReviewRemaining = _dupReviewGroups;
+  if (!_dupReviewRemaining.length) { dupReviewFinish(); return; }
+  renderDuplicateReview();
+};
+
+window.dupReviewDeleteAll = async function() {
+  // Delete ALL duplicate extras across all groups (keep first in each)
+  let deleted = 0;
+  for (const group of _dupReviewGroups) {
+    for (let i = group.length - 1; i >= 1; i--) {
+      const det = group[i];
+      const pid = det.property_id;
+      if (pid) {
+        try {
+          await supabase.from('showroom_listings').delete().eq('property_id', pid);
+          removeLocalShowroomListing(pid);
+          try { await saveCatalogHidden(pid, true); } catch {}
+        } catch {}
+      }
+      const gi = _dupReviewAllDetections.indexOf(det);
+      if (gi >= 0) _dupReviewAllDetections.splice(gi, 1);
+      deleted++;
+    }
+  }
+  showToast(`Deleted ${deleted} duplicate listing${deleted !== 1 ? 's' : ''}`);
+  dupReviewFinish();
+};
+
+window.dupReviewFinish = function() {
+  // Clean up duplicates from scanReviewProducts (sync with master list)
+  scanReviewProducts = _dupReviewAllDetections.slice();
+  _dupReviewGroups = [];
+  _dupReviewRemaining = [];
+  _dupReviewAllDetections = [];
+  renderProducts();
+  // Continue with normal auto-scan flow
+  if (scanReviewProducts.length) {
+    const el = document.getElementById(scannerReviewId);
+    if (el) {
+      el.classList.remove('hidden', 'text-red-400', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+      el.classList.add('text-gray-100');
+      el.innerHTML = `
+        <div class="space-y-3">
+          <div class="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
+            <p class="text-xs font-bold text-emerald-300 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Duplicates cleaned — ${scanReviewProducts.length} unique product${scanReviewProducts.length > 1 ? 's' : ''} ready to publish</p>
+          </div>
+          ${scanReviewProducts.map((p, i) => scanReviewCardHtml(p, i)).join('')}
+        </div>`;
+      if (window.lucide) lucide.createIcons();
+    }
+  } else {
+    const el = document.getElementById(scannerReviewId);
+    if (el) {
+      el.classList.remove('hidden', 'text-blue-300', 'text-amber-300');
+      el.classList.add('text-gray-400');
+      el.textContent = 'All duplicates removed — nothing left to publish.';
+    }
+    showToast('All duplicates removed.', 'info');
   }
 };
 
@@ -4783,7 +4984,22 @@ window.scanGeneralWithAI = async function() {
     failedCount ? `${failedCount} scan error${failedCount > 1 ? 's' : ''}` : '',
     rep.providers.map(p => `${p.count} by ${p.name}`).join(', '),
   ].filter(Boolean);
-  // ── AUTONOMOUS MODE: fill + publish every product without asking ──
+  // ── DUPLICATE DETECTION: check for same products before publishing ──
+  const dupGroups = findDuplicateGroups(detections);
+  if (dupGroups.length) {
+    const totalDupes = dupGroups.reduce((s, g) => s + g.length - 1, 0);
+    _dupReviewGroups = dupGroups;
+    _dupReviewRemaining = dupGroups;
+    _dupReviewAllDetections = detections.slice();
+    setStatus(`
+      <p class="font-bold text-amber-300">Scan finished: ${summaryBits.join(' · ')}.</p>
+      <p class="text-[11px] text-amber-300 mt-1">Found ${totalDupes} duplicate listing${totalDupes > 1 ? 's' : ''} in ${dupGroups.length} group${dupGroups.length > 1 ? 's' : ''} — review below before publishing.</p>
+    `, 'text-amber-300');
+    showToast(`Found ${totalDupes} duplicate product${totalDupes > 1 ? 's' : ''} — review before publishing`, 'info');
+    renderDuplicateReview();
+    return;
+  }
+  // ── No duplicates — proceed to autonomous auto-publish ──
   scanReviewProducts = detections;
   scanReviewImages = images;
   scanReviewSourceProducts = sources;
