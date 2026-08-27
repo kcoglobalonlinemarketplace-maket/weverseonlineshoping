@@ -24,6 +24,20 @@ export function taglineHtml() {
 }
 
 const CACHE_KEY = 'weverse_brand_v1';
+
+// ── Brand-blue brand name ──────────────────────────────────
+// Paints every .brand-name element with the brand blue gradient
+// (#3b82f6 → #2563eb — same blue as the verified badge / chat header).
+(function injectBrandBlue() {
+  if (document.getElementById('wv-brand-blue')) return;
+  const s = document.createElement('style');
+  s.id = 'wv-brand-blue';
+  s.textContent =
+    '.brand-name{background:linear-gradient(135deg,#3b82f6,#2563eb)!important;' +
+    '-webkit-background-clip:text!important;background-clip:text!important;' +
+    '-webkit-text-fill-color:transparent!important;color:#2563eb!important}';
+  (document.head || document.documentElement).appendChild(s);
+})();
 const OVERRIDE_KEY = 'weverse_brand_override_v1';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
