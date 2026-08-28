@@ -2496,7 +2496,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Product Scanner</p>
-                <p class="text-xs text-gray-500 mt-1">Reads your uploaded images and fills the form for you. Detects every distinct product (each detection fills its own listing). Powered by Google Gemini free tier â€” add your FREE key in AI Settings if not set. Only runs when you press the button.</p>
+                <p class="text-xs text-gray-500 mt-1">Upload a product image or video, then press SCAN WITH AI — it reads your photo and fills this form for you in one go. No extra clicks or review screens; just review the filled details and press Publish. Powered by Google Gemini free tier â€” add your FREE key in AI Settings if not set.</p>
               </div>
               <button type="button" id="btn-scan-ai" onclick="scanProductWithAI()" class="btn-press px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl transition flex items-center gap-2 shrink-0">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
@@ -3932,6 +3932,7 @@ window.dupReviewDelete = async function(groupIdx, di, globalIdx) {
   const det = group[di];
   if (!det) return;
   const pid = det.property_id;
+  if (!confirm(`Permanently delete "${det.detected_name || 'this product'}" from the database and showroom?`)) return;
   // Delete from DB + showroom if it's a saved product (not just a detection)
   if (pid) {
     try {
@@ -3968,6 +3969,7 @@ window.dupReviewDelete = async function(groupIdx, di, globalIdx) {
 window.dupReviewDeleteGroup = async function(groupIdx) {
   const group = _dupReviewGroups[groupIdx];
   if (!group) return;
+  if (!confirm(`Permanently delete ${group.length - 1} duplicate listing${group.length - 1 > 1 ? 's' : ''} in this group from the database and showroom?`)) return;
   // Delete all but the first (keep the original)
   for (let i = group.length - 1; i >= 1; i--) {
     const det = group[i];
@@ -4001,6 +4003,8 @@ window.dupReviewDeleteGroup = async function(groupIdx) {
 };
 
 window.dupReviewDeleteAll = async function() {
+  const totalDupes = _dupReviewRemaining.reduce((s, g) => s + g.length - 1, 0);
+  if (!confirm(`Permanently delete ALL ${totalDupes} duplicate listing${totalDupes !== 1 ? 's' : ''} from the database and showroom? This cannot be undone.`)) return;
   // Delete ALL duplicate extras across all groups (keep first in each)
   let deleted = 0;
   for (const group of _dupReviewGroups) {
@@ -4416,7 +4420,7 @@ window.scanProductWithAI = async function() {
   await scanPreflightStatus(setStatus);
 
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
-  setStatus('Detecting every distinct product in your imagesâ€¦', 'text-blue-300');
+  setStatus('Detecting the product from your photo and filling the formâ€¦', 'text-blue-300');
 
   let detection;
   try {
@@ -4431,12 +4435,15 @@ window.scanProductWithAI = async function() {
     if (btn) { btn.disabled = false; btn.innerHTML = original; }
     return;
   }
-  if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
+  // Pick the ONE product from the photo. When a photo shows several items we
+  // still fill a single form from the first detection so the owner never has to
+  // click through a "detected products" screen â€” they review and publish here.
   let products = (detection && detection.identified !== false && Array.isArray(detection.products) && detection.products.length) ? detection.products : [];
   if (!products.length) {
     // NEVER REJECT: the AI could not read the photo(s), but the images are real â€”
-    // create a review card from them so the owner can still fill, save & publish.
+    // fill the form from the best available details so the owner can still
+    // review, edit and publish without a separate review screen.
     products = [{
       detected_name: 'Product from your photos',
       category: form.dataset.category || 'Other',
@@ -4444,16 +4451,18 @@ window.scanProductWithAI = async function() {
       confidence: 'low',
       image_indices: images.map((_, i) => i),
     }];
-    setStatus('The AI could not confidently read these photos â€” a card was created with all of them. Review, edit the details, then continue to save & publish.', 'text-amber-300');
+    setStatus('The AI could not read the photo confidently â€” the form was filled with the best available details. Review and edit everything, then press Publish.', 'text-amber-300');
   }
 
-  // REVIEW LIST â€” the AI never fills or publishes on its own.
-  scanReviewProducts = products;
-  scanReviewImages = images;
-  scanReviewSourceProducts = {};
-  scanReviewEntry = 'scan-ai-status';
-  scanReviewRender();
-  showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected â€” review each one, then continue.`, 'info');
+  // FILL the currently-open product form directly â€” your uploaded image/video
+  // stays attached (the scanner only fills fields, it never clears images).
+  // No review cards, no Continue/Edit/Remove/Delete/Cancel â€” one scan fills the
+  // form once and you review + publish with one click.
+  try {
+    await completeScanAndFill(products[0], images, products[0].category || form.dataset.category || 'Other');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+  }
 };
 
 // Route an identified property into the Properties Manager with its images and
