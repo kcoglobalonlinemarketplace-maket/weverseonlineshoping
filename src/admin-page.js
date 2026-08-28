@@ -185,6 +185,10 @@ function badge(status) {
 
 function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
 function openModal(html) { document.getElementById('modal-container').innerHTML = html; if (window.lucide) lucide.createIcons(); }
+// These two are used by inline onclick="..." handlers inside modal HTML, which
+// resolve against the GLOBAL scope. This file is an ES module, so expose them.
+window.closeModal = closeModal;
+window.openModal = openModal;
 
 function statCard(label, value, icon, color, sub = '') {
   const c = { blue: 'bg-blue-500/10 text-blue-400 border-blue-500/15', amber: 'bg-amber-500/10 text-amber-400 border-amber-500/15', emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15', red: 'bg-red-500/10 text-red-400 border-red-500/15', violet: 'bg-violet-500/10 text-violet-400 border-violet-500/15', blue: 'bg-blue-500/10 text-blue-400 border-blue-500/15' };
