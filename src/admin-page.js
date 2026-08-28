@@ -1641,7 +1641,7 @@ window.quickEditProduct = async function(pid) {
           <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10"><span class="text-sm text-gray-300">Published</span><input type="checkbox" name="is_active" ${data.is_active ? 'checked' : ''} class="accent-blue-500 w-5 h-5"></div>
           <div>
             <label class="lbl">Gallery Images & Videos (up to 24)</label>
-            <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
+            <div id="drop-zone" class="drop-zone" onclick="pickMediaForForm('img-upload')">
               <i data-lucide="image-plus" class="w-10 h-10 text-blue-400 mx-auto mb-2"></i>
               <p class="text-base font-bold text-gray-300">Tap to add photos or videos (up to 24)</p>
               <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP, MP4, WebM. First item is the cover.</p>
@@ -2386,7 +2386,7 @@ window.showAddProductStep1 = function() {
         <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3 mb-4">
           <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan First â€” let AI pick the category</p>
           <p class="text-[11px] text-gray-500">Upload your product photos, press SCAN WITH AI. It detects EVERY distinct product (a photo with a bag + watch + shoes + phone gives four separate listings; each detection fills its own listing). Review each detection, then the correct category form opens filled for you. Nothing is published automatically.</p>
-          <div id="s1-drop-zone" class="drop-zone" onclick="document.getElementById('s1-img-upload').click()">
+          <div id="s1-drop-zone" class="drop-zone" onclick="pickMediaForForm('s1-img-upload')">
             <i data-lucide="image-plus" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
             <p class="text-xs font-bold text-gray-300">Click or drag & drop product images or videos</p>
             <input type="file" id="s1-img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onchange="handleStep1ImageUpload(event)">
@@ -2474,7 +2474,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
               <label class="lbl !mb-0">Step 1: Upload Product Images or Videos</label>
               <span class="text-sm text-gray-500">Upload one or multiple images before publishing</span>
             </div>
-            <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
+            <div id="drop-zone" class="drop-zone" onclick="pickMediaForForm('img-upload')">
               <i data-lucide="image-plus" class="w-12 h-12 text-blue-400 mx-auto mb-3"></i>
               <p class="text-lg font-bold text-gray-300">Click or drag & drop images or videos here</p>
               <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP, MP4, WebM. First item = cover.</p>
@@ -2734,6 +2734,49 @@ async function uploadImageFile(file) {
     return URL.createObjectURL(file);
   } catch { return URL.createObjectURL(file); }
 }
+
+// Native Capacitor gallery picker: opens the system Photo Picker (photos + videos,
+// multi-select) directly, bypassing the "Camera / Camera Video / Files" chooser.
+// On the website (browser) it returns null so the normal file input is used instead.
+async function nativeGalleryFiles() {
+  if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return null;
+  try {
+    const { Camera, MediaTypeSelection } = await import('@capacitor/camera');
+    const { results } = await Camera.chooseFromGallery({
+      mediaType: MediaTypeSelection.All,
+      allowMultipleSelection: true,
+      includeMetadata: true,
+    });
+    const files = [];
+    for (const r of results || []) {
+      if (!r.webPath) continue;
+      try {
+        const isVideo = r.type === 1;
+        const fmt = ((r.metadata && r.metadata.format) || (isVideo ? 'mp4' : 'jpg')).toLowerCase().replace(/^jpeg$/, 'jpg');
+        const blob = await fetch(r.webPath).then((x) => x.blob());
+        files.push(new File([blob], `gallery-${Date.now()}-${Math.random().toString(36).slice(2)}.${fmt}`, { type: blob.type || (isVideo ? 'video/mp4' : 'image/jpeg') }));
+      } catch {}
+    }
+    return files;
+  } catch (err) {
+    console.warn('Native gallery picker unavailable:', err);
+    return null;
+  }
+}
+
+// Drop-zone entry point. On native it opens the gallery picker and feeds the
+// selected media into the right upload pipeline; on web it falls back to
+// opening the hidden file input (unchanged behaviour).
+window.pickMediaForForm = async function(inputId) {
+  const files = await nativeGalleryFiles();
+  if (files === null) { document.getElementById(inputId)?.click(); return; }
+  if (!files.length) return;
+  if (inputId === 's1-img-upload') {
+    await handleStep1Files(files);
+  } else {
+    await processImageFiles(files);
+  }
+};
 
 window.removeImage = function(index) {
   const preview = document.getElementById('image-preview');
@@ -4574,16 +4617,19 @@ window.scanPropertyWithAI = async function() {
 
 // â”€â”€ Scan-first panel on the category picker (Add Product step 1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let step1Images = [];
-window.handleStep1ImageUpload = async function(e) {
-  const files = Array.from(e.target.files || []).slice(0, 10);
-  if (!files.length) return;
-  for (const file of files) {
+window.handleStep1Files = async function(files) {
+  const list = Array.from(files || []).slice(0, 24);
+  if (!list.length) return;
+  for (const file of list) {
     try {
       const url = await uploadImageFile(file);
       if (url) step1Images.push(url);
     } catch { /* skip failed uploads */ }
   }
   renderStep1Preview();
+};
+window.handleStep1ImageUpload = async function(e) {
+  await window.handleStep1Files(e.target.files || []);
   e.target.value = '';
 };
 window.removeStep1Image = function(i) {
@@ -5571,7 +5617,7 @@ window.showAddPropertyModal = function(existing = {}) {
 
           <div>
             <label class="lbl">Property Images & Videos</label>
-            <div id="drop-zone" class="drop-zone" onclick="document.getElementById('img-upload').click()">
+            <div id="drop-zone" class="drop-zone" onclick="pickMediaForForm('img-upload')">
               <i data-lucide="image-plus" class="w-7 h-7 text-blue-400 mx-auto mb-2"></i>
               <p class="text-xs font-bold text-gray-300">Click or drag & drop images or videos</p>
               <input type="file" id="img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onchange="handleImageUpload(event)">
