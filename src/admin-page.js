@@ -4367,26 +4367,22 @@ async function completeScanAndFill(identification0, images, category) {
     status.innerHTML = html;
   };
   try {
-    setStatus('Reading every image/page, completing all specifications and pricesâ€¦', 'text-blue-300');
+    setStatus('Scanning your photo into the formâ€¦', 'text-blue-300');
     let identification = identification0;
-    const res = await runVerifiedScan({ imageUrls: images, identification, category, formSelector: '#product-form' });
+    // Single fast AI pass. No second verification pass, no preflight, no review
+    // cards â€” one scan writes the form and you review + publish with one click.
+    const res = await runVerifiedScan({ imageUrls: images, identification, category, formSelector: '#product-form', verify: false });
     identification = res.identification || identification;
     const out = applyScanToProductForm({ identification, specs: res.specs, price: res.price });
     const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'the product';
-    let msg = `${esc(idLabel)} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you (including the detailed description and suggested Real + Discount prices). Review and edit everything, then press SAVE / UPDATE.`;
-    if (identification.year_estimated) msg += ' Confirm the model year before saving.';
+    let msg = `<span class="inline-flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-300"></i></span> ${esc(idLabel)} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} filled.`;
     if (!res.visionUsed) {
-      msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photo was NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — the values below did NOT come from your images. Re-scan when the key/quota is available.</p>`;
-    } else if (res.verifyRequested) {
-      msg += res.verified
-        ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your document.</p>`
-        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
+      msg += ' <span class="text-red-300">(Photo not read — values from saved details. Re-scan when the key is available.)</span>';
     }
-    if (res.summary.flagged) msg += `<p class="text-[11px] text-red-300 mt-1">${res.summary.flagged} value${res.summary.flagged > 1 ? 's need' : ' needs'} your attention below.</p>`;
-    msg += scanAiLimitNotice();
-    msg += renderScanChecklistReport(res.checklist, res.summary);
+    if (res.summary && res.summary.flagged) msg += ` Review ${res.summary.flagged} flagged value${res.summary.flagged > 1 ? 's' : ''}.`;
+    msg += ' Your uploaded photo stays attached. Press SAVE / UPDATE to publish.';
     setStatus(msg, 'text-emerald-300');
-    showToast(`Review ${idLabel}, then press SAVE / UPDATE.`, 'success');
+    showToast(`Form filled for ${idLabel} — review and press SAVE / UPDATE.`, 'success');
   } catch (err) {
     const msg = String(err?.message || err);
     const keyHint = /key|api|configured|settings|vision/i.test(msg);
@@ -4417,10 +4413,13 @@ window.scanProductWithAI = async function() {
     status.innerHTML = html;
   };
 
-  await scanPreflightStatus(setStatus);
+  // Straight to the scan — no preflight network check, no second verification
+  // pass. One fast AI read fills the form; you review and publish.
+  try { aiClient.beginScanSession(); } catch {}
+  setStatus('Scanning your photo and filling the formâ€¦', 'text-blue-300');
 
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
-  setStatus('Detecting the product from your photo and filling the formâ€¦', 'text-blue-300');
+  if (status) status.classList.remove('hidden');
 
   let detection;
   try {
@@ -4451,7 +4450,7 @@ window.scanProductWithAI = async function() {
       confidence: 'low',
       image_indices: images.map((_, i) => i),
     }];
-    setStatus('The AI could not read the photo confidently â€” the form was filled with the best available details. Review and edit everything, then press Publish.', 'text-amber-300');
+    setStatus('Photo read partially — the form was filled with the best available details. Review, then press Publish.', 'text-amber-300');
   }
 
   // FILL the currently-open product form directly â€” your uploaded image/video
