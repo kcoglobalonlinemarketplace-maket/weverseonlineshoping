@@ -1181,15 +1181,20 @@ function render(listing) {
   const imgs2 = [...rawImages];
   if (extraVideo && !imgs2.includes(extraVideo)) imgs2.unshift(extraVideo);
   const firstVideoIdx = imgs2.findIndex(u => isVideoUrl(u));
-  const heroMedia = firstVideoIdx >= 0 ? imgs2[firstVideoIdx] : imgs2[0];
-  const heroIsVideo = firstVideoIdx >= 0;
+  // Prefer a real photo as the hero so the page never opens on a blank
+  // auto-playing video. Only use a video hero when no photo is available.
+  const firstImageIdx = imgs2.findIndex(u => !isVideoUrl(u));
+  const heroIdx = firstImageIdx >= 0 ? firstImageIdx : (firstVideoIdx >= 0 ? firstVideoIdx : 0);
+  const heroMedia = imgs2[heroIdx];
+  const heroIsVideo = isVideoUrl(heroMedia);
+  const heroPoster = firstImageIdx >= 0 ? imgs2[firstImageIdx] : '';
   const galleryThumbs = imgs2.map((img, i) => {
     const isVid = isVideoUrl(img);
     const thumbContent = isVid
       ? `<video src="${escapeHtml(img)}" muted preload="auto" playsinline class="w-20 h-16 object-cover"></video>
          <div class="absolute inset-0 flex items-center justify-center"><div class="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center"><svg class="w-2.5 h-2.5 text-gray-800 ml-px" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
       : `<img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`;
-    return `<button class="gallery-thumb relative rounded-lg overflow-hidden border-2 ${(heroIsVideo ? i === firstVideoIdx : i === 0) ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
+    return `<button class="gallery-thumb relative rounded-lg overflow-hidden border-2 ${i === heroIdx ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
       ${thumbContent}
     </button>`;
   }).join('');
@@ -1331,7 +1336,7 @@ function render(listing) {
 
       <div id="hero-wrap" class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 cursor-zoom-in group" role="button" tabindex="0" aria-label="Open image gallery">
         ${heroIsVideo
-          ? `<video id="hero-image" src="${escapeHtml(heroMedia)}" autoplay muted loop preload="auto" playsinline class="w-full h-full object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video>
+          ? `<video id="hero-image" src="${escapeHtml(heroMedia)}" ${heroPoster ? `poster="${escapeHtml(heroPoster)}"` : ''} autoplay muted loop preload="metadata" playsinline controls class="w-full h-full object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video>
              <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-7 h-7 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
           : `<img id="hero-image" src="${heroMedia}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
         }
@@ -1388,7 +1393,8 @@ function render(listing) {
         else {
           const v = document.createElement('video');
           v.id = 'hero-image'; v.src = src; v.muted = true; v.loop = true;
-          v.autoplay = true; v.preload = 'auto'; v.playsInline = true;
+          v.autoplay = true; v.preload = 'metadata'; v.playsInline = true; v.controls = true;
+          if (heroPoster) v.poster = heroPoster;
           v.className = 'w-full h-full object-cover';
           wrap.insertBefore(v, wrap.firstChild);
           if (currentHero && currentHero.remove) currentHero.remove();

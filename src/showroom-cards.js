@@ -533,7 +533,7 @@ export function renderCard(listing) {
   card.innerHTML = `
     <div class="relative aspect-[6/5] overflow-hidden bg-gray-100">
       ${p.isCoverVideo
-        ? `<video src="${escapeHtml(p.cover)}" muted loop preload="metadata" playsinline class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
+        ? `<video src="${escapeHtml(p.cover)}" muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
         : `<img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -595,7 +595,7 @@ export function renderFeedCard(listing) {
   card.innerHTML = `
     <div class="relative shrink-0 sm:w-[42%] lg:w-[38%] xl:w-[34%] aspect-[7/5] sm:aspect-auto sm:min-h-[300px] overflow-hidden bg-gray-100">
       ${p.isCoverVideo
-        ? `<video src="${escapeHtml(p.cover)}" muted loop preload="metadata" playsinline class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
+        ? `<video src="${escapeHtml(p.cover)}" muted loop autoplay playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
         : `<img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
              class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
