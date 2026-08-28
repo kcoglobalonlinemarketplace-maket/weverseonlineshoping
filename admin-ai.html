@@ -53,17 +53,7 @@
     .msg-bubble-user { font-size: 1.05rem; line-height: 1.5; }
     #chat-messages::-webkit-scrollbar { width: 8px; }
   </style>
-  <link rel="modulepreload" crossorigin href="/assets/supabase-client-DvCmNkpI-BFHnnn3M.js">
-  <link rel="modulepreload" crossorigin href="/assets/localization-XLaEvqbL-DEyIhb6U.js">
-  <link rel="modulepreload" crossorigin href="/assets/localization-bootstrap-BhglmvwT-BZ_21NL6.js">
-  <link rel="modulepreload" crossorigin href="/assets/categories-BEuiwWw5-DvU_r1Ww.js">
-  <link rel="modulepreload" crossorigin href="/assets/app-promo-banner-VTpzwpvR-1NxFCIXH.js">
-  <script type="module" crossorigin src="/assets/adminAi-CgeYkUbn.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/supabase-client-DvCmNkpI-BBtcpOs0.js">
-  <link rel="modulepreload" crossorigin href="/assets/localization-B_HxL1KQ-Do35V_4n.js">
-  <link rel="modulepreload" crossorigin href="/assets/localization-bootstrap-BhglmvwT-CYE5uVRZ.js">
-  <link rel="modulepreload" crossorigin href="/assets/categories-BEuiwWw5-Dd8DYwb8.js">
-  <link rel="modulepreload" crossorigin href="/assets/app-promo-banner-VTpzwpvR-CiDTzVNv.js">
+  <script type="module" crossorigin src="/src/admin-ai-page.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/localization-B_HxL1KQ-B_HxL1KQ.css">
 </head>
 <body class="bg-[#070b16] text-gray-100 min-h-screen overflow-hidden">
@@ -122,9 +112,9 @@
         <button id="send-btn" onclick="sendMessage()" class="btn-press w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white flex items-center justify-center shrink-0 transition shadow-lg shadow-blue-600/30 disabled:opacity-40 disabled:cursor-not-allowed">
           <i data-lucide="send" class="w-6 h-6"></i>
         </button>
-        <input id="ai-image-upload" type="file" accept="image/*" multiple class="hidden">
+        <input id="ai-image-upload" type="file" accept="image/*,video/mp4,video/webm,video/quicktime,video/*" multiple class="hidden">
       </div>
-      <p class="text-center text-xs text-gray-600 mt-2">Attach photos — the AI sees them with your message.</p>
+      <p class="text-center text-xs text-gray-600 mt-2">Attach photos or videos — the AI sees them with your message.</p>
     </div>
   </div>
 

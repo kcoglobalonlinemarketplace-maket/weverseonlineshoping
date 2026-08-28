@@ -14,6 +14,7 @@ import { invalidatePromoBackgrounds } from './promo-backgrounds.js';
 import { invalidateSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
 import { MARKETPLACE_CATEGORIES, MARKETPLACE_AUTOMOTIVE, normalizeToMarketplaceCategory } from './categories.js';
 import { looksLikePdf, pdfToPageDataUrls } from './pdf-pages.js';
+import { looksLikeVideoUrl, videoToFrameDataUrls } from './video-frames.js';
 
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -7115,9 +7116,9 @@ Rules:
 - NEVER invent exact specs (price, storage size, RAM, horsepower, serial numbers) that are not visible or printed on the product.
 - Respond with valid JSON only.`;
 
-    const images = (await Promise.all(
-      (imageUrls || []).slice(0, context.maxImages || 3).map(u => this._fetchImageAsDataUrl(u, 768))
-    )).filter(Boolean);
+    // Videos, PDFs and photos are all valid scan input — collect them as a
+    // flat list of image data URLs (videos become sampled frames).
+    const images = await this._collectScanImages((imageUrls || []).slice(0, context.maxImages || 3));
     if (!images.length) throw new Error('Could not read the uploaded images.');
 
     // SERVER-SIDE VISION ONLY via the edge function: Gemini primary → Groq
@@ -7223,10 +7224,14 @@ Rules:
   },
 
   // Collect scan input as data URLs: photos are fetched+compressed (cached),
-  // PDFs are rendered page-by-page into one image per page so multi-page
-  // documents are read completely. Photos download IN PARALLEL so a big
-  // document set is ready quickly. Returns a flat array of data URLs.
+  // PDFs are rendered page-by-page into one image per page, and VIDEOS are
+  // expanded into a set of evenly-sampled representative frames (cached) so
+  // the AI reads products, text and details visible throughout the video.
+  // Long videos and multiple videos stay efficient: frame count per video is
+  // capped and extraction runs only once per source. Returns a flat array of
+  // data URLs.
   _pdfPageCache: new Map(),
+  _videoFrameCache: new Map(),
   async _collectScanImages(urls, { onProgress = () => {} } = {}) {
     const list = (Array.isArray(urls) ? urls : [urls]).map(u => String(u || '')).filter(Boolean);
     if (!list.length) return [];
@@ -7239,6 +7244,25 @@ Rules:
             if (pages.length) this._pdfPageCache.set(u, pages);
           }
           return pages;
+        }
+        // Videos: extension/data-URL match, or sniff a blob: upload by its
+        // MIME type (uploaded videos often only have a blob: URL).
+        let videoSource = null;
+        if (looksLikeVideoUrl(u)) {
+          videoSource = u;
+        } else if (u.startsWith('blob:')) {
+          try {
+            const blob = await fetch(u, { signal: AbortSignal.timeout(15000) }).then(r => r.blob());
+            if (blob && blob.type && blob.type.startsWith('video/')) videoSource = blob;
+          } catch { /* not sniffable — fall through to the image path */ }
+        }
+        if (videoSource) {
+          let frames = this._videoFrameCache.get(u) || null;
+          if (!frames) {
+            frames = await videoToFrameDataUrls(videoSource, { maxFrames: 8, maxDim: 1024 }).catch(() => []);
+            if (frames.length) this._videoFrameCache.set(u, frames);
+          }
+          return frames;
         }
         const img = await this._fetchImageAsDataUrl(u, 1024);
         return img ? [img] : [];

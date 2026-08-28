@@ -1,6 +1,7 @@
 import { supabase } from './supabase-client.js';
 import { getCurrentUser } from './auth.js';
 import { normalizeToMarketplaceCategory } from './categories.js';
+import { videoToFrameDataUrls, isVideoFile } from './video-frames.js';
 
 
 const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
@@ -13,6 +14,7 @@ const AUTO_EXECUTE_DEVELOPER_ACTIONS = true;
 const PRODUCT_IMAGE_BUCKET = 'product-images';
 const MAX_PENDING_UPLOADS = 24;
 const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
+const MAX_VIDEO_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 const BRAND_IMAGE_CACHE_KEY = 'kco_pending_brand_image_v1';
 const BRAND_OVERRIDE_KEY = 'weverse_brand_override_v1';
 const PRODUCT_FALLBACK_IMAGE = 'https://images.pexels.com/photos/1275229/pexels-photo-1275229.jpeg?auto=compress&cs=tinysrgb&w=1200';
@@ -180,8 +182,10 @@ function renderPendingUploads() {
 
   preview.innerHTML = state.pendingUploads.map((item) => `
     <div class="group relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-blue-500/30 bg-blue-950/40">
-      <img src="${item.previewUrl}" alt="${escapeHtml(item.name)}" class="w-full h-full object-cover">
-      <button class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/75 text-white text-sm leading-none flex items-center justify-center transition group-hover:bg-red-600/90" data-remove-upload-id="${item.id}" title="Remove image">×</button>
+      ${item.isVideo
+        ? `<video src="${item.previewUrl}" muted playsinline preload="metadata" class="w-full h-full object-cover"></video><span class="absolute top-1 left-1 bg-black/75 text-white text-[9px] font-bold px-1 py-0.5 rounded">VIDEO</span>`
+        : `<img src="${item.previewUrl}" alt="${escapeHtml(item.name)}" class="w-full h-full object-cover">`}
+      <button class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/75 text-white text-sm leading-none flex items-center justify-center transition group-hover:bg-red-600/90" data-remove-upload-id="${item.id}" title="Remove file">×</button>
       <div class="absolute bottom-0 inset-x-0 bg-black/70 text-[10px] text-gray-200 px-1.5 py-0.5 truncate">${escapeHtml(item.name)}</div>
     </div>
   `).join('');
@@ -220,6 +224,18 @@ async function fileToDataUrl(file) {
   });
 }
 
+// Any attached media (photo OR video) as vision input: photos become one data
+// URL, videos are sampled into a few representative frames so the AI can read
+// products, text and details shown throughout the video.
+async function mediaFileToVisionDataUrls(file, { maxFrames = 6, maxDim = 1024 } = {}) {
+  if (!file) return [];
+  if (isVideoFile(file)) {
+    return await videoToFrameDataUrls(file, { maxFrames, maxDim }).catch(() => []);
+  }
+  const dataUrl = await fileToDataUrl(file).catch(() => null);
+  return dataUrl ? [dataUrl] : [];
+}
+
 function getCachedBrandImage() {
   try {
     const raw = sessionStorage.getItem(BRAND_IMAGE_CACHE_KEY);
@@ -235,6 +251,7 @@ function getCachedBrandImage() {
 async function cacheBrandImageFromUploads() {
   const first = state.pendingUploads[0];
   if (!first?.file) return;
+  if (isVideoFile(first.file)) return; // brand image must be a real image
   try {
     const dataUrl = await fileToDataUrl(first.file);
     if (dataUrl) {
@@ -274,10 +291,18 @@ async function uploadPendingImages(propertyId) {
       }
 
       storageFailures += 1;
+      // Video fallback: never inline the whole video as a data URL (far too
+      // big) — use its first extracted frame so the listing still has media.
+      if (isVideoFile(item.file)) {
+        const frames = await videoToFrameDataUrls(item.file, { maxFrames: 1 }).catch(() => []);
+        if (frames.length) urls.push(frames[0]);
+        continue;
+      }
       const dataUrl = await fileToDataUrl(item.file);
       if (dataUrl) urls.push(dataUrl);
     } catch {
       storageFailures += 1;
+      if (isVideoFile(item.file)) continue;
       const dataUrl = await fileToDataUrl(item.file);
       if (dataUrl) urls.push(dataUrl);
     }
@@ -295,6 +320,7 @@ async function uploadBrandImage(propertyId) {
   const cached = getCachedBrandImage();
   if (!first && cached) return cached;
   if (!first) return null;
+  if (isVideoFile(first.file)) return cached || null; // brand asset must be an image
 
   const extRaw = String(first.name || '').split('.').pop() || 'png';
   const ext = extRaw.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
@@ -833,22 +859,27 @@ async function runAutoImagePipeline() {
   try {
     const progressMsg = {
       role: 'assistant',
-      content: `🔍 **Scanning your uploaded image(s)...** I am reading the photo and filling every card field (title, brand, price, rating, features) in your showroom format. You will review the card before it is saved.`,
+      content: `🔍 **Scanning your uploaded image(s)/video(s)...** I am reading the media (every sampled frame of a video) and filling every card field (title, brand, price, rating, features) in your showroom format. You will review the card before it is saved.`,
     };
     state.history.push(progressMsg);
     renderMessage(progressMsg);
 
     const propertyId = generateProductId();
     const firstItem = state.pendingUploads[0];
-    const firstDataUrl = await fileToDataUrl(firstItem.file);
+    // Videos are scanned too — they become sampled frames for the vision call.
+    let firstImages = await mediaFileToVisionDataUrls(firstItem.file);
+    if (!firstImages.length) {
+      const fallbackDataUrl = await fileToDataUrl(firstItem.file).catch(() => null);
+      if (fallbackDataUrl) firstImages = [fallbackDataUrl];
+    }
 
     const uploadResult = await uploadPendingImages(propertyId);
     const baseUrls = uploadResult.urls;
-    if (!baseUrls.length) {
+    if (!baseUrls.length || !firstImages.length) {
       return {
         ok: false,
-        content: '❌ I could not read the uploaded images. Try smaller files (under 8MB each) and retry.',
-        tool_results: [{ tool: 'upload_images', result: { error: 'Image upload failed.' } }],
+        content: '❌ I could not read the uploaded media. Try smaller files (images under 8MB, videos under 100MB each) and retry.',
+        tool_results: [{ tool: 'upload_images', result: { error: 'Media upload failed.' } }],
       };
     }
 
@@ -859,14 +890,14 @@ async function runAutoImagePipeline() {
     try {
       let parsed = null;
       try {
-        const vision = await callEdgeVision(VISION_SCAN_PROMPT, [firstDataUrl], 4096);
+        const vision = await callEdgeVision(VISION_SCAN_PROMPT, firstImages, 4096);
         parsed = extractJsonFromAiText(vision.text);
         if (parsed) scanProvider = `${vision.provider} (${vision.model})`;
       } catch (e) { throw e; }
       if (!parsed) {
         const retry = await callEdgeVision(
           `${VISION_SCAN_PROMPT}\n\nIMPORTANT: reply with ONE valid JSON object only — no markdown, no commentary.`,
-          [firstDataUrl],
+          firstImages,
           4096,
         );
         parsed = extractJsonFromAiText(retry.text);
@@ -1859,18 +1890,20 @@ window.sendMessage = async () => {
     let data = {};
     let usedVision = false;
 
-    // Attach uploaded images to the AI so it sees them together with the text.
+    // Attach uploaded media to the AI so it sees them together with the text.
+    // Videos contribute sampled frames, photos a single data URL each.
     const pendingImages = state.pendingUploads.slice(0, 4);
     if (pendingImages.length > 0) {
       const images = [];
       for (const item of pendingImages) {
         if (item.file) {
-          const dataUrl = await fileToDataUrl(item.file);
-          if (dataUrl) images.push(dataUrl);
+          const urls = await mediaFileToVisionDataUrls(item.file);
+          images.push(...urls);
         } else if (item.dataUrl) {
           images.push(item.dataUrl);
         }
       }
+      if (images.length > 12) images.length = 12;
       if (images.length > 0) {
         usedVision = true;
         try {
@@ -2021,11 +2054,12 @@ window.handleAiImageUpload = async (event) => {
   let added = 0;
   let rejected = 0;
   for (const file of files) {
-    if (!file.type?.startsWith('image/')) {
+    const isVideo = isVideoFile(file);
+    if (!file.type?.startsWith('image/') && !isVideo) {
       rejected += 1;
       continue;
     }
-    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    if (file.size > (isVideo ? MAX_VIDEO_UPLOAD_SIZE_BYTES : MAX_UPLOAD_SIZE_BYTES)) {
       rejected += 1;
       continue;
     }
@@ -2036,9 +2070,10 @@ window.handleAiImageUpload = async (event) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     state.pendingUploads.push({
       id,
-      name: file.name || `image-${state.pendingUploads.length + 1}.jpg`,
+      name: file.name || `${isVideo ? 'video' : 'image'}-${state.pendingUploads.length + 1}.${isVideo ? 'mp4' : 'jpg'}`,
       size: file.size || 0,
       file,
+      isVideo,
       previewUrl: URL.createObjectURL(file),
     });
     added += 1;
@@ -2048,7 +2083,7 @@ window.handleAiImageUpload = async (event) => {
   await cacheBrandImageFromUploads();
   if (added > 0) {
     const totalBytes = state.pendingUploads.reduce((sum, item) => sum + (item.size || 0), 0);
-    showToast(`${added} image(s) attached (${formatBytes(totalBytes)}). Type a message and send — the AI sees them.`);
+    showToast(`${added} file(s) attached (${formatBytes(totalBytes)}). Type a message and send — the AI sees them.`);
     const input = document.getElementById('chat-input');
     if (input) input.focus();
   }
@@ -2065,7 +2100,7 @@ window.handleAiImageUpload = async (event) => {
     } catch { /* errors are reported inside runAutoImagePipeline */ }
   }
   if (rejected > 0) {
-    showToast(`${rejected} file(s) skipped. Use images under 8MB each.`);
+    showToast(`${rejected} file(s) skipped. Use images under 8MB or videos under 100MB each.`);
   }
 };
 
