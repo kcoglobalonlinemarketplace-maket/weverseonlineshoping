@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { findListingById, loadDBListings } from '../src/showroom-data.js';
+import { findListingById } from '../src/showroom-data.js';
 import { getTruckById } from '../src/truck-data.js';
 import { getMotorhomeById } from '../src/motorhome-data.js';
 import { getCarById } from '../src/car-data.js';
@@ -89,21 +89,73 @@ function resolveListingSync(id) {
   );
 }
 
-// DB-only listings (created in the admin). Guarded so a slow/unreachable
-// database never stalls a crawler; falls back to the default preview.
+// Direct, targeted lookup of a single DB listing (created in the admin).
+//
+// Previously this went through the browser-side full-table loader
+// (loadDBListings() -> findListingById()), which fetches the ENTIRE
+// showroom_listings table (~440 rows) and raced a hard 2.5s cap. On a cold
+// serverless start that full-table fetch routinely exceeded the cap, so the
+// crawler got the generic fallback preview (brand-logo + "Property Details")
+// instead of the real product. A targeted single-row query by property_id is
+// ~0.9s and always wins, so Facebook/WhatsApp reliably show the real product.
+let _ogClient = null;
+async function ogClient() {
+  if (_ogClient) return _ogClient;
+  const { createClient } = await import('@supabase/supabase-js');
+  _ogClient = createClient(
+    'https://wttnvwpoqmbxryivcerf.supabase.co',
+    'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa',
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  return _ogClient;
+}
+
+function withTimeoutMs(promise, ms) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve('__timeout__'), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      () => { clearTimeout(timer); resolve('__timeout__'); },
+    );
+  });
+}
+
 async function resolveFromDb(id) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id));
   try {
-    const result = await Promise.race([
-      (async () => {
-        await loadDBListings();
-        return findListingById(id) || null;
-      })(),
-      new Promise((resolve) => setTimeout(() => resolve(null), 2500)),
-    ]);
-    return result;
-  } catch {
+    const client = await ogClient();
+    const byProperty = client.from('showroom_listings')
+      .select('*')
+      .eq('is_active', true)
+      .eq('property_id', id);
+    const propResult = await withTimeoutMs(byProperty.maybeSingle(), 4000);
+    if (propResult !== '__timeout__' && !propResult?.error && propResult?.data) {
+      return normalizeOgRow(propResult.data);
+    }
+    // Some URLs carry the raw UUID row id instead of the property_id.
+    if (isUuid) {
+      const byId = client.from('showroom_listings')
+        .select('*')
+        .eq('is_active', true)
+        .eq('id', id);
+      const idResult = await withTimeoutMs(byId.maybeSingle(), 4000);
+      if (idResult !== '__timeout__' && !idResult?.error && idResult?.data) {
+        return normalizeOgRow(idResult.data);
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error('[og] resolveFromDb failed:', err && err.message ? err.message : err);
     return null;
   }
+}
+
+function normalizeOgRow(row) {
+  return {
+    ...row,
+    price: Number(row.price) || 0,
+    images: Array.isArray(row.images) ? row.images : [],
+  };
 }
 
 function stripMetaTag(html, attr, key) {
