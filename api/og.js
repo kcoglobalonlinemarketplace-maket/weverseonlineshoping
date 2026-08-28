@@ -89,28 +89,7 @@ function resolveListingSync(id) {
   );
 }
 
-// Direct, targeted lookup of a single DB listing (created in the admin).
-//
-// Previously this went through the browser-side full-table loader
-// (loadDBListings() -> findListingById()), which fetches the ENTIRE
-// showroom_listings table (~440 rows) and raced a hard 2.5s cap. On a cold
-// serverless start that full-table fetch routinely exceeded the cap, so the
-// crawler got the generic fallback preview (brand-logo + "Property Details")
-// instead of the real product. A targeted single-row query by property_id is
-// ~0.9s and always wins, so Facebook/WhatsApp reliably show the real product.
-let _ogClient = null;
-async function ogClient() {
-  if (_ogClient) return _ogClient;
-  const { createClient } = await import('@supabase/supabase-js');
-  _ogClient = createClient(
-    'https://wttnvwpoqmbxryivcerf.supabase.co',
-    'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa',
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
-  return _ogClient;
-}
-
-function withTimeoutMs(promise, ms) {
+async function withTimeoutMs(promise, ms) {
   return new Promise((resolve) => {
     const timer = setTimeout(() => resolve('__timeout__'), ms);
     promise.then(
@@ -120,42 +99,22 @@ function withTimeoutMs(promise, ms) {
   });
 }
 
+// Direct, targeted lookup of a single DB listing (created in the admin).
+//
+// Previously this went through the browser-side full-table loader
+// (loadDBListings() -> findListingById()), which fetches the ENTIRE
+// showroom_listings table (~440 rows) and raced a hard timeout. On a cold
+// serverless start that full-table fetch routinely exceeded the cap, so the
+// crawler got the generic fallback preview (brand-logo + "Property Details")
+// instead of the real product. A targeted single-row query by property_id is
+// ~0.9s and always wins, so Facebook/WhatsApp reliably show the real product.
+// Shared with the /api/og-image generator (fast, persistSession:false).
 async function resolveFromDb(id) {
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id));
-  try {
-    const client = await ogClient();
-    const byProperty = client.from('showroom_listings')
-      .select('*')
-      .eq('is_active', true)
-      .eq('property_id', id);
-    const propResult = await withTimeoutMs(byProperty.maybeSingle(), 4000);
-    if (propResult !== '__timeout__' && !propResult?.error && propResult?.data) {
-      return normalizeOgRow(propResult.data);
-    }
-    // Some URLs carry the raw UUID row id instead of the property_id.
-    if (isUuid) {
-      const byId = client.from('showroom_listings')
-        .select('*')
-        .eq('is_active', true)
-        .eq('id', id);
-      const idResult = await withTimeoutMs(byId.maybeSingle(), 4000);
-      if (idResult !== '__timeout__' && !idResult?.error && idResult?.data) {
-        return normalizeOgRow(idResult.data);
-      }
-    }
-    return null;
-  } catch (err) {
-    console.error('[og] resolveFromDb failed:', err && err.message ? err.message : err);
-    return null;
-  }
-}
-
-function normalizeOgRow(row) {
-  return {
-    ...row,
-    price: Number(row.price) || 0,
-    images: Array.isArray(row.images) ? row.images : [],
-  };
+  const result = await withTimeoutMs(
+    import('./lib/listing-lookup.mjs').then((m) => m.resolveFromDb(id)),
+    4000,
+  );
+  return result === '__timeout__' ? null : result;
 }
 
 function stripMetaTag(html, attr, key) {
@@ -189,31 +148,48 @@ export default async function handler(req, res) {
     }
 
     let listing = null;
+    let fromDb = false;
     if (id) {
-      listing = resolveListingSync(id);
-      if (!listing) listing = await resolveFromDb(id);
+      const sync = resolveListingSync(id);
+      if (sync) {
+        listing = sync;
+      } else {
+        listing = await resolveFromDb(id);
+        fromDb = !!listing;
+      }
     }
 
     let out = html;
     if (listing) {
       const title = String(listing.title || '').trim() || SITE_NAME;
       const price = formatSharePrice(listing);
-      const image = absUrl(listing.images?.[0] || FALLBACK_IMG, siteUrl);
       const desc = `${title}${price ? ` — ${price}` : ''} — available at ${SITE_NAME}.`;
       const canonical = `${siteUrl}/details.html?id=${encodeURIComponent(id)}`;
+      // For DB showroom products use the 1200x630 OG-image generator (large,
+      // uncropped product preview). Static/specialist listings keep their raw
+      // image. The generator endpoint is only reachable for DB rows.
+      const useSized = fromDb && listing.images?.[0];
+      const ogImage = useSized
+        ? `${siteUrl}/api/og-image?id=${encodeURIComponent(id)}`
+        : absUrl(listing.images?.[0] || FALLBACK_IMG, siteUrl);
       const tags = [
         `<title>${escapeAttr(title)} | ${SITE_NAME}</title>`,
         `<meta name="description" content="${escapeAttr(desc)}">`,
         `<meta property="og:type" content="product">`,
         `<meta property="og:title" content="${escapeAttr(title)}">`,
         `<meta property="og:description" content="${escapeAttr(desc)}">`,
-        `<meta property="og:image" content="${escapeAttr(image)}">`,
+        `<meta property="og:image" content="${escapeAttr(ogImage)}">`,
+        ...(useSized ? [
+          `<meta property="og:image:width" content="1200">`,
+          `<meta property="og:image:height" content="630">`,
+          `<meta property="og:image:type" content="image/jpeg">`,
+        ] : []),
         `<meta property="og:image:alt" content="${escapeAttr(title)} — ${SITE_NAME}">`,
         `<meta property="og:url" content="${escapeAttr(canonical)}">`,
         `<meta name="twitter:card" content="summary_large_image">`,
         `<meta name="twitter:title" content="${escapeAttr(title)}">`,
         `<meta name="twitter:description" content="${escapeAttr(desc)}">`,
-        `<meta name="twitter:image" content="${escapeAttr(image)}">`,
+        `<meta name="twitter:image" content="${escapeAttr(ogImage)}">`,
         `<link rel="canonical" href="${escapeAttr(canonical)}">`,
       ];
       out = html.replace(/<title>[\s\S]*?<\/title>/, tags[0]);
