@@ -228,9 +228,7 @@ function cardHtml(listing) {
 
   return `<div class="showroom-card group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col cursor-pointer" data-id="${listingId}">
     <div class="relative aspect-[6/5] overflow-hidden bg-gray-100">
-      <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
-           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-           onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${/\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(cover || '') ? `<video src="${cover}" muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>` : `<img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`}
       ${statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${statusBadge}</span>` : ''}
       ${discountBadge}
       <div class="absolute top-2 right-2 flex flex-col gap-1.5">
@@ -328,9 +326,7 @@ function feedCardHtml(listing) {
 
   return `<div class="showroom-card showroom-feed-card group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 flex flex-col sm:flex-row cursor-pointer" data-id="${listingId}">
     <div class="relative shrink-0 sm:w-[42%] lg:w-[38%] xl:w-[34%] aspect-[7/5] sm:aspect-auto sm:min-h-[300px] overflow-hidden bg-gray-100">
-      <img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async"
-           class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-           onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${/\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(cover || '') ? `<video src="${cover}" muted loop autoplay playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>` : `<img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`}
       ${statusBadge ? `<span class="absolute top-2.5 left-2.5 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${statusBadge}</span>` : ''}
       ${discountBadge}
       <span class="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
