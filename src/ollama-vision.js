@@ -18,6 +18,10 @@ const VISION_MODEL_PREFERENCE = [
   'llama3.2-vision',
 ];
 
+// AI model and API keys
+const AI_MODEL = 'qwen2.5vl:7b';
+const API_KEY = 'your_api_key_here';
+
 function normalizeUrl(url) {
   let u = String(url || '').trim() || DEFAULT_OLLAMA_URL;
   if (!/^https?:\/\//i.test(u)) u = `http://${u}`;
@@ -136,4 +140,49 @@ export function extractJson(text) {
   const end = t.lastIndexOf('}');
   if (start === -1 || end === -1 || end <= start) return null;
   try { return JSON.parse(t.slice(start, end + 1)); } catch { return null; }
+}
+
+// Function to handle image upload and automatic form population
+export async function handleImageUpload(imageData) {
+  try {
+    const model = await resolveOllamaVisionModel(DEFAULT_OLLAMA_URL, AI_MODEL);
+    if (!model.ok) {
+      throw new Error(model.error);
+    }
+
+    const result = await ollamaVision({
+      baseUrl: DEFAULT_OLLAMA_URL,
+      model: model.model,
+      prompt: 'Analyze the image and extract relevant information',
+      images: [imageData],
+    });
+
+    const data = extractJson(result.text);
+    if (!data) {
+      throw new Error('No valid data extracted from the image.');
+    }
+
+    // Populate form fields based on the extracted data
+    populateFormFields(data);
+  } catch (error) {
+    console.error('Error processing image:', error);
+    alert('Error processing image. Please try again.');
+  }
+}
+
+// Function to populate form fields based on extracted data
+function populateFormFields(data) {
+  const form = document.getElementById('scan-form');
+  if (!form) {
+    console.error('Form not found');
+    return;
+  }
+
+  // Example fields to populate
+  form.elements['product-name'].value = data.productName || '';
+  form.elements['product-description'].value = data.productDescription || '';
+  form.elements['product-price'].value = data.productPrice || '';
+  form.elements['product-image'].value = data.productImage || '';
+
+  // Add more fields as needed
 }
