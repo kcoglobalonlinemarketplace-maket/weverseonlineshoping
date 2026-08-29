@@ -18,6 +18,7 @@ import { getPhoneById } from '../src/phone-data.js';
 import { PRODUCT_LISTINGS } from '../src/products-data.js';
 import { PRODUCT_EXTRA_LISTINGS } from '../src/products-extra.js';
 import { generateListingById } from '../src/catalog.js';
+import { productVideo, productPoster } from './lib/product-media.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_NAME = 'Weverse Online Shop';
@@ -166,19 +167,24 @@ export default async function handler(req, res) {
       const desc = `${title}${price ? ` — ${price}` : ''} — available at ${SITE_NAME}.`;
       const canonical = `${siteUrl}/details.html?id=${encodeURIComponent(id)}`;
       // For DB showroom products use the 1200x630 OG-image generator (large,
-      // uncropped product preview). Static/specialist listings keep their raw
-      // image. The generator endpoint is only reachable for DB rows.
-      const useSized = fromDb && listing.images?.[0];
+      // uncropped product preview) — only when the product has a REAL photo
+      // (never a video/mp4, which the image generator cannot decode). The
+      // poster is always a real photo; standalone video fields or an mp4 inside
+      // images[] are emitted separately as og:video so the card can play it.
+      const posterPhoto = productPoster(listing);
+      // Any DB product goes through the 1200x630 OG-image generator, which now
+      // ALWAYS returns a real JPEG — the product photo when available, or a
+      // bright branded poster for video-only products — so the card is never
+      // SVG/white. Static/specialist listings keep their raw image.
+      const useSized = fromDb;
       const ogImage = useSized
         ? `${siteUrl}/api/og-image?id=${encodeURIComponent(id)}`
-        : absUrl(listing.images?.[0] || FALLBACK_IMG, siteUrl);
-      // Product video (standalone video/video_url columns). When present, emit
-      // og:video so WhatsApp/Facebook/Telegram can offer a playable media card,
-      // and keep og:image as the poster so there is ALWAYS a preview thumbnail.
-      const videoUrl = String(
-        (listing.video_url && String(listing.video_url).trim()) ||
-        (listing.video && String(listing.video).trim()) || '',
-      ).trim();
+        : absUrl(posterPhoto || FALLBACK_IMG, siteUrl);
+      // Product video: standalone video/video_url columns OR an .mp4 stored
+      // inside images[]. When present, emit og:video so WhatsApp/Facebook/
+      // Telegram can offer a playable media card, and keep og:image as the
+      // poster so there is ALWAYS a preview thumbnail (never white/blank).
+      const videoUrl = productVideo(listing);
       const videoTags = videoUrl
         ? [
             `<meta property="og:video" content="${escapeAttr(absUrl(videoUrl, siteUrl))}">`,
@@ -210,6 +216,31 @@ export default async function handler(req, res) {
         `<meta name="twitter:title" content="${escapeAttr(title)}">`,
         `<meta name="twitter:description" content="${escapeAttr(desc)}">`,
         `<meta name="twitter:image" content="${escapeAttr(ogImage)}">`,
+        `<link rel="canonical" href="${escapeAttr(canonical)}">`,
+      ];
+      out = html.replace(/<title>[\s\S]*?<\/title>/, tags[0]);
+      out = out.replace(/<link rel="canonical"[^>]*>/, tags[tags.length - 1]);
+      for (const t of tags.slice(1, -1)) out = injectMeta(out, t);
+    } else if (id) {
+      // Product id couldn't be resolved (legacy/removed/never-in-DB). Still emit a
+      // proper branded card with the site brand logo as og:image so NO shared link
+      // ever previews without a picture — never a bare page with a missing image.
+      const canonical = `${siteUrl}/details.html?id=${encodeURIComponent(id)}`;
+      const logo = absUrl('/brand-logo.jpeg', siteUrl);
+      const genericDesc = `${SITE_NAME} — premium products, secure payments, worldwide delivery.`;
+      const tags = [
+        `<title>${SITE_NAME}</title>`,
+        `<meta name="description" content="${escapeAttr(genericDesc)}">`,
+        `<meta property="og:type" content="website">`,
+        `<meta property="og:title" content="${escapeAttr(SITE_NAME)}">`,
+        `<meta property="og:description" content="${escapeAttr(genericDesc)}">`,
+        `<meta property="og:image" content="${escapeAttr(logo)}">`,
+        `<meta property="og:image:secure_url" content="${escapeAttr(logo)}">`,
+        `<meta property="og:url" content="${escapeAttr(canonical)}">`,
+        `<meta name="twitter:card" content="summary_large_image">`,
+        `<meta name="twitter:title" content="${escapeAttr(SITE_NAME)}">`,
+        `<meta name="twitter:description" content="${escapeAttr(genericDesc)}">`,
+        `<meta name="twitter:image" content="${escapeAttr(logo)}">`,
         `<link rel="canonical" href="${escapeAttr(canonical)}">`,
       ];
       out = html.replace(/<title>[\s\S]*?<\/title>/, tags[0]);

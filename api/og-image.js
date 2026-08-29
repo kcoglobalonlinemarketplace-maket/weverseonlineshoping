@@ -14,6 +14,7 @@
 
 import sharp from 'sharp';
 import { resolveFromDb } from './lib/listing-lookup.mjs';
+import { productPoster } from './lib/product-media.mjs';
 
 const W = 1200;
 const H = 630;
@@ -64,30 +65,41 @@ export default async function handler(req, res) {
     }
 
     const listing = await resolveFromDb(id);
-    const rawImage = listing?.images?.[0];
-    if (!listing || !rawImage) {
-      res.statusCode = 404;
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.end('not found');
-      return;
-    }
+    // The poster must be a REAL photo — never an .mp4 (a video stored inside
+    // images[] is handled separately, and sharp cannot decode it into a card).
+    const rawImage = listing ? productPoster(listing) : '';
     const origin = 'https://' + (req.headers?.host || 'weverseonlineshop.com');
-    const imgUrl = absUrl(rawImage, origin);
+    const imgUrl = rawImage ? absUrl(rawImage, origin) : '';
 
-    const src = await fetchImageBytes(imgUrl);
-    if (!src) {
-      res.statusCode = 502;
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.end('image fetch failed');
-      return;
+    let src = null;
+    if (imgUrl) {
+      src = await fetchImageBytes(imgUrl);
+      if (src) {
+        let meta;
+        try { meta = await sharp(src).metadata(); } catch { meta = null; }
+        if (!meta || !meta.width || !meta.height) src = null;
+      }
     }
 
-    let meta;
-    try { meta = await sharp(src).metadata(); } catch { meta = null; }
-    if (!meta || !meta.width || !meta.height) {
-      res.statusCode = 502;
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.end('unreadable image');
+    // If the product has no decodable photo (e.g. a video-only product), render
+    // a bright, smooth branded poster using the site brand logo instead of a
+    // blank/white frame. og:video (from og.js) still lets the card play.
+    if (!src) {
+      let logo;
+      try { logo = await fetchImageBytes(absUrl('/brand-logo.jpeg', origin)); } catch { logo = null; }
+      const bg = sharp({ create: { width: W, height: H, channels: 3, background: { r: 255, g: 255, b: 255 } } })
+        .flatten({ background: '#ffffff' });
+      const comps = [];
+      if (logo) {
+        const lg = await sharp(logo).resize(FG_W, FG_H, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).png().toBuffer();
+        comps.push({ input: lg, gravity: 'center' });
+      }
+      const out = await bg.composite(comps).jpeg({ quality: 88, mozjpeg: true }).toBuffer();
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=3600');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.end(out);
       return;
     }
 
@@ -96,7 +108,7 @@ export default async function handler(req, res) {
     const bgBuff = await sharp(src)
       .resize(W, H, { fit: 'cover' })
       .blur(38)
-      .modulate({ brightness: 0.62, saturation: 1.12 })
+      .modulate({ brightness: 0.76, saturation: 1.15 })
       .jpeg({ quality: 70 })
       .toBuffer();
 
