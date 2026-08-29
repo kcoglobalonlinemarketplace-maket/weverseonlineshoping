@@ -29,7 +29,7 @@ const MODEL_FALLBACKS = [
 ];
 
 function pickModel(settings: Record<string, unknown>): string {
-  const override = String(settings.customer_model_override || '').trim();
+  const override = String(settings.chat_model_override || '').trim();
   if (override) return override;
   return String(settings.gemini_model || '').trim();
 }
@@ -169,13 +169,16 @@ Deno.serve(async (req) => {
   if (settingsErr) return jsonResponse({ error: 'AI settings could not be loaded.' }, 400);
   const settingsRow = (settings || {}) as Record<string, unknown>;
 
-  if (settingsRow.customer_enabled === false || settingsRow.customer_ai_enabled === false) {
+  if (settingsRow.chat_ai_enabled === false || settingsRow.customer_enabled === false || settingsRow.customer_ai_enabled === false) {
     return jsonResponse({
       response: 'I have to step away from my desk for a moment — I\'ll be back with you shortly. If it\'s urgent, email support@weverseonlineshop.com and we\'ll help right away.',
     });
   }
 
-  const apiKey = String(settingsRow.gemini_key || settingsRow.gemini_api_key || '').trim();
+  // Chat assistant uses its OWN dedicated key from "AI Chat Settings"
+  // (chat_gemini_key). This keeps it completely separate from the Product
+  // Scanner's key (gemini_key). This function only chats — it never scans.
+  const apiKey = String(settingsRow.chat_gemini_key || '').trim();
 
   // ── KEYLESS FREE AI FALLBACK (Pollinations — no API key, no signup, free) ──
   // Used when there is no Gemini key at all, or when Gemini errors/quota-exhausts,

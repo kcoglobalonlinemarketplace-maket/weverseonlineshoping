@@ -6201,72 +6201,93 @@ window.showAddPropertyModal = function(existing = {}) {
             <input type="hidden" name="required_image_count" id="ppf-required_image_count" value="">
           </div>
 
-          <div class="form-grid form-grid-2">
-            <div class="sm:col-span-2"><label class="lbl">Property Title *</label><input class="input-field" name="title" value="${esc(existing.title || '')}" required placeholder="e.g. Cozy 3-Bedroom Family Home"></div>
-            <div><label class="lbl">Property Type *</label><select class="input-field" name="property_type" required>
-              ${PROPERTY_TYPES.map(t => `<option value="${t}" ${existing.property_type === t ? 'selected' : ''}>${t}</option>`).join('')}
-            </select></div>
-            <div><label class="lbl">Listing Status</label><select class="input-field" name="listing_status">
-              <option value="sale" ${existing.listing_status !== 'rent' ? 'selected' : ''}>For Sale</option>
-              <option value="rent" ${existing.listing_status === 'rent' ? 'selected' : ''}>For Rent</option>
-            </select></div>
-            <div><label class="lbl">Price *</label><input type="number" class="input-field" id="ppf-price" name="price" value="${existing.price || ''}" required placeholder="0"></div>
-            <div><label class="lbl">Real Price (crossed out)</label><input type="number" class="input-field" id="ppf-real_price" name="real_price" value="${existing.real_price ?? existing.specifications?.real_price ?? ''}" placeholder="Original price before discount"></div>
-            <div><label class="lbl">Country Name *</label><input class="input-field" id="ppf-country" name="country" value="${esc(existing.country || '')}" required placeholder="United States"></div>
-            <div><label class="lbl">Subcategory</label><input class="input-field" name="subcategory" value="${esc(existing.subcategory || '')}" placeholder="e.g. Villas, Mansions, Hotels"></div>
-            <div><label class="lbl">State / Province</label><input class="input-field" name="state" value="${esc(existing.state || '')}" placeholder="e.g. California"></div>
-            <div><label class="lbl">City</label><input class="input-field" name="city" value="${esc(existing.city || '')}" placeholder="e.g. Los Angeles"></div>
-            <div><label class="lbl">Town / Local Area</label><input class="input-field" name="town" value="${esc(existing.town || '')}" placeholder="Neighborhood or district"></div>
-            <div><label class="lbl">Latitude</label><input type="number" step="any" class="input-field" name="latitude" value="${esc(existing.latitude || '')}" placeholder="40.7128"></div>
-            <div><label class="lbl">Longitude</label><input type="number" step="any" class="input-field" name="longitude" value="${esc(existing.longitude || '')}" placeholder="-74.0060"></div>
-            <div class="sm:col-span-2">
-              <div class="rounded-xl border border-gray-200 overflow-hidden" style="height:250px;background:#e2e8f0"><div id="property-map-preview" style="width:100%;height:100%"></div></div>
-              <div class="flex flex-wrap items-center justify-between gap-2 mt-2">
-                <div class="text-[11px] text-gray-500" id="property-map-status">Map preview â€” fill the location fields or click the map to drop a pin.</div>
-                <div class="flex items-center gap-2">
-                  <button type="button" id="btn-geocode-property" class="btn-press text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition">Locate from fields</button>
-                  <a id="btn-open-google-map" href="#" target="_blank" rel="noopener" class="text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-200 transition">Open in Google Maps</a>
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="home" class="w-4 h-4 text-blue-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Basic Information</p></div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Property Title *</label><input class="input-field" name="title" value="${esc(existing.title || '')}" required placeholder="e.g. Cozy 3-Bedroom Family Home"></div>
+              <div><label class="lbl">Property Type *</label><select class="input-field" name="property_type" required>
+                ${PROPERTY_TYPES.map(t => `<option value="${t}" ${existing.property_type === t ? 'selected' : ''}>${t}</option>`).join('')}
+              </select></div>
+              <div><label class="lbl">Listing Status</label><select class="input-field" name="listing_status">
+                <option value="sale" ${existing.listing_status !== 'rent' ? 'selected' : ''}>For Sale</option>
+                <option value="rent" ${existing.listing_status === 'rent' ? 'selected' : ''}>For Rent</option>
+              </select></div>
+              <div><label class="lbl">Price *</label><input type="number" class="input-field" id="ppf-price" name="price" value="${existing.price || ''}" required placeholder="0"></div>
+              <div><label class="lbl">Real Price (crossed out)</label><input type="number" class="input-field" id="ppf-real_price" name="real_price" value="${existing.real_price ?? existing.specifications?.real_price ?? ''}" placeholder="Original price before discount"></div>
+              <div><label class="lbl">Country Name *</label><input class="input-field" id="ppf-country" name="country" value="${esc(existing.country || '')}" required placeholder="United States"></div>
+              <div><label class="lbl">Subcategory</label><input class="input-field" name="subcategory" value="${esc(existing.subcategory || '')}" placeholder="e.g. Villas, Mansions, Hotels"></div>
+              <div><label class="lbl">Furnished</label><select class="input-field" name="furnished">
+                <option value="">Not specified</option>
+                <option value="Furnished" ${existing.furnished==='Furnished'?'selected':''}>Furnished</option>
+                <option value="Unfurnished" ${existing.furnished==='Unfurnished'?'selected':''}>Unfurnished</option>
+              </select></div>
+              <div><label class="lbl">Condition</label><select class="input-field" name="condition">
+                <option value="">Not specified</option>
+                ${['New Construction','Like New','Excellent','Good','Fair','Needs Renovation'].map(c => `<option value="${c}" ${existing.condition === c ? 'selected' : ''}>${c}</option>`).join('')}
+              </select></div>
+              <div><label class="lbl">Year Built</label><input type="number" class="input-field" name="year_built" value="${existing.year_built ?? ''}" placeholder="2015"></div>
+              <div><label class="lbl">Year Renovated</label><input type="number" class="input-field" name="year_renovated" value="${existing.year_renovated ?? ''}" placeholder="2021"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-sky-500/15 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-sky-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Location &amp; Map</p></div>
+            <div class="form-grid form-grid-2">
+              <div><label class="lbl">State / Province</label><input class="input-field" name="state" value="${esc(existing.state || '')}" placeholder="e.g. California"></div>
+              <div><label class="lbl">City</label><input class="input-field" name="city" value="${esc(existing.city || '')}" placeholder="e.g. Los Angeles"></div>
+              <div><label class="lbl">Town / Local Area</label><input class="input-field" name="town" value="${esc(existing.town || '')}" placeholder="Neighborhood or district"></div>
+              <div class="sm:col-span-2"><label class="lbl">Property Location</label><input class="input-field" name="product_location" value="${esc(existing.product_location || '')}" placeholder="Estate, district, city, landmark"></div>
+              <div class="sm:col-span-2"><label class="lbl">Street / Address</label><input class="input-field" name="address" value="${esc(existing.address || '')}" placeholder="Street and number, e.g. 123 Maple Street"></div>
+              <div><label class="lbl">ZIP / Postal Code</label><input class="input-field" name="zip_code" value="${esc(existing.zip_code || '')}" placeholder="e.g. 10001"></div>
+              <div><label class="lbl">Neighborhood / District</label><input class="input-field" name="neighborhood" value="${esc(existing.neighborhood || '')}" placeholder="e.g. Beverly Hills, Riverside"></div>
+              <div><label class="lbl">Latitude</label><input type="number" step="any" class="input-field" name="latitude" value="${esc(existing.latitude || '')}" placeholder="40.7128"></div>
+              <div><label class="lbl">Longitude</label><input type="number" step="any" class="input-field" name="longitude" value="${esc(existing.longitude || '')}" placeholder="-74.0060"></div>
+              <div class="sm:col-span-2"><label class="lbl">Landmarks (comma separated)</label><input class="input-field" name="landmarks_text" value="${esc((existing.landmarks || []).join(', '))}" placeholder="City Hall, Central Park, Main Station"></div>
+              <div class="sm:col-span-2">
+                <div class="rounded-xl border border-gray-200 overflow-hidden" style="height:250px;background:#e2e8f0"><div id="property-map-preview" style="width:100%;height:100%"></div></div>
+                <div class="flex flex-wrap items-center justify-between gap-2 mt-2">
+                  <div class="text-[11px] text-gray-500" id="property-map-status">Map preview â€” fill the location fields or click the map to drop a pin.</div>
+                  <div class="flex items-center gap-2">
+                    <button type="button" id="btn-geocode-property" class="btn-press text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition">Locate from fields</button>
+                    <a id="btn-open-google-map" href="#" target="_blank" rel="noopener" class="text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-200 transition">Open in Google Maps</a>
+                  </div>
                 </div>
               </div>
             </div>
-            <div><label class="lbl">Bedrooms</label><input type="number" class="input-field" name="bedrooms" value="${existing.bedrooms ?? ''}" placeholder="3"></div>
-            <div><label class="lbl">Bathrooms</label><input type="number" class="input-field" name="bathrooms" value="${existing.bathrooms ?? ''}" placeholder="2"></div>
-            <div><label class="lbl">Building Size</label><input class="input-field" name="building_size" value="${esc(existing.building_size || '')}" placeholder="e.g. 2,500 sqft"></div>
-            <div><label class="lbl">Land Size</label><input class="input-field" name="land_size" value="${esc(existing.land_size || '')}" placeholder="e.g. 0.5 acres"></div>
-            <div><label class="lbl">Parking Spaces</label><input type="number" class="input-field" name="parking_spaces" value="${existing.parking_spaces ?? ''}"></div>
-            <div><label class="lbl">Furnished</label><select class="input-field" name="furnished">
-              <option value="">Not specified</option>
-              <option value="Furnished" ${existing.furnished==='Furnished'?'selected':''}>Furnished</option>
-              <option value="Unfurnished" ${existing.furnished==='Unfurnished'?'selected':''}>Unfurnished</option>
-            </select></div>
-            <div><label class="lbl">Condition</label><select class="input-field" name="condition">
-              <option value="">Not specified</option>
-              ${['New Construction','Like New','Excellent','Good','Fair','Needs Renovation'].map(c => `<option value="${c}" ${existing.condition === c ? 'selected' : ''}>${c}</option>`).join('')}
-            </select></div>
-            <div><label class="lbl">Year Built</label><input type="number" class="input-field" name="year_built" value="${existing.year_built ?? ''}" placeholder="2015"></div>
-            <div><label class="lbl">Year Renovated</label><input type="number" class="input-field" name="year_renovated" value="${existing.year_renovated ?? ''}" placeholder="2021"></div>
-            <div><label class="lbl">Half Bathrooms</label><input type="number" class="input-field" name="half_bathrooms" value="${existing.half_bathrooms ?? ''}" placeholder="1"></div>
-            <div><label class="lbl">Floors / Levels</label><input type="number" class="input-field" name="floors" value="${existing.floors ?? ''}" placeholder="2"></div>
-            <div><label class="lbl">Garage</label><input class="input-field" name="garage" value="${esc(existing.garage || '')}" placeholder="e.g. 2-car attached, None"></div>
-            <div><label class="lbl">Living Areas</label><input class="input-field" name="living_areas" value="${esc(existing.living_areas || '')}" placeholder="Living room, Dining, Family room"></div>
-            <div><label class="lbl">Kitchens</label><input type="number" class="input-field" name="kitchens" value="${existing.kitchens ?? ''}" placeholder="1"></div>
-            <div><label class="lbl">Balconies</label><input type="number" class="input-field" name="balconies" value="${existing.balconies ?? ''}" placeholder="2"></div>
-            <div><label class="lbl">Garden</label><input class="input-field" name="garden" value="${esc(existing.garden || '')}" placeholder="Private garden / Landscaped / None"></div>
-            <div><label class="lbl">Pool</label><input class="input-field" name="pool" value="${esc(existing.pool || '')}" placeholder="Private pool / Community pool / None"></div>
-            <div><label class="lbl">Security</label><input class="input-field" name="security" value="${esc(existing.security || '')}" placeholder="Gated community, CCTV, Alarm"></div>
-            <div><label class="lbl">Utilities</label><input class="input-field" name="utilities" value="${esc(existing.utilities || '')}" placeholder="Water, electricity, gas, internet"></div>
-            <div class="sm:col-span-2"><label class="lbl">Neighborhood / District</label><input class="input-field" name="neighborhood" value="${esc(existing.neighborhood || '')}" placeholder="e.g. Beverly Hills, Riverside"></div>
-            <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the propertyâ€¦">${esc(existing.description || '')}</textarea></div>
-            <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Swimming Pool, Garden, Garageâ€¦"></div>
-            <div class="sm:col-span-2"><label class="lbl">Highlights (comma separated)</label><input class="input-field" name="highlights_text" value="${esc((existing.highlights || []).join(', '))}" placeholder="Prime location, map-ready post, 24-image gallery"></div>
-            <div class="sm:col-span-2"><label class="lbl">SEO Keywords (comma separated)</label><input class="input-field" name="seo_keywords_text" value="${esc((existing.seo_keywords || []).join(', '))}" placeholder="mansion, villa, property investment"></div>
-            <div class="sm:col-span-2"><label class="lbl">Property Location</label><input class="input-field" name="product_location" value="${esc(existing.product_location || '')}" placeholder="Estate, district, city, landmark"></div>
-            <div class="sm:col-span-2"><label class="lbl">Street / Address</label><input class="input-field" name="address" value="${esc(existing.address || '')}" placeholder="Street and number, e.g. 123 Maple Street"></div>
-            <div><label class="lbl">ZIP / Postal Code</label><input class="input-field" name="zip_code" value="${esc(existing.zip_code || '')}" placeholder="e.g. 10001"></div>
-            <div><label class="lbl">Landmarks (comma separated)</label><input class="input-field" name="landmarks_text" value="${esc((existing.landmarks || []).join(', '))}" placeholder="City Hall, Central Park, Main Station"></div>
           </div>
 
-<div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+          <div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="ruler" class="w-4 h-4 text-emerald-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Size &amp; Layout</p></div>
+            <div class="form-grid form-grid-2">
+              <div><label class="lbl">Bedrooms</label><input type="number" class="input-field" name="bedrooms" value="${existing.bedrooms ?? ''}" placeholder="3"></div>
+              <div><label class="lbl">Bathrooms</label><input type="number" class="input-field" name="bathrooms" value="${existing.bathrooms ?? ''}" placeholder="2"></div>
+              <div><label class="lbl">Half Bathrooms</label><input type="number" class="input-field" name="half_bathrooms" value="${existing.half_bathrooms ?? ''}" placeholder="1"></div>
+              <div><label class="lbl">Floors / Levels</label><input type="number" class="input-field" name="floors" value="${existing.floors ?? ''}" placeholder="2"></div>
+              <div><label class="lbl">Building Size</label><input class="input-field" name="building_size" value="${esc(existing.building_size || '')}" placeholder="e.g. 2,500 sqft"></div>
+              <div><label class="lbl">Land Size</label><input class="input-field" name="land_size" value="${esc(existing.land_size || '')}" placeholder="e.g. 0.5 acres"></div>
+              <div><label class="lbl">Parking Spaces</label><input type="number" class="input-field" name="parking_spaces" value="${existing.parking_spaces ?? ''}"></div>
+              <div><label class="lbl">Garage</label><input class="input-field" name="garage" value="${esc(existing.garage || '')}" placeholder="e.g. 2-car attached, None"></div>
+              <div><label class="lbl">Living Areas</label><input class="input-field" name="living_areas" value="${esc(existing.living_areas || '')}" placeholder="Living room, Dining, Family room"></div>
+              <div><label class="lbl">Kitchens</label><input type="number" class="input-field" name="kitchens" value="${existing.kitchens ?? ''}" placeholder="1"></div>
+              <div><label class="lbl">Balconies</label><input type="number" class="input-field" name="balconies" value="${existing.balconies ?? ''}" placeholder="2"></div>
+              <div><label class="lbl">Garden</label><input class="input-field" name="garden" value="${esc(existing.garden || '')}" placeholder="Private garden / Landscaped / None"></div>
+              <div><label class="lbl">Pool</label><input class="input-field" name="pool" value="${esc(existing.pool || '')}" placeholder="Private pool / Community pool / None"></div>
+              <div><label class="lbl">Security</label><input class="input-field" name="security" value="${esc(existing.security || '')}" placeholder="Gated community, CCTV, Alarm"></div>
+              <div><label class="lbl">Utilities</label><input class="input-field" name="utilities" value="${esc(existing.utilities || '')}" placeholder="Water, electricity, gas, internet"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-cyan-500/20 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-cyan-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Description, Features &amp; SEO</p></div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the propertyâ€¦">${esc(existing.description || '')}</textarea></div>
+              <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Swimming Pool, Garden, Garageâ€¦"></div>
+              <div class="sm:col-span-2"><label class="lbl">Highlights (comma separated)</label><input class="input-field" name="highlights_text" value="${esc((existing.highlights || []).join(', '))}" placeholder="Prime location, map-ready post, 24-image gallery"></div>
+              <div class="sm:col-span-2"><label class="lbl">SEO Keywords (comma separated)</label><input class="input-field" name="seo_keywords_text" value="${esc((existing.seo_keywords || []).join(', '))}" placeholder="mansion, villa, property investment"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
             <div class="flex items-center gap-2"><i data-lucide="home" class="w-4 h-4 text-emerald-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Interior &amp; Exterior Features</p></div>
             <div class="form-grid form-grid-2">
               <div class="sm:col-span-2"><label class="lbl">Interior Features (comma separated)</label><input class="input-field" name="interior_features_text" value="${esc((existing.interior_features || []).join(', '))}" placeholder="Open plan kitchen, Walk-in closet, Fireplace…"></div>
@@ -6285,7 +6306,6 @@ window.showAddPropertyModal = function(existing = {}) {
               <div><label class="lbl">Contact Phone / WhatsApp</label><input class="input-field" name="contact_phone" value="${esc(existing.contact_phone || '')}" placeholder="+1 555 010 2233"></div>
               <div><label class="lbl">Contact Email</label><input class="input-field" name="contact_email" value="${esc(existing.contact_email || '')}" placeholder="agent@example.com"></div>
             </div>
-          </div>
           </div>
 
           <div class="glass-soft border border-violet-500/25 rounded-2xl p-4 space-y-3">
@@ -7844,6 +7864,41 @@ async function renderAiSettings() {
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${ALL_AI_PROVIDERS.map(providerCard).join('')}</div>
           </div>
 
+          <div class="glass-soft border border-emerald-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div class="flex items-center gap-2">
+                <i data-lucide="messages-square" class="w-4 h-4 text-emerald-400"></i>
+                <h3 class="text-sm font-black text-white uppercase tracking-wide">AI Chat Settings</h3>
+                <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300">Customer Chat Only</span>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <span class="text-[10px] font-bold text-emerald-300">Enable chat assistant</span>
+                <span class="toggle-switch"><input type="checkbox" name="chat_ai_enabled" ${s.chat_ai_enabled !== false ? 'checked' : ''}><span class="toggle-slider"></span></span>
+              </label>
+            </div>
+            <p class="text-[11px] text-gray-400 leading-relaxed">This is the <b class="text-white">customer support chat assistant</b> (the floating "Contact Us" bubble). It uses its own Gemini key — completely separate from the Product Scanner above. This chat AI <b class="text-emerald-300">only chats with customers</b>; it never scans or analyzes photos. The scanner keeps its own key and only scans.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label class="lbl">Customer Chat Gemini Key</label>
+                <div class="relative">
+                  <input type="password" class="input-field pr-16 text-xs" name="chat_gemini_key"
+                    placeholder="${s.chat_gemini_key ? '••••' + String(s.chat_gemini_key).slice(-4) : 'AIzaSy… (NEW chat key)'}">
+                  ${s.chat_gemini_key ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
+                </div>
+              </div>
+              <div>
+                <label class="lbl">Chat Model (optional)</label>
+                <select class="input-field text-xs" name="chat_model_override">
+                  <option value="">Auto (recommended)</option>
+                  ${['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-2.0-flash-lite'].map(m => `<option value="${m}" ${(s.chat_model_override||'')===m?'selected':''}>${m}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400 hover:underline">
+              <i data-lucide="external-link" class="w-3 h-3"></i>Get a free Gemini key for the chat assistant
+            </a>
+          </div>
+
           <div class="glass-soft border border-orange-500/15 rounded-2xl p-4 space-y-3">
             <h3 class="text-sm font-black text-white flex items-center gap-2 flex-wrap">
               <i data-lucide="shield-check" class="w-4 h-4 text-orange-400"></i> Groq Vision
@@ -7936,6 +7991,12 @@ window.saveAiSettings = async function(e) {
   if (data.groq_vision_model) payload.groq_vision_model = data.groq_vision_model;
   const groqKeyVal = (data.groq_key || '').trim();
   if (groqKeyVal && !/^[•\u2022]{4}/.test(groqKeyVal)) payload.groq_key = groqKeyVal;
+
+  // Customer Chat Assistant (separate key — chat only, never the scanner's key)
+  payload.chat_ai_enabled = data.chat_ai_enabled === 'on';
+  if (data.chat_model_override !== undefined) payload.chat_model_override = data.chat_model_override.trim();
+  const chatKeyVal = (data.chat_gemini_key || '').trim();
+  if (chatKeyVal && !/^[•\u2022]{4}/.test(chatKeyVal)) payload.chat_gemini_key = chatKeyVal;
 
 
 

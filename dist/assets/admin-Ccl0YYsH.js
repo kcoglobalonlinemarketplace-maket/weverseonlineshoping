@@ -840,72 +840,93 @@ ${e.filter(i=>!fi.has(i.key)).map(i=>{let a=i.type;return i.type==="select"&&i.o
             <input type="hidden" name="required_image_count" id="ppf-required_image_count" value="">
           </div>
 
-          <div class="form-grid form-grid-2">
-            <div class="sm:col-span-2"><label class="lbl">Property Title *</label><input class="input-field" name="title" value="${d(e.title||"")}" required placeholder="e.g. Cozy 3-Bedroom Family Home"></div>
-            <div><label class="lbl">Property Type *</label><select class="input-field" name="property_type" required>
-              ${ta.map(s=>`<option value="${s}" ${e.property_type===s?"selected":""}>${s}</option>`).join("")}
-            </select></div>
-            <div><label class="lbl">Listing Status</label><select class="input-field" name="listing_status">
-              <option value="sale" ${e.listing_status!=="rent"?"selected":""}>For Sale</option>
-              <option value="rent" ${e.listing_status==="rent"?"selected":""}>For Rent</option>
-            </select></div>
-            <div><label class="lbl">Price *</label><input type="number" class="input-field" id="ppf-price" name="price" value="${e.price||""}" required placeholder="0"></div>
-            <div><label class="lbl">Real Price (crossed out)</label><input type="number" class="input-field" id="ppf-real_price" name="real_price" value="${e.real_price??e.specifications?.real_price??""}" placeholder="Original price before discount"></div>
-            <div><label class="lbl">Country Name *</label><input class="input-field" id="ppf-country" name="country" value="${d(e.country||"")}" required placeholder="United States"></div>
-            <div><label class="lbl">Subcategory</label><input class="input-field" name="subcategory" value="${d(e.subcategory||"")}" placeholder="e.g. Villas, Mansions, Hotels"></div>
-            <div><label class="lbl">State / Province</label><input class="input-field" name="state" value="${d(e.state||"")}" placeholder="e.g. California"></div>
-            <div><label class="lbl">City</label><input class="input-field" name="city" value="${d(e.city||"")}" placeholder="e.g. Los Angeles"></div>
-            <div><label class="lbl">Town / Local Area</label><input class="input-field" name="town" value="${d(e.town||"")}" placeholder="Neighborhood or district"></div>
-            <div><label class="lbl">Latitude</label><input type="number" step="any" class="input-field" name="latitude" value="${d(e.latitude||"")}" placeholder="40.7128"></div>
-            <div><label class="lbl">Longitude</label><input type="number" step="any" class="input-field" name="longitude" value="${d(e.longitude||"")}" placeholder="-74.0060"></div>
-            <div class="sm:col-span-2">
-              <div class="rounded-xl border border-gray-200 overflow-hidden" style="height:250px;background:#e2e8f0"><div id="property-map-preview" style="width:100%;height:100%"></div></div>
-              <div class="flex flex-wrap items-center justify-between gap-2 mt-2">
-                <div class="text-[11px] text-gray-500" id="property-map-status">Map preview â€” fill the location fields or click the map to drop a pin.</div>
-                <div class="flex items-center gap-2">
-                  <button type="button" id="btn-geocode-property" class="btn-press text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition">Locate from fields</button>
-                  <a id="btn-open-google-map" href="#" target="_blank" rel="noopener" class="text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-200 transition">Open in Google Maps</a>
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="home" class="w-4 h-4 text-blue-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Basic Information</p></div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Property Title *</label><input class="input-field" name="title" value="${d(e.title||"")}" required placeholder="e.g. Cozy 3-Bedroom Family Home"></div>
+              <div><label class="lbl">Property Type *</label><select class="input-field" name="property_type" required>
+                ${ta.map(s=>`<option value="${s}" ${e.property_type===s?"selected":""}>${s}</option>`).join("")}
+              </select></div>
+              <div><label class="lbl">Listing Status</label><select class="input-field" name="listing_status">
+                <option value="sale" ${e.listing_status!=="rent"?"selected":""}>For Sale</option>
+                <option value="rent" ${e.listing_status==="rent"?"selected":""}>For Rent</option>
+              </select></div>
+              <div><label class="lbl">Price *</label><input type="number" class="input-field" id="ppf-price" name="price" value="${e.price||""}" required placeholder="0"></div>
+              <div><label class="lbl">Real Price (crossed out)</label><input type="number" class="input-field" id="ppf-real_price" name="real_price" value="${e.real_price??e.specifications?.real_price??""}" placeholder="Original price before discount"></div>
+              <div><label class="lbl">Country Name *</label><input class="input-field" id="ppf-country" name="country" value="${d(e.country||"")}" required placeholder="United States"></div>
+              <div><label class="lbl">Subcategory</label><input class="input-field" name="subcategory" value="${d(e.subcategory||"")}" placeholder="e.g. Villas, Mansions, Hotels"></div>
+              <div><label class="lbl">Furnished</label><select class="input-field" name="furnished">
+                <option value="">Not specified</option>
+                <option value="Furnished" ${e.furnished==="Furnished"?"selected":""}>Furnished</option>
+                <option value="Unfurnished" ${e.furnished==="Unfurnished"?"selected":""}>Unfurnished</option>
+              </select></div>
+              <div><label class="lbl">Condition</label><select class="input-field" name="condition">
+                <option value="">Not specified</option>
+                ${["New Construction","Like New","Excellent","Good","Fair","Needs Renovation"].map(s=>`<option value="${s}" ${e.condition===s?"selected":""}>${s}</option>`).join("")}
+              </select></div>
+              <div><label class="lbl">Year Built</label><input type="number" class="input-field" name="year_built" value="${e.year_built??""}" placeholder="2015"></div>
+              <div><label class="lbl">Year Renovated</label><input type="number" class="input-field" name="year_renovated" value="${e.year_renovated??""}" placeholder="2021"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-sky-500/15 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-sky-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Location &amp; Map</p></div>
+            <div class="form-grid form-grid-2">
+              <div><label class="lbl">State / Province</label><input class="input-field" name="state" value="${d(e.state||"")}" placeholder="e.g. California"></div>
+              <div><label class="lbl">City</label><input class="input-field" name="city" value="${d(e.city||"")}" placeholder="e.g. Los Angeles"></div>
+              <div><label class="lbl">Town / Local Area</label><input class="input-field" name="town" value="${d(e.town||"")}" placeholder="Neighborhood or district"></div>
+              <div class="sm:col-span-2"><label class="lbl">Property Location</label><input class="input-field" name="product_location" value="${d(e.product_location||"")}" placeholder="Estate, district, city, landmark"></div>
+              <div class="sm:col-span-2"><label class="lbl">Street / Address</label><input class="input-field" name="address" value="${d(e.address||"")}" placeholder="Street and number, e.g. 123 Maple Street"></div>
+              <div><label class="lbl">ZIP / Postal Code</label><input class="input-field" name="zip_code" value="${d(e.zip_code||"")}" placeholder="e.g. 10001"></div>
+              <div><label class="lbl">Neighborhood / District</label><input class="input-field" name="neighborhood" value="${d(e.neighborhood||"")}" placeholder="e.g. Beverly Hills, Riverside"></div>
+              <div><label class="lbl">Latitude</label><input type="number" step="any" class="input-field" name="latitude" value="${d(e.latitude||"")}" placeholder="40.7128"></div>
+              <div><label class="lbl">Longitude</label><input type="number" step="any" class="input-field" name="longitude" value="${d(e.longitude||"")}" placeholder="-74.0060"></div>
+              <div class="sm:col-span-2"><label class="lbl">Landmarks (comma separated)</label><input class="input-field" name="landmarks_text" value="${d((e.landmarks||[]).join(", "))}" placeholder="City Hall, Central Park, Main Station"></div>
+              <div class="sm:col-span-2">
+                <div class="rounded-xl border border-gray-200 overflow-hidden" style="height:250px;background:#e2e8f0"><div id="property-map-preview" style="width:100%;height:100%"></div></div>
+                <div class="flex flex-wrap items-center justify-between gap-2 mt-2">
+                  <div class="text-[11px] text-gray-500" id="property-map-status">Map preview â€” fill the location fields or click the map to drop a pin.</div>
+                  <div class="flex items-center gap-2">
+                    <button type="button" id="btn-geocode-property" class="btn-press text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 transition">Locate from fields</button>
+                    <a id="btn-open-google-map" href="#" target="_blank" rel="noopener" class="text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-200 transition">Open in Google Maps</a>
+                  </div>
                 </div>
               </div>
             </div>
-            <div><label class="lbl">Bedrooms</label><input type="number" class="input-field" name="bedrooms" value="${e.bedrooms??""}" placeholder="3"></div>
-            <div><label class="lbl">Bathrooms</label><input type="number" class="input-field" name="bathrooms" value="${e.bathrooms??""}" placeholder="2"></div>
-            <div><label class="lbl">Building Size</label><input class="input-field" name="building_size" value="${d(e.building_size||"")}" placeholder="e.g. 2,500 sqft"></div>
-            <div><label class="lbl">Land Size</label><input class="input-field" name="land_size" value="${d(e.land_size||"")}" placeholder="e.g. 0.5 acres"></div>
-            <div><label class="lbl">Parking Spaces</label><input type="number" class="input-field" name="parking_spaces" value="${e.parking_spaces??""}"></div>
-            <div><label class="lbl">Furnished</label><select class="input-field" name="furnished">
-              <option value="">Not specified</option>
-              <option value="Furnished" ${e.furnished==="Furnished"?"selected":""}>Furnished</option>
-              <option value="Unfurnished" ${e.furnished==="Unfurnished"?"selected":""}>Unfurnished</option>
-            </select></div>
-            <div><label class="lbl">Condition</label><select class="input-field" name="condition">
-              <option value="">Not specified</option>
-              ${["New Construction","Like New","Excellent","Good","Fair","Needs Renovation"].map(s=>`<option value="${s}" ${e.condition===s?"selected":""}>${s}</option>`).join("")}
-            </select></div>
-            <div><label class="lbl">Year Built</label><input type="number" class="input-field" name="year_built" value="${e.year_built??""}" placeholder="2015"></div>
-            <div><label class="lbl">Year Renovated</label><input type="number" class="input-field" name="year_renovated" value="${e.year_renovated??""}" placeholder="2021"></div>
-            <div><label class="lbl">Half Bathrooms</label><input type="number" class="input-field" name="half_bathrooms" value="${e.half_bathrooms??""}" placeholder="1"></div>
-            <div><label class="lbl">Floors / Levels</label><input type="number" class="input-field" name="floors" value="${e.floors??""}" placeholder="2"></div>
-            <div><label class="lbl">Garage</label><input class="input-field" name="garage" value="${d(e.garage||"")}" placeholder="e.g. 2-car attached, None"></div>
-            <div><label class="lbl">Living Areas</label><input class="input-field" name="living_areas" value="${d(e.living_areas||"")}" placeholder="Living room, Dining, Family room"></div>
-            <div><label class="lbl">Kitchens</label><input type="number" class="input-field" name="kitchens" value="${e.kitchens??""}" placeholder="1"></div>
-            <div><label class="lbl">Balconies</label><input type="number" class="input-field" name="balconies" value="${e.balconies??""}" placeholder="2"></div>
-            <div><label class="lbl">Garden</label><input class="input-field" name="garden" value="${d(e.garden||"")}" placeholder="Private garden / Landscaped / None"></div>
-            <div><label class="lbl">Pool</label><input class="input-field" name="pool" value="${d(e.pool||"")}" placeholder="Private pool / Community pool / None"></div>
-            <div><label class="lbl">Security</label><input class="input-field" name="security" value="${d(e.security||"")}" placeholder="Gated community, CCTV, Alarm"></div>
-            <div><label class="lbl">Utilities</label><input class="input-field" name="utilities" value="${d(e.utilities||"")}" placeholder="Water, electricity, gas, internet"></div>
-            <div class="sm:col-span-2"><label class="lbl">Neighborhood / District</label><input class="input-field" name="neighborhood" value="${d(e.neighborhood||"")}" placeholder="e.g. Beverly Hills, Riverside"></div>
-            <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the propertyâ€¦">${d(e.description||"")}</textarea></div>
-            <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${d((e.features||[]).join(", "))}" placeholder="Swimming Pool, Garden, Garageâ€¦"></div>
-            <div class="sm:col-span-2"><label class="lbl">Highlights (comma separated)</label><input class="input-field" name="highlights_text" value="${d((e.highlights||[]).join(", "))}" placeholder="Prime location, map-ready post, 24-image gallery"></div>
-            <div class="sm:col-span-2"><label class="lbl">SEO Keywords (comma separated)</label><input class="input-field" name="seo_keywords_text" value="${d((e.seo_keywords||[]).join(", "))}" placeholder="mansion, villa, property investment"></div>
-            <div class="sm:col-span-2"><label class="lbl">Property Location</label><input class="input-field" name="product_location" value="${d(e.product_location||"")}" placeholder="Estate, district, city, landmark"></div>
-            <div class="sm:col-span-2"><label class="lbl">Street / Address</label><input class="input-field" name="address" value="${d(e.address||"")}" placeholder="Street and number, e.g. 123 Maple Street"></div>
-            <div><label class="lbl">ZIP / Postal Code</label><input class="input-field" name="zip_code" value="${d(e.zip_code||"")}" placeholder="e.g. 10001"></div>
-            <div><label class="lbl">Landmarks (comma separated)</label><input class="input-field" name="landmarks_text" value="${d((e.landmarks||[]).join(", "))}" placeholder="City Hall, Central Park, Main Station"></div>
           </div>
 
-<div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+          <div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="ruler" class="w-4 h-4 text-emerald-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Size &amp; Layout</p></div>
+            <div class="form-grid form-grid-2">
+              <div><label class="lbl">Bedrooms</label><input type="number" class="input-field" name="bedrooms" value="${e.bedrooms??""}" placeholder="3"></div>
+              <div><label class="lbl">Bathrooms</label><input type="number" class="input-field" name="bathrooms" value="${e.bathrooms??""}" placeholder="2"></div>
+              <div><label class="lbl">Half Bathrooms</label><input type="number" class="input-field" name="half_bathrooms" value="${e.half_bathrooms??""}" placeholder="1"></div>
+              <div><label class="lbl">Floors / Levels</label><input type="number" class="input-field" name="floors" value="${e.floors??""}" placeholder="2"></div>
+              <div><label class="lbl">Building Size</label><input class="input-field" name="building_size" value="${d(e.building_size||"")}" placeholder="e.g. 2,500 sqft"></div>
+              <div><label class="lbl">Land Size</label><input class="input-field" name="land_size" value="${d(e.land_size||"")}" placeholder="e.g. 0.5 acres"></div>
+              <div><label class="lbl">Parking Spaces</label><input type="number" class="input-field" name="parking_spaces" value="${e.parking_spaces??""}"></div>
+              <div><label class="lbl">Garage</label><input class="input-field" name="garage" value="${d(e.garage||"")}" placeholder="e.g. 2-car attached, None"></div>
+              <div><label class="lbl">Living Areas</label><input class="input-field" name="living_areas" value="${d(e.living_areas||"")}" placeholder="Living room, Dining, Family room"></div>
+              <div><label class="lbl">Kitchens</label><input type="number" class="input-field" name="kitchens" value="${e.kitchens??""}" placeholder="1"></div>
+              <div><label class="lbl">Balconies</label><input type="number" class="input-field" name="balconies" value="${e.balconies??""}" placeholder="2"></div>
+              <div><label class="lbl">Garden</label><input class="input-field" name="garden" value="${d(e.garden||"")}" placeholder="Private garden / Landscaped / None"></div>
+              <div><label class="lbl">Pool</label><input class="input-field" name="pool" value="${d(e.pool||"")}" placeholder="Private pool / Community pool / None"></div>
+              <div><label class="lbl">Security</label><input class="input-field" name="security" value="${d(e.security||"")}" placeholder="Gated community, CCTV, Alarm"></div>
+              <div><label class="lbl">Utilities</label><input class="input-field" name="utilities" value="${d(e.utilities||"")}" placeholder="Water, electricity, gas, internet"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-cyan-500/20 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-cyan-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Description, Features &amp; SEO</p></div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the propertyâ€¦">${d(e.description||"")}</textarea></div>
+              <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${d((e.features||[]).join(", "))}" placeholder="Swimming Pool, Garden, Garageâ€¦"></div>
+              <div class="sm:col-span-2"><label class="lbl">Highlights (comma separated)</label><input class="input-field" name="highlights_text" value="${d((e.highlights||[]).join(", "))}" placeholder="Prime location, map-ready post, 24-image gallery"></div>
+              <div class="sm:col-span-2"><label class="lbl">SEO Keywords (comma separated)</label><input class="input-field" name="seo_keywords_text" value="${d((e.seo_keywords||[]).join(", "))}" placeholder="mansion, villa, property investment"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
             <div class="flex items-center gap-2"><i data-lucide="home" class="w-4 h-4 text-emerald-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Interior &amp; Exterior Features</p></div>
             <div class="form-grid form-grid-2">
               <div class="sm:col-span-2"><label class="lbl">Interior Features (comma separated)</label><input class="input-field" name="interior_features_text" value="${d((e.interior_features||[]).join(", "))}" placeholder="Open plan kitchen, Walk-in closet, Fireplace…"></div>
@@ -924,7 +945,6 @@ ${e.filter(i=>!fi.has(i.key)).map(i=>{let a=i.type;return i.type==="select"&&i.o
               <div><label class="lbl">Contact Phone / WhatsApp</label><input class="input-field" name="contact_phone" value="${d(e.contact_phone||"")}" placeholder="+1 555 010 2233"></div>
               <div><label class="lbl">Contact Email</label><input class="input-field" name="contact_email" value="${d(e.contact_email||"")}" placeholder="agent@example.com"></div>
             </div>
-          </div>
           </div>
 
           <div class="glass-soft border border-violet-500/25 rounded-2xl p-4 space-y-3">
@@ -1572,6 +1592,41 @@ ${e.filter(i=>!fi.has(i.key)).map(i=>{let a=i.type;return i.type==="select"&&i.o
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${Mt.map(t).join("")}</div>
           </div>
 
+          <div class="glass-soft border border-emerald-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div class="flex items-center gap-2">
+                <i data-lucide="messages-square" class="w-4 h-4 text-emerald-400"></i>
+                <h3 class="text-sm font-black text-white uppercase tracking-wide">AI Chat Settings</h3>
+                <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300">Customer Chat Only</span>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <span class="text-[10px] font-bold text-emerald-300">Enable chat assistant</span>
+                <span class="toggle-switch"><input type="checkbox" name="chat_ai_enabled" ${a.chat_ai_enabled!==!1?"checked":""}><span class="toggle-slider"></span></span>
+              </label>
+            </div>
+            <p class="text-[11px] text-gray-400 leading-relaxed">This is the <b class="text-white">customer support chat assistant</b> (the floating "Contact Us" bubble). It uses its own Gemini key — completely separate from the Product Scanner above. This chat AI <b class="text-emerald-300">only chats with customers</b>; it never scans or analyzes photos. The scanner keeps its own key and only scans.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label class="lbl">Customer Chat Gemini Key</label>
+                <div class="relative">
+                  <input type="password" class="input-field pr-16 text-xs" name="chat_gemini_key"
+                    placeholder="${a.chat_gemini_key?"••••"+String(a.chat_gemini_key).slice(-4):"AIzaSy… (NEW chat key)"}">
+                  ${a.chat_gemini_key?'<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>':'<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>'}
+                </div>
+              </div>
+              <div>
+                <label class="lbl">Chat Model (optional)</label>
+                <select class="input-field text-xs" name="chat_model_override">
+                  <option value="">Auto (recommended)</option>
+                  ${["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-2.0-flash","gemini-2.0-flash-lite"].map(o=>`<option value="${o}" ${(a.chat_model_override||"")===o?"selected":""}>${o}</option>`).join("")}
+                </select>
+              </div>
+            </div>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400 hover:underline">
+              <i data-lucide="external-link" class="w-3 h-3"></i>Get a free Gemini key for the chat assistant
+            </a>
+          </div>
+
           <div class="glass-soft border border-orange-500/15 rounded-2xl p-4 space-y-3">
             <h3 class="text-sm font-black text-white flex items-center gap-2 flex-wrap">
               <i data-lucide="shield-check" class="w-4 h-4 text-orange-400"></i> Groq Vision
@@ -1618,7 +1673,7 @@ ${e.filter(i=>!fi.has(i.key)).map(i=>{let a=i.type;return i.type==="select"&&i.o
             ðŸ’¾ Save AI Settings
           </button>
         </form>
-      </div>`,window.lucide&&lucide.createIcons()}catch(t){e&&(e.innerHTML=`<div class="p-6 text-red-400">${d(t.message)}</div>`)}}window.highlightAI=function(e){Mt.forEach(t=>{const i=document.getElementById("apc-"+t.id);if(!i)return;const a=t.id===e;i.className=`glass-soft border ${a?de.border[t.color]+" "+de.bg[t.color]:"border-blue-500/10"} rounded-2xl p-4 space-y-3 ai-pcard`;const n=i.querySelector("input[type=radio] + span");n&&(n.className=`text-[9px] font-bold ${a?de.text[t.color]:"text-gray-600"}`)})};window.saveAiSettings=async function(e){e.preventDefault();const t=new FormData(e.target),i=Object.fromEntries(t.entries()),a={active_provider:i.active_provider||"gemini",product_ai_enabled:i.product_ai_enabled==="on",ai_code_assist:i.ai_code_assist==="on",ai_moderation:i.ai_moderation==="on"};Mt.forEach(o=>{i[o.mf]&&(a[o.mf]=i[o.mf]);const s=(i[o.kf]||"").trim();s&&!s.startsWith("â€¢â€¢â€¢â€¢")&&s!==""&&(a[o.kf]=s)}),a.gemini_key&&(a.gemini_api_key=a.gemini_key),i.groq_vision_model&&(a.groq_vision_model=i.groq_vision_model);const n=(i.groq_key||"").trim();n&&!/^[•\u2022]{4}/.test(n)&&(a.groq_key=n);try{const{data:o}=await b.from("ai_settings").select("id").limit(1).maybeSingle();let s;if(o?.id?{error:s}=await b.from("ai_settings").update(a).eq("id",o.id):{error:s}=await b.from("ai_settings").insert(a),s){g("Save failed: "+s.message,"error"),console.error("[AI Save]",s);return}await D.reload(),g("âœ… AI settings saved!","success"),setTimeout(()=>Ii(),600)}catch(o){g("Unexpected error: "+o.message,"error"),console.error("[AI Save]",o)}};const D={_cfg:null,async reload(){const{data:e,error:t}=await b.from("ai_settings").select("*").limit(1).maybeSingle();if(t){console.warn("[aiClient] Could not load settings:",t.message),this._cfg={};return}const i=e||{};!i.gemini_key&&i.gemini_api_key&&(i.gemini_key=i.gemini_api_key),this._cfg=i},async getConfig(){return this._cfg||await this.reload(),this._cfg},async freeChat(e,{maxTokens:t=2e3,timeoutMs:i=6e4}={}){const a=await fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"openai",messages:e.map(s=>({role:s.role==="assistant"?"assistant":s.role==="system"?"system":"user",content:String(s.content||"").slice(0,12e3)})),max_tokens:t}),signal:AbortSignal.timeout(i)});if(!a.ok)throw new Error(`Free AI provider error (${a.status}).`);const n=await a.json(),o=String(n?.choices?.[0]?.message?.content||"").trim();if(!o)throw new Error("Free AI provider returned an empty reply.");return{text:o,provider:"Free AI (Pollinations)",model:String(n?.model||"openai-fast")}},async chat(e,{maxTokens:t=2e3}={}){const i=await this.getConfig();if(!String(i.gemini_key||"").trim())return this.freeChat(e,{maxTokens:t});const n=e[e.length-1],o={action:"chat",message:String(n?.content||"").trim(),history:e.slice(0,-1).map(s=>({role:s.role,content:String(s.content||"")})),provider_override:"gemini",max_tokens:t};try{const s=await this._callEdge(o);if(s&&s.response)return{text:s.response,provider:"Google Gemini",model:s.model||i.gemini_model};throw new Error(String(s?.error||"Gemini is unavailable."))}catch(s){try{const l=await this.freeChat(e,{maxTokens:t});return l.note="gemini-unavailable",l}catch{throw s}}},async prompt(e,t={}){return this.chat([{role:"user",content:e}],t)},async getStatus(){const e=await this.getConfig();return Mt.map(t=>({id:t.id,name:t.name,color:t.color,hasKey:!!e[t.kf]?.trim(),isActive:e.active_provider===t.id,isCoolingDown:!1,remainingSec:0}))},async analyzeImages(e,t={}){const i=`You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded product photo(s) and identify exactly what the product is â€” the REAL brand, model and year that actually appear in the photos, never a guessed one.
+      </div>`,window.lucide&&lucide.createIcons()}catch(t){e&&(e.innerHTML=`<div class="p-6 text-red-400">${d(t.message)}</div>`)}}window.highlightAI=function(e){Mt.forEach(t=>{const i=document.getElementById("apc-"+t.id);if(!i)return;const a=t.id===e;i.className=`glass-soft border ${a?de.border[t.color]+" "+de.bg[t.color]:"border-blue-500/10"} rounded-2xl p-4 space-y-3 ai-pcard`;const n=i.querySelector("input[type=radio] + span");n&&(n.className=`text-[9px] font-bold ${a?de.text[t.color]:"text-gray-600"}`)})};window.saveAiSettings=async function(e){e.preventDefault();const t=new FormData(e.target),i=Object.fromEntries(t.entries()),a={active_provider:i.active_provider||"gemini",product_ai_enabled:i.product_ai_enabled==="on",ai_code_assist:i.ai_code_assist==="on",ai_moderation:i.ai_moderation==="on"};Mt.forEach(s=>{i[s.mf]&&(a[s.mf]=i[s.mf]);const l=(i[s.kf]||"").trim();l&&!l.startsWith("â€¢â€¢â€¢â€¢")&&l!==""&&(a[s.kf]=l)}),a.gemini_key&&(a.gemini_api_key=a.gemini_key),i.groq_vision_model&&(a.groq_vision_model=i.groq_vision_model);const n=(i.groq_key||"").trim();n&&!/^[•\u2022]{4}/.test(n)&&(a.groq_key=n),a.chat_ai_enabled=i.chat_ai_enabled==="on",i.chat_model_override!==void 0&&(a.chat_model_override=i.chat_model_override.trim());const o=(i.chat_gemini_key||"").trim();o&&!/^[•\u2022]{4}/.test(o)&&(a.chat_gemini_key=o);try{const{data:s}=await b.from("ai_settings").select("id").limit(1).maybeSingle();let l;if(s?.id?{error:l}=await b.from("ai_settings").update(a).eq("id",s.id):{error:l}=await b.from("ai_settings").insert(a),l){g("Save failed: "+l.message,"error"),console.error("[AI Save]",l);return}await D.reload(),g("âœ… AI settings saved!","success"),setTimeout(()=>Ii(),600)}catch(s){g("Unexpected error: "+s.message,"error"),console.error("[AI Save]",s)}};const D={_cfg:null,async reload(){const{data:e,error:t}=await b.from("ai_settings").select("*").limit(1).maybeSingle();if(t){console.warn("[aiClient] Could not load settings:",t.message),this._cfg={};return}const i=e||{};!i.gemini_key&&i.gemini_api_key&&(i.gemini_key=i.gemini_api_key),this._cfg=i},async getConfig(){return this._cfg||await this.reload(),this._cfg},async freeChat(e,{maxTokens:t=2e3,timeoutMs:i=6e4}={}){const a=await fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"openai",messages:e.map(s=>({role:s.role==="assistant"?"assistant":s.role==="system"?"system":"user",content:String(s.content||"").slice(0,12e3)})),max_tokens:t}),signal:AbortSignal.timeout(i)});if(!a.ok)throw new Error(`Free AI provider error (${a.status}).`);const n=await a.json(),o=String(n?.choices?.[0]?.message?.content||"").trim();if(!o)throw new Error("Free AI provider returned an empty reply.");return{text:o,provider:"Free AI (Pollinations)",model:String(n?.model||"openai-fast")}},async chat(e,{maxTokens:t=2e3}={}){const i=await this.getConfig();if(!String(i.gemini_key||"").trim())return this.freeChat(e,{maxTokens:t});const n=e[e.length-1],o={action:"chat",message:String(n?.content||"").trim(),history:e.slice(0,-1).map(s=>({role:s.role,content:String(s.content||"")})),provider_override:"gemini",max_tokens:t};try{const s=await this._callEdge(o);if(s&&s.response)return{text:s.response,provider:"Google Gemini",model:s.model||i.gemini_model};throw new Error(String(s?.error||"Gemini is unavailable."))}catch(s){try{const l=await this.freeChat(e,{maxTokens:t});return l.note="gemini-unavailable",l}catch{throw s}}},async prompt(e,t={}){return this.chat([{role:"user",content:e}],t)},async getStatus(){const e=await this.getConfig();return Mt.map(t=>({id:t.id,name:t.name,color:t.color,hasKey:!!e[t.kf]?.trim(),isActive:e.active_provider===t.id,isCoolingDown:!1,remainingSec:0}))},async analyzeImages(e,t={}){const i=`You are the AI listing expert for the Weverse Online Shop marketplace. Look carefully at the uploaded product photo(s) and identify exactly what the product is â€” the REAL brand, model and year that actually appear in the photos, never a guessed one.
 
 IDENTIFY THE REAL BRAND & MODEL (most important):
 - Find the brand badge, emblem, logo, nameplate or label in the photo and read its exact letters and symbols, character by character.
