@@ -7,5 +7,10 @@
     { "src": "^/product/([^/]+)$", "dest": "/api/og?id=$1" },
     { "src": "^/showroom$", "dest": "/index.html" },
     { "handle": "filesystem" }
-  ]
+  ],
+  "functions": {
+    "api/og-image.js": {
+      "includeFiles": "node_modules/ffmpeg-static/ffmpeg*"
+    }
+  }
 }

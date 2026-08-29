@@ -13,8 +13,14 @@
 // Usage: /api/og-image?id=<property_id|uuid>
 
 import sharp from 'sharp';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { writeFile, readFile, unlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import ffmpegPath from 'ffmpeg-static';
 import { resolveFromDb } from './lib/listing-lookup.mjs';
-import { productPoster } from './lib/product-media.mjs';
+import { productPoster, productVideo } from './lib/product-media.mjs';
 
 const W = 1200;
 const H = 630;
@@ -53,6 +59,36 @@ async function fetchImageBytes(url, timeout = 12000) {
   return result === '__timeout__' ? null : result;
 }
 
+const pexec = promisify(execFile);
+
+// Video-only products have no poster photo at all, so we extract one real
+// frame from the video and use it as the share-card poster — the preview then
+// shows the actual product (not the brand logo). Returns a JPEG Buffer, or null
+// on any failure so the caller can fall back to the branded card safely.
+async function extractVideoPoster(videoUrl, origin) {
+  const url = absUrl(videoUrl, origin);
+  if (!url) return null;
+  try {
+    const buf = await fetchImageBytes(url, 15000);
+    if (!buf) return null;
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const dir = tmpdir();
+    const srcP = path.join(dir, `ogvid-${id}.mp4`);
+    const outP = path.join(dir, `ogframe-${id}.jpg`);
+    try {
+      await writeFile(srcP, buf);
+      await pexec(ffmpegPath, ['-y', '-i', srcP, '-ss', '1', '-frames:v', '1', '-q:v', '3', outP], { timeout: 60000 });
+      const out = await readFile(outP);
+      return out && out.length ? out : null;
+    } finally {
+      try { await unlink(srcP); } catch {}
+      try { await unlink(outP); } catch {}
+    }
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   try {
     const rawId = req.query?.id || new URL(req.url || '', 'https://x').searchParams.get('id') || '';
@@ -81,9 +117,24 @@ export default async function handler(req, res) {
       }
     }
 
-    // If the product has no decodable photo (e.g. a video-only product), render
-    // a bright, smooth branded poster using the site brand logo instead of a
-    // blank/white frame. og:video (from og.js) still lets the card play.
+    // Video-only products have no poster photo — extract a real frame from the
+    // video so the share card shows the actual product instead of the brand logo.
+    if (!src) {
+      const videoUrl = listing ? productVideo(listing) : '';
+      if (videoUrl) {
+        src = await extractVideoPoster(videoUrl, origin);
+        if (src) {
+          let meta;
+          try { meta = await sharp(src).metadata(); } catch { meta = null; }
+          if (!meta || !meta.width || !meta.height) src = null;
+        }
+      }
+    }
+
+    // No usable photo OR extractable video frame (unresolvable product, broken
+    // video, ffmpeg unavailable): render a bright, smooth branded poster using
+    // the site brand logo instead of a blank/white frame. og:video (from og.js)
+    // still lets the card play.
     if (!src) {
       let logo;
       try { logo = await fetchImageBytes(absUrl('/brand-logo.jpeg', origin)); } catch { logo = null; }
