@@ -38,18 +38,9 @@ function setupCatBar(types, active, veh) {
 function showroomMasthead(isRe, list) {
   const mast = document.getElementById('kco-brand-mast') || document.querySelector('.kco-head');
   if (!mast) return;
-  const statCls = isRe ? 're' : 'veh';
   mast.innerHTML = `
-    <span class="kco-eyebrow"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> ${isRe ? 'Property Brief — Houses &amp; Real Estate' : 'Auto Brief — Cars &amp; Trucks'}</span>
     <h1 id="kco-cat-title">${isRe ? '🏡 Houses &amp; Real Estate' : '🚗 Cars &amp; Trucks'}</h1>
-    <p id="kco-cat-sub">${isRe
-      ? `Your dream home started here. ${list.length} professional listings — every house, apartment, villa and more, grouped by type.`
-      : `Your next ride starts here. ${list.length} professional listings — every car, truck, bus, motorhome and more, grouped by type.`}</p>
-    <div class="kco-mast-stats">
-      <span class="kco-mast-stat ${statCls}">${list.length} Live Listings</span>
-      <span class="kco-mast-stat ${statCls}">✓ AI-Scanned Specs</span>
-      <span class="kco-mast-stat ${statCls}">⚡ Updated Live</span>
-    </div>`;
+    <p id="kco-cat-sub">${isRe ? 'Your dream home starts here.' : 'Your next ride starts here.'}</p>`;
 }
 
 function render(cat, filterType) {
