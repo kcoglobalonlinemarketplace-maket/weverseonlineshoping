@@ -251,10 +251,12 @@ function updateDetectedInfo() {
   const tzEl = document.getElementById('kco-loc-tz');
 
   if (textEl) {
-    let parts = [`${loc.flag} ${loc.countryName}`];
-    if (loc.city) parts.push(loc.city);
-    if (loc.region) parts.push(loc.region);
-    textEl.textContent = parts.join(' · ');
+    // Only ever present the visitor's country at an approximate level.
+    // Never show city/region/street or claim an exact physical location.
+    const approx = loc.detectionSource && loc.detectionSource !== 'default'
+      ? 'Approximate location (detected from your connection): '
+      : '';
+    textEl.textContent = `${approx}${loc.flag} ${loc.countryName}`;
   }
 
   if (vpnEl) {
