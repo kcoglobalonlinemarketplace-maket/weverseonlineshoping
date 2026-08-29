@@ -308,7 +308,7 @@ export function generateSeedReviews(listing, opts = {}) {
     }
     if (i % 2 === 0) text += ` ${d2}`;
     text += ` ${closer}`;
-    if (i % 3 === 2) text += ` ${EMOJIS[(base + i * 13) % EMOJIS.length]}`;
+    if (i % 3 === 2) text += ` ${EMOJIS[(h + i * 13) % EMOJIS.length]}`;
 
     const city = CITIES[poolIndex(h, i, 337, CITIES.length)];
 
