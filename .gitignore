@@ -10,3 +10,4 @@ api/details-static.html
 dev-server.log
 
 .env*
+.aider*

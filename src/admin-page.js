@@ -970,6 +970,12 @@ async function renderProducts() {
               <p class="text-sm text-gray-400 mt-1">Unlimited products, smooth infinite scrolling layout, and clean auto-aligned cards.</p>
             </div>
             <div class="flex items-center gap-2.5 flex-wrap">
+              <button onclick="showAddPropertyModal()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition shadow-xl shadow-emerald-700/25" title="Add a real estate property with a multi-country interactive map">
+                <i data-lucide="home" class="w-5 h-5"></i> Add Real Estate
+              </button>
+              <button onclick="showAddVehicleModal()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition shadow-xl shadow-orange-700/25" title="Add a car, truck, bus, motorhome, motorcycle or boat">
+                <i data-lucide="car-front" class="w-5 h-5"></i> Add Cars &amp; Trucks
+              </button>
               <button onclick="showAddProductStep1()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-black px-6 py-3.5 rounded-2xl transition shadow-xl shadow-blue-700/25">
                 <i data-lucide="plus" class="w-5 h-5"></i> Add Product
               </button>
@@ -1760,14 +1766,37 @@ window.deleteProduct = async function(pid) {
 // the showroom catalog and nothing old remains.
 window.clearAllProducts = async function() {
   const total = (window._productsData || []).length;
-  if (!confirm(`Delete ALL ${total} product(s) from the Product Manager and the database now?\n\nThis is permanent and cannot be undone. Your built-in showroom catalog will stay.`)) return;
-  const { error } = await supabase.from('showroom_listings').delete().neq('property_id', '__none__');
-  if (error) {
-    if (isRlsDenied(error)) return showToast('âš ï¸ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
-    return showToast('Clear failed: ' + error.message, 'error');
+  if (!confirm(`Delete ALL ${total} product(s) from the Product Manager and the database now?\n\nThis is permanent and cannot be undone. Your Real Estate row, Cars & Trucks row and built-in showroom catalog will stay.`)) return;
+  const KEEP = new Set(['Cars', 'Cars & Vehicles', 'Trucks', 'Buses', 'Buses & Coaches', 'Motorhomes', 'Motorcycles', 'Marine & Boating', 'RV & Camper Accessories', 'Vehicles']);
+  let ids = [];
+  try {
+    const { data: rows, error: listErr } = await supabase.from('showroom_listings').select('property_id, listing_type, category').neq('property_id', '__none__');
+    if (listErr) {
+      if (isRlsDenied(listErr)) return showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+      return showToast('Clear failed: ' + listErr.message, 'error');
+    }
+    ids = ((rows || []).filter(r => r.listing_type === 'product' && !KEEP.has(r.category))).map(r => r.property_id).filter(Boolean);
+  } catch (scanErr) {
+    return showToast('Clear failed: ' + scanErr.message, 'error');
   }
-  try { localStorage.removeItem('kco_local_showroom_listings_v1'); } catch {}
-  showToast('All products deleted. The manager now shows your showroom catalog.');
+  if (ids.length) {
+    for (let i = 0; i < ids.length; i += 500) {
+      const { error } = await supabase.from('showroom_listings').delete().in('property_id', ids.slice(i, i + 500));
+      if (error) {
+        if (isRlsDenied(error)) return showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
+        return showToast('Clear failed: ' + error.message, 'error');
+      }
+    }
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem('kco_local_showroom_listings_v1') || '[]');
+    const kept = (Array.isArray(saved) ? saved : []).filter(item => {
+      if (item.listing_type && item.listing_type !== 'product') return true;
+      return KEEP.has(item.category);
+    });
+    localStorage.setItem('kco_local_showroom_listings_v1', JSON.stringify(kept));
+  } catch {}
+  showToast('All products deleted. Real Estate, Cars & Trucks and your showroom catalog stay.');
   renderProducts();
 };
 
@@ -6180,6 +6209,142 @@ window.saveProperty = async function(e, existingId) {
   }
   showToast(existingId ? 'Property updated!' : 'Property published!');
   closeModal(); renderProperties();
+};
+
+// ── Vehicle manager (Cars & Trucks) ─────────────────────────────
+// Add a car, truck, bus, motorhome, motorcycle or boat without any map or
+// location fields. Vehicle specifics are stored in `specifications` (plus the
+// safe top-level columns) so the showroom hero rows and details page can read
+// them, and `listing_type: 'vehicle'` keeps these rows out of "Clear All".
+const VEHICLE_TYPE_CATEGORY = {
+  'Car': 'Cars', 'Truck': 'Trucks', 'Bus': 'Buses', 'Motorhome / RV': 'Motorhomes',
+  'Motorcycle': 'Motorcycles', 'Boat / Marine': 'Marine & Boating',
+};
+const VEHICLE_BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Wagon', 'Pickup', 'Van', 'Truck', 'Sports Car', 'Luxury Sedan', 'Bus', 'Motorhome', 'Motorcycle', 'Yacht', 'Jet Ski', 'Other'];
+
+window.showAddVehicleModal = function(existing = {}) {
+  const isEdit = !!existing.property_id;
+  const type = Object.keys(VEHICLE_TYPE_CATEGORY).find(t => VEHICLE_TYPE_CATEGORY[t] === existing.category) || 'Car';
+  const spec = (existing.specifications && typeof existing.specifications === 'object') ? existing.specifications : {};
+  const val = (a, b) => existing[a] ?? spec[a] ?? b;
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box wide">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Vehicle</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
+        </div>
+        <form id="vehicle-form" onsubmit="saveVehicle(event,'${isEdit ? existing.property_id : ''}')" class="space-y-4">
+          <div class="glass-soft border border-amber-500/15 rounded-2xl p-4 space-y-3">
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center"><i data-lucide="car-front" class="w-4.5 h-4.5 text-amber-400"></i></span>
+              <div>
+                <p class="text-xs font-bold text-white uppercase tracking-wide">Cars &amp; Trucks</p>
+                <p class="text-[11px] text-gray-500 mt-0.5">Listed in the Vehicles row above Real Estate. No map needed. Vehicles are never deleted by Clear All Products.</p>
+              </div>
+            </div>
+            <div class="form-grid form-grid-2">
+              <div><label class="lbl">Vehicle Type *</label><select class="input-field" name="vehicle_type" required>${Object.keys(VEHICLE_TYPE_CATEGORY).map(t => `<option value="${t}" ${type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+              <div><label class="lbl">Body Type</label><select class="input-field" name="body_type">${['', ...VEHICLE_BODY_TYPES].map(b => `<option value="${b}" ${val('body_type', '') === b ? 'selected' : ''}>${b || 'General'}</option>`).join('')}</select></div>
+              <div class="sm:col-span-2"><label class="lbl">Vehicle Title *</label><input class="input-field" name="title" value="${esc(existing.title || '')}" placeholder="e.g. 2023 Toyota Land Cruiser V8 Turbo Diesel"></div>
+              <div><label class="lbl">Brand / Make *</label><input class="input-field" name="make" value="${esc(val('make', val('brand', '')))}" placeholder="e.g. Toyota"></div>
+              <div><label class="lbl">Model *</label><input class="input-field" name="model" value="${esc(spec.model || existing.model || '')}" placeholder="e.g. Land Cruiser"></div>
+              <div><label class="lbl">Model Year</label><input class="input-field" name="model_year" value="${esc(val('model_year', ''))}" placeholder="e.g. 2023"></div>
+              <div><label class="lbl">Mileage</label><input class="input-field" name="mileage" value="${esc(val('mileage', ''))}" placeholder="e.g. 15,000 mi or 0 (new)"></div>
+              <div><label class="lbl">Engine</label><input class="input-field" name="engine" value="${esc(val('engine', ''))}" placeholder="e.g. 4.0L V8 Turbo Diesel"></div>
+              <div><label class="lbl">Transmission</label><select class="input-field" name="transmission">${['', 'Automatic', 'Manual', 'CVT', 'Dual-Clutch', 'Semi-Automatic', 'Electric (Single Speed)'].map(t => `<option value="${t}" ${val('transmission', '') === t ? 'selected' : ''}>${t || 'Not specified'}</option>`).join('')}</select></div>
+              <div><label class="lbl">Fuel Type</label><select class="input-field" name="fuel_type">${['', 'Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-in Hybrid', 'LPG', 'Bio-diesel'].map(t => `<option value="${t}" ${val('fuel_type', '') === t ? 'selected' : ''}>${t || 'Not specified'}</option>`).join('')}</select></div>
+              <div><label class="lbl">Drive Type</label><select class="input-field" name="drive_type">${['', 'FWD', 'RWD', 'AWD', '4WD'].map(t => `<option value="${t}" ${val('drive_type', '') === t ? 'selected' : ''}>${t || 'Not specified'}</option>`).join('')}</select></div>
+              <div><label class="lbl">(${(val('sleeping_capacity', '') || '') ? 'Sleeps' : 'Seating Capacity'})</label><input class="input-field" name="seating_capacity" value="${esc(val('seating_capacity', ''))}" placeholder="e.g. 5 seats or Sleeps 6"></div>
+              <div><label class="lbl">Doors</label><input class="input-field" name="doors" value="${esc(val('doors', ''))}" placeholder="e.g. 4"></div>
+              <div><label class="lbl">Color</label><input class="input-field" name="color" value="${esc(existing.color || spec.color || '')}" placeholder="e.g. White"></div>
+              <div><label class="lbl">Condition *</label><select class="input-field" name="condition" required>${['', 'New', 'Used - Like New', 'Used - Good', 'Used - Fair', 'Refurbished'].map(c => `<option value="${c}" ${val('condition', '') === c ? 'selected' : ''}>${c || 'Select condition'}</option>`).join('')}</select></div>
+              <div><label class="lbl">VIN / Serial</label><input class="input-field" name="vin" value="${esc(val('vin', ''))}" placeholder="Optional identification number"></div>
+              <div><label class="lbl">Price (USD) *</label><input type="number" class="input-field" name="price" value="${existing.price || ''}" required placeholder="0"></div>
+              <div><label class="lbl">Real Price (crossed out)</label><input type="number" class="input-field" name="real_price" value="${existing.real_price ?? spec.real_price ?? ''}" placeholder="Original price before discount"></div>
+              <div><label class="lbl">Stock Qty</label><input type="number" class="input-field" name="stock_quantity" value="${existing.stock_quantity ?? '1'}"></div>
+              <div><label class="lbl">Warranty</label><input class="input-field" name="warranty" value="${esc(existing.warranty || spec.warranty || '')}" placeholder="e.g. 3-year manufacturer"></div>
+              <div class="sm:col-span-2"><label class="lbl">Safety Features (comma separated)</label><input class="input-field" name="safety_features" value="${esc(Array.isArray(val('safety_features', [])) ? val('safety_features', []).join(', ') : val('safety_features', ''))}" placeholder="ABS, Airbags, Lane Assist, Traction Control"></div>
+              <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the vehicle, extras, service history...">${esc(existing.description || '')}</textarea></div>
+              <div class="sm:col-span-2"><label class="lbl">Photo URLs (one per line)</label><textarea class="input-field" name="images_text" rows="3" placeholder="https://.../photo1.jpg&#10;https://.../photo2.jpg">${esc((existing.images || []).join('\n'))}</textarea></div>
+              <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Leather seats, Sunroof, GPS, Heated seats"></div>
+            </div>
+            <label class="flex items-center gap-2.5 cursor-pointer select-none"><input type="checkbox" name="is_active" ${existing.is_active === false ? '' : 'checked'} class="w-4 h-4 accent-emerald-500"><span class="text-xs font-bold text-gray-300">Publish immediately</span></label>
+          </div>
+          <div class="flex items-center justify-between gap-3">
+            <button type="button" onclick="closeModal()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition">Cancel</button>
+            <button type="submit" class="btn-press flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-black px-7 py-3 rounded-2xl transition shadow-xl shadow-orange-700/25">Publish Vehicle</button>
+          </div>
+        </form>
+      </div>
+    </div>`);
+  if (window.lucide) lucide.createIcons();
+};
+
+window.saveVehicle = async function(e, existingId) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = Object.fromEntries(fd.entries());
+  const images = String(data.images_text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const features = (data.features_text || '').split(',').map(s => s.trim()).filter(Boolean);
+  const safetyFeatures = (data.safety_features || '').split(',').map(s => s.trim()).filter(Boolean);
+  const realPriceNum = (data.real_price === '' || data.real_price == null) ? null : Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.real_price) || 0));
+  const vehicleType = VEHICLE_TYPE_CATEGORY[data.vehicle_type] || 'Cars';
+  const year = String(data.model_year || '').trim();
+  const make = String(data.make || '').trim();
+  const model = String(data.model || '').trim();
+  const autoTitle = [year, make, model].filter(Boolean).join(' ') || String(data.title || '').trim();
+  const specs = {
+    make, model, model_year: year, body_type: data.body_type || null,
+    mileage: data.mileage || '', engine: data.engine || '', horsepower: null,
+    transmission: data.transmission || null, drive_type: data.drive_type || null,
+    fuel_type: data.fuel_type || null,
+    seating_capacity: data.seating_capacity || null,
+    sleeping_capacity: vehicleType === 'Motorhomes' ? (data.seating_capacity || null) : null,
+    doors: data.doors || null, safety_features: safetyFeatures,
+    color: data.color || '', vin: data.vin || '', warranty: data.warranty || '',
+    condition: data.condition || '',
+  };
+  for (const k of Object.keys(specs)) if (specs[k] == null) delete specs[k];
+  const payload = {
+    listing_type: 'vehicle',
+    category: vehicleType,
+    subcategory: data.body_type || data.vehicle_type || null,
+    title: String(data.title || '').trim() || autoTitle,
+    description: data.description || '',
+    price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.price) || 0)),
+    currency: 'USD',
+    real_price: realPriceNum,
+    images, features,
+    brand: make || null,
+    color: data.color || null,
+    condition: data.condition || null,
+    warranty: data.warranty || null,
+    stock_quantity: parseInt(data.stock_quantity, 10) || 1,
+    is_active: data.is_active === 'on',
+    is_featured: false,
+    specifications: { ...specs, real_price: realPriceNum },
+  };
+  let err;
+  if (existingId) {
+    payload.property_id = existingId;
+    const current = sanitizeShowroomPayload((window._productsData || []).find(item => item.property_id === existingId));
+    payload.specifications = { ...(current.specifications && typeof current.specifications === 'object' ? current.specifications : {}), ...specs, real_price: realPriceNum };
+    ({ error: err } = await supabase.from('showroom_listings').upsert({ ...(current || {}), ...payload }, { onConflict: 'property_id' }));
+  } else {
+    payload.property_id = genId();
+    ({ error: err } = await supabase.from('showroom_listings').insert(payload));
+  }
+  if (err) {
+    const handled = handleWriteError(
+      err,
+      () => upsertLocalShowroomListing({ ...payload, property_id: existingId || payload.property_id }),
+      existingId ? 'Vehicle update' : 'Vehicle publish'
+    );
+    if (handled) return;
+  }
+  showToast(existingId ? 'Vehicle updated!' : 'Vehicle published! It now appears in the Cars & Trucks row.');
+  closeModal(); renderProducts();
 };
 
 window.editProperty = async function(pid) {
