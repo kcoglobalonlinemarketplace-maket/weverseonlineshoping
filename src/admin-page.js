@@ -3773,6 +3773,7 @@ const scannerReviewId = 'scanner-scan-status';
 // When the General AI Scanner runs in fully autonomous mode, it fills and
 // publishes every product without showing a review list or asking questions.
 let _autoScannerActive = false;
+let _autoScannerTotal = 0;
 let _autoScannerPublished = 0;
 let _autoScannerErrors = 0;
 
@@ -4485,9 +4486,9 @@ async function completeScanAndFill(identification0, images, category) {
   try {
     setStatus('Scanning your photo into the formâ€¦', 'text-blue-300');
     let identification = identification0;
-    // Single fast AI pass. No second verification pass, no preflight, no review
-    // cards â€” one scan writes the form and you review + publish with one click.
-    const res = await runVerifiedScan({ imageUrls: images, identification, category, formSelector: '#product-form', verify: false });
+    // Auto mode respects the scanner's second-pass checkbox for accuracy; the
+    // manual single-product scan stays on the one fast pass.
+    const res = await runVerifiedScan({ imageUrls: images, identification, category, formSelector: '#product-form', verify: _autoScannerActive ? scanVerifyPassEnabled() : false });
     identification = res.identification || identification;
     const out = applyScanToProductForm({ identification, specs: res.specs, price: res.price });
     const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'the product';
@@ -4496,9 +4497,13 @@ async function completeScanAndFill(identification0, images, category) {
       msg += ' <span class="text-red-300">(Photo not read — values from saved details. Re-scan when the key is available.)</span>';
     }
     if (res.summary && res.summary.flagged) msg += ` Review ${res.summary.flagged} flagged value${res.summary.flagged > 1 ? 's' : ''}.`;
-    msg += ' Your uploaded photo stays attached. Press SAVE / UPDATE to publish.';
+    msg += _autoScannerActive
+      ? ' Publishing automatically now.'
+      : ' Your uploaded photo stays attached. Press SAVE / UPDATE to publish.';
     setStatus(msg, 'text-emerald-300');
-    showToast(`Form filled for ${idLabel} — review and press SAVE / UPDATE.`, 'success');
+    showToast(_autoScannerActive
+      ? `Filled for ${idLabel} — publishing automatically.`
+      : `Form filled for ${idLabel} — review and press SAVE / UPDATE.`, 'success');
   } catch (err) {
     const msg = String(err?.message || err);
     const keyHint = /key|api|configured|settings|vision/i.test(msg);
@@ -5114,8 +5119,9 @@ function aiScanTimeout(promise, ms) {
   });
 }
 window.scanGeneralWithAI = async function() {
-  // NEVER run two scans at once: a background stream must finish first.
-  if (_streamScanActive) {
+  // NEVER run two scans at once: an active scan (background or auto chain)
+  // must finish before a new one can start.
+  if (_streamScanActive || _autoScannerActive) {
     showToast('A scan is already running - wait for it to finish before starting another.', 'info');
     return;
   }
@@ -5147,114 +5153,51 @@ if (!products.length) {
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
   setStatus(`Detecting and completing ${products.length} product${products.length === 1 ? '' : 's'}â€¦`, 'text-blue-300');
 
-  // ── ONE-BY-ONE STREAMING SCAN ─────────────────────────────────────
-  // Products are processed SEQUENTIALLY. The moment a product finishes
-  // scanning, its card is added to the list and rendered immediately with a
-  // one-click Publish button — while the scanner keeps working on the rest
-  // in the background. Publishing never waits for (and never blocks) the run.
-  _streamScanActive = true;
-  _streamScanTotal = products.length;
-  _streamScanScanned = 0;
-  _streamScanPublished = 0;
-  _streamScanErrors = 0;
-  _streamScanDuplicatesSkipped = 0;
-  _streamScanFallbacks = 0;
-  _autoScannerActive = false;
+  // ── FULLY AUTONOMOUS SCAN ─────────────────────────────────────────
+  // ONE TAP starts everything and it runs ENTIRELY BY ITSELF. No review
+  // cards, no "Publish Now" buttons, no "Continue to its form", no questions.
+  // For each product the scanner:
+  //   1. opens the product's form with its image showing,
+  //   2. reads the photo and fills EVERY field of the form,
+  //   3. automatically presses "One-Click Publish Changes",
+  //   4. moves straight on to the next product until ALL are published.
+  _autoScannerActive = true;
+  _autoScannerTotal = products.length;
+  _autoScannerPublished = 0;
+  _autoScannerErrors = 0;
+  _streamScanActive = false;
   scanReviewProducts = [];
   scanReviewImages = [];
   scanReviewSourceProducts = {};
   scanReviewEntry = 'scanner-scan-status';
-  scanStreamRender();
 
-  const images = [];
-  let sources = {};
-  let scannedCount = 0;
-  let failedCount = 0;
-  let fallbacks = 0;
-  let duplicatesSkipped = 0;
-  const seenImages = new Set();
-  const SCAN_TIMEOUT_MS = 120000;
-
-  const streamRender = () => {
-    scanReviewImages = images.slice();
-    scanReviewSourceProducts = sources;
-    if (typeof scanStreamRender === 'function') scanStreamRender();
-  };
-
-  // COMPLETENESS: every photo/page of each product is scanned; nothing sliced.
-  for (let i = 0; i < products.length; i++) {
-    const prod = products[i];
+  // Seed one entry per product before starting so the auto chain has something
+  // to process. image_indices map each product's photos into scanReviewImages.
+  let flatBase = 0;
+  for (const prod of products) {
     const prodImages = (prod.images || []).filter(Boolean);
-    if (prodImages.length) {
-      const keys = prodImages.map(u => String(u || '').trim()).filter(Boolean);
-      const allSeen = keys.length > 0 && keys.every(k => seenImages.has(k));
-      for (const k of keys) seenImages.add(k);
-      if (allSeen) { duplicatesSkipped++; _streamScanDuplicatesSkipped++; _streamScanScanned++; streamRender(); continue; }
-      const base = images.length;
-      images.push(...prodImages);
-      const indices = prodImages.map((_, ix) => base + ix);
-      let list = [];
-      let detErr = null;
-      try {
-        const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: AI_PRODUCT_SCANNER.maxImages }), SCAN_TIMEOUT_MS);
-        list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
-      } catch (e) { detErr = e; }
-      // NEVER REJECT: if the AI could not read this product (unclear photo,
-      // timeout, service hiccup), still include it using saved details so the
-      // owner reviews it and it is always saveable & publishable.
-      if (!list.length) {
-        if (detErr) { failedCount++; _streamScanErrors++; }
-        list = [{
-          detected_name: prod.title || prod.property_id || 'Product',
-          category: prod.category || 'Other',
-          listing_type: prod.listing_type || 'product',
-          brand: prod.brand || null,
-          model: (prod.specifications && prod.specifications.model) || prod.model || null,
-          confidence: 'medium',
-          _photoNotRead: true,
-          _fallbackReason: detErr ? 'scan-failed' : 'no-identification',
-        }];
-        fallbacks++;
-        _streamScanFallbacks++;
-      }
-      scannedCount++;
-      sources[prod.property_id] = prod;
-      for (const d of list) {
-        scanReviewProducts.push({
-          ...d,
-          property_id: prod.property_id,
-          image_indices: (Array.isArray(d.image_indices) && d.image_indices.length ? d.image_indices.map(ix => indices[Number(ix)]).filter(v => v !== undefined) : indices),
-          detected_name: d.detected_name || prod.title || prod.property_id,
-          category: d.category || prod.category || 'Other',
-          listing_type: d.listing_type || prod.listing_type || 'product',
-        });
-      }
+    const indices = [];
+    for (const u of prodImages) {
+      scanReviewImages.push(u);
+      indices.push(flatBase);
+      flatBase++;
     }
-    _streamScanScanned = Math.min(_streamScanScanned + 1, _streamScanTotal);
-    streamRender();
+    scanReviewSourceProducts[prod.property_id] = prod;
+    scanReviewProducts.push({
+      detected_name: prod.title || prod.property_id || 'Product',
+      category: prod.category || 'Other',
+      listing_type: prod.listing_type || 'product',
+      brand: prod.brand || null,
+      model: (prod.specifications && prod.specifications.model) || prod.model || null,
+      confidence: 'medium',
+      property_id: prod.property_id,
+      image_indices: indices,
+    });
   }
-  _streamScanActive = false;
-  if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
-  const rep = aiClient.sessionReport ? aiClient.sessionReport() : { issues: [], providers: [] };
-  const summaryBits = [
-    `${scannedCount} product${scannedCount === 1 ? '' : 's'} processed`,
-    duplicatesSkipped ? `${duplicatesSkipped} duplicate${duplicatesSkipped > 1 ? 's' : ''} skipped` : '',
-    fallbacks ? `${fallbacks} filled from saved details (photo NOT read)` : '',
-    failedCount ? `${failedCount} scan error${failedCount > 1 ? 's' : ''}` : '',
-    (rep.providers || []).map(p => `${p.count} by ${p.name}`).join(', '),
-  ].filter(Boolean);
-  if (scanReviewProducts.length) {
-    const statusEl = document.getElementById('scanner-scan-status');
-    if (statusEl) { statusEl.classList.remove('text-blue-300', 'text-amber-300'); statusEl.classList.add('text-gray-100'); }
-    showToast('Scan finished \u2014 publish each card below.', 'info');
-    streamRender();
-  } else {
-    setStatus(failedCount
-      ? `The scan could not read any product (${failedCount} scan${failedCount > 1 ? 's' : ''} failed or timed out${duplicatesSkipped ? `; ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}). Make sure your products have clear photos and that your free Gemini key is active in AI Settings, then try again.`
-      : `No product could be identified from the photos on your existing products${duplicatesSkipped ? ` (${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped)` : ''}. Make sure each product has clear photos, then try again.`, 'text-amber-300');
-    showToast('No products could be scanned.', 'error');
-  }
+  // Kick off the automatic chain. After this product is filled and published,
+  // the save flow chains back here automatically for the next one.
+  autoScanOne(scanReviewProducts[0], 0);
 };
 
 
@@ -5504,6 +5447,17 @@ window.saveProduct = async function(e, category, existingId) {
       if (JSON.stringify(specMerged) !== JSON.stringify(base.specifications || {})) changes.specifications = specMerged;
 
       if (Object.keys(changes).length === 0) {
+        if (_autoScannerActive) {
+          // Auto-scan: this product is already complete and correct — just move
+          // straight on to the next one without creating a duplicate save.
+          resetBtn();
+          try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
+          const autoIdx = scanReviewActiveIndex;
+          closeProductFormModal();
+          renderProducts();
+          if (typeof window.returnToScanReviewAfterSave === 'function' && window.returnToScanReviewAfterSave(autoIdx)) renderProducts();
+          return;
+        }
         showToast('No changes detected â€” nothing was saved.', 'info');
         try { localStorage.removeItem(productAutoSaveKey(category, existingId)); } catch {}
         showToast('No changes were needed — this product is already published with exactly these details.', 'info');
@@ -5519,6 +5473,17 @@ window.saveProduct = async function(e, category, existingId) {
       delete payload.id;
       const writeResult = await safePublishShowroom(payload);
       if (writeResult.error) {
+        if (_autoScannerActive) {
+          // Auto-scan: a product that fails to publish must never stall the
+          // whole run — count it as an error and move to the next one.
+          _autoScannerErrors++;
+          resetBtn();
+          const autoIdx = scanReviewActiveIndex;
+          closeProductFormModal();
+          renderProducts();
+          if (typeof window.returnToScanReviewAfterSave === 'function' && window.returnToScanReviewAfterSave(autoIdx)) renderProducts();
+          return;
+        }
         resetBtn();
         const writeMsg = describeWriteError(writeResult.error, isDraft ? 'Draft save' : 'Product publish');
         showToast(writeMsg, 'error');
@@ -5583,6 +5548,15 @@ window.saveProduct = async function(e, category, existingId) {
       payload.property_id = pid;
       const writeResult = await safePublishShowroom(payload);
       if (writeResult.error) {
+        if (_autoScannerActive) {
+          _autoScannerErrors++;
+          resetBtn();
+          const autoIdx = scanReviewActiveIndex;
+          closeProductFormModal();
+          renderProducts();
+          if (typeof window.returnToScanReviewAfterSave === 'function' && window.returnToScanReviewAfterSave(autoIdx)) renderProducts();
+          return;
+        }
         resetBtn();
         const writeMsg = describeWriteError(writeResult.error, 'Product publish');
         showToast(writeMsg, 'error');
@@ -5618,6 +5592,15 @@ window.saveProduct = async function(e, category, existingId) {
       : describeWriteError(err, 'Product publish');
     if (_autoScannerActive) _autoScannerErrors++;
     resetBtn();
+    if (_autoScannerActive) {
+      // Auto-scan: a failed save must never stall the whole run — close this
+      // product's form and move straight on to the next one.
+      const autoIdx = scanReviewActiveIndex;
+      closeProductFormModal();
+      renderProducts();
+      if (typeof window.returnToScanReviewAfterSave === 'function' && window.returnToScanReviewAfterSave(autoIdx)) renderProducts();
+      return;
+    }
     showToast(msg, 'error');
   }
 };
