@@ -12,13 +12,12 @@ import { PRODUCT_LISTINGS } from './products-data.js';
 import { renderCard } from './showroom-cards.js';
 import { openShareSheet, setProductMeta } from './share.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
-import { DEFAULT_BRAND_NAME } from './brand.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
 import { addToCart as cartAddToCart } from './cart.js';
 import { generateSeedReviews } from './seed-reviews.js';
 import { loadPromoBackgrounds, bgMediaLayer } from './promo-backgrounds.js';
-import { loadReviewInteractions, toggleReviewLike, addReviewComment } from './review-interactions.js';
+import { loadReviewInteractions, toggleReviewLike, addReviewComment, loadGuestReviews, addGuestReviewLocal, removeGuestReviewLocal } from './review-interactions.js';
 // Self-initializing modules: trust & info area (#trust-info-area) and the app
 // promo banner (#app-promo-banner) render below the details content. The page
 // markup only ships inert modulepreload hints, so these must be imported here
@@ -488,7 +487,7 @@ function replyItemHtml(c) {
 }
 
 function reviewItemHtml(r) {
-  const nm = r.name || r.profiles?.full_name || 'Anonymous';
+  const nm = r.author_name || r.name || r.profiles?.full_name || 'Anonymous';
   const initial = escapeHtml(nm.trim().charAt(0).toUpperCase() || 'A');
   const handle = r.handle ? `<span class="text-xs font-semibold text-gray-400">${escapeHtml(r.handle)}</span>` : '';
   const time = formatCommentDate(r.date || r.created_at);
@@ -552,7 +551,6 @@ function reviewItemHtml(r) {
 // reviews for one product can never leak onto another product's page. Rendered
 // over the admin-chosen "reviews" promo banner background.
 function reviewsSectionHtml(listing) {
-  const redirect = encodeURIComponent(window.location.pathname + window.location.search);
   return `
     <div id="reviews-section" class="relative overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm mb-8">
       <div class="absolute inset-0" data-bg-slot="reviews"></div>
@@ -584,41 +582,29 @@ function reviewsSectionHtml(listing) {
 
         <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 sm:p-6">
           <div id="review-form-wrapper">
-            <h4 class="text-[15px] font-black text-gray-900 mb-3 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-500"></i> Write a Review</h4>
-
-            <!-- GUESTS: locked state with a clear, PERSISTENT register prompt -->
-            <div id="review-guest-box" class="hidden space-y-3">
-              <button type="button" id="review-guest-btn" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">
-                <i data-lucide="pen-line" class="w-4 h-4"></i> Write a Review
-              </button>
-              <div id="review-guest-msg" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 space-y-2.5">
-                <p class="text-sm font-bold text-amber-800 flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i> Please register to give a review</p>
-                <p class="text-xs text-amber-700 leading-relaxed">Only customers with a ${DEFAULT_BRAND_NAME} account can post reviews — this keeps our reviews real and verified. It takes less than a minute, and once you're signed in you can rate the product, write your review and even add a photo.</p>
-                <div class="flex flex-wrap items-center gap-2.5 pt-0.5">
-                  <a href="/auth.html?mode=register&redirect=${redirect}" class="inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg px-4 py-2 transition"><i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Create a free account</a>
-                  <a href="/auth.html?redirect=${redirect}" class="inline-flex items-center gap-1.5 bg-white border border-gray-300 hover:border-blue-400 text-gray-700 text-xs font-bold rounded-lg px-4 py-2 transition"><i data-lucide="log-in" class="w-3.5 h-3.5"></i> I already have an account</a>
-                </div>
-              </div>
-            </div>
-
-            <!-- SIGNED-IN USERS: the full working review form -->
-            <form id="review-form" class="space-y-3 hidden">
+            <h4 class="text-[15px] font-black text-gray-900 mb-0.5 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-blue-500"></i> Write a Review</h4>
+            <p class="text-xs text-gray-500 mb-3">Rate the product and share your experience — your review appears right at the top, newest first. No account needed.</p>
+            <form id="review-form" class="space-y-3">
               <div class="flex items-center gap-2">
                 <label class="text-xs text-gray-700 font-bold uppercase">Rating</label>
                 <div id="star-rating" class="flex gap-1">
                   ${[1,2,3,4,5].map(i => `<button type="button" data-rating="${i}" class="star-btn p-1"><i data-lucide="star" class="w-5 h-5 text-gray-300 hover:text-amber-400 transition"></i></button>`).join('')}
                 </div>
               </div>
+              <input id="review-name" type="text" maxlength="40" placeholder="Your name (optional)" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-[15px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
               <textarea id="review-text" rows="3" placeholder="Share your experience with this product..." class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-[15px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"></textarea>
-              <div class="flex items-center gap-3">
+              <div id="review-photo-row" class="flex items-center gap-3">
                 <label for="review-photo-input" class="inline-flex items-center gap-2 text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-xl px-3.5 py-2.5 cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition">
                   <i data-lucide="camera" class="w-4 h-4 text-blue-500"></i> Add a photo
                 </label>
                 <input id="review-photo-input" type="file" accept="image/*" class="hidden">
                 <div id="review-photo-preview" class="flex items-center gap-2"></div>
               </div>
-              <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">Submit Review</button>
-              <div id="review-submit-msg" class="text-xs text-emerald-600 font-bold hidden"><i data-lucide="check-circle" class="w-3.5 h-3.5 inline"></i> Thank you! Your review is now live.</div>
+              <div class="flex items-center gap-3">
+                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">Submit Review</button>
+                <div id="review-submit-msg" class="text-xs text-emerald-600 font-bold hidden"><i data-lucide="check-circle" class="w-3.5 h-3.5 inline"></i> Thank you! Your review is now live.</div>
+                <div id="review-error-msg" class="text-xs text-red-600 font-bold hidden"><i data-lucide="alert-circle" class="w-3.5 h-3.5 inline"></i> <span></span></div>
+              </div>
             </form>
           </div>
         </div>
@@ -1853,30 +1839,21 @@ async function setupReviewForm(listing) {
   const form = document.getElementById('review-form');
   if (!form) return;
   const user = await getCurrentUser();
+  const pid = listing.property_id || listing.id || '';
 
-  // GUESTS (not signed in / not registered): show the locked "Write a Review"
-  // button. When they try, the register prompt comes up and STAYS (never
-  // auto-hides) — only real, signed-in accounts can post a review.
-  if (!user) {
-    form.classList.add('hidden');
-    const guestBox = document.getElementById('review-guest-box');
-    const guestBtn = document.getElementById('review-guest-btn');
-    const guestMsg = document.getElementById('review-guest-msg');
-    if (guestBox) guestBox.classList.remove('hidden');
-    if (guestBtn && guestMsg) {
-      guestBtn.addEventListener('click', () => {
-        guestMsg.classList.remove('hidden'); // persistent — no auto-hide
-        guestBtn.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i> Sign in to write a review';
-        if (window.lucide) window.lucide.createIcons();
-      });
-    }
-    return;
+  // Photo upload is a signed-in extra; guests just pick a rating and write.
+  const photoRow = document.getElementById('review-photo-row');
+  if (photoRow) {
+    if (!user) photoRow.classList.add('hidden');
+    else photoRow.classList.remove('hidden');
   }
 
-  // SIGNED-IN users get the full working review form.
-  form.classList.remove('hidden');
-  const guestBox = document.getElementById('review-guest-box');
-  if (guestBox) guestBox.classList.add('hidden');
+  const nameInput = document.getElementById('review-name');
+  if (nameInput) {
+    let saved = '';
+    try { saved = localStorage.getItem('kco_review_name') || ''; } catch {}
+    nameInput.value = saved;
+  }
 
   document.querySelectorAll('.star-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1911,8 +1888,25 @@ async function setupReviewForm(listing) {
   }
 
   const msg = document.getElementById('review-submit-msg');
+  const errMsg = document.getElementById('review-error-msg');
+  const showErr = (t) => {
+    if (!errMsg) return;
+    if (t) {
+      errMsg.classList.remove('hidden');
+      const s = errMsg.querySelector('span');
+      if (s) s.textContent = t;
+    } else {
+      errMsg.classList.add('hidden');
+    }
+  };
+
+  // GUESTS can rate + write too ("No account needed"). The review is first
+  // sent to the server (product_reviews) once the guest-review SQL migration
+  // has been applied; until then it's saved on this device so it still shows
+  // up instantly at the top of the list. Signed-in users keep the photo upload.
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    showErr('');
     const text = document.getElementById('review-text').value.trim();
     if (!selectedRating) { alert('Please select a rating.'); return; }
     if (!text) { alert('Please write a review.'); return; }
@@ -1922,40 +1916,72 @@ async function setupReviewForm(listing) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="inline-block animate-spin">⏳</span> Submitting…';
 
-    let reviewPhoto = null;
-    if (photoFile) {
-      const ext = (photoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-      const path = `${user.id}/${Date.now()}_${String(Math.random()).slice(2)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('review-photos').upload(path, photoFile, {
-        contentType: photoFile.type || 'image/jpeg',
-        cacheControl: '3600',
-        upsert: false,
-      });
-      if (upErr) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalLabel;
-        alert('Could not upload photo: ' + upErr.message);
-        return;
-      }
-      const { data: pub } = supabase.storage.from('review-photos').getPublicUrl(path);
-      reviewPhoto = pub?.publicUrl || null;
+    const authorName = (nameInput ? nameInput.value : '').trim();
+    if (authorName) {
+      try { localStorage.setItem('kco_review_name', authorName); } catch {}
     }
 
-    const { error } = await supabase.from('product_reviews').insert({
-      listing_id: listing.id || null,
-      property_id: listing.property_id || listing.id || '',
-      user_id: user.id,
-      rating: selectedRating,
-      comment: text,
-      review_photo: reviewPhoto,
-      is_approved: true,
-    });
+    let ok = false;
+    if (user) {
+      let reviewPhoto = null;
+      if (photoFile) {
+        const ext = (photoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        const path = `${user.id}/${Date.now()}_${String(Math.random()).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('review-photos').upload(path, photoFile, {
+          contentType: photoFile.type || 'image/jpeg',
+          cacheControl: '3600',
+          upsert: false,
+        });
+        if (upErr) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalLabel;
+          showErr('Could not upload photo: ' + upErr.message);
+          return;
+        }
+        const { data: pub } = supabase.storage.from('review-photos').getPublicUrl(path);
+        reviewPhoto = pub?.publicUrl || null;
+      }
+
+      const { error } = await supabase.from('product_reviews').insert({
+        listing_id: listing.id || null,
+        property_id: pid,
+        user_id: user.id,
+        rating: selectedRating,
+        comment: text,
+        review_photo: reviewPhoto,
+        is_approved: true,
+      });
+      if (!error) ok = true;
+      else showErr('Could not save your review: ' + (error.message || 'unknown error'));
+    } else {
+      try {
+        const { error } = await supabase.from('product_reviews').insert({
+          listing_id: listing.id || null,
+          property_id: pid,
+          rating: selectedRating,
+          comment: text,
+          author_name: authorName || null,
+          is_approved: true,
+        });
+        if (!error) {
+          ok = true;
+          removeGuestReviewLocal(pid, { rating: selectedRating, text, name: authorName });
+        }
+      } catch {}
+      if (!ok) ok = !!addGuestReviewLocal(pid, { rating: selectedRating, text, name: authorName });
+      if (!ok) showErr('Could not save your review right now — please try again.');
+    }
+
+    if (!ok) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalLabel;
+      return;
+    }
 
     submitBtn.disabled = false;
     submitBtn.innerHTML = originalLabel;
-    if (error) { alert('Error: ' + error.message); return; }
-
     document.getElementById('review-text').value = '';
+    if (nameInput) nameInput.value = authorName;
     selectedRating = 0;
     photoFile = null;
     if (photoInput) photoInput.value = '';
@@ -1996,12 +2022,24 @@ async function loadReviews(listing) {
       .order('created_at', { ascending: false });
     if (!error && reviews) {
       for (const r of reviews) {
-        dbReviews.push({ ...r, name: r.profiles?.full_name || 'Anonymous', verified: r.is_verified_purchase });
+        dbReviews.push({ ...r, name: r.author_name || r.profiles?.full_name || 'Anonymous', verified: r.is_verified_purchase });
         const s = Math.min(5, Math.max(1, Math.round(Number(r.rating) || 0)));
         breakdown[s]++;
         total++;
       }
     }
+  }
+
+  // Guest-written reviews saved on this device (until the server migration is
+  // applied they live here; afterwards they come back through `product_reviews`
+  // and the local copy is dropped so nothing is shown twice). Newest first.
+  const guestReviews = loadGuestReviews(pid).filter(g => !dbReviews.some(d =>
+    Math.round(Number(d.rating)) === Math.round(Number(g.rating))
+    && String(d.comment || '').trim() === String(g.text || '').trim()));
+  for (const g of guestReviews) {
+    const s = Math.min(5, Math.max(1, Math.round(Number(g.rating) || 0)));
+    breakdown[s]++;
+    total++;
   }
 
   // Rating recomputed from the true combined breakdown so it stays honest when
@@ -2031,7 +2069,7 @@ async function loadReviews(listing) {
   if (summaryEl) summaryEl.innerHTML = summaryHtml;
   if (breakdownEl) breakdownEl.innerHTML = ratingsBreakdownHtml(listing, breakdown, displayCount);
 
-  const all = [...dbReviews, ...seed.reviews];
+  const all = [...guestReviews, ...dbReviews, ...seed.reviews];
   if (!all.length) {
     listEl.innerHTML = '<p class="text-gray-400 text-sm py-2">No reviews yet. Be the first to review this product!</p>';
     if (window.lucide) lucide.createIcons();
@@ -2041,7 +2079,8 @@ async function loadReviews(listing) {
   // Stable per-comment keys so ❤️ likes and 💬 replies stay attached to the
   // right comment across reloads and refreshes.
   allReviewsRef = all.map((r) => {
-    if (r.id) r._key = 'db-' + r.id;
+    if (r._local) r._key = 'local-' + r.id;
+    else if (r.id) r._key = 'db-' + r.id;
     else r._key = 'seed-' + reviewKeyHash(String(pid) + '||' + (r.date || '') + '||' + (r.text || ''));
     return r;
   });

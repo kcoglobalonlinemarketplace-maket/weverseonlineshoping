@@ -140,3 +140,61 @@ export async function addReviewComment(propertyId, reviewKey, author, body) {
   writeLocal(LS_COMMENTS(pid), store);
   return comment;
 }
+
+// ── Guest-written reviews ────────────────────────────────────────────────
+// Visitors who are NOT signed in can still rate a product and write a review.
+// The site first tries to save it to `product_reviews` (server, shared across
+// all devices once the guest-review migration is applied) and falls back to
+// this device-local store so the review ALWAYS shows up instantly at the top.
+const LS_REVIEWS = (pid) => `kco_guest_reviews_${pid}`;
+
+export function loadGuestReviews(propertyId) {
+  const pid = String(propertyId || '');
+  const arr = readLocal(LS_REVIEWS(pid));
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .filter(r => r && r.rating >= 1 && r.rating <= 5 && (r.text || r.comment))
+    .map(r => ({
+      ...r,
+      _local: true,
+      comment: r.comment || r.text,
+      text: r.text || r.comment,
+      name: r.name || '',
+      rating: Math.max(1, Math.min(5, Math.round(Number(r.rating) || 0))),
+    }))
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
+export function addGuestReviewLocal(propertyId, review) {
+  const pid = String(propertyId || '');
+  const rating = Math.max(1, Math.min(5, Math.round(Number(review && review.rating) || 0)));
+  const text = String(review && review.text || '').trim().slice(0, 2000);
+  const name = String(review && review.name || '').trim().slice(0, 40);
+  if (!rating || !text) return null;
+  const entry = {
+    id: 'gv_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+    rating,
+    text,
+    comment: text,
+    name,
+    created_at: new Date().toISOString(),
+    _local: true,
+  };
+  const store = readLocal(LS_REVIEWS(pid));
+  if (!Array.isArray(store)) return null;
+  store.push(entry);
+  writeLocal(LS_REVIEWS(pid), store);
+  return entry;
+}
+
+// Removes the device-local copy of a review that was successfully saved to the
+// server, so it is not shown twice after a reload (server row first).
+export function removeGuestReviewLocal(propertyId, review) {
+  const pid = String(propertyId || '');
+  const rating = Math.max(1, Math.min(5, Math.round(Number(review && review.rating) || 0)));
+  const text = String(review && review.text || '').trim();
+  const store = readLocal(LS_REVIEWS(pid));
+  if (!Array.isArray(store)) return;
+  const next = store.filter(x => !(Math.round(Number(x.rating)) === rating && String(x.text || '').trim() === text));
+  if (next.length !== store.length) writeLocal(LS_REVIEWS(pid), next);
+}
