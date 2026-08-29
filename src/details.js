@@ -18,6 +18,7 @@ import { supabase } from './supabase-client.js';
 import { addToCart as cartAddToCart } from './cart.js';
 import { generateSeedReviews } from './seed-reviews.js';
 import { loadPromoBackgrounds, bgMediaLayer } from './promo-backgrounds.js';
+import { loadReviewInteractions, toggleReviewLike, addReviewComment } from './review-interactions.js';
 // Self-initializing modules: trust & info area (#trust-info-area) and the app
 // promo banner (#app-promo-banner) render below the details content. The page
 // markup only ships inert modulepreload hints, so these must be imported here
@@ -26,6 +27,23 @@ import './trust-info-area.js';
 import './app-promo-banner.js';
 
 const FALLBACK_IMG = '/fallback.svg';
+
+// Live interaction state for the "What Buyers Say" list (likes + replies).
+let riState = { likes: new Map(), liked: new Set(), comments: new Map() };
+let openReplyKey = null;
+let savedReplyName = '';
+let allReviewsRef = [];
+let reviewsExpanded = false;
+let reviewsPidRef = '';
+
+function reviewKeyHash(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(36);
+}
 
 function safeRating(r) { return (typeof r === 'number' && !isNaN(r)) ? r.toFixed(1) : '0.0'; }
 function safeImages(imgs) { return (Array.isArray(imgs) && imgs.length > 0) ? imgs : [FALLBACK_IMG]; }
@@ -429,24 +447,13 @@ function setupAccordions() {
   }
 }
 
-function relativeCommentTime(iso) {
+// Comments always show a real calendar date + year (e.g. "Aug 12, 2025"),
+// never a relative "now / 5m / 3h" so they do not look machine-generated.
+function formatCommentDate(iso) {
   if (!iso) return '';
-  const t = new Date(iso).getTime();
-  if (!t || isNaN(t)) return '';
-  const diff = Math.max(0, Date.now() - t);
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'now';
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d`;
-  const w = Math.floor(d / 7);
-  if (w < 5) return `${w}w`;
-  const mo = Math.floor(d / 30);
-  if (mo < 12) return `${mo}mo`;
-  const y = Math.floor(d / 365);
-  return y === 1 ? '1y' : `${y}y`;
+  const t = new Date(iso);
+  if (!t.getTime() || isNaN(t.getTime())) return '';
+  return t.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function commentLikeCount(r) {
@@ -465,19 +472,59 @@ function compactCount(n) {
   return String(n);
 }
 
+function replyItemHtml(c) {
+  const initial = escapeHtml(String(c.author || 'Guest').trim().charAt(0).toUpperCase() || 'G');
+  return `
+    <div class="flex gap-2.5 pl-0.5">
+      <div class="shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 text-white flex items-center justify-center text-[11px] font-black uppercase shadow-sm">${initial}</div>
+      <div class="min-w-0 flex-1 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span class="text-xs font-bold text-gray-900">${escapeHtml(c.author || 'Guest')}</span>
+          <span class="text-[11px] text-gray-400">&middot; ${formatCommentDate(c.created_at)}</span>
+        </div>
+        <p class="text-sm text-gray-700 mt-0.5 leading-relaxed break-words">${escapeHtml(c.body || '')}</p>
+      </div>
+    </div>`;
+}
+
 function reviewItemHtml(r) {
   const nm = r.name || r.profiles?.full_name || 'Anonymous';
   const initial = escapeHtml(nm.trim().charAt(0).toUpperCase() || 'A');
   const handle = r.handle ? `<span class="text-xs font-semibold text-gray-400">${escapeHtml(r.handle)}</span>` : '';
-  const time = relativeCommentTime(r.date || r.created_at);
+  const time = formatCommentDate(r.date || r.created_at);
   const timeHtml = time ? `<span class="text-xs text-gray-400">&middot; ${time}</span>` : '';
   const loc = r.location && !r.handle ? `<span class="text-xs text-gray-400">&middot; ${escapeHtml(r.location)}</span>` : '';
   const title = r.title ? `<p class="text-sm font-bold text-gray-900 mt-1">${escapeHtml(r.title)}</p>` : '';
   const verifiedBadge = r.verified ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"><i data-lucide="badge-check" class="w-3 h-3"></i> Verified Purchase</span>` : '';
   const photo = r.review_photo ? `<div class="mt-2.5"><img src="${escapeHtml(r.review_photo)}" alt="Customer photo" class="w-28 h-28 object-cover rounded-xl border border-gray-200" loading="lazy" onerror="this.style.display='none'"></div>` : '';
-  const likes = commentLikeCount(r);
-  const likesHtml = compactCount(likes);
-  const replies = (typeof r.replies === 'number' && r.replies > 0) ? r.replies : 0;
+  const key = r._key || '';
+  const extraLikes = (riState.likes.get(key) || 0);
+  const likes = commentLikeCount(r) + extraLikes;
+  const liked = riState.liked.has(key);
+  const storedComments = riState.comments.get(key) || [];
+  const repliesTotal = (typeof r.replies === 'number' && r.replies > 0 ? r.replies : 0) + storedComments.length;
+  const likeBtn = `
+    <button type="button" class="review-like-btn btn-press inline-flex items-center gap-1.5 text-xs font-bold transition ${liked ? 'text-rose-500' : 'text-gray-500 hover:text-rose-500'}" data-key="${key}">
+      <i data-lucide="heart" class="w-4 h-4 ${liked ? 'fill-rose-500 text-rose-500' : ''}"></i> ${compactCount(likes)}
+    </button>`;
+  const replyBtn = `
+    <button type="button" class="review-reply-toggle btn-press inline-flex items-center gap-1.5 text-xs font-bold transition ${openReplyKey === key ? 'text-blue-600' : 'text-gray-500 hover:text-blue-500'}" data-key="${key}">
+      <i data-lucide="message-circle" class="w-4 h-4"></i> ${repliesTotal > 0 ? `${compactCount(repliesTotal)} replies` : 'Reply'}
+    </button>`;
+  let replyBox = '';
+  if (openReplyKey === key) {
+    const nameVal = escapeHtml(savedReplyName || '');
+    replyBox = `
+      <div class="review-reply-box mt-3 rounded-xl border border-gray-200 bg-gray-50/80 p-3 space-y-2">
+        <input type="text" class="review-reply-name w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Your name (optional)" maxlength="40" value="${nameVal}">
+        <textarea class="review-reply-body w-full rounded-lg border border-gray-300 px-3 py-2 text-sm min-h-[74px] resize-y" placeholder="Write a comment..." maxlength="1000"></textarea>
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" class="review-reply-cancel text-xs font-bold text-gray-500 hover:text-gray-700 px-3 py-2 transition">Cancel</button>
+          <button type="button" data-key="${key}" class="review-reply-post btn-press inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm shadow-blue-500/20"><i data-lucide="send" class="w-3.5 h-3.5"></i> Comment</button>
+        </div>
+      </div>`;
+  }
+  const threads = storedComments.length ? `<div class="mt-2.5 space-y-2.5">${storedComments.map(replyItemHtml).join('')}</div>` : '';
   return `
     <div class="flex gap-3 py-4 border-b border-gray-100 last:border-0">
       <div class="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-black uppercase shadow-sm">${initial}</div>
@@ -491,9 +538,11 @@ function reviewItemHtml(r) {
         <p class="text-[15px] text-gray-700 leading-relaxed mt-1.5">${escapeHtml(r.text || r.comment || '')}</p>
         ${photo}
         <div class="flex items-center gap-5 mt-2.5">
-          <button type="button" class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-rose-500 transition"><i data-lucide="heart" class="w-4 h-4"></i> ${likesHtml}</button>
-          <button type="button" class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-blue-500 transition"><i data-lucide="message-circle" class="w-4 h-4"></i> ${replies > 0 ? `${compactCount(replies)} replies` : 'Reply'}</button>
+          ${likeBtn}
+          ${replyBtn}
         </div>
+        ${replyBox}
+        ${threads}
       </div>
     </div>`;
 }
@@ -1989,31 +2038,27 @@ async function loadReviews(listing) {
     return;
   }
 
+  // Stable per-comment keys so ❤️ likes and 💬 replies stay attached to the
+  // right comment across reloads and refreshes.
+  allReviewsRef = all.map((r) => {
+    if (r.id) r._key = 'db-' + r.id;
+    else r._key = 'seed-' + reviewKeyHash(String(pid) + '||' + (r.date || '') + '||' + (r.text || ''));
+    return r;
+  });
+  reviewsPidRef = pid;
+  try { savedReplyName = localStorage.getItem('kco_reply_name') || ''; } catch {}
+  if (pid) {
+    try { riState = await loadReviewInteractions(pid); } catch { riState = { likes: new Map(), liked: new Set(), comments: new Map() }; }
+  } else {
+    riState = { likes: new Map(), liked: new Set(), comments: new Map() };
+  }
+  openReplyKey = null;
+  reviewsExpanded = false;
+  bindReviewActions(listEl);
+  renderReviewList();
   // Show the 3 newest reviews first, then "View All Customer Reviews" expands
   // the full list. New customer reviews appear at the very top (dbReviews are
   // merged before seeds). No review-count numbers are shown anywhere.
-  const preview = all.slice(0, 3);
-  const renderPreview = () => {
-    listEl.innerHTML = preview.map(reviewItemHtml).join('');
-    if (all.length > preview.length) {
-      const wrap = document.createElement('div');
-      wrap.className = 'mt-4 flex justify-center';
-      wrap.innerHTML = `
-        <button type="button" class="view-all-reviews-btn btn-press inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm shadow-blue-500/20">
-          View All Customer Reviews
-          <i data-lucide="chevron-down" class="w-4 h-4"></i>
-        </button>`;
-      listEl.appendChild(wrap);
-      if (window.lucide) lucide.createIcons();
-      wrap.querySelector('.view-all-reviews-btn').addEventListener('click', () => {
-        listEl.innerHTML = all.map(reviewItemHtml).join('');
-        if (window.lucide) lucide.createIcons();
-        appendReviewsBackToTop(listEl, renderPreview);
-      });
-    }
-  };
-  renderPreview();
-  if (window.lucide) lucide.createIcons();
 }
 
 // Fills the Customer Reviews banner with the admin-chosen "reviews" promo
@@ -2030,6 +2075,100 @@ async function applyReviewsBannerBg() {
 }
 
 document.addEventListener('promo-backgrounds-updated', () => { try { applyReviewsBannerBg(); } catch {} });
+
+// Renders the review list in its current state (3-review preview vs full list)
+// so liking / replying / toggling the reply box can re-render in place without
+// losing the "View All" expansion or scroll position.
+function renderReviewList() {
+  const listEl = document.getElementById('reviews-list');
+  if (!listEl || !allReviewsRef.length) return;
+  const items = reviewsExpanded ? allReviewsRef : allReviewsRef.slice(0, 3);
+  listEl.innerHTML = items.map(reviewItemHtml).join('');
+  if (window.lucide) lucide.createIcons();
+  if (reviewsExpanded) {
+    appendReviewsBackToTop(listEl, () => {
+      reviewsExpanded = false;
+      renderReviewList();
+    });
+  } else if (allReviewsRef.length > items.length) {
+    const wrap = document.createElement('div');
+    wrap.className = 'mt-4 flex justify-center';
+    wrap.innerHTML = `
+      <button type="button" class="view-all-reviews-btn btn-press inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm shadow-blue-500/20">
+        View All Customer Reviews
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>`;
+    listEl.appendChild(wrap);
+    if (window.lucide) lucide.createIcons();
+    wrap.querySelector('.view-all-reviews-btn').addEventListener('click', () => {
+      reviewsExpanded = true;
+      renderReviewList();
+    });
+  }
+}
+
+async function refreshReviewInteractions() {
+  if (!reviewsPidRef) return;
+  try { riState = await loadReviewInteractions(reviewsPidRef); } catch {
+    riState = { likes: new Map(), liked: new Set(), comments: new Map() };
+  }
+}
+
+function focusOpenReply() {
+  if (!openReplyKey) return;
+  const body = document.querySelector('.review-reply-box textarea.review-reply-body');
+  if (body) setTimeout(() => { try { body.focus(); } catch {} }, 60);
+}
+
+// One delegated listener on the persistent #reviews-list element covers every
+// like / reply toggle / cancel / post action, even after innerHTML swaps.
+function bindReviewActions(listEl) {
+  if (!listEl || listEl.dataset.riBound === '1') return;
+  listEl.dataset.riBound = '1';
+  listEl.addEventListener('click', async (e) => {
+    const likeBtn = e.target.closest('.review-like-btn');
+    if (likeBtn) {
+      e.preventDefault();
+      if (!likeBtn.dataset.key) return;
+      try { await toggleReviewLike(reviewsPidRef, likeBtn.dataset.key); } catch {}
+      await refreshReviewInteractions();
+      renderReviewList();
+      return;
+    }
+    const toggle = e.target.closest('.review-reply-toggle');
+    if (toggle) {
+      e.preventDefault();
+      openReplyKey = openReplyKey === toggle.dataset.key ? null : toggle.dataset.key;
+      renderReviewList();
+      focusOpenReply();
+      return;
+    }
+    const cancel = e.target.closest('.review-reply-cancel');
+    if (cancel) {
+      e.preventDefault();
+      openReplyKey = null;
+      renderReviewList();
+      return;
+    }
+    const post = e.target.closest('.review-reply-post');
+    if (post) {
+      e.preventDefault();
+      const box = e.target.closest('.review-reply-box');
+      if (!box) return;
+      const nameEl = box.querySelector('.review-reply-name');
+      const bodyEl = box.querySelector('.review-reply-body');
+      const name = ((nameEl && nameEl.value) || '').trim();
+      const body = ((bodyEl && bodyEl.value) || '').trim();
+      if (!body) { if (bodyEl) bodyEl.focus(); return; }
+      savedReplyName = name || savedReplyName;
+      try { await addReviewComment(reviewsPidRef, post.dataset.key, name || 'Guest', body); } catch {}
+      try { localStorage.setItem('kco_reply_name', savedReplyName); } catch {}
+      openReplyKey = null;
+      await refreshReviewInteractions();
+      renderReviewList();
+    }
+  });
+}
 
 // Floating control so customers scrolling through the full review list can tap
 // to collapse back to the 3-review preview AND jump to the top of the Customer
