@@ -423,26 +423,71 @@ function setupAccordions() {
   }
 }
 
+function relativeCommentTime(iso) {
+  if (!iso) return '';
+  const t = new Date(iso).getTime();
+  if (!t || isNaN(t)) return '';
+  const diff = Math.max(0, Date.now() - t);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `${w}w`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo`;
+  const y = Math.floor(d / 365);
+  return y === 1 ? '1y' : `${y}y`;
+}
+
+function commentLikeCount(r) {
+  if (typeof r.likes === 'number' && r.likes > 0) return r.likes;
+  const src = String(r.text || r.comment || r.created_at || r.name || '');
+  let h = 2166136261;
+  for (let i = 0; i < src.length; i++) {
+    h ^= src.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return 2 + (h >>> 0) % 140;
+}
+
+function compactCount(n) {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(n);
+}
+
 function reviewItemHtml(r) {
   const nm = r.name || r.profiles?.full_name || 'Anonymous';
   const initial = escapeHtml(nm.trim().charAt(0).toUpperCase() || 'A');
-  const loc = r.location ? `<span class="text-xs text-gray-400">&middot; ${escapeHtml(r.location)}</span>` : '';
+  const handle = r.handle ? `<span class="text-xs font-semibold text-gray-400">${escapeHtml(r.handle)}</span>` : '';
+  const time = relativeCommentTime(r.date || r.created_at);
+  const timeHtml = time ? `<span class="text-xs text-gray-400">&middot; ${time}</span>` : '';
+  const loc = r.location && !r.handle ? `<span class="text-xs text-gray-400">&middot; ${escapeHtml(r.location)}</span>` : '';
   const title = r.title ? `<p class="text-sm font-bold text-gray-900 mt-1">${escapeHtml(r.title)}</p>` : '';
   const verifiedBadge = r.verified ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"><i data-lucide="badge-check" class="w-3 h-3"></i> Verified Purchase</span>` : '';
   const photo = r.review_photo ? `<div class="mt-2.5"><img src="${escapeHtml(r.review_photo)}" alt="Customer photo" class="w-28 h-28 object-cover rounded-xl border border-gray-200" loading="lazy" onerror="this.style.display='none'"></div>` : '';
+  const likes = commentLikeCount(r);
+  const likesHtml = compactCount(likes);
+  const replies = (typeof r.replies === 'number' && r.replies > 0) ? r.replies : 0;
   return `
     <div class="flex gap-3 py-4 border-b border-gray-100 last:border-0">
       <div class="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-black uppercase shadow-sm">${initial}</div>
       <div class="min-w-0 flex-1">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm font-bold text-gray-900">${escapeHtml(nm)}</span>${loc}
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span class="text-sm font-bold text-gray-900">${escapeHtml(nm)}</span>${handle}${timeHtml}${loc}
           ${verifiedBadge}
-          <span class="text-xs text-gray-400">${new Date(r.date || r.created_at).toLocaleDateString()}</span>
         </div>
         <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= (r.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
         ${title}
         <p class="text-[15px] text-gray-700 leading-relaxed mt-1.5">${escapeHtml(r.text || r.comment || '')}</p>
         ${photo}
+        <div class="flex items-center gap-5 mt-2.5">
+          <button type="button" class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-rose-500 transition"><i data-lucide="heart" class="w-4 h-4"></i> ${likesHtml}</button>
+          <button type="button" class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-blue-500 transition"><i data-lucide="message-circle" class="w-4 h-4"></i> ${replies > 0 ? `${compactCount(replies)} replies` : 'Reply'}</button>
+        </div>
       </div>
     </div>`;
 }

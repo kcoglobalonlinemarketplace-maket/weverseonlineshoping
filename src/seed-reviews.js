@@ -101,140 +101,121 @@ const CITIES = [
   { city: 'Taipei', country: 'Taiwan' }, { city: 'Hong Kong', country: 'Hong Kong' },
 ];
 
-// Title built from two parts (adj + noun): 48 x 40 = 1,920 unique combos —
-// shop-experience focused, never product focused.
-const TITLE_A = [
-  'Great shopping experience','Easy checkout','Smooth ordering','Fast delivery','Excellent service',
-  'Very reliable store','Impressed with the site','Would shop again','Worth it','As advertised',
-  'Professional team','Quick response','Secure checkout','Clear communication','Trustworthy shop',
-  'Happy with my order','Simple and easy','Great customer service','Everything on time','No issues at all',
-  'Very professional','Highly recommended','Smooth transaction','Well organised','Pleasant experience',
-  'Top quality service','Efficient and quick','Great overall','Straightforward','Genuinely impressed',
-  'Seamless process','Responsive support','Delivered as promised','Exceptional experience','Reliable shipping',
-  'Five star service','Perfect order','Great communication','Honest shop','First class service',
-  'Very satisfied','Quick and easy','Professional all round','Better than expected','Zero hassle',
-  'A pleasure to shop','Consistently good','Outstanding support','Smooth all the way','Absolutely perfect',
-];
-
-const TITLE_B = [
-  ' shopping',' experience',' service',' process',' order',' delivery',' support',' checkout',
-  ' communication',' transaction',' shop',' site',' handling',' team',' packaging',' quality',
-  ' speed',' follow-up',' attention',' standard',' professionalism',' care',' results',' accuracy',
-  ' efficiency',' convenience',' presentation',' reliability',' trust',' customer care',' experience online',
-  ' store',' purchase',' every time',' overall',' end to end',' turnaround',' dealings',' execution',
-];
-
-// Shop-experience write-ups (NOT product reviews). Every text reads like a real
-// customer describing their experience ordering on the website.
+// Shop-experience comments written to sound like REAL short-form app comments
+// (TikTok/Instagram style): casual, lowercase, light punctuation, occasional
+// emoji — never stiff marketing paragraphs.
 const OPENERS = [
-  'Ordering on the website was straightforward and the checkout process went smoothly.',
-  'I placed my first order through the site and the whole experience was very pleasant.',
-  'The website was easy to use and placing the order took just a couple of minutes.',
-  'This was my first time shopping with them and I was genuinely impressed.',
-  'I ordered through the website and everything worked exactly as it should.',
-  'The online checkout was quick, secure, and completely painless.',
-  'I have ordered from many online shops and this experience stood out.',
-  'Setting up my account and placing the order was simple and clear.',
-  'The site made it very easy to find what I wanted and complete my purchase.',
-  'I was a little unsure at first, but the whole process turned out to be very professional.',
-  'From browsing to checkout, everything on the website was well organised.',
-  'I have used this online shop a few times now and it never disappoints.',
-  'The ordering process was quick and everything was confirmed instantly.',
-  'I appreciated how clear the website was about pricing, shipping, and delivery.',
-  'Placing my order was effortless and the confirmation came through right away.',
-  'The online shop handled my order professionally from start to finish.',
-  'It was my first international online order and it went perfectly.',
-  'The website checkout was smooth and I felt secure throughout.',
-  'I found the store easy to navigate and the order process very user friendly.',
-  'Everything from selection to payment was handled neatly and clearly.',
+  "just ordered from this shop and it was so easy fr",
+  "first time buying here and honestly impressed ngl",
+  "checked out in like 2 minutes, easiest thing ever",
+  "was a little skeptical at first but it all worked out",
+  "placed my order from my phone, super smooth",
+  "i've ordered here a few times and it never lets me down",
+  "took a chance on this store and zero regrets",
+  "signing up and ordering took no time at all",
+  "everything from picking to paying was really simple",
+  "first international order and it went perfectly 🙏",
+  "lowkey wasn't expecting much but it was great",
+  "order went through instantly, no drama",
+  "the site is so easy to use, even i managed it lol",
+  "been shopping online for years, this one stands out",
+  "quick and painless, just how online shopping should be",
+  "had a tiny doubt before ordering but it was fine",
+  "the whole process felt very professional",
+  "just what i needed, no stress, no hassle",
+  "my cousin recommended this shop and he was right",
+  "ordered without overthinking and it paid off",
 ];
 
 const DETAILS = [
-  'Shipping was faster than expected and the package arrived in perfect condition.',
-  'The parcel was well packed and arrived exactly when the tracking promised.',
-  'Customer service replied quickly and answered all my questions patiently.',
-  'Delivery was prompt and the courier was courteous and careful.',
-  'The order updates kept me informed at every stage of the journey.',
-  'My payment was processed securely and I received confirmation immediately.',
-  'The package arrived beautifully wrapped and completely intact.',
-  'I was kept updated throughout the whole delivery process.',
-  'The estimated delivery date was accurate and the order arrived on time.',
-  'Communication from the team was clear, friendly, and professional.',
-  'The packaging was sturdy and everything arrived in perfect shape.',
-  'It was dispatched quickly, well within the promised time.',
-  'The tracking worked perfectly and the delivery was smooth.',
-  'Customer support helped me quickly when I had a small question.',
-  'The whole transaction was handled efficiently and without any issues.',
-  'My order arrived earlier than the estimated date, which was a nice surprise.',
-  'The team processed my order quickly and kept me well informed.',
-  'The website kept me updated with clear order status throughout.',
-  'Delivery went exactly as scheduled and the item arrived safely.',
-  'I appreciated the fast dispatch and careful handling of my order.',
-  'Everything arrived as described and on the exact date promised.',
-  'The checkout confirmed my order instantly and the follow-up was excellent.',
-  'The support team responded to my query within minutes.',
-  'My package arrived in pristine condition with great packaging.',
-  'The order was handled with care from the moment I placed it.',
-  'Tracking updates were timely and the delivery was hassle free.',
-  'The team went out of their way to make sure everything was perfect.',
-  'It was a smooth, well managed order from start to finish.',
-  'The delivery arrived well within the window they promised.',
-  'Everything about the transaction was clear, honest, and professional.',
-  'My order was processed and shipped with impressive speed.',
-  'The customer service was responsive and genuinely helpful.',
-  'The package arrived exactly on schedule and in perfect condition.',
-  'They kept their promise on delivery time and the quality was clear.',
-  'The whole experience online was seamless and reassuring.',
-  'Every step, from payment to delivery, was handled perfectly.',
-  'The order status updates were clear and always accurate.',
-  'It was dispatched the same day and arrived quickly.',
-  'The shopping experience was smooth and completely trustworthy.',
-  'Their follow-up after delivery was thoughtful and professional.',
+  "shipping was mad fast, arrived way earlier than expected",
+  "my package came in perfect condition 🔥",
+  "the delivery guy was super nice and careful",
+  "got updates the entire time, no guessing",
+  "tracking was accurate and it showed up on time",
+  "packaging was really solid, nothing was damaged",
+  "they answered my question in like 10 minutes",
+  "customer service was actually helpful, rare these days",
+  "everything arrived exactly as described",
+  "the parcel was wrapped so well, impressive",
+  "it showed up a day early, which was a nice surprise",
+  "payment was secure and confirmation came right away",
+  "kept me posted at every single step",
+  "dispatching was quick, shipped the same day",
+  "the item looked even better in person",
+  "my order was handled with so much care",
+  "they were super responsive whenever i messaged",
+  "the tracking link actually worked the whole way",
+  "delivery was on schedule, not a minute late",
+  "everything came neatly packed and in one piece",
+  "no issues at all, straight to my door",
+  "they followed up after delivery which i thought was nice",
+  "the whole team was polite and professional",
+  "my doubts disappeared once the package arrived",
+  "quality was clear as soon as i opened the box",
+  "support replied quickly even though it was late",
+  "well organized from start to finish",
+  "came when they said it would, no surprises",
+  "fast dispatch and smooth handling of my order",
+  "the notifications kept me calm the whole time lol",
+  "everything i ordered was in the box, nothing missing",
+  "the courier called before arriving, so professional",
+  "shipped in sturdy packaging, survived the trip perfectly",
+  "i could track it the whole way, very reassuring",
+  "they processed my order in record time",
+  "came in perfect shape and very well protected",
+  "every update they sent was accurate and clear",
+  "exactly the delivery experience you hope for",
+  "returns and support were straightforward too",
+  "very clean, well managed order, i was impressed",
 ];
 
 const CLOSERS = [
-  'I will definitely be shopping here again.',
-  'Would happily recommend this online shop to friends.',
-  'A five star experience from start to finish.',
-  'No hesitation in recommending them to others.',
-  'Very pleased with the whole experience.',
-  'I am glad I chose this shop for my order.',
-  'A really professional online store worth trusting.',
-  'Would not think twice about ordering again.',
-  'They have earned a loyal customer in me.',
-  'Highly recommended for anyone ordering online.',
-  'A great experience and I will be back.',
-  'Their service deserves every bit of praise.',
-  'I would confidently order from them again.',
-  'A genuinely pleasant shopping experience.',
-  'Five stars, no question about it.',
-  'They are now my go to online shop.',
+  "100% ordering again fr",
+  "would recommend this shop to anyone",
+  "already told my friends about it",
+  "this is my new go to place now",
+  "can't recommend them enough",
+  "definitely coming back, no question",
+  "so glad i found this store",
+  "will 100% be back 💯",
+  "no complaints at all honestly",
+  "totally worth it, trust me",
+  "10/10 experience, easy",
+  "this shop is legit, trust",
+  "loyal customer for life now",
+  "five stars from me, easy",
+  "a real hidden gem honestly",
+  "can't wait for my next order",
 ];
 
 // Category-flavoured lines that stay about the SHOP experience, not the item
 // itself, so no one assumes the product dates back to 2018.
 const CATEGORY_DETAILS = {
   vehicle: [
-    'The vehicle was listed accurately and the delivery arrangement was handled very professionally by the shop.',
-    'The shop arranged safe delivery of the vehicle and kept me updated the whole way.',
+    "my vehicle was delivered safe and sound, kept me updated the whole trip",
+    "the listing was exact and delivery was arranged super smoothly",
   ],
   property: [
-    'The listing was accurate and the shop team guided me through the process smoothly.',
-    'The shop handled all the paperwork and communication professionally throughout.',
+    "the listing was spot on and they walked me through the whole process",
+    "all the paperwork was handled clean, very easy from start to finish",
   ],
   phone: [
-    'The phone matched the description exactly and the shop dispatched it quickly and safely.',
-    'The shop confirmed all the device details before shipping and the packaging was excellent.',
+    "the phone matched the photos exactly and shipped out quick",
+    "they double checked everything before sending, packaging was solid",
   ],
   pet: [
-    'The shop handled the entire arrangement with care and kept me informed at every step.',
-    'All the paperwork was provided and the shop made the process very easy.',
+    "they handled everything so carefully, i felt reassured the whole way",
+    "all the paperwork was sorted out and the process was really easy",
   ],
   product: [
-    'The item matched the listing perfectly and the shop delivered it in great condition.',
-    'The shop processed and dispatched my order quickly with careful packaging.',
+    "the item was exactly like the photos, arrived in great shape",
+    "order was processed fast and the packaging was really solid",
   ],
 };
+
+// Small emoji sprinkle so a few comments feel lived-in, never every one.
+const EMOJIS = ['🔥','✨','😍','🙌','💯','😭','❤️','👍','🎯','👌','✅','⚡','📦','🙏'];
 
 // Years from 2018 (shop opened October 2018) with a realistic spread — 2026 is
 // present but not dominant. Weighted so middle years are the most common.
@@ -292,10 +273,9 @@ export function generateSeedReviews(listing, opts = {}) {
   const reviews = [];
 
   const nameSpace = FIRST_NAMES.length * LAST_NAMES.length; // 8100
-  const titleSpace = TITLE_A.length * TITLE_B.length;        // 1920
   const bodySpace = OPENERS.length * DETAILS.length * DETAILS.length * CLOSERS.length;
 
-  const titleStep = 137, nameStep = 457, bodyStep = 811;
+  const nameStep = 457, bodyStep = 811;
 
   for (let i = 0; i < show; i++) {
     const rng = mulberry32(hashString(id + '::' + i));
@@ -315,10 +295,6 @@ export function generateSeedReviews(listing, opts = {}) {
     const lastName = LAST_NAMES[ni % LAST_NAMES.length];
     const name = `${firstName} ${lastName}`;
 
-    // Unique title per product.
-    const ti = poolIndex(h, i, titleStep, titleSpace);
-    const title = TITLE_A[Math.floor(ti / TITLE_B.length) % TITLE_A.length] + TITLE_B[ti % TITLE_B.length];
-
     // Unique body per product: opener + detail(s) + closer.
     const bi = poolIndex(h, i, bodyStep, bodySpace);
     let idx = bi;
@@ -332,6 +308,7 @@ export function generateSeedReviews(listing, opts = {}) {
     }
     if (i % 2 === 0) text += ` ${d2}`;
     text += ` ${closer}`;
+    if (i % 3 === 2) text += ` ${EMOJIS[(base + i * 13) % EMOJIS.length]}`;
 
     const city = CITIES[poolIndex(h, i, 337, CITIES.length)];
 
@@ -344,13 +321,21 @@ export function generateSeedReviews(listing, opts = {}) {
     const candidate = Date.UTC(year, month - 1, day);
     const date = new Date(Math.min(candidate, now)).toISOString();
 
+    // Casual "@username" handle + engagement counts so the list feels like a
+    // real comment thread (likes are deterministic per product + slot).
+    const handle = `@${firstName.toLowerCase()}${lastName.toLowerCase()}`;
+    const likes = 2 + ((hashString(id + '::likes::' + i) % 380));
+    const replies = i % 7 === 0 ? 1 + ((hashString(id + '::rep::' + i) % 4)) : 0;
+
     reviews.push({
       name,
+      handle,
       location: city.country,
       date,
       rating: stars,
-      title,
       text,
+      likes,
+      replies,
       verified: false,
       seeded: true,
     });
