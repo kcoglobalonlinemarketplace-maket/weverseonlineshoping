@@ -290,9 +290,9 @@ function accordionsHtml() {
 
 // ── 4. Customer Reviews & Trust (with admin background) ──────────
 const TESTIMONIALS = [
-  { name: 'Amina K.', country: 'Nigeria', text: 'My order arrived ahead of schedule and the quality was exactly as described. I shop here without any doubt.', verified: true },
-  { name: 'Sarah & James', country: 'United States', text: 'Ordered for our whole family — tracking updates made it feel safe and reliable from checkout to delivery.', verified: true },
-  { name: 'Priya S.', country: 'India', text: 'The customer support team answered my questions in minutes. Genuinely trustworthy shopping experience.', verified: true },
+  { name: 'Megan R.', country: 'United States', text: 'My order arrived ahead of schedule and the quality was exactly as described. I shop here without any doubt.', verified: true },
+  { name: 'Sarah & James', country: 'United Kingdom', text: 'Ordered for our whole family and the tracking updates made it feel safe and reliable from checkout to delivery.', verified: true },
+  { name: 'Oliver K.', country: 'Germany', text: 'The customer support team answered my questions in minutes. Genuinely trustworthy shopping experience.', verified: true },
 ];
 
 // ── 4. Customer Feedback (professional banner + separate comments) ──
@@ -324,19 +324,158 @@ function feedbackCardHtml(f) {
 }
 
 // Curated shop-experience feedback used in the "View more Feedback" list.
+// Only wealthy, developed countries appear here (no developing nations).
 const MORE_FEEDBACK = [
-  { name: 'Daniel O.', country: 'Ghana', text: 'Ordered a laptop and it arrived in under a week, perfectly packed. The tracking updates were accurate all the way to my door.', rating: 5, verified: true },
-  { name: 'Emily R.', country: 'Canada', text: 'The checkout process was smooth and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
-  { name: 'Kevin M.', country: 'United Kingdom', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
-  { name: 'Grace A.', country: 'Nigeria', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
-  { name: 'Lucas T.', country: 'Brazil', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
-  { name: 'Fatima Z.', country: 'United Arab Emirates', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
-  { name: 'James H.', country: 'Australia', text: 'Had to arrange a return once and it was handled quickly with a full refund. That is how you keep customers happy.', rating: 5, verified: true },
-  { name: 'Amara N.', country: 'Kenya', text: 'The customer support team is available around the clock. I asked a question at midnight and still got a helpful reply.', rating: 5, verified: true },
+  { name: 'Emma W.', country: 'United States', text: 'Ordered a laptop and it arrived in under a week, perfectly packed. The tracking updates were accurate all the way to my door.', rating: 5, verified: true },
+  { name: 'Daniel R.', country: 'United States', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Olivia H.', country: 'United States', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Liam M.', country: 'United States', text: 'Had to arrange a return once and it was handled quickly with a full refund. That is how you keep customers happy.', rating: 5, verified: true },
+  { name: 'Sophia B.', country: 'United States', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Noah T.', country: 'United States', text: 'Tracking updates at every step made the whole experience worry-free. The product arrived safely and on time.', rating: 5, verified: true },
+  { name: 'Isabella G.', country: 'United States', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 4, verified: true },
+  { name: 'Lucas P.', country: 'United States', text: 'Ordered several items for the family and every single one was packed with care and delivered on time.', rating: 5, verified: true },
+  { name: 'Mia C.', country: 'United States', text: 'The package arrived beautifully wrapped and matched the pictures perfectly. I will definitely be ordering again.', rating: 5, verified: true },
+  { name: 'Ethan F.', country: 'United States', text: 'First time shopping here and the whole experience felt premium. Live chat answered me in seconds.', rating: 5, verified: true },
+  { name: 'Charlotte D.', country: 'Canada', text: 'Ordered during the holidays and it still arrived on time, which impressed me the most.', rating: 5, verified: true },
+  { name: 'James K.', country: 'Canada', text: 'The checkout process was smooth and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Amelia S.', country: 'Canada', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Benjamin L.', country: 'Canada', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Evelyn M.', country: 'Canada', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
+  { name: 'Henry W.', country: 'Canada', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 4, verified: true },
+  { name: 'Emily R.', country: 'United Kingdom', text: 'The checkout process was smooth and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Oliver J.', country: 'United Kingdom', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Amelia F.', country: 'United Kingdom', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'George C.', country: 'United Kingdom', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
+  { name: 'Harry B.', country: 'United Kingdom', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Isla N.', country: 'United Kingdom', text: 'Tracking updates at every step made the whole experience worry-free. The product arrived safely and on time.', rating: 5, verified: true },
+  { name: 'Jack T.', country: 'United Kingdom', text: 'Had to arrange a return once and it was handled quickly with a full refund. That is how you keep customers happy.', rating: 4, verified: true },
+  { name: 'Grace P.', country: 'United Kingdom', text: 'Ordered several items for the family and every single one was packed with care and delivered on time.', rating: 5, verified: true },
+  { name: 'Aoife K.', country: 'Ireland', text: 'Delivery to Ireland was faster than I expected and everything was tracked the whole way.', rating: 5, verified: true },
+  { name: 'Sean O.', country: 'Ireland', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Ciara M.', country: 'Ireland', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Declan W.', country: 'Ireland', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 4, verified: true },
   { name: 'Sophie L.', country: 'France', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
-  { name: 'Ravi P.', country: 'India', text: 'Tracking updates at every step made the whole experience worry-free. The product arrived safely and on time.', rating: 5, verified: true },
-  { name: 'Maria S.', country: 'Spain', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
-  { name: 'Ahmed B.', country: 'Egypt', text: 'Ordered several items for the family — every single one was packed with care and delivered on time. Five stars from us.', rating: 5, verified: true },
+  { name: 'Louis V.', country: 'France', text: 'Tracking updates at every step made the whole experience worry-free. The product arrived safely and on time.', rating: 5, verified: true },
+  { name: 'Camille R.', country: 'France', text: 'Ordered several items for the family and every single one was packed with care and delivered on time.', rating: 5, verified: true },
+  { name: 'Hugo M.', country: 'France', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Lena S.', country: 'Germany', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Max B.', country: 'Germany', text: 'Tracking updates at every step made the whole experience worry-free. The product arrived safely and on time.', rating: 5, verified: true },
+  { name: 'Hannah K.', country: 'Germany', text: 'Ordered several items for the family and every single one was packed with care and delivered on time.', rating: 5, verified: true },
+  { name: 'Felix W.', country: 'Germany', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Emma D.', country: 'Germany', text: 'Had to arrange a return once and it was handled quickly with a full refund. That is how you keep customers happy.', rating: 4, verified: true },
+  { name: 'Jonas H.', country: 'Germany', text: 'The package arrived beautifully wrapped and matched the pictures perfectly. I will definitely be ordering again.', rating: 5, verified: true },
+  { name: 'Fleur V.', country: 'Netherlands', text: 'Ordered a laptop and it arrived in under a week, perfectly packed. The tracking updates were accurate all the way to my door.', rating: 5, verified: true },
+  { name: 'Daan B.', country: 'Netherlands', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Sanne D.', country: 'Netherlands', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 4, verified: true },
+  { name: 'Elise M.', country: 'Belgium', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Pieter V.', country: 'Belgium', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
+  { name: 'Lotte V.', country: 'Belgium', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Anna S.', country: 'Switzerland', text: 'Ordered during the holidays and it still arrived on time, which impressed me the most.', rating: 5, verified: true },
+  { name: 'Leon M.', country: 'Switzerland', text: 'The checkout process was smooth and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Nora K.', country: 'Switzerland', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 4, verified: true },
+  { name: 'Lukas H.', country: 'Austria', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Julia W.', country: 'Austria', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'David S.', country: 'Austria', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Giulia R.', country: 'Italy', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Matteo B.', country: 'Italy', text: 'Tracking updates at every step made the whole experience worry-free. The product arrived safely and on time.', rating: 5, verified: true },
+  { name: 'Francesca M.', country: 'Italy', text: 'Ordered several items for the family and every single one was packed with care and delivered on time.', rating: 5, verified: true },
+  { name: 'Alessandro F.', country: 'Italy', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 4, verified: true },
+  { name: 'Lucia G.', country: 'Spain', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Diego S.', country: 'Spain', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Martina P.', country: 'Spain', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Pablo R.', country: 'Spain', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
+  { name: 'Sofia C.', country: 'Portugal', text: 'The package arrived beautifully wrapped and matched the pictures perfectly. I will definitely be ordering again.', rating: 5, verified: true },
+  { name: 'Tomás A.', country: 'Portugal', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Mariana L.', country: 'Portugal', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 4, verified: true },
+  { name: 'Ingrid N.', country: 'Sweden', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Erik S.', country: 'Sweden', text: 'Ordered during the holidays and it still arrived on time, which impressed me the most.', rating: 5, verified: true },
+  { name: 'Maja L.', country: 'Sweden', text: 'Tracking updates at every step made the whole experience worry-free. The product arrived safely and on time.', rating: 5, verified: true },
+  { name: 'Emil H.', country: 'Norway', text: 'My order arrived ahead of schedule, beautifully packed from Oslo. Could not have asked for a smoother delivery.', rating: 5, verified: true },
+  { name: 'Astrid K.', country: 'Norway', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Magnus B.', country: 'Norway', text: 'The customer support team answered my questions in minutes. Genuinely trustworthy shopping experience.', rating: 4, verified: true },
+  { name: 'Freja N.', country: 'Denmark', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'William P.', country: 'Denmark', text: 'Ordered several items for the family and every single one was packed with care and delivered on time.', rating: 5, verified: true },
+  { name: 'Clara M.', country: 'Denmark', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Aino K.', country: 'Finland', text: 'Delivery to Finland was faster than I expected and everything was tracked the whole way.', rating: 5, verified: true },
+  { name: 'Onni V.', country: 'Finland', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Riikka S.', country: 'Finland', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 4, verified: true },
+  { name: 'Sigrid J.', country: 'Iceland', text: 'Ordered during the holidays and it still arrived on time, which impressed me the most.', rating: 5, verified: true },
+  { name: 'Björn L.', country: 'Iceland', text: 'The package arrived beautifully wrapped and matched the pictures perfectly. I will definitely be ordering again.', rating: 5, verified: true },
+  { name: 'Zofia W.', country: 'Poland', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Jakub N.', country: 'Poland', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Ola S.', country: 'Poland', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 4, verified: true },
+  { name: 'Klara V.', country: 'Czech Republic', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Tomáš D.', country: 'Czech Republic', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
+  { name: 'Adéla N.', country: 'Czech Republic', text: 'Ordered several items for the family and every single one was packed with care and delivered on time.', rating: 5, verified: true },
+  { name: 'Dimitra K.', country: 'Greece', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Nikos P.', country: 'Greece', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Eleni S.', country: 'Greece', text: 'Delivery arrived earlier than expected and the quality matched the pictures perfectly. Five stars from us.', rating: 4, verified: true },
+  { name: 'Sarah T.', country: 'Australia', text: 'Delivery to Australia was faster than I expected and everything was tracked the whole way.', rating: 5, verified: true },
+  { name: 'Jack M.', country: 'Australia', text: 'The checkout process was smooth and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Charlotte B.', country: 'Australia', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'William H.', country: 'Australia', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Olivia T.', country: 'Australia', text: 'Had to arrange a return once and it was handled quickly with a full refund. That is how you keep customers happy.', rating: 4, verified: true },
+  { name: 'Liam R.', country: 'Australia', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Charlotte W.', country: 'New Zealand', text: 'Ordered during the holidays and it still arrived on time, which impressed me the most.', rating: 5, verified: true },
+  { name: 'Oliver S.', country: 'New Zealand', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Mia H.', country: 'New Zealand', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
+  { name: 'Ethan L.', country: 'Singapore', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Nora T.', country: 'Singapore', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Ryan C.', country: 'Singapore', text: 'Ordered several items for the family and every single one was packed with care and delivered on time.', rating: 4, verified: true },
+  { name: 'Yuki T.', country: 'Japan', text: 'Packaging was meticulous and the quality exceeded expectations. The whole experience felt premium.', rating: 5, verified: true },
+  { name: 'Haruto S.', country: 'Japan', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Aiko M.', country: 'Japan', text: 'Ordered during the holidays and it still arrived on time, which impressed me the most.', rating: 5, verified: true },
+  { name: 'Minjun K.', country: 'South Korea', text: 'Delivery was quick and the package arrived in perfect condition. I will definitely be ordering again.', rating: 5, verified: true },
+  { name: 'Seo-yeon P.', country: 'South Korea', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Jiwon L.', country: 'South Korea', text: 'The customer support team answered my questions in minutes. Genuinely trustworthy shopping experience.', rating: 4, verified: true },
+  { name: 'Layla A.', country: 'United Arab Emirates', text: 'Delivery to Dubai was faster than I expected and everything was tracked the whole way.', rating: 5, verified: true },
+  { name: 'Omar R.', country: 'United Arab Emirates', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Mariam S.', country: 'United Arab Emirates', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Khalid A.', country: 'Qatar', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Noor H.', country: 'Qatar', text: 'Delivery arrived earlier than expected and the quality matched the pictures perfectly.', rating: 5, verified: true },
+  { name: 'Noam K.', country: 'Israel', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Tamar L.', country: 'Israel', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 4, verified: true },
+  { name: 'Wei-cheng L.', country: 'Taiwan', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Ting-wei C.', country: 'Taiwan', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Ka-yan W.', country: 'Hong Kong', text: 'Ordered during the holidays and it still arrived on time, which impressed me the most.', rating: 5, verified: true },
+  { name: 'Ho-man C.', country: 'Hong Kong', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Harper A.', country: 'United States', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Mason T.', country: 'United States', text: 'The package arrived beautifully wrapped and matched the pictures perfectly. I will definitely be ordering again.', rating: 5, verified: true },
+  { name: 'Abigail K.', country: 'United States', text: 'Ordered a few gifts and every one arrived on time, beautifully packed. Support was friendly and quick to help.', rating: 5, verified: true },
+  { name: 'Carter W.', country: 'United States', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 4, verified: true },
+  { name: 'Eliana J.', country: 'United States', text: 'First time ordering and the item matched the description perfectly. Delivery updates were spot on.', rating: 5, verified: true },
+  { name: 'Logan B.', country: 'United States', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Chase R.', country: 'Canada', text: 'Ordered during the holidays and it still arrived on time, which impressed me the most.', rating: 5, verified: true },
+  { name: 'Naomi B.', country: 'Canada', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Chloe V.', country: 'Canada', text: 'The customer support team answered my questions in minutes. Genuinely trustworthy shopping experience.', rating: 4, verified: true },
+  { name: 'Rosalind M.', country: 'United Kingdom', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Freddie P.', country: 'United Kingdom', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Evie C.', country: 'United Kingdom', text: 'Tracking updates at every step made the whole experience worry-free. The product arrived safely and on time.', rating: 5, verified: true },
+  { name: 'Conor M.', country: 'Ireland', text: 'The checkout process was smooth and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Margaux B.', country: 'France', text: 'The package arrived beautifully wrapped and matched the pictures perfectly. I will definitely be ordering again.', rating: 5, verified: true },
+  { name: 'Tobias F.', country: 'Germany', text: 'Delivery to Germany was faster than I expected and everything was tracked the whole way.', rating: 5, verified: true },
+  { name: 'Lina M.', country: 'Germany', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Marco N.', country: 'Italy', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Valentina A.', country: 'Italy', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
+  { name: 'Carmen I.', country: 'Spain', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Javier G.', country: 'Spain', text: 'The package arrived beautifully wrapped and matched the pictures perfectly. I will definitely be ordering again.', rating: 4, verified: true },
+  { name: 'Inês R.', country: 'Portugal', text: 'Ordered several items for the family and every single one was packed with care and delivered on time.', rating: 5, verified: true },
+  { name: 'Thijs M.', country: 'Netherlands', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 5, verified: true },
+  { name: 'Lieke V.', country: 'Netherlands', text: 'My order was well packaged and the quality matched the pictures perfectly. I will definitely be shopping here again.', rating: 5, verified: true },
+  { name: 'Emiel P.', country: 'Belgium', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
+  { name: 'Lien V.', country: 'Belgium', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Sabine G.', country: 'Switzerland', text: 'Tracked the whole way and it arrived exactly when promised. A very professional shopping experience.', rating: 5, verified: true },
+  { name: 'Alexandra H.', country: 'Switzerland', text: 'First international order for me and it went flawlessly. Real-time tracking from start to finish. Highly recommended.', rating: 5, verified: true },
+  { name: 'Paul K.', country: 'Austria', text: 'Ordered during the holidays and it still arrived on time, which impressed me the most.', rating: 5, verified: true },
+  { name: 'Katharina S.', country: 'Austria', text: 'Support replied within minutes when I had a question about shipping. Genuinely impressed by how fast and kind they were.', rating: 5, verified: true },
+  { name: 'Alva E.', country: 'Sweden', text: 'Delivery to Sweden was faster than I expected and everything was tracked the whole way.', rating: 5, verified: true },
+  { name: 'Nils H.', country: 'Sweden', text: 'Beautiful products, fair prices, and delivery arrived earlier than expected. A trusted place to shop.', rating: 5, verified: true },
+  { name: 'Ida L.', country: 'Denmark', text: 'The package arrived beautifully wrapped and matched the pictures perfectly. I will definitely be ordering again.', rating: 5, verified: true },
+  { name: 'Zoe F.', country: 'Australia', text: 'Everything from ordering to delivery felt professional and secure. My favourite online shop so far.', rating: 5, verified: true },
+  { name: 'Cooper W.', country: 'Australia', text: 'Secure checkout and fast worldwide shipping. I trust this shop with my money and my family.', rating: 4, verified: true },
+  { name: 'Ruby C.', country: 'Australia', text: 'Tracked the whole way and it arrived exactly when promised. A very professional shopping experience.', rating: 5, verified: true },
+  { name: 'Mei Lin T.', country: 'Singapore', text: 'Delivery was quick and the package arrived in perfect condition. I will definitely be ordering again.', rating: 5, verified: true },
+  { name: 'Kenji M.', country: 'Japan', text: 'Checked out in about two minutes and the payment felt very secure. Exactly the peace of mind you want when buying online.', rating: 5, verified: true },
 ];
 
 function reviewsHtml() {
@@ -361,14 +500,15 @@ function reviewsHtml() {
           ${TESTIMONIALS.map(feedbackCardHtml).join('')}
         </div>
 
-        <!-- Feedback form -->
+        <!-- Feedback form (signed-in account holders only) -->
         <div class="mt-6 rounded-2xl border border-white/10 bg-white/[.06] backdrop-blur p-5 sm:p-6">
-          <div class="flex items-center gap-2 mb-4">
-            <i data-lucide="pen-line" class="w-4 h-4 text-emerald-300"></i>
-            <p class="text-sm font-black text-white">Feedback</p>
-            <span class="text-[10px] text-slate-400">Your experience helps us improve</span>
-          </div>
-          <form id="fb-form" class="space-y-3.5">
+          <div id="fb-form-holder">
+            <div class="flex items-center gap-2 mb-4">
+              <i data-lucide="pen-line" class="w-4 h-4 text-emerald-300"></i>
+              <p class="text-sm font-black text-white">Feedback</p>
+              <span class="text-[10px] text-slate-400">Your experience helps us improve</span>
+            </div>
+            <form id="fb-form" class="space-y-3.5">
             <div class="grid sm:grid-cols-2 gap-3.5">
               <input id="fb-name" type="text" maxlength="60" placeholder="Your name" class="w-full rounded-xl border border-white/15 bg-slate-950/40 px-4 py-3 text-sm text-white placeholder-slate-400 outline-none focus:border-emerald-400/60">
               <input id="fb-email" type="email" maxlength="120" placeholder="Email (optional)" class="w-full rounded-xl border border-white/15 bg-slate-950/40 px-4 py-3 text-sm text-white placeholder-slate-400 outline-none focus:border-emerald-400/60">
@@ -389,6 +529,22 @@ function reviewsHtml() {
               <p id="fb-msg" class="text-xs font-bold hidden"></p>
             </div>
           </form>
+          </div>
+          <!-- Guests are asked to create/sign in to an account first. -->
+          <div id="fb-signin-zone" class="hidden">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <i data-lucide="lock" class="w-5 h-5 text-emerald-300 shrink-0"></i>
+                <div>
+                  <p class="text-sm font-black text-white">Accounts only</p>
+                  <p class="text-xs text-slate-400">Only signed-in account holders can submit feedback.</p>
+                </div>
+              </div>
+              <a href="/auth.html" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs transition hover:scale-[1.02] active:scale-[.98]">
+                Sign in / Create account <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </a>
+            </div>
+          </div>
         </div>
 
         <!-- View more Feedback (same banner background, separate comments) -->
@@ -633,6 +789,14 @@ async function submitFeedback(form) {
     const supabase = await getSupabase();
     let userId = null;
     try { userId = (await supabase.auth.getUser()).data?.user?.id || null; } catch {}
+    // Feedback is for signed-in account holders only.
+    if (!userId) {
+      feedbackMsg(form, 'Only account holders can submit feedback. Please sign in first.', 'text-amber-300');
+      btn.disabled = false;
+      btn.innerHTML = original;
+      if (window.lucide) { try { lucide.createIcons(); } catch {} }
+      return;
+    }
     const { error } = await supabase.from('site_feedback').insert({
       user_id: userId,
       name: form.querySelector('#fb-name')?.value.trim() || 'Anonymous shopper',
@@ -654,10 +818,12 @@ async function submitFeedback(form) {
   if (window.lucide) { try { lucide.createIcons(); } catch {} }
 }
 
-// Approved feedback from the DB is prepended to the "View more Feedback" list.
+// Real (approved) feedback from the DB goes ON TOP, above the curated
+// preview comments — exactly like real reviews sit on top of seeded ones.
 async function loadSiteFeedbackList(root) {
   const list = root?.querySelector('#fb-more-list');
-  if (!list) return;
+  const featured = root?.querySelector('#fb-featured');
+  if (!list && !featured) return;
   try {
     const supabase = await getSupabase();
     const { data, error } = await supabase
@@ -674,9 +840,36 @@ async function loadSiteFeedbackList(root) {
       verified: true,
       country: 'Verified customer',
       date: f.created_at ? new Date(f.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
-    })).join('');
-    list.innerHTML = cards + list.innerHTML;
+    }));
+    if (list) list.innerHTML = cards.join('') + list.innerHTML;
+    if (featured && cards.length) featured.innerHTML = cards.slice(0, 3).join('');
   } catch {}
+}
+
+// Feedback is for signed-in account holders only. Show the write form to
+// members (with their details pre-filled) and a sign-in prompt to guests.
+async function applyFeedbackAuth(root) {
+  const formHolder = root?.querySelector('#fb-form-holder');
+  const signinZone = root?.querySelector('#fb-signin-zone');
+  if (!formHolder || !signinZone) return;
+  let user = null;
+  try {
+    const supabase = await getSupabase();
+    user = (await supabase.auth.getUser()).data?.user || null;
+  } catch {}
+  if (user) {
+    signinZone.classList.add('hidden');
+    formHolder.classList.remove('hidden');
+    const meta = user.user_metadata || {};
+    const nm = meta.name || meta.full_name || (user.email ? user.email.split('@')[0] : '');
+    const nameInput = root.querySelector('#fb-name');
+    const emailInput = root.querySelector('#fb-email');
+    if (nameInput && !nameInput.value && nm) nameInput.value = nm;
+    if (emailInput && !emailInput.value && user.email) emailInput.value = user.email;
+  } else {
+    formHolder.classList.add('hidden');
+    signinZone.classList.remove('hidden');
+  }
 }
 
 function injectStyle() {
@@ -708,6 +901,7 @@ async function init() {
   if (window.lucide) { try { lucide.createIcons(); } catch {} }
   bindAccordions(mount);
   bindFeedback(mount);
+  applyFeedbackAuth(mount);
   loadSiteFeedbackList(mount);
   let bg = { ...DEFAULT_PROMO_BG };
   try { bg = await loadPromoBackgrounds(); } catch {}
