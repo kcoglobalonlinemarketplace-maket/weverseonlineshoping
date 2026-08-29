@@ -26,9 +26,9 @@ ALTER TABLE public.review_likes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "review_likes_public_read" ON public.review_likes;
 CREATE POLICY "review_likes_public_read" ON public.review_likes FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "review_likes_public_insert" ON public.review_likes FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "review_likes_public_insert" ON public.review_likes;
 
-DROP POLICY IF EXISTS "review_likes_owner_delete" ON public.review_likes FOR DELETE USING (true);
+DROP POLICY IF EXISTS "review_likes_owner_delete" ON public.review_likes;
 
 GRANT SELECT, INSERT, DELETE ON public.review_likes TO anon, authenticated, service_role;
 
@@ -49,6 +49,6 @@ ALTER TABLE public.review_comments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "review_comments_public_read" ON public.review_comments;
 CREATE POLICY "review_comments_public_read" ON public.review_comments FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "review_comments_public_insert" ON public.review_comments FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "review_comments_public_insert" ON public.review_comments;
 
 GRANT SELECT, INSERT ON public.review_comments TO anon, authenticated, service_role;
