@@ -5084,10 +5084,10 @@ window.openGeneralAiScanner = async function(onlyMissingPrice = false) {
           <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> ${_scannerOnlyMissingPrice ? 'Scan products with no price and auto-fill them' : 'Scan your products with AI'}</p>
           <p class="text-[11px] text-gray-500">${_scannerOnlyMissingPrice
             ? 'Every product in your Product Manager that still has no price is scanned: the AI reads its existing photos, identifies the item, assigns a fair current market price, completes the specifications and writes the description. Everything is filled and published automatically — no questions asked. Duplicates are skipped silently.'
-            : 'The scanner works on the products already in your Product Manager — no image upload needed. Press SCAN ALL WITH AI and it reads each product\'s existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Everything is filled and published automatically — no questions asked. Duplicates are skipped silently.'}</p>
+            : 'The scanner works on the products already in your Product Manager — no image upload needed. It reads each product\'s existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Everything is filled and published automatically — no questions asked. Duplicates are skipped silently.'}</p>
           <div class="flex items-center gap-2 text-[11px] font-bold text-gray-300 bg-white/5 border border-violet-500/20 rounded-xl px-3 py-2.5">
-            <i data-lucide="package" class="w-4 h-4 text-violet-400 shrink-0"></i>
-            <span>${products.length} product${products.length === 1 ? '' : 's'} ready to scan in the Product Manager.</span>
+            <i data-lucide="scan-search" class="w-4 h-4 text-violet-400 animate-pulse shrink-0"></i>
+            <span>${products.length} product${products.length === 1 ? '' : 's'} ready to scan. Starting automatically now…</span>
           </div>
           <button type="button" id="btn-scanner-scan" onclick="scanGeneralWithAI()" class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
             <i data-lucide="scan-search" class="w-4 h-4"></i> ${_scannerOnlyMissingPrice ? 'SCAN & FILL ALL PRICES' : 'SCAN ALL WITH AI'}
@@ -5101,6 +5101,10 @@ window.openGeneralAiScanner = async function(onlyMissingPrice = false) {
       </div>
     </div>`);
   if (window.lucide) lucide.createIcons();
+  // Start the scan BY ITSELF — no button tap needed. The modal is already open
+  // so the status element exists; the guard inside scanGeneralWithAI prevents
+  // double-starts, and the auto chain fills + publishes every product on its own.
+  window.scanGeneralWithAI();
 };
 
 // â”€â”€ Timeout-safe scan guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
