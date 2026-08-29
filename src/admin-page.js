@@ -3775,7 +3775,17 @@ const scannerReviewId = 'scanner-scan-status';
 let _autoScannerActive = false;
 let _autoScannerPublished = 0;
 let _autoScannerErrors = 0;
-let _autoScannerTotal = 0;
+
+// One-by-one streaming scan state: the General AI Scanner processes products
+// sequentially and shows a one-click Publish button on every card THE MOMENT
+// it is scanned, while the remaining products keep scanning in the background.
+let _streamScanActive = false;
+let _streamScanTotal = 0;
+let _streamScanScanned = 0;
+let _streamScanPublished = 0;
+let _streamScanErrors = 0;
+let _streamScanDuplicatesSkipped = 0;
+let _streamScanFallbacks = 0;
 
 function imagesForProduct(p, images) {
   const idxs = Array.isArray(p.image_indices) ? p.image_indices : [];
@@ -3783,7 +3793,7 @@ function imagesForProduct(p, images) {
   return out.length ? out : images;
 }
 
-function scanReviewCardHtml(p, i, isDuplicate) {
+function scanReviewCardHtml(p, i, isDuplicate, showPublish) {
   const norm = normalizeDetectedCategory(p.category);
   const isProperty = p.listing_type === 'property' || (norm && norm.listing_type === 'property');
   const cat = !isProperty ? (norm.category || p.category || 'Other') : 'Real Estate';
@@ -3809,6 +3819,7 @@ function scanReviewCardHtml(p, i, isDuplicate) {
       <span class="text-[11px] text-gray-400">${isProperty ? 'Real Estate' : esc(cat)} &middot; ${(p.image_indices || []).length || 1} image(s)</span>
     </div>
     <div class="flex flex-wrap gap-2">
+      ${showPublish ? `<button type="button" onclick="scanStreamPublish(${i})" class="btn-press px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition" title="Open this product, fill it with the AI scan and publish it right now with one click">Publish Now</button>` : ''}
       <button type="button" onclick="scanReviewContinue(${i})" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Continue to ${isProperty ? 'Properties Manager' : 'its form'}</button>
       <button type="button" onclick="scanReviewEdit(${i})" class="btn-press px-4 py-2 bg-gray-700/60 hover:bg-gray-600 text-gray-200 text-xs font-bold rounded-lg transition">Edit</button>
       <button type="button" onclick="scanReviewDelete(${i})" class="btn-press px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition" title="Permanently delete this product from the database">Delete</button>
@@ -3819,6 +3830,7 @@ function scanReviewCardHtml(p, i, isDuplicate) {
 }
 
 window.scanReviewRender = function() {
+  if (scanReviewEntry === 'scanner-scan-status') { scanStreamRender(); return; }
   const el = document.getElementById(scanReviewEntry);
   if (!el) return;
   el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
@@ -4914,6 +4926,11 @@ async function scannerSourceProducts() {
 window.returnToScanReviewAfterSave = function(activeIndex = scanReviewActiveIndex) {
   scanReviewActiveIndex = -1;
   if (!scanReviewProducts.length) {
+    if (_streamScanActive) {
+      openStreamReviewModal('Published! The scanner keeps working on the remaining products - new results will appear here.');
+      renderProducts();
+      return true;
+    }
     if (_autoScannerActive) {
       _autoScannerActive = false;
       const el = document.getElementById('scanner-scan-status');
@@ -4929,8 +4946,16 @@ window.returnToScanReviewAfterSave = function(activeIndex = scanReviewActiveInde
   }
   if (Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < scanReviewProducts.length) {
     scanReviewProducts.splice(activeIndex, 1);
+    if (_streamScanActive && scanReviewEntry === 'scanner-scan-status') _streamScanPublished++;
   }
   if (!scanReviewProducts.length) {
+    if (_streamScanActive) {
+      scanReviewImages = [];
+      scanReviewSourceProducts = {};
+      openStreamReviewModal('Published! The scanner keeps working on the remaining products - new results will appear here.');
+      renderProducts();
+      return true;
+    }
     scanReviewImages = [];
     scanReviewSourceProducts = {};
     if (_autoScannerActive) {
@@ -5110,165 +5135,231 @@ if (!products.length) {
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
   setStatus(`Detecting and completing ${products.length} product${products.length === 1 ? '' : 's'}â€¦`, 'text-blue-300');
 
+  // ── ONE-BY-ONE STREAMING SCAN ─────────────────────────────────────
+  // Products are processed SEQUENTIALLY. The moment a product finishes
+  // scanning, its card is added to the list and rendered immediately with a
+  // one-click Publish button — while the scanner keeps working on the rest
+  // in the background. Publishing never waits for (and never blocks) the run.
+  _streamScanActive = true;
+  _streamScanTotal = products.length;
+  _streamScanScanned = 0;
+  _streamScanPublished = 0;
+  _streamScanErrors = 0;
+  _streamScanDuplicatesSkipped = 0;
+  _streamScanFallbacks = 0;
+  _autoScannerActive = false;
+  scanReviewProducts = [];
+  scanReviewImages = [];
+  scanReviewSourceProducts = {};
+  scanReviewEntry = 'scanner-scan-status';
+  scanStreamRender();
+
   const images = [];
-  const detections = [];
-  const sources = {};
+  let sources = {};
   let scannedCount = 0;
   let failedCount = 0;
-  const total = products.length;
-  // â”€â”€ Duplicate-image handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // The FIRST time a product's photos are all duplicates of photos already
-  // scanned, ONE "Continue" button is shown. Pressing it ONCE skips every
-  // remaining duplicate warning automatically â€” processing (AI detection,
-  // category selection, saving flow) continues for every remaining product.
-  // Duplicate photos are never deleted or replaced; the duplicate product is
-  // simply not re-scanned (the original product with those photos is kept).
-  const seenImages = new Set();
-  let duplicatesSkipped = 0;
   let fallbacks = 0;
-  // â”€â”€ FAST concurrent scanning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Several products are scanned AT THE SAME TIME (not one after another), so a
-  // full catalog scan takes a fraction of the time. Each scan processes ALL of
-  // the product's photos/pages (batched inside the AI client â€” nothing skipped)
-  // and is bounded by a generous timeout so a slow call can never hold up the
-  // whole batch.
-  // PACED: only TWO products scan at once now. Every AI call is rate-limited
-  // through the global pacer, so higher concurrency would just queue anyway —
-  // two workers keep the pipeline full without bursting free-tier limits.
-  const SCAN_CONCURRENCY = 2;
+  let duplicatesSkipped = 0;
+  const seenImages = new Set();
   const SCAN_TIMEOUT_MS = 120000;
-  let cursor = 0;
-  let doneCount = 0;
-  const scanOne = async (prod) => {
-    // COMPLETENESS: every photo/page of the product is scanned â€” no slicing.
+
+  const streamRender = () => {
+    scanReviewImages = images.slice();
+    scanReviewSourceProducts = sources;
+    if (typeof scanStreamRender === 'function') scanStreamRender();
+  };
+
+  // COMPLETENESS: every photo/page of each product is scanned; nothing sliced.
+  for (let i = 0; i < products.length; i++) {
+    const prod = products[i];
     const prodImages = (prod.images || []).filter(Boolean);
-    if (!prodImages.length) return;
-    // Register this product's photos, then check whether ALL of them were
-    // already scanned on an earlier product (a full duplicate).
-    const keys = prodImages.map(u => String(u || '').trim()).filter(Boolean);
-    const allSeen = keys.length > 0 && keys.every(k => seenImages.has(k));
-    for (const k of keys) seenImages.add(k);
-    if (allSeen) {
-      // Duplicate photos of an already-scanned product â€” skip silently and keep
-      // going with the rest. No prompt, nothing deleted or replaced.
-      duplicatesSkipped++;
-      return; // skip re-scanning this duplicate; do NOT touch its images
+    if (prodImages.length) {
+      const keys = prodImages.map(u => String(u || '').trim()).filter(Boolean);
+      const allSeen = keys.length > 0 && keys.every(k => seenImages.has(k));
+      for (const k of keys) seenImages.add(k);
+      if (allSeen) { duplicatesSkipped++; _streamScanScanned++; streamRender(); continue; }
+      const base = images.length;
+      images.push(...prodImages);
+      const indices = prodImages.map((_, ix) => base + ix);
+      let list = [];
+      let detErr = null;
+      try {
+        const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: AI_PRODUCT_SCANNER.maxImages }), SCAN_TIMEOUT_MS);
+        list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
+      } catch (e) { detErr = e; }
+      // NEVER REJECT: if the AI could not read this product (unclear photo,
+      // timeout, service hiccup), still include it using saved details so the
+      // owner reviews it and it is always saveable & publishable.
+      if (!list.length) {
+        if (detErr) failedCount++;
+        list = [{
+          detected_name: prod.title || prod.property_id || 'Product',
+          category: prod.category || 'Other',
+          listing_type: prod.listing_type || 'product',
+          brand: prod.brand || null,
+          model: (prod.specifications && prod.specifications.model) || prod.model || null,
+          confidence: 'medium',
+          _photoNotRead: true,
+          _fallbackReason: detErr ? 'scan-failed' : 'no-identification',
+        }];
+        fallbacks++;
+      }
+      scannedCount++;
+      sources[prod.property_id] = prod;
+      for (const d of list) {
+        scanReviewProducts.push({
+          ...d,
+          property_id: prod.property_id,
+          image_indices: (Array.isArray(d.image_indices) && d.image_indices.length ? d.image_indices.map(ix => indices[Number(ix)]).filter(v => v !== undefined) : indices),
+          detected_name: d.detected_name || prod.title || prod.property_id,
+          category: d.category || prod.category || 'Other',
+          listing_type: d.listing_type || prod.listing_type || 'product',
+        });
+      }
     }
-    // No await between reading images.length and pushing, so this is race-free.
-    const base = images.length;
-    images.push(...prodImages);
-    const indices = prodImages.map((_, i) => base + i);
-    let list = [];
-    let detErr = null;
-    try {
-      const detection = await aiScanTimeout(aiClient.detectProducts(prodImages, { category: prod.category || '', maxImages: AI_PRODUCT_SCANNER.maxImages }), SCAN_TIMEOUT_MS);
-      list = (detection && detection.identified !== false && Array.isArray(detection.products)) ? detection.products : [];
-    } catch (e) { detErr = e; }
-    // NEVER REJECT: if the AI could not read this product (unclear photo, timeout,
-    // service hiccup), still include it in the review list using the product's own
-    // saved info and photos. The owner reviews it, the AI completes specs/price on
-    // Continue, and the product is always saveable & publishable.
-    // HONESTY: these cards are explicitly tagged _photoNotRead so the UI (and
-    // the final report) can say plainly that no photo reading happened for them.
-    if (!list.length) {
-      if (detErr) failedCount++;
-      list = [{
-        detected_name: prod.title || prod.property_id || 'Product',
-        category: prod.category || 'Other',
-        listing_type: prod.listing_type || 'product',
-        brand: prod.brand || null,
-        model: (prod.specifications && prod.specifications.model) || prod.model || null,
-        confidence: 'medium',
-        _photoNotRead: true,
-        _fallbackReason: detErr ? 'scan-failed' : 'no-identification',
-      }];
-      fallbacks++;
-    }
-    scannedCount++;
-    sources[prod.property_id] = prod;
-    for (const d of list) {
-      detections.push({
-        ...d,
-        property_id: prod.property_id,
-        image_indices: (Array.isArray(d.image_indices) && d.image_indices.length ? d.image_indices.map(i => indices[Number(i)]).filter(i => i !== undefined) : indices),
-        detected_name: d.detected_name || prod.title || prod.property_id,
-        category: d.category || prod.category || 'Other',
-        listing_type: d.listing_type || prod.listing_type || 'product',
-      });
-    }
-  };
-  const worker = async () => {
-    while (cursor < products.length) {
-      const prod = products[cursor++];
-      setStatus(`Scanning ${doneCount + 1} of ${total} product${total === 1 ? '' : 's'} (fast parallel mode)â€¦`, 'text-blue-300');
-      await scanOne(prod);
-      doneCount++;
-      if (doneCount < total) setStatus(`Scanned ${doneCount} of ${total} â€” continuingâ€¦`, 'text-blue-300');
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(SCAN_CONCURRENCY, Math.max(1, products.length)) }, worker));
+    _streamScanScanned = Math.min(_streamScanScanned + 1, _streamScanTotal);
+    streamRender();
+  }
+  _streamScanActive = false;
   if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
-  if (!detections.length) {
-    setStatus(failedCount
-      ? `The scan could not read any product (${failedCount} scan${failedCount > 1 ? 's' : ''} failed or timed out${duplicatesSkipped ? `; ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}). Make sure your products have clear photos and that your free Gemini key is active in AI Settings, then try again.`
-      : `No product could be identified from the photos on your existing products${duplicatesSkipped ? ` (${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped)` : ''}. Make sure each product has clear photos, then try again.`, 'text-amber-300');
-    showToast('No products could be scanned.', 'error');
-    return;
-  }
-
-  // âœ… SUCCESS â€” the scan stops here with a review list. Press "Continue with
-  // ALL" to save & publish every product in one click, or handle cards
-  // one-by-one. Any image count is fine; 24 is only the gallery maximum.
-  scanReviewProducts = detections;
-  scanReviewImages = images;
-  scanReviewSourceProducts = sources;
-  scanReviewEntry = 'scanner-scan-status';
-  scanReviewRender();
-  // HONEST REPORT: say exactly how much real photo reading happened, and why
-  // anything that fell back did so. "Success" can no longer hide placeholders.
-  const rep = aiClient.sessionReport();
-  const quotaHit = Date.now() < (aiClient._geminiQuotaUntil || 0);
-  const topIssue = rep.issues.length ? rep.issues[rep.issues.length - 1] : null;
+  const rep = aiClient.sessionReport ? aiClient.sessionReport() : { issues: [], providers: [] };
   const summaryBits = [
     `${scannedCount} product${scannedCount === 1 ? '' : 's'} processed`,
     duplicatesSkipped ? `${duplicatesSkipped} duplicate${duplicatesSkipped > 1 ? 's' : ''} skipped` : '',
     fallbacks ? `${fallbacks} filled from saved details (photo NOT read)` : '',
     failedCount ? `${failedCount} scan error${failedCount > 1 ? 's' : ''}` : '',
-    rep.providers.map(p => `${p.count} by ${p.name}`).join(', '),
+    (rep.providers || []).map(p => `${p.count} by ${p.name}`).join(', '),
   ].filter(Boolean);
-  // ── DUPLICATE DETECTION: check for same products before publishing ──
-  const dupGroups = findDuplicateGroups(detections);
-  if (dupGroups.length) {
-    const totalDupes = dupGroups.reduce((s, g) => s + g.length - 1, 0);
-    _dupReviewGroups = dupGroups;
-    _dupReviewRemaining = dupGroups;
-    _dupReviewAllDetections = detections.slice();
-    setStatus(`
-      <p class="font-bold text-amber-300">Scan finished: ${summaryBits.join(' · ')}.</p>
-      <p class="text-[11px] text-amber-300 mt-1">Found ${totalDupes} duplicate listing${totalDupes > 1 ? 's' : ''} in ${dupGroups.length} group${dupGroups.length > 1 ? 's' : ''} — review below before publishing.</p>
-    `, 'text-amber-300');
-    showToast(`Found ${totalDupes} duplicate product${totalDupes > 1 ? 's' : ''} — review before publishing`, 'info');
-    renderDuplicateReview();
-    return;
+  if (scanReviewProducts.length) {
+    const statusEl = document.getElementById('scanner-scan-status');
+    if (statusEl) { statusEl.classList.remove('text-blue-300', 'text-amber-300'); statusEl.classList.add('text-gray-100'); }
+    showToast('Scan finished \u2014 publish each card below.', 'info');
+    streamRender();
+  } else {
+    setStatus(failedCount
+      ? `The scan could not read any product (${failedCount} scan${failedCount > 1 ? 's' : ''} failed or timed out${duplicatesSkipped ? `; ${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped` : ''}). Make sure your products have clear photos and that your free Gemini key is active in AI Settings, then try again.`
+      : `No product could be identified from the photos on your existing products${duplicatesSkipped ? ` (${duplicatesSkipped} duplicate product${duplicatesSkipped > 1 ? 's' : ''} skipped)` : ''}. Make sure each product has clear photos, then try again.`, 'text-amber-300');
+    showToast('No products could be scanned.', 'error');
   }
-  // ── No duplicates — proceed to autonomous auto-publish ──
-  scanReviewProducts = detections;
-  scanReviewImages = images;
-  scanReviewSourceProducts = sources;
-  scanReviewEntry = 'scanner-scan-status';
-  _autoScannerActive = true;
-_autoScannerPublished = 0;
-  _autoScannerErrors = 0;
-  _autoScannerTotal = detections.length;
-  setStatus(`
-    <p class="font-bold text-blue-300">Scan finished: ${summaryBits.join(' · ')}.</p>
-    <p class="text-[11px] text-blue-300 mt-1">Auto-publishing ${detections.length} product${detections.length > 1 ? 's' : ''}${_scannerOnlyMissingPrice ? ' with AI-filled prices' : ''}…</p>
-  `, 'text-blue-300');
-  showToast(`Scan done — auto-publishing ${detections.length} product${detections.length > 1 ? 's' : ''}â€¦`, 'info');
-  autoScanOne(detections[0], 0);
 };
 
+
+// ── One-by-one streaming renderer ─────────────────────────────────────
+// Renders the live list of scanned products inside #scanner-scan-status.
+// Works for the General AI Scanner AND the AI Price Scanner (missing prices).
+window.scanStreamRender = function() {
+  const el = document.getElementById('scanner-scan-status');
+  if (!el) return;
+  el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+  el.classList.add('text-gray-100');
+  const running = _streamScanActive;
+  const total = _streamScanTotal;
+  const scanned = Math.min(_streamScanScanned, _streamScanTotal);
+  const published = _streamScanPublished;
+  const ready = scanReviewProducts.length;
+  const dupCounts = {};
+  for (const p of scanReviewProducts) {
+    const brand = normalizeDupKey(p.brand);
+    const model = normalizeDupKey(p.model);
+    const name = normalizeDupKey(p.detected_name);
+    const key = (brand && model) ? `${brand}::${model}` : (name || `${brand}::${model}`);
+    if (key) dupCounts[key] = (dupCounts[key] || 0) + 1;
+  }
+  const head = running
+    ? `<p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin text-violet-400"></i> Scanning ${scanned} of ${total} \u2014 results appear below as each product is scanned.</p>`
+    : `<p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4 text-violet-400"></i> ${scanned} product${scanned === 1 ? '' : 's'} processed${published ? `, ${published} published` : ''}${_streamScanErrors ? `, ${_streamScanErrors} error${_streamScanErrors > 1 ? 's' : ''}` : ''}${_streamScanDuplicatesSkipped ? `, ${_streamScanDuplicatesSkipped} duplicate${_streamScanDuplicatesSkipped > 1 ? 's' : ''} skipped` : ''}.</p>`;
+  let html = `<div class="space-y-3">${head}`;
+  if (ready) {
+    html += `<p class="text-[11px] text-gray-400">Each card below can be published with one click \u2014 press Publish Now and the scanner keeps working on the rest in the background.</p>`;
+    html += scanReviewProducts.map((p, i) => {
+      const brand = normalizeDupKey(p.brand);
+      const model = normalizeDupKey(p.model);
+      const name = normalizeDupKey(p.detected_name);
+      const key = (brand && model) ? `${brand}::${model}` : (name || `${brand}::${model}`);
+      return scanReviewCardHtml(p, i, key && dupCounts[key] > 1, true);
+    }).join('');
+  } else if (running) {
+    html += `<p class="text-[11px] text-gray-500">Waiting for the first product to finish scanning \u2026</p>`;
+  } else if (!_streamScanTotal) {
+    html += `<p class="text-[11px] text-gray-500">Nothing to scan yet.</p>`;
+  } else if (!published && !_streamScanErrors) {
+    html += `<p class="text-[11px] text-gray-500">No product could be identified from the photos on your existing products. Make sure each product has clear photos, then try again.</p>`;
+  } else {
+    html += `<p class="text-[11px] text-gray-500">All detected products were handled \u2014 nothing left to publish.</p>`;
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+  if (window.lucide) lucide.createIcons();
+};
+
+// One-click Publish: opens the product form for a scanned card, fills it with
+// the AI detection, then auto-publishes. The background stream keeps running
+// and keeps adding new cards while this is open.
+window.scanStreamPublish = async function(i) {
+  const det = scanReviewProducts[i];
+  if (!det) return;
+  scanReviewActiveIndex = i;
+  const images = imagesForProduct(det, scanReviewImages);
+  const norm = normalizeDetectedCategory(det.category);
+  const isProperty = det.listing_type === 'property' || (norm && norm.listing_type === 'property');
+  const cat = isProperty ? 'Real Estate' : (norm.category || det.category || 'Other');
+  try {
+    if (isProperty) { _streamScanErrors++; scanReviewProducts.splice(i, 1); scanStreamRender(); return; }
+    let existing = det.property_id ? scanReviewSourceProducts[det.property_id] : null;
+    if (existing && existing.specifications && typeof existing.specifications === 'object') {
+      existing = { ...existing, ...existing.specifications };
+    }
+    showAddProductStep2(cat, existing ? { ...existing, images } : { images });
+    await new Promise(r => setTimeout(r, 250));
+    await completeScanAndFill(det, images, cat);
+    const form = document.getElementById('product-form');
+    const publishBtn = form ? form.querySelector('[type=submit][name=action][value=publish]') : null;
+    if (publishBtn) {
+      scanReviewActiveIndex = i;
+      publishBtn.click();
+    } else {
+      _streamScanErrors++;
+      closeProductFormModal();
+      scanReviewProducts.splice(i, 1);
+      scanStreamRender();
+    }
+  } catch (err) {
+    _streamScanErrors++;
+    closeProductFormModal();
+    scanReviewProducts.splice(i, 1);
+    scanStreamRender();
+    showToast('Could not publish this product: ' + String(err && err.message || err), 'error');
+  }
+};
+
+// Opens the scanner review modal (streaming edition). Used after a successful
+// Save & Publish so the owner returns to the live list while the scan runs.
+function openStreamReviewModal(successMsg) {
+  scanReviewEntry = 'scanner-scan-status';
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> ${_scannerOnlyMissingPrice ? 'AI Price Scanner' : 'General AI Scanner'}</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">x Close</button>
+        </div>
+        <div class="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-3 mb-3">
+          <p class="text-xs font-bold text-emerald-300 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> ${successMsg || 'Saved & published! Select the next product below to keep going.'}</p>
+        </div>
+        <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3">
+          <label class="flex items-start gap-2 text-[11px] text-gray-400 select-none cursor-pointer">
+            <input type="checkbox" class="accent-violet-500 mt-0.5" ${scanVerifyPassEnabled() ? 'checked' : ''} onchange="setScanVerifyPass(this.checked)">
+            <span>Second-pass verification for remaining scans \u2014 more accurate, uses about twice the free AI quota.</span>
+          </label>
+          <div id="scanner-scan-status" class="hidden text-xs font-medium"></div>
+        </div>
+      </div>
+    </div>`);
+  scanStreamRender();
+  if (window.lucide) lucide.createIcons();
+}
+window.openStreamReviewModal = openStreamReviewModal;
 window.saveProduct = async function(e, category, existingId) {
   e.preventDefault();
   const form = e.target;
