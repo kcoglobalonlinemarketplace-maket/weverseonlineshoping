@@ -2682,31 +2682,107 @@ window.handleImageUpload = async function(e) { await processImageFiles(e.target.
 
 async function handleFileDrop(files) { await processImageFiles(files); }
 
+// Run async work on a list with limited parallelism while keeping the original
+// order of results (parallel uploads: 3 at a time, so multi-file is fast but
+// big videos never flood the network or memory).
+async function mapWithConcurrency(items, concurrency, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(Math.max(concurrency, 1), items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++;
+      try { results[i] = await fn(items[i], i); } catch { results[i] = null; }
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+// Timeout wrapper so a stalled connection can never leave the "Uploading…"
+// spinner spinning forever. On timeout it resolves with an error object so
+// uploadImageFile takes its fallback path (embedded image / blob preview).
+function uploadWithTimeout(bucket, path, file, opts, timeoutMs = 90000) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve({ error: { message: `Upload timed out after ${Math.round(timeoutMs / 1000)}s — the network is too slow for this file size.` } });
+    }, timeoutMs);
+    supabase.storage.from(bucket).upload(path, file, opts).then((res) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(res);
+    });
+  });
+}
+
+// Client-side compression so photos upload fast: a 5–15MB phone photo becomes
+// a ~150–400KB JPEG. Videos and PDFs are never compressed. Returns null when
+// the file can't be re-encoded (caller then uploads the original).
+async function compressImageForUpload(file, maxDim = 1920, quality = 0.82) {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = objectUrl; });
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+    if (!blob || !blob.size) return null;
+    const name = (file.name || 'photo.jpg').replace(/\.[^.]+$/i, '') + '.jpg';
+    return new File([blob], name, { type: 'image/jpeg' });
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 async function processImageFiles(files) {
   const preview = document.getElementById('image-preview');
   if (!preview) return;
+  const valid = [];
   for (const file of files) {
     const isPdf = file.type === 'application/pdf' || looksLikePdf(file.name);
     const isVid = isVideoFile(file);
     if (!file.type.startsWith('image/') && !isPdf && !isVid) continue;
     if (isVid && file.size > 100 * 1024 * 1024) { showToast('Video must be under 100 MB.', 'error'); continue; }
+    valid.push(file);
+  }
+  if (!valid.length) return;
+
+  // One spinner per file, in selection order.
+  const loadingDivs = valid.map(() => {
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'img-thumb uploading';
     loadingDiv.style.cssText = 'min-width:90px;min-height:80px;';
     loadingDiv.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-gray-400"><div class="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mb-1.5"></div><span class="text-[10px] font-bold">Uploading…</span></div>`;
     preview.appendChild(loadingDiv);
-    const url = await uploadImageFile(file);
-    loadingDiv.remove();
-    if (url) {
-      const i = preview.children.length;
-      const div = document.createElement('div');
-      div.innerHTML = imageThumbHtml(url, i);
-      preview.appendChild(div.firstElementChild);
-      rebuildImageInputs();
-    } else {
-      showToast(`Failed to upload ${isVid ? 'video' : 'image'}. Try a smaller file.`, 'error');
-    }
-  }
+    return loadingDiv;
+  });
+
+  // Upload concurrently (3 at a time), preserving selection order.
+  const urls = await mapWithConcurrency(valid, 3, (file) => uploadImageFile(file));
+
+  // Swap spinners for real thumbnails in the same order.
+  const thumbs = [];
+  valid.forEach((file, i) => {
+    const loadingDiv = loadingDivs[i];
+    if (loadingDiv) loadingDiv.remove();
+    const url = urls[i];
+    if (!url) { showToast(`Failed to upload ${isVideoFile(file) ? 'video' : 'image'}. Try a smaller file.`, 'error'); return; }
+    const div = document.createElement('div');
+    div.innerHTML = imageThumbHtml(url, i);
+    const el = div.firstElementChild;
+    if (el) thumbs.push(el);
+  });
+  thumbs.forEach((el) => preview.appendChild(el));
+  rebuildImageInputs();
   updateCoverBadge();
   updateGalleryCounter();
   if (window.lucide) lucide.createIcons();
@@ -2715,12 +2791,25 @@ async function processImageFiles(files) {
 async function uploadImageFile(file) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    const ext = (file.name || 'photo.jpg').split('.').pop() || 'jpg';
+    const isImg = String(file.type || '').startsWith('image/');
+    const isVid = isVideoFile(file);
+    // Images are compressed client-side BEFORE the network upload, so a photo
+    // that is 5–15MB becomes ~200–400KB and uploads almost instantly. This is
+    // exactly why "another place" in the app uploads fast while Add Product
+    // hung: the old code uploaded the raw full-size photo (and every video
+    // sequentially) with no compression, no progress and no timeout.
+    let payload = file;
+    if (isImg && file.size > 250 * 1024) {
+      const smaller = await compressImageForUpload(file);
+      if (smaller && smaller.size) payload = smaller;
+    }
+    const ext = payload.type === 'image/jpeg' ? 'jpg' : ((file.name || 'photo.jpg').split('.').pop() || 'jpg');
     const base = `products/${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const timeoutMs = isVid ? 180000 : 90000;
     // Try twice (fresh unique path each time) so a storage hiccup never loses a photo.
     for (let attempt = 0; attempt < 2; attempt++) {
       const path = `${base}${attempt ? '-' + Math.random().toString(36).slice(2, 7) : ''}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: false });
+      const { error: upErr } = await uploadWithTimeout('product-images', path, payload, { contentType: payload.type || file.type, upsert: false }, timeoutMs);
       if (!upErr) {
         const { data } = supabase.storage.from('product-images').getPublicUrl(path);
         if (data && data.publicUrl) return data.publicUrl;
@@ -2733,7 +2822,7 @@ async function uploadImageFile(file) {
     // image ALWAYS shows in the showroom â€” never a temporary blob: URL, which
     // would be silently dropped when the product is saved & published.
     try {
-      const embedded = await aiClient._downscaleImage(file, 1200);
+      const embedded = await aiClient._downscaleImage(payload, 1200);
       if (embedded) return embedded;
     } catch { /* fall through */ }
     return URL.createObjectURL(file);
