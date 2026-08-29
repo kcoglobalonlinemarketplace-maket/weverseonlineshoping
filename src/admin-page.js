@@ -976,6 +976,9 @@ async function renderProducts() {
               <button onclick="openGeneralAiScanner()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition shadow-xl shadow-violet-700/25" title="Scan product photos with AI â€” detect, analyze and add products to your manager">
                 <i data-lucide="scan-search" class="w-5 h-5"></i> General AI Scanner
               </button>
+              <button onclick="openGeneralAiScanner(true)" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition shadow-xl shadow-amber-700/25" title="Scan every product that has no price â€” AI reads the photo, fills the form and assigns a fair price automatically">
+                <i data-lucide="dollar-sign" class="w-5 h-5"></i> Scan Missing Prices
+              </button>
               <button onclick="clearAllProducts()" class="btn-press flex items-center justify-center gap-2 bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition" title="Delete every product from the manager & database. Your showroom catalog stays.">
                 <i data-lucide="trash-2" class="w-5 h-5"></i> Clear All Products
               </button>
@@ -4819,9 +4822,22 @@ window.scanFirstWithAI = async function() {
 let scannerImages = [];
 let scanReviewSourceProducts = {};
 
+// When true, the General AI Scanner only processes products that still have NO
+// price (the "Scan Missing Prices" mode). Clearing a price in the manager marks
+// it for the next missing-price scan.
+let _scannerOnlyMissingPrice = false;
+
+// A product "has no price" when its price is empty/0/not a number — exactly the
+// products the owner wants the AI to read a photo and assign a fair price to.
+function productHasNoPrice(p) {
+  const n = parseFloat(p && p.price);
+  return !Number.isFinite(n) || n <= 0;
+}
+
 // Every product the Product Manager shows (database + local fallback store),
 // deduped by id. Properties live in the Properties Manager and products
-// without at least one existing photo cannot be scanned visually.
+// without at least one existing photo cannot be scanned visually. In
+// missing-price mode, products that already have a price are excluded.
 async function scannerSourceProducts() {
   const seen = new Set();
   const out = [];
@@ -4829,6 +4845,7 @@ async function scannerSourceProducts() {
     if (!p || !p.property_id || p.listing_type === 'property') return;
     if (seen.has(p.property_id)) return;
     if (!Array.isArray(p.images) || !p.images.length) return;
+    if (_scannerOnlyMissingPrice && !productHasNoPrice(p)) return;
     seen.add(p.property_id);
     out.push(p);
   };
@@ -4965,26 +4982,29 @@ async function autoScanOne(det, index) {
   }
 }
 
-window.openGeneralAiScanner = async function() {
+window.openGeneralAiScanner = async function(onlyMissingPrice = false) {
+  _scannerOnlyMissingPrice = !!onlyMissingPrice;
   scannerImages = [];
   const products = await scannerSourceProducts();
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
-          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> General AI Scanner</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">âœ• Close</button>
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> ${_scannerOnlyMissingPrice ? 'AI Price Scanner' : 'General AI Scanner'}</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">× Close</button>
         </div>
 
         <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3">
-          <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan your products with AI</p>
-          <p class="text-[11px] text-gray-500">The scanner works on the products already in your Product Manager â€” no image upload needed. Press SCAN ALL WITH AI and it reads each product's existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Everything is filled and published automatically \u2014 no questions asked. Duplicates are skipped silently.</p>
+          <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> ${_scannerOnlyMissingPrice ? 'Scan products with no price and auto-fill them' : 'Scan your products with AI'}</p>
+          <p class="text-[11px] text-gray-500">${_scannerOnlyMissingPrice
+            ? 'Every product in your Product Manager that still has no price is scanned: the AI reads its existing photos, identifies the item, assigns a fair current market price, completes the specifications and writes the description. Everything is filled and published automatically — no questions asked. Duplicates are skipped silently.'
+            : 'The scanner works on the products already in your Product Manager — no image upload needed. Press SCAN ALL WITH AI and it reads each product\'s existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Everything is filled and published automatically — no questions asked. Duplicates are skipped silently.'}</p>
           <div class="flex items-center gap-2 text-[11px] font-bold text-gray-300 bg-white/5 border border-violet-500/20 rounded-xl px-3 py-2.5">
             <i data-lucide="package" class="w-4 h-4 text-violet-400 shrink-0"></i>
             <span>${products.length} product${products.length === 1 ? '' : 's'} ready to scan in the Product Manager.</span>
           </div>
           <button type="button" id="btn-scanner-scan" onclick="scanGeneralWithAI()" class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
-            <i data-lucide="scan-search" class="w-4 h-4"></i> SCAN ALL WITH AI
+            <i data-lucide="scan-search" class="w-4 h-4"></i> ${_scannerOnlyMissingPrice ? 'SCAN & FILL ALL PRICES' : 'SCAN ALL WITH AI'}
           </button>
           <label class="flex items-start gap-2 text-[11px] text-gray-400 select-none cursor-pointer">
             <input type="checkbox" class="accent-violet-500 mt-0.5" ${scanVerifyPassEnabled() ? 'checked' : ''} onchange="setScanVerifyPass(this.checked)">
@@ -5015,8 +5035,10 @@ function aiScanTimeout(promise, ms) {
 window.scanGeneralWithAI = async function() {
   let products = [];
   try { products = await aiScanTimeout(scannerSourceProducts(), 15000); } catch { products = []; }
-  if (!products.length) {
-    showToast('No products with photos are in the Product Manager yet â€” add a product first.', 'error');
+if (!products.length) {
+    showToast(_scannerOnlyMissingPrice
+      ? 'No products are missing a price right now — every product already has one.'
+      : 'No products with photos are in the Product Manager yet — add a product first.', 'error');
     return;
   }
   const btn = document.getElementById('btn-scanner-scan');
@@ -5187,12 +5209,12 @@ window.scanGeneralWithAI = async function() {
   scanReviewSourceProducts = sources;
   scanReviewEntry = 'scanner-scan-status';
   _autoScannerActive = true;
-  _autoScannerPublished = 0;
+_autoScannerPublished = 0;
   _autoScannerErrors = 0;
   _autoScannerTotal = detections.length;
   setStatus(`
     <p class="font-bold text-blue-300">Scan finished: ${summaryBits.join(' · ')}.</p>
-    <p class="text-[11px] text-blue-300 mt-1">Auto-publishing ${detections.length} product${detections.length > 1 ? 's' : ''}â€¦</p>
+    <p class="text-[11px] text-blue-300 mt-1">Auto-publishing ${detections.length} product${detections.length > 1 ? 's' : ''}${_scannerOnlyMissingPrice ? ' with AI-filled prices' : ''}…</p>
   `, 'text-blue-300');
   showToast(`Scan done — auto-publishing ${detections.length} product${detections.length > 1 ? 's' : ''}â€¦`, 'info');
   autoScanOne(detections[0], 0);
