@@ -18,6 +18,12 @@ import { supabase } from './supabase-client.js';
 import { addToCart as cartAddToCart } from './cart.js';
 import { generateSeedReviews } from './seed-reviews.js';
 import { loadPromoBackgrounds, bgMediaLayer } from './promo-backgrounds.js';
+// Self-initializing modules: trust & info area (#trust-info-area) and the app
+// promo banner (#app-promo-banner) render below the details content. The page
+// markup only ships inert modulepreload hints, so these must be imported here
+// to actually run (they skip the homepage automatically).
+import './trust-info-area.js';
+import './app-promo-banner.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
