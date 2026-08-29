@@ -1721,15 +1721,44 @@ window.unpublishProduct = function(pid) { return toggleProductActive(pid, false)
 
 window.shareProduct = async function(pid) {
   const url = `${window.location.origin}/details.html?id=${encodeURIComponent(pid)}`;
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-      showToast('Product link copied to clipboard');
-      return;
-    }
-  } catch {}
-  window.prompt('Copy product link:', url);
+  const item = (window._productsData || []).find(p => p.property_id === pid)
+    || (window._propertiesData || []).find(p => p.property_id === pid)
+    || getLocalShowroomListingById(pid);
+  const title = (item && String(item.title || '').trim()) || 'Product on Weverse Online Shop';
+  const shareText = item && Number(item.price || 0) > 0
+    ? `${title} — ${formatPriceForShare(item)}\n${url}`
+    : `${title}\n${url}`;
+  const copied = (async () => {
+    try {
+      if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(url); return true; }
+    } catch {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = url; ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy'); ta.remove(); return true;
+    } catch { return false; }
+  })();
+  const okCopy = await copied;
+  // Native share sheet surfaces WhatsApp/Telegram/Facebook/Instagram/etc. and
+  // always carries the permanent product URL + title for a proper preview.
+  let usedShare = false;
+  if (navigator.share) {
+    try { await navigator.share({ title, text: shareText, url }); usedShare = true; } catch {}
+  }
+  if (!usedShare) {
+    showToast(okCopy ? 'Product link copied to clipboard' : ('Product link: ' + url));
+  }
 };
+function formatPriceForShare(item) {
+  const n = Number(item && typeof item.price === 'object' ? item.price.price : (item && item.price)) || 0;
+  const cur = (item && item.currency) || 'USD';
+  let s;
+  try { s = n.toLocaleString('en-US', { style: 'currency', currency: cur, maximumFractionDigits: 0 }); }
+  catch { s = '$' + n.toLocaleString('en-US'); }
+  if (item && item.price_period) s += '/' + item.price_period;
+  return s;
+}
 
 window.deleteProduct = async function(pid) {
   if (!confirm('Delete this product permanently? This action cannot be undone.')) return;

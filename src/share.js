@@ -15,6 +15,33 @@ export function absUrl(src) {
   return (window.location.origin || '') + src;
 }
 
+// True for blob/data/temp or video-file URLs that must never be used as the
+// share-card thumbnail — the preview needs the product's real, permanent photo.
+function isPermanentImage(src) {
+  if (!src || typeof src !== 'string') return false;
+  if (src.startsWith('blob:') || src.startsWith('data:')) return false;
+  if (/\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(src)) return false;
+  return true;
+}
+
+// Best permanent main image: the first image that is a real persisted photo
+// (never a temp/blob/video). Falls back to the first listed item, then brand logo.
+function mainShareImage(listing) {
+  const imgs = Array.isArray(listing?.images) ? listing.images : [];
+  const permanent = imgs.find(isPermanentImage);
+  return permanent || imgs[0] || FALLBACK_IMG;
+}
+
+// Permanent product video (mp4 and similar). Used to emit og:video so
+// WhatsApp/Facebook/Telegram can offer a playable card for video products.
+function mainShareVideo(listing) {
+  const candidates = [];
+  if (listing?.video_url) candidates.push(listing.video_url);
+  if (listing?.video) candidates.push(listing.video);
+  if (Array.isArray(listing?.images)) candidates.push(...listing.images);
+  return candidates.find((u) => typeof u === 'string' && /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u)) || '';
+}
+
 export function formatSharePrice(listing) {
   const raw = listing?.price;
   const n = Number(raw && typeof raw === 'object' ? raw.price : raw) || 0;
@@ -38,10 +65,11 @@ function productMeta(listing) {
   const title = String(listing?.title || '').trim() || SITE_NAME;
   const price = formatSharePrice(listing);
   const url = productUrl(listing);
-  const image = absUrl(listing?.images?.[0] || FALLBACK_IMG);
+  const image = absUrl(mainShareImage(listing));
+  const video = absUrl(mainShareVideo(listing) || '');
   const text = price ? `${title} — ${price}` : title;
   const caption = price ? `${title}\n${price}\n${url}` : `${title}\n${url}`;
-  return { title, price, url, image, text, caption };
+  return { title, price, url, image, video, text, caption };
 }
 
 function showShareToast(msg) {
@@ -249,8 +277,14 @@ export function setProductMeta(listing) {
   setMeta('property', 'og:title', meta.title);
   setMeta('property', 'og:description', desc);
   setMeta('property', 'og:image', meta.image);
+  setMeta('property', 'og:image:secure_url', meta.image);
   setMeta('property', 'og:url', meta.url);
   setMeta('property', 'og:type', 'product');
+  if (meta.video) {
+    setMeta('property', 'og:video', meta.video);
+    setMeta('property', 'og:video:secure_url', meta.video);
+    setMeta('property', 'og:video:type', 'video/mp4');
+  }
   setMeta('name', 'twitter:title', meta.title);
   setMeta('name', 'twitter:description', desc);
   setMeta('name', 'twitter:image', meta.image);
