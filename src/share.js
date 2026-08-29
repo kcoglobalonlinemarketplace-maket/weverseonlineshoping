@@ -133,9 +133,15 @@ async function shareMediaFile(listing, fallback) {
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       const meta = productMeta(listing);
-      // iOS: passing `text` alongside `files` can drop the file, so for native
-      // media shares we send the file + title only. The product is the media.
-      const payload = { files: [file], title: meta.title };
+      // The product link MUST always travel with the shared image/video. We put
+      // the full caption (title + price + LINK) in BOTH `text` and `title` so the
+      // URL is never dropped — even if a platform ignores one of those fields.
+      const payload = {
+        files: [file],
+        title: meta.caption, // title is always kept alongside files → link survives
+        text: meta.caption,  // normal caption with the link
+        url: meta.url,
+      };
       await navigator.share(payload);
       return true;
     }
