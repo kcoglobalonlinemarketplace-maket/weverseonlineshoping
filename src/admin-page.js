@@ -1599,7 +1599,7 @@ window.previewProduct = async function(pid) {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">Product Live Preview</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="space-y-2">
@@ -1777,7 +1777,7 @@ window.openProductMoreActions = function(pid) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">More Actions</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <div class="grid grid-cols-1 gap-2">
           <button onclick="previewProduct('${pid}');closeModal();" class="btn-press text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-semibold text-gray-200">Live Preview</button>
@@ -2387,7 +2387,7 @@ window.showAddProductStep1 = function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Add New Product</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
 
         <!-- Scan first â€” let AI pick the category -->
@@ -2452,7 +2452,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
           <div class="flex items-center gap-2 shrink-0">
             ${isEdit ? `<button type="button" onclick="closeProductFormModal()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Product Manager</button>` : `<button type="button" onclick="showAddProductStep1()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5" title="Change category"><i data-lucide="arrow-left" class="w-4 h-4"></i> Category</button>`}
             <button type="button" onclick="closeProductFormModal()" class="btn-press px-4 h-11 flex items-center justify-center rounded-xl text-sm font-bold uppercase tracking-wide text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Close (X) â€” return to Product Manager">
-              Back
+              <i data-lucide="x" class="w-4 h-4 mr-1.5"></i>Back
             </button>
           </div>
         </div>
@@ -2769,26 +2769,31 @@ async function processImageFiles(files) {
     return loadingDiv;
   });
 
-  // Upload concurrently (3 at a time), preserving selection order.
-  const urls = await mapWithConcurrency(valid, 3, (file) => uploadImageFile(file));
-
-  // Swap spinners for real thumbnails in the same order.
-  const thumbs = [];
-  valid.forEach((file, i) => {
+  // Upload concurrently (3 at a time). Each spinner is swapped for its real
+  // thumbnail in place the moment that file finishes — nothing waits for the
+  // slowest upload, so the gallery fills up almost instantly and every thumb
+  // stays exactly where the user dropped it.
+  await mapWithConcurrency(valid, 3, async (file, i) => {
     const loadingDiv = loadingDivs[i];
-    if (loadingDiv) loadingDiv.remove();
-    const url = urls[i];
-    if (!url) { showToast(`Failed to upload ${isVideoFile(file) ? 'video' : 'image'}. Try a smaller file.`, 'error'); return; }
-    const div = document.createElement('div');
-    div.innerHTML = imageThumbHtml(url, i);
-    const el = div.firstElementChild;
-    if (el) thumbs.push(el);
+    const url = await uploadImageFile(file);
+    setTimeout(() => {
+      if (!loadingDiv || !loadingDiv.isConnected) return;
+      loadingDiv.remove();
+      if (url) {
+        const div = document.createElement('div');
+        div.innerHTML = imageThumbHtml(url, i);
+        const el = div.firstElementChild;
+        const next = loadingDiv.nextSibling;
+        if (next) preview.insertBefore(el, next); else preview.appendChild(el);
+      } else {
+        showToast(`Failed to upload ${isVideoFile(file) ? 'video' : 'image'}. Try a smaller file.`, 'error');
+      }
+      rebuildImageInputs();
+      updateCoverBadge();
+      updateGalleryCounter();
+      if (window.lucide) lucide.createIcons();
+    }, 0);
   });
-  thumbs.forEach((el) => preview.appendChild(el));
-  rebuildImageInputs();
-  updateCoverBadge();
-  updateGalleryCounter();
-  if (window.lucide) lucide.createIcons();
 }
 
 async function uploadImageFile(file) {
@@ -3056,7 +3061,7 @@ window.previewProductDraft = function() {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-black text-white">Live Draft Preview</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <img src="${esc(image)}" class="w-full h-64 object-cover rounded-xl border border-blue-500/20" onerror="this.src='/fallback.svg'">
@@ -4725,12 +4730,43 @@ let step1Images = [];
 window.handleStep1Files = async function(files) {
   const list = Array.from(files || []).slice(0, 24);
   if (!list.length) return;
+  const preview = document.getElementById('s1-image-preview');
+  const valid = [];
   for (const file of list) {
+    const isPdf = file.type === 'application/pdf' || looksLikePdf(file.name);
+    const isVid = isVideoFile(file);
+    if (!file.type.startsWith('image/') && !isPdf && !isVid) continue;
+    if (isVid && file.size > 100 * 1024 * 1024) { showToast('Video must be under 100 MB.', 'error'); continue; }
+    valid.push(file);
+    // One spinner per file so the user sees the uploads are running right away.
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'img-thumb';
+    loadingDiv.style.cssText = 'min-width:90px;min-height:80px;';
+    loadingDiv.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-gray-400"><div class="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mb-1.5"></div><span class="text-[10px] font-bold">Uploading…</span></div>`;
+    if (preview) preview.appendChild(loadingDiv);
+  }
+  if (!valid.length) return;
+
+  // Upload ALL files in parallel (3 at a time), compress images before upload,
+  // and swap each spinner for its thumbnail the moment it's done.
+  const completed = [];
+  await mapWithConcurrency(valid, 3, async (file, i) => {
     try {
       const url = await uploadImageFile(file);
-      if (url) step1Images.push(url);
-    } catch { /* skip failed uploads */ }
-  }
+      completed[i] = url;
+    } catch {
+      completed[i] = null;
+    }
+  });
+
+  // Keep finished thumbs in original selection order, then render the preview.
+  valid.forEach((file, i) => {
+    if (completed[i]) {
+      step1Images.push(completed[i]);
+    } else {
+      showToast(`Failed to upload ${isVideoFile(file) ? 'video' : 'image'}. Try a smaller file.`, 'error');
+    }
+  });
   renderStep1Preview();
 };
 window.handleStep1ImageUpload = async function(e) {
@@ -5611,7 +5647,7 @@ window.showAddPropertyModal = function(existing = {}) {
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Property</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <form id="property-form" onsubmit="saveProperty(event,'${isEdit ? existing.property_id : ''}')" class="space-y-4">
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-3">
@@ -6144,7 +6180,7 @@ window.viewOrder = async function(id) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Order ${esc(o.order_number)}</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <div class="space-y-3 text-sm">
           <div class="grid grid-cols-2 gap-3">
@@ -6243,7 +6279,7 @@ window.viewCustomer = async function(uid) {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Customer Profile</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <div class="flex items-center gap-4 mb-5 p-4 glass-soft border border-blue-500/15 rounded-xl">
           <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
@@ -6484,7 +6520,7 @@ window.showAddCouponModal = function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white">Create Coupon</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <form id="coupon-form" onsubmit="saveCoupon(event)" class="space-y-4">
           <div class="form-grid form-grid-2">
@@ -7919,7 +7955,7 @@ window.showAiStatusModal = async function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="activity" class="w-5 h-5 text-emerald-400"></i> AI Provider Status</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <div class="mb-4 p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl text-xs text-blue-300">
           ${configured.length === 0
@@ -8939,7 +8975,7 @@ window.setup2FAFlow = async function() {
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
           <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="shield-plus" class="w-5 h-5 text-emerald-400"></i> Enable Two-Factor Authentication</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white">ðŸ”™ Back</button>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <div id="2fa-setup-content">
           <div class="flex items-center justify-center py-8"><i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-400"></i></div>
