@@ -35,19 +35,31 @@ function setupCatBar(types, active, veh) {
   });
 }
 
+function showroomMasthead(isRe, list) {
+  const mast = document.getElementById('kco-brand-mast') || document.querySelector('.kco-head');
+  if (!mast) return;
+  const statCls = isRe ? 're' : 'veh';
+  mast.innerHTML = `
+    <span class="kco-eyebrow"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> ${isRe ? 'Property Brief — Houses &amp; Real Estate' : 'Auto Brief — Cars &amp; Trucks'}</span>
+    <h1 id="kco-cat-title">${isRe ? '🏡 Houses &amp; Real Estate' : '🚗 Cars &amp; Trucks'}</h1>
+    <p id="kco-cat-sub">${isRe
+      ? `Your dream home started here. ${list.length} professional listings — every house, apartment, villa and more, grouped by type.`
+      : `Your next ride starts here. ${list.length} professional listings — every car, truck, bus, motorhome and more, grouped by type.`}</p>
+    <div class="kco-mast-stats">
+      <span class="kco-mast-stat ${statCls}">${list.length} Live Listings</span>
+      <span class="kco-mast-stat ${statCls}">✓ AI-Scanned Specs</span>
+      <span class="kco-mast-stat ${statCls}">⚡ Updated Live</span>
+    </div>`;
+}
+
 function render(cat, filterType) {
   const results = document.getElementById('kco-results');
   if (!results) return;
   heroStyles();
   const isRe = cat === 'real-estate';
   const list = isRe ? getAllShowcaseProperties() : getAllHeroVehicles();
-  const title = document.getElementById('kco-cat-title');
-  const sub = document.getElementById('kco-cat-sub');
+  showroomMasthead(isRe, list);
   document.querySelectorAll('.kco-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
-  if (title) title.textContent = isRe ? 'Browse Real Estate' : 'Browse Cars & Trucks';
-  if (sub) sub.textContent = isRe
-    ? `${list.length} properties — every house, apartment, villa and more, grouped by type.`
-    : `${list.length} vehicles — every car, truck, bus, motorhome and more, grouped by type.`;
 
   const groups = new Map();
   const order = [];

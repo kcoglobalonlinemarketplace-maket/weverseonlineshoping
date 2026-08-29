@@ -170,6 +170,21 @@ function heroStyles() {
 @media(min-width:1024px){.kco-hero-arrow{display:flex}}
 .kco-hero-arrow.left{left:.8rem}.kco-hero-arrow.right{right:.8rem}
 .kco-hero-arrow:disabled{opacity:.35;pointer-events:none}
+.kco-hero-brand{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1.1rem;padding:1.6rem 1.25rem .9rem;color:#fff}
+@media(min-width:640px){.kco-hero-brand{padding:1.9rem 1.75rem .9rem}}
+.kco-hero-brand-left{display:flex;align-items:center;gap:1rem;min-width:0;max-width:100%}
+.kco-hero-brand-ic{flex:0 0 auto;width:3.5rem;height:3.5rem;border-radius:1.05rem;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26);font-size:1.7rem;box-shadow:0 10px 24px -10px rgba(0,0,0,.4)}
+.kco-hero-brand-kicker{font-size:.6rem;font-weight:900;letter-spacing:.22em;text-transform:uppercase;opacity:.85;margin:0}
+.kco-hero-brand h2{font-size:1.75rem;font-weight:900;letter-spacing:-.02em;line-height:1.1;margin:.18rem 0 .12rem;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+@media(min-width:640px){.kco-hero-brand h2{font-size:2.15rem}}
+.kco-hero-brand-tag{font-size:.82rem;font-weight:600;line-height:1.45;opacity:.82;max-width:36rem;margin:0}
+.kco-hero-brand-stats{display:flex;gap:.6rem;flex-wrap:wrap}
+.kco-hero-brand-stat{display:flex;flex-direction:column;gap:.12rem;min-width:5.8rem;padding:.6rem .85rem;border-radius:.95rem;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);transition:background .15s ease}
+.kco-hero-brand-stat:hover{background:rgba(255,255,255,.2)}
+.kco-hero-brand-stat b{font-size:1.1rem;font-weight:900;line-height:1}
+.kco-hero-brand-stat span{font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.75}
+.kco-hero-re .kco-hero-brand{background:linear-gradient(120deg,rgba(6,78,59,.55),rgba(13,148,136,.18))}
+.kco-hero-veh .kco-hero-brand{background:linear-gradient(120deg,rgba(31,41,55,.55),rgba(146,64,14,.22))}
 `;
   document.head.appendChild(st);
 }
@@ -286,6 +301,20 @@ function heroSection(opts) {
     <button class="kco-hero-arrow right" aria-label="Scroll ${opts.title} right">${SVG_CH_R}</button>`;
 
   const head = `
+    ${opts.brand ? `
+    <div class="kco-hero-brand">
+      <div class="kco-hero-brand-left">
+        <span class="kco-hero-brand-ic">${opts.brand.emoji}</span>
+        <div class="min-w-0">
+          <p class="kco-hero-brand-kicker">${esc(opts.brand.kicker)}</p>
+          <h2>${esc(opts.brand.title)}</h2>
+          <p class="kco-hero-brand-tag">${esc(opts.brand.tagline)}</p>
+        </div>
+      </div>
+      <div class="kco-hero-brand-stats">
+        ${opts.brand.stats.map(s => `<div class="kco-hero-brand-stat"><b>${esc(String(s.value))}</b><span>${esc(s.label)}</span></div>`).join('')}
+      </div>
+    </div>` : ''}
     <div class="kco-hero-panel">
       <div class="kco-hero-head">
         <div class="kco-hero-headleft">
@@ -340,12 +369,34 @@ function renderHeroRows() {
     title: 'Real Estate', subtitle: 'Houses & homes from around the world',
     icon: 'home', cat: 'real-estate', seeAll: true,
     listings: houses, card: (l) => heroCardHtml(l, 'house'),
+    brand: {
+      emoji: '🏡',
+      kicker: 'Property Brief — Houses & Real Estate',
+      title: 'Houses & Real Estate',
+      tagline: 'Your dream home started here. Every listing is presented like a professional brief — real rooms, land, history and a fair price.',
+      stats: [
+        { value: houses.length, label: 'Live Listings' },
+        { value: '✓', label: 'AI-Scanned Specs' },
+        { value: 'Live', label: 'Updated Daily' },
+      ],
+    },
   }));
   frag.appendChild(heroSection({
     kindCls: 'kco-hero-veh',
     title: 'Cars & Trucks', subtitle: 'Vehicles, trucks, motorhomes and more',
     icon: 'car-front', cat: 'cars-trucks', seeAll: true,
     listings: vehicles, card: (l) => heroCardHtml(l, 'vehicle'),
+    brand: {
+      emoji: '🚗',
+      kicker: 'Auto Brief — Cars & Trucks',
+      title: 'Cars & Trucks',
+      tagline: 'Your next ride starts here. Full specifications, real mileage and history — every detail read from the photos and reviewed before publishing.',
+      stats: [
+        { value: vehicles.length, label: 'Live Listings' },
+        { value: '✓', label: 'AI-Scanned Specs' },
+        { value: 'Live', label: 'Updated Daily' },
+      ],
+    },
   }));
   container.replaceChildren(frag);
   if (window.lucide) lucide.createIcons();

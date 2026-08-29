@@ -280,6 +280,170 @@ function propertyExtrasHtml(listing) {
   return sections.join('');
 }
 
+// ── Professional vehicle listing sections ─────────────────────
+// Reads a value from the listing directly (DB rows are flattened from the
+// `specifications` JSONB) and falls back to the raw specifications object.
+function spL(listing, key, fallback = '') {
+  const v = listing[key];
+  if (v != null && String(v).trim() !== '') return v;
+  const specs = listing.specifications && typeof listing.specifications === 'object' ? listing.specifications : {};
+  return specs[key] != null ? specs[key] : fallback;
+}
+
+const VEHICLE_CATEGORIES = new Set(['Cars', 'Cars & Vehicles', 'Trucks', 'Buses', 'Buses & Coaches', 'Motorhomes', 'Motorcycles', 'Marine & Boating', 'RV & Camper Accessories', 'Vehicles', 'Luxury Cars', 'Commercial Vehicles']);
+function isVehicleListing(listing) {
+  return listing.listing_type === 'vehicle' || VEHICLE_CATEGORIES.has(listing.category);
+}
+
+function tireVisualHtml(listing) {
+  const wt = String(spL(listing, 'wheels_tires') || '');
+  if (!wt.trim()) return '';
+  const parts = wt.split(',').map(s => s.trim()).filter(Boolean);
+  const sizeMatch = String(wt).match(/(?:[0-9]{2,4}\s*(?:\/[0-9]{2,3}\s*)?(?:R|ZR)[0-9]{1,2}|[0-9]{1,2}(?:\.|x|X)[0-9]{1,2}(?:\.|x|X)-?[0-9]+|[0-9]{2,3}\s*(?:\.[0-9]{1,2})?\s*(?:inches|inch|in|"))/);
+  const size = sizeMatch ? sizeMatch[0] : '';
+  return `
+    <div class="flex flex-col sm:flex-row items-center gap-5 bg-gradient-to-br from-amber-50 via-white to-orange-50 border border-amber-200 rounded-2xl p-5">
+      <div class="relative shrink-0 w-36 h-36 sm:w-40 sm:h-40">
+        <div class="absolute inset-0 rounded-full bg-gradient-to-br from-gray-800 to-gray-950 shadow-xl" style="background:radial-gradient(circle at 35% 30%, #4b5563, #111827 70%)"></div>
+        <div class="absolute inset-[26%] rounded-full bg-white shadow-inner flex items-center justify-center">
+          <div class="w-full h-full rounded-full border-[10px] border-gray-200"></div>
+        </div>
+        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-black tracking-widest text-gray-500 uppercase">Tire</span>
+      </div>
+      <div class="flex-1 min-w-0 text-center sm:text-left">
+        <p class="text-xs font-black text-amber-700 uppercase tracking-wide mb-1">Wheels & Tires</p>
+        <p class="text-lg font-black text-gray-900 leading-snug">${escapeHtml(wt)}</p>
+        ${size ? `<div class="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-white border border-amber-200 px-3 py-1.5 rounded-full"><i data-lucide="ruler" class="w-3.5 h-3.5 text-amber-600"></i> Size: ${escapeHtml(size)}</div>` : ''}
+        <div class="mt-3 rounded-xl bg-white/80 border border-amber-200 p-3.5 text-left">
+          <p class="text-[11px] font-black text-gray-600 uppercase tracking-wide mb-1.5">What this means for you</p>
+          <ul class="space-y-1 text-xs text-gray-600 leading-relaxed">
+            <li class="flex items-start gap-2"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0"></i><span>Confirms the exact tire and wheel fitment — what the vehicle wears and whether spares match.</span></li>
+            <li class="flex items-start gap-2"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0"></i><span>Fresh tires mean no surprise costs when you drive away — worn ones are called out up front.</span></li>
+            <li class="flex items-start gap-2"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0"></i><span>Always confirm tread and condition in person or with the seller's inspection report.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>`;
+}
+
+function vehicleExtrasHtml(listing) {
+  if (!isVehicleListing(listing)) return '';
+  const sections = [];
+  const tile = (icon, label, value) => value != null && String(value) !== ''
+    ? `<div class="bg-gray-50 border border-gray-100 rounded-xl p-3.5"><div class="flex items-center gap-1.5 text-gray-500 text-xs mb-1.5"><i data-lucide="${icon}" class="w-3.5 h-3.5"></i>${label}</div><div class="text-gray-900 font-bold text-[15px] leading-snug">${escapeHtml(String(value))}</div></div>`
+    : '';
+  const histBlock = (icon, label, text) => text ? `
+    <div class="flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3.5">
+      <span class="shrink-0 w-7 h-7 rounded-lg bg-white border border-gray-100 flex items-center justify-center"><i data-lucide="${icon}" class="w-4 h-4 text-emerald-600"></i></span>
+      <div class="min-w-0"><p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">${label}</p><p class="text-sm text-gray-700 leading-relaxed">${escapeHtml(String(text))}</p></div>
+    </div>` : '';
+
+  const condTiles = [
+    tile('badge-check', 'Condition', spL(listing, 'condition')),
+    tile('user-round', 'Previous Owners', spL(listing, 'previous_owners')),
+    tile('clipboard-check', 'Registration', spL(listing, 'registration_status')),
+    tile('shield-check', 'Inspection', spL(listing, 'inspection_status')),
+    tile('badge-dollar-sign', 'Warranty', spL(listing, 'warranty')),
+  ].filter(Boolean).join('');
+  const condHistory = [histBlock('scroll-text', 'Ownership History', spL(listing, 'ownership_history')),
+    histBlock('wrench', 'Service & Maintenance History', spL(listing, 'service_history')),
+    histBlock('alert-triangle', 'Accident / Damage History', spL(listing, 'accident_history'))].filter(Boolean).join('');
+  if (condTiles || condHistory) {
+    sections.push(accordionItem('acc-vh-cond', 'shield-check', 'Condition & History', `
+      ${condTiles ? `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">${condTiles}</div>` : ''}
+      ${condHistory}`.trim(), true, 'emerald'));
+  }
+
+  const tires = tireVisualHtml(listing);
+  if (tires) sections.push(accordionItem('acc-vh-wheels', 'circle-dot', 'Wheels & Tires', tires, true, 'amber'));
+
+  const safetyGroup = (arr, icon, label) => Array.isArray(arr) && arr.length ? `
+    <div><p class="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><i data-lucide="${icon}" class="w-3.5 h-3.5"></i> ${label}</p>
+    <div class="flex flex-wrap gap-2">${arr.map(i => `<span class="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-full">${escapeHtml(String(i))}</span>`).join('')}</div></div>` : '';
+  const safety = [safetyGroup(spL(listing, 'safety_features'), 'shield', 'Safety Features'),
+    safetyGroup(spL(listing, 'driver_assistance'), 'radar', 'Driver Assistance'),
+    safetyGroup(spL(listing, 'technology'), 'cpu', 'Technology & Infotainment'),
+    safetyGroup(spL(listing, 'interior'), 'armchair', 'Interior & Comfort')].filter(Boolean).join('');
+  if (safety) sections.push(accordionItem('acc-vh-safety', 'cpu', 'Safety & Technology', safety, false, 'rose'));
+
+  const dimsTiles = [tile('ruler', 'Dimensions (L x W x H)', spL(listing, 'dimensions')),
+    tile('package', 'Cargo Capacity', spL(listing, 'cargo_capacity')),
+    tile('truck', 'Towing Capacity', spL(listing, 'towing_capacity')),
+    tile('fuel', 'Fuel Economy', spL(listing, 'fuel_economy')),
+    tile('users', 'Seats', spL(listing, 'seating_capacity')),
+    tile('door-open', 'Doors', spL(listing, 'doors'))].filter(Boolean).join('');
+  if (dimsTiles) sections.push(accordionItem('acc-vh-dims', 'ruler', 'Dimensions & Capacity', `<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${dimsTiles}</div>`, false, 'sky'));
+
+  const loc = spL(listing, 'location') || [spL(listing, 'city'), spL(listing, 'state'), spL(listing, 'country')].filter(Boolean).join(', ');
+  if (loc) {
+    const mapsLink = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc);
+    sections.push(accordionItem('acc-vh-loc', 'map-pin', 'Location & Availability', `
+      <div class="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3.5">
+        <span class="shrink-0 w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center"><i data-lucide="map-pin" class="w-5 h-5"></i></span>
+        <div class="min-w-0"><p class="text-[15px] text-gray-900 font-bold">${escapeHtml(String(loc))}</p>
+        <a href="${mapsLink}" target="_blank" rel="noopener" class="text-xs font-bold text-blue-600 hover:underline">Open in Google Maps</a></div>
+      </div>
+      <div class="mt-3 grid grid-cols-2 gap-3">
+        <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3"><p class="text-xs text-gray-500">Availability</p><p class="text-sm font-black text-emerald-700">${escapeHtml(listing.availability_status || (listing.stock_quantity > 0 ? 'In Stock' : 'Available'))}</p></div>
+        <div class="bg-gray-50 border border-gray-100 rounded-xl p-3"><p class="text-xs text-gray-500">Seller Location</p><p class="text-sm font-black text-gray-900">${escapeHtml(String(spL(listing, 'location') || 'Marketplace'))}</p></div>
+      </div>`, false, 'sky'));
+  }
+  return sections.join('');
+}
+
+// AI trust / "how to read this listing" explanation for major listings.
+function aiTrustBlock(listing) {
+  const ai = !!listing.is_ai_generated || (Array.isArray(listing.ai_generated_fields) && listing.ai_generated_fields.length) || isVehicleListing(listing);
+  const chips = [];
+  if (ai) chips.push('<span class="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full bg-violet-600 text-white"><i data-lucide="sparkles" class="w-3 h-3"></i> AI-assisted listing</span>');
+  chips.push('<span class="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full bg-emerald-600 text-white"><i data-lucide="search-check" class="w-3 h-3"></i> Photo-read specs</span>');
+  chips.push('<span class="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full bg-blue-600 text-white"><i data-lucide="user-check" class="w-3 h-3"></i> Review before publish</span>');
+  return `
+    <div class="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 rounded-2xl p-5 sm:p-6 mb-6 shadow-lg text-white">
+      <div class="flex items-center gap-2.5 mb-2">
+        <span class="shrink-0 w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center"><i data-lucide="sparkles" class="w-5 h-5"></i></span>
+        <h3 class="text-base sm:text-lg font-black tracking-tight">How this ${listing.listing_type === 'property' ? 'property' : 'listing'} was checked</h3>
+      </div>
+      <p class="text-sm text-white/80 leading-relaxed mb-3">
+        Our marketplace uses an <strong class="text-white">AI listing assistant</strong> to read the uploaded photos,
+        complete the full specifications and write a clear, professional description — so you always see the
+        real engine, size, condition, history and fair price, never a generic blurb. Every value was
+        <strong class="text-white">reviewed and approved before publishing</strong>. Always confirm the most important
+        details directly with the seller before you buy.
+      </p>
+      <div class="flex flex-wrap gap-2">${chips.join('')}</div>
+    </div>`;
+}
+
+// Buyer information card — direct seller/agent contact for major listings.
+function buyerInfoBlock(listing) {
+  const name = spL(listing, 'seller_name') || spL(listing, 'contact_name');
+  const phone = spL(listing, 'seller_phone') || spL(listing, 'contact_phone');
+  const email = spL(listing, 'seller_email') || spL(listing, 'contact_email');
+  const loc = spL(listing, 'location');
+  const rows = [];
+  if (name) rows.push({ icon: 'user-round', label: 'Seller / Agent', value: name });
+  if (phone) rows.push({ icon: 'phone', label: 'Phone / WhatsApp', value: phone, link: 'tel:' + phone.replace(/[^0-9+]/g, '') });
+  if (email) rows.push({ icon: 'mail', label: 'Email', value: email, link: 'mailto:' + email });
+  if (loc) rows.push({ icon: 'map-pin', label: 'Location', value: loc });
+  return `
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
+      ${sectionHeader('contact-round', 'Buyer Information', 'emerald')}
+      <div class="space-y-2.5">
+        ${rows.map(r => `
+          <div class="flex items-center justify-between gap-3 bg-gray-50 border border-gray-100 rounded-xl px-3.5 py-2.5">
+            <span class="flex items-center gap-2 text-sm text-gray-800 font-bold"><i data-lucide="${r.icon}" class="w-4 h-4 text-emerald-600"></i> ${r.label}</span>
+            ${r.link ? `<a href="${escapeHtml(r.link)}" class="text-sm text-blue-600 font-bold hover:underline">${escapeHtml(String(r.value))}</a>`
+                      : `<span class="text-sm text-gray-700 font-semibold">${escapeHtml(String(r.value))}</span>`}
+          </div>`).join('')}
+        <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 flex items-start gap-2.5">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0"></i>
+          <p class="text-xs text-gray-600 leading-relaxed">Buy with confidence — secure checkout, payment protection and verified contact details. Questions about this ${listing.listing_type === 'property' ? 'property' : 'vehicle'}? Reach out before purchase, or open a live chat any time.</p>
+        </div>
+      </div>
+    </div>`;
+}
+
 function descriptionBlockHtml(text) {
   return `
     <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
@@ -392,8 +556,8 @@ function detailsAccordions(listing, specs, features, highlights, locationContent
     ${highlightsListHtml(highlights)}
     ${featuresListHtml(features)}`;
   return `
-    ${accordionItem('acc-details', 'file-text', isProperty ? 'Property Details' : 'Product Details', productDetails, true, 'blue')}
-    ${accordionItem('acc-specs', 'settings-2', isProperty ? 'Property Specifications' : 'Specifications', specsGridHtml(specs) || '<p class="text-sm text-gray-500">No specifications available for this listing.</p>', true, 'violet')}
+    ${accordionItem('acc-details', 'file-text', isProperty ? 'Property Details' : (isVehicleListing(listing) ? 'Vehicle Details' : 'Product Details'), productDetails, true, 'blue')}
+    ${accordionItem('acc-specs', 'settings-2', isProperty ? 'Property Specifications' : (isVehicleListing(listing) ? 'Vehicle Specifications' : 'Specifications'), specsGridHtml(specs) || '<p class="text-sm text-gray-500">No specifications available for this listing.</p>', true, 'violet')}
     ${propertyExtras || ''}
     ${accordionItem('acc-shipping', 'truck', 'Shipping Information', shippingInfoContent(), false, 'emerald')}
     ${accordionItem('acc-refund', 'rotate-ccw', 'Return &amp; Refund Policy', refundPolicyContent(), false, 'rose')}
@@ -1243,6 +1407,7 @@ function loadRelatedSections(listing) {
 function render(listing) {
   const root = document.getElementById('details-content');
   const isProperty = listing.listing_type === 'property';
+  const isVehicle = isVehicleListing(listing);
   const price = formatPrice(listing);
   const flag = flagEmoji(listing.country_code);
   const idLabel = listing.listing_type === 'product' ? 'Product ID' : isProperty ? 'Property ID' : 'Listing ID';
@@ -1292,6 +1457,8 @@ function render(listing) {
       { icon: 'map-pin', label: 'State / Province', value: listing.state },
       { icon: 'building', label: 'City', value: listing.city },
       { icon: 'navigation', label: 'Town / Local Area', value: listing.town },
+      { icon: 'signpost', label: 'Neighborhood / District', value: spL(listing, 'neighborhood') },
+      { icon: 'home', label: 'Address', value: spL(listing, 'address') },
     ].filter(item => item.value);
     locationBlock = `
       <div class="mt-4">
@@ -1306,6 +1473,26 @@ function render(listing) {
         </div>
         <div id="listing-map" class="mt-4 rounded-xl overflow-hidden border border-gray-200" style="height:280px"></div>
       </div>`;
+  } else if (isVehicle) {
+    const loc = spL(listing, 'location') || [spL(listing, 'city'), spL(listing, 'state'), spL(listing, 'country')].filter(Boolean).join(', ');
+    if (loc) {
+      const mapsLink = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc);
+      locationBlock = `
+      <div class="mt-4">
+        ${sectionHeader('map-pin', 'Location', 'rose')}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2 flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
+            <div class="p-2.5 bg-white border border-gray-100 rounded-lg"><i data-lucide="map-pin" class="w-4 h-4 text-blue-500"></i></div>
+            <div><div class="text-gray-500 text-xs">Vehicle Location</div><div class="text-gray-900 font-bold text-[15px]">${escapeHtml(String(loc))}</div></div>
+          </div>
+          <div class="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
+            <div class="p-2.5 bg-white border border-gray-100 rounded-lg"><i data-lucide="navigation" class="w-4 h-4 text-blue-500"></i></div>
+            <div><div class="text-gray-500 text-xs">View on Map</div><a href="${mapsLink}" target="_blank" rel="noopener" class="text-blue-600 font-bold text-sm hover:underline">Google Maps <i data-lucide="external-link" class="w-3.5 h-3.5 inline"></i></a></div>
+          </div>
+        </div>
+        <div id="listing-map" class="mt-4 rounded-xl overflow-hidden border border-gray-200" style="height:280px"></div>
+      </div>`;
+    }
   }
 
   let specsBlock = '';
@@ -1327,6 +1514,17 @@ function render(listing) {
       { icon: 'paintbrush', label: 'Year Renovated', value: listing.year_renovated },
       { icon: 'mail', label: 'ZIP / Postal Code', value: listing.zip_code },
       { icon: 'tag', label: 'Status', value: listing.listing_status === 'rent' ? 'For Rent' : 'For Sale' },
+      { icon: 'signpost', label: 'Neighborhood', value: spL(listing, 'neighborhood') },
+      { icon: 'sofa', label: 'Living Areas', value: spL(listing, 'living_areas') },
+      { icon: 'flame', label: 'Kitchens', value: spL(listing, 'kitchens') },
+      { icon: 'tree-pine', label: 'Balconies', value: spL(listing, 'balconies') },
+      { icon: 'leaf', label: 'Garden / Yard', value: spL(listing, 'garden') },
+      { icon: 'waves', label: 'Pool', value: spL(listing, 'pool') },
+      { icon: 'lock', label: 'Security', value: spL(listing, 'security') },
+      { icon: 'home', label: 'Utilities & Heating', value: spL(listing, 'utilities') },
+      { icon: 'hammer', label: 'Construction Type', value: spL(listing, 'construction_type') },
+      { icon: 'clipboard-check', label: 'Construction Status', value: spL(listing, 'construction_status') },
+      { icon: 'user-check', label: 'Ownership Type', value: spL(listing, 'ownership_type') },
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = specsPanel('Property Information', 'home', specs);
   } else if (listing.category === 'Motorhomes') {
@@ -1347,6 +1545,29 @@ function render(listing) {
       { icon: 'droplet', label: 'Water Tank', value: listing.water_tank },
     ].filter(s => s.value != null && s.value !== '');
     specsBlock = specsPanel('Vehicle Information', 'bus', specs, 'violet');
+  } else if (isVehicle) {
+    specs = [
+      { icon: 'tag', label: 'Title / Listing', value: listing.title },
+      { icon: 'car-front', label: 'Vehicle / Body Type', value: spL(listing, 'body_type') },
+      { icon: 'factory', label: 'Make / Brand', value: spL(listing, 'make') || listing.brand },
+      { icon: 'car', label: 'Model', value: spL(listing, 'model') },
+      { icon: 'badge-award', label: 'Trim / Edition', value: spL(listing, 'trim') },
+      { icon: 'calendar', label: 'Year', value: spL(listing, 'model_year') },
+      { icon: 'gauge', label: 'Mileage', value: spL(listing, 'mileage') },
+      { icon: 'zap', label: 'Engine', value: spL(listing, 'engine') },
+      { icon: 'gauge', label: 'Horsepower', value: spL(listing, 'horsepower') },
+      { icon: 'cog', label: 'Transmission', value: spL(listing, 'transmission') },
+      { icon: 'route', label: 'Drive Type', value: spL(listing, 'drive_type') },
+      { icon: 'fuel', label: 'Fuel Type', value: spL(listing, 'fuel_type') },
+      { icon: 'fuel', label: 'Fuel Economy', value: spL(listing, 'fuel_economy') },
+      { icon: 'users', label: 'Seating Capacity', value: spL(listing, 'seating_capacity') },
+      { icon: 'door-open', label: 'Doors', value: spL(listing, 'doors') },
+      { icon: 'palette', label: 'Color / Exterior', value: spL(listing, 'color') },
+      { icon: 'fingerprint', label: 'VIN', value: spL(listing, 'vin') },
+      { icon: 'badge-check', label: 'Condition', value: spL(listing, 'condition') },
+      { icon: 'wrench', label: 'Warranty', value: spL(listing, 'warranty') },
+    ].filter(s => s.value != null && s.value !== '');
+    specsBlock = specsPanel('Vehicle Specifications', 'car-front', specs, 'violet');
   } else if (listing.listing_type === 'product') {
     specs = [
       { icon: 'factory', label: 'Brand', value: listing.brand },
@@ -1438,12 +1659,13 @@ function render(listing) {
       ${actionGridHtml(listing)}
 
       <div id="listing-details">
-        ${detailsAccordions(listing, specs, listing.features, listing.highlights, locationBlock, propertyExtrasHtml(listing))}
+        ${detailsAccordions(listing, specs, listing.features, listing.highlights, locationBlock, isProperty ? propertyExtrasHtml(listing) : (isVehicle ? vehicleExtrasHtml(listing) : ''))}
+        ${(isProperty || isVehicle) ? aiTrustBlock(listing) : ''}
       </div>
 
       ${ratingsBlock}
 
-      ${isProperty ? sellerBlock(listing) : ''}
+      ${isProperty ? sellerBlock(listing) : (isVehicle ? buyerInfoBlock(listing) : '')}
 
       <div id="recommendations-section" class="hidden">
         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">You May Also Like</h3>

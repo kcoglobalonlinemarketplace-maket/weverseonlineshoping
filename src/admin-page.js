@@ -4316,6 +4316,24 @@ function applyScanToPropertyForm(result) {
   if (li) set('legal_info_text', li);
   if (specs.inspection_info) set('inspection_info', specs.inspection_info);
   if (specs.risk_notes) set('risk_notes', specs.risk_notes);
+
+  // Professional real-estate fields.
+  set('neighborhood', identification.neighborhood || specs.neighborhood || identification.area);
+  set('living_areas', text(specs.living_areas));
+  const kitchens = identification.kitchens ?? specs.kitchens;
+  if (kitchens != null && kitchens !== '') set('kitchens', parseInt(kitchens, 10) || kitchens);
+  const balconies = identification.balconies ?? specs.balconies;
+  if (balconies != null && balconies !== '') set('balconies', parseInt(balconies, 10) || balconies);
+  set('garden', identification.garden || specs.garden);
+  set('pool', identification.pool || specs.pool);
+  set('security', text(specs.security));
+  set('utilities', text(specs.utilities));
+  set('construction_type', specs.construction_type);
+  set('construction_status', specs.construction_status);
+  set('ownership_type', specs.ownership_type || identification.ownership_type);
+  set('contact_name', specs.contact_name || identification.contact_name);
+  set('contact_phone', specs.contact_phone || identification.contact_phone);
+  set('contact_email', specs.contact_email || identification.contact_email);
   const vs = document.querySelector('#property-form [name="verification_status"]');
   if (vs) { vs.value = 'Not verified'; filled.push('verification_status'); }
 
@@ -4380,7 +4398,16 @@ function applyScanToPropertyForm(result) {
 const SCAN_IDENTIFICATION_KEYS = ['brand', 'model', 'year', 'year_estimated', 'body_type', 'color', 'condition', 'subcategory',
   'property_type', 'bedrooms', 'bathrooms', 'half_bathrooms', 'building_size', 'land_size', 'floors', 'garage',
   'parking_spaces', 'furnished', 'year_built', 'year_renovated', 'area', 'address', 'zip_code', 'landmarks',
-  'town', 'city', 'state', 'country', 'latitude', 'longitude', 'listing_status'];
+  'town', 'city', 'state', 'country', 'latitude', 'longitude', 'listing_status',
+  // Professional real-estate fields.
+  'neighborhood', 'living_areas', 'kitchens', 'balconies', 'garden', 'pool', 'security', 'utilities',
+  'construction_type', 'construction_status', 'ownership_type', 'contact_name', 'contact_phone', 'contact_email',
+  // Professional vehicle fields.
+  'trim', 'mileage', 'engine', 'horsepower', 'transmission', 'drive_type', 'fuel_type', 'fuel_economy',
+  'towing_capacity', 'seating_capacity', 'sleeping_capacity', 'doors', 'interior', 'safety_features',
+  'driver_assistance', 'technology', 'wheels_tires', 'dimensions', 'cargo_capacity', 'ownership_history',
+  'service_history', 'accident_history', 'previous_owners', 'registration_status', 'inspection_status',
+  'warranty', 'vin', 'location', 'seller_name', 'seller_phone', 'seller_email'];
 // Honest status: when the Gemini key hit its free limit mid-scan (or none is
 // set), say so plainly instead of letting results silently look thin.
 function scanAiLimitNotice() {
@@ -4763,6 +4790,203 @@ window.scanPropertyWithAI = async function() {
     msg += renderScanChecklistReport(res.checklist, res.summary);
     setStatus(msg, 'text-emerald-300');
     showToast('Review the property details, then press Publish Property.', 'success');
+  } catch (err) {
+    const msg = String(err?.message || err);
+    const keyHint = /key|api|configured|settings|vision/i.test(msg);
+    setStatus(keyHint
+      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
+      : `Scan failed: ${msg}`, 'text-red-400');
+    showToast('AI scan failed.', 'error');
+  }
+  if (window.lucide) lucide.createIcons();
+};
+
+// AI Vehicle Scanner (Cars & Trucks manager) - mirrors the property scanner:
+// reads the uploaded photos, completes every field of the professional vehicle
+// form and writes a clear, professional description. Works over the SAME image
+// elements as the property form (only one modal is ever open, so the shared
+// IDs are safe).
+function applyScanToVehicleForm(result) {
+  const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
+  const specs = result && result.specs ? result.specs : {};
+  const price = result && result.price ? result.price : null;
+  const filled = [];
+  const toText = (v) => Array.isArray(v) ? v.join(', ') : String(v ?? '').trim();
+  const set = (key, value) => {
+    if (value == null || toText(value) === '') return;
+    const field = document.querySelector(`#vehicle-form [name="${key}"]`);
+    if (!field) return;
+    if (field.tagName === 'SELECT') {
+      const raw = toText(value);
+      const match = [...field.options].find(o => o.value && (
+        o.value.toLowerCase() === raw.toLowerCase()
+        || raw.toLowerCase().includes(o.value.toLowerCase())
+        || o.value.toLowerCase().includes(raw.toLowerCase())));
+      if (match) { field.value = match.value; filled.push(key); }
+      return;
+    }
+    field.value = Array.isArray(value) ? value.join(', ') : String(value);
+    filled.push(key);
+  };
+  set('make', identification.brand || specs.brand || identification.make || specs.make);
+  set('model', identification.model || specs.model);
+  set('model_year', identification.year || specs.model_year || specs.year);
+  set('trim', specs.trim);
+  set('body_type', identification.body_type || specs.body_type);
+  set('mileage', specs.mileage);
+  set('engine', specs.engine);
+  set('horsepower', specs.horsepower);
+  set('transmission', specs.transmission);
+  set('fuel_type', specs.fuel_type);
+  set('drive_type', specs.drive_type);
+  set('fuel_economy', specs.fuel_economy);
+  set('towing_capacity', specs.towing_capacity);
+  set('seating_capacity', specs.seating_capacity);
+  set('sleeping_capacity', specs.sleeping_capacity);
+  set('doors', specs.doors);
+  set('color', identification.color || specs.color);
+  set('condition', identification.condition || specs.condition);
+  set('vin', specs.vin);
+  set('warranty', specs.warranty);
+  set('location', specs.location);
+  set('seller_name', specs.seller_name);
+  set('seller_phone', specs.seller_phone);
+  set('seller_email', specs.seller_email);
+  set('safety_features', specs.safety_features);
+  set('driver_assistance', specs.driver_assistance);
+  set('technology', specs.technology);
+  set('interior', specs.interior);
+  set('wheels_tires', specs.wheels_tires);
+  set('dimensions', specs.dimensions);
+  set('cargo_capacity', specs.cargo_capacity);
+  set('ownership_history', specs.ownership_history);
+  set('service_history', specs.service_history);
+  set('accident_history', specs.accident_history);
+  set('previous_owners', specs.previous_owners);
+  set('registration_status', specs.registration_status);
+  set('inspection_status', specs.inspection_status);
+  set('features_text', specs.features);
+  const titleField = document.querySelector('#vehicle-form [name="title"]');
+  const titleFallback = [specs.model_year || identification.year, identification.brand || specs.brand, identification.model || specs.model, identification.body_type || specs.body_type]
+    .filter(Boolean).join(' ') || String(specs.title || identification.detected_name || 'Vehicle');
+  if (!titleField.value.trim()) { titleField.value = titleFallback; filled.push('title'); }
+  set('title', specs.title || identification.detected_name || titleFallback);
+  const descField = document.querySelector('#vehicle-form [name="description"]');
+  if (!descField.value.trim()) {
+    descField.value = specs.description
+      || `${titleFallback} — now available on Weverse Online Shop. Review the details below and edit anything before publishing.`;
+    filled.push('description');
+  }
+  const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 0;
+  const max = Number.isFinite(Number(GLOBAL_PRICE_MAX)) ? Number(GLOBAL_PRICE_MAX) : 999999999;
+  const clamp = (n) => Math.max(min, Math.min(max, Math.round(n)));
+  const est = price ? Number(price.estimated_price) : NaN;
+  const estDiscount = price ? Number(price.suggested_discount_price) : NaN;
+  if (Number.isFinite(est) && est > 0) {
+    const realField = document.querySelector('#vehicle-form [name="real_price"]');
+    if (realField) { realField.value = String(clamp(est)); filled.push('real_price'); }
+    const discount = Number.isFinite(estDiscount) && estDiscount > 0 && estDiscount < est ? estDiscount : est;
+    const priceField = document.querySelector('#vehicle-form [name="price"]');
+    if (priceField && !Number(priceField.value)) { priceField.value = String(clamp(discount)); filled.push('price'); }
+  }
+  return { filled };
+}
+
+// Simplified confirmation, same policy as property: a fresh vehicle form is
+// filled with NO question; if the owner already typed/changed something the
+// scan asks first so it never silently overwrites work in progress.
+window.scanVehicleWithAI = async function() {
+  const form = document.getElementById('vehicle-form');
+  if (!form) { showToast('Open the vehicle form first.', 'error'); return; }
+  const btn = document.getElementById('btn-scan-ai-veh');
+  const status = document.getElementById('scan-ai-veh-status');
+
+  const images = [...(document.querySelectorAll('#image-url-inputs [name="images"]') || [])]
+    .map((el) => el.value).filter(Boolean);
+  if (!images.length) { showToast('Upload at least one vehicle photo before scanning.', 'error'); return; }
+
+  const original = btn ? btn.innerHTML : '';
+  const setStatus = (html, cls) => {
+    if (!status) return;
+    status.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+    if (cls) status.classList.add(cls);
+    status.innerHTML = html;
+  };
+
+  await scanPreflightStatus(setStatus);
+
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
+  setStatus('Identifying this vehicle from your photos…', 'text-blue-300');
+
+  let identification;
+  try {
+    identification = await aiClient.identifyProduct(images, { category: 'Cars & Trucks', maxImages: AI_PRODUCT_SCANNER.maxImages });
+  } catch (err) {
+    const msg = String(err?.message || err);
+    const keyHint = /key|api|configured|settings|vision/i.test(msg);
+    setStatus(keyHint
+      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
+      : `Scan failed: ${msg}`, 'text-red-400');
+    showToast('AI scan failed.', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    return;
+  }
+
+  if (!identification || identification.identified === false) {
+    setStatus(identification && identification.reason
+      ? `The AI could not read this vehicle: ${esc(identification.reason)}`
+      : 'The vehicle could not be read from these images. Use clear photos that show the whole vehicle, badges, dashboard and wheels, then try again.', 'text-amber-300');
+    showToast('The vehicle could not be identified from the images.', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    return;
+  }
+  if (btn) { btn.disabled = false; btn.innerHTML = original; }
+
+  const choice = await new Promise((resolve) => {
+    _scanConfirmResolve = (c) => { _scanConfirmResolve = null; resolve(c); };
+    const el = document.getElementById('scan-ai-veh-status');
+    if (!el) { resolve({ choice: 'continue' }); return; }
+    if (!window._vehFormDirty) { resolve({ choice: 'continue' }); return; }
+    el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
+    const conf = identification.confidence || 'medium';
+    const confBadge = { high: 'text-emerald-400 border-emerald-500/20', medium: 'text-amber-400 border-amber-500/20', low: 'text-red-400 border-red-500/20' }[conf] || 'text-amber-400 border-amber-500/20';
+    el.innerHTML = `
+      <div class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 space-y-2 fade-in">
+        <p class="text-xs font-bold text-white">AI identified: <span class="text-violet-300">${esc(identification.detected_name || 'this vehicle')}</span></p>
+        <p class="text-[11px] text-gray-400">
+          ${identification.brand ? esc(identification.brand) + ' ' : ''}${identification.model ? esc(identification.model) + ' ' : ''}${identification.year ? esc(identification.year) + ' ' : ''}${identification.body_type ? ' • ' + esc(identification.body_type) : ''}
+          <span class="ml-1 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${confBadge}">${esc(conf).toUpperCase()} confidence</span>
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="_resolveScanConfirm('continue')" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Fill the vehicle form</button>
+          <button type="button" onclick="_resolveScanConfirm('cancel')" class="btn-press px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs font-bold rounded-lg transition">Cancel</button>
+        </div>
+      </div>`;
+  });
+
+  if (!choice || choice.choice === 'cancel') {
+    setStatus('Scan cancelled — nothing was changed.', 'text-gray-400');
+    showToast('Scan cancelled.', 'info');
+    return;
+  }
+
+  try {
+    setStatus('Reading every photo, completing the vehicle specs and market value…', 'text-blue-300');
+    const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Cars & Trucks', formSelector: '#vehicle-form' });
+    const id2 = res.identification || identification;
+    const out = applyScanToVehicleForm({ identification: id2, specs: res.specs, price: res.price });
+    let msg = `${esc(id2.detected_name || 'Vehicle')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Vehicle.`;
+    if (!res.visionUsed) {
+      msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photos were NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — these values did NOT come from your images.</p>`;
+    } else if (res.verifyRequested) {
+      msg += res.verified
+        ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your photos.</p>`
+        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
+    }
+    msg += scanAiLimitNotice();
+    msg += renderScanChecklistReport(res.checklist, res.summary);
+    setStatus(msg, 'text-emerald-300');
+    showToast('Review the vehicle details, then press Publish Vehicle.', 'success');
   } catch (err) {
     const msg = String(err?.message || err);
     const keyHint = /key|api|configured|settings|vision/i.test(msg);
@@ -5847,6 +6071,14 @@ window.showAddPropertyModal = function(existing = {}) {
             <div><label class="lbl">Half Bathrooms</label><input type="number" class="input-field" name="half_bathrooms" value="${existing.half_bathrooms ?? ''}" placeholder="1"></div>
             <div><label class="lbl">Floors / Levels</label><input type="number" class="input-field" name="floors" value="${existing.floors ?? ''}" placeholder="2"></div>
             <div><label class="lbl">Garage</label><input class="input-field" name="garage" value="${esc(existing.garage || '')}" placeholder="e.g. 2-car attached, None"></div>
+            <div><label class="lbl">Living Areas</label><input class="input-field" name="living_areas" value="${esc(existing.living_areas || '')}" placeholder="Living room, Dining, Family room"></div>
+            <div><label class="lbl">Kitchens</label><input type="number" class="input-field" name="kitchens" value="${existing.kitchens ?? ''}" placeholder="1"></div>
+            <div><label class="lbl">Balconies</label><input type="number" class="input-field" name="balconies" value="${existing.balconies ?? ''}" placeholder="2"></div>
+            <div><label class="lbl">Garden</label><input class="input-field" name="garden" value="${esc(existing.garden || '')}" placeholder="Private garden / Landscaped / None"></div>
+            <div><label class="lbl">Pool</label><input class="input-field" name="pool" value="${esc(existing.pool || '')}" placeholder="Private pool / Community pool / None"></div>
+            <div><label class="lbl">Security</label><input class="input-field" name="security" value="${esc(existing.security || '')}" placeholder="Gated community, CCTV, Alarm"></div>
+            <div><label class="lbl">Utilities</label><input class="input-field" name="utilities" value="${esc(existing.utilities || '')}" placeholder="Water, electricity, gas, internet"></div>
+            <div class="sm:col-span-2"><label class="lbl">Neighborhood / District</label><input class="input-field" name="neighborhood" value="${esc(existing.neighborhood || '')}" placeholder="e.g. Beverly Hills, Riverside"></div>
             <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the propertyâ€¦">${esc(existing.description || '')}</textarea></div>
             <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Swimming Pool, Garden, Garageâ€¦"></div>
             <div class="sm:col-span-2"><label class="lbl">Highlights (comma separated)</label><input class="input-field" name="highlights_text" value="${esc((existing.highlights || []).join(', '))}" placeholder="Prime location, map-ready post, 24-image gallery"></div>
@@ -5857,13 +6089,26 @@ window.showAddPropertyModal = function(existing = {}) {
             <div><label class="lbl">Landmarks (comma separated)</label><input class="input-field" name="landmarks_text" value="${esc((existing.landmarks || []).join(', '))}" placeholder="City Hall, Central Park, Main Station"></div>
           </div>
 
-          <div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+<div class="glass-soft border border-emerald-500/20 rounded-2xl p-4 space-y-3">
             <div class="flex items-center gap-2"><i data-lucide="home" class="w-4 h-4 text-emerald-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Interior &amp; Exterior Features</p></div>
             <div class="form-grid form-grid-2">
-              <div class="sm:col-span-2"><label class="lbl">Interior Features (comma separated)</label><input class="input-field" name="interior_features_text" value="${esc((existing.interior_features || []).join(', '))}" placeholder="Open plan kitchen, Walk-in closet, Fireplaceâ€¦"></div>
-              <div class="sm:col-span-2"><label class="lbl">Exterior Features (comma separated)</label><input class="input-field" name="exterior_features_text" value="${esc((existing.exterior_features || []).join(', '))}" placeholder="Swimming pool, Garden, Balcony, Patioâ€¦"></div>
-              <div class="sm:col-span-2"><label class="lbl">Home Systems (comma separated)</label><input class="input-field" name="home_systems_text" value="${esc((existing.home_systems || []).join(', '))}" placeholder="Central heating, Air conditioning, Solar panelsâ€¦"></div>
+              <div class="sm:col-span-2"><label class="lbl">Interior Features (comma separated)</label><input class="input-field" name="interior_features_text" value="${esc((existing.interior_features || []).join(', '))}" placeholder="Open plan kitchen, Walk-in closet, Fireplace…"></div>
+              <div class="sm:col-span-2"><label class="lbl">Exterior Features (comma separated)</label><input class="input-field" name="exterior_features_text" value="${esc((existing.exterior_features || []).join(', '))}" placeholder="Swimming pool, Garden, Balcony, Patio…"></div>
+              <div class="sm:col-span-2"><label class="lbl">Home Systems (comma separated)</label><input class="input-field" name="home_systems_text" value="${esc((existing.home_systems || []).join(', '))}" placeholder="Central heating, Air conditioning, Solar panels…"></div>
             </div>
+          </div>
+
+          <div class="glass-soft border border-amber-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="hard-hat" class="w-4 h-4 text-amber-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Construction, Ownership &amp; Contact</p></div>
+            <div class="form-grid form-grid-2">
+              <div><label class="lbl">Construction Type</label><input class="input-field" name="construction_type" value="${esc(existing.construction_type || '')}" placeholder="Brick, Concrete, Timber…"></div>
+              <div><label class="lbl">Construction Status</label><input class="input-field" name="construction_status" value="${esc(existing.construction_status || '')}" placeholder="Completed, Under construction"></div>
+              <div><label class="lbl">Ownership Type</label><input class="input-field" name="ownership_type" value="${esc(existing.ownership_type || '')}" placeholder="Freehold, Leasehold, HOA…"></div>
+              <div><label class="lbl">Contact / Agent Name</label><input class="input-field" name="contact_name" value="${esc(existing.contact_name || '')}" placeholder="Listing agent name"></div>
+              <div><label class="lbl">Contact Phone / WhatsApp</label><input class="input-field" name="contact_phone" value="${esc(existing.contact_phone || '')}" placeholder="+1 555 010 2233"></div>
+              <div><label class="lbl">Contact Email</label><input class="input-field" name="contact_email" value="${esc(existing.contact_email || '')}" placeholder="agent@example.com"></div>
+            </div>
+          </div>
           </div>
 
           <div class="glass-soft border border-violet-500/25 rounded-2xl p-4 space-y-3">
@@ -6188,15 +6433,38 @@ window.saveProperty = async function(e, existingId) {
     ai_generated_fields: data.catalog_template_id ? ['title', 'description', 'features', 'highlights', 'seo_keywords', 'country', 'country_code', 'product_location'] : [],
     is_active: data.is_active === 'on',
   };
+  // Professional real-estate fields live in the `specifications` JSONB (there
+  // are no dedicated columns). The details page reads them the same way it
+  // reads every spec key.
+  const professionalSpecs = {
+    neighborhood: data.neighborhood || '',
+    living_areas: data.living_areas || '',
+    kitchens: numOrNull(data.kitchens),
+    balconies: numOrNull(data.balconies),
+    garden: data.garden || '',
+    pool: data.pool || '',
+    security: data.security || '',
+    utilities: data.utilities || '',
+    construction_type: data.construction_type || '',
+    construction_status: data.construction_status || '',
+    ownership_type: data.ownership_type || '',
+    contact_name: data.contact_name || '',
+    contact_phone: data.contact_phone || '',
+    contact_email: data.contact_email || '',
+  };
+  const saveProfessionalSpecs = {};
+  for (const [k, v] of Object.entries({ ...professionalSpecs, real_price: realPriceNum })) {
+    if (v != null && String(v).trim() !== '') saveProfessionalSpecs[k] = v;
+  }
   let err;
   if (existingId) {
     payload.property_id = existingId;
     const current = sanitizeShowroomPayload((window._propertiesData || []).find(item => item.property_id === existingId) || (window._productsData || []).find(item => item.property_id === existingId));
-    payload.specifications = { ...(current.specifications && typeof current.specifications === 'object' ? current.specifications : {}), real_price: realPriceNum };
+    payload.specifications = { ...(current.specifications && typeof current.specifications === 'object' ? current.specifications : {}), ...saveProfessionalSpecs };
     ({ error: err } = await supabase.from('showroom_listings').upsert({ ...current, ...payload }, { onConflict: 'property_id' }));
   } else {
     payload.property_id = genId();
-    payload.specifications = { real_price: realPriceNum };
+    payload.specifications = { ...saveProfessionalSpecs };
     ({ error: err } = await supabase.from('showroom_listings').insert(payload));
   }
   if (err) {
@@ -6227,50 +6495,129 @@ window.showAddVehicleModal = function(existing = {}) {
   const type = Object.keys(VEHICLE_TYPE_CATEGORY).find(t => VEHICLE_TYPE_CATEGORY[t] === existing.category) || 'Car';
   const spec = (existing.specifications && typeof existing.specifications === 'object') ? existing.specifications : {};
   const val = (a, b) => existing[a] ?? spec[a] ?? b;
+  const asText = (v, f = '') => Array.isArray(v) ? v.join(', ') : (v == null ? f : v);
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box wide">
         <div class="flex items-center justify-between mb-5">
-          <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Vehicle</h3>
+          <h3 class="text-base font-black text-white">${isEdit ? 'Edit' : 'Add'} Vehicle — Professional Listing</h3>
           <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
         </div>
         <form id="vehicle-form" onsubmit="saveVehicle(event,'${isEdit ? existing.property_id : ''}')" class="space-y-4">
-          <div class="glass-soft border border-amber-500/15 rounded-2xl p-4 space-y-3">
+          <div class="glass-soft border border-amber-500/15 rounded-2xl p-4">
             <div class="flex items-start gap-3">
               <span class="shrink-0 w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center"><i data-lucide="car-front" class="w-4.5 h-4.5 text-amber-400"></i></span>
               <div>
-                <p class="text-xs font-bold text-white uppercase tracking-wide">Cars &amp; Trucks</p>
-                <p class="text-[11px] text-gray-500 mt-0.5">Listed in the Vehicles row above Real Estate. No map needed. Vehicles are never deleted by Clear All Products.</p>
+                <p class="text-xs font-bold text-white uppercase tracking-wide">Cars &amp; Trucks — Your next ride starts here.</p>
+                <p class="text-[11px] text-gray-500 mt-0.5">This professional listing lives in the Vehicles row above Real Estate. Every field the AI scanner can read is auto-filled from your photos — you review everything before publishing. Vehicles are never deleted by Clear All Products.</p>
               </div>
             </div>
+            <div class="mt-3 rounded-xl border border-violet-500/25 bg-violet-500/10 p-3">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Vehicle Scanner</p>
+                <button type="button" id="btn-scan-ai-veh" onclick="scanVehicleWithAI()" class="btn-press px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shrink-0">
+                  <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
+                </button>
+              </div>
+              <p class="text-[11px] text-gray-500 mt-1.5">Upload photos first, then press scan — the AI reads the vehicle, completes every field below and writes a clear professional description (size, engine, trim, tires, history, safety, fair price).</p>
+              <div id="scan-ai-veh-status" class="hidden text-xs mt-3 font-medium"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-violet-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="car" class="w-4 h-4 text-violet-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Overview &amp; Identity</p></div>
             <div class="form-grid form-grid-2">
               <div><label class="lbl">Vehicle Type *</label><select class="input-field" name="vehicle_type" required>${Object.keys(VEHICLE_TYPE_CATEGORY).map(t => `<option value="${t}" ${type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
               <div><label class="lbl">Body Type</label><select class="input-field" name="body_type">${['', ...VEHICLE_BODY_TYPES].map(b => `<option value="${b}" ${val('body_type', '') === b ? 'selected' : ''}>${b || 'General'}</option>`).join('')}</select></div>
               <div class="sm:col-span-2"><label class="lbl">Vehicle Title *</label><input class="input-field" name="title" value="${esc(existing.title || '')}" placeholder="e.g. 2023 Toyota Land Cruiser V8 Turbo Diesel"></div>
               <div><label class="lbl">Brand / Make *</label><input class="input-field" name="make" value="${esc(val('make', val('brand', '')))}" placeholder="e.g. Toyota"></div>
               <div><label class="lbl">Model *</label><input class="input-field" name="model" value="${esc(spec.model || existing.model || '')}" placeholder="e.g. Land Cruiser"></div>
+              <div><label class="lbl">Trim / Edition</label><input class="input-field" name="trim" value="${esc(val('trim', ''))}" placeholder="e.g. GXR V8, Platinum, LS"></div>
               <div><label class="lbl">Model Year</label><input class="input-field" name="model_year" value="${esc(val('model_year', ''))}" placeholder="e.g. 2023"></div>
+              <div><label class="lbl">Doors</label><input class="input-field" name="doors" value="${esc(val('doors', ''))}" placeholder="e.g. 4"></div>
+              <div><label class="lbl">Color (Exterior)</label><input class="input-field" name="color" value="${esc(existing.color || spec.color || '')}" placeholder="e.g. Pearl White"></div>
+              <div><label class="lbl">VIN / Serial</label><input class="input-field" name="vin" value="${esc(val('vin', ''))}" placeholder="Optional identification number"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-amber-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="gauge" class="w-4 h-4 text-amber-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Performance &amp; Mechanical</p></div>
+            <div class="form-grid form-grid-2">
               <div><label class="lbl">Mileage</label><input class="input-field" name="mileage" value="${esc(val('mileage', ''))}" placeholder="e.g. 15,000 mi or 0 (new)"></div>
               <div><label class="lbl">Engine</label><input class="input-field" name="engine" value="${esc(val('engine', ''))}" placeholder="e.g. 4.0L V8 Turbo Diesel"></div>
+              <div><label class="lbl">Horsepower</label><input class="input-field" name="horsepower" value="${esc(val('horsepower', ''))}" placeholder="e.g. 400 hp"></div>
               <div><label class="lbl">Transmission</label><select class="input-field" name="transmission">${['', 'Automatic', 'Manual', 'CVT', 'Dual-Clutch', 'Semi-Automatic', 'Electric (Single Speed)'].map(t => `<option value="${t}" ${val('transmission', '') === t ? 'selected' : ''}>${t || 'Not specified'}</option>`).join('')}</select></div>
               <div><label class="lbl">Fuel Type</label><select class="input-field" name="fuel_type">${['', 'Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-in Hybrid', 'LPG', 'Bio-diesel'].map(t => `<option value="${t}" ${val('fuel_type', '') === t ? 'selected' : ''}>${t || 'Not specified'}</option>`).join('')}</select></div>
               <div><label class="lbl">Drive Type</label><select class="input-field" name="drive_type">${['', 'FWD', 'RWD', 'AWD', '4WD'].map(t => `<option value="${t}" ${val('drive_type', '') === t ? 'selected' : ''}>${t || 'Not specified'}</option>`).join('')}</select></div>
+              <div><label class="lbl">Fuel Economy</label><input class="input-field" name="fuel_economy" value="${esc(val('fuel_economy', ''))}" placeholder="e.g. 25 mpg combined"></div>
+              <div><label class="lbl">Towing Capacity</label><input class="input-field" name="towing_capacity" value="${esc(val('towing_capacity', ''))}" placeholder="e.g. 7,700 lbs"></div>
               <div><label class="lbl">(${(val('sleeping_capacity', '') || '') ? 'Sleeps' : 'Seating Capacity'})</label><input class="input-field" name="seating_capacity" value="${esc(val('seating_capacity', ''))}" placeholder="e.g. 5 seats or Sleeps 6"></div>
-              <div><label class="lbl">Doors</label><input class="input-field" name="doors" value="${esc(val('doors', ''))}" placeholder="e.g. 4"></div>
-              <div><label class="lbl">Color</label><input class="input-field" name="color" value="${esc(existing.color || spec.color || '')}" placeholder="e.g. White"></div>
+              <div><label class="lbl">Wheels &amp; Tires</label><input class="input-field" name="wheels_tires" value="${esc(val('wheels_tires', ''))}" placeholder="e.g. 2 new front, 20\" alloy, 265/65 R18"></div>
+              <div><label class="lbl">Dimensions (L × W × H)</label><input class="input-field" name="dimensions" value="${esc(val('dimensions', ''))}" placeholder="e.g. 4,950 x 1,980 x 1,890 mm"></div>
+              <div><label class="lbl">Cargo Capacity</label><input class="input-field" name="cargo_capacity" value="${esc(val('cargo_capacity', ''))}" placeholder="e.g. 2,000 L / 5 seats up"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-emerald-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Condition, History &amp; Ownership</p></div>
+            <div class="form-grid form-grid-2">
               <div><label class="lbl">Condition *</label><select class="input-field" name="condition" required>${['', 'New', 'Used - Like New', 'Used - Good', 'Used - Fair', 'Refurbished'].map(c => `<option value="${c}" ${val('condition', '') === c ? 'selected' : ''}>${c || 'Select condition'}</option>`).join('')}</select></div>
-              <div><label class="lbl">VIN / Serial</label><input class="input-field" name="vin" value="${esc(val('vin', ''))}" placeholder="Optional identification number"></div>
+              <div><label class="lbl">Previous Owners</label><input class="input-field" name="previous_owners" value="${esc(val('previous_owners', ''))}" placeholder="e.g. 1 or None (new)"></div>
+              <div class="sm:col-span-2"><label class="lbl">Ownership History</label><textarea class="input-field" name="ownership_history" rows="2" placeholder="e.g. Single owner, always garaged, clean title">${esc(val('ownership_history', ''))}</textarea></div>
+              <div class="sm:col-span-2"><label class="lbl">Service / Maintenance History</label><textarea class="input-field" name="service_history" rows="2" placeholder="e.g. Full dealer service every 5,000 mi, new brakes 2024">${esc(val('service_history', ''))}</textarea></div>
+              <div class="sm:col-span-2"><label class="lbl">Accident / Damage History</label><textarea class="input-field" name="accident_history" rows="2" placeholder="e.g. Accident-free, or: minor rear bumper repair 2022">${esc(val('accident_history', ''))}</textarea></div>
+              <div><label class="lbl">Registration Status</label><select class="input-field" name="registration_status">${['', 'Registered', 'Unregistered', 'Registration Pending'].map(t => `<option value="${t}" ${val('registration_status', '') === t ? 'selected' : ''}>${t || 'Not specified'}</option>`).join('')}</select></div>
+              <div><label class="lbl">Inspection Status</label><select class="input-field" name="inspection_status">${['', 'Inspected & Certified', 'Inspected', 'Not Inspected', 'Under Inspection'].map(t => `<option value="${t}" ${val('inspection_status', '') === t ? 'selected' : ''}>${t || 'Not specified'}</option>`).join('')}</select></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-rose-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="cpu" class="w-4 h-4 text-rose-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Safety, Technology &amp; Interior</p></div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Safety Features (comma separated)</label><input class="input-field" name="safety_features" value="${esc(typeof val('safety_features', []).join === 'function' ? val('safety_features', []).join(', ') : val('safety_features', ''))}" placeholder="ABS, Airbags, Lane Assist, Traction Control, 360 Camera"></div>
+              <div class="sm:col-span-2"><label class="lbl">Driver Assistance</label><input class="input-field" name="driver_assistance" value="${esc(asText(val('driver_assistance', '')))}" placeholder="Adaptive Cruise, Auto Emergency Braking, Blind-spot Monitor"></div>
+              <div class="sm:col-span-2"><label class="lbl">Technology &amp; Infotainment</label><input class="input-field" name="technology" value="${esc(asText(val('technology', '')))}" placeholder="Apple CarPlay, Navigation, BOSE sound, Reverse camera"></div>
+              <div class="sm:col-span-2"><label class="lbl">Interior &amp; Comfort</label><input class="input-field" name="interior" value="${esc(asText(val('interior', '')))}" placeholder="Leather seats, Heated front seats, Sunroof, AC"></div>
+            </div>
+          </div>
+
+          <div class="glass-soft border border-sky-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="badge-dollar-sign" class="w-4 h-4 text-sky-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Price, Warranty, Location &amp; Seller</p></div>
+            <div class="form-grid form-grid-2">
               <div><label class="lbl">Price (USD) *</label><input type="number" class="input-field" name="price" value="${existing.price || ''}" required placeholder="0"></div>
               <div><label class="lbl">Real Price (crossed out)</label><input type="number" class="input-field" name="real_price" value="${existing.real_price ?? spec.real_price ?? ''}" placeholder="Original price before discount"></div>
               <div><label class="lbl">Stock Qty</label><input type="number" class="input-field" name="stock_quantity" value="${existing.stock_quantity ?? '1'}"></div>
               <div><label class="lbl">Warranty</label><input class="input-field" name="warranty" value="${esc(existing.warranty || spec.warranty || '')}" placeholder="e.g. 3-year manufacturer"></div>
-              <div class="sm:col-span-2"><label class="lbl">Safety Features (comma separated)</label><input class="input-field" name="safety_features" value="${esc(Array.isArray(val('safety_features', [])) ? val('safety_features', []).join(', ') : val('safety_features', ''))}" placeholder="ABS, Airbags, Lane Assist, Traction Control"></div>
-              <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="3" placeholder="Describe the vehicle, extras, service history...">${esc(existing.description || '')}</textarea></div>
-              <div class="sm:col-span-2"><label class="lbl">Photo URLs (one per line)</label><textarea class="input-field" name="images_text" rows="3" placeholder="https://.../photo1.jpg&#10;https://.../photo2.jpg">${esc((existing.images || []).join('\n'))}</textarea></div>
-              <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Leather seats, Sunroof, GPS, Heated seats"></div>
+              <div class="sm:col-span-2"><label class="lbl">Listing Location</label><input class="input-field" name="location" value="${esc(val('location', ''))}" placeholder="e.g. Houston, TX, United States"></div>
+              <div><label class="lbl">Seller / Contact Name</label><input class="input-field" name="seller_name" value="${esc(val('seller_name', ''))}" placeholder="e.g. James Carter"></div>
+              <div><label class="lbl">Seller Phone / WhatsApp</label><input class="input-field" name="seller_phone" value="${esc(val('seller_phone', ''))}" placeholder="e.g. +1 555 010 2233"></div>
+              <div><label class="lbl">Seller Email</label><input class="input-field" name="seller_email" value="${esc(val('seller_email', ''))}" placeholder="e.g. james@example.com"></div>
             </div>
-            <label class="flex items-center gap-2.5 cursor-pointer select-none"><input type="checkbox" name="is_active" ${existing.is_active === false ? '' : 'checked'} class="w-4 h-4 accent-emerald-500"><span class="text-xs font-bold text-gray-300">Publish immediately</span></label>
           </div>
+
+          <div class="glass-soft border border-blue-500/20 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2"><i data-lucide="photo" class="w-4 h-4 text-blue-400"></i><p class="text-xs font-bold text-white uppercase tracking-wide">Description &amp; Media</p></div>
+            <div class="form-grid form-grid-2">
+              <div class="sm:col-span-2"><label class="lbl">Description</label><textarea class="input-field" name="description" rows="4" placeholder="Clear, professional description of the vehicle, its condition, extras and service history...">${esc(existing.description || '')}</textarea></div>
+              <div class="sm:col-span-2"><label class="lbl">Features (comma separated)</label><input class="input-field" name="features_text" value="${esc((existing.features || []).join(', '))}" placeholder="Leather seats, Sunroof, GPS, Heated seats, Roof rack"></div>
+            </div>
+            <div>
+              <label class="lbl">Vehicle Photos &amp; Videos</label>
+              <div id="drop-zone" class="drop-zone" onclick="pickMediaForForm('img-upload')">
+                <i data-lucide="image-plus" class="w-7 h-7 text-blue-400 mx-auto mb-2"></i>
+                <p class="text-xs font-bold text-gray-300">Click or drag &amp; drop images or videos</p>
+                <input type="file" id="img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onchange="handleImageUpload(event)">
+              </div>
+              <div id="image-preview" class="flex flex-wrap gap-2 mt-3">
+                ${(existing.images || []).map((u, i) => imageThumbHtml(u, i)).join('')}
+              </div>
+              <div id="image-url-inputs">
+                ${(existing.images || []).map((u, i) => `<input type="hidden" name="images" id="img-url-${i}" value="${esc(u)}">`).join('')}
+              </div>
+            </div>
+            <label class="flex items-center gap-2.5 cursor-pointer select-none mt-2"><input type="checkbox" name="is_active" ${existing.is_active === false ? '' : 'checked'} class="w-4 h-4 accent-emerald-500"><span class="text-xs font-bold text-gray-300">Publish immediately</span></label>
+          </div>
+
           <div class="flex items-center justify-between gap-3">
             <button type="button" onclick="closeModal()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition">Cancel</button>
             <button type="submit" class="btn-press flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-black px-7 py-3 rounded-2xl transition shadow-xl shadow-orange-700/25">Publish Vehicle</button>
@@ -6278,6 +6625,14 @@ window.showAddVehicleModal = function(existing = {}) {
         </form>
       </div>
     </div>`);
+  setupDropZone(); setupImageSortable();
+  window._vehFormDirty = !!isEdit;
+  const vfEl = document.getElementById('vehicle-form');
+  if (vfEl) {
+    const markVehDirty = () => { window._vehFormDirty = true; };
+    vfEl.addEventListener('input', markVehDirty);
+    vfEl.addEventListener('change', markVehDirty);
+  }
   if (window.lucide) lucide.createIcons();
 };
 
@@ -6285,9 +6640,14 @@ window.saveVehicle = async function(e, existingId) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const data = Object.fromEntries(fd.entries());
-  const images = String(data.images_text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const images = [...fd.getAll('images')].filter(Boolean)
+    .concat(String(data.images_text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean));
+  const uniqueImages = [...new Set(images)];
   const features = (data.features_text || '').split(',').map(s => s.trim()).filter(Boolean);
   const safetyFeatures = (data.safety_features || '').split(',').map(s => s.trim()).filter(Boolean);
+  const driverAssist = (data.driver_assistance || '').split(',').map(s => s.trim()).filter(Boolean);
+  const techFeatures = (data.technology || '').split(',').map(s => s.trim()).filter(Boolean);
+  const interiorFeatures = (data.interior || '').split(',').map(s => s.trim()).filter(Boolean);
   const realPriceNum = (data.real_price === '' || data.real_price == null) ? null : Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.real_price) || 0));
   const vehicleType = VEHICLE_TYPE_CATEGORY[data.vehicle_type] || 'Cars';
   const year = String(data.model_year || '').trim();
@@ -6296,14 +6656,25 @@ window.saveVehicle = async function(e, existingId) {
   const autoTitle = [year, make, model].filter(Boolean).join(' ') || String(data.title || '').trim();
   const specs = {
     make, model, model_year: year, body_type: data.body_type || null,
-    mileage: data.mileage || '', engine: data.engine || '', horsepower: null,
+    trim: data.trim || '', mileage: data.mileage || '', engine: data.engine || '',
+    horsepower: data.horsepower || '',
     transmission: data.transmission || null, drive_type: data.drive_type || null,
-    fuel_type: data.fuel_type || null,
+    fuel_type: data.fuel_type || null, fuel_economy: data.fuel_economy || '',
+    towing_capacity: data.towing_capacity || '',
     seating_capacity: data.seating_capacity || null,
     sleeping_capacity: vehicleType === 'Motorhomes' ? (data.seating_capacity || null) : null,
     doors: data.doors || null, safety_features: safetyFeatures,
+    driver_assistance: driverAssist, technology: techFeatures, interior: interiorFeatures,
+    wheels_tires: data.wheels_tires || '', dimensions: data.dimensions || '',
+    cargo_capacity: data.cargo_capacity || '',
+    ownership_history: data.ownership_history || '', service_history: data.service_history || '',
+    accident_history: data.accident_history || '', previous_owners: data.previous_owners || '',
+    registration_status: data.registration_status || null, inspection_status: data.inspection_status || null,
     color: data.color || '', vin: data.vin || '', warranty: data.warranty || '',
     condition: data.condition || '',
+    location: data.location || '', seller_name: data.seller_name || '',
+    seller_phone: data.seller_phone || '', seller_email: data.seller_email || '',
+    product_location: data.location || '',
   };
   for (const k of Object.keys(specs)) if (specs[k] == null) delete specs[k];
   const payload = {
@@ -6315,7 +6686,7 @@ window.saveVehicle = async function(e, existingId) {
     price: Math.max(GLOBAL_PRICE_MIN, Math.min(GLOBAL_PRICE_MAX, parseFloat(data.price) || 0)),
     currency: 'USD',
     real_price: realPriceNum,
-    images, features,
+    images: uniqueImages, features,
     brand: make || null,
     color: data.color || null,
     condition: data.condition || null,
@@ -7778,7 +8149,7 @@ For each distinct product include:
 - year: only from visible text; otherwise null with year_estimated true when estimated from the design.
 - body_type, color, condition (New, Refurbished, Used - Like New, Used - Good, Used - Fair).
 - category: best match from this list â€” ${PRODUCT_CATEGORIES.join(', ')}. For properties set category to "Real Estate".
-- subcategory, property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors (number|null), garage (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), year_built (number|null â€” only if visible), area (neighborhood/district), address (street + number or landmark when visible/reliably known), zip_code (string|null â€” only if visible), landmarks (string[]|null â€” only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null) for properties. LOCATION RULES: only use location genuinely visible in the photo â€” never invent an address or coordinates; return null when unknown.
+- subcategory, property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors (number|null), garage (string|null), parking_spaces (number|null), furnished ("Furnished"/"Unfurnished"/null), year_built (number|null â€” only if visible), area (neighborhood/district), neighborhood (string|null), living_areas (string|null - rooms/areas seen on a visible floor plan), kitchens (number|null), balconies (number|null - only clearly visible), garden (string|null - e.g. "Private garden", "None"), pool (string|null - e.g. "Private pool", "Community pool", "None"), security (string|null - only visibly present systems), utilities (string|null - only visibly stated), construction_type (string|null - only visibly apparent), construction_status (string|null - e.g. "Completed", "Under construction"), ownership_type (string|null - only printed on a visible sign/paper), contact_name (string|null - only from visible contact info), contact_phone (string|null), contact_email (string|null), address (street + number or landmark when visible/reliably known), zip_code (string|null â€” only if visible), landmarks (string[]|null â€” only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null) for properties. LOCATION RULES: only use location genuinely visible in the photo â€” never invent an address or coordinates; return null when unknown.
 - confidence: "high" | "medium" | "low" for each product.
 - detected_name: a short plain label for each product, e.g. "black leather handbag", "silver wristwatch", "white Nike sneakers", "modern 3-bedroom villa".
 
@@ -7824,9 +8195,9 @@ IDENTIFIED PRODUCT:
 Look at the photo(s) again, then complete the standard specifications for THIS EXACT identified product using reliable product/vehicle/property data for that exact brand + model.
 
 ALWAYS fill every relevant specification when you can determine it for the identified product:
-- Vehicles: Engine, Transmission, Fuel, Drive type, Horsepower, Seats (seating capacity), Doors, Body type, Model year, Mileage (only if visible/known), Safety features.
+- Vehicles: Engine, Transmission, Fuel, Drive type, Horsepower, Seats (seating capacity), Doors, Body type, Model year, Mileage (only if visible/known), Safety features, Trim (when visible/known), Color, Interior & comfort (only visible elements), Driver assistance, Technology/infotainment, Wheels & tires (size/type/condition, e.g. "20-inch alloys, 265/65 R18, 2 new tires"), Dimensions (L x W x H), Cargo capacity, Towing capacity, Fuel economy, Registration status, Inspection status, Service history and Accident history (only from visible paperwork/signs — otherwise null), Previous owners (only if visibly stated), Warranty.
 - Phones/Computers: storage, ram, processor, display, graphics, os.
-- Properties (house/villa/land): property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition (string|null â€” "New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation"; only from visible state or a listing sign, never inferred as verified), year_built (number|null â€” only if visible/known), year_renovated (number|null â€” only if visible/known), area (neighborhood/district), address (street + number or landmark when visible/reliably known), zip_code (string|null â€” only if visibly printed), landmarks (string[]|null â€” only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, country_code, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null), interior_features (string[]|null â€” only interior elements actually visible in the photos), exterior_features (string[]|null â€” only exterior elements actually visible), home_systems (string[]|null â€” only systems visibly present, e.g. air conditioning units, solar panels, radiators), nearby_area (only genuinely known from the photo/listing sign: schools/hospitals/shopping/transportation/distances â€” otherwise null), floor_plan (only if a floor plan is actually visible in the photos, otherwise null), legal_info (NEVER claim ownership/title/permits/taxes/legal status as verified from a photo â€” only mention something clearly printed on a visible listing/sign as source "Seller provided", otherwise null), inspection_info (string|null â€” only if visibly stated), verification_status (always null here â€” stays "Not verified" unless the owner verifies), risk_notes (string|null â€” only clearly visible issues). LOCATION RULES: only use location genuinely visible in the photo or reliably known â€” never invent an address, city, coordinates, landmarks or nearby places; return null (and list the key in "missing_fields") when you cannot determine it. latitude/longitude may be derived from a readable address; otherwise null.
+- Properties (house/villa/land): property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition (string|null â€” "New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation"; only from visible state or a listing sign, never inferred as verified), year_built (number|null â€” only if visible/known), year_renovated (number|null â€” only if visible/known), area (neighborhood/district), neighborhood (string|null), living_areas (string|null - rooms/areas seen on a visible floor plan), kitchens (number|null), balconies (number|null - only clearly visible), garden (string|null - e.g. "Private garden", "None"), pool (string|null - e.g. "Private pool", "Community pool", "None"), security (string|null - only visibly present systems), utilities (string|null - only visibly stated), construction_type (string|null - only visibly apparent), construction_status (string|null - e.g. "Completed", "Under construction"), ownership_type (string|null - only printed on a visible sign/paper), contact_name (string|null - only from visible contact info), contact_phone (string|null), contact_email (string|null), address (street + number or landmark when visible/reliably known), zip_code (string|null â€” only if visibly printed), landmarks (string[]|null â€” only well-known landmarks visible in or clearly indicated by the photo), town, city, state, country, country_code, latitude (number|null), longitude (number|null), listing_status ("sale"/"rent"/null), interior_features (string[]|null â€” only interior elements actually visible in the photos), exterior_features (string[]|null â€” only exterior elements actually visible), home_systems (string[]|null â€” only systems visibly present, e.g. air conditioning units, solar panels, radiators), nearby_area (only genuinely known from the photo/listing sign: schools/hospitals/shopping/transportation/distances â€” otherwise null), floor_plan (only if a floor plan is actually visible in the photos, otherwise null), legal_info (NEVER claim ownership/title/permits/taxes/legal status as verified from a photo â€” only mention something clearly printed on a visible listing/sign as source "Seller provided", otherwise null), inspection_info (string|null â€” only if visibly stated), verification_status (always null here â€” stays "Not verified" unless the owner verifies), risk_notes (string|null â€” only clearly visible issues). LOCATION RULES: only use location genuinely visible in the photo or reliably known â€” never invent an address, city, coordinates, landmarks or nearby places; return null (and list the key in "missing_fields") when you cannot determine it. latitude/longitude may be derived from a readable address; otherwise null.
 - Other product types: fill whatever genuinely applies â€” type (e.g. Handbag, Sneaker, Textbook), material, size, color, brand, model, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, storage, assembly, weatherproof, warranty.
 - Also complete the listing content for the exact identified product: highlights (3-6 genuine selling points), seo_keywords (6-10 relevant search keywords for the identified product), tags (from the allowed badge set â€” "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" â€” only the ones that genuinely apply to this exact product), warranty (only when the identified product type genuinely carries one, e.g. electronics, vehicles, appliances), availability_status ("In Stock" for a new product, otherwise null if not determinable), and stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle, property or single specimen â€” otherwise null, because stock cannot be known from a photo).
 
