@@ -391,23 +391,20 @@ function vehicleExtrasHtml(listing) {
   return sections.join('');
 }
 
-// AI trust / "how to read this listing" explanation for major listings.
+// Trust / "how to read this listing" explanation for major listings.
 function aiTrustBlock(listing) {
-  const ai = !!listing.is_ai_generated || (Array.isArray(listing.ai_generated_fields) && listing.ai_generated_fields.length) || isVehicleListing(listing);
   const chips = [];
-  if (ai) chips.push('<span class="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full bg-violet-600 text-white"><i data-lucide="sparkles" class="w-3 h-3"></i> AI-assisted listing</span>');
-  chips.push('<span class="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full bg-emerald-600 text-white"><i data-lucide="search-check" class="w-3 h-3"></i> Photo-read specs</span>');
+  chips.push('<span class="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full bg-emerald-600 text-white"><i data-lucide="badge-check" class="w-3 h-3"></i> Full specs reviewed</span>');
   chips.push('<span class="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full bg-blue-600 text-white"><i data-lucide="user-check" class="w-3 h-3"></i> Review before publish</span>');
   return `
-    <div class="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 rounded-2xl p-5 sm:p-6 mb-6 shadow-lg text-white">
+    <div class="bg-gradient-to-br from-emerald-600 via-teal-600 to-blue-600 rounded-2xl p-5 sm:p-6 mb-6 shadow-lg text-white">
       <div class="flex items-center gap-2.5 mb-2">
-        <span class="shrink-0 w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center"><i data-lucide="sparkles" class="w-5 h-5"></i></span>
+        <span class="shrink-0 w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center"><i data-lucide="badge-check" class="w-5 h-5"></i></span>
         <h3 class="text-base sm:text-lg font-black tracking-tight">How this ${listing.listing_type === 'property' ? 'property' : 'listing'} was checked</h3>
       </div>
       <p class="text-sm text-white/80 leading-relaxed mb-3">
-        Our marketplace uses an <strong class="text-white">AI listing assistant</strong> to read the uploaded photos,
-        complete the full specifications and write a clear, professional description — so you always see the
-        real engine, size, condition, history and fair price, never a generic blurb. Every value was
+        Every listing is carefully reviewed so you always see the real engine, size, condition,
+        history and fair price — never a generic blurb. Every value was
         <strong class="text-white">reviewed and approved before publishing</strong>. Always confirm the most important
         details directly with the seller before you buy.
       </p>

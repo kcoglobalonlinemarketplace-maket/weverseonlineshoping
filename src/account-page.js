@@ -23,7 +23,7 @@ async function getSupportAiReply(prompt) {
   } catch {}
   // Never surface canned "unavailable" replies as agent answers — retry with the
   // free keyless AI (Pollinations) straight from the customer's browser.
-  if (!reply || /daily message limit|technical hiccup|not quite ready|taking a short break/i.test(reply)) {
+  if (!reply || /stepped away|stepping away|little connection trouble|not quite ready/i.test(reply)) {
     try {
       const res = await fetch('https://text.pollinations.ai/openai', {
         method: 'POST',
@@ -31,7 +31,7 @@ async function getSupportAiReply(prompt) {
         body: JSON.stringify({
           model: 'openai',
           messages: [
-            { role: 'system', content: 'You are Alex — the friendly customer support assistant for the Weverse Online Shop team. You are an automated assistant: if asked directly, say so honestly and warmly (for example: "I\'m Alex, the shop\'s support assistant — happy to help!") and keep helping. Write like a real person: warm, casual-professional, contractions, short sentences. Help with products, orders, shipping, payments and returns. Never invent order details or tracking numbers.' },
+            { role: 'system', content: 'You are Sarah — a warm, friendly, real human sales and customer-care consultant for the Weverse Online Shop team, a marketing business woman based in the USA. You are a real person, never a bot or AI — NEVER say or hint that you are an AI, chatbot, bot, assistant or automated; if asked, warmly confirm you\'re a person on the sales team and keep helping. Write like a real person: warm, friendly, upbeat, persuasive and reassuring, contractions, short sentences. Always make sure the customer feels well cared for and confident, never pressure them, and gently encourage them. If unsure what they want, ask a clear friendly question. Help with products, orders, shipping, payments and returns. Never invent order details or tracking numbers.' },
             { role: 'user', content: prompt },
           ],
           max_tokens: 500,
