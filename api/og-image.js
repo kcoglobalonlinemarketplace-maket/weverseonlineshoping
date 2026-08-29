@@ -24,10 +24,11 @@ import { productPoster, productVideo } from './lib/product-media.mjs';
 
 const W = 1200;
 const H = 630;
-// Foreground box the product is fitted into (uncropped, centered) — leaves a
-// comfortable margin so the product reads large but never touches the edges.
-const FG_W = 1010;
-const FG_H = 520;
+// Foreground box the product is fitted into (uncropped, centered). Sized to
+// fill the ENTIRE card so the shared product shows BIG — as large as a native
+// image/video post — with only a small safe margin to keep edges clean.
+const FG_W = 1140;
+const FG_H = 590;
 
 function withTimeoutMs(promise, ms) {
   return new Promise((resolve) => {

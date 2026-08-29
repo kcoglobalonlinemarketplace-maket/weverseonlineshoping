@@ -69,7 +69,82 @@ function productMeta(listing) {
   const video = absUrl(mainShareVideo(listing) || '');
   const text = price ? `${title} — ${price}` : title;
   const caption = price ? `${title}\n${price}\n${url}` : `${title}\n${url}`;
-  return { title, price, url, image, video, text, caption };
+  return { title, price, url, image, video, text, caption, _listing: listing };
+}
+
+// ── Native media file sharing ─────────────────────────────
+// The share button on mobile posts a LINK, which Facebook shows as a small
+// card (and usually ignores video). To share a product exactly like a normal
+// image/video post — big and at original size — we download the REAL permanent
+// file (image or mp4) and pass it to the OS share sheet via the Web Share API,
+// so picking the Facebook app posts a native, full-size media post.
+
+function fileNameFromUrl(url, fallbackExt) {
+  try {
+    const base = new URL(url).pathname.split('/').pop();
+    return base && base.includes('.') ? base : `product.${fallbackExt}`;
+  } catch {
+    return `product.${fallbackExt}`;
+  }
+}
+
+// The real media file to share: prefer the playable video (mp4) for video
+// products, otherwise the permanent main photo. Never temp/blob/video placeholders.
+function primaryMediaSource(listing) {
+  const video = mainShareVideo(listing);
+  if (video) return absUrl(video);
+  const img = mainShareImage(listing);
+  if (img && img !== FALLBACK_IMG) return absUrl(img);
+  return '';
+}
+
+function guessMime(url) {
+  if (/\.(mp4|m4v)(\?|#|$)/i.test(url)) return 'video/mp4';
+  if (/\.webm(\?|#|$)/i.test(url)) return 'video/webm';
+  if (/\.png(\?|#|$)/i.test(url)) return 'image/png';
+  if (/\.webp(\?|#|$)/i.test(url)) return 'image/webp';
+  if (/\.(jpe?g)(\?|#|$)/i.test(url)) return 'image/jpeg';
+  return '';
+}
+
+async function fetchAsFile(url) {
+  const res = await fetch(url, { mode: 'cors', credentials: 'omit', redirect: 'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const blob = await res.blob();
+  const type = blob.type || guessMime(url) || 'application/octet-stream';
+  const isVideo = /^video\//.test(type) || /\.(mp4|webm|m4v)/i.test(url);
+  const name = fileNameFromUrl(url, isVideo ? 'mp4' : 'jpg');
+  const file = new File([blob], name, { type });
+  return { file, isVideo, type };
+}
+
+// Shares a product's real media file natively (native Facebook/WhatsApp/etc. post).
+// Returns true if the OS share went through, false if it fell back to a link.
+async function shareMediaFile(listing, fallback) {
+  const src = primaryMediaSource(listing);
+  if (!src || typeof navigator.share !== 'function') { fallback(); return false; }
+  let file = null;
+  try {
+    const f = await fetchAsFile(src);
+    file = f.file;
+  } catch {
+    fallback(); return false;
+  }
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      const meta = productMeta(listing);
+      // iOS: passing `text` alongside `files` can drop the file, so for native
+      // media shares we send the file + title only. The product is the media.
+      const payload = { files: [file], title: meta.title };
+      await navigator.share(payload);
+      return true;
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') return true; // user cancelled
+    // some apps/desktop throw because files aren't accepted — fall back to link
+  }
+  fallback();
+  return false;
 }
 
 function showShareToast(msg) {
@@ -209,10 +284,18 @@ function openSheet(meta) {
 async function runAction(action, meta) {
   switch (action) {
     case 'whatsapp':
-      openWindow(`https://api.whatsapp.com/send?text=${encodeURIComponent(meta.caption)}`);
+      // Native media first: sharing the actual image/video posts it big and at
+      // original size (like a normal WhatsApp photo/video). Otherwise fall back
+      // to a text message with the link.
+      await shareMediaFile(meta._listing, () =>
+        openWindow(`https://api.whatsapp.com/send?text=${encodeURIComponent(meta.caption)}`));
       break;
     case 'facebook':
-      openWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(meta.url)}&quote=${encodeURIComponent(meta.text)}`);
+      // Native media first: the real image/video file posts as a full-size
+      // native Facebook post (exactly like uploading a normal photo/video).
+      // Otherwise fall back to the link-share card.
+      await shareMediaFile(meta._listing, () =>
+        openWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(meta.url)}&quote=${encodeURIComponent(meta.text)}`));
       break;
     case 'x':
       openWindow(`https://twitter.com/intent/tweet?text=${encodeURIComponent(meta.text)}&url=${encodeURIComponent(meta.url)}`);
