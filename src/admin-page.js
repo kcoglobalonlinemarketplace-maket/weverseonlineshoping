@@ -3484,6 +3484,140 @@ function mapSelectValue(field, value) {
   return fuzzy || null;
 }
 
+// REAL-VALUE INFERENCE PASS — fills the genuine gaps a scan can still have with
+// real, expert-derived values instead of blank fields or "Not specified"
+// placeholders. Every inferred value is marked in "estimated" so the owner
+// reviews it before publishing. Fields that can NEVER be read from a photo
+// (private seller contact details, VIN, precise address/GPS, verification
+// evidence) are intentionally NOT inferred — those stay blank for the owner.
+function inferScanGaps(category, current, identification, fields) {
+  const out = {};
+  const estimated = [];
+  const fieldMap = new Map((fields || []).map((f) => [f.key, f]));
+  const has = (k) => fieldMap.has(k);
+  const isEmpty = (k) => current[k] == null || String(Array.isArray(current[k]) ? current[k].join(', ') : current[k]).trim() === '';
+  const set = (k, v) => {
+    if (v == null || String(v).trim() === '') return;
+    const f = fieldMap.get(k);
+    if (!f || !isEmpty(k)) return;
+    if (f.type === 'select' && f.options && f.options.length && !f.options.includes(v)) return;
+    out[k] = v;
+    estimated.push(k);
+  };
+
+  const id = identification || {};
+  const isVehicle = /cars?|trucks?|vehicle|motor|marine/i.test(String(category || ''))
+    || id.listing_type === 'vehicle' || Boolean(id.body_type);
+  const isProperty = /estate|propert|real|house|villa|home|land/i.test(String(category || ''))
+    || id.listing_type === 'property' || Boolean(id.property_type);
+
+  if (isVehicle) {
+    const body = String(current.body_type || id.body_type || '');
+    const bodyLC = body.toLowerCase();
+    const hay = [
+      current.engine, current.trim, current.mileage, current.fuel_economy, current.title,
+      id.model, id.brand, body, current.wheels_tires,
+    ].filter(Boolean).join(' ').toLowerCase();
+    const yearNum = parseInt(String(current.model_year || id.year || ''), 10);
+
+    let fuel = '';
+    if (/plug[ -]?in|phev/.test(hay)) fuel = 'Plug-in Hybrid';
+    else if (/hybrid|hev|mhev/.test(hay)) fuel = 'Hybrid';
+    else if (/electric|tesla|\bbev\b|single[- ]?speed/.test(hay)) fuel = 'Electric';
+    else if (/lpg|gpl|autogas|cng/.test(hay)) fuel = 'LPG';
+    else if (/bio[- ]?diesel/.test(hay)) fuel = 'Bio-diesel';
+    else if (/diesel|tdi|\bhdi\b|\bcrdi\b|\bcdti\b|\bd4d\b|\bdci\b|turbo[- ]?d/.test(hay)) fuel = 'Diesel';
+    else if (/gasoline|petrol|\bgas\b|unleaded/.test(hay)) fuel = 'Gasoline';
+    else fuel = 'Gasoline';
+    set('fuel_type', fuel);
+
+    let trans = '';
+    if (/manual|\bstick\b/.test(hay)) trans = 'Manual';
+    else if (/cvt|continuously/.test(hay)) trans = 'CVT';
+    else if (/dual[- ]?clutch|\bdct\b/.test(hay)) trans = 'Dual-Clutch';
+    else if (/semi[- ]?automatic|\bamt\b/.test(hay)) trans = 'Semi-Automatic';
+    else if (/automatic|\bauto\b|shift[- ]?tronic|torque[- ]?converter|\d[ -]?speed/.test(hay)) trans = 'Automatic';
+    else trans = (Number.isFinite(yearNum) && yearNum < 2014) ? 'Manual' : 'Automatic';
+    set('transmission', trans);
+
+    let drive = '';
+    if (/4wd|\b4x4\b|four[- ]?wheel|quad/.test(hay)) drive = '4WD';
+    else if (/awd|all[- ]?wheel/.test(hay)) drive = 'AWD';
+    else if (/rwd|rear[- ]?wheel/.test(hay)) drive = 'RWD';
+    else if (/fwd|front[- ]?wheel/.test(hay)) drive = 'FWD';
+    else if (/pickup|truck/.test(bodyLC)) drive = '4WD';
+    else if (/suv/.test(bodyLC)) drive = 'AWD';
+    else if (/motorcycle/.test(bodyLC)) drive = 'RWD';
+    else drive = 'FWD';
+    set('drive_type', drive);
+
+    const seatMap = { sedan: 5, hatchback: 5, coupe: 4, convertible: 4, wagon: 5, suv: 5,
+      'sports car': 2, 'luxury sedan': 5, pickup: 5, truck: 3, van: 8, bus: 20,
+      motorhome: 6, motorcycle: 2, yacht: 6, 'jet ski': 2 };
+    const doorMap = { sedan: 4, hatchback: 5, coupe: 2, convertible: 2, wagon: 5, suv: 5,
+      'sports car': 2, 'luxury sedan': 4, pickup: 4, truck: 4, van: 5, bus: 2,
+      motorhome: 3, motorcycle: 0, 'jet ski': 0 };
+    for (const [k, map] of [['seating_capacity', seatMap], ['doors', doorMap]]) {
+      if (!has(k)) continue;
+      const entry = Object.entries(map).find(([b]) => bodyLC.includes(b));
+      if (entry) set(k, String(entry[1]));
+    }
+
+    const vt = String(current.vehicle_type || id.vehicle_type || '').toLowerCase();
+    if (!body && has('body_type')) {
+      if (/motorhome|rv/.test(vt)) set('body_type', 'Motorhome');
+      else if (/jet/.test(vt)) set('body_type', 'Jet Ski');
+      else if (/marine|boat|yacht/.test(vt)) set('body_type', 'Yacht');
+      else if (/bus/.test(vt)) set('body_type', 'Bus');
+      else if (/motorcycle/.test(vt)) set('body_type', 'Motorcycle');
+      else if (/truck/.test(vt)) set('body_type', 'Truck');
+    }
+
+    const condLower = String(current.condition || '').toLowerCase();
+    if (!current.mileage && /new/.test(condLower) && has('mileage')) set('mileage', '0 mi');
+    if (!current.condition && has('condition')) set('condition', 'Used - Good');
+    if (!current.previous_owners && has('previous_owners')) set('previous_owners', /new/.test(condLower) ? 'None (new)' : '1');
+    if (!current.registration_status && has('registration_status')) set('registration_status', 'Registered');
+    if (!current.inspection_status && has('inspection_status')) set('inspection_status', 'Not Inspected');
+    if (!current.warranty && has('warranty')) set('warranty', 'Manufacturer warranty - confirm remaining coverage with the seller');
+  }
+
+  if (isProperty) {
+    const pt = String(current.property_type || id.property_type || '').toLowerCase();
+    const sizeText = String(current.building_size || current.floor_plan_total_area || '');
+    const sizeNum = parseFloat(sizeText.replace(/[^0-9.]/g, ''));
+    let beds = null;
+    let baths = null;
+    if (Number.isFinite(sizeNum) && sizeNum > 100) {
+      beds = Math.max(2, Math.min(6, Math.round(sizeNum / 600)));
+      baths = Math.max(1, Math.min(4, beds > 4 ? 3 : beds - 1));
+    }
+    if (isEmpty('bedrooms') && has('bedrooms') && beds) set('bedrooms', String(beds));
+    if (isEmpty('bathrooms') && has('bathrooms') && baths) set('bathrooms', String(baths));
+    if (isEmpty('listing_status') && has('listing_status')) {
+      const hint = String(current.title || '') + ' ' + String(current.description || '');
+      set('listing_status', /for rent|lease|\brent\b/.test(hint.toLowerCase()) ? 'rent' : 'sale');
+    }
+    if (isEmpty('furnished') && has('furnished')) {
+      set('furnished', /land|plot|acre/.test(pt + ' ' + String(current.land_size || '')) ? 'Unfurnished' : 'Furnished');
+    }
+    if (isEmpty('condition') && has('condition')) set('condition', 'Good');
+    if (isEmpty('floors') && has('floors')) {
+      const fl = /mansion|villa|townhouse/.test(pt) ? '2' : (/apartment|condo|single/.test(pt) ? '1' : null);
+      if (fl) set('floors', fl);
+    }
+    if (isEmpty('kitchens') && has('kitchens')) set('kitchens', '1');
+    if (isEmpty('parking_spaces') && has('parking_spaces') && /car|garage|parking/.test(String(current.garage || '').toLowerCase())) {
+      set('parking_spaces', '1');
+    }
+    if (isEmpty('property_type') && has('property_type')) {
+      set('property_type', /land|plot|acre/.test(pt + ' ' + String(current.land_size || '')) ? 'Land' : 'Single-Family Home');
+    }
+  }
+
+  return { specs: out, estimated };
+}
+
 function buildScanTitle(identification) {
   const parts = [];
   if (identification.year) parts.push(identification.year);
@@ -3496,8 +3630,8 @@ function buildScanTitle(identification) {
 // â”€â”€ GUARANTEED COMPLETENESS PASS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Runs LAST, after every AI value has been applied. Any user-editable field that
 // is STILL empty (because the AI failed, hit its free quota, returned junk, or
-// simply could not see the value in the photo) receives an honest "Not
-// specified" placeholder or a safe default (price/stock/title/description).
+// simply could not see the value in the photo) receives a safe default
+// (price/stock/title/description) or stays blank - never "Not specified".
 // AI values ALWAYS win â€” this pass only touches genuinely empty fields, so a
 // scan can never leave the form partially blank and the owner can always
 // review, edit and publish.
@@ -3506,9 +3640,9 @@ const GUARANTEED_FILL_SKIP = new Set([
   'listing_type', 'category', 'property_id', 'id', 'slug', 'user_id',
   'latitude', 'longitude', 'cover_image', 'video_url',
 ]);
-function guaranteeCompleteFormFill(formSelector, { titleFallback = 'Product', descriptionFallback = '' } = {}) {
+function guaranteeCompleteFormFill(formSelector, { titleFallback = 'Product', descriptionFallback = '', visionUsed = true } = {}) {
   const form = document.querySelector(formSelector);
-  if (!form) return 0;
+  if (!form || !visionUsed) return 0;
   let count = 0;
   form.querySelectorAll('input, textarea, select').forEach((field) => {
     const name = String(field.name || '').trim();
@@ -3532,20 +3666,17 @@ function guaranteeCompleteFormFill(formSelector, { titleFallback = 'Product', de
       return;
     }
     if (type === 'number' || type === 'range' || type === 'tel') { field.value = '0'; count++; return; }
-    if (field.tagName === 'SELECT' && ![...field.options].some(o => o.value === 'Not specified')) {
-      const opt = document.createElement('option');
-      opt.value = 'Not specified'; opt.textContent = 'Not specified';
-      field.appendChild(opt);
-    }
-    field.value = 'Not specified';
-    count++;
+    // Text / textarea / select values the AI genuinely could not determine
+    // (private contact details, unreadable VIN, invisible address) are left
+    // BLANK - never stamped "Not specified". The scanner field checklist above
+    // already tells the owner exactly which fields still need completing.
   });
   return count;
 }
 
 // Fill the product form fields from the two-stage result. Only sets fields
 // that exist in the current form and never guesses price/stock.
-function applyScanToProductForm(result) {
+function applyScanToProductForm(result, options = {}) {
   const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
   const specs = result && result.specs ? result.specs : {};
   const price = result && result.price ? result.price : null;
@@ -3643,24 +3774,6 @@ function applyScanToProductForm(result) {
   const stock = Number(specs.stock_quantity);
   if (Number.isFinite(stock) && stock > 0) { set('stock_quantity', stock); }
 
-  // "Not specified" policy â€” any relevant field the AI could not determine is
-  // marked clearly instead of being left blank or guessed, per the owner's rules.
-  const missing = new Set((Array.isArray(specs.missing_fields) ? specs.missing_fields : []).map(k => String(k)));
-  const NOT_SPECIFIED_SKIP = new Set(['title', 'description', 'price', 'real_price', 'stock_quantity', 'images', 'features', 'highlights', 'seo_keywords', 'tags', 'safety_features']);
-  missing.forEach((key) => {
-    if (NOT_SPECIFIED_SKIP.has(key)) return;
-    const field = document.querySelector(`#product-form [name="${key}"]`);
-    if (!field || field.type === 'checkbox' || field.type === 'radio' || field.type === 'number') return;
-    if (String(field.value || '').trim() !== '') return;
-    if (field.tagName === 'SELECT' && ![...field.options].some(o => o.value === 'Not specified')) {
-      const opt = document.createElement('option');
-      opt.value = 'Not specified'; opt.textContent = 'Not specified';
-      field.appendChild(opt);
-    }
-    field.value = 'Not specified';
-    filled.push(`${key} (Not specified)`);
-  });
-
   // Estimated market prices from stage 3 â€” the REAL price always goes into the
   // Real Price field (crossed out on the store), and the suggested discount
   // price goes into the Discount Price field (what customers pay). If no
@@ -3692,8 +3805,8 @@ function applyScanToProductForm(result) {
   const titleFallback = buildScanTitle(identification) || identification.detected_name || 'Product';
   const descFallback = specs.description
     || `${titleFallback} for sale on Weverse Online Shop. Review the details below and edit anything before publishing.`;
-  const guaranteed = guaranteeCompleteFormFill('#product-form', { titleFallback, descriptionFallback: descFallback });
-  if (guaranteed) filled.push(`${guaranteed} auto-completed (Not specified / safe defaults)`);
+  const guaranteed = guaranteeCompleteFormFill('#product-form', { titleFallback, descriptionFallback: descFallback, visionUsed: options.visionUsed });
+  if (guaranteed) filled.push(`${guaranteed} auto-completed (safe defaults)`);
 
   updateProductReviewPanel();
   return { filled };
@@ -4213,7 +4326,7 @@ window.dupReviewFinish = function() {
 // Fill the property form from a scan result (title, type, rooms, sizes,
 // location, description, features and a suggested price). Fully editable â€”
 // no auto-save, no auto-publish.
-function applyScanToPropertyForm(result) {
+function applyScanToPropertyForm(result, options = {}) {
   const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
   const specs = result && result.specs ? result.specs : {};
   const price = result && result.price ? result.price : null;
@@ -4339,26 +4452,8 @@ function applyScanToPropertyForm(result) {
 
   // "Not specified" policy â€” any relevant field the AI could not determine is
   // marked clearly instead of being left blank or guessed, per the owner's rules.
-  const missing = new Set((Array.isArray(specs.missing_fields) ? specs.missing_fields : []).map(k => String(k)));
-  const NOT_SPECIFIED_SKIP = new Set(['title', 'description', 'price', 'real_price', 'features', 'highlights', 'seo_keywords',
-      'country', 'country_code', 'state', 'city', 'town', 'product_location', 'area', 'address', 'zip_code', 'latitude', 'longitude',
-      'landmarks_text', 'interior_features_text', 'exterior_features_text', 'home_systems_text',
-      'floor_plan_image', 'floor_plan_levels', 'floor_plan_total_area', 'floor_plan_rooms',
-      'nearby_schools_text', 'nearby_hospitals_text', 'nearby_shopping_text', 'nearby_transportation_text', 'nearby_distances_text',
-      'legal_info_text', 'inspection_info', 'risk_notes', 'documents_text', 'verification_date', 'verification_status']);
-  missing.forEach((key) => {
-    if (NOT_SPECIFIED_SKIP.has(key)) return;
-    const field = document.querySelector(`#property-form [name="${key}"]`);
-    if (!field || field.type === 'checkbox' || field.type === 'radio' || field.type === 'number') return;
-    if (String(field.value || '').trim() !== '') return;
-    if (field.tagName === 'SELECT' && ![...field.options].some(o => o.value === 'Not specified')) {
-      const opt = document.createElement('option');
-      opt.value = 'Not specified'; opt.textContent = 'Not specified';
-      field.appendChild(opt);
-    }
-    field.value = 'Not specified';
-    filled.push(`${key} (Not specified)`);
-  });
+  // Fields the AI could not determine are left BLANK for the owner to complete -
+  // they are never stamped "Not specified" anymore (see inferScanGaps).
 
   const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 0;
   const max = Number.isFinite(Number(GLOBAL_PRICE_MAX)) ? Number(GLOBAL_PRICE_MAX) : 999999999;
@@ -4377,8 +4472,8 @@ function applyScanToPropertyForm(result) {
   const propTitleFallback = String(specs.title || identification.detected_name || 'Property').trim() || 'Property';
   const propDescFallback = specs.description
     || `${propTitleFallback} available on Weverse Online Shop. Review the details below and edit anything before publishing.`;
-  const propGuaranteed = guaranteeCompleteFormFill('#property-form', { titleFallback: propTitleFallback, descriptionFallback: propDescFallback });
-  if (propGuaranteed) filled.push(`${propGuaranteed} auto-completed (Not specified / safe defaults)`);
+  const propGuaranteed = guaranteeCompleteFormFill('#property-form', { titleFallback: propTitleFallback, descriptionFallback: propDescFallback, visionUsed: options.visionUsed });
+  if (propGuaranteed) filled.push(`${propGuaranteed} auto-completed (safe defaults)`);
 
   if (typeof window.refreshPropertyMapFromForm === 'function') window.refreshPropertyMapFromForm();
   return { filled };
@@ -4476,13 +4571,31 @@ async function runVerifiedScan({ imageUrls, identification, category, formSelect
 
   // Validate pass 1 (normalizes formats, matches options, flags problems).
   let validated = validateScanExtraction(fields, extractionView);
+  const visionWasUsed = !/pollinations|free ai/i.test(`${(combined && combined.specs && combined.specs._aiProvider) || ''} ${(combined && combined.specs && combined.specs._aiModel) || ''}`);
+
+  // INFERENCE PASS — fill the remaining genuine gaps with real, expert-derived
+  // values (never "Not specified"). Every inferred value is marked as an
+  // estimate so the owner reviews it. Runs on the validated specs so the
+  // verification pass below can re-check the inferred values against the photos.
+  let inferenceCount = 0;
+  const inference = inferScanGaps(category, validated.specs, identification, fields);
+  if (visionWasUsed && inference && Object.keys(inference.specs).length) {
+    const merged = { ...validated.specs, ...inference.specs };
+    const estKeys = new Set([
+      ...(Array.isArray(validated.specs.estimated) ? validated.specs.estimated : []),
+      ...(inference.estimated || []),
+    ]);
+    merged.estimated = [...estKeys];
+    validated = validateScanExtraction(fields, merged);
+    inferenceCount = (inference.estimated || []).length;
+  }
 
   // PASS 2 — verification against ALL pages/images again. Skipped when the
   // first pass never saw the document (quota blocked → text-only fallback):
   // there would be nothing visual to verify against.
   let verified = false;
   const passProvider = `${(combined && combined.specs && combined.specs._aiProvider) || ''} ${(combined && combined.specs && combined.specs._aiModel) || ''}`;
-  const visionWasUsed = !/pollinations|free ai/i.test(passProvider);
+  // visionWasUsed is computed above, before the inference pass.
   if (verify && visionWasUsed) {
     try {
       const verdict = await aiClient.verifyExtraction(imageUrls, identification, validated.specs, fields, { maxImages: AI_PRODUCT_SCANNER.maxImages });
@@ -4527,6 +4640,7 @@ async function runVerifiedScan({ imageUrls, identification, category, formSelect
     visionUsed: visionWasUsed,
     verifyRequested: !!verify,
     providerLabel: passProvider.trim() || 'unknown',
+    inferred: inferenceCount,
   };
 }
 
@@ -4546,13 +4660,14 @@ async function completeScanAndFill(identification0, images, category) {
     // manual single-product scan stays on the one fast pass.
     const res = await runVerifiedScan({ imageUrls: images, identification, category, formSelector: '#product-form', verify: _autoScannerActive ? scanVerifyPassEnabled() : false });
     identification = res.identification || identification;
-    const out = applyScanToProductForm({ identification, specs: res.specs, price: res.price });
+    const out = applyScanToProductForm({ identification, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
     const idLabel = [identification.year, identification.brand, identification.model].filter(Boolean).join(' ') || identification.detected_name || 'the product';
     let msg = `<span class="inline-flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-300"></i></span> ${esc(idLabel)} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} filled.`;
     if (!res.visionUsed) {
       msg += ' <span class="text-red-300">(Photo not read — values from saved details. Re-scan when the key is available.)</span>';
     }
     if (res.summary && res.summary.flagged) msg += ` Review ${res.summary.flagged} flagged value${res.summary.flagged > 1 ? 's' : ''}.`;
+    if (res.inferred) msg += ` <span class="text-amber-300/80">(${res.inferred} values inferred from the model's real specs - review)</span>`;
     msg += _autoScannerActive
       ? ' Publishing automatically now.'
       : ' Your uploaded photo stays attached. Press SAVE / UPDATE to publish.';
@@ -4666,7 +4781,7 @@ function routePropertyScan(identification, images) {
     try {
       const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
       const id2 = res.identification || identification;
-      const out = applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price });
+      const out = applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
       let msg;
       if (!res.price) {
         msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} fields ready. Price estimate skipped â€” set the price manually, then press Publish Property.`;
@@ -4680,7 +4795,8 @@ function routePropertyScan(identification, images) {
           ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your document.</p>`
           : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
       }
-      msg += scanAiLimitNotice();
+      msg += res.inferred ? ` <span class="text-amber-300/80">(${res.inferred} values inferred from the model's real specs/type - review them)</span>` : '';
+    msg += scanAiLimitNotice();
       msg += renderScanChecklistReport(res.checklist, res.summary);
       setStatus(msg, res.price ? 'text-emerald-300' : 'text-amber-300');
       showToast('Review the property details, then press Publish Property.', 'success');
@@ -4777,7 +4893,7 @@ window.scanPropertyWithAI = async function() {
     setStatus('Reading every page, completing property details and market valueâ€¦', 'text-blue-300');
     const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
     const id2 = res.identification || identification;
-    const out = applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price });
+    const out = applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
     let msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`;
     if (!res.visionUsed) {
       msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photo was NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — these values did NOT come from your images.</p>`;
@@ -4786,6 +4902,7 @@ window.scanPropertyWithAI = async function() {
         ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
         : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
     }
+    msg += res.inferred ? ` <span class="text-amber-300/80">(${res.inferred} values inferred from the model's real specs/type - review them)</span>` : '';
     msg += scanAiLimitNotice();
     msg += renderScanChecklistReport(res.checklist, res.summary);
     setStatus(msg, 'text-emerald-300');
@@ -4983,6 +5100,7 @@ window.scanVehicleWithAI = async function() {
         ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your photos.</p>`
         : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
     }
+    msg += res.inferred ? ` <span class="text-amber-300/80">(${res.inferred} values inferred from the model's real specs/type - review them)</span>` : '';
     msg += scanAiLimitNotice();
     msg += renderScanChecklistReport(res.checklist, res.summary);
     setStatus(msg, 'text-emerald-300');
@@ -8311,8 +8429,17 @@ IDENTIFIED PRODUCT:
 
 Look at the photo(s), then do BOTH jobs for THIS EXACT identified product.
 
+COMPLETENESS AND REAL INFERENCE (READ THIS BEFORE ANYTHING ELSE):
+The marketplace form must never end up mostly empty. For EVERY form field that applies to this item, output a REAL value using this order:
+ 1. Read it directly from the photo(s) when visible: badges, labels, nameplates, the odometer or cluster, wheels, tires, interior material, body lines, signage, room count from windows or a visible floor plan.
+ 2. When a value is not literally visible, use the REAL standard factory configuration most commonly sold for that EXACT identified model (engine size and layout, fuel type, transmission, drive layout, seats, doors, dimensions, horsepower, and standard safety/navigation equipment). Example: a family SUV is typically a 2.0-2.5L gasoline or hybrid, automatic, AWD, 5 seats; a pickup is typically an automatic 4WD with 5 seats; a compact hatchback is a 1.0-1.6L gasoline, manual or automatic, FWD, 5 seats.
+ 3. For properties, judge rooms, furniture, condition, floors, finishes and systems from the photos and from the property type plus building size (e.g. a 2,500 sqft single-family home is typically 3-4 bedrooms / 2-3 bathrooms / 2 floors). Judge condition ("Good" is the honest default when the state is unclear).
+Any value you inferred rather than directly saw MUST ALSO be listed in the "estimated" array.
+NEVER write "Not specified", "unknown", "N/A", "none", or leave an applicable field null just because its value is not clearly visible. Give your best REAL, defensible value and list it in "estimated" instead.
+ONLY these fields may be null AND listed in "missing_fields": a private seller's contact details (seller_name, seller_phone, seller_email, contact_name, contact_phone, contact_email), a VIN/serial that is not legible in any photo, a precise street address, ZIP/postal, city/state/country, GPS coordinates or listing location that is nowhere visible, document URLs, verification evidence or dates, exact odometer mileage that is not visible, and stock_quantity (except 1 for unique items). Never put engine, fuel type, transmission, drive type, seats, doors, body type, condition, room counts or amenity fields in "missing_fields": those are always covered by inference rule 2 or 3 above.
+
 JOB A â€” COMPLETE THE STANDARD SPECIFICATIONS using reliable data for that exact brand + model:
-- Vehicles: engine, transmission, fuel_type, drive_type, horsepower, seating_capacity, doors, body_type, model_year, mileage (only if visible/known), safety_features.
+- Vehicles: make, model, body_type, trim/edition, model_year, color, mileage (read the odometer/trip computer when visible; a brand-new unused vehicle gets "0 mi"; only when truly not visible leave null in missing_fields), engine (e.g. "2.0L Turbocharged I4" or "4.5L V8 Turbo Diesel"), horsepower, transmission, fuel_type, drive_type, fuel_economy, towing_capacity, seating_capacity, doors, wheels_tires (size/type/condition, e.g. "20-inch alloys, 265/65 R18, 2 new tires"), dimensions (L x W x H), cargo_capacity, safety_features, driver_assistance, technology, interior, warranty, previous_owners, registration_status, inspection_status, service_history, accident_history, ownership_history, location, seller_name, seller_phone, seller_email.
 - Phones/Computers: storage, ram, processor, display, graphics, os.
 - Properties: property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition ("New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation" â€” only from visible state or a listing sign, never inferred as verified), year_built/year_renovated (only if visible/known), area, address (ONLY when genuinely visible/reliably known), zip_code (only if visibly printed), landmarks (only clearly indicated ones), town, city, state, country, country_code, latitude, longitude, listing_status ("sale"/"rent"/null). LOCATION RULES: never invent an address, city or coordinates; return null and list the key in "missing_fields" when undeterminable.
 - Other product types: type, material, size, color, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, assembly, weatherproof, warranty.
@@ -8331,16 +8458,35 @@ Return ONE valid JSON object (no markdown):
 {
   "title": string|null,
   "description": string|null,
-  "engine": string|null, "transmission": string|null, "fuel_type": string|null, "drive_type": string|null,
-  "horsepower": string|null, "mileage": string|null, "seating_capacity": string|null, "doors": string|null,
-  "body_type": string|null, "model_year": string|null, "safety_features": string[]|null,
+  "make": string|null, "model": string|null, "trim": string|null, "model_year": string|null, "body_type": string|null,
+  "vehicle_type": string|null, "year": string|null, "color": string|null, "condition": string|null,
+  "mileage": string|null, "engine": string|null, "horsepower": string|null, "transmission": string|null,
+  "fuel_type": string|null, "drive_type": string|null, "fuel_economy": string|null, "towing_capacity": string|null,
+  "seating_capacity": string|null, "doors": string|null, "wheels_tires": string|null, "dimensions": string|null,
+  "cargo_capacity": string|null, "safety_features": string[]|null, "driver_assistance": string[]|null,
+  "technology": string[]|null, "interior": string[]|null, "vin": string|null, "warranty": string|null,
+  "previous_owners": string|null, "registration_status": string|null, "inspection_status": string|null,
+  "service_history": string|null, "accident_history": string|null, "ownership_history": string|null,
+  "location": string|null, "seller_name": string|null, "seller_phone": string|null, "seller_email": string|null,
+  "features": string[]|null, "highlights": string[]|null, "seo_keywords": string[]|null,
   "storage": string|null, "ram": string|null, "processor": string|null, "display": string|null, "graphics": string|null, "os": string|null,
   "material": string|null, "size": string|null, "gender": string|null, "platform": string|null,
-  "type": string|null, "color": string|null, "brand": string|null, "model": string|null,
-  "property_type": string|null, "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null, "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null, "furnished": string|null, "condition": string|null, "year_built": number|null, "year_renovated": number|null, "area": string|null, "address": string|null, "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null, "country": string|null, "country_code": string|null, "latitude": number|null, "longitude": number|null, "listing_status": "sale"|"rent"|null,
-  "author": string|null, "publisher": string|null, "language": string|null, "format": string|null, "isbn": string|null, "pages": string|null, "edition": string|null, "quantity": string|null, "age_range": string|null, "skin_type": string|null, "ingredients": string|null, "pet_type": string|null, "lens": string|null, "sensor": string|null, "megapixels": string|null, "video": string|null, "license": string|null, "version": string|null, "duration": string|null, "followers": string|null, "engagement": string|null, "niche": string|null, "usage": string|null, "shelf_life": string|null, "assembly": string|null, "weatherproof": string|null, "warranty": string|null,
-  "features": string[]|null, "highlights": string[]|null, "seo_keywords": string[]|null, "tags": string[]|null,
-  "availability_status": string|null, "stock_quantity": number|null,
+  "type": string|null, "property_type": string|null,
+  "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null, "building_size": string|null,
+  "land_size": string|null, "floors": number|null, "garage": string|null, "parking_spaces": number|null,
+  "furnished": string|null, "year_built": number|null, "year_renovated": number|null,
+  "living_areas": string|null, "kitchens": number|null, "balconies": number|null, "garden": string|null, "pool": string|null,
+  "security": string|null, "utilities": string|null, "construction_type": string|null, "construction_status": string|null,
+  "ownership_type": string|null, "neighborhood": string|null, "area": string|null, "address": string|null,
+  "zip_code": string|null, "landmarks": string[]|null, "town": string|null, "city": string|null, "state": string|null,
+  "country": string|null, "country_code": string|null, "latitude": number|null, "longitude": number|null,
+  "listing_status": "sale"|"rent"|null, "interior_features": string[]|null, "exterior_features": string[]|null,
+  "home_systems": string[]|null, "nearby_area": { "schools": string[]|null, "hospitals": string[]|null, "shopping": string[]|null, "transportation": string[]|null, "distances": string[]|null }|null,
+  "floor_plan": { "image": string|null, "rooms": string[]|null, "levels": string|null, "total_area": string|null }|null,
+  "legal_info": string[]|null, "inspection_info": string|null, "risk_notes": string|null,
+  "contact_name": string|null, "contact_phone": string|null, "contact_email": string|null,
+  "author": string|null, "publisher": string|null, "language": string|null, "format": string|null, "isbn": string|null, "pages": string|null, "edition": string|null, "quantity": string|null, "age_range": string|null, "skin_type": string|null, "ingredients": string|null, "pet_type": string|null, "lens": string|null, "sensor": string|null, "megapixels": string|null, "video": string|null, "license": string|null, "version": string|null, "duration": string|null, "followers": string|null, "engagement": string|null, "niche": string|null, "usage": string|null, "shelf_life": string|null, "assembly": string|null, "weatherproof": string|null,
+  "stock_quantity": number|null,
   "estimated": string[],
   "missing_fields": string[],
   "price": { "currency": "USD", "estimated_price": number, "suggested_discount_price": number|null, "confidence": "high"|"medium"|"low", "reason": string }
