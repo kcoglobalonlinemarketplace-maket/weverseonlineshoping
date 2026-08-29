@@ -172,6 +172,22 @@ export default async function handler(req, res) {
       const ogImage = useSized
         ? `${siteUrl}/api/og-image?id=${encodeURIComponent(id)}`
         : absUrl(listing.images?.[0] || FALLBACK_IMG, siteUrl);
+      // Product video (standalone video/video_url columns). When present, emit
+      // og:video so WhatsApp/Facebook/Telegram can offer a playable media card,
+      // and keep og:image as the poster so there is ALWAYS a preview thumbnail.
+      const videoUrl = String(
+        (listing.video_url && String(listing.video_url).trim()) ||
+        (listing.video && String(listing.video).trim()) || '',
+      ).trim();
+      const videoTags = videoUrl
+        ? [
+            `<meta property="og:video" content="${escapeAttr(absUrl(videoUrl, siteUrl))}">`,
+            `<meta property="og:video:secure_url" content="${escapeAttr(absUrl(videoUrl, siteUrl))}">`,
+            `<meta property="og:video:type" content="video/mp4">`,
+            `<meta property="og:video:width" content="1280">`,
+            `<meta property="og:video:height" content="720">`,
+          ]
+        : [];
       const tags = [
         `<title>${escapeAttr(title)} | ${SITE_NAME}</title>`,
         `<meta name="description" content="${escapeAttr(desc)}">`,
@@ -179,6 +195,9 @@ export default async function handler(req, res) {
         `<meta property="og:title" content="${escapeAttr(title)}">`,
         `<meta property="og:description" content="${escapeAttr(desc)}">`,
         `<meta property="og:image" content="${escapeAttr(ogImage)}">`,
+        // secure_url is what many HTTPS-only crawlers actually honor — always
+        // mirror the absolute `og:image` there so the thumbnail cannot be lost.
+        `<meta property="og:image:secure_url" content="${escapeAttr(ogImage)}">`,
         ...(useSized ? [
           `<meta property="og:image:width" content="1200">`,
           `<meta property="og:image:height" content="630">`,
@@ -186,6 +205,7 @@ export default async function handler(req, res) {
         ] : []),
         `<meta property="og:image:alt" content="${escapeAttr(title)} — ${SITE_NAME}">`,
         `<meta property="og:url" content="${escapeAttr(canonical)}">`,
+        ...videoTags,
         `<meta name="twitter:card" content="summary_large_image">`,
         `<meta name="twitter:title" content="${escapeAttr(title)}">`,
         `<meta name="twitter:description" content="${escapeAttr(desc)}">`,
