@@ -881,8 +881,8 @@ function renderTruck(listing) {
       </div>
 
       <!-- Main Image -->
-      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 hero-zoom">
-        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      <div class="relative w-full h-[46vh] sm:h-[60vh] lg:h-[72vh] rounded-2xl overflow-hidden bg-gray-100 mb-3 hero-zoom flex items-center justify-center">
+        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-contain" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
         <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
       </div>
 
@@ -1016,8 +1016,8 @@ function renderMotorhome(listing) {
       </div>
 
       <!-- Main Image -->
-      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 hero-zoom">
-        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      <div class="relative w-full h-[46vh] sm:h-[60vh] lg:h-[72vh] rounded-2xl overflow-hidden bg-gray-100 mb-3 hero-zoom flex items-center justify-center">
+        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-contain" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
         <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
       </div>
 
@@ -1146,8 +1146,8 @@ function renderCar(listing) {
       </div>
 
       <!-- Main Image -->
-      <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 hero-zoom">
-        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      <div class="relative w-full h-[46vh] sm:h-[60vh] lg:h-[72vh] rounded-2xl overflow-hidden bg-gray-100 mb-3 hero-zoom flex items-center justify-center">
+        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-contain" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
         <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
       </div>
 
@@ -1641,11 +1641,11 @@ function render(listing) {
         </div>
       </div>
 
-      <div id="hero-wrap" class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-50 mb-3 cursor-zoom-in group" role="button" tabindex="0" aria-label="Open image gallery">
+      <div id="hero-wrap" class="relative w-full h-[46vh] sm:h-[60vh] lg:h-[72vh] rounded-2xl overflow-hidden bg-gray-100 mb-3 cursor-zoom-in group flex items-center justify-center" role="button" tabindex="0" aria-label="Open image gallery">
         ${heroIsVideo
-          ? `<video id="hero-image" src="${escapeHtml(heroMedia)}" ${heroPoster ? `poster="${escapeHtml(heroPoster)}"` : ''} autoplay muted loop preload="metadata" playsinline controls class="w-full h-full object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video>
+          ? `<video id="hero-image" src="${escapeHtml(heroMedia)}" ${heroPoster ? `poster="${escapeHtml(heroPoster)}"` : ''} autoplay muted loop preload="metadata" playsinline controls class="w-full h-full object-contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video>
              <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-7 h-7 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
-          : `<img id="hero-image" src="${heroMedia}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
+          : `<img id="hero-image" src="${heroMedia}" alt="${listing.title}" class="w-full h-full object-contain" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
         }
         <div class="absolute inset-0 flex items-end justify-between p-3 opacity-0 group-hover:opacity-100 transition pointer-events-none">
           <span class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-black/50 backdrop-blur px-3 py-1.5 rounded-full"><i data-lucide="expand" class="w-3.5 h-3.5"></i> Tap to enlarge</span>
@@ -1703,7 +1703,7 @@ function render(listing) {
           v.id = 'hero-image'; v.src = src; v.muted = true; v.loop = true;
           v.autoplay = true; v.preload = 'metadata'; v.playsInline = true; v.controls = true;
           if (heroPoster) v.poster = heroPoster;
-          v.className = 'w-full h-full object-cover';
+          v.className = 'w-full h-full object-contain';
           wrap.insertBefore(v, wrap.firstChild);
           if (currentHero && currentHero.remove) currentHero.remove();
           const ov = document.createElement('div');
@@ -1716,7 +1716,7 @@ function render(listing) {
         else {
           const img = document.createElement('img');
           img.id = 'hero-image'; img.src = src;
-          img.alt = listing.title; img.className = 'w-full h-full object-cover';
+          img.alt = listing.title; img.className = 'w-full h-full object-contain';
           img.onerror = function() { this.onerror = null; this.src = FALLBACK_IMG; };
           wrap.insertBefore(img, wrap.firstChild);
           if (currentHero && currentHero.remove) currentHero.remove();

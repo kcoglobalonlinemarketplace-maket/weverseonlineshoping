@@ -278,6 +278,11 @@ export function setProductMeta(listing) {
   setMeta('property', 'og:description', desc);
   setMeta('property', 'og:image', meta.image);
   setMeta('property', 'og:image:secure_url', meta.image);
+  // Recommended preview dimensions so Facebook, WhatsApp, Instagram, TikTok and
+  // others render a large, properly balanced card from the permanent original image.
+  setMeta('property', 'og:image:width', '1200');
+  setMeta('property', 'og:image:height', '630');
+  setMeta('property', 'og:image:type', 'image/jpeg');
   setMeta('property', 'og:url', meta.url);
   setMeta('property', 'og:type', 'product');
   if (meta.video) {
