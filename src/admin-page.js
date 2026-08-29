@@ -4944,14 +4944,15 @@ window.returnToScanReviewAfterSave = function(activeIndex = scanReviewActiveInde
     }
     return false;
   }
-  if (Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < scanReviewProducts.length) {
+if (Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < scanReviewProducts.length) {
     scanReviewProducts.splice(activeIndex, 1);
     if (_streamScanActive && scanReviewEntry === 'scanner-scan-status') _streamScanPublished++;
   }
   if (!scanReviewProducts.length) {
     if (_streamScanActive) {
-      scanReviewImages = [];
-      scanReviewSourceProducts = {};
+      // Do NOT clear images/sources here — the still-running background loop
+      // repopulates them via streamRender on its next completed product, and
+      // clearing them now would make the remaining cards lose their thumbnails.
       openStreamReviewModal('Published! The scanner keeps working on the remaining products - new results will appear here.');
       renderProducts();
       return true;
@@ -4974,6 +4975,12 @@ window.returnToScanReviewAfterSave = function(activeIndex = scanReviewActiveInde
   // ── Autonomous mode: skip the review list, process next product ──
   if (_autoScannerActive) {
     autoScanOne(scanReviewProducts[0], 0);
+    return true;
+  }
+  // ── Streaming mode: keep showing the live one-by-one list ──
+  if (_streamScanActive) {
+    openStreamReviewModal('Published! The scanner keeps working on the remaining products - new results will appear here.');
+    renderProducts();
     return true;
   }
   scanReviewEntry = 'scanner-scan-status';
@@ -5107,6 +5114,11 @@ function aiScanTimeout(promise, ms) {
   });
 }
 window.scanGeneralWithAI = async function() {
+  // NEVER run two scans at once: a background stream must finish first.
+  if (_streamScanActive) {
+    showToast('A scan is already running - wait for it to finish before starting another.', 'info');
+    return;
+  }
   let products = [];
   try { products = await aiScanTimeout(scannerSourceProducts(), 15000); } catch { products = []; }
 if (!products.length) {
@@ -5177,7 +5189,7 @@ if (!products.length) {
       const keys = prodImages.map(u => String(u || '').trim()).filter(Boolean);
       const allSeen = keys.length > 0 && keys.every(k => seenImages.has(k));
       for (const k of keys) seenImages.add(k);
-      if (allSeen) { duplicatesSkipped++; _streamScanScanned++; streamRender(); continue; }
+      if (allSeen) { duplicatesSkipped++; _streamScanDuplicatesSkipped++; _streamScanScanned++; streamRender(); continue; }
       const base = images.length;
       images.push(...prodImages);
       const indices = prodImages.map((_, ix) => base + ix);
@@ -5191,7 +5203,7 @@ if (!products.length) {
       // timeout, service hiccup), still include it using saved details so the
       // owner reviews it and it is always saveable & publishable.
       if (!list.length) {
-        if (detErr) failedCount++;
+        if (detErr) { failedCount++; _streamScanErrors++; }
         list = [{
           detected_name: prod.title || prod.property_id || 'Product',
           category: prod.category || 'Other',
@@ -5203,6 +5215,7 @@ if (!products.length) {
           _fallbackReason: detErr ? 'scan-failed' : 'no-identification',
         }];
         fallbacks++;
+        _streamScanFallbacks++;
       }
       scannedCount++;
       sources[prod.property_id] = prod;
