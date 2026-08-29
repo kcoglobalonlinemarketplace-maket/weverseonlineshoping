@@ -1002,11 +1002,14 @@ async function renderProducts() {
         </div>
 
         <div class="glass-soft border border-blue-500/15 rounded-2xl p-3 sm:p-4 space-y-3">
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2.5">
-            <div class="xl:col-span-2 relative">
-              <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
-              <input id="prod-search" type="search" class="input-field pl-9" placeholder="Search by name, SKU, brand, category..." value="${esc(window._productFilters.search || '')}" oninput="filterProducts()">
-            </div>
+          <div class="relative">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-300"></i>
+            <input id="prod-search" type="search" class="input-field pl-12 py-4 pr-28 text-base font-semibold !rounded-2xl border-blue-500/40 shadow-inner shadow-blue-900/20 focus:border-blue-400"
+              placeholder="Search any product by name, SKU, brand, category, tag..." value="${esc(window._productFilters.search || '')}"
+              oninput="filterProducts()" onkeydown="productSearchKeydown(event)">
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">Press Enter to open</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2.5">
             <select id="prod-cat-filter" class="input-field" onchange="filterProducts()">
               <option value="">All Categories</option>
               ${(categories.length ? categories : PRODUCT_CATEGORIES).map(c => `<option value="${esc(c)}" ${(window._productFilters.category || '') === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}
@@ -1333,6 +1336,28 @@ const sorted = sortProductItems(filtered, f.sort);
   if (!skipLimitReset) window._productsCardLimit = 60;
   renderProductsShowroomGrid(sorted);
   if (window._productView === 'table') renderProductsTable(sorted);
+};
+
+window.productSearchKeydown = function(e) {
+  if (e.key !== 'Enter') return;
+  const query = (document.getElementById('prod-search')?.value || '').trim().toLowerCase();
+  if (!query) return;
+  const f = window._productFilters || {};
+  const filtered = (window._productsData || []).filter((p) => {
+    const haystack = [p.title, p.brand, p.category, productSku(p), normalizeProductTags(p).join(' '), p.description].join(' ').toLowerCase();
+    if (!haystack.includes(query)) return false;
+    if (f.category && (p.category || '') !== f.category) return false;
+    if (f.tag && !normalizeProductTags(p).includes(f.tag)) return false;
+    if (f.status && productStatusText(p) !== f.status) return false;
+    if (f.featured && (f.featured === 'featured') !== !!p.is_featured) return false;
+    return true;
+  });
+  const best = sortProductItems(filtered, f.sort || 'newest')[0];
+  if (best) {
+    editProduct(best.property_id);
+  } else {
+    showToast('No product matched that search', 'error');
+  }
 };
 
 window.resetProductFilters = function() {
