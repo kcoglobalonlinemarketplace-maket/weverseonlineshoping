@@ -1,4 +1,4 @@
-import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadDBListings, getAllListings, isDBLoaded, cleanListing } from './showroom-data.js';
+import { SHOWROOM_LISTINGS, formatPrice, flagEmoji, findListingById, loadFullListingById, getAllListings, isDBLoaded, cleanListing } from './showroom-data.js';
 import { getCatalogCategory, getCatalogSample, generateListingById } from './catalog.js';
 import { loadHiddenCatalogIds, isCatalogListingHidden } from './catalog-hidden-store.js';
 import { getTruckById, formatTruckPrice, TRUCK_LISTINGS } from './truck-data.js';
@@ -2533,14 +2533,14 @@ async function init() {
   const staticListing = staticSource();
   if (staticListing) {
     renderListing(staticListing);
-    // Hydrate with live DB data in the background (single shared, timed fetch).
-    // Admin edits (title, price, images, publish state) still win when present.
-    loadDBListings().then(() => {
+    // Hydrate with the FULL live row in the background (a single tiny row
+    // fetch — never the whole table). Admin edits (title, price, images,
+    // publish state) still win when present.
+    loadFullListingById(id).then((live) => {
       // If another admin hid this generated catalog listing while the local
       // cache was stale, remove it from view once the DB-hidden list is known.
       loadHiddenCatalogIds().then(() => {
         if (isCatalogListingHidden(id)) { notFound(); return; }
-        const live = findListingById(id);
         if (live && live.property_id === id) {
           try { renderListing(live); } catch {}
         }
@@ -2550,10 +2550,10 @@ async function init() {
   }
 
   // ── Slow path — only for listings NOT in any local source ────────────────
-  // (e.g. DB-only properties created in the admin). The fetch is timed so it
-  // can never hang the page on "Loading property details...".
-  await loadDBListings();
-  const live = findListingById(id);
+  // (e.g. DB-only properties created in the admin). The fetch is a single full
+  // row (fast), timed so it can never hang the page on "Loading property
+  // details...".
+  const live = await loadFullListingById(id);
   if (live) {
     renderListing(live);
     return;

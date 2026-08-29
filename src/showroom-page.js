@@ -94,6 +94,7 @@ function init() {
   render(currentCat(), '');
   loadDBListings().then(() => render(currentCat(), '')).catch(() => {});
   window.addEventListener('showroom-categories-ready', () => render(currentCat(), ''));
+  window.addEventListener('kco-db-refresh', () => render(currentCat(), ''));
 }
 
 init();

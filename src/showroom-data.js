@@ -142,8 +142,28 @@ export function isDBLoaded() { return _dbLoaded; }
 // unreachable the page must still render from cached/seed data instead of
 // hanging on "Loading property details..." forever. On timeout we resolve with
 // what we have (cache/seeds) and treat the DB as loaded so callers move on.
-const DB_FETCH_TIMEOUT_MS = 6000;
+// 15s (not 6s): the old 6s ceiling was shorter than a real slow-network fetch,
+// so published listings were silently discarded before the rows ever arrived.
+const DB_FETCH_TIMEOUT_MS = 15000;
 const DB_CACHE_KEY = 'kco_db_listings_cache_v1';
+
+// The shopfront LIST only needs the columns below. Everything the cards,
+// category bars and promo banner read is here (including `specifications`,
+// which is flattened onto each row). Dropping description/highlights/features/
+// seo_keywords and other detail-only columns cuts the payload ~43%, so the
+// showroom list arrives faster and the localStorage cache is lighter.
+const LIST_COLUMNS = [
+  'property_id', 'listing_type', 'category', 'subcategory', 'title',
+  'price', 'real_price', 'price_period', 'currency', 'country', 'country_code',
+  'state', 'city', 'town', 'property_type', 'listing_status',
+  'bedrooms', 'bathrooms', 'building_size', 'land_size', 'parking_spaces',
+  'year_built', 'furnished', 'brand', 'color', 'size', 'condition', 'warranty',
+  'stock_quantity', 'availability_status', 'is_active', 'images', 'tags',
+  'specifications', 'latitude', 'longitude', 'video', 'video_url',
+  'shipping_info', 'delivery_estimate', 'weight', 'dimensions',
+  'rating', 'rating_count', 'favorite_count', 'review_count',
+  'approval_status', 'created_at', 'updated_at',
+].join(',');
 
 function withTimeout(promise, ms) {
   return new Promise((resolve) => {
@@ -215,6 +235,8 @@ export function hydrateDBListingsFromCache() {
 // Single shared in-flight request: if the homepage, promo pool, cards, and the
 // details page all ask for listings at once, they reuse ONE fetch instead of
 // hammering Supabase N times. This is what makes the details page open fast.
+// The result is the slim column set above (everything the LIST needs) so the
+// payload is small and the localStorage cache is light.
 export function loadDBListings() {
   if (_dbLoaded) return Promise.resolve(_dbListings);
   if (_dbLoading) return _dbLoading;
@@ -225,7 +247,7 @@ export function loadDBListings() {
       const result = await withTimeout(
         supabase
           .from('showroom_listings')
-          .select('*')
+          .select(LIST_COLUMNS)
           .eq('is_active', true)
           .order('created_at', { ascending: false }),
         DB_FETCH_TIMEOUT_MS
@@ -263,6 +285,48 @@ export function loadDBListings() {
     }
   })();
   return _dbLoading;
+}
+
+// Fetch ONE full listing row (every column) by property_id. The shopfront list
+// only loads slim rows, so the details/checkout/payment pages use this to get a
+// complete listing (description, specifications, features...) with a single
+// tiny request instead of re-downloading the whole table. Rows are merged into
+// the shared listing map so later lookups see the fully-populated listing.
+const _fullInflight = new Map();
+export function loadFullListingById(pid) {
+  if (!pid) return Promise.resolve(null);
+  // A row with a description is already the FULL listing (statics, or a row
+  // hydrated by an earlier full fetch). Slim list rows have no description, so
+  // they fall through and get the single-row fetch below.
+  const existing = LISTING_MAP.get(pid);
+  if (existing && existing.description != null) return Promise.resolve(existing);
+  if (_fullInflight.has(pid)) return _fullInflight.get(pid);
+  const p = (async () => {
+    try {
+      const { supabase } = await import('./supabase-client.js');
+      const res = await withTimeout(
+        supabase
+          .from('showroom_listings')
+          .select('*')
+          .eq('property_id', pid)
+          .maybeSingle(),
+        DB_FETCH_TIMEOUT_MS
+      );
+      const ok = res !== '__timeout__' && !res.error && res.data;
+      const norm = ok ? normalizeDbRow(res.data) : null;
+      if (norm && norm.property_id) {
+        LISTING_MAP.set(norm.property_id, norm);
+        _dbListings = _dbListings.map(l => (l.property_id === norm.property_id ? norm : l));
+      }
+      return norm;
+    } catch {
+      return null;
+    } finally {
+      _fullInflight.delete(pid);
+    }
+  })();
+  _fullInflight.set(pid, p);
+  return p;
 }
 
 // Return ALL listings: hardcoded + database, deduplicated by property_id.

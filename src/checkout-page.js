@@ -1,7 +1,7 @@
 import { supabase } from './supabase-client.js';
 import { getCurrentUser } from './auth.js';
 import { trackEvent } from './analytics.js';
-import { SHOWROOM_LISTINGS, findListingById, formatPrice, flagEmoji, getAllListings, loadDBListings } from './showroom-data.js';
+import { SHOWROOM_LISTINGS, findListingById, formatPrice, flagEmoji, getAllListings, loadDBListings, loadFullListingById } from './showroom-data.js';
 import { getTruckById } from './truck-data.js';
 import { getMotorhomeById } from './motorhome-data.js';
 import { getCarById } from './car-data.js';
@@ -172,8 +172,8 @@ async function init() {
   // Load listing from URL param or cart
   const listingId = params.get('id');
   if (listingId) {
-    await loadDBListings();
-    state.listing = findListingById(listingId) || getTruckById(listingId) || getMotorhomeById(listingId) || getCarById(listingId) || getPhoneById(listingId) || findProductById(listingId);
+    let l = await loadFullListingById(listingId);
+    state.listing = l || findListingById(listingId) || getTruckById(listingId) || getMotorhomeById(listingId) || getCarById(listingId) || getPhoneById(listingId) || findProductById(listingId);
     if (!state.listing) {
       const [{ generateListingById }, { loadHiddenCatalogIds }] = await Promise.all([
         import('./catalog.js'),
