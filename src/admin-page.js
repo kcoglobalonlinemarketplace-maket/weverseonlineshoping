@@ -2397,7 +2397,7 @@ window.showAddProductStep1 = function() {
           <div id="s1-drop-zone" class="drop-zone" onclick="pickMediaForForm('s1-img-upload')">
             <i data-lucide="image-plus" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
             <p class="text-xs font-bold text-gray-300">Click or drag & drop product images or videos</p>
-            <input type="file" id="s1-img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onchange="handleStep1ImageUpload(event)">
+            <input type="file" id="s1-img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onclick="event.stopPropagation()" onchange="handleStep1ImageUpload(event)">
           </div>
           <div id="s1-image-preview" class="flex flex-wrap gap-2"></div>
           <button type="button" id="btn-s1-scan" onclick="scanFirstWithAI()" disabled class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2" style="opacity:0.5">
@@ -2486,7 +2486,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
               <i data-lucide="image-plus" class="w-12 h-12 text-blue-400 mx-auto mb-3"></i>
               <p class="text-lg font-bold text-gray-300">Click or drag & drop images or videos here</p>
               <p class="text-sm text-gray-500 mt-1">PNG, JPG, WEBP, MP4, WebM. First item = cover.</p>
-                             <input type="file" id="img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onchange="handleImageUpload(event)">
+<input type="file" id="img-upload" class="hidden" multiple accept="image/*,video/mp4,video/webm,video/*,application/pdf" onclick="event.stopPropagation()" onchange="handleImageUpload(event)">
             </div>
             <div id="image-preview" class="flex flex-wrap gap-2.5 mt-3">
               ${(existingData.images || []).map((url, i) => imageThumbHtml(url, i)).join('')}
@@ -2868,11 +2868,14 @@ async function nativeGalleryFiles() {
 
 // Drop-zone entry point. On native it opens the gallery picker and feeds the
 // selected media into the right upload pipeline; on web it falls back to
-// opening the hidden file input (unchanged behaviour).
+// opening the hidden file input (unchanged behaviour). The web path calls
+// .click() SYNCHRONOUSLY (no await first) so it stays inside the user gesture
+// and can never re-enter this handler via event bubbling.
 window.pickMediaForForm = async function(inputId) {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isNative) { document.getElementById(inputId)?.click(); return; }
   const files = await nativeGalleryFiles();
-  if (files === null) { document.getElementById(inputId)?.click(); return; }
-  if (!files.length) return;
+  if (!files || !files.length) return;
   if (inputId === 's1-img-upload') {
     await handleStep1Files(files);
   } else {
