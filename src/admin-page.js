@@ -4732,6 +4732,7 @@ window.handleStep1Files = async function(files) {
   if (!list.length) return;
   const preview = document.getElementById('s1-image-preview');
   const valid = [];
+  const loadingDivs = [];
   for (const file of list) {
     const isPdf = file.type === 'application/pdf' || looksLikePdf(file.name);
     const isVid = isVideoFile(file);
@@ -4740,34 +4741,39 @@ window.handleStep1Files = async function(files) {
     valid.push(file);
     // One spinner per file so the user sees the uploads are running right away.
     const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'img-thumb';
+    loadingDiv.className = 'img-thumb uploading';
     loadingDiv.style.cssText = 'min-width:90px;min-height:80px;';
     loadingDiv.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-gray-400"><div class="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mb-1.5"></div><span class="text-[10px] font-bold">Uploading…</span></div>`;
     if (preview) preview.appendChild(loadingDiv);
+    loadingDivs.push(loadingDiv);
   }
   if (!valid.length) return;
 
-  // Upload ALL files in parallel (3 at a time), compress images before upload,
-  // and swap each spinner for its thumbnail the moment it's done.
-  const completed = [];
+  // Upload ALL files in parallel (3 at a time), compress images before upload.
+  // Each spinner is swapped for its real thumbnail IN PLACE the moment that file
+  // finishes — nothing waits for the slowest upload, so a long video or a slow
+  // network can never freeze the Add New Product modal.
+  updateStep1ScanButton();
   await mapWithConcurrency(valid, 3, async (file, i) => {
-    try {
-      const url = await uploadImageFile(file);
-      completed[i] = url;
-    } catch {
-      completed[i] = null;
-    }
+    const url = await uploadImageFile(file);
+    const loadingDiv = loadingDivs[i];
+    setTimeout(() => {
+      if (!loadingDiv || !loadingDiv.isConnected) return;
+      loadingDiv.remove();
+      if (url) {
+        step1Images.push(url);
+        const div = document.createElement('div');
+        div.innerHTML = renderStep1Thumb(url, step1Images.length - 1);
+        const el = div.firstElementChild;
+        const next = loadingDiv.nextSibling;
+        if (next) preview.insertBefore(el, next); else preview.appendChild(el);
+      } else {
+        showToast(`Failed to upload ${isVideoFile(file) ? 'video' : 'image'}. Try a smaller file.`, 'error');
+      }
+      updateStep1ScanButton();
+      if (window.lucide) lucide.createIcons();
+    }, 0);
   });
-
-  // Keep finished thumbs in original selection order, then render the preview.
-  valid.forEach((file, i) => {
-    if (completed[i]) {
-      step1Images.push(completed[i]);
-    } else {
-      showToast(`Failed to upload ${isVideoFile(file) ? 'video' : 'image'}. Try a smaller file.`, 'error');
-    }
-  });
-  renderStep1Preview();
 };
 window.handleStep1ImageUpload = async function(e) {
   await window.handleStep1Files(e.target.files || []);
@@ -4777,22 +4783,26 @@ window.removeStep1Image = function(i) {
   step1Images.splice(i, 1);
   renderStep1Preview();
 };
+function renderStep1Thumb(u, i) {
+  const isVid = isVideoUrl(u);
+  const media = isVid
+    ? `<video src="${esc(u)}" muted loop preload="metadata" playsinline class="w-full h-full object-cover"></video>
+       <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-7 h-7 rounded-full bg-white/80 flex items-center justify-center"><svg class="w-3.5 h-3.5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
+    : `<img src="${esc(u)}" onerror="this.src='/fallback.svg'">`;
+  return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}">
+    ${media}
+    <button class="rm" onclick="removeStep1Image(${i})" type="button">✕</button>
+  </div>`;
+}
+function updateStep1ScanButton() {
+  const btn = document.getElementById('btn-s1-scan');
+  if (btn) { btn.disabled = step1Images.length === 0; btn.style.opacity = step1Images.length ? '' : '0.5'; }
+}
 function renderStep1Preview() {
   const preview = document.getElementById('s1-image-preview');
   if (!preview) return;
-  preview.innerHTML = step1Images.map((u, i) => {
-    const isVid = isVideoUrl(u);
-    const media = isVid
-      ? `<video src="${esc(u)}" muted loop preload="metadata" playsinline class="w-full h-full object-cover"></video>
-         <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-7 h-7 rounded-full bg-white/80 flex items-center justify-center"><svg class="w-3.5 h-3.5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
-      : `<img src="${esc(u)}" onerror="this.src='/fallback.svg'">`;
-    return `<div class="img-thumb ${i === 0 ? 'cover-img' : ''}" data-index="${i}">
-      ${media}
-      <button class="rm" onclick="removeStep1Image(${i})" type="button">✕</button>
-    </div>`;
-  }).join('');
-  const btn = document.getElementById('btn-s1-scan');
-  if (btn) { btn.disabled = step1Images.length === 0; btn.style.opacity = step1Images.length ? '' : '0.5'; }
+  preview.innerHTML = step1Images.map((u, i) => renderStep1Thumb(u, i)).join('');
+  updateStep1ScanButton();
   if (window.lucide) lucide.createIcons();
 }
 
