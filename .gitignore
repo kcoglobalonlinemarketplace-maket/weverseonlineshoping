@@ -11,3 +11,5 @@ dev-server.log
 
 .env*
 .aider*
+
+misc-test-scanner.mjs

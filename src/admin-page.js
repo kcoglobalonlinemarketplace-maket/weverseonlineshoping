@@ -3680,6 +3680,7 @@ function applyScanToProductForm(result, options = {}) {
   const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
   const specs = result && result.specs ? result.specs : {};
   const price = result && result.price ? result.price : null;
+  const visionUsed = (options && options.visionUsed !== undefined) ? options.visionUsed : (result && result.visionUsed !== undefined ? result.visionUsed : true);
   const filled = [];
   const text = (v) => (Array.isArray(v) ? v.join(', ') : String(v ?? '').trim());
   const set = (key, value, allowed) => {
@@ -3805,7 +3806,7 @@ function applyScanToProductForm(result, options = {}) {
   const titleFallback = buildScanTitle(identification) || identification.detected_name || 'Product';
   const descFallback = specs.description
     || `${titleFallback} for sale on Weverse Online Shop. Review the details below and edit anything before publishing.`;
-  const guaranteed = guaranteeCompleteFormFill('#product-form', { titleFallback, descriptionFallback: descFallback, visionUsed: options.visionUsed });
+  const guaranteed = guaranteeCompleteFormFill('#product-form', { titleFallback, descriptionFallback: descFallback, visionUsed });
   if (guaranteed) filled.push(`${guaranteed} auto-completed (safe defaults)`);
 
   updateProductReviewPanel();
@@ -4330,6 +4331,7 @@ function applyScanToPropertyForm(result, options = {}) {
   const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
   const specs = result && result.specs ? result.specs : {};
   const price = result && result.price ? result.price : null;
+  const visionUsed = (options && options.visionUsed !== undefined) ? options.visionUsed : (result && result.visionUsed !== undefined ? result.visionUsed : true);
   const filled = [];
   const text = (v) => (Array.isArray(v) ? v.join(', ') : String(v ?? '').trim());
   const set = (key, value) => {
@@ -4341,8 +4343,12 @@ function applyScanToPropertyForm(result, options = {}) {
   };
   const pt = identification.property_type || specs.property_type;
   if (pt) { const mapped = mapPropertyType(pt); if (mapped) set('property_type', mapped); }
-  set('title', specs.title || identification.detected_name);
-  set('description', specs.description);
+  // Title/description only come from a real read; when vision was NOT used the
+  // scan stops here so nothing is force-filled (owner completes the form).
+  if (visionUsed) {
+    set('title', specs.title || identification.detected_name);
+    set('description', specs.description);
+  }
   set('subcategory', identification.subcategory || specs.subcategory);
   const beds = identification.bedrooms ?? specs.bedrooms;
   if (beds != null && beds !== '') set('bedrooms', parseInt(beds, 10) || beds);
@@ -4448,7 +4454,7 @@ function applyScanToPropertyForm(result, options = {}) {
   set('contact_phone', specs.contact_phone || identification.contact_phone);
   set('contact_email', specs.contact_email || identification.contact_email);
   const vs = document.querySelector('#property-form [name="verification_status"]');
-  if (vs) { vs.value = 'Not verified'; filled.push('verification_status'); }
+  if (visionUsed && vs) { vs.value = 'Not verified'; filled.push('verification_status'); }
 
   // "Not specified" policy â€” any relevant field the AI could not determine is
   // marked clearly instead of being left blank or guessed, per the owner's rules.
@@ -4460,19 +4466,20 @@ function applyScanToPropertyForm(result, options = {}) {
   const clamp = (n) => Math.max(min, Math.min(max, Math.round(n)));
   const est = price ? Number(price.estimated_price) : NaN;
   const estDiscount = price ? Number(price.suggested_discount_price) : NaN;
-  if (Number.isFinite(est) && est > 0) {
+  if (visionUsed && Number.isFinite(est) && est > 0) {
     const realField = document.querySelector('#property-form [name="real_price"]');
     if (realField) { realField.value = String(clamp(est)); filled.push('real_price'); }
     const discount = Number.isFinite(estDiscount) && estDiscount > 0 && estDiscount < est ? estDiscount : est;
     set('price', String(clamp(discount)));
   }
   // GUARANTEED COMPLETENESS PASS â€” same rule as the product form: AI values win,
-  // anything still empty gets "Not specified" / a safe default, so the property
-  // form is never left partially blank after a scan.
+  // anything still empty gets a safe default (price/stock/title/description) so
+  // the property form is never left partially blank. Runs only when vision read
+  // the photos; when the free quota is exhausted the scan stops here instead.
   const propTitleFallback = String(specs.title || identification.detected_name || 'Property').trim() || 'Property';
   const propDescFallback = specs.description
     || `${propTitleFallback} available on Weverse Online Shop. Review the details below and edit anything before publishing.`;
-  const propGuaranteed = guaranteeCompleteFormFill('#property-form', { titleFallback: propTitleFallback, descriptionFallback: propDescFallback, visionUsed: options.visionUsed });
+  const propGuaranteed = guaranteeCompleteFormFill('#property-form', { titleFallback: propTitleFallback, descriptionFallback: propDescFallback, visionUsed });
   if (propGuaranteed) filled.push(`${propGuaranteed} auto-completed (safe defaults)`);
 
   if (typeof window.refreshPropertyMapFromForm === 'function') window.refreshPropertyMapFromForm();
@@ -4571,7 +4578,12 @@ async function runVerifiedScan({ imageUrls, identification, category, formSelect
 
   // Validate pass 1 (normalizes formats, matches options, flags problems).
   let validated = validateScanExtraction(fields, extractionView);
-  const visionWasUsed = !/pollinations|free ai/i.test(`${(combined && combined.specs && combined.specs._aiProvider) || ''} ${(combined && combined.specs && combined.specs._aiModel) || ''}`);
+  // The instance is "vision-backed" only when a REAL vision provider (Gemini or
+  // Groq) actually read the photos. When there is no combined result (quota/
+  // service failure) or only the free text fallback ran, visionUsed is false so
+  // inference and guaranteed defaults STOP instead of force-filling.
+  const providerTag = `${(combined && combined.specs && combined.specs._aiProvider) || ''} ${(combined && combined.specs && combined.specs._aiModel) || ''}`;
+  const visionWasUsed = !!combined && !/pollinations|free ai|\b(aiofields|fake)\b/i.test(providerTag);
 
   // INFERENCE PASS — fill the remaining genuine gaps with real, expert-derived
   // values (never "Not specified"). Every inferred value is marked as an
@@ -4923,10 +4935,11 @@ window.scanPropertyWithAI = async function() {
 // form and writes a clear, professional description. Works over the SAME image
 // elements as the property form (only one modal is ever open, so the shared
 // IDs are safe).
-function applyScanToVehicleForm(result) {
+function applyScanToVehicleForm(result, options = {}) {
   const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
   const specs = result && result.specs ? result.specs : {};
   const price = result && result.price ? result.price : null;
+  const visionUsed = (options && options.visionUsed !== undefined) ? options.visionUsed : (result && result.visionUsed !== undefined ? result.visionUsed : true);
   const filled = [];
   const toText = (v) => Array.isArray(v) ? v.join(', ') : String(v ?? '').trim();
   const set = (key, value) => {
@@ -4935,10 +4948,18 @@ function applyScanToVehicleForm(result) {
     if (!field) return;
     if (field.tagName === 'SELECT') {
       const raw = toText(value);
-      const match = [...field.options].find(o => o.value && (
-        o.value.toLowerCase() === raw.toLowerCase()
-        || raw.toLowerCase().includes(o.value.toLowerCase())
-        || o.value.toLowerCase().includes(raw.toLowerCase())));
+      const lower = raw.toLowerCase();
+      // Match the option in order of confidence: exact, then starts-with,
+      // then one direction of containment. Guard against the classic
+      // substring false-positive where a negated value ("Not Inspected")
+      // accidentally matches the positively-named option ("Inspected").
+      const options = [...field.options].filter(o => o.value && o.value.trim() !== '');
+      const isNegated = /^not |no |none of|without /.test(lower);
+      const match = options.find(o => o.value.toLowerCase() === lower)
+        || (isNegated ? null : options.find(o => o.value.toLowerCase().startsWith(lower)))
+        || options.find(o => lower.startsWith(o.value.toLowerCase()))
+        || options.find(o => o.value.toLowerCase().includes(lower))
+        || options.find(o => lower.includes(o.value.toLowerCase()) && o.value.length > 1);
       if (match) { field.value = match.value; filled.push(key); }
       return;
     }
@@ -4986,25 +5007,34 @@ function applyScanToVehicleForm(result) {
   const titleField = document.querySelector('#vehicle-form [name="title"]');
   const titleFallback = [specs.model_year || identification.year, identification.brand || specs.brand, identification.model || specs.model, identification.body_type || specs.body_type]
     .filter(Boolean).join(' ') || String(specs.title || identification.detected_name || 'Vehicle');
-  if (!titleField.value.trim()) { titleField.value = titleFallback; filled.push('title'); }
-  set('title', specs.title || identification.detected_name || titleFallback);
-  const descField = document.querySelector('#vehicle-form [name="description"]');
-  if (!descField.value.trim()) {
-    descField.value = specs.description
-      || `${titleFallback} — now available on Weverse Online Shop. Review the details below and edit anything before publishing.`;
-    filled.push('description');
-  }
-  const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 0;
-  const max = Number.isFinite(Number(GLOBAL_PRICE_MAX)) ? Number(GLOBAL_PRICE_MAX) : 999999999;
-  const clamp = (n) => Math.max(min, Math.min(max, Math.round(n)));
-  const est = price ? Number(price.estimated_price) : NaN;
-  const estDiscount = price ? Number(price.suggested_discount_price) : NaN;
-  if (Number.isFinite(est) && est > 0) {
-    const realField = document.querySelector('#vehicle-form [name="real_price"]');
-    if (realField) { realField.value = String(clamp(est)); filled.push('real_price'); }
-    const discount = Number.isFinite(estDiscount) && estDiscount > 0 && estDiscount < est ? estDiscount : est;
-    const priceField = document.querySelector('#vehicle-form [name="price"]');
-    if (priceField && !Number(priceField.value)) { priceField.value = String(clamp(discount)); filled.push('price'); }
+  // When vision did NOT run (free quota exhausted) we stop here: no forced title/
+  // description/price defaults. The owner finishes the form themselves.
+  if (visionUsed) {
+    if (!titleField.value.trim()) { titleField.value = titleFallback; filled.push('title'); }
+    set('title', specs.title || identification.detected_name || titleFallback);
+    const descField = document.querySelector('#vehicle-form [name="description"]');
+    if (!descField.value.trim()) {
+      descField.value = specs.description
+        || `${titleFallback} — now available on Weverse Online Shop. Review the details below and edit anything before publishing.`;
+      filled.push('description');
+    }
+    const min = Number.isFinite(Number(GLOBAL_PRICE_MIN)) ? Number(GLOBAL_PRICE_MIN) : 0;
+    const max = Number.isFinite(Number(GLOBAL_PRICE_MAX)) ? Number(GLOBAL_PRICE_MAX) : 999999999;
+    const clamp = (n) => Math.max(min, Math.min(max, Math.round(n)));
+    const est = price ? Number(price.estimated_price) : NaN;
+    const estDiscount = price ? Number(price.suggested_discount_price) : NaN;
+    if (Number.isFinite(est) && est > 0) {
+      const realField = document.querySelector('#vehicle-form [name="real_price"]');
+      if (realField) { realField.value = String(clamp(est)); filled.push('real_price'); }
+      const discount = Number.isFinite(estDiscount) && estDiscount > 0 && estDiscount < est ? estDiscount : est;
+      const priceField = document.querySelector('#vehicle-form [name="price"]');
+      if (priceField && !Number(priceField.value)) { priceField.value = String(clamp(discount)); filled.push('price'); }
+    }
+    // GUARANTEED COMPLETENESS PASS — only sets safe defaults (price/stock/title/
+    // description), never "Not specified". Runs only when vision ran.
+    const guaranteed = guaranteeCompleteFormFill('#vehicle-form',
+      { titleFallback, descriptionFallback: specs.description || `${titleFallback} — now available on Weverse Online Shop. Review the details below and edit anything before publishing.`, visionUsed: true });
+    if (guaranteed) filled.push(`${guaranteed} auto-filled (safe defaults)`);
   }
   return { filled };
 }
@@ -5091,7 +5121,7 @@ window.scanVehicleWithAI = async function() {
     setStatus('Reading every photo, completing the vehicle specs and market value…', 'text-blue-300');
     const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Cars & Trucks', formSelector: '#vehicle-form' });
     const id2 = res.identification || identification;
-    const out = applyScanToVehicleForm({ identification: id2, specs: res.specs, price: res.price });
+    const out = applyScanToVehicleForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
     let msg = `${esc(id2.detected_name || 'Vehicle')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Vehicle.`;
     if (!res.visionUsed) {
       msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photos were NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — these values did NOT come from your images.</p>`;
