@@ -608,7 +608,7 @@ function closingSectionHtml(content) {
             <img src="${esc(logo)}" alt="${esc(name)}" class="w-10 h-10 object-contain" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'">
             <span style="display:none">${W_LOGO_SVG('w-9 h-9')}</span>
           </div>
-          <p class="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-cyan-300">${esc(slogan)}</p>
+          <p class="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-white">${esc(slogan)}</p>
           <h2 class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.08] tracking-tight text-white">
             ${esc(c.bottom_heading)}
           </h2>

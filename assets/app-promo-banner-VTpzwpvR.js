@@ -260,7 +260,7 @@ import{j as L,D as f,k as w,h as H,W as O,p as P,q as F,r as Z,t as D,u as R,v a
             <img src="${o(s)}" alt="${o(r)}" class="w-10 h-10 object-contain" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'">
             <span style="display:none">${O("w-9 h-9")}</span>
           </div>
-          <p class="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-cyan-300">${o(i)}</p>
+          <p class="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-white">${o(i)}</p>
           <h2 class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.08] tracking-tight text-white">
             ${o(t.bottom_heading)}
           </h2>

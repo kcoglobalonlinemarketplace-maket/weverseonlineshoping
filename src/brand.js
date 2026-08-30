@@ -25,19 +25,69 @@ export function taglineHtml() {
 
 const CACHE_KEY = 'weverse_brand_v1';
 
-// ── Brand-blue brand name ──────────────────────────────────
-// Paints every .brand-name element with the brand blue gradient
-// (#3b82f6 → #2563eb — same blue as the verified badge / chat header).
-(function injectBrandBlue() {
-  if (document.getElementById('wv-brand-blue')) return;
+// ── Brand-name + tagline auto-contrast ─────────────────────
+// Sharp deep black on light surfaces, clean white on dark/hero surfaces —
+// the professional, trusted marketplace look (no blue rainbow gradients on
+// the wordmark). The single verified-blue accent lives only in the badge.
+const BRAND_INK = '#0a0a0a';      // sharp deep black
+const BRAND_LIGHT = '#ffffff';    // clean white (on dark surfaces)
+
+// Neutral base so the old blue-gradient styling is fully removed and the
+// brand name always has a solid, readable color even before JS contrast runs.
+(function injectBrandBase() {
+  if (document.getElementById('wv-brand-base')) return;
   const s = document.createElement('style');
-  s.id = 'wv-brand-blue';
+  s.id = 'wv-brand-base';
   s.textContent =
-    '.brand-name{background:linear-gradient(135deg,#3b82f6,#2563eb)!important;' +
-    '-webkit-background-clip:text!important;background-clip:text!important;' +
-    '-webkit-text-fill-color:transparent!important;color:#2563eb!important}';
+    '.brand-name{background:none!important;background-image:none!important;' +
+    '-webkit-background-clip:initial!important;background-clip:initial!important;' +
+    '-webkit-text-fill-color:#0a0a0a!important;color:#0a0a0a!important}';
   (document.head || document.documentElement).appendChild(s);
 })();
+
+function parseRgb(str) {
+  const m = (str || '').toString().match(/rgba?\(([^)]+)\)/);
+  if (!m) return null;
+  const parts = m[1].split(',').map(x => parseFloat(x));
+  if (parts.length < 3) return null;
+  return { r: parts[0], g: parts[1], b: parts[2] };
+}
+function parseColorAlpha(str) {
+  const m = (str || '').toString().match(/rgba?\(([^)]+)\)/);
+  if (!m) return 0;
+  const parts = m[1].split(',').map(x => parseFloat(x));
+  return parts.length >= 4 ? parts[3] : 1;
+}
+
+// Effective background luminance (0=black … 1=white) behind an element.
+function bgLuminance(el) {
+  const cs = [];
+  let cur = el;
+  while (cur) {
+    let style;
+    try { style = getComputedStyle(cur); } catch { break; }
+    cs.push(style);
+    if (parseColorAlpha(style.backgroundColor) > 0.03) break;
+    cur = cur.parentElement;
+  }
+  const bg = cs.length ? cs[cs.length - 1].backgroundColor : '';
+  const rgb = parseRgb(bg);
+  if (rgb) return (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+  return 1; // gradient/unknown → default to light (white page)
+}
+
+// Picks the most readable brand color for each background: white on dark,
+// sharp deep black on light. Applied to the brand name and the tagline.
+function applyAutoContrast() {
+  document.querySelectorAll('.brand-name, .brand-tagline-1, .brand-tagline-2').forEach(el => {
+    const ink = bgLuminance(el) < 0.5 ? BRAND_LIGHT : BRAND_INK;
+    el.style.setProperty('color', ink, 'important');
+    el.style.setProperty('-webkit-text-fill-color', ink, 'important');
+    el.style.background = 'none';
+    el.style.webkitBackgroundClip = 'initial';
+    el.style.backgroundClip = 'initial';
+  });
+}
 const OVERRIDE_KEY = 'weverse_brand_override_v1';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -163,6 +213,9 @@ function applyBrand(b) {
   injectFooterBrand(name, slogan, logo);
 
   syncHomepageLayout();
+
+  // ── 7. Brand-name + tagline auto-contrast (last, so it wins) ──
+  applyAutoContrast();
 }
 
 function injectHomepageBanner(imageUrl, altText) {
@@ -298,7 +351,15 @@ loadBrand().then(applyBrand);
 
 // Re-apply after dynamic content loads (for SPAs)
 window.addEventListener('load', () => loadBrand().then(applyBrand));
-window.addEventListener('resize', () => syncHomepageLayout());
+window.addEventListener('resize', () => { syncHomepageLayout(); applyAutoContrast(); });
 window.addEventListener('storage', (event) => {
   if (event.key === CACHE_KEY) loadBrand().then(applyBrand);
 });
+
+// Re-run contrast for brand/tagline elements rendered asynchronously.
+let contrastTries = 0;
+function retryContrast() {
+  applyAutoContrast();
+  if (++contrastTries < 12) setTimeout(retryContrast, 600);
+}
+retryContrast();
