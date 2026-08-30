@@ -180,6 +180,7 @@ function pickIdentity(countryCode: string, language: string, seed: string): { na
 
 // Real, widely-available Gemini models.
 const MODEL_FALLBACKS = [
+  'gemini-3-flash-preview',
   'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
   'gemini-2.0-flash',
@@ -188,7 +189,7 @@ const MODEL_FALLBACKS = [
 
 function modelChain(settings: Record<string, unknown>): string[] {
   const chain = new Set<string>();
-  const override = String(settings.chat_model_override || '').trim();
+  const override = String(settings.customer_model_override || settings.chat_model_override || '').trim();
   const preferred = override || String(settings.gemini_model || '').trim();
   if (preferred) chain.add(preferred);
   for (const m of MODEL_FALLBACKS) chain.add(m);
@@ -413,16 +414,19 @@ Deno.serve(async (req) => {
   }
 
   // ── RUN THE STACK ──────────────────────────────────────────────────────
-  const geminiKey = String(settingsRow.chat_gemini_key || '').trim();
+  // The customer chat shares the main Google Gemini key (gemini_key /
+  // gemini_api_key). We never rely on a column that doesn't exist — read the
+  // real, populated columns from ai_settings.
+  const geminiKey = String(settingsRow.gemini_key || settingsRow.gemini_api_key || settingsRow.openai_api_key || '').trim();
   const groqKey = String(settingsRow.groq_key || '').trim();
-  const openrouterKey = String(settingsRow.chat_openrouter_key || '').trim();
+  const openrouterKey = String(settingsRow.openrouter_key || '').trim();
 
   // Collect candidate calls in priority order (only those with a key/provider).
   const attempts: Array<() => Promise<{ text: string; provider: string; model: string }>> = [];
 
   // 1. Groq (OpenAI-compatible) — if the site has a Groq key saved.
   if (groqKey) {
-    for (const model of ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']) {
+    for (const model of ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'allam-2-7b']) {
       attempts.push(() => callOpenAICompatible({
         apiKey: groqKey,
         baseUrl: 'https://api.groq.com/openai/v1',

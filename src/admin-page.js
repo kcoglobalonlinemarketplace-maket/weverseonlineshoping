@@ -7898,35 +7898,35 @@ async function renderAiSettings() {
               </div>
               <label class="flex items-center gap-2 cursor-pointer">
                 <span class="text-[10px] font-bold text-emerald-300">Enable chat assistant</span>
-                <span class="toggle-switch"><input type="checkbox" name="chat_ai_enabled" ${s.chat_ai_enabled !== false ? 'checked' : ''}><span class="toggle-slider"></span></span>
+                <span class="toggle-switch"><input type="checkbox" name="customer_ai_enabled" ${s.customer_ai_enabled !== false ? 'checked' : ''}><span class="toggle-slider"></span></span>
               </label>
             </div>
-            <p class="text-[11px] text-gray-400 leading-relaxed">This is the <b class="text-white">customer support chat assistant</b> (the floating "Contact Us" bubble). It uses its own Gemini key — completely separate from the Product Scanner above. This chat AI <b class="text-emerald-300">only chats with customers</b>; it never scans or analyzes photos. The scanner keeps its own key and only scans.</p>
+            <p class="text-[11px] text-gray-400 leading-relaxed">This is the <b class="text-white">customer support chat assistant</b> (the floating "Contact Us" bubble). It talks with shoppers in their own language with a local human name, and it never gives up: it automatically stacks <b class="text-emerald-300">Google Gemini → Groq → OpenRouter → free keyless AI</b>, each with its own free quota, so customers ALWAYS get a real answer instead of a "rate limit" message.</p>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
-                <label class="lbl">Customer Chat Gemini Key</label>
+                <label class="lbl">Google Gemini Key (chat)</label>
                 <div class="relative">
-                  <input type="password" class="input-field pr-16 text-xs" name="chat_gemini_key"
-                    placeholder="${s.chat_gemini_key ? '••••' + String(s.chat_gemini_key).slice(-4) : 'AIzaSy… (NEW chat key)'}">
-                  ${s.chat_gemini_key ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
+                  <input type="password" class="input-field pr-16 text-xs" name="gemini_key"
+                    placeholder="${s.gemini_key || s.gemini_api_key ? '••••' + String(s.gemini_key || s.gemini_api_key).slice(-4) : 'AIzaSy… (shared Gemini key)'}">
+                  ${(s.gemini_key || s.gemini_api_key) ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
                 </div>
               </div>
               <div>
                 <label class="lbl">Chat Model (optional)</label>
-                <select class="input-field text-xs" name="chat_model_override">
+                <select class="input-field text-xs" name="customer_model_override">
                   <option value="">Auto (recommended)</option>
-                  ${['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-2.0-flash-lite'].map(m => `<option value="${m}" ${(s.chat_model_override||'')===m?'selected':''}>${m}</option>`).join('')}
+                  ${['gemini-3-flash-preview','gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash'].map(m => `<option value="${m}" ${(s.customer_model_override||'')===m?'selected':''}>${m}</option>`).join('')}
                 </select>
               </div>
             </div>
             <div class="mt-3">
               <label class="lbl">OpenRouter Key (optional, free fallback)</label>
               <div class="relative">
-                <input type="password" class="input-field pr-16 text-xs" name="chat_openrouter_key"
-                  placeholder="${s.chat_openrouter_key ? '••••' + String(s.chat_openrouter_key).slice(-4) : 'sk-or-v1-… (NEW)'}">
-                ${s.chat_openrouter_key ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
+                <input type="password" class="input-field pr-16 text-xs" name="openrouter_key"
+                  placeholder="${s.openrouter_key ? '••••' + String(s.openrouter_key).slice(-4) : 'sk-or-v1-… (NEW)'}">
+                ${s.openrouter_key ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
               </div>
-              <p class="text-[10px] text-gray-400 mt-1">One free key unlocks many free chat models. If Gemini's free daily limit runs out, the chat automatically falls back to your Groq key (in Groq Vision above), then OpenRouter, then the free keyless AI — so customers always get an answer.</p>
+              <p class="text-[10px] text-gray-400 mt-1">Your Groq key (in Groq Vision above) is used as an extra free fallback automatically. Add an OpenRouter key for even more free headroom — the chat always finds a provider that can answer right now.</p>
             </div>
             <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400 hover:underline">
               <i data-lucide="external-link" class="w-3 h-3"></i>Get a free Gemini key for the chat assistant
@@ -8026,15 +8026,13 @@ window.saveAiSettings = async function(e) {
   const groqKeyVal = (data.groq_key || '').trim();
   if (groqKeyVal && !/^[•\u2022]{4}/.test(groqKeyVal)) payload.groq_key = groqKeyVal;
 
-  // Customer Chat Assistant (separate key — chat only, never the scanner's key)
-  payload.chat_ai_enabled = data.chat_ai_enabled === 'on';
-  if (data.chat_model_override !== undefined) payload.chat_model_override = data.chat_model_override.trim();
-  const chatKeyVal = (data.chat_gemini_key || '').trim();
-  if (chatKeyVal && !/^[•\u2022]{4}/.test(chatKeyVal)) payload.chat_gemini_key = chatKeyVal;
-
-  // OpenRouter free fallback key for the customer chat (saved only when new).
-  const openrouterChatKeyVal = (data.chat_openrouter_key || '').trim();
-  if (openrouterChatKeyVal && !/^[•\u2022]{4}/.test(openrouterChatKeyVal)) payload.chat_openrouter_key = openrouterChatKeyVal;
+  // Customer Chat Assistant settings → real ai_settings columns.
+  payload.customer_ai_enabled = data.customer_ai_enabled === 'on';
+  if (data.customer_model_override !== undefined) payload.customer_model_override = data.customer_model_override.trim();
+  // The chat's Gemini key is the shared gemini_key (saved above by the provider
+  // loop). OpenRouter free fallback key (saved only when a NEW value is typed):
+  const openrouterChatKeyVal = (data.openrouter_key || '').trim();
+  if (openrouterChatKeyVal && !/^[•\u2022]{4}/.test(openrouterChatKeyVal)) payload.openrouter_key = openrouterChatKeyVal;
 
 
 

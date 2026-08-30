@@ -47,8 +47,6 @@ ALTER TABLE public.ai_settings
   ADD COLUMN IF NOT EXISTS ai21_model        text NOT NULL DEFAULT 'jamba-1.5-mini',
   ADD COLUMN IF NOT EXISTS lepton_key        text,
   ADD COLUMN IF NOT EXISTS lepton_model      text NOT NULL DEFAULT 'qwen2-5-coder-32b-instruct',
-  ADD COLUMN IF NOT EXISTS ollama_url        text DEFAULT 'http://localhost:11434',
-  ADD COLUMN IF NOT EXISTS ollama_model      text NOT NULL DEFAULT 'qwen2.5-coder:7b',
   ADD COLUMN IF NOT EXISTS gemini_key        text,
   ADD COLUMN IF NOT EXISTS customer_ai_enabled  boolean NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS product_ai_enabled   boolean NOT NULL DEFAULT true,
