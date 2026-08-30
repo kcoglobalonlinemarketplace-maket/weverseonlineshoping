@@ -643,8 +643,8 @@ function reviewItemHtml(r) {
   const storedComments = riState.comments.get(key) || [];
   const repliesTotal = (typeof r.replies === 'number' && r.replies > 0 ? r.replies : 0) + storedComments.length;
   const likeBtn = `
-    <button type="button" class="review-like-btn btn-press inline-flex items-center gap-1.5 text-xs font-bold transition ${liked ? 'text-rose-500' : 'text-gray-500 hover:text-rose-500'}" data-key="${key}">
-      <i data-lucide="heart" class="w-4 h-4 ${liked ? 'fill-rose-500 text-rose-500' : ''}"></i> ${compactCount(likes)}
+    <button type="button" class="review-like-btn btn-press inline-flex items-center gap-1.5 text-xs font-bold transition ${liked ? 'text-[#fe2c55]' : 'text-gray-500 hover:text-[#fe2c55]'}" data-key="${key}">
+      <i data-lucide="heart" class="w-4 h-4 ${liked ? 'fill-[#fe2c55] text-[#fe2c55]' : ''}"></i> ${compactCount(likes)}
     </button>`;
   const replyBtn = `
     <button type="button" class="review-reply-toggle btn-press inline-flex items-center gap-1.5 text-xs font-bold transition ${openReplyKey === key ? 'text-blue-600' : 'text-gray-500 hover:text-blue-500'}" data-key="${key}">
@@ -2365,9 +2365,19 @@ function bindReviewActions(listEl) {
     const likeBtn = e.target.closest('.review-like-btn');
     if (likeBtn) {
       e.preventDefault();
-      if (!likeBtn.dataset.key) return;
-      try { await toggleReviewLike(reviewsPidRef, likeBtn.dataset.key); } catch {}
-      await refreshReviewInteractions();
+      const key = likeBtn.dataset.key;
+      if (!key) return;
+      const wasLiked = riState.liked.has(key);
+      let nowLiked = !wasLiked;
+      try {
+        const res = await toggleReviewLike(reviewsPidRef, key);
+        if (res && typeof res.liked === 'boolean') nowLiked = res.liked;
+      } catch {}
+      // Apply the toggle's authoritative result directly so the heart reliably
+      // reflects the click (and the count stays in sync), instead of relying on
+      // the reload's identity-based re-derivation of "liked".
+      if (nowLiked) riState.liked.add(key); else riState.liked.delete(key);
+      riState.likes.set(key, Math.max(0, (riState.likes.get(key) || 0) + (nowLiked ? 1 : -1)));
       renderReviewList();
       return;
     }
