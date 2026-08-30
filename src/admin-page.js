@@ -7919,6 +7919,15 @@ async function renderAiSettings() {
                 </select>
               </div>
             </div>
+            <div class="mt-3">
+              <label class="lbl">OpenRouter Key (optional, free fallback)</label>
+              <div class="relative">
+                <input type="password" class="input-field pr-16 text-xs" name="chat_openrouter_key"
+                  placeholder="${s.chat_openrouter_key ? '••••' + String(s.chat_openrouter_key).slice(-4) : 'sk-or-v1-… (NEW)'}">
+                ${s.chat_openrouter_key ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
+              </div>
+              <p class="text-[10px] text-gray-400 mt-1">One free key unlocks many free chat models. If Gemini's free daily limit runs out, the chat automatically falls back to your Groq key (in Groq Vision above), then OpenRouter, then the free keyless AI — so customers always get an answer.</p>
+            </div>
             <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400 hover:underline">
               <i data-lucide="external-link" class="w-3 h-3"></i>Get a free Gemini key for the chat assistant
             </a>
@@ -8022,6 +8031,10 @@ window.saveAiSettings = async function(e) {
   if (data.chat_model_override !== undefined) payload.chat_model_override = data.chat_model_override.trim();
   const chatKeyVal = (data.chat_gemini_key || '').trim();
   if (chatKeyVal && !/^[•\u2022]{4}/.test(chatKeyVal)) payload.chat_gemini_key = chatKeyVal;
+
+  // OpenRouter free fallback key for the customer chat (saved only when new).
+  const openrouterChatKeyVal = (data.chat_openrouter_key || '').trim();
+  if (openrouterChatKeyVal && !/^[•\u2022]{4}/.test(openrouterChatKeyVal)) payload.chat_openrouter_key = openrouterChatKeyVal;
 
 
 

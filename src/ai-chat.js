@@ -19,6 +19,26 @@ const SUGGESTIONS = [
   'Talk to a human',
 ];
 
+// Read the shopper's detected country + language so the AI can be localized
+// (adopt a local human name and reply in the shopper's own language).
+// Uses the site's saved locale (localStorage['kco_locale'], written by
+// localization.js) and falls back to the browser's language.
+function detectLocale() {
+  let country = '';
+  let countryName = '';
+  let language = '';
+  try {
+    const saved = JSON.parse(localStorage.getItem('kco_locale') || 'null');
+    if (saved && saved.country) country = saved.country;
+    if (saved && saved.countryName) countryName = saved.countryName;
+    if (saved && saved.language) language = saved.language;
+  } catch (e) { /* noop */ }
+  if (!language) {
+    try { language = (navigator.language || 'en').split('-')[0]; } catch (e) { language = 'en'; }
+  }
+  return { country, countryName, language };
+}
+
 let state = {
   open: false,
   busy: false,
@@ -279,7 +299,12 @@ async function sendMessage(text) {
           'Authorization': `Bearer ${ANON_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: text, history: context }),
+        body: JSON.stringify({
+          message: text,
+          history: context,
+          ...detectLocale(),
+          session_id: (window.__kcoAiSessionId || (window.__kcoAiSessionId = Date.now() + '-' + Math.random().toString(36).slice(2, 8))),
+        }),
       });
       const data = await res.json();
       reply = String(data?.response || '').trim();
