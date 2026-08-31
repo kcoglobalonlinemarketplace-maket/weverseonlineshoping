@@ -951,6 +951,13 @@ async function renderProducts() {
         if (items[i] && items[i].property_id && hiddenIds.has(items[i].property_id)) items.splice(i, 1);
       }
     }
+    // Hide any product priced $1-$100 so they never appear in the admin Product
+    // Manager, even if stale copies linger in a local localStorage cache.
+    for (let i = items.length - 1; i >= 0; i--) {
+      const p = items[i];
+      const price = Number(p && p.price);
+      if (Number.isFinite(price) && price >= 1 && price <= 100) items.splice(i, 1);
+    }
     const categories = [...new Set(items.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     const tags = [...new Set(items.flatMap(p => Array.isArray(p.tags) ? p.tags : []).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 

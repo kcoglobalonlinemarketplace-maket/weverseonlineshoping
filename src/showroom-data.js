@@ -176,7 +176,18 @@ function withTimeout(promise, ms) {
 }
 
 // Turn a raw DB/local-store row into the shape the showroom/details pages read.
+// Products priced between $1 and $100 are intentionally filtered OUT here so they
+// never appear anywhere on the store (public catalog, showroom, dashboards) even
+// if stale copies linger in any localStorage cache.
+export function isKeepableProduct(row) {
+  if (!row) return false;
+  const price = Number(row.price);
+  if (Number.isFinite(price) && price >= 1 && price <= 100) return false;
+  return true;
+}
+
 function normalizeDbRow(row) {
+  if (!isKeepableProduct(row)) return null;
   const images = Array.isArray(row.images) ? [...row.images] : [];
   // Merge standalone video/video_url columns into images[] so every renderer
   // that iterates `listing.images` automatically picks up the product video.
@@ -259,7 +270,7 @@ export function loadDBListings() {
       // the store. Database rows win on duplicate IDs.
       const dbIds = new Set(rows.map(row => row.property_id));
       for (const row of listLocalShowroomListings().filter(item => item.is_active !== false)) {
-        if (row && row.property_id && !dbIds.has(row.property_id)) { dbIds.add(row.property_id); rows.push(row); }
+        if (row && row.property_id && !dbIds.has(row.property_id) && isKeepableProduct(row)) { dbIds.add(row.property_id); rows.push(row); }
       }
       if (ok) {
         // Fresh DB data replaces whatever was hydrated from the cache.
