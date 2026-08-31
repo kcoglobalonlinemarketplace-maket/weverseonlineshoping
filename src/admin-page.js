@@ -5258,6 +5258,24 @@ function applyScanToVehicleForm(result, options = {}) {
   set('model_year', identification.year || specs.model_year || specs.year);
   set('trim', specs.trim);
   set('body_type', identification.body_type || specs.body_type);
+  // Vehicle Type * is required. The AI returns vehicle_type / body_type which
+  // must be mapped to a valid VEHICLE_TYPE_CATEGORY option key.
+  const mapVehicleCategory = (raw) => {
+    const s = String(raw || '').toLowerCase();
+    if (/motorhome|motor home|rv|recreational vehicle/.test(s)) return 'Motorhome / RV';
+    if (/boat|marine|yacht|ship|jet ?ski|watercraft/.test(s)) return 'Boat / Marine';
+    if (/motorcycle|motorbike|scooter|bike/.test(s)) return 'Motorcycle';
+    if (/^bus|buses|coach/.test(s)) return 'Bus';
+    if (/truck|pickup|pick ?up|ute|lkw|van|commercial/.test(s)) return 'Truck';
+    const optKeys = Object.keys(VEHICLE_TYPE_CATEGORY || {});
+    const exact = optKeys.find(k => k.toLowerCase() === s);
+    if (exact) return exact;
+    if (/car|sedan|suv|hatchback|coupe|convertible|wagon|sports|limousine|crossover|saloon/.test(s)) return 'Car';
+    return null;
+  };
+  const vtSeed = specs.vehicle_type || identification.vehicle_type || specs.body_type || identification.body_type;
+  const vtCategory = mapVehicleCategory(vtSeed);
+  if (vtCategory) set('vehicle_type', vtCategory);
   set('mileage', specs.mileage);
   set('engine', specs.engine);
   set('horsepower', specs.horsepower);
