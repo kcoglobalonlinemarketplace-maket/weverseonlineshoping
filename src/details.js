@@ -598,9 +598,12 @@ function faqContent() {
 // same listing.
 function humanDescriptionHtml(listing) {
   const written = (listing.description || '').trim();
+  // Professional, high-contrast body text — near-black (gray-900) so it
+  // reads clearly against the white card, with clean spacing like Temu.
+  const BODY = 'text-[15px] sm:text-[16px] text-gray-900 leading-[1.75] mb-3';
   if (written.length > 140) {
     return written.split(/\r?\n+/).filter(Boolean).map(p =>
-      `<p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-2.5">${escapeHtml(p)}</p>`
+      `<p class="${BODY}">${escapeHtml(p)}</p>`
     ).join('');
   }
 
@@ -639,33 +642,47 @@ function humanDescriptionHtml(listing) {
   ]);
 
   let chips = [];
-  if (brand) chips.push(`branded as ${brand}`);
+  if (brand) chips.push(`brand: ${brand}`);
   if (condi) chips.push(condi.toLowerCase() === 'new' ? 'brand new condition' : `${condi.toLowerCase()} condition`);
-  if (color) chips.push(`available in ${color}`);
+  if (color) chips.push(`colour: ${color}`);
   if (origin) chips.push(`shipping from ${origin}`);
   chips = chips.filter(Boolean);
-  const chipLine = chips.length ? ` You can expect ${chips[0]}${chips[1] ? `, ${chips[1]}` : ''}.` : '';
+  const chipLine = chips.length ? `You can expect ${chips.slice(0, 3).join(' · ')}.` : '';
 
-  const featureLines = feats.length
-    ? `<ul class="list-disc pl-5 text-[15px] sm:text-base text-gray-700 leading-relaxed space-y-1 mt-2.5">
-        ${feats.slice(0, 6).map(f => `<li>${escapeHtml(f)}</li>`).join('')}
-      </ul>`
+  const tagChips = tags.length
+    ? tags.slice(0, 6).map(t => `<span class="inline-block rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 mr-1.5 mb-1.5">${escapeHtml(t)}</span>`).join('')
     : '';
-  const tagLine = tags.length
-    ? `<p class="text-sm text-gray-500 mt-2.5">${tags.slice(0, 6).map(t => `<span class="inline-block bg-gray-100 border border-gray-200 rounded-full px-2.5 py-0.5 text-xs font-semibold text-gray-600 mr-1.5 mb-1.5">${escapeHtml(t)}</span>`).join('')}</p>`
+
+  const featureBlock = feats.length
+    ? `
+      <div class="mt-4">
+        <h4 class="flex items-center gap-2 text-[13px] font-black uppercase tracking-wide text-gray-900 mb-2.5">
+          <i data-lucide="list-checks" class="w-4 h-4 text-blue-500"></i> Key features
+        </h4>
+        <ul class="space-y-2.5">
+          ${feats.slice(0, 6).map(f => `
+            <li class="flex items-start gap-2.5">
+              <i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 shrink-0 mt-0.5"></i>
+              <span class="text-[15px] sm:text-[16px] text-gray-900 leading-relaxed">${escapeHtml(f)}</span>
+            </li>`).join('')}
+        </ul>
+      </div>`
     : '';
 
   return `
-    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-2.5">${escapeHtml(focus)}</p>
-    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-2.5">${escapeHtml(quality)} ${escapeHtml(practical)}</p>
-    ${written.trim() ? `<p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-2.5">${escapeHtml(written.trim())}</p>` : ''}
-    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-1">${escapeHtml(chipLine)}</p>
-    ${featureLines}
-    ${tagLine}
-    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mt-2.5">${escapeHtml(pick([
-      'Order with confidence, and the team at Weverse Online Shop is here if you need anything along the way.',
+    <h4 class="flex items-center gap-2 text-[13px] font-black uppercase tracking-wide text-gray-900 mb-3">
+      <i data-lucide="file-text" class="w-4 h-4 text-blue-500"></i> About this ${cat}
+    </h4>
+    <p class="${BODY}">${escapeHtml(focus)}</p>
+    <p class="${BODY}">${escapeHtml(quality)} ${escapeHtml(practical)}</p>
+    ${written.trim() ? `<p class="${BODY}">${escapeHtml(written.trim())}</p>` : ''}
+    ${chipLine ? `<p class="${BODY}"><span class="font-bold text-gray-900">Details:</span> ${escapeHtml(chipLine)}</p>` : ''}
+    ${featureBlock}
+    ${tagChips ? `<div class="mt-3 pt-3">${tagChips}</div>` : ''}
+    <p class="${BODY} mt-3 border-t border-slate-100 pt-3">${escapeHtml(pick([
+      'Order with confidence — the Weverse Online Shop team is here if you need anything along the way.',
       'A dependable everyday choice, backed by our easy-returns promise if it is not quite right for you.',
-      'Great value for what you get, delivered right to your door with secure checkout and helpful support.',
+      'Great value for what you get, delivered to your door with secure checkout and helpful support.',
     ]))}</p>`;
 }
 
