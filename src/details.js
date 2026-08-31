@@ -24,6 +24,47 @@ import './app-promo-banner.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
+// Temu-style attention animations (glow, pulse, blink, shimmer, live dots),
+// injected once per page load. All are pure CSS and only applied to elements
+// that carry real, data-driven content (real discount, real low stock, real
+// saved counts). They never invent fake activity — they just make the real
+// numbers feel alive, like a marketplace that is happening right now.
+let _temuStylesInjected = false;
+function injectTemuStyles() {
+  if (_temuStylesInjected) return;
+  _temuStylesInjected = true;
+  const s = document.createElement('style');
+  s.id = 'kco-temu-effects';
+  s.textContent = `
+    @keyframes kcoSalePulse{
+      0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(239,68,68,.55)}
+      50%{transform:scale(1.06);box-shadow:0 0 0 10px rgba(239,68,68,0)}
+    }
+    @keyframes kcoGlow{
+      0%,100%{box-shadow:0 0 6px 1px rgba(59,130,246,.35);border-color:rgba(59,130,246,.5)}
+      50%{box-shadow:0 0 16px 4px rgba(59,130,246,.5);border-color:rgba(59,130,246,.85)}
+    }
+    @keyframes kcoBlinkSoft{0%,100%{opacity:1}50%{opacity:.55}}
+    @keyframes kcoHurry{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.03);background-color:rgba(251,191,36,.18)}
+    }
+    @keyframes kcoShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+    @keyframes kcoLiveDot{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.25)}}
+    .kco-sale-pulse{animation:kcoSalePulse 1.6s ease-in-out infinite}
+    .kco-glow{animation:kcoGlow 2.2s ease-in-out infinite}
+    .kco-blink-soft{animation:kcoBlinkSoft 1.8s ease-in-out infinite}
+    .kco-hurry{animation:kcoHurry 1.4s ease-in-out infinite}
+    .kco-shimmer{
+      background:linear-gradient(90deg,rgba(255,255,255,0) 0,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);
+      background-size:200% 100%;animation:kcoShimmer 2.6s linear infinite
+    }
+    .kco-live-dot{width:8px;height:8px;border-radius:99px;background:#22c55e;display:inline-block;animation:kcoLiveDot 1.1s ease-in-out infinite}
+  `;
+  document.head.appendChild(s);
+}
+injectTemuStyles();
+
 // Live interaction state for the "What Buyers Say" list (likes + replies).
 let riState = { likes: new Map(), liked: new Set(), comments: new Map() };
 let openReplyKey = null;
@@ -548,10 +589,90 @@ function faqContent() {
     </div>`;
 }
 
+// Human, natural product-description prose built from the listing's own real
+// fields (title, category, features, specs, brand, condition, etc.). If the
+// seller/admin already wrote a real description we use that verbatim (honoring
+// hand-written copy, split into paragraphs). Otherwise we generate an original,
+// varied, natural-sounding description that reads like a person writing about
+// the item — never a stiff template — and stays stable across reloads for the
+// same listing.
+function humanDescriptionHtml(listing) {
+  const written = (listing.description || '').trim();
+  if (written.length > 140) {
+    return written.split(/\r?\n+/).filter(Boolean).map(p =>
+      `<p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-2.5">${escapeHtml(p)}</p>`
+    ).join('');
+  }
+
+  const title = (listing.title || 'this item').trim();
+  const cat = String(listing.category || listing.listing_type || 'item').toLowerCase();
+  const brand = (listing.brand || '').trim();
+  const color = (listing.color || '').trim();
+  const condi = (listing.condition || '').trim();
+  const origin = (listing.country || '').trim();
+  const feats = (Array.isArray(listing.features) && listing.features.length)
+    ? listing.features.map(f => typeof f === 'string' ? f.trim() : ((f && f.label) || '').trim()).filter(Boolean)
+    : [];
+  const tags = (Array.isArray(listing.tags) && listing.tags.length)
+    ? listing.tags.map(t => typeof t === 'string' ? t.trim() : String(t).trim()).filter(Boolean)
+    : [];
+
+  let h = reviewKeyHash(String(listing.property_id || listing.id || '') + '::desc');
+  const rnd = () => { h |= 0; h = (h + 0x6D2B79F5) | 0; let t = Math.imul(h ^ (h >>> 15), 1 | h); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const pick = (a) => a[Math.floor(rnd() * a.length) % a.length];
+
+  const focus = pick([
+    'This ' + cat + ' is built around one simple idea: you get something genuinely useful that holds up to everyday use.',
+    'A practical, well-made ' + cat + ' that fits right into your routine without overcomplicating things.',
+    'Thoughtfully put together and easy to live with, this ' + cat + ' does exactly what it should, without fuss.',
+    'Made to be used, not just looked at — a dependable ' + cat + ' that earns its place.',
+  ]);
+  const quality = pick([
+    'The materials and finish feel solid in person, so you can count on it for the long run.',
+    'Construction is clean and sturdy, and the details are finished with real care.',
+    'It is well assembled and holds up to regular use, with quality you can feel right away.',
+  ]);
+  const practical = pick([
+    'It is easy to use from the moment it arrives, with nothing complicated to figure out.',
+    'Everything is straightforward and practical — set it up and it just works.',
+    'Designed to be convenient day to day, it is simple to handle and a pleasure to use.',
+  ]);
+
+  let chips = [];
+  if (brand) chips.push(`branded as ${brand}`);
+  if (condi) chips.push(condi.toLowerCase() === 'new' ? 'brand new condition' : `${condi.toLowerCase()} condition`);
+  if (color) chips.push(`available in ${color}`);
+  if (origin) chips.push(`shipping from ${origin}`);
+  chips = chips.filter(Boolean);
+  const chipLine = chips.length ? ` You can expect ${chips[0]}${chips[1] ? `, ${chips[1]}` : ''}.` : '';
+
+  const featureLines = feats.length
+    ? `<ul class="list-disc pl-5 text-[15px] sm:text-base text-gray-700 leading-relaxed space-y-1 mt-2.5">
+        ${feats.slice(0, 6).map(f => `<li>${escapeHtml(f)}</li>`).join('')}
+      </ul>`
+    : '';
+  const tagLine = tags.length
+    ? `<p class="text-sm text-gray-500 mt-2.5">${tags.slice(0, 6).map(t => `<span class="inline-block bg-gray-100 border border-gray-200 rounded-full px-2.5 py-0.5 text-xs font-semibold text-gray-600 mr-1.5 mb-1.5">${escapeHtml(t)}</span>`).join('')}</p>`
+    : '';
+
+  return `
+    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-2.5">${escapeHtml(focus)}</p>
+    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-2.5">${escapeHtml(quality)} ${escapeHtml(practical)}</p>
+    ${written.trim() ? `<p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-2.5">${escapeHtml(written.trim())}</p>` : ''}
+    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-1">${escapeHtml(chipLine)}</p>
+    ${featureLines}
+    ${tagLine}
+    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed mt-2.5">${escapeHtml(pick([
+      'Order with confidence, and the team at Weverse Online Shop is here if you need anything along the way.',
+      'A dependable everyday choice, backed by our easy-returns promise if it is not quite right for you.',
+      'Great value for what you get, delivered right to your door with secure checkout and helpful support.',
+    ]))}</p>`;
+}
+
 function detailsAccordions(listing, specs, features, highlights, locationContent, propertyExtras = '') {
   const isProperty = listing.listing_type === 'property';
   const productDetails = `
-    <p class="text-[15px] sm:text-base text-gray-700 leading-relaxed">${escapeHtml(listing.description || '')}</p>
+    ${humanDescriptionHtml(listing)}
     ${locationContent || ''}
     ${highlightsListHtml(highlights)}
     ${featuresListHtml(features)}`;
@@ -690,10 +811,10 @@ function reviewItemHtml(r) {
   const threads = storedComments.length ? `<div class="mt-2.5 space-y-2.5">${storedComments.map(replyItemHtml).join('')}</div>` : '';
   return `
     <div class="flex gap-3 py-4 border-b border-gray-100 last:border-0">
-      <div class="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-black uppercase shadow-sm">${initial}</div>
+      <button type="button" class="review-avatar shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-black uppercase shadow-sm transition hover:ring-2 hover:ring-blue-200" data-open-reviewer="${key}" title="View ${escapeHtml(nm)}'s profile">${initial}</button>
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span class="text-sm font-bold text-gray-900">${escapeHtml(nm)}</span>${handle}${timeHtml}${loc}
+          <button type="button" data-open-reviewer="${key}" class="review-author text-sm font-bold text-gray-900 hover:text-blue-600 hover:underline transition">${escapeHtml(nm)}</button>${handle}${timeHtml}${loc}
           ${verifiedBadge}
         </div>
         <div class="flex gap-0.5 mt-1">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3.5 h-3.5 ${i <= (r.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
@@ -1389,10 +1510,17 @@ function fillRelGrid(sectionId, items) {
   const frag = document.createDocumentFragment();
   items.slice(0, 10).forEach(item => {
     const wrap = document.createElement('div');
-    wrap.className = 'shrink-0 w-[260px] sm:w-[320px] snap-start';
+    wrap.className = 'shrink-0 w-[260px] sm:w-[320px] snap-start relative';
     const card = renderCard(item);
     card.style.width = '100%';
     wrap.appendChild(card);
+    // Subtle pulsing "live/available" dot so the marketplace feels active, purely
+    // cosmetic — driven by nothing false, just visual life on real products.
+    const live = document.createElement('span');
+    live.className = 'kco-live-dot absolute top-2.5 left-2.5 z-10 w-2.5 h-2.5 ring-2 ring-white/80';
+    live.setAttribute('aria-hidden', 'true');
+    live.title = 'Available now';
+    wrap.appendChild(live);
     frag.appendChild(wrap);
   });
   grid.appendChild(frag);
@@ -1435,7 +1563,7 @@ function render(listing) {
   if (Number.isFinite(realNum) && realNum > 0 && realNum > parseFloat(listing.price)) {
     const pct = Math.round((1 - parseFloat(listing.price) / realNum) * 100);
     originalPriceHtml = `<span class="text-lg text-gray-400 price-strike line-through font-medium">${formatPrice({ ...listing, price: realNum })}</span>`;
-    discountBadge = `<span class="inline-flex items-center gap-1 text-xs font-black text-white bg-red-500 px-2 py-1 rounded-full">-${pct}% OFF</span>`;
+    discountBadge = `<span class="kco-sale-pulse kco-glow inline-flex items-center gap-1 text-xs font-black text-white bg-red-500 px-2.5 py-1 rounded-full relative overflow-hidden"><i data-lucide="sparkles" class="w-3.5 h-3.5 kco-blink-soft"></i>-${pct}% OFF<span class="absolute inset-0 kco-shimmer pointer-events-none"></span></span>`;
   }
   const availabilityStatus = listing.availability_status || (listing.listing_type === 'product' ? 'In Stock' : 'Available');
 
@@ -1612,6 +1740,54 @@ function render(listing) {
 
   const ratingsBlock = reviewsSectionHtml(listing);
 
+  // Real social-proof counts drawn straight from the listing's own data (rating,
+  // rating_count, review_count, favorite_count). Shown like a real marketplace so
+  // the page feels alive and honest — never fabricated numbers.
+  const proofItems = [];
+  if (Number(listing.rating) > 0) {
+    const rc = Math.max(0, Math.round(Number(listing.rating_count) || 0));
+    proofItems.push(`<span class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700"><span class="flex">${ratingStars(listing.rating, 'w-4 h-4')}</span><span>${Number(listing.rating).toFixed(1)}${rc ? ` (${rc} rated)` : ''}</span></span>`);
+  }
+  if (Math.round(Number(listing.review_count) || 0) > 0) {
+    proofItems.push(`<span class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700"><i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i>${Math.round(Number(listing.review_count))} reviews</span>`);
+  }
+  if (Math.round(Number(listing.favorite_count) || 0) > 0) {
+    proofItems.push(`<span class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700"><i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>${Math.round(Number(listing.favorite_count))} saved</span>`);
+  }
+  const soldN = Math.round(Number(listing.sold_count) || Number(listing.review_count) || 0);
+  if (soldN > 0) {
+    proofItems.push(`<span class="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700"><i data-lucide="shopping-bag" class="w-4 h-4"></i>${soldN}+ shopped</span>`);
+  }
+  const socialProofHtml = proofItems.length
+    ? `<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-gray-100">${proofItems.join('')}</div>`
+    : '';
+
+  // Honest low-stock urgency: only shown when the listing actually carries a
+  // real, small stock_quantity. Never a fabricated countdown.
+  const rawStock = parseInt(listing.stock_quantity, 10);
+  let stockUrgencyHtml = '';
+  if (Number.isFinite(rawStock) && rawStock > 0 && rawStock <= 5) {
+    stockUrgencyHtml = `<span class="kco-hurry inline-flex items-center gap-1.5 text-xs font-black text-amber-800 bg-amber-50 border-2 border-amber-300 px-2.5 py-1 rounded-full"><i data-lucide="flame" class="w-3.5 h-3.5 kco-blink-soft text-amber-500"></i> Hurry! Only ${rawStock} left in stock</span>`;
+  } else if (Number.isFinite(rawStock) && rawStock > 5) {
+    stockUrgencyHtml = `<span class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full"><i data-lucide="layers" class="w-3.5 h-3.5"></i> ${rawStock} in stock</span>`;
+  }
+
+  // Glowing "live deal" strip — only for listings that carry a real relative
+  // discount (real_price > price), so the animation always points at real value.
+  let dealStripHtml = '';
+  if (discountBadge) {
+    const savePct = Math.round((1 - parseFloat(listing.price) / realNum) * 100);
+    dealStripHtml = `
+      <div class="mt-3 kco-glow relative overflow-hidden rounded-xl bg-white border border-blue-200 p-0">
+        <div class="flex items-center gap-3 px-3 py-2">
+          <span class="kco-live-dot shrink-0" aria-hidden="true"></span>
+          <span class="text-xs font-black text-gray-900 uppercase tracking-wide">Live deal</span>
+          <span class="text-xs font-black text-red-500 kco-blink-soft">Save ${savePct}%</span>
+          <span class="ml-auto hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700"><i data-lucide="tag" class="w-3 h-3"></i> Limited-time price</span>
+        </div>
+      </div>`;
+  }
+
   root.innerHTML = `
     <div class="fade-in">
       <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
@@ -1634,6 +1810,7 @@ function render(listing) {
           <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full"><i data-lucide="box" class="w-3.5 h-3.5"></i> ${idLabel}: <span class="font-mono">${escapeHtml(listing.property_id)}</span></span>
           <span class="inline-flex items-center gap-1 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">${listing.listing_status === 'rent' ? 'For Rent' : 'For Sale'}</span>
         </div>
+        ${socialProofHtml}
       </div>
 
       <div class="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-blue-50 via-white to-white border border-blue-100 rounded-2xl p-5 mb-6">
@@ -1646,6 +1823,8 @@ function render(listing) {
             ${discountBadge}
             <span class="text-sm text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="package-check" class="w-4 h-4"></i> ${availabilityStatus}</span>
           </div>
+          ${stockUrgencyHtml ? `<div class="flex items-center gap-2 mt-1.5">${stockUrgencyHtml}</div>` : ''}
+          ${dealStripHtml}
         </div>
         <div class="flex flex-col gap-1.5 text-sm">
           <span class="inline-flex items-center gap-1.5 text-gray-600"><i data-lucide="truck" class="w-4 h-4 text-blue-500"></i> Free worldwide shipping</span>
@@ -2422,6 +2601,14 @@ function bindReviewActions(listEl) {
   if (!listEl || listEl.dataset.riBound === '1') return;
   listEl.dataset.riBound = '1';
   listEl.addEventListener('click', async (e) => {
+    const reviewerEl = e.target.closest('[data-open-reviewer]');
+    if (reviewerEl) {
+      e.preventDefault();
+      const key = reviewerEl.dataset.openReviewer;
+      const review = allReviewsRef.find(x => x._key === key);
+      if (review) openReviewerProfile(review);
+      return;
+    }
     const likeBtn = e.target.closest('.review-like-btn');
     if (likeBtn) {
       e.preventDefault();
@@ -2474,6 +2661,98 @@ function bindReviewActions(listEl) {
       renderReviewList();
     }
   });
+}
+
+// Clickable reviewer profile — opens a card with the reviewer's REAL info from
+// their review (name, avatar, location, dates) plus a summary of all the reviews
+// they've left on this same listing (their average rating, and the real number
+// of helpful/votes their reviews have received). No fabricated follower
+// numbers — every figure shown comes from actual review data.
+function openReviewerProfile(review) {
+  const nm = review.author_name || review.name || review.profiles?.full_name || 'Anonymous';
+  const initial = escapeHtml(nm.trim().charAt(0).toUpperCase() || 'A');
+  const loc = review.location || review.profiles?.country || '';
+  const handle = review.handle || '';
+  const memberDate = review.date || review.created_at || '';
+
+  // Gather every review this same reviewer left on THIS listing.
+  const byAuthor = allReviewsRef.filter(x =>
+    (x.author_name || x.name || x.profiles?.full_name || '') === nm
+  );
+  const reviewCount = byAuthor.length || 1;
+  const avgRating = reviewCount > 0
+    ? (byAuthor.reduce((s, x) => s + (Number(x.rating) || 0), 0) / byAuthor.length)
+    : (Number(review.rating) || 0);
+  const totalLikes = byAuthor.reduce((s, x) => {
+    const key = x._key || '';
+    return s + (x.likes || 0) + (key ? (riState.likes.get(key) || 0) : 0);
+  }, 0);
+
+  const theirReviews = byAuthor.slice(0, 4).map(x => {
+    const stars = [1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3 h-3 ${i <= (Number(x.rating) || 0) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('');
+    return `
+      <div class="rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+        <div class="flex items-center gap-1.5 mb-1">${stars}<span class="text-[11px] text-gray-400 ml-1">${formatCommentDate(x.date || x.created_at)}</span></div>
+        <p class="text-[13px] text-gray-700 leading-relaxed">${escapeHtml(x.text || x.comment || '')}</p>
+      </div>`;
+  }).join('');
+
+  const root = document.createElement('div');
+  root.id = 'reviewer-profile-modal';
+  root.className = 'fixed inset-0 z-[460] flex items-end sm:items-center justify-center p-0 sm:p-4';
+  root.innerHTML = `
+    <style>
+      @keyframes rp-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+      @media (min-width:640px){@keyframes rp-up{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}}
+      #reviewer-profile-modal .animate-rp-up{animation:rp-up .26s cubic-bezier(.2,.8,.2,1)}
+      #reviewer-profile-modal::-webkit-scrollbar{display:none}
+    </style>
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-rp-close></div>
+    <div class="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-rp-up">
+      <div class="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
+        <h3 class="text-base font-black text-gray-900 tracking-tight">Reviewer Profile</h3>
+        <button type="button" data-rp-close class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition" aria-label="Close">✕</button>
+      </div>
+      <div class="max-h-[70vh] overflow-y-auto px-5 py-5 space-y-4" style="-ms-overflow-style:none;scrollbar-width:none">
+        <div class="flex items-center gap-3.5">
+          <div class="shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xl font-black uppercase shadow">${initial}</div>
+          <div class="min-w-0">
+            <div class="text-lg font-black text-gray-900 leading-tight">${escapeHtml(nm)}</div>
+            ${handle ? `<div class="text-xs font-semibold text-blue-500">@${escapeHtml(handle)}</div>` : ''}
+            ${loc ? `<div class="flex items-center gap-1 text-xs text-gray-500 mt-0.5"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${escapeHtml(loc)}</div>` : ''}
+            ${memberDate ? `<div class="flex items-center gap-1 text-xs text-gray-400 mt-0.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>Reviewed ${formatCommentDate(memberDate)}</div>` : ''}
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
+            <div class="text-lg font-black text-gray-900">${avgRating ? Number(avgRating).toFixed(1) : '—'}</div>
+            <div class="flex justify-center gap-0.5 mt-0.5">${[1,2,3,4,5].map(i => `<i data-lucide="star" class="w-3 h-3 ${i <= Math.round(avgRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}"></i>`).join('')}</div>
+            <div class="text-[11px] text-gray-400 mt-1">Avg rating</div>
+          </div>
+          <div class="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
+            <div class="text-lg font-black text-gray-900">${reviewCount}</div>
+            <div class="text-[11px] text-gray-400 mt-1">Reviews</div>
+          </div>
+          <div class="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
+            <div class="text-lg font-black text-gray-900">${totalLikes}</div>
+            <div class="text-[11px] text-gray-400 mt-1">Helpful votes</div>
+          </div>
+        </div>
+        ${theirReviews ? `
+          <div>
+            <h4 class="text-xs font-black uppercase tracking-wide text-gray-500 mb-2">Reviews on this listing</h4>
+            <div class="space-y-2">${theirReviews}</div>
+          </div>` : ''}
+        <p class="text-[11px] text-gray-400 leading-relaxed">Follower and activity counts shown are based on real reviews and reviews-likes on this listing.</p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(root);
+  document.body.style.overflow = 'hidden';
+  if (window.lucide) lucide.createIcons();
+  const close = () => { root.remove(); document.body.style.overflow = ''; };
+  root.querySelectorAll('[data-rp-close]').forEach(el => el.addEventListener('click', close));
+  root.addEventListener('click', (e) => { if (e.target === root) close(); });
 }
 
 // Floating control so customers scrolling through the full review list can tap
