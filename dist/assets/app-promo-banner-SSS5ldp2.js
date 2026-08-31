@@ -59,7 +59,7 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
           ${e([{icon:"shield-check",title:"Secure Checkout",sub:"Protected"},{icon:"key-round",title:"Privacy Protected",sub:"Your data is safe"},{icon:"headphones",title:"24/7 Support",sub:"Always here"}])}
         </div>
       </div>
-    </section>`}const E=[{id:"trust-shipping",icon:"package",tone:"blue",title:"Shipping & Delivery",body:`
+    </section>`}const T=[{id:"trust-shipping",icon:"package",tone:"blue",title:"Shipping & Delivery",body:`
       <p class="text-sm text-gray-600 leading-relaxed">Every order is packed securely and shipped through trusted, fully-tracked couriers. Delivery times depend on your location:</p>
       <ul class="mt-3 space-y-2 text-sm text-gray-700">
         <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span><b>Standard:</b> 5–10 business days</li>
@@ -129,7 +129,7 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
         <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>Track orders & get instant updates</li>
         <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>Exclusive app offers & new arrivals</li>
       </ul>
-      <p class="mt-3 text-xs text-gray-400">The Android app is in final review — the download link will appear here the moment it goes live.</p>`}],T={blue:"bg-blue-50 text-blue-600",emerald:"bg-emerald-50 text-emerald-600",amber:"bg-amber-50 text-amber-600",violet:"bg-violet-50 text-violet-600",sky:"bg-sky-50 text-sky-600",indigo:"bg-indigo-50 text-indigo-600",rose:"bg-rose-50 text-rose-600",slate:"bg-slate-100 text-slate-600",teal:"bg-teal-50 text-teal-600",cyan:"bg-cyan-50 text-cyan-600"};function K(e){const t=T[e.tone]||T.blue;return`
+      <p class="mt-3 text-xs text-gray-400">The Android app is in final review — the download link will appear here the moment it goes live.</p>`}],E={blue:"bg-blue-50 text-blue-600",emerald:"bg-emerald-50 text-emerald-600",amber:"bg-amber-50 text-amber-600",violet:"bg-violet-50 text-violet-600",sky:"bg-sky-50 text-sky-600",indigo:"bg-indigo-50 text-indigo-600",rose:"bg-rose-50 text-rose-600",slate:"bg-slate-100 text-slate-600",teal:"bg-teal-50 text-teal-600",cyan:"bg-cyan-50 text-cyan-600"};function K(e){const t=E[e.tone]||E.blue;return`
     <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
       <button type="button" data-acc="${e.id}" aria-expanded="false" class="w-full flex items-center justify-between gap-3 p-4 sm:p-5 text-left hover:bg-gray-50 transition active:bg-gray-100">
         <span class="flex items-center gap-3 min-w-0">
@@ -143,7 +143,7 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
       <div data-acc-body="${e.id}" class="trust-acc-body" data-open="0">
         <div class="px-4 sm:px-5 pb-5 pt-1 border-t border-gray-100">${e.body}</div>
       </div>
-    </div>`}function Z(){const e=E.slice(0,6),t=E.slice(6),a=r=>r.map(K).join("");return`
+    </div>`}function Z(){const e=T.slice(0,6),t=T.slice(6),a=r=>r.map(K).join("");return`
     <section class="bg-white">
       <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-12">
         <div class="flex items-center gap-3 mb-6">
@@ -261,7 +261,7 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
           </div>
         </div>
       </div>
-    </section>`}function c(e,t){return`<li><a href="${e}" class="text-xs text-slate-400 hover:text-white transition">${t}</a></li>`}function _(e){const t={...x,...e||{}},a=O(),r=a.brand_name||a.site_name||H,i=a.brand_logo||a.brand_header_logo||a.brand_footer_logo||"/w-logo.svg",n=t.bottom_footer_text||a.brand_slogan||a.site_tagline||"GLOBAL SHOPPING · WORLDWIDE DELIVERY",l=t.bottom_copyright?t.bottom_copyright:`© ${new Date().getFullYear()} ${r}. All rights reserved.`;return`
+    </section>`}function d(e,t){return`<li><a href="${e}" class="text-xs text-slate-400 hover:text-white transition">${t}</a></li>`}function _(e){const t={...x,...e||{}},a=O(),r=a.brand_name||a.site_name||H,i=a.brand_logo||a.brand_header_logo||a.brand_footer_logo||"/w-logo.svg",n=t.bottom_footer_text||a.brand_slogan||a.site_tagline||"GLOBAL SHOPPING · WORLDWIDE DELIVERY",l=t.bottom_copyright?t.bottom_copyright:`© ${new Date().getFullYear()} ${r}. All rights reserved.`;return`
     <section id="site-closing-section" class="relative overflow-hidden bg-[#060c1c] text-white">
       <!-- backdrop -->
       <div class="absolute inset-0" style="background:
@@ -321,32 +321,33 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
           <div>
             <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Company info</h4>
             <ul class="space-y-2.5">
-              ${c("/about.html","About Us")}
-              ${c("/contact.html","Contact us")}
-              ${c("/team.html","Careers")}
-              ${c("/team.html","Press")}
-              ${c("/about.html","Partner with Us")}
+              ${d("/about.html","About Us")}
+              ${d("/contact.html","Contact us")}
+              ${d("/team.html","Careers")}
+              ${d("/team.html","Press")}
+              ${d("/about.html","Partner with Us")}
             </ul>
           </div>
           <!-- Customer service -->
           <div>
             <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Customer service</h4>
             <ul class="space-y-2.5">
-              ${c("/refund-policy.html","Return and refund policy")}
-              ${c("/terms.html","Intellectual property policy")}
-              ${c("/shipping-policy.html","Shipping info")}
-              ${c("/help.html","Report suspicious activity")}
+              ${d("/policies.html","Country / region policies")}
+              ${d("/refund-policy.html","Return and refund policy")}
+              ${d("/terms.html","Terms of use")}
+              ${d("/shipping-policy.html","Shipping info")}
+              ${d("/help.html","Report suspicious activity")}
             </ul>
           </div>
           <!-- Help -->
           <div>
             <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Help</h4>
             <ul class="space-y-2.5">
-              ${c("/help.html","Support centre & FAQ")}
-              ${c("/privacy.html","Safety centre")}
-              ${c("/refund-policy.html","Purchase protection")}
-              ${c("/","Sitemap")}
-              ${c("/about.html","Partner with Us")}
+              ${d("/help.html","Support centre & FAQ")}
+              ${d("/privacy.html","Safety centre")}
+              ${d("/refund-policy.html","Purchase protection")}
+              ${d("/","Sitemap")}
+              ${d("/about.html","Partner with Us")}
             </ul>
           </div>
           <!-- Download the app -->
@@ -393,6 +394,8 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
           <div class="flex flex-col gap-3 sm:flex-row items-center justify-between">
             <p class="text-[11px] text-slate-400 text-center sm:text-left">${o(l)}</p>
             <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-bold text-slate-400">
+              <a href="/policies.html" class="text-blue-400 hover:text-white transition">Country / region policies</a>
+              <span class="text-slate-600">|</span>
               <a href="/terms.html" class="hover:text-white transition">Terms of use</a>
               <span class="text-slate-600">|</span>
               <a href="/privacy.html" class="hover:text-white transition">Privacy policy</a>
@@ -405,7 +408,7 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
           <p class="text-center text-[11px] text-slate-600 mt-4">${o(t.bottom_footer_closing)}</p>
         </div>
       </div>
-    </section>`}function Y(e){e.addEventListener("click",t=>{const a=t.target.closest("[data-acc]");if(!a)return;const r=a.dataset.acc,i=e.querySelector(`[data-acc-body="${r}"]`),n=e.querySelector(`[data-acc-icon="${r}"]`);if(!i)return;i.dataset.open==="1"?(i.style.maxHeight="0px",i.style.opacity="0",i.dataset.open="0",n.classList.remove("rotate-180"),a.setAttribute("aria-expanded","false")):(i.style.maxHeight=i.scrollHeight+"px",i.style.opacity="1",i.dataset.open="1",n.classList.add("rotate-180"),a.setAttribute("aria-expanded","true"))})}function $(e){const t=document.querySelectorAll("[data-bg-slot]");t.length&&t.forEach(a=>{const r=a.dataset.bgSlot;r==="trust_promo"?a.innerHTML=b(e.trust_promo_bg_image,e.trust_promo_bg_video):r==="reviews"&&(a.innerHTML=b(e.reviews_bg_image,e.reviews_bg_video))})}function Q(e){const t=e.querySelector("#fb-stars");t&&t.addEventListener("click",i=>{const n=i.target.closest(".fb-star");if(!n)return;const l=parseInt(n.dataset.star,10),s=e.querySelector("#fb-rating");s&&(s.value=String(l)),t.querySelectorAll(".fb-star").forEach((p,h)=>{const d=p.querySelector("i, svg");d&&(h<l?(d.classList.add("fill-amber-400","text-amber-400"),d.classList.remove("text-slate-500")):(d.classList.remove("fill-amber-400","text-amber-400"),d.classList.add("text-slate-500")))})});const a=e.querySelector("#fb-form");a&&a.addEventListener("submit",i=>{i.preventDefault(),X(a)});const r=e.querySelector("[data-feedback-backtop]");r&&r.addEventListener("click",()=>{const i=e.querySelector('[data-acc="trust-reviews-more"]');i&&i.click();const n=document.getElementById("customer-feedback");n&&n.scrollIntoView({behavior:"smooth",block:"start"})})}function f(e,t,a){const r=e.closest("#customer-feedback")?.querySelector("#fb-msg");r&&(r.textContent=t,r.classList.remove("hidden","text-emerald-300","text-amber-300"),a&&r.classList.add(a))}async function X(e){const a=(e.querySelector("#fb-text")?.value||"").trim();if(!a){f(e,"Please write your feedback first.","text-amber-300");return}const r=e.querySelector("[type=submit]"),i=r.innerHTML;if(r.disabled=!0,r.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Sending…',window.lucide)try{lucide.createIcons()}catch{}try{const n=await M();let l=null;try{l=(await n.auth.getUser()).data?.user?.id||null}catch{}if(!l){if(f(e,"Only account holders can submit feedback. Please sign in first.","text-amber-300"),r.disabled=!1,r.innerHTML=i,window.lucide)try{lucide.createIcons()}catch{}return}const{error:s}=await n.from("site_feedback").insert({user_id:l,name:e.querySelector("#fb-name")?.value.trim()||"Anonymous shopper",email:e.querySelector("#fb-email")?.value.trim()||"",rating:parseInt(e.querySelector("#fb-rating")?.value||"5",10),feedback:a,is_approved:!1});if(s)throw new Error(s.message);f(e,"✓ Thank you! Your feedback has been sent.","text-emerald-300"),e.reset();const p=e.closest("#customer-feedback")?.querySelector("#fb-stars");p&&p.querySelectorAll(".fb-star").forEach(h=>{const d=h.querySelector("i, svg");d&&(d.classList.remove("fill-amber-400","text-amber-400"),d.classList.add("text-slate-500"))})}catch{f(e,"Could not send your feedback right now. Please try again later.","text-amber-300")}if(r.disabled=!1,r.innerHTML=i,window.lucide)try{lucide.createIcons()}catch{}}async function ee(e){const t=e?.querySelector("#fb-more-list"),a=e?.querySelector("#fb-featured");if(!(!t&&!a))try{const r=await M(),{data:i,error:n}=await r.from("site_feedback").select("name,rating,feedback,created_at").eq("is_approved",!0).order("created_at",{ascending:!1}).limit(30);if(n||!i||!i.length)return;const l=i.map(s=>S({name:s.name||"Verified shopper",text:s.feedback||"",rating:s.rating||5,verified:!0,country:"Verified customer",date:s.created_at?new Date(s.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}));t&&(t.innerHTML=l.join("")+t.innerHTML),a&&l.length&&(a.innerHTML=l.slice(0,3).join(""))}catch{}}async function te(e){const t=e?.querySelector("#fb-form-holder"),a=e?.querySelector("#fb-signin-zone");if(!t||!a)return;let r=null;try{r=(await(await M()).auth.getUser()).data?.user||null}catch{}if(r){a.classList.add("hidden"),t.classList.remove("hidden");const i=r.user_metadata||{},n=i.name||i.full_name||(r.email?r.email.split("@")[0]:""),l=e.querySelector("#fb-name"),s=e.querySelector("#fb-email");l&&!l.value&&n&&(l.value=n),s&&!s.value&&r.email&&(s.value=r.email)}else t.classList.add("hidden"),a.classList.remove("hidden")}function ae(){if(document.getElementById("trust-info-style"))return;const e=document.createElement("style");e.id="trust-info-style",e.textContent=`
+    </section>`}function Y(e){e.addEventListener("click",t=>{const a=t.target.closest("[data-acc]");if(!a)return;const r=a.dataset.acc,i=e.querySelector(`[data-acc-body="${r}"]`),n=e.querySelector(`[data-acc-icon="${r}"]`);if(!i)return;i.dataset.open==="1"?(i.style.maxHeight="0px",i.style.opacity="0",i.dataset.open="0",n.classList.remove("rotate-180"),a.setAttribute("aria-expanded","false")):(i.style.maxHeight=i.scrollHeight+"px",i.style.opacity="1",i.dataset.open="1",n.classList.add("rotate-180"),a.setAttribute("aria-expanded","true"))})}function $(e){const t=document.querySelectorAll("[data-bg-slot]");t.length&&t.forEach(a=>{const r=a.dataset.bgSlot;r==="trust_promo"?a.innerHTML=b(e.trust_promo_bg_image,e.trust_promo_bg_video):r==="reviews"&&(a.innerHTML=b(e.reviews_bg_image,e.reviews_bg_video))})}function Q(e){const t=e.querySelector("#fb-stars");t&&t.addEventListener("click",i=>{const n=i.target.closest(".fb-star");if(!n)return;const l=parseInt(n.dataset.star,10),s=e.querySelector("#fb-rating");s&&(s.value=String(l)),t.querySelectorAll(".fb-star").forEach((p,h)=>{const c=p.querySelector("i, svg");c&&(h<l?(c.classList.add("fill-amber-400","text-amber-400"),c.classList.remove("text-slate-500")):(c.classList.remove("fill-amber-400","text-amber-400"),c.classList.add("text-slate-500")))})});const a=e.querySelector("#fb-form");a&&a.addEventListener("submit",i=>{i.preventDefault(),X(a)});const r=e.querySelector("[data-feedback-backtop]");r&&r.addEventListener("click",()=>{const i=e.querySelector('[data-acc="trust-reviews-more"]');i&&i.click();const n=document.getElementById("customer-feedback");n&&n.scrollIntoView({behavior:"smooth",block:"start"})})}function f(e,t,a){const r=e.closest("#customer-feedback")?.querySelector("#fb-msg");r&&(r.textContent=t,r.classList.remove("hidden","text-emerald-300","text-amber-300"),a&&r.classList.add(a))}async function X(e){const a=(e.querySelector("#fb-text")?.value||"").trim();if(!a){f(e,"Please write your feedback first.","text-amber-300");return}const r=e.querySelector("[type=submit]"),i=r.innerHTML;if(r.disabled=!0,r.innerHTML='<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Sending…',window.lucide)try{lucide.createIcons()}catch{}try{const n=await M();let l=null;try{l=(await n.auth.getUser()).data?.user?.id||null}catch{}if(!l){if(f(e,"Only account holders can submit feedback. Please sign in first.","text-amber-300"),r.disabled=!1,r.innerHTML=i,window.lucide)try{lucide.createIcons()}catch{}return}const{error:s}=await n.from("site_feedback").insert({user_id:l,name:e.querySelector("#fb-name")?.value.trim()||"Anonymous shopper",email:e.querySelector("#fb-email")?.value.trim()||"",rating:parseInt(e.querySelector("#fb-rating")?.value||"5",10),feedback:a,is_approved:!1});if(s)throw new Error(s.message);f(e,"✓ Thank you! Your feedback has been sent.","text-emerald-300"),e.reset();const p=e.closest("#customer-feedback")?.querySelector("#fb-stars");p&&p.querySelectorAll(".fb-star").forEach(h=>{const c=h.querySelector("i, svg");c&&(c.classList.remove("fill-amber-400","text-amber-400"),c.classList.add("text-slate-500"))})}catch{f(e,"Could not send your feedback right now. Please try again later.","text-amber-300")}if(r.disabled=!1,r.innerHTML=i,window.lucide)try{lucide.createIcons()}catch{}}async function ee(e){const t=e?.querySelector("#fb-more-list"),a=e?.querySelector("#fb-featured");if(!(!t&&!a))try{const r=await M(),{data:i,error:n}=await r.from("site_feedback").select("name,rating,feedback,created_at").eq("is_approved",!0).order("created_at",{ascending:!1}).limit(30);if(n||!i||!i.length)return;const l=i.map(s=>S({name:s.name||"Verified shopper",text:s.feedback||"",rating:s.rating||5,verified:!0,country:"Verified customer",date:s.created_at?new Date(s.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}));t&&(t.innerHTML=l.join("")+t.innerHTML),a&&l.length&&(a.innerHTML=l.slice(0,3).join(""))}catch{}}async function te(e){const t=e?.querySelector("#fb-form-holder"),a=e?.querySelector("#fb-signin-zone");if(!t||!a)return;let r=null;try{r=(await(await M()).auth.getUser()).data?.user||null}catch{}if(r){a.classList.add("hidden"),t.classList.remove("hidden");const i=r.user_metadata||{},n=i.name||i.full_name||(r.email?r.email.split("@")[0]:""),l=e.querySelector("#fb-name"),s=e.querySelector("#fb-email");l&&!l.value&&n&&(l.value=n),s&&!s.value&&r.email&&(s.value=r.email)}else t.classList.add("hidden"),a.classList.remove("hidden")}function ae(){if(document.getElementById("trust-info-style"))return;const e=document.createElement("style");e.id="trust-info-style",e.textContent=`
     .trust-acc-body{overflow:hidden;max-height:0;opacity:0;transition:max-height .38s cubic-bezier(.2,.8,.2,1),opacity .28s ease}
     .trust-acc-body[data-open="1"]{opacity:1}`,document.head.appendChild(e)}async function L(){if(document.body&&document.body.dataset.homepage==="true")return;const e=document.getElementById("trust-info-area");if(!e)return;ae();let t={...x};try{t=await k()}catch{}if(e.innerHTML=[R(),N(),Z(),J(),_(t)].join(""),window.lucide)try{lucide.createIcons()}catch{}Y(e),Q(e),te(e),ee(e);let a={...q};try{a=await g()}catch{}$(a),window.addEventListener("promo-backgrounds-updated",()=>{g().then($).catch(()=>{})});const r=()=>{const i=e.querySelector("#site-closing-section");if(!i)return;const n=document.getElementById("app-promo-banner");n&&n.nextSibling!==i&&n.after(i)};r(),window.addEventListener("app-promo-banner-ready",r),window.addEventListener("site-content-updated",()=>{k().then(i=>{const n=e.querySelector("#site-closing-section");if(n&&(n.outerHTML=_(i)),window.lucide)try{lucide.createIcons()}catch{}r()}).catch(()=>{})})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",L):L();const ie=()=>document.getElementById("app-promo-banner"),C="/fallback.svg";function re(){return`
   <svg viewBox="0 0 560 720" class="w-full h-full block" aria-hidden="true">
@@ -646,7 +649,7 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
           <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 34%,rgba(255,255,255,0) 78%,rgba(255,255,255,.06) 100%)"></div>
         </div>
       </div>
-    </div>`}function oe(e,t,a){const r=D(t,e,12),i=(e.app_play_store_url||"").trim(),n={...x,...a||{}},l=(n.app_banner_title||e.app_banner_headline||G.app_banner_headline).trim(),s=n.app_banner_description,p=n.app_banner_button_text,h=n.app_banner_secondary_text,d=i?`<a href="${u(i)}" target="_blank" rel="noopener" class="inline-flex items-center gap-2.5 bg-white text-blue-900 font-black text-sm px-6 py-3.5 rounded-2xl shadow-xl shadow-blue-900/30 hover:scale-[1.03] active:scale-[.98] transition">
+    </div>`}function oe(e,t,a){const r=D(t,e,12),i=(e.app_play_store_url||"").trim(),n={...x,...a||{}},l=(n.app_banner_title||e.app_banner_headline||G.app_banner_headline).trim(),s=n.app_banner_description,p=n.app_banner_button_text,h=n.app_banner_secondary_text,c=i?`<a href="${u(i)}" target="_blank" rel="noopener" class="inline-flex items-center gap-2.5 bg-white text-blue-900 font-black text-sm px-6 py-3.5 rounded-2xl shadow-xl shadow-blue-900/30 hover:scale-[1.03] active:scale-[.98] transition">
          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none"><path d="M3 5.5v13c0 .8.5 1.5 1.2 1.8L13.5 12 4.2 3.7C3.5 4 3 4.7 3 5.5Z" fill="#34a853"/><path d="M21.4 11.2 17 8.5l-3.5 3.5L17 15.5l4.4-2.7c.8-.5.8-1.1 0-1.6Z" fill="#4285f4"/><path d="m13.5 12 1.2 1.2-5.4 5.2c.4.2.9.2 1.3 0l10.8-6.5c.4-.2.6-.6.6-.9h.1V5.5c0-.8-.5-1.5-1.2-1.8L13.5 12Z" fill="#fbbc04"/><path d="m6.1 3.6 7.4 8.4 2.5-2.5-8.7-5.3c-.4-.2-.9-.2-1.2-.6Z" fill="#ea4335"/></svg>
          <span>${u(p)}</span>
        </a>`:`<span class="inline-flex items-center gap-2 bg-white/15 border border-white/20 text-white text-sm font-bold px-6 py-3.5 rounded-2xl backdrop-blur cursor-default">
@@ -685,7 +688,7 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
                 </div>`).join("")}
             </div>
             <div class="flex flex-wrap items-center gap-3.5 mt-8">
-              ${d}
+              ${c}
               <a href="/#showroom-directory" class="inline-flex items-center gap-2 text-sm font-bold text-cyan-200 hover:text-white transition">
                 ${u(h)} <i data-lucide="arrow-right" class="w-4 h-4"></i>
               </a>
@@ -703,10 +706,10 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
           </div>
         </div>
       </div>
-    </section>`}let y=null;function de(e){y&&(clearInterval(y),y=null);const t=document.getElementById("promo-phone-screen"),a=document.getElementById("promo-phone-grid");if(!t||!a||!e.length)return;const r=e.slice();let i=0;const n=()=>{if(!a||!r.length)return;const l=r[i%r.length],s=r[(i+1)%r.length],p=u(w(l)),h=u(w(s)),d=u((l.title||l.name||"").slice(0,34)),m=u((s.title||s.name||"").slice(0,34));if(a.innerHTML=`
+    </section>`}let y=null;function de(e){y&&(clearInterval(y),y=null);const t=document.getElementById("promo-phone-screen"),a=document.getElementById("promo-phone-grid");if(!t||!a||!e.length)return;const r=e.slice();let i=0;const n=()=>{if(!a||!r.length)return;const l=r[i%r.length],s=r[(i+1)%r.length],p=u(w(l)),h=u(w(s)),c=u((l.title||l.name||"").slice(0,34)),m=u((s.title||s.name||"").slice(0,34));if(a.innerHTML=`
       <a href="/details.html?id=${encodeURIComponent(l.property_id||l.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
-        <div class="aspect-square bg-gray-100 overflow-hidden"><img src="${p}" alt="${d}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${C}'"></div>
-        <div class="p-2"><p class="text-[10px] text-gray-700 font-bold leading-tight line-clamp-2 min-h-[26px]">${d}</p>
+        <div class="aspect-square bg-gray-100 overflow-hidden"><img src="${p}" alt="${c}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${C}'"></div>
+        <div class="p-2"><p class="text-[10px] text-gray-700 font-bold leading-tight line-clamp-2 min-h-[26px]">${c}</p>
         <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-blue-600 font-black">${v(l)}</span><span class="bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded-lg">Buy</span></div></div>
       </a>
       <a href="/details.html?id=${encodeURIComponent(s.property_id||s.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">

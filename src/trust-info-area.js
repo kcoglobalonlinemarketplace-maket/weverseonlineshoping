@@ -663,8 +663,9 @@ function closingSectionHtml(content) {
           <div>
             <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Customer service</h4>
             <ul class="space-y-2.5">
+              ${closingLink('/policies.html', 'Country / region policies')}
               ${closingLink('/refund-policy.html', 'Return and refund policy')}
-              ${closingLink('/terms.html', 'Intellectual property policy')}
+              ${closingLink('/terms.html', 'Terms of use')}
               ${closingLink('/shipping-policy.html', 'Shipping info')}
               ${closingLink('/help.html', 'Report suspicious activity')}
             </ul>
@@ -724,6 +725,8 @@ function closingSectionHtml(content) {
           <div class="flex flex-col gap-3 sm:flex-row items-center justify-between">
             <p class="text-[11px] text-slate-400 text-center sm:text-left">${esc(copyright)}</p>
             <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-bold text-slate-400">
+              <a href="/policies.html" class="text-blue-400 hover:text-white transition">Country / region policies</a>
+              <span class="text-slate-600">|</span>
               <a href="/terms.html" class="hover:text-white transition">Terms of use</a>
               <span class="text-slate-600">|</span>
               <a href="/privacy.html" class="hover:text-white transition">Privacy policy</a>
