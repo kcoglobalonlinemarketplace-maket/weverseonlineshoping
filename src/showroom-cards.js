@@ -26,6 +26,34 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// Temu-style compact count label, always derived from the listing's real data.
+// 838 -> "838", 3200 -> "3.2k", 10000 -> "10k", 100000 -> "100k", 1200000 -> "1.2m".
+function formatCompactCount(n) {
+  const num = Math.round(Number(n) || 0);
+  if (num <= 0) return '';
+  if (num < 1000) return String(num);
+  if (num < 10000) {
+    const k = num / 1000;
+    return (k >= 10 || Number.isInteger(k) ? Math.round(k) : k.toFixed(1)) + 'k';
+  }
+  if (num < 1000000) return Math.round(num / 1000) + 'k';
+  const m = num / 1000000;
+  return (m >= 10 ? Math.round(m) : m.toFixed(1)) + 'm';
+}
+
+// Five-star row (filled up to the rounded rating), rendered exclusively from the
+// listing's real rating. Temu-style amber stars used across cards and details.
+function renderStars(rating, sizeClass = 'w-3.5 h-3.5') {
+  const filled = Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
+  let out = '';
+  for (let i = 0; i < 5; i++) {
+    out += i < filled
+      ? `<i data-lucide="star" class="${sizeClass} fill-amber-400 text-amber-400"></i>`
+      : `<i data-lucide="star" class="${sizeClass} text-gray-300"></i>`;
+  }
+  return out;
+}
+
 // ── View mode ──────────────────────────────────────────────────
 // The showroom can show products in a compact 2-column grid (default —
 // scroll down to browse), one by one (vertical feed) or in horizontal
@@ -487,9 +515,16 @@ function cardParts(listing) {
   // Rating display: only real ratings from actual buyer reviews are shown.
   // Clicking the stars opens the product's details page (with the interactive
   // rating widget + real buyer reviews).
-  let ratingStars = '';
-  if (displayRating > 0) {
-    ratingStars = `<a href="/details.html?id=${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
+  //
+  // Sold count reuses the exact same real-data convention as the details page
+  // (sold_count, falling back to review_count), so the card always matches the
+  // product page. Rendered Temu-style (e.g. "838 sold", "2.1k sold") with real
+  // data — never fabricated numbers.
+  const soldN = Math.round(Number(listing.sold_count) || Number(listing.review_count) || 0);
+  const soldLabel = formatCompactCount(soldN);
+  let ratingSoldHtml = '';
+  if (displayRating > 0 || soldLabel) {
+    ratingSoldHtml = `<a href="/details.html?id=${listing.property_id}" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs no-underline rounded-md group/rating transition" title="View ratings & reviews">${displayRating > 0 ? `<span class="flex items-center gap-1"><span class="flex">${renderStars(displayRating, 'w-3.5 h-3.5')}</span><span class="text-gray-900 font-bold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></span>` : ''}${soldLabel ? `<span class="inline-flex items-center gap-1 text-emerald-600 font-bold ml-auto whitespace-nowrap"><i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i>${soldLabel} sold</span>` : ''}</a>`;
   }
 
   // Product badges (New Arrival, Best Seller, etc.)
@@ -524,7 +559,7 @@ function cardParts(listing) {
   return {
     isProperty, isPet, isTruck, isMotorhome, isCar,
     listingId, cover, isCoverVideo, price, statusBadge,
-    locationHtml, specsHtml, ratingStars, mapPreviewHtml,
+    locationHtml, specsHtml, ratingSoldHtml, mapPreviewHtml,
     discountBadge, originalPriceHtml,
   };
 }
@@ -560,7 +595,7 @@ export function renderCard(listing) {
     </div>
     <div class="px-3.5 sm:px-4 pt-2.5 sm:pt-3 pb-3 sm:pb-3.5 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">${listing.title}</h3>
-      ${p.ratingStars}
+      ${p.ratingSoldHtml}
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
         ${p.originalPriceHtml}
         <span class="text-lg font-black text-blue-600">${p.price}</span>
@@ -620,11 +655,11 @@ export function renderFeedCard(listing) {
     </div>
     <div class="flex-1 px-4 pt-2.5 pb-4 sm:p-5 lg:p-6 flex flex-col min-w-0">
       <h3 class="text-base sm:text-lg font-bold text-gray-900 leading-snug mb-1.5 line-clamp-2 group-hover:text-blue-700 transition-colors">${listing.title}</h3>
+      ${p.ratingSoldHtml}
       ${p.locationHtml}
       ${p.specsHtml}
       <div class="flex items-center justify-between gap-3 mt-auto pt-2">
         <span class="flex items-baseline flex-wrap gap-x-2">${p.originalPriceHtml}<span class="text-xl sm:text-2xl font-black text-blue-600">${p.price}</span></span>
-        ${p.ratingStars}
       </div>
       ${p.mapPreviewHtml}
       <div class="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-gray-100 justify-end">
