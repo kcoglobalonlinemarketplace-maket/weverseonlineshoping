@@ -13,3 +13,21 @@ dev-server.log
 .aider*
 
 misc-test-scanner.mjs
+
+# Generated/scratch artifacts (never commit)
+*.log
+*.apk
+*.pid
+*.sql
+scan-img/
+bad-products.json
+products-scan.json
+renamed-products-report.csv
+tmp_*.txt
+_tmp_*
+db-push-log.txt
+verify.sql
+verify-out.txt
+n8n-local-ollama-*.json
+ollama-vision.js
+vite.config.js.timestamp-*.mjs
