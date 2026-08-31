@@ -66,7 +66,7 @@ function toastHtml(l) {
       </div>
       <div class="min-w-0 flex-1">
         <p class="text-[9px] font-black uppercase tracking-wider text-blue-600 flex items-center gap-1">
-          <i data-lucide="sparkles" class="w-3 h-3"></i> ${esc(label)}
+          <i data-lucide="star" class="w-3 h-3"></i> ${esc(label)}
         </p>
         <p class="text-[12px] font-bold text-gray-900 leading-snug truncate mt-0.5">${title}</p>
         <div class="flex items-center justify-between mt-1">

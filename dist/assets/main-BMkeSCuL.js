@@ -1,5 +1,5 @@
 const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/special-order-Caq0IXyR.js","assets/site-content-DxInYU0I.js","assets/showroom-data-B_6YqRLg.js"])))=>i.map(i=>d[i]);
-import"./modulepreload-polyfill-B5Qt9EMX.js";/* empty css                                       */import{b as P,a as he,L as ye,A as be,c as ve,d as we,s as _e,e as xe,f as ke,h as Ee,o as Le,i as Se}from"./localization-m4gKtAlW.js";import{_ as h}from"./showroom-data-B_6YqRLg.js";import{g as y,l as se,D as j}from"./site-content-DxInYU0I.js";import{f as Ie,c as Ce}from"./showroom-cards-DrmvndRc.js";import"./showroom-hero-C-ejGLJc.js";import{D as Te,l as Ae,a as Be,g as K,p as Me,e as C,c as Pe,b as De}from"./promo-pool-CZD5oU4b.js";import"./ai-chat-B7d_wj3_.js";import"./motorhome-data-CupbOvk0.js";import"./catalog-hidden-store-DROVVFIz.js";import"./categories-BEuiwWw5.js";import"./supabase-client-nvpjTmO6.js";let z=!1;function Oe(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
+import"./modulepreload-polyfill-B5Qt9EMX.js";/* empty css                                       */import{b as P,a as he,L as ye,A as be,c as ve,d as we,s as _e,e as xe,f as ke,h as Ee,o as Le,i as Se}from"./localization-m4gKtAlW.js";import{_ as h}from"./showroom-data-B_6YqRLg.js";import{g as y,l as se,D as j}from"./site-content-DxInYU0I.js";import{f as Ie,c as Ce}from"./showroom-cards-D0SmCucz.js";import"./showroom-hero-C-ejGLJc.js";import{D as Te,l as Ae,a as Be,g as K,p as Me,e as C,c as Pe,b as De}from"./promo-pool-CZD5oU4b.js";import"./ai-chat-B7d_wj3_.js";import"./motorhome-data-CupbOvk0.js";import"./catalog-hidden-store-DROVVFIz.js";import"./categories-5zVhBEjq.js";import"./supabase-client-nvpjTmO6.js";let z=!1;function Oe(){if(document.getElementById("kco-loc-styles"))return;const e=document.createElement("style");e.id="kco-loc-styles",e.textContent=`
     @keyframes kcoLocPulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
     @keyframes kcoLocSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
     @keyframes kcoLocFadeIn { from { opacity:0; } to { opacity:1; } }
@@ -149,7 +149,7 @@ import"./modulepreload-polyfill-B5Qt9EMX.js";/* empty css                       
       </div>
       <div class="min-w-0 flex-1">
         <p class="text-[9px] font-black uppercase tracking-wider text-blue-600 flex items-center gap-1">
-          <i data-lucide="sparkles" class="w-3 h-3"></i> ${C(n)}
+          <i data-lucide="star" class="w-3 h-3"></i> ${C(n)}
         </p>
         <p class="text-[12px] font-bold text-gray-900 leading-snug truncate mt-0.5">${t}</p>
         <div class="flex items-center justify-between mt-1">

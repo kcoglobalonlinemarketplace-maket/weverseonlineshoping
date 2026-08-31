@@ -681,7 +681,7 @@ import{D as q,l as g,b}from"./promo-backgrounds-BZhAn4aI.js";import{d as H,W as 
               ${u(s)}
             </p>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-7 max-w-lg">
-              ${[{icon:"shopping-bag",label:"Shop Products"},{icon:"sparkles",label:"New Arrivals"},{icon:"package-search",label:"Manage Orders"},{icon:"heart",label:"Save Favorites"}].map(m=>`
+              ${[{icon:"shopping-bag",label:"Shop Products"},{icon:"package-plus",label:"New Arrivals"},{icon:"package-search",label:"Manage Orders"},{icon:"heart",label:"Save Favorites"}].map(m=>`
                 <div class="bg-white/[.06] border border-white/10 rounded-2xl px-3 py-3.5 text-center backdrop-blur">
                   <i data-lucide="${m.icon}" class="w-4.5 h-4.5 w-5 h-5 text-cyan-300 mx-auto"></i>
                   <p class="text-[10px] font-bold text-slate-200 mt-2">${m.label}</p>

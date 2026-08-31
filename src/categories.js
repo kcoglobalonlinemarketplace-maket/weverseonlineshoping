@@ -19,7 +19,7 @@ export const MARKETPLACE_CATEGORIES = [
   { name: 'Trucks', icon: 'truck', color: 'yellow', keywords: ['truck'] },
   { name: 'Fashion', icon: 'scissors', color: 'fuchsia', keywords: ['fashion', 'style', 'clothing', 'apparel', 'shoe', 'handbag', 'dress', 'shirt', 'jeans', 'sneaker'] },
   { name: 'Jewelry', icon: 'gem', color: 'cyan', keywords: ['jewel', 'jewellery', 'ring', 'bangle', 'gem', 'necklace', 'earring', 'bracelet'] },
-  { name: 'Beauty', icon: 'sparkles', color: 'rose', keywords: ['beauty', 'cosmetic', 'makeup', 'skincare', 'hair care', 'perfume'] },
+  { name: 'Beauty', icon: 'flower', color: 'rose', keywords: ['beauty', 'cosmetic', 'makeup', 'skincare', 'hair care', 'perfume'] },
   { name: 'Sports', icon: 'dumbbell', color: 'lime', keywords: ['sport', 'fitness', 'gym', 'athletic'] },
   { name: 'Electronics', icon: 'circuit-board', color: 'sky', keywords: ['electronic', 'gadget', 'circuit', 'television', 'tv', 'audio', 'speaker', 'headphone', 'charger', 'tech'] },
   { name: 'Phones', icon: 'smartphone', color: 'violet', keywords: ['phone', 'smartphone', 'mobile', 'iphone'] },

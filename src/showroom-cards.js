@@ -149,7 +149,7 @@ const PRODUCT_CAT_ICON = {
   'Houses & Real Estate': 'home', 'Cars & Vehicles': 'car-front', 'Trucks': 'truck',
   'Motorhomes': 'bus', 'Kitchen & Appliances': 'chef-hat', 'Home Appliances & Cleaning': 'washing-machine',
   'Jewelry': 'gem', 'Watches': 'watch', 'Fashion & Shoes': 'shirt', 'Babies & Kids': 'baby',
-  'Electronics': 'smartphone', 'Tools & Hardware': 'wrench', 'Beauty & Personal Care': 'sparkles',
+  'Electronics': 'smartphone', 'Tools & Hardware': 'wrench', 'Beauty & Personal Care': 'flower',
   'Home Decor & Storage': 'lamp', 'New Arrivals': 'package',
 };
 function productCatSlug(c) { return String(c).toLowerCase().replace(/[^a-z0-9]+/g, '-'); }

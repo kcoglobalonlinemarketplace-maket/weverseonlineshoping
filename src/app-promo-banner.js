@@ -348,7 +348,7 @@ function bannerHtml(settings, pool, content) {
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-7 max-w-lg">
               ${[
                 { icon: 'shopping-bag', label: 'Shop Products' },
-                { icon: 'sparkles', label: 'New Arrivals' },
+                { icon: 'package-plus', label: 'New Arrivals' },
                 { icon: 'package-search', label: 'Manage Orders' },
                 { icon: 'heart', label: 'Save Favorites' },
               ].map(f => `

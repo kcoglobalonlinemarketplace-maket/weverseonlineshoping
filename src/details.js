@@ -1580,7 +1580,7 @@ function render(listing) {
   if (Number.isFinite(realNum) && realNum > 0 && realNum > parseFloat(listing.price)) {
     const pct = Math.round((1 - parseFloat(listing.price) / realNum) * 100);
     originalPriceHtml = `<span class="text-lg text-gray-400 price-strike line-through font-medium">${formatPrice({ ...listing, price: realNum })}</span>`;
-    discountBadge = `<span class="kco-sale-pulse kco-glow inline-flex items-center gap-1 text-xs font-black text-white bg-red-500 px-2.5 py-1 rounded-full relative overflow-hidden"><i data-lucide="sparkles" class="w-3.5 h-3.5 kco-blink-soft"></i>-${pct}% OFF<span class="absolute inset-0 kco-shimmer pointer-events-none"></span></span>`;
+    discountBadge = `<span class="kco-sale-pulse kco-glow inline-flex items-center gap-1 text-xs font-black text-white bg-red-500 px-2.5 py-1 rounded-full relative overflow-hidden">-${pct}% OFF<span class="absolute inset-0 kco-shimmer pointer-events-none"></span></span>`;
   }
   const availabilityStatus = listing.availability_status || (listing.listing_type === 'product' ? 'In Stock' : 'Available');
 
