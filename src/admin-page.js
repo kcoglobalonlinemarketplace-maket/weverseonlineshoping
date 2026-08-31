@@ -4723,6 +4723,60 @@ function fillHonestBlanks(form) {
   return count;
 }
 
+// Honest blank-fill for vehicle forms: after the AI scan, any editable field the
+// model could not determine is stamped with a clear "requires verification"
+// placeholder instead of being left visually empty. Never fabricates real values.
+const VEHICLE_REQ_LABELS = {
+  vin: 'VIN / serial number - requires verification',
+  mileage: 'Odometer reading - requires verification',
+  engine: 'Engine details - requires verification',
+  horsepower: 'Horsepower - requires verification',
+  fuel_economy: 'Fuel economy - requires verification',
+  towing_capacity: 'Towing capacity - requires verification',
+  seating_capacity: 'Seating / sleeping capacity - requires verification',
+  sleeping_capacity: 'Seating / sleeping capacity - requires verification',
+  doors: 'Number of doors - requires verification',
+  wheels_tires: 'Wheels and tires - requires verification',
+  dimensions: 'Dimensions (L x W x H) - requires verification',
+  cargo_capacity: 'Cargo capacity - requires verification',
+  previous_owners: 'Previous owners - requires verification',
+  ownership_history: 'Ownership history - requires verification',
+  service_history: 'Service / maintenance history - requires verification',
+  accident_history: 'Accident / damage history - requires verification',
+  warranty: 'Warranty cover - requires verification',
+  location: 'Listing location - requires verification',
+  seller_name: 'Seller / contact name - requires verification',
+  seller_phone: 'Seller phone / WhatsApp - requires verification',
+  seller_email: 'Seller email - requires verification',
+  safety_features: 'Safety features - requires verification',
+  driver_assistance: 'Driver assistance - requires verification',
+  technology: 'Technology / infotainment - requires verification',
+  interior: 'Interior and comfort - requires verification',
+  features_text: 'Additional features - requires verification',
+  trim: 'Trim / edition - requires verification',
+  color: 'Exterior color - requires verification',
+};
+function fillVehicleBlanks(form) {
+  if (!form) return 0;
+  let count = 0;
+  form.querySelectorAll('input, textarea, select').forEach((field) => {
+    const name = String(field.name || '').trim();
+    if (!name || GUARANTEED_FILL_SKIP.has(name)) return;
+    const type = String(field.type || '').toLowerCase();
+    if (['hidden', 'checkbox', 'radio', 'file', 'submit', 'button', 'image', 'password'].includes(type)) return;
+    if (field.disabled) return;
+    if (String(field.value || '').trim() !== '') return;
+    if (type === 'number') { field.value = '0'; count++; return; }
+    if (name === 'condition') { field.value = 'Used - Good'; count++; return; }
+    if (type === 'date') { field.value = ''; return; }
+    if (type === 'select') { if (field.options && field.options.length > 2) field.value = field.options[0].value || ''; count++; return; }
+    if (name === 'description') { field.value = 'Full vehicle details to be confirmed by the seller. Review and edit before publishing.'; count++; return; }
+    field.value = VEHICLE_REQ_LABELS[name] || REQUIRES_VERIFICATION;
+    count++;
+  });
+  return count;
+}
+
 async function enhancePropertyFormWithRealData() {
   const form = document.getElementById('property-form');
   if (!form) return;
@@ -5340,6 +5394,11 @@ function applyScanToVehicleForm(result, options = {}) {
     const guaranteed = guaranteeCompleteFormFill('#vehicle-form',
       { titleFallback, descriptionFallback: specs.description || `${titleFallback} — now available on Weverse Online Shop. Review the details below and edit anything before publishing.`, visionUsed: true });
     if (guaranteed) filled.push(`${guaranteed} auto-filled (safe defaults)`);
+    // HONEST BLANK-FILL PASS — every remaining editable field gets a clear
+    // "requires verification" placeholder so the vehicle form is never left
+    // visually empty. Never fabricates real values.
+    const vBlanks = fillVehicleBlanks(document.getElementById('vehicle-form'));
+    if (vBlanks) filled.push(`${vBlanks} blank fields marked for verification`);
   }
   return { filled };
 }
@@ -8822,7 +8881,7 @@ ONLY these fields may be null AND listed in "missing_fields": a private seller's
 JOB A â€” COMPLETE THE STANDARD SPECIFICATIONS using reliable data for that exact brand + model:
 - Vehicles: make, model, body_type, trim/edition, model_year, color, mileage (read the odometer/trip computer when visible; a brand-new unused vehicle gets "0 mi"; only when truly not visible leave null in missing_fields), engine (e.g. "2.0L Turbocharged I4" or "4.5L V8 Turbo Diesel"), horsepower, transmission, fuel_type, drive_type, fuel_economy, towing_capacity, seating_capacity, doors, wheels_tires (size/type/condition, e.g. "20-inch alloys, 265/65 R18, 2 new tires"), dimensions (L x W x H), cargo_capacity, safety_features, driver_assistance, technology, interior, warranty, previous_owners, registration_status, inspection_status, service_history, accident_history, ownership_history, location, seller_name, seller_phone, seller_email.
 - Phones/Computers: storage, ram, processor, display, graphics, os.
-- Properties: property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition ("New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation" â€” only from visible state or a listing sign, never inferred as verified), year_built/year_renovated (only if visible/known), area, address (ONLY when genuinely visible/reliably known), zip_code (only if visibly printed), landmarks (only clearly indicated ones), town, city, state, country, country_code, latitude, longitude, listing_status ("sale"/"rent"/null). LOCATION RULES: never invent an address, city or coordinates; return null and list the key in "missing_fields" when undeterminable.
+- Properties: property_type, bedrooms, bathrooms, half_bathrooms, building_size, land_size, floors, garage, parking_spaces, furnished ("Furnished"/"Unfurnished"/null), condition ("New Construction"/"Like New"/"Excellent"/"Good"/"Fair"/"Needs Renovation" â€” only from visible state or a listing sign, never inferred as verified), year_built/year_renovated (only if visible/known), area, address (ONLY when genuinely visible/reliably known), zip_code (only if visibly printed), landmarks (only clearly indicated ones), town, city, state, country, country_code, latitude, longitude, listing_status ("sale"/"rent"/null). LOCATION RULES: read EVERY frame for country evidence - a flag, a written country name, a license plate, street/business signs, or the dominant language - and use it to fill country and country_code for the country clearly shown (e.g. a US flag or "USA" sign means country "United States", country_code "US"; a French plate or French text means "France"/"FR"; a UK plate means "United Kingdom"/"GB"). Only fill state/city/town/address when their names are visibly printed. NEVER invent an address, city, coordinates or a country that is not indicated by any visible evidence; return null and list the key in "missing_fields" when no country evidence is visible.
 - Other product types: type, material, size, color, age_range, skin_type, ingredients, author, publisher, language, format, isbn, pages, edition, quantity, pet_type, lens, sensor, megapixels, video, platform, license, version, duration, followers, engagement, niche, usage, shelf_life, assembly, weatherproof, warranty.
 - Listing content: highlights (3-6 genuine selling points), seo_keywords (6-10 keywords), tags (only from "New Arrival", "Best Seller", "Hot Deal", "Featured", "Limited Stock" â€” only ones that genuinely apply), availability_status ("In Stock" for a new product, otherwise null), stock_quantity (1 ONLY for unique one-of-a-kind items such as a vehicle or property, otherwise null).
 
