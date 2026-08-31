@@ -920,14 +920,27 @@ function closeMsgAgent() {
 // ═══════════════════════════════════════════════════════════════════
 
 /**
- * Returns the HTML for the 4 agent buttons. Insert into product cards
- * and detail pages. Each button carries data attributes so the
- * event listener can look up the correct listing.
+ * Returns the agent buttons. Houses (real estate) and cars (vehicles) keep the
+ * full set of 4 buttons (Call Agent, Message Agent, Call Company, Message
+ * Company). Every other product — including any new ones created in the future —
+ * shows only the "Chat Company" (Message Company) button, because the listing
+ * type drives this automatically.
  */
 export function agentButtonsHtml(listing, opts = {}) {
   const id = listing?.property_id || listing?.id || '';
   const compact = opts.compact || false;
   const cls = compact ? 'kco-agent-btn-compact' : 'kco-agent-btn';
+  const fullSet = listingIsHouseOrCar(listing);
+
+  // Regular products: only the Chat Company button.
+  if (!fullSet) {
+    return `
+      <div class="kco-agent-row ${!compact ? 'kco-agent-row-full' : ''}" data-listing-id="${id}">
+        <button class="${cls} kco-agent-msg-company" data-action="msg-company" title="Chat Company — chat with company support" aria-label="Chat Company">
+          <i data-lucide="headphones" class="${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}"></i><span>Chat Company</span>
+        </button>
+      </div>`;
+  }
 
   if (compact) {
     return `
@@ -966,6 +979,19 @@ export function agentButtonsHtml(listing, opts = {}) {
         <span>Message Company</span>
       </button>
     </div>`;
+}
+
+// Houses (real estate) and cars (vehicles) keep the full 4-button set.
+// Everything else — regular products, incl. any created later — only gets
+// Chat Company. Driven by listing_type/category so new listings behave
+// automatically.
+function listingIsHouseOrCar(listing) {
+  if (!listing) return false;
+  const type = String(listing.listing_type || '').toLowerCase();
+  if (type === 'property' || type === 'vehicle') return true;
+  const cat = String(listing.category || listing.subcategory || '').toLowerCase();
+  return /(real estate|houses|homes|apartment|villa|mansion|land|property|condo|townhouse|estate|residential|commercial building|farm|beach house)/i.test(cat)
+    || /(cars|trucks|vehicle|automotive|motorhome|motorcycle|boat|marine|bus|rv|auto|pickup|suv|sedan)/i.test(cat);
 }
 
 /**
