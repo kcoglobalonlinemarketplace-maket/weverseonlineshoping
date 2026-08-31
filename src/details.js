@@ -450,7 +450,7 @@ function vehicleExtrasHtml(listing) {
       </div>
       <div class="mt-3 grid grid-cols-2 gap-3">
         <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3"><p class="text-xs text-gray-500">Availability</p><p class="text-sm font-black text-emerald-700">${escapeHtml(listing.availability_status || (listing.stock_quantity > 0 ? 'In Stock' : 'Available'))}</p></div>
-        <div class="bg-gray-50 border border-gray-100 rounded-xl p-3"><p class="text-xs text-gray-500">Seller Location</p><p class="text-sm font-black text-gray-900">${escapeHtml(String(spL(listing, 'location') || 'Marketplace'))}</p></div>
+        <div class="bg-gray-50 border border-gray-100 rounded-xl p-3"><p class="text-xs text-gray-500">Listing Location</p><p class="text-sm font-black text-gray-900">${escapeHtml(String(spL(listing, 'location') || 'Marketplace'))}</p></div>
       </div>`, false, 'sky'));
   }
   return sections.join('');
@@ -463,7 +463,7 @@ function buyerInfoBlock(listing) {
   const email = spL(listing, 'seller_email') || spL(listing, 'contact_email');
   const loc = spL(listing, 'location');
   const rows = [];
-  if (name) rows.push({ icon: 'user-round', label: 'Seller / Agent', value: name });
+  if (name) rows.push({ icon: 'user-round', label: 'Company / Contact', value: name });
   if (phone) rows.push({ icon: 'phone', label: 'Phone / WhatsApp', value: phone, link: 'tel:' + phone.replace(/[^0-9+]/g, '') });
   if (email) rows.push({ icon: 'mail', label: 'Email', value: email, link: 'mailto:' + email });
   if (loc) rows.push({ icon: 'map-pin', label: 'Location', value: loc });

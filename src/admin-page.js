@@ -4397,10 +4397,32 @@ window.dupReviewFinish = function() {
 // (scanReviewContinueAll removed — each product is published individually via scanReviewContinue)
 
 
+// COMPANY CONTACT — this store has no external sellers; it is the seller. Any
+// listing "seller / contact" field is filled with the owner's own company
+// contact, read from the real site_settings the owner manages (never invented).
+let _companyContactCache = null;
+async function loadCompanyContact() {
+  if (_companyContactCache) return _companyContactCache;
+  let s = {};
+  try {
+    const { data } = await supabase.from('site_settings').select('site_name,brand_name,contact_email,contact_phone,whatsapp_number').limit(1).maybeSingle();
+    s = data || {};
+  } catch {}
+  const name = String(s.site_name || s.brand_name || '').trim();
+  const phone = String(s.contact_phone || s.whatsapp_number || '').trim();
+  const email = String(s.contact_email || '').trim();
+  if (!name && !phone && !email) {
+    _companyContactCache = { name: 'Company', phone: '', email: '' };
+  } else {
+    _companyContactCache = { name, phone, email };
+  }
+  return _companyContactCache;
+}
+
 // Fill the property form from a scan result (title, type, rooms, sizes,
-// location, description, features and a suggested price). Fully editable â€”
+// location, description, features and a suggested price). Fully editable â€"
 // no auto-save, no auto-publish.
-function applyScanToPropertyForm(result, options = {}) {
+async function applyScanToPropertyForm(result, options = {}) {
   const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
   const specs = result && result.specs ? result.specs : {};
   const price = result && result.price ? result.price : null;
@@ -4523,9 +4545,10 @@ function applyScanToPropertyForm(result, options = {}) {
   set('construction_type', specs.construction_type);
   set('construction_status', specs.construction_status);
   set('ownership_type', specs.ownership_type || identification.ownership_type);
-  set('contact_name', specs.contact_name || identification.contact_name);
-  set('contact_phone', specs.contact_phone || identification.contact_phone);
-  set('contact_email', specs.contact_email || identification.contact_email);
+  const owns = await loadCompanyContact();
+  if (owns.name) set('contact_name', owns.name);
+  if (owns.phone) set('contact_phone', owns.phone);
+  if (owns.email) set('contact_email', owns.email);
   const vs = document.querySelector('#property-form [name="verification_status"]');
   if (visionUsed && vs) { vs.value = 'Not verified'; filled.push('verification_status'); }
 
@@ -4594,9 +4617,9 @@ const PROPERTY_REQUIRED_LABELS = {
   construction_type: 'Construction material - requires verification',
   construction_status: 'Construction status - requires verification',
   ownership_type: 'Ownership type - requires verification',
-  contact_name: 'Listing agent name - requires verification',
-  contact_phone: 'Contact phone / WhatsApp - requires verification',
-  contact_email: 'Contact email - requires verification',
+  contact_name: '', // filled with the company's own contact (no sellers)
+  contact_phone: '', // filled with the company's own contact (no sellers)
+  contact_email: '', // filled with the company's own contact (no sellers)
   inspection_info: 'Inspection details - requires verification',
   verification_date: '', // left blank (date)
   documents_text: '', // left blank (URLs)
@@ -4745,9 +4768,9 @@ const VEHICLE_REQ_LABELS = {
   accident_history: 'Accident / damage history - requires verification',
   warranty: 'Warranty cover - requires verification',
   location: 'Listing location - requires verification',
-  seller_name: 'Seller / contact name - requires verification',
-  seller_phone: 'Seller phone / WhatsApp - requires verification',
-  seller_email: 'Seller email - requires verification',
+  seller_name: '', // filled with the company's own contact (no sellers)
+  seller_phone: '', // filled with the company's own contact (no sellers)
+  seller_email: '', // filled with the company's own contact (no sellers)
   safety_features: 'Safety features - requires verification',
   driver_assistance: 'Driver assistance - requires verification',
   technology: 'Technology / infotainment - requires verification',
@@ -5166,7 +5189,7 @@ function routePropertyScan(identification, images) {
     try {
       const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
       const id2 = res.identification || identification;
-      const out = applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
+      const out = await applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
       let msg;
       if (!res.price) {
         msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} fields ready. Price estimate skipped â€” set the price manually, then press Publish Property.`;
@@ -5276,12 +5299,13 @@ window.scanPropertyWithAI = async function() {
 // form and writes a clear, professional description. Works over the SAME image
 // elements as the property form (only one modal is ever open, so the shared
 // IDs are safe).
-function applyScanToVehicleForm(result, options = {}) {
+async function applyScanToVehicleForm(result, options = {}) {
   const identification = result && result.identification && result.identification.identified !== false ? result.identification : {};
   const specs = result && result.specs ? result.specs : {};
   const price = result && result.price ? result.price : null;
   const visionUsed = (options && options.visionUsed !== undefined) ? options.visionUsed : (result && result.visionUsed !== undefined ? result.visionUsed : true);
   const filled = [];
+  const owns = await loadCompanyContact();
   const toText = (v) => Array.isArray(v) ? v.join(', ') : String(v ?? '').trim();
   const set = (key, value) => {
     if (value == null || toText(value) === '') return;
@@ -5346,9 +5370,9 @@ function applyScanToVehicleForm(result, options = {}) {
   set('vin', specs.vin);
   set('warranty', specs.warranty);
   set('location', specs.location);
-  set('seller_name', specs.seller_name);
-  set('seller_phone', specs.seller_phone);
-  set('seller_email', specs.seller_email);
+  if (owns.name) set('seller_name', owns.name);
+  if (owns.phone) set('seller_phone', owns.phone);
+  if (owns.email) set('seller_email', owns.email);
   set('safety_features', specs.safety_features);
   set('driver_assistance', specs.driver_assistance);
   set('technology', specs.technology);
@@ -5457,7 +5481,7 @@ window.scanVehicleWithAI = async function() {
     setStatus('Reading every photo, completing the vehicle specs and market value…', 'text-blue-300');
     const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Cars & Trucks', formSelector: '#vehicle-form' });
     const id2 = res.identification || identification;
-    const out = applyScanToVehicleForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
+    const out = await applyScanToVehicleForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
     let msg = `${esc(id2.detected_name || 'Vehicle')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Vehicle.`;
     if (!res.visionUsed) {
       msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photos were NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — these values did NOT come from your images.</p>`;
@@ -8876,7 +8900,7 @@ The marketplace form must never end up mostly empty. For EVERY form field that a
  3. For properties, judge rooms, furniture, condition, floors, finishes and systems from the photos and from the property type plus building size (e.g. a 2,500 sqft single-family home is typically 3-4 bedrooms / 2-3 bathrooms / 2 floors). Judge condition ("Good" is the honest default when the state is unclear).
 Any value you inferred rather than directly saw MUST ALSO be listed in the "estimated" array.
 NEVER write "Not specified", "unknown", "N/A", "none", or leave an applicable field null just because its value is not clearly visible. Give your best REAL, defensible value and list it in "estimated" instead.
-ONLY these fields may be null AND listed in "missing_fields": a private seller's contact details (seller_name, seller_phone, seller_email, contact_name, contact_phone, contact_email), a VIN/serial that is not legible in any photo, a precise street address, ZIP/postal, city/state/country, GPS coordinates or listing location that is nowhere visible, document URLs, verification evidence or dates, exact odometer mileage that is not visible, and stock_quantity (except 1 for unique items). Never put engine, fuel type, transmission, drive type, seats, doors, body type, condition, room counts or amenity fields in "missing_fields": those are always covered by inference rule 2 or 3 above.
+ONLY these fields may be null AND listed in "missing_fields": contact fields (seller_name, seller_phone, seller_email, contact_name, contact_phone, contact_email - these are filled with the store's own company contact, so ignore them), a VIN/serial that is not legible in any photo, a precise street address, ZIP/postal, city/state/country, GPS coordinates or listing location that is nowhere visible, document URLs, verification evidence or dates, exact odometer mileage that is not visible, and stock_quantity (except 1 for unique items). Never put engine, fuel type, transmission, drive type, seats, doors, body type, condition, room counts or amenity fields in "missing_fields": those are always covered by inference rule 2 or 3 above.
 
 JOB A â€” COMPLETE THE STANDARD SPECIFICATIONS using reliable data for that exact brand + model:
 - Vehicles: make, model, body_type, trim/edition, model_year, color, mileage (read the odometer/trip computer when visible; a brand-new unused vehicle gets "0 mi"; only when truly not visible leave null in missing_fields), engine (e.g. "2.0L Turbocharged I4" or "4.5L V8 Turbo Diesel"), horsepower, transmission, fuel_type, drive_type, fuel_economy, towing_capacity, seating_capacity, doors, wheels_tires (size/type/condition, e.g. "20-inch alloys, 265/65 R18, 2 new tires"), dimensions (L x W x H), cargo_capacity, safety_features, driver_assistance, technology, interior, warranty, previous_owners, registration_status, inspection_status, service_history, accident_history, ownership_history, location, seller_name, seller_phone, seller_email.
