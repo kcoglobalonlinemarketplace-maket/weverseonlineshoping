@@ -133,8 +133,9 @@ function showToast(msg, type = 'success') {
 // ── Video helpers ──────────────────────────────────────────────────────────
 function isVideoUrl(url) {
   if (!url || typeof url !== 'string') return false;
-  if (url.startsWith('blob:') || url.startsWith('data:')) return false;
-  return /\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(url);
+  if (/^data:video\//i.test(url)) return true;
+  if (url.startsWith('blob:')) return false;
+  return /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
 }
 function isVideoFile(file) {
   return file && file.type && file.type.startsWith('video/');
@@ -2903,7 +2904,10 @@ async function uploadImageFile(file) {
     }
     const ext = payload.type === 'image/jpeg' ? 'jpg' : ((file.name || 'photo.jpg').split('.').pop() || 'jpg');
     const base = `products/${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const timeoutMs = isVid ? 180000 : 90000;
+    // Long videos stream slowly on mobile data, so give them a generous window
+    // (this is the whole point of "fast upload" — never time out a big file that
+    // is still making progress). Timeout is per-attempt; we retry below.
+    const timeoutMs = isVid ? 300000 : 90000;
     // Try twice (fresh unique path each time) so a storage hiccup never loses a photo.
     for (let attempt = 0; attempt < 2; attempt++) {
       const path = `${base}${attempt ? '-' + Math.random().toString(36).slice(2, 7) : ''}.${ext}`;
@@ -2915,16 +2919,24 @@ async function uploadImageFile(file) {
         console.warn('product-images upload failed (attempt ' + (attempt + 1) + '):', upErr.message || upErr);
       }
     }
-    // 100% SHOWROOM GUARANTEE: even when storage fails (or no session), embed a
-    // compressed copy of the photo directly with the listing (data URL) so the
-    // image ALWAYS shows in the showroom â€” never a temporary blob: URL, which
-    // would be silently dropped when the product is saved & published.
+    // IMAGES: 100% SHOWROOM GUARANTEE — even when storage fails (or no session),
+    // embed a compressed copy of the photo directly with the listing (data URL)
+    // so the image ALWAYS shows in the showroom — never a temporary blob: URL,
+    // which would be silently dropped when the product is saved & published.
+    // VIDEOS: there is no safe offline fallback — a blob: URL would be a broken
+    // white/blank player after the page reloads, which is exactly the bug the
+    // user reported. So for videos we return null (fail loudly) and the caller
+    // tells the user to retry, instead of silently saving a broken video.
+    if (isVid) return null;
     try {
       const embedded = await aiClient._downscaleImage(payload, 1200);
       if (embedded) return embedded;
     } catch { /* fall through */ }
     return URL.createObjectURL(file);
-  } catch { return URL.createObjectURL(file); }
+  } catch {
+    if (isVideoFile(file)) return null;
+    return URL.createObjectURL(file);
+  }
 }
 
 // Native Capacitor gallery picker: opens the system Photo Picker (photos + videos,
@@ -6842,6 +6854,8 @@ window.saveProperty = async function(e, existingId) {
     inspection_info: data.inspection_info || '',
     documents: splitList(data.documents_text),
     features, images,
+    video_url: (images || []).find(u => typeof u === 'string' && isVideoUrl(u)) || null,
+    video: (images || []).find(u => typeof u === 'string' && isVideoUrl(u)) || null,
     highlights: normalizeCommaList(data.highlights_text),
     seo_keywords: normalizeCommaList(data.seo_keywords_text),
     is_ai_generated: !!data.catalog_template_id,

@@ -45,8 +45,35 @@ function safeRating(r) { return (typeof r === 'number' && !isNaN(r)) ? r.toFixed
 function safeImages(imgs) { return (Array.isArray(imgs) && imgs.length > 0) ? imgs : [FALLBACK_IMG]; }
 function isVideoUrl(url) {
   if (!url || typeof url !== 'string') return false;
-  if (url.startsWith('blob:') || url.startsWith('data:')) return false;
-  return /\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(url);
+  if (/^data:video\//i.test(url)) return true;
+  // Sniff a blob: URL is only possible if we already know its MIME type; here
+  // we trust that video media are stored with a real extension. blob: without
+  // a known type is NOT treated as video (it likely never survives a reload).
+  if (url.startsWith('blob:')) return false;
+  return /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
+}
+
+// Draws the first available video frame as a poster image (data URL) so a video
+// hero always shows a real preview instead of a blank white box before it plays.
+function ensureVideoPoster(videoEl, src) {
+  const tryLoad = (v) => {
+    if (v.readyState >= 2 && v.videoWidth) {
+      try {
+        const c = document.createElement('canvas');
+        c.width = v.videoWidth; c.height = v.videoHeight;
+        c.getContext('2d').drawImage(v, 0, 0);
+        const dataUrl = c.toDataURL('image/jpeg', 0.8);
+        if (dataUrl && dataUrl.length > 100) videoEl.poster = dataUrl;
+      } catch { /* cross-origin or unreadable — leave blank */ }
+    }
+  };
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.preload = 'auto';
+  v.src = src;
+  v.addEventListener('loadeddata', () => tryLoad(v), { once: true });
+  v.addEventListener('error', () => { /* ignore */ }, { once: true });
+  v.load();
+  setTimeout(() => { try { v.removeAttribute('src'); v.load(); } catch {} }, 12000);
 }
 
 // ── Professional app-style building blocks ─────────────────────
@@ -1629,8 +1656,8 @@ function render(listing) {
 
       <div id="hero-wrap" class="relative w-full h-[46vh] sm:h-[60vh] lg:h-[72vh] rounded-2xl overflow-hidden bg-gray-100 mb-3 cursor-zoom-in group flex items-center justify-center" role="button" tabindex="0" aria-label="Open image gallery">
         ${heroIsVideo
-          ? `<video id="hero-image" src="${escapeHtml(heroMedia)}" ${heroPoster ? `poster="${escapeHtml(heroPoster)}"` : ''} autoplay muted loop preload="metadata" playsinline controls class="w-full h-full object-contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video>
-             <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-7 h-7 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
+          ? `<video id="hero-image" src="${escapeHtml(heroMedia)}" ${heroPoster ? `poster="${escapeHtml(heroPoster)}"` : ''} autoplay muted loop playsinline preload="metadata" controls class="w-full h-full object-contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video>
+             <div class="absolute inset-0 flex items-center justify-center pointer-events-none" style="display:${heroPoster ? 'none' : 'flex'}"><div class="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-7 h-7 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
           : `<img id="hero-image" src="${heroMedia}" alt="${listing.title}" class="w-full h-full object-contain" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
         }
         <div class="absolute inset-0 flex items-end justify-between p-3 opacity-0 group-hover:opacity-100 transition pointer-events-none">
@@ -1663,9 +1690,31 @@ function render(listing) {
 
   const hero = document.getElementById('hero-image');
   const heroWrap = document.getElementById('hero-wrap');
+  // If the hero is a video with NO poster image, generate a real first-frame
+  // thumbnail on the fly — so a video-only listing never shows a blank/white
+  // box before playback starts (it always looks like a real, playable video).
+  if (hero && hero.tagName === 'VIDEO' && !heroPoster) {
+    ensureVideoPoster(hero, heroMedia);
+  }
   if (heroWrap) {
     const openLightbox = () => openGalleryLightbox(listing, imgs2);
-    heroWrap.addEventListener('click', openLightbox);
+    // When the hero is a video, let taps on the video itself play/pause it
+    // (clicking the still/white area starts playback) instead of always jumping
+    // to the lightbox — so the video always reads as a playable video.
+    heroWrap.addEventListener('click', (e) => {
+      const hv = document.getElementById('hero-image');
+      if (hv && hv.tagName === 'VIDEO') {
+        const videoBox = hv.getBoundingClientRect();
+        if (videoBox.width > 0 && e.clientX >= videoBox.left && e.clientX <= videoBox.right && e.clientY >= videoBox.top && e.clientY <= videoBox.bottom) {
+          // Let the native control / built-in tap-to-play handle it, but if the
+          // video never started (paused/buffering) force it to play once.
+          if (hv.paused && hv.readyState >= 2) { hv.play().catch(() => {}); return; }
+          if (hv.paused) return;
+          return;
+        }
+      }
+      openLightbox();
+    });
     heroWrap.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(); } });
   }
   root.querySelectorAll('.gallery-thumb').forEach(thumb => {

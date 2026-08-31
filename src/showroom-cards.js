@@ -15,8 +15,9 @@ const FALLBACK_IMG = '/fallback.svg';
 
 function isVideoUrl(url) {
   if (!url || typeof url !== 'string') return false;
-  if (url.startsWith('blob:') || url.startsWith('data:')) return false;
-  return /\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(url);
+  if (/^data:video\//i.test(url)) return true;
+  if (url.startsWith('blob:')) return false;
+  return /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
 }
 
 function escapeHtml(value) {
