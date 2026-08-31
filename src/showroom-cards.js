@@ -9,6 +9,7 @@ import { addToCart as cartAddToCart } from './cart.js';
 import { openShareSheet } from './share.js';
 import { renderCardMaps } from './static-map.js';
 import { canonicalCategoriesForLabel } from './categories.js';
+import { agentButtonsHtml, wireAgentButtons, injectAgentStyles } from './smart-agent.js';
 
 const FALLBACK_IMG = '/fallback.svg';
 
@@ -571,6 +572,7 @@ export function renderCard(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
       </button>
+      <div class="agent-btns-wrap mt-2 pt-2 border-t border-gray-100">${agentButtonsHtml(listing, { compact: true })}</div>
     </div>
   `;
 
@@ -635,6 +637,7 @@ export function renderFeedCard(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
       </button>
+      <div class="agent-btns-wrap mt-2 pt-2 border-t border-gray-100">${agentButtonsHtml(listing, { compact: true })}</div>
     </div>
   `;
 
@@ -656,6 +659,7 @@ function attachCardListeners(card, listing) {
   card.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
   card.querySelector('.cart-btn')?.addEventListener('click', (e) => { e.stopPropagation(); addToCart(listing); });
   card.querySelector('.details-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/details.html?id=${listing.property_id}`; });
+  wireAgentButtons(card, () => listing);
 }
 
 async function handleBuyNow(listing) {
@@ -931,8 +935,21 @@ function adoptPrerendered(container) {
       track.querySelectorAll('.showroom-card').forEach(card => {
         const id = card.dataset.id;
         const listing = listings.find(l => (l.id || l.property_id) === id);
-        if (listing) attachCardListeners(card, listing);
-        else if (id) attachCardListeners(card, { id, property_id: id, title: id });
+        const target = listing || (id ? { id, property_id: id, title: id } : null);
+        if (!target) return;
+        // Inject the smart agent buttons into build-time baked cards that
+        // don't already have them so every product shows Call/Message Agent.
+        if (!card.querySelector('.kco-agent-row')) {
+          const btnWrap = card.querySelector('.agent-btns-wrap') || (() => {
+            const w = document.createElement('div');
+            w.className = 'agent-btns-wrap mt-2 pt-2 border-t border-gray-100';
+            card.querySelector('.showroom-card .px-3\\.5', card)?.appendChild(w) ||
+              card.appendChild(w);
+            return w;
+          })();
+          btnWrap.innerHTML = agentButtonsHtml(target, { compact: true });
+        }
+        attachCardListeners(card, target);
       });
     }
     delete row.dataset.prerendered;

@@ -18,10 +18,7 @@ import { addToCart as cartAddToCart } from './cart.js';
 import { generateSeedReviews } from './seed-reviews.js';
 import { loadPromoBackgrounds, bgMediaLayer } from './promo-backgrounds.js';
 import { loadReviewInteractions, toggleReviewLike, addReviewComment, loadGuestReviews, addGuestReviewLocal, removeGuestReviewLocal } from './review-interactions.js';
-// Self-initializing modules: trust & info area (#trust-info-area) and the app
-// promo banner (#app-promo-banner) render below the details content. The page
-// markup only ships inert modulepreload hints, so these must be imported here
-// to actually run (they skip the homepage automatically).
+import { agentButtonsHtml, wireAgentButtons, injectAgentStyles } from './smart-agent.js';
 import './trust-info-area.js';
 import './app-promo-banner.js';
 
@@ -880,6 +877,9 @@ function renderTruck(listing) {
         </button>
       </div>
 
+      <!-- Smart Agent Buttons -->
+      <div class="mb-8 pt-4 border-t border-gray-100" id="agent-buttons-block">${agentButtonsHtml(listing, { compact: false })}</div>
+
       <!-- Description -->
       ${detailsAccordions(listing, specs, listing.features, null, null)}
 
@@ -918,6 +918,7 @@ function renderTruck(listing) {
     openShareSheet(listing);
   });
 
+  wireAgentButtons(document.getElementById('agent-buttons-block'), () => listing);
   loadRelatedSections(listing);
 
   setupReviewForm(listing);
@@ -1015,6 +1016,9 @@ function renderMotorhome(listing) {
         </button>
       </div>
 
+      <!-- Smart Agent Buttons -->
+      <div class="mb-8 pt-4 border-t border-gray-100" id="agent-buttons-block">${agentButtonsHtml(listing, { compact: false })}</div>
+
       <!-- Description -->
       ${detailsAccordions(listing, specs, listing.features, null, null)}
 
@@ -1053,6 +1057,7 @@ function renderMotorhome(listing) {
     openShareSheet(listing);
   });
 
+  wireAgentButtons(document.getElementById('agent-buttons-block'), () => listing);
   loadRelatedSections(listing);
 
   setupReviewForm(listing);
@@ -1145,6 +1150,9 @@ function renderCar(listing) {
         </button>
       </div>
 
+      <!-- Smart Agent Buttons -->
+      <div class="mb-8 pt-4 border-t border-gray-100" id="agent-buttons-block">${agentButtonsHtml(listing, { compact: false })}</div>
+
       <!-- Description -->
       ${detailsAccordions(listing, specs, listing.features, null, null)}
 
@@ -1183,6 +1191,7 @@ function renderCar(listing) {
     openShareSheet(listing);
   });
 
+  wireAgentButtons(document.getElementById('agent-buttons-block'), () => listing);
   loadRelatedSections(listing);
 
   setupReviewForm(listing);
@@ -1251,6 +1260,7 @@ function actionGridHtml(listing) {
         ${viewMapBtn}
       </div>
       ${isProperty ? `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">${propertyActions}</div>` : ''}
+      <div class="mt-4 pt-4 border-t border-gray-100" id="agent-buttons-block">${agentButtonsHtml(listing, { compact: false })}</div>
     </div>
   `;
 }
@@ -1740,6 +1750,7 @@ function render(listing) {
   }
 
   setupWishlistButton(listing);
+  wireAgentButtons(document.getElementById('agent-buttons-block'), () => listing);
   setupReviewForm(listing);
   loadReviews(listing);
   loadRecommendations(listing);
