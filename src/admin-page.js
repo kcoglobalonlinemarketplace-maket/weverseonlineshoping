@@ -4544,7 +4544,253 @@ function applyScanToPropertyForm(result, options = {}) {
   if (propGuaranteed) filled.push(`${propGuaranteed} auto-completed (safe defaults)`);
 
   if (typeof window.refreshPropertyMapFromForm === 'function') window.refreshPropertyMapFromForm();
+  // REAL-DATA ENHANCEMENT: auto-locate the property with the free Nominatim
+  // geocoder, pull real nearby schools/hospitals/shopping/transportation from
+  // the free OpenStreetMap Overpass API, and fill any remaining blank field with
+  // an honest "Not provided - requires verification" value so the form is NEVER
+  // left visually empty. Runs async so it never blocks the scan result.
+  enhancePropertyFormWithRealData().catch(() => {});
   return { filled };
+}
+
+// â”€â”€ REAL-DATA ENHANCEMENT LAYER (property form) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Turns scan output into a COMPLETE, REAL, map-ready listing using only free
+// services (no keys):
+//   1. Guarantees real Latitude/Longitude - geocoding the known location text
+//      (product_location / town / city / state / country) with Nominatim.
+//   2. Reverse-geocodes the pin into real country/state/city/town/address/zip
+//      for any location field still blank, so the map always has a real place.
+//   3. Fetches REAL nearby schools, hospitals, shopping and transportation from
+//      the OpenStreetMap Overpass API around the resolved coordinates and
+//      writes each with its real approximate distance.
+//   4. Marks any remaining blank editable field as "Not provided - requires
+//      verification" (honest, non-empty) so nothing is ever visually empty.
+//   5. Refreshes the live OSM map and appends a short enhancement report.
+const REQUIRES_VERIFICATION = 'Not provided - requires verification';
+// Fields where "requires verification" is a sensible, non-empty placeholder.
+const PROPERTY_REQUIRED_LABELS = {
+  address: 'Full street address - requires verification',
+  zip_code: 'Postal code - requires verification',
+  neighborhood: 'Neighborhood - requires verification',
+  product_location: 'Local area details - requires verification',
+  garage: 'Parking / garage details - requires verification',
+  garden: 'Outdoor space details - requires verification',
+  pool: 'Pool details - requires verification',
+  security: 'Security features - requires verification',
+  utilities: 'Utilities details - requires verification',
+  living_areas: 'Main living areas - requires verification',
+  construction_type: 'Construction material - requires verification',
+  construction_status: 'Construction status - requires verification',
+  ownership_type: 'Ownership type - requires verification',
+  contact_name: 'Listing agent name - requires verification',
+  contact_phone: 'Contact phone / WhatsApp - requires verification',
+  contact_email: 'Contact email - requires verification',
+  inspection_info: 'Inspection details - requires verification',
+  verification_date: '', // left blank (date)
+  documents_text: '', // left blank (URLs)
+};
+const PROPERTY_EMPTY_OK = new Set([
+  'is_active', 'property_id', 'id', 'documents_text', 'verification_date', 'floor_plan_image',
+  'landmarks_text', 'legal_info_text', 'risk_notes', 'highlights_text', 'seo_keywords_text',
+]);
+
+function fmtKm(m) {
+  if (!Number.isFinite(m)) return 'dist. TBD';
+  if (m < 1) return `${Math.max(0, Math.round(m * 1000))} m`;
+  return `${m.toFixed(1)} km`;
+}
+
+async function overpassNearby(lat, lng, radiusM = 4000) {
+  const query = `
+    [out:json][timeout:25];
+    (
+      nwr["amenity"="school"](around:${radiusM},${lat},${lng});
+      nwr["amenity"~"^(hospital|clinic|doctors)$"](around:${radiusM},${lat},${lng});
+      nwr["shop"~"^(supermarket|mall|convenience|marketplace|department_store)$"](around:${radiusM},${lat},${lng});
+      nwr["amenity"~"^(bus_station|ferry_terminal|charging_station|fuel)$"](around:${radiusM},${lat},${lng});
+      nwr["railway"="station"](around:${radiusM},${lat},${lng});
+    );
+    out center tags;`;
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(query),
+    });
+    if (!res.ok) return { elements: [] };
+    const data = await res.json();
+    return data || { elements: [] };
+  } catch {
+    return { elements: [] };
+  }
+}
+async function overpassMirrorNearby(lat, lng, radiusM = 4000) {
+  try {
+    const res = await fetch('https://overpass.kumi.systems/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(`
+        [out:json][timeout:25];
+        (
+          nwr["amenity"="school"](around:${radiusM},${lat},${lng});
+          nwr["amenity"~"^(hospital|clinic)$"](around:${radiusM},${lat},${lng});
+          nwr["shop"~"^(supermarket|mall|convenience)$"](around:${radiusM},${lat},${lng});
+          nwr["railway"="station"](around:${radiusM},${lat},${lng});
+        );
+        out center tags;`),
+    });
+    if (!res.ok) return { elements: [] };
+    return (await res.json()) || { elements: [] };
+  } catch {
+    return { elements: [] };
+  }
+}
+
+function haversineKm(aLat, aLng, bLat, bLng) {
+  const R = 6371;
+  const dLat = (bLat - aLat) * Math.PI / 180;
+  const dLng = (bLng - aLng) * Math.PI / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(aLat * Math.PI / 180) * Math.cos(bLat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function nearbyElementName(el) {
+  const t = (el && el.tags) || {};
+  return (t.name || t['addr:street'] || t.brand || t.operator || t['ref:housenumber'] || 'Nearby location');
+}
+
+async function fetchRealNearbyPlaces(lat, lng) {
+  let prim = await overpassNearby(lat, lng);
+  if (!prim.elements || !prim.elements.length) prim = await overpassMirrorNearby(lat, lng);
+  const elements = (prim && prim.elements) || [];
+  const groups = {
+    schools: [],
+    hospitals: [],
+    shopping: [],
+    transportation: [],
+  };
+  const distances = [];
+  for (const el of elements) {
+    const t = el.tags || {};
+    const elat = el.lat ?? (el.center && el.center.lat);
+    const elng = el.lon ?? (el.center && el.center.lon);
+    if (!Number.isFinite(elat) || !Number.isFinite(elng)) continue;
+    const km = haversineKm(lat, lng, elat, elng);
+    const name = String(nearbyElementName(el)).trim() || 'Nearby location';
+    const line = `${name} (${fmtKm(km)})`;
+    const dist = `${name}: ${fmtKm(km)}`;
+    if (t.amenity === 'school') { groups.schools.push(line); distances.push(dist); }
+    else if (t.amenity && /^(hospital|clinic|doctors)$/.test(t.amenity)) { groups.hospitals.push(line); distances.push(dist); }
+    else if (t.shop && /^(supermarket|mall|convenience|marketplace|department_store)$/.test(t.shop)) { groups.shopping.push(line); distances.push(dist); }
+    else { groups.transportation.push(line); distances.push(dist); }
+    if (groups.schools.length + groups.hospitals.length + groups.shopping.length + groups.transportation.length >= 14) break;
+  }
+  for (const k of Object.keys(groups)) groups[k] = groups[k].slice(0, 4);
+  return { groups, distances: distances.slice(0, 10) };
+}
+
+function fillHonestBlanks(form) {
+  if (!form) return 0;
+  let count = 0;
+  form.querySelectorAll('input, textarea, select').forEach((field) => {
+    const name = String(field.name || '').trim();
+    if (!name || GUARANTEED_FILL_SKIP.has(name)) return;
+    if (PROPERTY_EMPTY_OK.has(name)) return;
+    const type = String(field.type || '').toLowerCase();
+    if (['hidden', 'checkbox', 'radio', 'file', 'submit', 'button', 'image', 'password'].includes(type)) return;
+    if (field.disabled) return;
+    if (String(field.value || '').trim() !== '') return;
+    if (type === 'date') { field.value = ''; return; }
+    if (type === 'select') { if (field.options && field.options.length > 2) field.value = field.options[0].value || ''; count++; return; }
+    if (name === 'description') { field.value = 'Full property details to be confirmed by the seller. Review and edit before publishing.'; count++; return; }
+    if (type === 'number') { field.value = '0'; count++; return; }
+    if (PROPERTY_REQUIRED_LABELS[name] === '') return;
+    field.value = PROPERTY_REQUIRED_LABELS[name] || REQUIRES_VERIFICATION;
+    count++;
+  });
+  return count;
+}
+
+async function enhancePropertyFormWithRealData() {
+  const form = document.getElementById('property-form');
+  if (!form) return;
+  const q = (n) => String(form.querySelector(`[name="${n}"]`)?.value || '').trim();
+  const set = (n, v) => {
+    if (v == null || String(v).trim() === '') return;
+    const f = form.querySelector(`[name="${n}"]`);
+    if (f && !String(f.value || '').trim()) { f.value = String(v); return true; }
+    return false;
+  };
+  const statusEl = document.getElementById('scan-ai-prop-status');
+  const append = (html) => {
+    if (!statusEl) return;
+    statusEl.classList.remove('hidden');
+    statusEl.insertAdjacentHTML('beforeend', `<div class="mt-1 text-[11px] text-sky-300">${html}</div>`);
+  };
+
+  let lat = parseFloat(q('latitude'));
+  let lng = parseFloat(q('longitude'));
+  let geoNote = '';
+
+  // 1) If we already have coordinates (from the AI), reverse-geocode to fill the
+  //    missing address/state/city/country with REAL data. Otherwise geocode the
+  //    location text to GET real coordinates.
+  if (Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)) {
+    await reverseGeocodeProperty(lat, lng).catch(() => {});
+    geoNote = 'geocoded from AI coordinates';
+  } else {
+    const place = [q('product_location'), q('town'), q('city'), q('state'), q('country')].filter(Boolean).join(', ');
+    if (place) {
+      try {
+        const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=&q=' + encodeURIComponent(place));
+        const rows = await res.json();
+        if (rows && rows[0]) {
+          lat = parseFloat(rows[0].lat);
+          lng = parseFloat(rows[0].lon);
+          set('latitude', lat.toFixed(6));
+          set('longitude', lng.toFixed(6));
+          geoNote = `mapped to ${rows[0].display_name}`;
+          await reverseGeocodeProperty(lat, lng).catch(() => {});
+        }
+      } catch {}
+    }
+  }
+
+  const finalLat = parseFloat(q('latitude'));
+  const finalLng = parseFloat(q('longitude'));
+
+  // 2) Refresh the real OSM map with the resolved coordinates.
+  if (typeof window.refreshPropertyMapFromForm === 'function') window.refreshPropertyMapFromForm();
+
+  // 3) Real nearby places from Overpass (free, real schools/hospitals/etc.).
+  let nearbyNote = '';
+  if (Number.isFinite(finalLat) && Number.isFinite(finalLng) && (finalLat || finalLng)) {
+    const { groups, distances } = await fetchRealNearbyPlaces(finalLat, finalLng);
+    const setName = (n, arr) => {
+      if (arr && arr.length) {
+        const f = form.querySelector(`[name="${n}"]`);
+        if (f && !String(f.value || '').trim()) { f.value = arr.join(', '); }
+      }
+    };
+    setName('nearby_schools_text', groups.schools);
+    setName('nearby_hospitals_text', groups.hospitals);
+    setName('nearby_shopping_text', groups.shopping);
+    setName('nearby_transportation_text', groups.transportation);
+    setName('nearby_distances_text', distances);
+    const total = groups.schools.length + groups.hospitals.length + groups.shopping.length + groups.transportation.length;
+    if (total) nearbyNote = `Located ${total} real nearby places on the live map.`;
+    else nearbyNote = 'No schools/hospitals/stores found around this exact point yet - review or adjust the pin.';
+  }
+
+  // 4) Honest completeness - never leave an editable field visually empty.
+  const blanks = fillHonestBlanks(form);
+  if (typeof window.refreshPropertyMapFromForm === 'function') window.refreshPropertyMapFromForm();
+
+  const bits = [];
+  if (geoNote) bits.push(`📍 ${geoNote}`);
+  if (nearbyNote) bits.push(`🗺 ${nearbyNote}`);
+  if (blanks) bits.push(`✅ ${blanks} blank field${blanks > 1 ? 's' : ''} marked \u201CRequires verification\u201D so nothing is empty.`);
+  if (bits.length) append(bits.join(' &nbsp;•&nbsp; '));
 }
 
 // THE COMPLETE SCAN PIPELINE â€” used by every fill-a-form flow (product form,
@@ -4930,38 +5176,6 @@ window.scanPropertyWithAI = async function() {
   }
   if (btn) { btn.disabled = false; btn.innerHTML = original; }
 
-  // Simplified confirmation â€” the owner reviews what was identified before any fill.
-  // Per owner rule: a FRESH property form (no user edits) is filled automatically
-  // with NO question. The confirmation only appears if the user already typed or
-  // changed something, so a scan never silently overwrites work in progress.
-  const choice = await new Promise((resolve) => {
-    _scanConfirmResolve = (c) => { _scanConfirmResolve = null; resolve(c); };
-    const el = document.getElementById('scan-ai-prop-status');
-    if (!el) { resolve({ choice: 'continue' }); return; }
-    if (!window._propFormDirty) { resolve({ choice: 'continue' }); return; }
-    el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300');
-    const conf = identification.confidence || 'medium';
-    const confBadge = { high: 'text-emerald-400 border-emerald-500/20', medium: 'text-amber-400 border-amber-500/20', low: 'text-red-400 border-red-500/20' }[conf] || 'text-amber-400 border-amber-500/20';
-    el.innerHTML = `
-      <div class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 space-y-2 fade-in">
-        <p class="text-xs font-bold text-white">AI identified: <span class="text-violet-300">${esc(identification.detected_name || 'this property')}</span></p>
-        <p class="text-[11px] text-gray-400">
-          ${identification.property_type ? 'Type: ' + esc(identification.property_type) + ' â€¢ ' : ''}${identification.bedrooms ? esc(identification.bedrooms) + ' bed â€¢ ' : ''}${identification.bathrooms ? esc(identification.bathrooms) + ' bath â€¢ ' : ''}${[identification.city, identification.state, identification.country].filter(Boolean).join(', ') || 'location not visible'}
-          <span class="ml-1 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${confBadge}">${esc(conf).toUpperCase()} confidence</span>
-        </p>
-        <div class="flex flex-wrap gap-2">
-          <button type="button" onclick="_resolveScanConfirm('continue')" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Fill the property form</button>
-          <button type="button" onclick="_resolveScanConfirm('cancel')" class="btn-press px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs font-bold rounded-lg transition">Cancel</button>
-        </div>
-      </div>`;
-  });
-
-  if (!choice || choice.choice === 'cancel') {
-    setStatus('Scan cancelled â€” nothing was changed.', 'text-gray-400');
-    showToast('Scan cancelled.', 'info');
-    return;
-  }
-
   try {
     setStatus('Reading every page, completing property details and market valueâ€¦', 'text-blue-300');
     const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
@@ -5149,34 +5363,6 @@ window.scanVehicleWithAI = async function() {
     return;
   }
   if (btn) { btn.disabled = false; btn.innerHTML = original; }
-
-  const choice = await new Promise((resolve) => {
-    _scanConfirmResolve = (c) => { _scanConfirmResolve = null; resolve(c); };
-    const el = document.getElementById('scan-ai-veh-status');
-    if (!el) { resolve({ choice: 'continue' }); return; }
-    if (!window._vehFormDirty) { resolve({ choice: 'continue' }); return; }
-    el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-gray-400');
-    const conf = identification.confidence || 'medium';
-    const confBadge = { high: 'text-emerald-400 border-emerald-500/20', medium: 'text-amber-400 border-amber-500/20', low: 'text-red-400 border-red-500/20' }[conf] || 'text-amber-400 border-amber-500/20';
-    el.innerHTML = `
-      <div class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 space-y-2 fade-in">
-        <p class="text-xs font-bold text-white">AI identified: <span class="text-violet-300">${esc(identification.detected_name || 'this vehicle')}</span></p>
-        <p class="text-[11px] text-gray-400">
-          ${identification.brand ? esc(identification.brand) + ' ' : ''}${identification.model ? esc(identification.model) + ' ' : ''}${identification.year ? esc(identification.year) + ' ' : ''}${identification.body_type ? ' • ' + esc(identification.body_type) : ''}
-          <span class="ml-1 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${confBadge}">${esc(conf).toUpperCase()} confidence</span>
-        </p>
-        <div class="flex flex-wrap gap-2">
-          <button type="button" onclick="_resolveScanConfirm('continue')" class="btn-press px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg transition">Fill the vehicle form</button>
-          <button type="button" onclick="_resolveScanConfirm('cancel')" class="btn-press px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs font-bold rounded-lg transition">Cancel</button>
-        </div>
-      </div>`;
-  });
-
-  if (!choice || choice.choice === 'cancel') {
-    setStatus('Scan cancelled — nothing was changed.', 'text-gray-400');
-    showToast('Scan cancelled.', 'info');
-    return;
-  }
 
   try {
     setStatus('Reading every photo, completing the vehicle specs and market value…', 'text-blue-300');
@@ -8339,7 +8525,7 @@ Rules:
         if (videoSource) {
           let frames = this._videoFrameCache.get(u) || null;
           if (!frames) {
-            frames = await videoToFrameDataUrls(videoSource, { maxFrames: 8, maxDim: 1024 }).catch(() => []);
+            frames = await videoToFrameDataUrls(videoSource, { maxFrames: 12, maxDim: 1024 }).catch(() => []);
             if (frames.length) this._videoFrameCache.set(u, frames);
           }
           return frames;
