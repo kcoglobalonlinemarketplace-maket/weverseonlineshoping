@@ -260,21 +260,11 @@ function cardHtml(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
       </button>
-      <div class="agent-btns-wrap mt-2 pt-2 border-t border-gray-100">${prerenderAgentButtons(listing)}</div>
+      <button type="button" class="kco-card-call-agent mt-2 w-full min-w-0 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30">
+        <i data-lucide="phone" class="w-4 h-4 shrink-0"></i> <span class="truncate">Call Agent</span>
+      </button>
     </div>
   </div>`;
-}
-
-// Static agent buttons baked into the pre-rendered card so every product shows
-// Call/Message Agent immediately (before JS runs). Mirrors showroom-cards.js.
-function prerenderAgentButtons(listing) {
-  const id = listing.property_id || listing.id || '';
-  return `<div class="kco-agent-row" data-listing-id="${id}">
-      <button type="button" class="kco-agent-btn-compact kco-agent-call" data-action="call-agent" title="Call Agent"><i data-lucide="phone" class="w-3.5 h-3.5"></i><span>Call Agent</span></button>
-      <button type="button" class="kco-agent-btn-compact kco-agent-msg" data-action="msg-agent" title="Message Agent"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i><span>Chat</span></button>
-      <button type="button" class="kco-agent-btn-compact kco-agent-call-company" data-action="call-company" title="Call Company"><i data-lucide="building-2" class="w-3.5 h-3.5"></i><span>Call Us</span></button>
-      <button type="button" class="kco-agent-btn-compact kco-agent-msg-company" data-action="msg-company" title="Message Company"><i data-lucide="headphones" class="w-3.5 h-3.5"></i><span>Support</span></button>
-    </div>`;
 }
 
 // full-width feed card markup identical to renderFeedCard in showroom-cards.js.
@@ -374,7 +364,9 @@ function feedCardHtml(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
       </button>
-      <div class="agent-btns-wrap mt-2 pt-2 border-t border-gray-100">${prerenderAgentButtons(listing)}</div>
+      <button type="button" class="kco-card-call-agent mt-2 w-full min-w-0 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30">
+        <i data-lucide="phone" class="w-4 h-4 shrink-0"></i> <span class="truncate">Call Agent</span>
+      </button>
     </div>
   </div>`;
 }
