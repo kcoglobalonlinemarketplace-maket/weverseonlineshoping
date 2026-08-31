@@ -646,55 +646,95 @@ function closingSectionHtml(content) {
           </div>
         </div>
 
-        <!-- Professional footer links -->
-        <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-9">
+        <!-- Professional footer: Temu-style link columns -->
+        <div class="mt-14 border-t border-white/10 pt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
+          <!-- Company info -->
           <div>
-            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Company</h4>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Company info</h4>
             <ul class="space-y-2.5">
               ${closingLink('/about.html', 'About Us')}
-              ${closingLink('/team.html', 'Our Team')}
-              ${closingLink('/contact.html', 'Contact Us')}
-              ${closingLink('/help.html', 'Help Center')}
+              ${closingLink('/contact.html', 'Contact us')}
+              ${closingLink('/team.html', 'Careers')}
+              ${closingLink('/team.html', 'Press')}
+              ${closingLink('/about.html', 'Partner with Us')}
             </ul>
           </div>
+          <!-- Customer service -->
           <div>
-            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Legal</h4>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Customer service</h4>
             <ul class="space-y-2.5">
-              ${closingLink('/privacy.html', 'Privacy Policy')}
-              ${closingLink('/terms.html', 'Terms & Conditions')}
-              ${closingLink('/refund-policy.html', 'Refund Policy')}
-              ${closingLink('/shipping-policy.html', 'Shipping Policy')}
+              ${closingLink('/refund-policy.html', 'Return and refund policy')}
+              ${closingLink('/terms.html', 'Intellectual property policy')}
+              ${closingLink('/shipping-policy.html', 'Shipping info')}
+              ${closingLink('/help.html', 'Report suspicious activity')}
             </ul>
           </div>
+          <!-- Help -->
           <div>
-            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Account</h4>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Help</h4>
             <ul class="space-y-2.5">
-              ${closingLink('/account.html', 'My Account')}
-              ${closingLink('/auth.html', 'Sign In')}
-              ${closingLink('/auth.html', 'Register / Create Account')}
+              ${closingLink('/help.html', 'Support centre & FAQ')}
+              ${closingLink('/privacy.html', 'Safety centre')}
+              ${closingLink('/refund-policy.html', 'Purchase protection')}
+              ${closingLink('/', 'Sitemap')}
+              ${closingLink('/about.html', 'Partner with Us')}
             </ul>
           </div>
+          <!-- Download the app -->
           <div>
-            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Support</h4>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Download the App</h4>
             <ul class="space-y-2.5">
-              ${closingLink('mailto:' + SUPPORT_EMAIL, 'Email Support')}
-              ${closingLink('/help.html', 'FAQ')}
-              ${closingLink('/contact.html', 'Contact Us')}
+              <li class="inline-flex items-center gap-2 text-xs text-slate-300"><i data-lucide="bell" class="w-3.5 h-3.5 text-cyan-300"></i> Price-drop alerts</li>
+              <li class="inline-flex items-center gap-2 text-xs text-slate-300"><i data-lucide="package-search" class="w-3.5 h-3.5 text-cyan-300"></i> Track orders any time</li>
+              <li class="inline-flex items-center gap-2 text-xs text-slate-300"><i data-lucide="lock" class="w-3.5 h-3.5 text-cyan-300"></i> Faster &amp; secure checkout</li>
+              <li class="inline-flex items-center gap-2 text-xs text-slate-300"><i data-lucide="zap" class="w-3.5 h-3.5 text-cyan-300"></i> Exclusive offers &amp; coupons</li>
             </ul>
+            <div class="mt-4 flex flex-col gap-2">
+              <a href="/" class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-xs font-bold text-white px-4 py-2.5 transition"><i data-lucide="smartphone" class="w-4 h-4 text-cyan-300"></i> Download on the App Store</a>
+              <a href="/" class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-xs font-bold text-white px-4 py-2.5 transition"><i data-lucide="play" class="w-4 h-4 text-cyan-300"></i> Get it on Google Play</a>
+            </div>
           </div>
         </div>
 
-        <!-- Bottom bar -->
-        <div class="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p class="text-[11px] text-slate-400 text-center sm:text-left">
-            ${esc(c.bottom_footer_closing)}
-          </p>
-          <div class="flex items-center gap-2 text-[11px] font-bold text-slate-400">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[.06] border border-white/10"><i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-400"></i> SSL Secure</span>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[.06] border border-white/10"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Secure Checkout</span>
+        <!-- Security certification + We accept -->
+        <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Trusted &amp; secure</h4>
+            <div class="flex flex-wrap gap-2">
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[.06] border border-white/10 text-[11px] font-bold text-slate-200"><i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-400"></i> SSL Secure</span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[.06] border border-white/10 text-[11px] font-bold text-slate-200"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Secure Checkout</span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[.06] border border-white/10 text-[11px] font-bold text-slate-200"><i data-lucide="badge-check" class="w-3.5 h-3.5 text-emerald-400"></i> Verified Shop</span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[.06] border border-white/10 text-[11px] font-bold text-slate-200"><i data-lucide="headphones" class="w-3.5 h-3.5 text-emerald-400"></i> 24/7 Support</span>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3.5">Convenient ways to pay</h4>
+            <div class="flex flex-wrap gap-2">
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[.06] border border-white/10 text-[11px] font-bold text-slate-200"><i data-lucide="credit-card" class="w-3.5 h-3.5 text-cyan-300"></i> Credit &amp; Debit Cards</span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[.06] border border-white/10 text-[11px] font-bold text-slate-200"><i data-lucide="smartphone" class="w-3.5 h-3.5 text-cyan-300"></i> Mobile Pay</span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[.06] border border-white/10 text-[11px] font-bold text-slate-200"><i data-lucide="landmark" class="w-3.5 h-3.5 text-cyan-300"></i> Bank Transfer</span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[.06] border border-white/10 text-[11px] font-bold text-slate-200"><i data-lucide="wallet" class="w-3.5 h-3.5 text-cyan-300"></i> Cash on Delivery</span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[.06] border border-white/10 text-[11px] font-bold text-slate-200"><i data-lucide="shield" class="w-3.5 h-3.5 text-cyan-300"></i> Buyer Protection</span>
+            </div>
           </div>
         </div>
-        <p class="text-center text-[11px] text-slate-500 mt-4">${esc(copyright)}</p>
+
+        <!-- Bottom bar: copyright + legal links -->
+        <div class="mt-10 pt-6 border-t border-white/10">
+          <div class="flex flex-col gap-3 sm:flex-row items-center justify-between">
+            <p class="text-[11px] text-slate-400 text-center sm:text-left">${esc(copyright)}</p>
+            <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-bold text-slate-400">
+              <a href="/terms.html" class="hover:text-white transition">Terms of use</a>
+              <span class="text-slate-600">|</span>
+              <a href="/privacy.html" class="hover:text-white transition">Privacy policy</a>
+              <span class="text-slate-600">|</span>
+              <a href="/privacy.html" class="hover:text-white transition">Your privacy choices</a>
+              <span class="text-slate-600">|</span>
+              <a href="/privacy.html" class="hover:text-white transition">Ad Choices</a>
+            </div>
+          </div>
+          <p class="text-center text-[11px] text-slate-600 mt-4">${esc(c.bottom_footer_closing)}</p>
+        </div>
       </div>
     </section>`;
 }
@@ -909,12 +949,24 @@ async function init() {
   window.addEventListener('promo-backgrounds-updated', () => {
     loadPromoBackgrounds().then(applyBg).catch(() => {});
   });
+  // The closing footer should sit BELOW the "Weverse Mobile App" phone banner
+  // (like Temu: promo phone first, then the full footer). The app-promo-banner
+  // mounts after trust-info-area, so move site-closing-section to follow it.
+  const relocateClosing = () => {
+    const sec = mount.querySelector('#site-closing-section');
+    if (!sec) return;
+    const promo = document.getElementById('app-promo-banner');
+    if (promo && promo.nextSibling !== sec) promo.after(sec);
+  };
+  relocateClosing();
+  window.addEventListener('app-promo-banner-ready', relocateClosing);
   // Re-render the closing section when the admin saves new wording.
   window.addEventListener('site-content-updated', () => {
     loadSiteContent().then((c) => {
       const sec = mount.querySelector('#site-closing-section');
       if (sec) sec.outerHTML = closingSectionHtml(c);
       if (window.lucide) { try { lucide.createIcons(); } catch {} }
+      relocateClosing();
     }).catch(() => {});
   });
 }
