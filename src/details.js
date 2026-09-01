@@ -147,7 +147,7 @@ function specTile(s) {
   return `
     <div class="bg-gray-50 border border-gray-100 rounded-xl p-3.5">
       <div class="flex items-center gap-1.5 text-gray-500 text-xs mb-1.5"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${s.label}</div>
-      <div class="text-gray-900 font-bold text-[15px] leading-snug">${escapeHtml(s.value)}</div>
+      <div class="text-gray-900 font-bold text-[15px] leading-snug">${s.html || escapeHtml(s.value)}</div>
     </div>`;
 }
 
@@ -355,6 +355,56 @@ function spL(listing, key, fallback = '') {
   return specs[key] != null ? specs[key] : fallback;
 }
 
+// ── Real Google Maps location links ─────────────────────────
+// A field is only "real" (linkable) when the property genuinely stores it.
+// Placeholder / "requires verification" strings are rendered exactly as
+// stored, non-clickable, so no fake location is ever invented or linked.
+function isRealLocationValue(value) {
+  if (value == null) return false;
+  const s = String(value).trim();
+  if (!s) return false;
+  if (/requires?\s+verification|not\s+provided|not\s+specified|not\s+available|not\s+found|not\s+visible|not\s+applicable|not\s+listed|\bunknown\b|undisclosed|no\s+data|full\s+street\s+address|postal\s+code|local\s+area\s+details|to\s+be\s+(?:confirmed|verified|announced|updated)|^\s*n\/?a\s*$|^\s*none\s*$|^\s*null\s*$|^\s*-{1,}\s*$/i.test(s)) return false;
+  return true;
+}
+
+// Build the Google Maps destination query from the property's actual, stored
+// location values only (context fields such as city → city, state, country).
+// Returns '' when there is nothing real to link — never invents a location.
+function mapsSearchUrl(...parts) {
+  const real = parts.map(p => p == null ? '' : String(p).trim()).filter(p => p && isRealLocationValue(p));
+  if (!real.length) return '';
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(real.join(', '));
+}
+
+// Renders one location value: real values become an obvious-but-professional
+// Google Maps deep link; "requires verification" placeholders stay as plain,
+// clearly-marked non-clickable text with the exact stored wording preserved.
+// The field only links when ITS OWN value is real — context fields never turn
+// an unprovided location into a link.
+function locationValueHtml(displayText, queryParts) {
+  const text = displayText == null ? '' : String(displayText).trim();
+  if (!text) return '';
+  if (!isRealLocationValue(text)) {
+    return `<span class="text-[15px] text-gray-400 font-semibold" title="Requires verification">${escapeHtml(text)}</span>`;
+  }
+  const url = mapsSearchUrl(...queryParts);
+  if (url) {
+    return `<a href="${url}" target="_blank" rel="noopener" class="inline-flex flex-wrap items-center gap-1 text-[15px] text-blue-600 font-bold hover:text-blue-700 underline decoration-blue-300 underline-offset-2" title="Open in Google Maps">${escapeHtml(text)} <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0"></i></a>`;
+  }
+  return `<span class="text-[15px] text-gray-400 font-semibold" title="Requires verification">${escapeHtml(text)}</span>`;
+}
+
+// Real stored values only, in address → neighborhood → town → city → state →
+// country order (product/vehicle single-value locations included too).
+function listingMapQuery(listing) {
+  const values = [];
+  for (const key of ['address', 'neighborhood', 'product_location', 'location', 'town', 'city', 'state', 'country']) {
+    const v = spL(listing, key);
+    if (isRealLocationValue(v)) values.push(String(v).trim());
+  }
+  return values.join(', ');
+}
+
 const VEHICLE_CATEGORIES = new Set(['Cars', 'Cars & Vehicles', 'Trucks', 'Buses', 'Buses & Coaches', 'Motorhomes', 'Motorcycles', 'Marine & Boating', 'RV & Camper Accessories', 'Vehicles', 'Luxury Cars', 'Commercial Vehicles']);
 function isVehicleListing(listing) {
   return listing.listing_type === 'vehicle' || VEHICLE_CATEGORIES.has(listing.category);
@@ -441,12 +491,12 @@ function vehicleExtrasHtml(listing) {
 
   const loc = spL(listing, 'location') || [spL(listing, 'city'), spL(listing, 'state'), spL(listing, 'country')].filter(Boolean).join(', ');
   if (loc) {
-    const mapsLink = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc);
+    const locUrl = mapsSearchUrl(loc);
     sections.push(accordionItem('acc-vh-loc', 'map-pin', 'Location & Availability', `
       <div class="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3.5">
         <span class="shrink-0 w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center"><i data-lucide="map-pin" class="w-5 h-5"></i></span>
-        <div class="min-w-0"><p class="text-[15px] text-gray-900 font-bold">${escapeHtml(String(loc))}</p>
-        <a href="${mapsLink}" target="_blank" rel="noopener" class="text-xs font-bold text-blue-600 hover:underline">Open in Google Maps</a></div>
+        <div class="min-w-0"><p class="text-[15px] text-gray-900 font-bold">${locationValueHtml(loc, [loc])}</p>
+        ${locUrl ? `<a href="${locUrl}" target="_blank" rel="noopener" class="text-xs font-bold text-blue-600 hover:underline">Open in Google Maps</a>` : ''}</div>
       </div>
       <div class="mt-3 grid grid-cols-2 gap-3">
         <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3"><p class="text-xs text-gray-500">Availability</p><p class="text-sm font-black text-emerald-700">${escapeHtml(listing.availability_status || (listing.stock_quantity > 0 ? 'In Stock' : 'Available'))}</p></div>
@@ -466,7 +516,7 @@ function buyerInfoBlock(listing) {
   if (name) rows.push({ icon: 'user-round', label: 'Company / Contact', value: name });
   if (phone) rows.push({ icon: 'phone', label: 'Phone / WhatsApp', value: phone, link: 'tel:' + phone.replace(/[^0-9+]/g, '') });
   if (email) rows.push({ icon: 'mail', label: 'Email', value: email, link: 'mailto:' + email });
-  if (loc) rows.push({ icon: 'map-pin', label: 'Location', value: loc });
+  if (loc) rows.push({ icon: 'map-pin', label: 'Location', html: locationValueHtml(loc, [loc]) });
   return `
     <div class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 shadow-sm">
       ${sectionHeader('contact-round', 'Buyer Information', 'emerald')}
@@ -474,8 +524,9 @@ function buyerInfoBlock(listing) {
         ${rows.map(r => `
           <div class="flex items-center justify-between gap-3 bg-gray-50 border border-gray-100 rounded-xl px-3.5 py-2.5">
             <span class="flex items-center gap-2 text-sm text-gray-800 font-bold"><i data-lucide="${r.icon}" class="w-4 h-4 text-emerald-600"></i> ${r.label}</span>
-            ${r.link ? `<a href="${escapeHtml(r.link)}" class="text-sm text-blue-600 font-bold hover:underline">${escapeHtml(String(r.value))}</a>`
-                      : `<span class="text-sm text-gray-700 font-semibold">${escapeHtml(String(r.value))}</span>`}
+            ${r.html ? r.html
+                      : (r.link ? `<a href="${escapeHtml(r.link)}" class="text-sm text-blue-600 font-bold hover:underline">${escapeHtml(String(r.value))}</a>`
+                                : `<span class="text-sm text-gray-700 font-semibold">${escapeHtml(String(r.value))}</span>`)}
           </div>`).join('')}
         <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 flex items-start gap-2.5">
           <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0"></i>
@@ -1801,12 +1852,12 @@ function render(listing) {
   let locationBlock = '';
   if (isProperty) {
     const locItems = [
-      { icon: 'globe', label: 'Country', value: `${flag} ${listing.country}` },
-      { icon: 'map-pin', label: 'State / Province', value: listing.state },
-      { icon: 'building', label: 'City', value: listing.city },
-      { icon: 'navigation', label: 'Town / Local Area', value: listing.town },
-      { icon: 'signpost', label: 'Neighborhood / District', value: spL(listing, 'neighborhood') },
-      { icon: 'home', label: 'Address', value: spL(listing, 'address') },
+      { icon: 'globe', label: 'Country', value: locationValueHtml(`${flag} ${listing.country}`, [listing.country]) },
+      { icon: 'map-pin', label: 'State / Province', value: locationValueHtml(listing.state, [listing.state, listing.country]) },
+      { icon: 'building', label: 'City', value: locationValueHtml(listing.city, [listing.city, listing.state, listing.country]) },
+      { icon: 'navigation', label: 'Town / Local Area', value: locationValueHtml(listing.town, [listing.town, listing.city, listing.state, listing.country]) },
+      { icon: 'signpost', label: 'Neighborhood / District', value: locationValueHtml(spL(listing, 'neighborhood'), [spL(listing, 'neighborhood'), listing.city, listing.state, listing.country]) },
+      { icon: 'home', label: 'Address', value: locationValueHtml(spL(listing, 'address'), [spL(listing, 'address'), listing.city, listing.state, listing.country]) },
     ].filter(item => item.value);
     locationBlock = `
       <div class="mt-4">
@@ -1815,28 +1866,30 @@ function render(listing) {
           ${locItems.map(item => `
             <div class="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
               <div class="p-2.5 bg-white border border-gray-100 rounded-lg"><i data-lucide="${item.icon}" class="w-4 h-4 text-blue-500"></i></div>
-              <div><div class="text-gray-500 text-xs">${item.label}</div><div class="text-gray-900 font-bold text-[15px]">${item.value}</div></div>
+              <div class="min-w-0"><div class="text-gray-500 text-xs">${item.label}</div><div class="mt-0.5">${item.value}</div></div>
             </div>
           `).join('')}
         </div>
         <div id="listing-map" class="mt-4 rounded-xl overflow-hidden border border-gray-200" style="height:280px"></div>
       </div>`;
   } else if (isVehicle) {
-    const loc = spL(listing, 'location') || [spL(listing, 'city'), spL(listing, 'state'), spL(listing, 'country')].filter(Boolean).join(', ');
+    const locParts = [spL(listing, 'location'), spL(listing, 'city'), spL(listing, 'state'), spL(listing, 'country')]
+      .map(v => v == null ? '' : String(v).trim()).filter(Boolean);
+    const loc = locParts.join(', ');
     if (loc) {
-      const mapsLink = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc);
+      const locUrl = mapsSearchUrl(loc);
       locationBlock = `
       <div class="mt-4">
         ${sectionHeader('map-pin', 'Location', 'rose')}
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="sm:col-span-2 flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
             <div class="p-2.5 bg-white border border-gray-100 rounded-lg"><i data-lucide="map-pin" class="w-4 h-4 text-blue-500"></i></div>
-            <div><div class="text-gray-500 text-xs">Vehicle Location</div><div class="text-gray-900 font-bold text-[15px]">${escapeHtml(String(loc))}</div></div>
+            <div class="min-w-0"><div class="text-gray-500 text-xs">Vehicle Location</div><div class="mt-0.5">${locationValueHtml(loc, [loc])}</div></div>
           </div>
-          <div class="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
+          ${locUrl ? `<div class="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
             <div class="p-2.5 bg-white border border-gray-100 rounded-lg"><i data-lucide="navigation" class="w-4 h-4 text-blue-500"></i></div>
-            <div><div class="text-gray-500 text-xs">View on Map</div><a href="${mapsLink}" target="_blank" rel="noopener" class="text-blue-600 font-bold text-sm hover:underline">Google Maps <i data-lucide="external-link" class="w-3.5 h-3.5 inline"></i></a></div>
-          </div>
+            <div><div class="text-gray-500 text-xs">View on Map</div><a href="${locUrl}" target="_blank" rel="noopener" class="text-blue-600 font-bold text-sm hover:underline">Google Maps <i data-lucide="external-link" class="w-3.5 h-3.5 inline"></i></a></div>
+          </div>` : ''}
         </div>
         <div id="listing-map" class="mt-4 rounded-xl overflow-hidden border border-gray-200" style="height:280px"></div>
       </div>`;
@@ -1862,7 +1915,7 @@ function render(listing) {
       { icon: 'paintbrush', label: 'Year Renovated', value: listing.year_renovated },
       { icon: 'mail', label: 'ZIP / Postal Code', value: listing.zip_code },
       { icon: 'tag', label: 'Status', value: listing.listing_status === 'rent' ? 'For Rent' : 'For Sale' },
-      { icon: 'signpost', label: 'Neighborhood', value: spL(listing, 'neighborhood') },
+      { icon: 'signpost', label: 'Neighborhood', html: locationValueHtml(spL(listing, 'neighborhood'), [spL(listing, 'neighborhood'), listing.city, listing.state, listing.country]) },
       { icon: 'sofa', label: 'Living Areas', value: spL(listing, 'living_areas') },
       { icon: 'flame', label: 'Kitchens', value: spL(listing, 'kitchens') },
       { icon: 'tree-pine', label: 'Balconies', value: spL(listing, 'balconies') },
@@ -1873,7 +1926,7 @@ function render(listing) {
       { icon: 'hammer', label: 'Construction Type', value: spL(listing, 'construction_type') },
       { icon: 'clipboard-check', label: 'Construction Status', value: spL(listing, 'construction_status') },
       { icon: 'user-check', label: 'Ownership Type', value: spL(listing, 'ownership_type') },
-    ].filter(s => s.value != null && s.value !== '');
+    ].filter(s => s.html || (s.value != null && s.value !== ''));
     specsBlock = specsPanel('Property Information', 'home', specs);
   } else if (listing.category === 'Motorhomes') {
     specs = [
@@ -1891,7 +1944,7 @@ function render(listing) {
       { icon: 'shower-head', label: 'Bathroom', value: listing.bathroom },
       { icon: 'utensils', label: 'Kitchen', value: listing.kitchen },
       { icon: 'droplet', label: 'Water Tank', value: listing.water_tank },
-    ].filter(s => s.value != null && s.value !== '');
+    ].filter(s => s.html || (s.value != null && s.value !== ''));
     specsBlock = specsPanel('Vehicle Information', 'bus', specs, 'violet');
   } else if (isVehicle) {
     specs = [
@@ -1914,7 +1967,7 @@ function render(listing) {
       { icon: 'fingerprint', label: 'VIN', value: spL(listing, 'vin') },
       { icon: 'badge-check', label: 'Condition', value: spL(listing, 'condition') },
       { icon: 'wrench', label: 'Warranty', value: spL(listing, 'warranty') },
-    ].filter(s => s.value != null && s.value !== '');
+    ].filter(s => s.html || (s.value != null && s.value !== ''));
     specsBlock = specsPanel('Vehicle Specifications', 'car-front', specs, 'violet');
   } else if (listing.listing_type === 'product') {
     specs = [
@@ -1926,7 +1979,7 @@ function render(listing) {
       { icon: 'badge-check', label: 'Condition', value: listing.condition || 'New' },
       { icon: 'shield-check', label: 'Warranty', value: listing.warranty },
       { icon: 'package-check', label: 'Availability', value: listing.availability_status },
-    ].filter(s => s.value != null && s.value !== '');
+    ].filter(s => s.html || (s.value != null && s.value !== ''));
     specsBlock = specsPanel('Product Information', 'package', specs);
   } else if (listing.listing_type === 'pet') {
     specs = [
@@ -1935,9 +1988,9 @@ function render(listing) {
       { icon: 'users', label: 'Gender', value: listing.gender },
       { icon: 'palette', label: 'Colour', value: listing.color },
       { icon: 'scale', label: 'Weight', value: listing.size },
-      { icon: 'globe', label: 'Origin', value: `${flagEmoji(listing.country_code)} ${listing.country}` },
+      { icon: 'globe', label: 'Origin', html: locationValueHtml(`${flagEmoji(listing.country_code)} ${listing.country}`, [listing.country]) },
       { icon: 'badge-check', label: 'Health', value: listing.condition },
-    ].filter(s => s.value != null && s.value !== '');
+    ].filter(s => s.html || (s.value != null && s.value !== ''));
     specsBlock = specsPanel('Pet Information', 'paw-print', specs, 'amber');
   }
 
@@ -2211,9 +2264,9 @@ function render(listing) {
   if (mapEl && window.L) {
     const lat = parseFloat(listing.latitude) || null;
     const lng = parseFloat(listing.longitude) || null;
-    const addressLabel = [listing.product_location, listing.town, listing.city, listing.state, listing.country].filter(Boolean).join(', ') || listing.title;
-    const query = [listing.product_location, listing.town, listing.city, listing.state, listing.country].filter(Boolean).join(', ');
-    const fallbackLink = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query || listing.title);
+    const query = listingMapQuery(listing);
+    const addressLabel = query || listing.title;
+    const fallbackLink = query ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query) : '';
     const showMap = (ml, mln, zoom) => {
       const map = L.map(mapEl).setView([ml, mln], zoom);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
