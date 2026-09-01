@@ -9312,31 +9312,61 @@ const carAIScanner = {
       }],
       generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
     };
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(90000),
-    });
-    if (!res.ok) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+    // Google's free tier frequently returns 503 "model is currently experiencing
+    // high demand" (transient) and 429 (rate) — both intermittent and worth retrying.
+    // Hard errors (model retired 404, bad key 400/403, quota exhausted 429-permanent)
+    // are NOT retried.
+    const attempt = async () => {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(90000),
+      });
+      if (res.ok) return res;
       const errBody = await res.json().catch(() => ({}));
       const status = res.status;
       const msg = String((errBody && errBody.error && errBody.error.message) || '').toLowerCase();
-      if (status === 429 || /quota|rate|resource has been exhausted|limit/.test(msg)) {
-        throw new Error('CAR_QUOTA');
-      }
-      if (status === 400 || status === 403 || /api key|invalid|unauthor|permission/.test(msg)) {
-        throw new Error('CAR_BAD_KEY');
-      }
-      throw new Error(`CAR_HTTP_${status}`);
+      const transient = status === 503 || status === 429
+        || /high demand|try again later|temporarily|overload|unavailable|resource has been exhausted/.test(msg);
+      return { _status: status, _msg: msg, _transient: transient };
+    };
+    let result = await attempt();
+    if (result && result.ok) {
+      const data = await result.json();
+      const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
+        ? data.candidates[0].content.parts.map(p => p.text || '').join('')
+        : '';
+      const parsed = text ? extractJsonFromAiText(text) : null;
+      if (!parsed) throw new Error('CAR_NO_PARSE');
+      return parsed;
     }
-    const data = await res.json();
-    const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
-      ? data.candidates[0].content.parts.map(p => p.text || '').join('')
-      : '';
-    const parsed = text ? extractJsonFromAiText(text) : null;
-    if (!parsed) throw new Error('CAR_NO_PARSE');
-    return parsed;
+    if (result && result._transient) {
+      // Retry transient high-demand / rate errors a few times with backoff.
+      for (let i = 1; i <= 4; i++) {
+        await new Promise(r => setTimeout(r, 4000 + i * 4000));
+        result = await attempt();
+        if (result && result.ok) {
+          const data = await result.json();
+          const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
+            ? data.candidates[0].content.parts.map(p => p.text || '').join('')
+            : '';
+          const parsed = text ? extractJsonFromAiText(text) : null;
+          if (parsed) return parsed;
+          throw new Error('CAR_NO_PARSE');
+        }
+      }
+    }
+    const status = result._status;
+    const msg = result._msg;
+    if (status === 429 || /quota|rate|resource has been exhausted|limit/.test(msg)) {
+      throw new Error('CAR_QUOTA');
+    }
+    if (status === 400 || status === 403 || /api key|invalid|unauthor|permission/.test(msg)) {
+      throw new Error('CAR_BAD_KEY');
+    }
+    throw new Error(`CAR_HTTP_${status}`);
   },
 
   // The dedicated car/truck scan. `imageUrls` may contain photos, videos and/or
@@ -9443,6 +9473,9 @@ If the media does not clearly show any vehicle, return { "identification": { "id
     }
     if (code === 'CAR_HTTP_404') {
       return { title: 'Car Scanner model unavailable', hint: 'Google no longer serves the selected Gemini model (2.5/2.0 are retired). In AI Settings → "Car & Truck Scanner", pick "gemini-flash-latest" (or gemini-3.7-flash), Save, then scan again.', code };
+    }
+    if (code === 'CAR_HTTP_503') {
+      return { title: 'Car Scanner is busy (Google overloaded)', hint: 'Google\'s free Gemini model is currently under heavy demand ("high demand, try again later"). Your key and model are fine — this is temporary. Wait a minute and try again. The scanner now auto-retries several times automatically.', code };
     }
     if (/^CAR_HTTP_/.test(code)) {
       return { title: 'Car Scanner could not run', hint: `The Car & Truck Scanner service returned an error (${code}). Try again in a moment or add a fresh key in AI Settings.`, code };
