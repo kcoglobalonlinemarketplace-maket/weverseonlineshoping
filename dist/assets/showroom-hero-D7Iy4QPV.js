@@ -73,11 +73,11 @@ import{h as F,d as W,S as N,e as S,c as C,a as L,b as E}from"./showroom-data-B_6
 .kco-video-hscroll{display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:.4rem 2px .7rem;cursor:grab}
 .kco-video-hscroll::-webkit-scrollbar{display:none}
 .kco-video-hscroll.dragging{cursor:grabbing;scroll-snap-type:none;-webkit-user-select:none;user-select:none}
-.kco-video-card{flex:0 0 auto;scroll-snap-align:start;width:min(92vw,360px);min-width:min(92vw,360px);border-radius:1.4rem;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.16);box-shadow:0 16px 34px -14px rgba(0,0,0,.55);transition:transform .18s ease,box-shadow .18s ease;text-decoration:none;display:flex;flex-direction:column}
-@media(min-width:640px){.kco-video-card{width:460px;min-width:460px}}
-@media(min-width:1024px){.kco-video-card{width:560px;min-width:560px}}
-.kco-video-card:hover{transform:translateY(-3px);box-shadow:0 24px 48px -16px rgba(0,0,0,.6)}
-.kco-video-media{position:relative;aspect-ratio:16/9;background:#0b1120;overflow:hidden}
+.kco-video-card{flex:0 0 auto;scroll-snap-align:start;width:272px;min-width:272px;border-radius:1.25rem;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 26px -12px rgba(0,0,0,.45);transition:transform .18s ease,box-shadow .18s ease;text-decoration:none;display:flex;flex-direction:column}
+@media(min-width:640px){.kco-video-card{width:372px;min-width:372px}}
+@media(min-width:1024px){.kco-video-card{width:450px;min-width:450px}}
+.kco-video-card:hover{transform:translateY(-3px);box-shadow:0 20px 40px -14px rgba(0,0,0,.5)}
+.kco-video-media{position:relative;aspect-ratio:16/10;background:#0b1120;overflow:hidden}
 .kco-video-media video{width:100%;height:100%;object-fit:cover;display:block}
 .kco-video-bigplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.92;transition:opacity .2s ease}
 .kco-video-bigplay svg{width:3.4rem;height:3.4rem;color:#fff;filter:drop-shadow(0 4px 14px rgba(0,0,0,.5))}
