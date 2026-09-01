@@ -252,6 +252,48 @@ function stopSpeaking() {
   if (synth) synth.cancel();
 }
 
+// ── Ring Tone (generated with Web Audio, no external file needed) ──
+let ringCtx = null;
+let ringTimer = null;
+let ringOsc = null;
+
+function startRing() {
+  stopRing();
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!ringCtx) ringCtx = new AC();
+    ringCtx.resume && ringCtx.resume();
+    // Play a single ring burst (about 2s of ringing), then repeat.
+    const playBurst = () => {
+      if (!ringCtx) return;
+      const now = ringCtx.currentTime;
+      const osc = ringCtx.createOscillator();
+      const gain = ringCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 440;
+      ringOsc = osc;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.35, now + 0.02);
+      gain.gain.setValueAtTime(0.35, now + 0.7);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+      osc.connect(gain);
+      gain.connect(ringCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.9);
+    };
+    playBurst();
+    // Repeat the ring every 2.5s until the agent picks up.
+    ringTimer = setInterval(playBurst, 2500);
+  } catch (e) { /* audio not available */ }
+}
+
+function stopRing() {
+  if (ringTimer) { clearInterval(ringTimer); ringTimer = null; }
+  if (ringOsc) { try { ringOsc.stop(); } catch {} ringOsc = null; }
+  if (ringCtx) { try { ringCtx.close(); } catch {} ringCtx = null; }
+}
+
 // ── Speech Recognition (STT) ───────────────────────────────────────
 const SpeechRecognition = typeof window !== 'undefined'
   ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
@@ -525,25 +567,33 @@ async function startCallAgent(listing, isCompany = false) {
     }
   });
 
-  // Generate greeting
-  setCallStatus('thinking', 'Connecting...');
-  animateWaveform(true);
+  // Ring the agent first — the call rings a few times before someone picks up.
+  setCallStatus('thinking', 'Ringing...');
+  animateWaveform(false);
+  startRing();
 
   const systemPrompt = buildCallSystemPrompt(listing, isCompany, agentName, greeting);
 
   try {
-    const greetingText = `${greeting}! This is ${agentName} from ${getCompanyName()}. I'm ${isCompany ? 'here to help you with any questions about our marketplace' : `calling about the ${listing?.title || 'product'} you're interested in`}. How can I help you today?`;
+    // Simulate the phone ringing for a few rings before the agent answers.
+    await new Promise(resolve => setTimeout(resolve, 3500));
+    if (!callState.active) return;
+    // Agent picks up.
+    stopRing();
+    setCallStatus('speaking', 'Connected');
 
-    // Speak the greeting
-    speak(greetingText, langCode, () => {
+    // Brief natural pickup pause, then a short welcome — no long self-intro.
+    const welcome = `${greeting}! Thank you for calling. How can I help you today?`;
+    speak(welcome, langCode, () => {
       if (callState.active) {
         setCallStatus('listening', 'Listening...');
         startListening(langCode, systemPrompt);
       }
     });
-    addCallMsg(greetingText, 'agent');
-    callState.history.push({ role: 'assistant', content: greetingText });
+    addCallMsg(welcome, 'agent');
+    callState.history.push({ role: 'assistant', content: welcome });
   } catch (err) {
+    stopRing();
     setCallStatus('idle', 'Connection issue — please try again');
     setTimeout(() => endCall(), 3000);
   }
@@ -684,6 +734,7 @@ function showCallTextInput(systemPrompt) {
 
 function endCall() {
   stopSpeaking();
+  stopRing();
   stopCallTimer();
   animateWaveform(false);
   if (callState.recognizer) { try { callState.recognizer.stop(); } catch {} }
