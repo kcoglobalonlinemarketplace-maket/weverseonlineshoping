@@ -140,38 +140,56 @@ Our website is weverseonlineshop.com.`;
 // ── AI Conversation Engine (Edge Function → Pollinations fallback) ─
 async function getAIReply(messages, systemPrompt, opts = {}) {
   // Prefer the server-side edge function (rich free-provider stack + grounded
-  // product facts). Fall back to a direct Pollinations call if unavailable.
+  // product facts). Fall back to the customer-ai-chat edge function, then a
+  // direct Pollinations call, so the agent almost always replies.
   const { listing = null, mode = 'agent' } = opts;
   const locale = detectLocale();
-  const csv = localStorage.getItem('kco_locale') || '';
   let sessionId = '';
   try { sessionId = localStorage.getItem('kco_session_id') || ''; } catch {}
-  try {
-    const feUrl = `${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/smart-agent-chat`;
+
+  const basePayload = () => ({
+    message: messages.length ? String(messages[messages.length - 1].content || '') : '',
+    history: messages.slice(0, -1),
+    mode,
+    listing: mode === 'agent' ? (listing || null) : null,
+    country: locale.country,
+    countryName: locale.countryName,
+    language: locale.language,
+    session_id: sessionId,
+  });
+
+  const callEdgeFn = async (fnName) => {
+    const feUrl = `${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/${fnName}`;
     const res = await fetch(feUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': `Bearer ${ANON_KEY}` },
-      body: JSON.stringify({
-        message: messages.length ? String(messages[messages.length - 1].content || '') : '',
-        history: messages.slice(0, -1),
-        mode,
-        listing: mode === 'agent' ? (listing || null) : null,
-        country: locale.country,
-        countryName: locale.countryName,
-        language: locale.language,
-        session_id: sessionId,
-      }),
+      body: JSON.stringify(basePayload()),
       signal: AbortSignal.timeout(45000),
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && typeof data.response === 'string' && data.response.trim()) {
-        return data.response.trim();
+    if (!res.ok) throw new Error(`${fnName}-${res.status}`);
+    const data = await res.json();
+    if (data && typeof data.response === 'string' && data.response.trim()) {
+      const reply = data.response.trim();
+      // A canned "unavailable/stepping away" reply means the AI was disabled
+      // or quota-exhausted — treat as failure so we try the next provider.
+      if (!/stepped away|stepping away|little connection trouble|not quite ready|unavailable/i.test(reply)) {
+        return reply;
       }
     }
-  } catch { /* fall through to Pollinations */ }
+    throw new Error(`${fnName}-empty`);
+  };
 
-  // ── Fallback: direct Pollinations (free, keyless) ─────────────────
+  // 1) Primary: smart-agent-chat (product/company aware).
+  try {
+    return await callEdgeFn('smart-agent-chat');
+  } catch { /* try next */ }
+
+  // 2) Fallback: customer-ai-chat — same payload, already deployed & live.
+  try {
+    return await callEdgeFn('customer-ai-chat');
+  } catch { /* try next */ }
+
+  // 3) Last resort: direct Pollinations (free, keyless).
   const body = {
     model: 'openai',
     messages: [
