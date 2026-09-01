@@ -185,18 +185,18 @@ function videoSection() {
 
   const sec = document.createElement('section');
   sec.className = 'kco-hero-section kco-video-section';
-  sec.setAttribute('aria-label', 'Houses For Sale');
+  sec.setAttribute('aria-label', 'Houses and Real Estate Video Tours');
   sec.setAttribute('data-property-videos', 'true');
 
   const head = `
     <div class="kco-hero-panel">
       <div class="kco-hero-head">
         <div class="kco-hero-headleft">
-          <span class="kco-hero-ic kco-video-ic"><i data-lucide="home" class="w-5 h-5 text-white"></i></span>
+          <span class="kco-hero-ic kco-video-ic"><i data-lucide="home" class="w-5 h-5"></i></span>
           <div class="min-w-0">
             <span class="kco-video-eyebrow">Real Estate</span>
-            <h3 class="kco-video-h3">Houses For Sale</h3>
-            <p>Every listed home, ready to tour on video — see it before you visit.</p>
+            <h3 class="kco-video-h3">Houses and Real Estate Video Tours</h3>
+            <p>Watch every home, apartment, villa &amp; mansion on video.</p>
           </div>
         </div>
         <span class="kco-hero-count">${listings.length} Homes</span>
@@ -205,8 +205,8 @@ function videoSection() {
       <div class="kco-video-hscroll">
         ${listings.map(l => videoCardHtml(l)).join('')}
       </div>
-      <button class="kco-hero-arrow left" aria-label="Scroll Houses For Sale left">${SVG_CH_L}</button>
-      <button class="kco-hero-arrow right" aria-label="Scroll Houses For Sale right">${SVG_CH_R}</button>
+      <button class="kco-hero-arrow left" aria-label="Scroll Houses and Real Estate Video Tours left">${SVG_CH_L}</button>
+      <button class="kco-hero-arrow right" aria-label="Scroll Houses and Real Estate Video Tours right">${SVG_CH_R}</button>
     </div>`;
 
   sec.innerHTML = head;
@@ -340,14 +340,15 @@ function heroStyles() {
 .kco-hero-re .kco-hero-btn{background:linear-gradient(90deg,#059669,#0d9488)}
 .kco-hero-veh .kco-hero-btn{background:linear-gradient(90deg,#f59e0b,#ea580c)}
 .kco-hero-empty{padding:1.2rem;text-align:center;color:rgba(255,255,255,.75);font-size:.85rem;font-weight:600;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.25);border-radius:1rem}
-.kco-video-section{background:linear-gradient(135deg,#ffffff 0%,#f8fafc 55%,#f0f4fa 100%);border:1px solid #e2e8f0;box-shadow:0 16px 40px -22px rgba(2,6,23,.28)}
-.kco-video-ic{background:linear-gradient(135deg,#0f172a,#1e3a8a);border:none;box-shadow:0 10px 20px -8px rgba(30,58,138,.55)}
-.kco-video-eyebrow{display:block;font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:.1rem}
-.kco-video-section .kco-hero-head .kco-video-h3{color:#0f172a;font-size:1.2rem}
-.kco-video-section .kco-hero-head p{color:#64748b}
-.kco-video-section .kco-hero-count{background:#eef2ff;border-color:#c7d2fe;color:#1e3a8a}
-.kco-video-section .kco-hero-seeall{background:#0f172a;border-color:#0f172a;color:#fff}
-.kco-video-section .kco-hero-seeall:hover{background:#1e3a8a;border-color:#1e3a8a}
+.kco-video-section{background:linear-gradient(135deg,#043a1c 0%,#0b6b3c 48%,#059669 100%);border:1px solid rgba(209,250,229,.22);box-shadow:0 18px 46px -22px rgba(4,58,28,.55)}
+.kco-video-ic{background:#ffffff;border:none;color:#065f46;box-shadow:0 10px 20px -8px rgba(0,0,0,.35)}
+.kco-video-eyebrow{display:inline-flex;align-items:center;font-size:.62rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#050505;background:#ffffff;border-radius:999px;padding:.22rem .6rem;margin-bottom:.35rem;box-shadow:0 4px 12px -4px rgba(0,0,0,.4)}
+.kco-video-section .kco-hero-head .kco-video-h3{color:#ffffff;font-size:clamp(1.15rem,2.4vw,1.55rem);font-weight:900;letter-spacing:.02em;text-transform:none;text-shadow:0 2px 14px rgba(0,0,0,.35)}
+.kco-video-section .kco-hero-head p{color:#ffffff;font-size:.78rem;font-weight:700;letter-spacing:.01em;text-shadow:0 1px 10px rgba(0,0,0,.3)}
+.kco-video-section .kco-hero-count{background:#ffffff;border:none;color:#040a06;box-shadow:0 4px 14px -4px rgba(0,0,0,.35)}
+.kco-video-section .kco-hero-count b,.kco-video-section .kco-hero-count strong{color:#065f46}
+.kco-video-section .kco-hero-seeall{background:#050505;border:1.5px solid #ffffff;color:#ffffff}
+.kco-video-section .kco-hero-seeall:hover{background:#065f46;border-color:#ffffff;color:#ffffff}
 .kco-video-hscroll{display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:.4rem 2px .7rem;cursor:grab}
 .kco-video-hscroll::-webkit-scrollbar{display:none}
 .kco-video-hscroll.dragging{cursor:grabbing;scroll-snap-type:none;-webkit-user-select:none;user-select:none}
