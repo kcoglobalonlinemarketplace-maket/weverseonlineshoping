@@ -9278,9 +9278,9 @@ const carAIScanner = {
             } catch { /* not a video — falls through to the image path */ }
           }
           if (videoSource) {
-            frames = await videoToFrameDataUrls(videoSource, { maxFrames: 12, maxDim: 1024 }).catch(() => []);
+            frames = await videoToFrameDataUrls(videoSource, { maxFrames: 6, maxDim: 720 }).catch(() => []);
           } else {
-            frames = await aiClient._fetchImageAsDataUrl(u, 1024).then(img => img ? [img] : []);
+            frames = await aiClient._fetchImageAsDataUrl(u, 720).then(img => img ? [img] : []);
           }
         }
         this._mediaCache.set(u, frames || []);
@@ -9310,7 +9310,7 @@ const carAIScanner = {
           )),
         ],
       }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
+      generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
     };
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
     // Google's free tier frequently returns 503 "model is currently experiencing
