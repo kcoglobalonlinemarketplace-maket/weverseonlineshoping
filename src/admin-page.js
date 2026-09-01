@@ -8272,7 +8272,7 @@ async function renderAiSettings() {
               <div>
                 <label class="lbl">Car Scanner Model</label>
                 <select class="input-field text-xs" name="car_scanner_model">
-                  ${['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-2.0-flash-lite'].map(m=>`<option value="${m}" ${(s.car_scanner_model||'gemini-2.5-flash')===m?'selected':''}>${m}</option>`).join('')}
+                  ${['gemini-flash-latest','gemini-3.7-flash','gemini-3.6-flash'].map(m=>`<option value="${m}" ${(s.car_scanner_model||'gemini-flash-latest')===m?'selected':''}>${m}</option>`).join('')}
                 </select>
               </div>
             </div>
@@ -9249,7 +9249,11 @@ const carAIScanner = {
   },
 
   model() {
-    return String((this._cfg && this._cfg.car_scanner_model) || 'gemini-2.5-flash').trim();
+    const stored = String((this._cfg && this._cfg.car_scanner_model) || '').trim();
+    // gemini-2.5-flash / 2.0 series are retired by Google (HTTP 404 "no longer
+    // available to new users"). If a stale value is stored, fall back to a live model.
+    if (/^gemini-2\./.test(stored)) return 'gemini-flash-latest';
+    return stored || 'gemini-flash-latest';
   },
 
   // Fetch an image/video source and turn it into compact data URLs for the
@@ -9436,6 +9440,9 @@ If the media does not clearly show any vehicle, return { "identification": { "id
     }
     if (code === 'CAR_NO_PARSE') {
       return { title: 'Scanner returned no details', hint: 'Google answered but returned no usable vehicle details. Try clearer photos or a different video, then scan again.', code };
+    }
+    if (code === 'CAR_HTTP_404') {
+      return { title: 'Car Scanner model unavailable', hint: 'Google no longer serves the selected Gemini model (2.5/2.0 are retired). In AI Settings → "Car & Truck Scanner", pick "gemini-flash-latest" (or gemini-3.7-flash), Save, then scan again.', code };
     }
     if (/^CAR_HTTP_/.test(code)) {
       return { title: 'Car Scanner could not run', hint: `The Car & Truck Scanner service returned an error (${code}). Try again in a moment or add a fresh key in AI Settings.`, code };
