@@ -39,8 +39,8 @@ function showroomMasthead(isRe, list) {
   const mast = document.getElementById('kco-brand-mast') || document.querySelector('.kco-head');
   if (!mast) return;
   mast.innerHTML = `
-    <h1 id="kco-cat-title">${isRe ? '🏡 Houses &amp; Real Estate' : '🚗 Cars &amp; Trucks'}</h1>
-    <p id="kco-cat-sub">${isRe ? 'Your dream home starts here.' : 'Your next ride starts here.'}</p>`;
+    <h1 id="kco-cat-title">${isRe ? 'Houses For Sale' : 'Cars &amp; Trucks'}</h1>
+    <p id="kco-cat-sub">${isRe ? 'Every listed home, ready to tour on video — see it before you visit.' : 'Your next ride starts here.'}</p>`;
 }
 
 function render(cat, filterType) {

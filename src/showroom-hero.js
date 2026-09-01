@@ -113,9 +113,13 @@ function videoCardHtml(listing) {
   const loc = place
     ? `<span class="kco-video-loc"><i data-lucide="map-pin" class="w-3 h-3 shrink-0"></i>${esc(flag ? flag + ' ' + place : place)}</span>`
     : '';
+  const isRent = listing.listing_status === 'rent';
+  const statusCls = isRent ? 'kco-sale-rent' : 'kco-sale-buy';
+  const statusLabel = isRent ? 'For Rent' : 'For Sale';
 
-  const beds = sp(listing, 'bedrooms') != null ? `<span class="kco-hero-chip"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'bedrooms'))} Beds</span>` : '';
-  const baths = sp(listing, 'bathrooms') != null ? `<span class="kco-hero-chip"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'bathrooms'))} Baths</span>` : '';
+  const beds = sp(listing, 'bedrooms') != null ? `<span class="kco-hero-chip"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'bedrooms'))} Bed${Number(sp(listing, 'bedrooms')) === 1 ? '' : 's'}</span>` : '';
+  const baths = sp(listing, 'bathrooms') != null ? `<span class="kco-hero-chip"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'bathrooms'))} Bath${Number(sp(listing, 'bathrooms')) === 1 ? '' : 's'}</span>` : '';
+  const build = sp(listing, 'building_size') ? `<span class="kco-hero-chip"><i data-lucide="building-2" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'building_size'))}</span>` : '';
   const land = listing.land_size ? `<span class="kco-hero-chip"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${esc(listing.land_size)}</span>` : '';
 
   return `
@@ -124,16 +128,16 @@ function videoCardHtml(listing) {
         <video src="${esc(video)}" poster="${esc(poster)}" muted loop playsinline preload="metadata" class="kco-video-el" data-detail-href="/details.html?id=${pid}" aria-label="${esc(listing.title || '')}">
           <source src="${esc(video)}">
         </video>
-        <div class="kco-video-bigplay"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+        <div class="kco-video-bigplay"><span class="kco-video-playcircle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
         <span class="kco-hero-type"><i data-lucide="home" class="w-3 h-3"></i>${esc(type)}</span>
-        <span class="kco-video-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Video</span>
+        <span class="kco-video-badge ${statusCls}">${statusLabel}</span>
         ${loc}
       </div>
       <div class="kco-video-body">
-        <div class="kco-hero-price"><b>${priceHtml}</b><span>${(listing.listing_status === 'rent') ? 'per month · for rent' : 'for sale'}</span></div>
+        <div class="kco-hero-price"><b>${priceHtml}</b><span>${isRent ? 'per month · for rent' : 'for sale'}</span></div>
         <p class="kco-hero-title">${esc(listing.title || '')}</p>
-        ${(beds || baths || land) ? `<div class="kco-hero-chips">${beds}${baths}${land}</div>` : ''}
-        <span class="kco-hero-btn">Watch &amp; View Property <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
+        ${(beds || baths || build || land) ? `<div class="kco-hero-chips">${beds}${baths}${build}${land}</div>` : ''}
+        <span class="kco-hero-btn">View Home &amp; Watch Tour <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
       </div>
     </a>`;
 }
@@ -181,27 +185,28 @@ function videoSection() {
 
   const sec = document.createElement('section');
   sec.className = 'kco-hero-section kco-video-section';
-  sec.setAttribute('aria-label', 'Property Video Tours');
+  sec.setAttribute('aria-label', 'Houses For Sale');
   sec.setAttribute('data-property-videos', 'true');
 
   const head = `
     <div class="kco-hero-panel">
       <div class="kco-hero-head">
         <div class="kco-hero-headleft">
-          <span class="kco-hero-ic kco-video-ic"><i data-lucide="video" class="w-5 h-5 text-white"></i></span>
+          <span class="kco-hero-ic kco-video-ic"><i data-lucide="home" class="w-5 h-5 text-white"></i></span>
           <div class="min-w-0">
-            <h3 class="kco-video-h3">Property Video Tours</h3>
-            <p>Watch every home, apartment, villa &amp; mansion on video.</p>
+            <span class="kco-video-eyebrow">Real Estate</span>
+            <h3 class="kco-video-h3">Houses For Sale</h3>
+            <p>Every listed home, ready to tour on video — see it before you visit.</p>
           </div>
         </div>
-        <span class="kco-hero-count">${listings.length} Videos</span>
-        <a class="kco-hero-seeall" href="/showroom.html?cat=real-estate">See All <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>
+        <span class="kco-hero-count">${listings.length} Homes</span>
+        <a class="kco-hero-seeall" href="/showroom.html?cat=real-estate">See More Homes <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>
       </div>
       <div class="kco-video-hscroll">
         ${listings.map(l => videoCardHtml(l)).join('')}
       </div>
-      <button class="kco-hero-arrow left" aria-label="Scroll Property Videos left">${SVG_CH_L}</button>
-      <button class="kco-hero-arrow right" aria-label="Scroll Property Videos right">${SVG_CH_R}</button>
+      <button class="kco-hero-arrow left" aria-label="Scroll Houses For Sale left">${SVG_CH_L}</button>
+      <button class="kco-hero-arrow right" aria-label="Scroll Houses For Sale right">${SVG_CH_R}</button>
     </div>`;
 
   sec.innerHTML = head;
@@ -269,10 +274,6 @@ export function houseTypeLabel(listing) {
 }
 const HouseTypeLabelCache = new Map();
 
-function getAllHeroHouses() {
-  return getAllShowcaseProperties().filter(l => isHouse(l));
-}
-
 export function getAllShowcaseProperties() {
   const db = getDBListings() || [];
   const dbProps = db.filter(l =>
@@ -339,25 +340,39 @@ function heroStyles() {
 .kco-hero-re .kco-hero-btn{background:linear-gradient(90deg,#059669,#0d9488)}
 .kco-hero-veh .kco-hero-btn{background:linear-gradient(90deg,#f59e0b,#ea580c)}
 .kco-hero-empty{padding:1.2rem;text-align:center;color:rgba(255,255,255,.75);font-size:.85rem;font-weight:600;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.25);border-radius:1rem}
-.kco-video-section{background:linear-gradient(135deg,#0b1020 0%,#111a3a 45%,#1e3a8a 130%)}
-.kco-video-ic{background:rgba(59,130,246,.28);border-color:rgba(96,165,250,.4)}
-.kco-video-h3{color:#fff}
+.kco-video-section{background:linear-gradient(135deg,#ffffff 0%,#f8fafc 55%,#f0f4fa 100%);border:1px solid #e2e8f0;box-shadow:0 16px 40px -22px rgba(2,6,23,.28)}
+.kco-video-ic{background:linear-gradient(135deg,#0f172a,#1e3a8a);border:none;box-shadow:0 10px 20px -8px rgba(30,58,138,.55)}
+.kco-video-eyebrow{display:block;font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:.1rem}
+.kco-video-section .kco-hero-head .kco-video-h3{color:#0f172a;font-size:1.2rem}
+.kco-video-section .kco-hero-head p{color:#64748b}
+.kco-video-section .kco-hero-count{background:#eef2ff;border-color:#c7d2fe;color:#1e3a8a}
+.kco-video-section .kco-hero-seeall{background:#0f172a;border-color:#0f172a;color:#fff}
+.kco-video-section .kco-hero-seeall:hover{background:#1e3a8a;border-color:#1e3a8a}
 .kco-video-hscroll{display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:.4rem 2px .7rem;cursor:grab}
 .kco-video-hscroll::-webkit-scrollbar{display:none}
 .kco-video-hscroll.dragging{cursor:grabbing;scroll-snap-type:none;-webkit-user-select:none;user-select:none}
-.kco-video-card{flex:0 0 auto;scroll-snap-align:start;width:272px;min-width:272px;border-radius:1.25rem;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 26px -12px rgba(0,0,0,.45);transition:transform .18s ease,box-shadow .18s ease;text-decoration:none;display:flex;flex-direction:column}
+.kco-video-card{flex:0 0 auto;scroll-snap-align:start;width:272px;min-width:272px;border-radius:1.1rem;overflow:hidden;background:#fff;border:1px solid #e2e8f0;box-shadow:0 8px 22px -12px rgba(2,6,23,.18);transition:transform .18s ease,box-shadow .18s ease;text-decoration:none;display:flex;flex-direction:column}
 @media(min-width:640px){.kco-video-card{width:372px;min-width:372px}}
-@media(min-width:1024px){.kco-video-card{width:450px;min-width:450px}}
-.kco-video-card:hover{transform:translateY(-3px);box-shadow:0 20px 40px -14px rgba(0,0,0,.5)}
+@media(min-width:1024px){.kco-video-card{width:440px;min-width:440px}}
+.kco-video-card:hover{transform:translateY(-4px);box-shadow:0 20px 38px -16px rgba(2,6,23,.32);border-color:#bfdbfe}
 .kco-video-media{position:relative;aspect-ratio:16/10;background:#0b1120;overflow:hidden}
-.kco-video-media video{width:100%;height:100%;object-fit:cover;display:block}
-.kco-video-bigplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.92;transition:opacity .2s ease}
-.kco-video-bigplay svg{width:3.4rem;height:3.4rem;color:#fff;filter:drop-shadow(0 4px 14px rgba(0,0,0,.5))}
+.kco-video-media video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.kco-video-card:hover .kco-video-media video{transform:scale(1.04)}
+.kco-video-bigplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.95;transition:opacity .2s ease}
+.kco-video-playcircle{width:3.4rem;height:3.4rem;border-radius:999px;background:rgba(255,255,255,.94);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px -6px rgba(0,0,0,.45);transition:transform .18s ease}
+.kco-video-playcircle svg{width:1.5rem;height:1.5rem;color:#1e3a8a;margin-left:.15rem}
 .kco-video-card:hover .kco-video-bigplay,.kco-video-media.video-playing .kco-video-bigplay{opacity:0}
-.kco-video-badge{position:absolute;top:.7rem;right:.7rem;display:inline-flex;align-items:center;gap:.3rem;background:rgba(220,38,38,.92);color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.3rem .6rem;border-radius:999px;border:1px solid rgba(255,255,255,.25);box-shadow:0 4px 12px -2px rgba(0,0,0,.4)}
+.kco-video-card:hover .kco-video-playcircle{transform:scale(1.1)}
+.kco-video-badge{position:absolute;top:.7rem;right:.7rem;display:inline-flex;align-items:center;gap:.3rem;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.3rem .6rem;border-radius:999px;box-shadow:0 4px 12px -2px rgba(0,0,0,.3)}
+.kco-video-badge.kco-sale-buy{background:#059669;color:#fff;border:1px solid rgba(255,255,255,.25)}
+.kco-video-badge.kco-sale-rent{background:#d97706;color:#fff;border:1px solid rgba(255,255,255,.25)}
 .kco-video-badge svg{width:.8rem;height:.8rem}
 .kco-video-loc{position:absolute;bottom:.7rem;left:.7rem;right:.7rem;display:flex;align-items:center;gap:.4rem;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:11px;font-weight:600;padding:.35rem .7rem;border-radius:.8rem}
-.kco-video-body{display:flex;flex-direction:column;gap:.55rem;padding:.85rem .95rem 1rem}
+.kco-video-section .kco-video-loc{left:.7rem}
+.kco-video-body{display:flex;flex-direction:column;gap:.55rem;padding:.9rem 1rem 1rem}
+.kco-video-section .kco-video-body .kco-hero-price b{color:#0f172a;font-size:1.45rem}
+.kco-video-section .kco-video-body .kco-hero-price span{color:#059669;font-weight:800}
+.kco-video-section .kco-video-body .kco-hero-btn{background:linear-gradient(90deg,#1d4ed8,#2563eb);box-shadow:0 8px 16px -6px rgba(37,99,235,.45)}
 .kco-hero-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem}
 .kco-hero-headleft{display:flex;align-items:center;gap:.7rem;min-width:0}
 .kco-hero-ic{flex:0 0 auto;width:2.6rem;height:2.6rem;border-radius:.85rem;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22)}
@@ -535,18 +550,11 @@ function renderHeroRows() {
   const container = document.getElementById(CONTAINER_ID);
   if (!container) return;
   heroStyles();
-  const houses = getAllHeroHouses();
   const vehicles = getAllHeroVehicles();
   const frag = document.createDocumentFragment();
-  // Dedicated full-width horizontal PROPERTY VIDEO section (single row of large
-  // video cards). Shows nothing when there are no property videos yet.
+  // Houses show ONLY as video tours (single full-width row of large video
+  // cards) — no card grid, so every home is seen as a real walkthrough.
   frag.appendChild(videoSection());
-  frag.appendChild(heroSection({
-    kindCls: 'kco-hero-re',
-    title: '🏡 Houses & Real Estate', subtitle: 'Your dream home starts here.',
-    icon: '', cat: 'real-estate', seeAll: true,
-    listings: houses, card: (l) => heroCardHtml(l, 'house'),
-  }));
   frag.appendChild(heroSection({
     kindCls: 'kco-hero-veh',
     title: '🚗 Cars & Trucks', subtitle: 'Your next ride starts here.',
