@@ -306,7 +306,8 @@ function startRing() {
     if (!AC) return;
     if (!ringCtx) ringCtx = new AC();
     ringCtx.resume && ringCtx.resume();
-    // Play a single ring burst (about 2s of ringing), then repeat.
+    // A real phone ring: a short tone (~1s), a pause (~2s), repeated —
+    // ring ... feed ... ring ... feed ...
     const playBurst = () => {
       if (!ringCtx) return;
       const now = ringCtx.currentTime;
@@ -315,18 +316,22 @@ function startRing() {
       osc.type = 'sine';
       osc.frequency.value = 440;
       ringOsc = osc;
+      // Dual-tone on-off ring (like a phone ringing tone).
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.exponentialRampToValueAtTime(0.35, now + 0.02);
-      gain.gain.setValueAtTime(0.35, now + 0.7);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+      gain.gain.setValueAtTime(0.35, now + 1.0);
+      gain.gain.setValueAtTime(0.0001, now + 1.15);
+      gain.gain.exponentialRampToValueAtTime(0.35, now + 1.2);
+      gain.gain.setValueAtTime(0.35, now + 2.0);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
       osc.connect(gain);
       gain.connect(ringCtx.destination);
       osc.start(now);
-      osc.stop(now + 0.9);
+      osc.stop(now + 2.2);
     };
     playBurst();
-    // Repeat the ring every 2.5s until the agent picks up.
-    ringTimer = setInterval(playBurst, 2500);
+    // Repeat the ring every 3.2s until the agent picks up.
+    ringTimer = setInterval(playBurst, 3200);
   } catch (e) { /* audio not available */ }
 }
 
@@ -610,8 +615,9 @@ async function startCallAgent(listing, isCompany = false) {
   const systemPrompt = buildCallSystemPrompt(listing, isCompany, agentName, greeting);
 
   try {
-    // A short, natural ring before the agent answers (keeps it snappy).
-    await new Promise(resolve => setTimeout(resolve, 1600));
+    // Let the phone ring a few times (ring ... pause ... ring ... pause)
+    // before the agent picks up — feels like a real phone call.
+    await new Promise(resolve => setTimeout(resolve, 8500));
     if (!callState.active) return;
     // Agent picks up.
     stopRing();
