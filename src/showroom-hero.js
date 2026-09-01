@@ -189,24 +189,25 @@ function videoSection() {
   sec.setAttribute('data-property-videos', 'true');
 
   const head = `
-    <div class="kco-hero-panel">
-      <div class="kco-hero-head">
-        <div class="kco-hero-headleft">
-          <span class="kco-hero-ic kco-video-ic"><i data-lucide="home" class="w-5 h-5"></i></span>
-          <div class="min-w-0">
-            <span class="kco-video-eyebrow">Real Estate</span>
-            <h3 class="kco-video-h3">Houses and Real Estate Video Tours</h3>
-            <p>Watch every home, apartment, villa &amp; mansion on video.</p>
-          </div>
+    <div class="kco-hero-panel kco-video-panel">
+      <div class="kco-video-promo">
+        <div class="kco-video-copy">
+          <span class="kco-video-eyebrow">Real Estate</span>
+          <h3 class="kco-video-h3">Houses and Real Estate Video Tours</h3>
+          <p>Watch every home, apartment, villa &amp; mansion on video.</p>
         </div>
-        <span class="kco-hero-count">${listings.length} Homes</span>
-        <a class="kco-hero-seeall" href="/showroom.html?cat=real-estate">See More Homes <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>
+        <div class="kco-video-actions">
+          <span class="kco-hero-count"><b>${listings.length}</b> Homes</span>
+          <a class="kco-hero-seeall" href="/showroom.html?cat=real-estate">See More Homes <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>
+        </div>
       </div>
-      <div class="kco-video-hscroll">
-        ${listings.map(l => videoCardHtml(l)).join('')}
+      <div class="kco-video-carousel">
+        <div class="kco-video-hscroll">
+          ${listings.map(l => videoCardHtml(l)).join('')}
+        </div>
+        <button class="kco-hero-arrow left" aria-label="Scroll Houses and Real Estate Video Tours left">${SVG_CH_L}</button>
+        <button class="kco-hero-arrow right" aria-label="Scroll Houses and Real Estate Video Tours right">${SVG_CH_R}</button>
       </div>
-      <button class="kco-hero-arrow left" aria-label="Scroll Houses and Real Estate Video Tours left">${SVG_CH_L}</button>
-      <button class="kco-hero-arrow right" aria-label="Scroll Houses and Real Estate Video Tours right">${SVG_CH_R}</button>
     </div>`;
 
   sec.innerHTML = head;
@@ -341,14 +342,25 @@ function heroStyles() {
 .kco-hero-veh .kco-hero-btn{background:linear-gradient(90deg,#f59e0b,#ea580c)}
 .kco-hero-empty{padding:1.2rem;text-align:center;color:rgba(255,255,255,.75);font-size:.85rem;font-weight:600;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.25);border-radius:1rem}
 .kco-video-section{background:linear-gradient(135deg,#043a1c 0%,#0b6b3c 48%,#059669 100%);border:1px solid rgba(209,250,229,.22);box-shadow:0 18px 46px -22px rgba(4,58,28,.55)}
-.kco-video-ic{background:#ffffff;border:none;color:#065f46;box-shadow:0 10px 20px -8px rgba(0,0,0,.35)}
-.kco-video-eyebrow{display:inline-flex;align-items:center;font-size:.62rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#050505;background:#ffffff;border-radius:999px;padding:.22rem .6rem;margin-bottom:.35rem;box-shadow:0 4px 12px -4px rgba(0,0,0,.4)}
-.kco-video-section .kco-hero-head .kco-video-h3{color:#ffffff;font-size:clamp(1.15rem,2.4vw,1.55rem);font-weight:900;letter-spacing:.02em;text-transform:none;text-shadow:0 2px 14px rgba(0,0,0,.35)}
-.kco-video-section .kco-hero-head p{color:#ffffff;font-size:.78rem;font-weight:700;letter-spacing:.01em;text-shadow:0 1px 10px rgba(0,0,0,.3)}
+.kco-video-panel{padding:1.5rem 1.15rem 1.6rem}
+@media(min-width:640px){.kco-video-panel{padding:1.7rem 1.75rem 1.8rem}}
+.kco-video-promo{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem 1.5rem;flex-wrap:wrap}
+.kco-video-copy{flex:1 1 auto;min-width:0;max-width:44ch}
+.kco-video-eyebrow{display:inline-flex;align-items:center;font-size:.62rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#050505;background:#ffffff;border-radius:999px;padding:.24rem .65rem;margin-bottom:.45rem;box-shadow:0 4px 12px -4px rgba(0,0,0,.4)}
+.kco-video-section .kco-video-h3{color:#ffffff;font-size:clamp(1.15rem,2.4vw,1.6rem);font-weight:900;letter-spacing:.02em;line-height:1.2;margin:0;text-shadow:0 2px 14px rgba(0,0,0,.35)}
+.kco-video-copy p{color:#ffffff;font-size:.8rem;font-weight:600;line-height:1.5;margin:.35rem 0 0;text-shadow:0 1px 10px rgba(0,0,0,.3)}
+.kco-video-actions{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:.55rem;padding-top:.1rem}
 .kco-video-section .kco-hero-count{background:#ffffff;border:none;color:#040a06;box-shadow:0 4px 14px -4px rgba(0,0,0,.35)}
 .kco-video-section .kco-hero-count b,.kco-video-section .kco-hero-count strong{color:#065f46}
-.kco-video-section .kco-hero-seeall{background:#050505;border:1.5px solid #ffffff;color:#ffffff}
+.kco-video-section .kco-hero-seeall{background:#050505;border:1.5px solid #ffffff;color:#ffffff;white-space:nowrap}
 .kco-video-section .kco-hero-seeall:hover{background:#065f46;border-color:#ffffff;color:#ffffff}
+.kco-video-carousel{position:relative;margin-top:1.35rem}
+@media(max-width:640px){.kco-video-section .kco-hero-seeall{padding:.5rem .85rem;font-size:.74rem}}
+@media(max-width:380px){
+.kco-video-promo{flex-direction:column;align-items:stretch;gap:1rem}
+.kco-video-copy{max-width:none}
+.kco-video-actions{flex-direction:row;align-items:center;justify-content:space-between;padding-top:0}
+}
 .kco-video-hscroll{display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:.4rem 2px .7rem;cursor:grab}
 .kco-video-hscroll::-webkit-scrollbar{display:none}
 .kco-video-hscroll.dragging{cursor:grabbing;scroll-snap-type:none;-webkit-user-select:none;user-select:none}
