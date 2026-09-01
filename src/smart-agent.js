@@ -1283,26 +1283,40 @@ export function agentButtonsHtml(listing, opts = {}) {
 
   if (compact) {
     return `
-      <div class="kco-agent-row" data-listing-id="${id}">
-        <button class="${cls} kco-agent-call-company" data-action="call-company" title="Call Company" aria-label="Call Company">
-          <i data-lucide="building-2" class="w-3.5 h-3.5"></i><span>Call Us</span>
+      <div class="kco-agent-panel kco-agent-panel-sm" data-listing-id="${id}">
+        <button class="${cls} kco-agent-call-company" data-action="call-company" title="Customer Service — Call our support team">
+          <i data-lucide="phone" class="w-4 h-4"></i><span>Customer Service</span>
         </button>
-        <button class="${cls} kco-agent-msg-company" data-action="msg-company" title="Message Company" aria-label="Message Company">
-          <i data-lucide="headphones" class="w-3.5 h-3.5"></i><span>Support</span>
+        <button class="${cls} kco-agent-msg-company" data-action="msg-company" title="Chat with Us — Live support now">
+          <i data-lucide="message-circle" class="w-4 h-4"></i><span>Chat with Us</span>
         </button>
       </div>`;
   }
 
   return `
-    <div class="kco-agent-row kco-agent-row-full" data-listing-id="${id}">
-      <button class="${cls} kco-agent-call-company" data-action="call-company" title="Call Company — Speak with company support">
-        <i data-lucide="building-2" class="w-4 h-4"></i>
-        <span>Call Company</span>
-      </button>
-      <button class="${cls} kco-agent-msg-company" data-action="msg-company" title="Message Company — Chat with company support">
-        <i data-lucide="headphones" class="w-4 h-4"></i>
-        <span>Message Company</span>
-      </button>
+    <div class="kco-agent-panel" data-listing-id="${id}">
+      <div class="kco-agent-panel-head">
+        <span class="kco-agent-panel-title">Sales &amp; Support</span>
+        <span class="kco-agent-panel-hint">We're here — call or chat with our team</span>
+      </div>
+      <div class="kco-agent-panel-grid">
+        <button class="kco-support kco-agent-call-company" data-action="call-company" title="Customer Service — Call our support team">
+          <span class="kco-support-ico"><i data-lucide="phone"></i></span>
+          <span class="kco-support-txt">
+            <span class="kco-support-label">Customer Service</span>
+            <span class="kco-support-sub">Call our support team</span>
+          </span>
+          <span class="kco-support-arrow"><i data-lucide="arrow-right"></i></span>
+        </button>
+        <button class="kco-support kco-agent-msg-company" data-action="msg-company" title="Chat with Us — Live support now">
+          <span class="kco-support-ico"><i data-lucide="message-circle"></i></span>
+          <span class="kco-support-txt">
+            <span class="kco-support-label">Chat with Us</span>
+            <span class="kco-support-sub">Live support — instant reply</span>
+          </span>
+          <span class="kco-support-arrow"><i data-lucide="arrow-right"></i></span>
+        </button>
+      </div>
     </div>`;
 }
 
@@ -1314,22 +1328,38 @@ export function injectAgentStyles() {
   const style = document.createElement('style');
   style.id = 'kco-agent-global-style';
   style.textContent = `
-    .kco-agent-row{display:flex;gap:.4rem;flex-wrap:wrap}
-    .kco-agent-row-full{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
-    .kco-agent-btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.55rem .75rem;border:1.5px solid;border-radius:.75rem;font-size:.72rem;font-weight:700;cursor:pointer;transition:all .2s ease;white-space:nowrap;letter-spacing:.01em}
-    .kco-agent-btn:active{transform:scale(.96)}
-    .kco-agent-btn-compact{display:inline-flex;align-items:center;justify-content:center;gap:.3rem;padding:.4rem .55rem;border:1.5px solid;border-radius:.6rem;font-size:.65rem;font-weight:700;cursor:pointer;transition:all .2s ease;white-space:nowrap;flex:1;min-width:0}
+    .kco-agent-btn-compact{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;padding:.55rem .65rem;border:none;border-radius:.65rem;font-size:.7rem;font-weight:800;cursor:pointer;transition:all .2s ease;color:#fff;flex:1;min-width:0;letter-spacing:.01em}
     .kco-agent-btn-compact:active{transform:scale(.96)}
-    .kco-agent-call{background:linear-gradient(135deg,#059669,#10b981);border-color:#059669;color:#fff;box-shadow:0 2px 8px rgba(5,150,105,.25)}
-    .kco-agent-call:hover{background:linear-gradient(135deg,#047857,#059669);box-shadow:0 4px 14px rgba(5,150,105,.35);transform:translateY(-1px)}
-    .kco-agent-msg{background:linear-gradient(135deg,#2563eb,#3b82f6);border-color:#2563eb;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.25)}
-    .kco-agent-msg:hover{background:linear-gradient(135deg,#1d4ed8,#2563eb);box-shadow:0 4px 14px rgba(37,99,235,.35);transform:translateY(-1px)}
-    .kco-agent-call-company{background:linear-gradient(135deg,#7c3aed,#8b5cf6);border-color:#7c3aed;color:#fff;box-shadow:0 2px 8px rgba(124,58,237,.25)}
-    .kco-agent-call-company:hover{background:linear-gradient(135deg,#6d28d9,#7c3aed);box-shadow:0 4px 14px rgba(124,58,237,.35);transform:translateY(-1px)}
-    .kco-agent-msg-company{background:linear-gradient(135deg,#e11d48,#f43f5e);border-color:#e11d48;color:#fff;box-shadow:0 2px 8px rgba(225,29,72,.25)}
-    .kco-agent-msg-company:hover{background:linear-gradient(135deg,#be123c,#e11d48);box-shadow:0 4px 14px rgba(225,29,72,.35);transform:translateY(-1px)}
-    .kco-agent-btn span{line-height:1}
-    .kco-agent-btn-compact span{line-height:1;font-size:.6rem}
+    .kco-agent-btn-compact span{line-height:1.1}
+
+    /* Professional support panel (detail page) */
+    .kco-agent-panel{border:1px solid #e9edf4;background:#fff;border-radius:1.1rem;padding:.9rem 1rem 1rem;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+    .kco-agent-panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;margin-bottom:.7rem}
+    .kco-agent-panel-title{font-size:1.02rem;font-weight:900;color:#0f172a;letter-spacing:.01em}
+    .kco-agent-panel-hint{font-size:.72rem;color:#64748b;font-weight:500}
+    .kco-agent-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+
+    /* Big professional CTA-style support buttons */
+    .kco-support{display:flex;align-items:center;gap:.75rem;padding:1rem 1.05rem;border:none;border-radius:.95rem;cursor:pointer;text-align:left;color:#fff;transition:all .22s ease;box-shadow:0 4px 14px rgba(15,23,42,.14)}
+    .kco-support .kco-support-ico{display:inline-flex;align-items:center;justify-content:center;width:2.6rem;height:2.6rem;border-radius:.8rem;background:rgba(255,255,255,.16);flex-shrink:0}
+    .kco-support .kco-support-ico i{width:1.35rem;height:1.35rem}
+    .kco-support .kco-support-txt{display:flex;flex-direction:column;gap:.12rem;min-width:0;flex:1}
+    .kco-support .kco-support-label{font-size:.98rem;font-weight:900;line-height:1.15;letter-spacing:.01em}
+    .kco-support .kco-support-sub{font-size:.72rem;font-weight:500;opacity:.9;line-height:1.2}
+    .kco-support .kco-support-arrow{margin-left:auto;opacity:.85;flex-shrink:0}
+    .kco-support .kco-support-arrow i{width:1rem;height:1rem}
+    .kco-support:active{transform:scale(.97)}
+
+    .kco-agent-call-company{background:linear-gradient(135deg,#047857,#059669)}
+    .kco-agent-call-company:hover{background:linear-gradient(135deg,#065f46,#047857);box-shadow:0 10px 24px rgba(5,150,105,.38);transform:translateY(-2px)}
+    .kco-agent-msg-company{background:linear-gradient(135deg,#1d4ed8,#2563eb)}
+    .kco-agent-msg-company:hover{background:linear-gradient(135deg,#1e40af,#1d4ed8);box-shadow:0 10px 24px rgba(37,99,235,.38);transform:translateY(-2px)}
+
+    @media (max-width:520px){
+      .kco-agent-panel-grid{grid-template-columns:1fr}
+      .kco-agent-panel-hint{display:none}
+      .kco-support .kco-support-label{font-size:.92rem}
+    }
   `;
   document.head.appendChild(style);
 }
@@ -1349,7 +1379,7 @@ export function wireAgentButtons(container, listingLookup) {
     e.preventDefault();
 
     const action = btn.dataset.action;
-    const row = btn.closest('.kco-agent-row');
+    const row = btn.closest('.kco-agent-panel') || btn.closest('.kco-agent-row');
     const listingId = row?.dataset.listingId || '';
 
     const listing = typeof listingLookup === 'function'
