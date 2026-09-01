@@ -5448,60 +5448,38 @@ window.scanVehicleWithAI = async function() {
     status.innerHTML = html;
   };
 
-  await scanPreflightStatus(setStatus);
-
+  // ── DEDICATED CAR & TRUCK SCANNER ────────────────────────────────
+  // Vehicles use their own separate Gemini system (carAIScanner), NOT the
+  // product scanner. It reads the vehicle from photos AND videos, uses its own
+  // key (AI Settings → "Car & Truck Scanner"), and stops with a clear message
+  // when the key is missing or its quota is used up — it never fabricates data.
   if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
-  setStatus('Identifying this vehicle from your photos…', 'text-blue-300');
-
-  let identification;
-  try {
-    identification = await aiClient.identifyProduct(images, { category: 'Cars & Trucks', maxImages: AI_PRODUCT_SCANNER.maxImages });
-  } catch (err) {
-    const msg = String(err?.message || err);
-    const keyHint = /key|api|configured|settings|vision/i.test(msg);
-    setStatus(keyHint
-      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
-      : `Scan failed: ${msg}`, 'text-red-400');
-    showToast('AI scan failed.', 'error');
-    if (btn) { btn.disabled = false; btn.innerHTML = original; }
-    return;
-  }
-
-  if (!identification || identification.identified === false) {
-    setStatus(identification && identification.reason
-      ? `The AI could not read this vehicle: ${esc(identification.reason)}`
-      : 'The vehicle could not be read from these images. Use clear photos that show the whole vehicle, badges, dashboard and wheels, then try again.', 'text-amber-300');
-    showToast('The vehicle could not be identified from the images.', 'error');
-    if (btn) { btn.disabled = false; btn.innerHTML = original; }
-    return;
-  }
-  if (btn) { btn.disabled = false; btn.innerHTML = original; }
+  setStatus('Reading your car/truck from the photos and video…', 'text-blue-300');
 
   try {
-    setStatus('Reading every photo, completing the vehicle specs and market value…', 'text-blue-300');
-    const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Cars & Trucks', formSelector: '#vehicle-form' });
-    const id2 = res.identification || identification;
-    const out = await applyScanToVehicleForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
-    let msg = `${esc(id2.detected_name || 'Vehicle')} — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Vehicle.`;
-    if (!res.visionUsed) {
-      msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photos were NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — these values did NOT come from your images.</p>`;
-    } else if (res.verifyRequested) {
-      msg += res.verified
-        ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your photos.</p>`
-        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
+    // Will throw NO_CAR_KEY / CAR_QUOTA / CAR_BAD_KEY with friendly messages.
+    const res = await carAIScanner.scanCars(images);
+    if (!res.identification || res.identification.identified === false) {
+      setStatus(res.identification && res.identification.reason
+        ? `The Car Scanner could not read this vehicle: ${esc(res.identification.reason)}`
+        : 'The vehicle could not be read from these images. Use clear photos that show the whole vehicle, badges, dashboard and wheels, then try again.', 'text-amber-300');
+      showToast('The vehicle could not be identified from the media.', 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = original; }
+      return;
     }
-    msg += res.inferred ? ` <span class="text-amber-300/80">(${res.inferred} values inferred from the model's real specs/type - review them)</span>` : '';
-    msg += scanAiLimitNotice();
-    msg += renderScanChecklistReport(res.checklist, res.summary);
-    setStatus(msg, 'text-emerald-300');
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    const out = await applyScanToVehicleForm({ identification: res.identification, specs: res.specs, price: res.price, visionUsed: true });
+    const name = res.identification.detected_name || 'Vehicle';
+    setStatus(
+      `<span class="font-bold text-white">${esc(name)}</span> — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you from the <b>Car &amp; Truck Scanner</b>. Review and edit everything, then press Publish Vehicle.` +
+      `<p class="text-[11px] text-gray-400 mt-1">Dedicated car scanner · own Gemini key · reads photos &amp; videos.</p>`,
+      'text-emerald-300'
+    );
     showToast('Review the vehicle details, then press Publish Vehicle.', 'success');
   } catch (err) {
-    const msg = String(err?.message || err);
-    const keyHint = /key|api|configured|settings|vision/i.test(msg);
-    setStatus(keyHint
-      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
-      : `Scan failed: ${msg}`, 'text-red-400');
-    showToast('AI scan failed.', 'error');
+    const info = carAIScanner.describeError(err);
+    setStatus(`<span class="font-bold text-white">${esc(info.title)}</span><br>${esc(info.hint)}`, 'text-red-400');
+    showToast(info.title, 'error');
   }
   if (window.lucide) lucide.createIcons();
 };
@@ -8274,6 +8252,35 @@ async function renderAiSettings() {
             <p class="text-[11px] text-gray-400 leading-relaxed">The General AI Scanner processes product photos through your Gemini key (primary) with Groq backup — no local software needed. Both keys are already saved above. Works from any device.</p>
           </div>
 
+          <div class="glass-soft border border-cyan-500/25 rounded-2xl p-4 space-y-3">
+            <h3 class="text-sm font-black text-white flex items-center gap-2 flex-wrap">
+              <i data-lucide="car-front" class="w-4 h-4 text-cyan-400"></i> Car &amp; Truck Scanner
+              <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300">Cars &amp; Trucks Only</span>
+            </h3>
+            <p class="text-[11px] text-gray-400 leading-relaxed">This is a <b class="text-white">separate, dedicated AI system just for Cars, Trucks &amp; Motorhomes</b>. It uses its own Gemini key, its own car-specific scanner, and reads cars from <b class="text-white">photos OR videos</b> (video frames are sampled automatically). It does NOT use the product scanner or its key — it is fully independent.</p>
+            <p class="text-[10px] text-amber-300/90 leading-relaxed">⚡ When this key runs out of free quota, the car scanner <b>stops</b> until you paste in a fresh key here. No fake values are ever generated. Add a new key and the car scanner works again automatically.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label class="lbl">Car Scanner Gemini Key</label>
+                <div class="relative">
+                  <input type="password" class="input-field text-xs" name="car_scanner_key"
+                    placeholder="${s.car_scanner_key ? '••••' + String(s.car_scanner_key).slice(-4) : 'AIzaSy… (dedicated car key)'}">
+                  ${s.car_scanner_key ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
+                </div>
+                <p class="text-[10px] text-gray-400 mt-1">Get a free key at Google AI Studio, then paste it here. The key is stored securely in your database.</p>
+              </div>
+              <div>
+                <label class="lbl">Car Scanner Model</label>
+                <select class="input-field text-xs" name="car_scanner_model">
+                  ${['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-2.0-flash-lite'].map(m=>`<option value="${m}" ${(s.car_scanner_model||'gemini-2.5-flash')===m?'selected':''}>${m}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-[10px] font-bold text-cyan-400 hover:underline">
+              <i data-lucide="external-link" class="w-3 h-3"></i>Get a free Gemini key for the Car &amp; Truck Scanner
+            </a>
+          </div>
+
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
             <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Feature Toggles</h3>
             ${[
@@ -8333,6 +8340,11 @@ window.saveAiSettings = async function(e) {
   if (data.groq_vision_model) payload.groq_vision_model = data.groq_vision_model;
   const groqKeyVal = (data.groq_key || '').trim();
   if (groqKeyVal && !/^[•\u2022]{4}/.test(groqKeyVal)) payload.groq_key = groqKeyVal;
+
+  // Dedicated Car & Truck Scanner (separate Gemini system — own key + model).
+  if (data.car_scanner_model) payload.car_scanner_model = data.car_scanner_model;
+  const carKeyVal = (data.car_scanner_key || '').trim();
+  if (carKeyVal && !/^[•\u2022]{4}/.test(carKeyVal)) payload.car_scanner_key = carKeyVal;
 
   // Customer Chat Assistant settings → real ai_settings columns.
   payload.customer_ai_enabled = data.customer_ai_enabled === 'on';
@@ -9196,7 +9208,244 @@ function blobToBase64(blob) {
 // Expose globally so other parts of the app can call aiClient.chat(...)
 window.aiClient = aiClient;
 
-// â”€â”€ AI Status Widget (Gemini) â”€â”€
+// ═════════════════════════════════════════════════════════════════════
+//  CAR & TRUCK AI SCANNER  —  a SEPARATE, dedicated Gemini system just
+//  for Cars, Trucks & Motorhomes.
+//
+//  Why separate: this scanner is fully independent from the General AI
+//  Scanner (aiClient). It uses its OWN Gemini key (car_scanner_key) and its
+//  own model (car_scanner_model) stored in ai_settings, and it talks to
+//  Google Gemini REST directly from the browser — it does NOT go through
+//  the ai-admin-assistant edge function and never touches the product
+//  scanner's key.
+//
+//  It reads cars/trucks/motorhomes from PHOTOS OR VIDEOS (video frames are
+//  sampled automatically, just like the general scanner). It is used ONLY
+//  by the Car & Truck form, never by products or houses.
+//
+//  Quota / key behaviour: if car_scanner_key is empty, or the Gemini quota
+//  is exhausted (HTTP 429) or the key is invalid (HTTP 400/403), the scanner
+//  STOPS with a clear, specific message so you can paste in a fresh key.
+//  It NEVER invents values to "finish" a scan. Add a new key and it works
+//  again automatically — no rebuild needed.
+// ═════════════════════════════════════════════════════════════════════
+const carAIScanner = {
+  _cfg: null,
+
+  async reload() {
+    try {
+      const { data, error } = await supabase.from('ai_settings').select('*').limit(1).maybeSingle();
+      this._cfg = (error ? null : (data || {})) || {};
+    } catch { this._cfg = {}; }
+  },
+  async getConfig() {
+    if (!this._cfg) await this.reload();
+    return this._cfg || {};
+  },
+
+  // Is a dedicated car key configured?
+  hasKey() {
+    return !!(this._cfg && String(this._cfg.car_scanner_key || '').trim());
+  },
+
+  model() {
+    return String((this._cfg && this._cfg.car_scanner_model) || 'gemini-2.5-flash').trim();
+  },
+
+  // Fetch an image/video source and turn it into compact data URLs for the
+  // vision call. Videos are expanded into sampled frames; PDFs into pages.
+  _mediaCache: new Map(),
+  async _collectScanImages(urls) {
+    const list = (Array.isArray(urls) ? urls : [urls]).map(u => String(u || '')).filter(Boolean);
+    if (!list.length) return [];
+    const results = await Promise.all(list.map(async (u) => {
+      try {
+        if (this._mediaCache.has(u)) return this._mediaCache.get(u);
+        let frames = null;
+        if (/^data:application\/pdf/.test(u) || looksLikePdf(u)) {
+          frames = await pdfToPageDataUrls(u, { maxDim: 1300 }).catch(() => []);
+        } else {
+          let videoSource = null;
+          if (looksLikeVideoUrl(u)) videoSource = u;
+          else if (u.startsWith('blob:')) {
+            try {
+              const blob = await fetch(u, { signal: AbortSignal.timeout(15000) }).then(r => r.blob());
+              if (blob && blob.type && blob.type.startsWith('video/')) videoSource = blob;
+            } catch { /* not a video — falls through to the image path */ }
+          }
+          if (videoSource) {
+            frames = await videoToFrameDataUrls(videoSource, { maxFrames: 12, maxDim: 1024 }).catch(() => []);
+          } else {
+            frames = await aiClient._fetchImageAsDataUrl(u, 1024).then(img => img ? [img] : []);
+          }
+        }
+        this._mediaCache.set(u, frames || []);
+        return frames || [];
+      } catch { return []; }
+    }));
+    const out = [];
+    for (const r of results) out.push(...r);
+    return out;
+  },
+
+  // ONE direct Gemini REST vision call. Returns parsed JSON or throws a
+  // specific, human message (empty key / quota exhausted / invalid key / other).
+  async _geminiVision(items, prompt) {
+    const cfg = await this.getConfig();
+    const key = String(cfg.car_scanner_key || '').trim();
+    if (!key) throw new Error('NO_CAR_KEY');
+    const model = this.model();
+    const body = {
+      contents: [{
+        parts: [
+          { text: prompt },
+          ...items.filter(Boolean).map(dataUrl => (
+            /^data:video\//.test(dataUrl)
+              ? { inlineData: { mimeType: 'video/mp4', data: dataUrl.split(',')[1] } }
+              : { inlineData: { mimeType: 'image/jpeg', data: dataUrl.split(',')[1] } }
+          )),
+        ],
+      }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
+    };
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(90000),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      const status = res.status;
+      const msg = String((errBody && errBody.error && errBody.error.message) || '').toLowerCase();
+      if (status === 429 || /quota|rate|resource has been exhausted|limit/.test(msg)) {
+        throw new Error('CAR_QUOTA');
+      }
+      if (status === 400 || status === 403 || /api key|invalid|unauthor|permission/.test(msg)) {
+        throw new Error('CAR_BAD_KEY');
+      }
+      throw new Error(`CAR_HTTP_${status}`);
+    }
+    const data = await res.json();
+    const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
+      ? data.candidates[0].content.parts.map(p => p.text || '').join('')
+      : '';
+    const parsed = text ? extractJsonFromAiText(text) : null;
+    if (!parsed) throw new Error('CAR_NO_PARSE');
+    return parsed;
+  },
+
+  // The dedicated car/truck scan. `imageUrls` may contain photos, videos and/or
+  // PDFs; returns { identification, specs, price } ready for applyScanToVehicleForm.
+  // Throws with a friendly, specific message on any failure.
+  async scanCars(imageUrls) {
+    const cfg = await this.getConfig();
+    if (!String(cfg.car_scanner_key || '').trim()) throw new Error('NO_CAR_KEY');
+    const items = await this._collectScanImages(imageUrls);
+    if (!items.length) throw new Error('NO_MEDIA');
+
+    const prompt = `You are the dedicated CAR & TRUCK listing expert for the Weverse Online Shop marketplace. Read the car, truck or motorhome shown in the photo(s)/video frame(s) and complete ALL of its real details below from what is actually visible.
+
+READ THE VEHICLE ACCURATELY (most important):
+- Read the real brand badge / emblem / nameplate / logo in the media character by character and use the EXACT brand that appears (BMW, Mercedes-Benz, Audi, Toyota, Ford, Tesla, Ferrari, Lamborghini, Honda, etc.). NEVER swap one brand for another, and NEVER guess a luxury brand if none is visible.
+- Identify the exact model from a visible nameplate/badging, otherwise from the body design (grille, headlights, taillights, wheels, body lines, silhouette). If you cannot name a model, give "brand + type" (e.g. "Mercedes SUV") instead of inventing one.
+- model_year: only from a visible year, badge or registration/plate; otherwise estimate from the design era and mark year_estimated true.
+- mileage: read the odometer only if visible ("12,345 mi" -> 12345); otherwise null. Never invent a mileage.
+- engine, horsepower, transmission, fuel_type, drive_type, fuel_economy, towing_capacity, seating_capacity, sleeping_capacity, doors: only from visible badges/specs/cluster, otherwise null.
+- color: the dominant visible color. condition: judged from what is visible (New / Used - Like New / Used - Good / Used - Fair).
+- body_type: Sedan, SUV, Hatchback, Coupe, Convertible, Wagon, Pickup, Truck, Van, Sports Car, Luxury Sedan, Motorcycle, Motorhome / RV, Boat, Other.
+- vehicle_type: same as body_type when it is a vehicle type.
+- vin, trim, warranty: only if visibly printed, otherwise null.
+- location, country: only from visible evidence (flag, plate, name, language on the vehicle/signs), otherwise null.
+- Never leave a field blank that you can reasonably identify from the media, but NEVER fabricate a number, price or detail that is not visible or reliably known.
+- detected_name: a short plain label, e.g. "white Toyota Camry sedan".
+- Write a professional title and a persuasive description for the listing.
+
+Return ONE valid JSON object (no markdown, no extra text) with exactly this shape:
+{
+ "identification": {
+   "identified": true, "brand": string|null, "model": string|null, "year": string|null,
+   "year_estimated": boolean, "body_type": string|null, "vehicle_type": string|null,
+   "color": string|null, "condition": string|null, "detected_name": string
+ },
+ "specs": {
+   "make": string|null, "model": string|null, "model_year": string|null, "trim": string|null,
+   "body_type": string|null, "vehicle_type": string|null, "mileage": number|null,
+   "engine": string|null, "horsepower": string|null, "transmission": string|null,
+   "fuel_type": string|null, "drive_type": string|null, "fuel_economy": string|null,
+   "towing_capacity": string|null, "seating_capacity": number|null,
+   "sleeping_capacity": number|null, "doors": number|null, "color": string|null,
+   "condition": string|null, "vin": string|null, "warranty": string|null,
+   "location": string|null, "country": string|null, "safety_features": string|null,
+   "driver_assistance": string|null, "technology": string|null, "interior": string|null,
+   "wheels_tires": string|null, "dimensions": string|null, "cargo_capacity": string|null,
+   "ownership_history": string|null, "service_history": string|null,
+   "accident_history": string|null, "previous_owners": number|null,
+   "registration_status": string|null, "inspection_status": string|null,
+   "features": string|null, "title": string|null, "description": string|null
+ },
+ "price": { "estimated_price": number|null, "suggested_discount_price": number|null }
+}
+If the media does not clearly show any vehicle, return { "identification": { "identified": false, "reason": "why you could not identify it", "detected_name": "what you see" } }.`;
+
+    const parsed = await this._geminiVision(items, prompt);
+    if (parsed && parsed.identification && parsed.identification.identified === false) {
+      return {
+        identification: parsed.identification,
+        specs: (parsed.specs || {}),
+        price: (parsed.price || null),
+        visionUsed: true,
+      };
+    }
+    const identification = (parsed && parsed.identification) || {};
+    const specs = (parsed && parsed.specs) || {};
+    const price = (parsed && parsed.price) || null;
+    // Merge identification fields into specs so the form fillers have everything.
+    return {
+      identification,
+      specs: {
+        make: specs.make || identification.brand,
+        model: specs.model || identification.model,
+        model_year: specs.model_year || identification.year,
+        body_type: specs.body_type || identification.body_type,
+        vehicle_type: specs.vehicle_type || identification.vehicle_type,
+        color: specs.color || identification.color,
+        condition: specs.condition || identification.condition,
+        brand: specs.brand || identification.brand,
+        ...specs,
+      },
+      price,
+      visionUsed: true,
+    };
+  },
+
+  // Human-friendly message for a thrown car-scanner error code.
+  describeError(err) {
+    const code = String((err && err.message) || '');
+    if (code === 'NO_CAR_KEY') {
+      return { title: 'Car Scanner key not set', hint: 'Add your dedicated Car & Truck Scanner Gemini key in AI Settings → "Car & Truck Scanner", then try again. The car scanner does not use the product key.', code };
+    }
+    if (code === 'CAR_QUOTA') {
+      return { title: 'Car Scanner quota used up', hint: 'Your Car & Truck Scanner Gemini key has run out of free quota or is rate-limited. It will stop until you paste in a fresh key in AI Settings → "Car & Truck Scanner". No fake values were generated.', code };
+    }
+    if (code === 'CAR_BAD_KEY') {
+      return { title: 'Car Scanner key not accepted', hint: 'Google rejected your Car & Truck Scanner key. Check it in AI Settings → "Car & Truck Scanner" (valid 39-char AIzaSy… key) and save it again.', code };
+    }
+    if (code === 'NO_MEDIA') {
+      return { title: 'No readable media', hint: 'The car photos/video could not be loaded. Upload clear photos or a video of the vehicle and try again.', code };
+    }
+    if (code === 'CAR_NO_PARSE') {
+      return { title: 'Scanner returned no details', hint: 'Google answered but returned no usable vehicle details. Try clearer photos or a different video, then scan again.', code };
+    }
+    if (/^CAR_HTTP_/.test(code)) {
+      return { title: 'Car Scanner could not run', hint: `The Car & Truck Scanner service returned an error (${code}). Try again in a moment or add a fresh key in AI Settings.`, code };
+    }
+    return { title: 'Car Scanner failed', hint: String(err && err.message ? err.message : err), code };
+  },
+};
+
+// ══════════════════════════════════════════════════════════════
+//  AI Status Widget (Gemini) ═══════════════════════════════════
 window.showAiStatusModal = async function() {
   const statuses = await aiClient.getStatus();
   const configured = statuses.filter(s => s.hasKey);
