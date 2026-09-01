@@ -100,7 +100,7 @@ function injectStyles() {
     #kco-ai-btn-dot::before{content:"";position:absolute;inset:0;border-radius:50%;background:#34d399;animation:kco-ai-dot-ping 1.8s cubic-bezier(0,0,.2,1) infinite}
     @keyframes kco-ai-dot-ping{0%{transform:scale(1);opacity:.8}70%,100%{transform:scale(2.4);opacity:0}}
     @keyframes kco-ai-ping{0%{transform:scale(1);opacity:.7}70%,100%{transform:scale(1.65);opacity:0}}
-    #kco-ai-panel{position:fixed;right:1.1rem;bottom:5.4rem;z-index:96;width:380px;max-width:calc(100vw - 1.6rem);height:560px;max-height:calc(100dvh - 7rem);display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:1.25rem;box-shadow:0 24px 70px rgba(15,23,42,.28);overflow:hidden;opacity:0;transform:translateY(14px) scale(.97);pointer-events:none;transition:opacity .22s ease,transform .22s ease}
+    #kco-ai-panel{position:fixed;right:1.1rem;bottom:5.4rem;z-index:96;width:380px;max-width:calc(100vw - 1.6rem);height:560px;max-height:calc(100dvh - 7rem);display:flex;flex-direction:column;background:#eef2fb;border:1px solid #cbd5e1;border-radius:1.25rem;box-shadow:0 24px 70px rgba(15,23,42,.28);overflow:hidden;opacity:0;transform:translateY(14px) scale(.97);pointer-events:none;transition:opacity .22s ease,transform .22s ease}
     #kco-ai-panel.kco-ai-open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
     .kco-ai-head{display:flex;align-items:center;gap:.75rem;padding:.9rem 1rem;color:#fff;background:linear-gradient(135deg,#2563eb,#3b82f6)}
     .kco-ai-avatar{width:38px;height:38px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center}
@@ -111,27 +111,27 @@ function injectStyles() {
     .kco-ai-close:hover{background:rgba(255,255,255,.3)}
     .kco-ai-back{width:32px;height:32px;flex-shrink:0;border:none;border-radius:9px;background:rgba(255,255,255,.18);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .15s;margin-right:-.25rem}
     .kco-ai-back:hover{background:rgba(255,255,255,.35);transform:scale(1.08)}
-    .kco-ai-body{flex:1;min-height:0;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.6rem;background:#ffffff;scroll-behavior:smooth}
+    .kco-ai-body{flex:1;min-height:0;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.6rem;background:#eef2fb;scroll-behavior:smooth}
     .kco-ai-msg{max-width:82%;padding:.55rem .8rem;border-radius:1rem;font-size:13px;line-height:1.5;word-break:break-word}
     .kco-ai-msg b{font-weight:700}
     .kco-ai-bullet{color:#000;margin-right:.25rem}
     .kco-ai-user{align-self:flex-end;color:#fff;background:#111827;border-bottom-right-radius:.25rem}
-    .kco-ai-assistant{align-self:flex-start;color:#000;background:#f3f4f6;border:1px solid #d1d5db;border-bottom-left-radius:.25rem;box-shadow:none}
-    .kco-ai-typing{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;padding:.7rem .9rem;border-radius:1rem;border-bottom-left-radius:.25rem;background:#f3f4f6;border:1px solid #d1d5db}
+    .kco-ai-assistant{align-self:flex-start;color:#111827;background:#ffffff;border:1px solid #cbd5e1;border-bottom-left-radius:.25rem;box-shadow:0 1px 2px rgba(15,23,42,.08)}
+    .kco-ai-typing{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;padding:.7rem .9rem;border-radius:1rem;border-bottom-left-radius:.25rem;background:#ffffff;border:1px solid #cbd5e1}
     .kco-ai-typing span{width:6px;height:6px;border-radius:50%;background:#374151;animation:kco-ai-bounce 1.2s infinite}
     .kco-ai-typing span:nth-child(2){animation-delay:.15s}
     .kco-ai-typing span:nth-child(3){animation-delay:.3s}
     @keyframes kco-ai-bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-4px);opacity:1}}
-    .kco-ai-chips{display:flex;flex-wrap:wrap;gap:.45rem;padding:.6rem 1rem .7rem;background:#ffffff;border-top:1px solid #e5e7eb}
-    .kco-ai-chip{border:1px solid #9ca3af;background:#fff;color:#111827;font-size:11.5px;font-weight:600;padding:.4rem .7rem;border-radius:999px;cursor:pointer;transition:all .15s}
+    .kco-ai-chips{display:flex;flex-wrap:wrap;gap:.45rem;padding:.6rem 1rem .7rem;background:#eef2fb;border-top:1px solid #dbe2f0}
+    .kco-ai-chip{border:1px solid #94a3b8;background:#ffffff;color:#111827;font-size:11.5px;font-weight:600;padding:.4rem .7rem;border-radius:999px;cursor:pointer;transition:all .15s}
     .kco-ai-chip:hover{background:#111827;color:#fff;border-color:#111827}
-    .kco-ai-inputrow{display:flex;gap:.5rem;padding:.7rem .9rem .9rem;background:#ffffff;border-top:1px solid #e5e7eb}
-    .kco-ai-input{flex:1;min-width:0;border:1px solid #d1d5db;border-radius:.9rem;padding:.6rem .8rem;font-size:13px;color:#000;background:#fff;outline:none;transition:border-color .15s}
-    .kco-ai-input:focus{border-color:#000;box-shadow:0 0 0 2px rgba(0,0,0,.12)}
-    .kco-ai-send{flex-shrink:0;width:40px;height:40px;border:none;border-radius:.9rem;color:#fff;background:#111827;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s,transform .15s}
+    .kco-ai-inputrow{display:flex;gap:.5rem;padding:.7rem .9rem .9rem;background:#eef2fb;border-top:1px solid #dbe2f0}
+    .kco-ai-input{flex:1;min-width:0;border:1px solid #94a3b8;border-radius:.9rem;padding:.6rem .8rem;font-size:13px;color:#111827;background:#ffffff;outline:none;transition:border-color .15s}
+    .kco-ai-input:focus{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.22)}
+    .kco-ai-send{flex-shrink:0;width:40px;height:40px;border:none;border-radius:.9rem;color:#fff;background:#2563eb;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s,transform .15s}
     .kco-ai-send:hover{transform:scale(1.05)}
     .kco-ai-send:disabled{opacity:.5;cursor:not-allowed;transform:none}
-    .kco-ai-foot{font-size:10px;color:#94a3b8;text-align:center;padding:.4rem 1rem .55rem;background:#fff;border-top:1px solid #f1f5f9}
+    .kco-ai-foot{font-size:10.5px;color:#475569;text-align:center;padding:.4rem 1rem .55rem;background:#e6ebf8;border-top:1px solid #dbe2f0}
     @media (max-width:480px){#kco-ai-panel{height:calc(100dvh - 7rem);bottom:5.2rem}}
   `;
   document.head.appendChild(style);
@@ -153,8 +153,8 @@ function buildDom() {
       <button class="kco-ai-back" aria-label="Go back">${iconSvg('arrowleft', 18)}</button>
       <div class="kco-ai-avatar" style="width:38px;height:38px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center">${iconSvg('headset', 20)}</div>
       <div>
-        <div class="kco-ai-title" style="font-size:14px;font-weight:800;line-height:1.1;color:#fff">Weverse Online Shop</div>
-        <div class="kco-ai-status" style="display:flex;align-items:center;gap:.35rem;font-size:11px;opacity:.92;margin-top:2px;color:#fff"><span class="kco-ai-dot"></span> Online — replies instantly</div>
+        <div class="kco-ai-title" style="font-size:15px;font-weight:800;line-height:1.1;color:#ffffff;text-shadow:0 1px 2px rgba(0,20,60,.25)">Weverse Online Shop</div>
+        <div class="kco-ai-status" style="display:flex;align-items:center;gap:.35rem;font-size:11.5px;opacity:1;margin-top:2px;color:#ffffff;text-shadow:0 1px 2px rgba(0,20,60,.25)"><span class="kco-ai-dot"></span> Online — replies instantly</div>
       </div>
       <button class="kco-ai-close" aria-label="Close chat">${iconSvg('close', 16)}</button>
     </div>
