@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   KCO Global Marketplace — Real Voice Call & Message System
+   Weverse Online Shop — Real Voice Call & Message System
    
    Provides 2 buttons for every product/property:
    1. Call Company  — Voice conversation with a real sales representative
@@ -72,7 +72,7 @@ function getAgentName(listing) {
 }
 
 function getCompanyName() {
-  return 'KCO Global Marketplace';
+  return 'Weverse Online Shop';
 }
 
 function hashCode(s) {
@@ -292,10 +292,118 @@ function stopSpeaking() {
   if (synth) synth.cancel();
 }
 
-// ── Ring Tone (generated with Web Audio, no external file needed) ──
+// ── Ring Tone ──────────────────────────────────────────────────────
+// Plays a real, calm, musical ringtone while the customer waits for the
+// representative to pick up (~25s). How to use your own sound:
+//   1. Put your audio file in the project's public/ folder named
+//      ringtone.mp3 (also accepts .wav, .ogg, .m4a). It is served at
+//      https://weverseonlineshop.com/ringtone.mp3 and used automatically.
+//   2. Rebuild + redeploy the site. No code changes needed.
+//   3. If no ringtone file is present, a gentle synthesized melody plays
+//      instead, so there is always a pleasant ring with no extra setup.
 let ringCtx = null;
 let ringTimer = null;
-let ringOsc = null;
+let ringGain = null;
+let ringOscs = [];
+let ringSource = null;
+let ringBuffer = null;
+let ringBufferPromise = null;
+
+// ── Real audio file playback (optional) ─────────────────────────────
+// Tries ringtone.mp3 / .wav / .ogg / .m4a in order, whichever your team
+// uploaded. Cached after the first successful load so calls start instantly.
+const RING_FILE_CANDIDATES = ['/ringtone.mp3', '/ringtone.wav', '/ringtone.ogg', '/ringtone.m4a'];
+
+function loadRingBuffer(ctx) {
+  if (ringBuffer) return Promise.resolve(ringBuffer);
+  if (ringBufferPromise) return ringBufferPromise;
+  const tryUrl = (i) => {
+    const url = RING_FILE_CANDIDATES[i];
+    if (!url) return Promise.reject(new Error('no-ring-file'));
+    return fetch(url, { cache: 'force-cache' })
+      .then((res) => { if (!res.ok) throw new Error('404'); return res.arrayBuffer(); })
+      .then((buf) => ctx.decodeAudioData(buf))
+      .catch((e) => (e && e.message === '404') ? tryUrl(i + 1) : Promise.reject(e));
+  };
+  ringBufferPromise = tryUrl(0)
+    .then((decoded) => { ringBuffer = decoded; return decoded; })
+    .catch((e) => { ringBufferPromise = null; return Promise.reject(e); });
+  return ringBufferPromise;
+}
+
+function playRingFile() {
+  if (!ringCtx || !ringBuffer) return;
+  const now = ringCtx.currentTime;
+  const master = ringCtx.createGain();
+  master.gain.setValueAtTime(1, now);
+  master.connect(ringCtx.destination);
+  ringGain = master;
+  const src = ringCtx.createBufferSource();
+  src.buffer = ringBuffer;
+  src.loop = true;
+  src.connect(master);
+  src.start(now);
+  ringSource = src;
+}
+
+// ── Synthesized fallback melody (used only if no ringtone file exists) ──
+// A calm, pleasant motif (note freqs in Hz + duration in seconds).
+const RING_MOTIF = [
+  { f: 523.25, d: 0.35 },   // C5
+  { f: 659.25, d: 0.25 },   // E5
+  { f: 783.99, d: 0.35 },   // G5
+  { f: 659.25, d: 0.25 },   // E5
+  { f: 880.00, d: 0.5 },    // A5
+  { f: 0,       d: 0.15 },  // short rest
+  { f: 783.99, d: 0.35 },   // G5
+  { f: 659.25, d: 0.35 },   // E5
+  { f: 523.25, d: 0.5 },    // C5
+];
+
+function toneNote(ctx, dest, freq, start, dur, vol) {
+  if (!freq) return;
+  // Two detuned oscillators create a warmer, more "live" timbre.
+  [0, 6].forEach((detune) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.detune.value = detune;
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.exponentialRampToValueAtTime(vol, start + 0.015);
+    g.gain.setValueAtTime(vol, start + dur - 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    osc.connect(g);
+    g.connect(dest);
+    osc.start(start);
+    osc.stop(start + dur + 0.02);
+    ringOscs.push(osc);
+  });
+}
+
+// Soft pad chord played underneath the melody for a fuller, richer ring.
+function toneChord(ctx, dest, freqs, start, dur, vol) {
+  (freqs || []).forEach((f) => toneNote(ctx, dest, f, start, dur, vol * 0.35));
+}
+
+function playRingMotif() {
+  if (!ringCtx) return;
+  if (ringGain) { try { ringGain.disconnect(); } catch {} ringGain = null; }
+  const now = ringCtx.currentTime;
+  let t = now;
+  const master = ringCtx.createGain();
+  master.gain.setValueAtTime(1, now);
+  master.connect(ringCtx.destination);
+  ringGain = master;
+  RING_MOTIF.forEach((n) => {
+    if (n.f) {
+      const chordFreqs = [n.f / 2, n.f * 1.5];
+      toneChord(ringCtx, master, chordFreqs, t, n.d * 0.9, 0.5);
+    }
+    toneNote(ringCtx, master, n.f, t, n.d, 0.5);
+    t += n.d;
+  });
+}
 
 function startRing() {
   stopRing();
@@ -304,38 +412,42 @@ function startRing() {
     if (!AC) return;
     if (!ringCtx) ringCtx = new AC();
     ringCtx.resume && ringCtx.resume();
-    // A real phone ring: a short tone (~1s), a pause (~2s), repeated —
-    // ring ... feed ... ring ... feed ...
-    const playBurst = () => {
+
+    // Try the real audio file first. If it isn't there, fall back to the
+    // synthesized melody. A small safety timeout guarantees we always ring.
+    loadRingBuffer(ringCtx).then((buf) => {
       if (!ringCtx) return;
-      const now = ringCtx.currentTime;
-      const osc = ringCtx.createOscillator();
-      const gain = ringCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 440;
-      ringOsc = osc;
-      // Dual-tone on-off ring (like a phone ringing tone).
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.35, now + 0.02);
-      gain.gain.setValueAtTime(0.35, now + 1.0);
-      gain.gain.setValueAtTime(0.0001, now + 1.15);
-      gain.gain.exponentialRampToValueAtTime(0.35, now + 1.2);
-      gain.gain.setValueAtTime(0.35, now + 2.0);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
-      osc.connect(gain);
-      gain.connect(ringCtx.destination);
-      osc.start(now);
-      osc.stop(now + 2.2);
-    };
-    playBurst();
-    // Repeat the ring every 3.2s until the agent picks up.
-    ringTimer = setInterval(playBurst, 3200);
+      // Stop any synth fallback that the safety timeout may have started.
+      if (ringTimer) { clearInterval(ringTimer); ringTimer = null; }
+      if (ringGain) { try { ringGain.disconnect(); } catch {} ringGain = null; }
+      ringOscs.forEach((o) => { try { o.stop(); } catch {} });
+      ringOscs = [];
+      playRingFile();
+    }).catch(() => {
+      if (!ringCtx) return;
+      if (!ringSource && !ringGain && !ringTimer) {
+        playRingMotif();
+        ringTimer = setInterval(playRingMotif, 3400);
+      }
+    });
+
+    // Guarantee a ring even if the file fails to download quickly.
+    setTimeout(() => {
+      if (!ringCtx || ringSource !== null) return;
+      if (!ringGain && !ringTimer) {
+        playRingMotif();
+        ringTimer = setInterval(playRingMotif, 3400);
+      }
+    }, 1500);
   } catch (e) { /* audio not available */ }
 }
 
 function stopRing() {
   if (ringTimer) { clearInterval(ringTimer); ringTimer = null; }
-  if (ringOsc) { try { ringOsc.stop(); } catch {} ringOsc = null; }
+  if (ringSource) { try { ringSource.stop(); } catch {} ringSource = null; }
+  if (ringGain) { try { ringGain.disconnect(); } catch {} ringGain = null; }
+  ringOscs.forEach((o) => { try { o.stop(); } catch {} });
+  ringOscs = [];
   if (ringCtx) { try { ringCtx.close(); } catch {} ringCtx = null; }
 }
 

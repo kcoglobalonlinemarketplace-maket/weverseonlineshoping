@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
 
   const { data: site } = await serviceClient.from('site_settings').select('*').limit(1).maybeSingle();
   const siteRow = (site || {}) as Record<string, unknown>;
-  const BRAND_NAME = 'KCO Global Marketplace';
+  const BRAND_NAME = 'Weverse Online Shop';
   const rawStoreName = String(siteRow.brand_name || siteRow.site_name || BRAND_NAME);
   const storeName = /(kco|k\.c\.o|global online marketplace|global marketplace)/i.test(rawStoreName) ? BRAND_NAME : rawStoreName;
   const contactEmail = String(siteRow.contact_email || siteRow.brand_email || 'support@weverseonlineshop.com');
