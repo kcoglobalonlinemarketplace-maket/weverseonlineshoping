@@ -1279,43 +1279,37 @@ function closeMsgAgent() {
 export function agentButtonsHtml(listing, opts = {}) {
   const id = listing?.property_id || listing?.id || '';
   const compact = opts.compact || false;
-  const cls = compact ? 'kco-agent-btn-compact' : 'kco-agent-btn';
 
   if (compact) {
     return `
-      <div class="kco-agent-panel kco-agent-panel-sm" data-listing-id="${id}">
-        <button class="${cls} kco-agent-call-company" data-action="call-company" title="Customer Service — Call our support team">
-          <i data-lucide="phone" class="w-4 h-4"></i><span>Customer Service</span>
+      <div class="kco-agent-row-compact" data-listing-id="${id}">
+        <button class="kco-agent-action kco-agent-call-company" data-action="call-company" title="Customer Service — Call our support team">
+          <i data-lucide="phone" class="kco-ico"></i><span>Customer Service</span>
         </button>
-        <button class="${cls} kco-agent-msg-company" data-action="msg-company" title="Chat with Us — Live support now">
-          <i data-lucide="message-circle" class="w-4 h-4"></i><span>Chat with Us</span>
+        <button class="kco-agent-action kco-agent-msg-company" data-action="msg-company" title="Chat with Us — Live support now">
+          <i data-lucide="message-circle" class="kco-ico"></i><span>Chat with Us</span>
         </button>
       </div>`;
   }
 
   return `
-    <div class="kco-agent-panel" data-listing-id="${id}">
-      <div class="kco-agent-panel-head">
-        <span class="kco-agent-panel-title">Sales &amp; Support</span>
-        <span class="kco-agent-panel-hint">We're here — call or chat with our team</span>
+    <div class="kco-support-section" data-listing-id="${id}">
+      <div class="kco-support-trust">
+        <span class="kco-support-trust-ico"><i data-lucide="shield-check"></i></span>
+        <span class="kco-support-trust-txt">Buyer Protection &mdash; your purchase is secure</span>
       </div>
-      <div class="kco-agent-panel-grid">
-        <button class="kco-support kco-agent-call-company" data-action="call-company" title="Customer Service — Call our support team">
-          <span class="kco-support-ico"><i data-lucide="phone"></i></span>
-          <span class="kco-support-txt">
-            <span class="kco-support-label">Customer Service</span>
-            <span class="kco-support-sub">Call our support team</span>
-          </span>
-          <span class="kco-support-arrow"><i data-lucide="arrow-right"></i></span>
-        </button>
-        <button class="kco-support kco-agent-msg-company" data-action="msg-company" title="Chat with Us — Live support now">
-          <span class="kco-support-ico"><i data-lucide="message-circle"></i></span>
-          <span class="kco-support-txt">
-            <span class="kco-support-label">Chat with Us</span>
-            <span class="kco-support-sub">Live support — instant reply</span>
-          </span>
-          <span class="kco-support-arrow"><i data-lucide="arrow-right"></i></span>
-        </button>
+      <div class="kco-support-cta">
+        <p class="kco-support-question">Questions about this product?</p>
+        <div class="kco-support-actions">
+          <button class="kco-support-btn kco-agent-call-company" data-action="call-company" title="Customer Service — Call our support team">
+            <i data-lucide="phone" class="kco-ico"></i>
+            <span>Customer Service</span>
+          </button>
+          <button class="kco-support-btn kco-agent-msg-company" data-action="msg-company" title="Chat with Us — Live support now">
+            <i data-lucide="message-circle" class="kco-ico"></i>
+            <span>Chat with Us</span>
+          </button>
+        </div>
       </div>
     </div>`;
 }
@@ -1328,37 +1322,41 @@ export function injectAgentStyles() {
   const style = document.createElement('style');
   style.id = 'kco-agent-global-style';
   style.textContent = `
-    .kco-agent-btn-compact{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;padding:.55rem .65rem;border:none;border-radius:.65rem;font-size:.7rem;font-weight:800;cursor:pointer;transition:all .2s ease;color:#fff;flex:1;min-width:0;letter-spacing:.01em}
-    .kco-agent-btn-compact:active{transform:scale(.96)}
-    .kco-agent-btn-compact span{line-height:1.1}
+    /* Compact agent action buttons (product cards) */
+    .kco-agent-row-compact{display:flex;gap:.35rem}
+    .kco-agent-action{display:inline-flex;align-items:center;justify-content:center;gap:.3rem;padding:.42rem .6rem;border:none;border-radius:.55rem;font-size:.65rem;font-weight:700;cursor:pointer;transition:all .18s ease;color:#fff;flex:1;min-width:0;letter-spacing:.01em;white-space:nowrap}
+    .kco-agent-action:active{transform:scale(.96)}
+    .kco-agent-action .kco-ico{width:.7rem;height:.7rem;flex-shrink:0}
+    .kco-agent-action span{line-height:1.1}
 
-    /* Professional support panel (detail page) */
-    .kco-agent-panel{border:1px solid #e9edf4;background:#fff;border-radius:1.1rem;padding:.9rem 1rem 1rem;box-shadow:0 8px 24px rgba(15,23,42,.06)}
-    .kco-agent-panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;margin-bottom:.7rem}
-    .kco-agent-panel-title{font-size:1.02rem;font-weight:900;color:#0f172a;letter-spacing:.01em}
-    .kco-agent-panel-hint{font-size:.72rem;color:#64748b;font-weight:500}
-    .kco-agent-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+    /* Detail page support section — modeled on real marketplace patterns */
+    .kco-support-section{border-top:1px solid #f1f5f9;padding-top:.85rem}
 
-    /* Big professional CTA-style support buttons */
-    .kco-support{display:flex;align-items:center;gap:.75rem;padding:1rem 1.05rem;border:none;border-radius:.95rem;cursor:pointer;text-align:left;color:#fff;transition:all .22s ease;box-shadow:0 4px 14px rgba(15,23,42,.14)}
-    .kco-support .kco-support-ico{display:inline-flex;align-items:center;justify-content:center;width:2.6rem;height:2.6rem;border-radius:.8rem;background:rgba(255,255,255,.16);flex-shrink:0}
-    .kco-support .kco-support-ico i{width:1.35rem;height:1.35rem}
-    .kco-support .kco-support-txt{display:flex;flex-direction:column;gap:.12rem;min-width:0;flex:1}
-    .kco-support .kco-support-label{font-size:.98rem;font-weight:900;line-height:1.15;letter-spacing:.01em}
-    .kco-support .kco-support-sub{font-size:.72rem;font-weight:500;opacity:.9;line-height:1.2}
-    .kco-support .kco-support-arrow{margin-left:auto;opacity:.85;flex-shrink:0}
-    .kco-support .kco-support-arrow i{width:1rem;height:1rem}
-    .kco-support:active{transform:scale(.97)}
+    /* Trust signal bar */
+    .kco-support-trust{display:flex;align-items:center;gap:.4rem;margin-bottom:.55rem;padding:.35rem .55rem;background:#f0fdf4;border:1px solid #dcfce7;border-radius:.5rem}
+    .kco-support-trust-ico{color:#16a34a;flex-shrink:0;display:flex;align-items:center}
+    .kco-support-trust-ico svg,.kco-support-trust-ico i{width:.85rem;height:.85rem}
+    .kco-support-trust-txt{font-size:.68rem;font-weight:600;color:#15803d;line-height:1.2}
 
-    .kco-agent-call-company{background:linear-gradient(135deg,#047857,#059669)}
-    .kco-agent-call-company:hover{background:linear-gradient(135deg,#065f46,#047857);box-shadow:0 10px 24px rgba(5,150,105,.38);transform:translateY(-2px)}
-    .kco-agent-msg-company{background:linear-gradient(135deg,#1d4ed8,#2563eb)}
-    .kco-agent-msg-company:hover{background:linear-gradient(135deg,#1e40af,#1d4ed8);box-shadow:0 10px 24px rgba(37,99,235,.38);transform:translateY(-2px)}
+    /* CTA section */
+    .kco-support-cta{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+    .kco-support-question{font-size:.78rem;font-weight:600;color:#334155;margin:0;white-space:nowrap}
+    .kco-support-actions{display:flex;gap:.35rem;flex-shrink:0}
+
+    /* Support buttons — clean, medium, professional (not oversized) */
+    .kco-support-btn{display:inline-flex;align-items:center;gap:.3rem;padding:.45rem .7rem;border:none;border-radius:.55rem;font-size:.7rem;font-weight:700;cursor:pointer;transition:all .18s ease;color:#fff;white-space:nowrap}
+    .kco-support-btn:active{transform:scale(.96)}
+    .kco-support-btn .kco-ico{width:.75rem;height:.75rem;flex-shrink:0}
+
+    .kco-agent-call-company{background:#059669}
+    .kco-agent-call-company:hover{background:#047857;box-shadow:0 4px 12px rgba(5,150,105,.3)}
+    .kco-agent-msg-company{background:#2563eb}
+    .kco-agent-msg-company:hover{background:#1d4ed8;box-shadow:0 4px 12px rgba(37,99,235,.3)}
 
     @media (max-width:520px){
-      .kco-agent-panel-grid{grid-template-columns:1fr}
-      .kco-agent-panel-hint{display:none}
-      .kco-support .kco-support-label{font-size:.92rem}
+      .kco-support-cta{flex-direction:column;align-items:stretch}
+      .kco-support-actions{width:100%}
+      .kco-support-btn{flex:1;justify-content:center}
     }
   `;
   document.head.appendChild(style);
@@ -1379,7 +1377,7 @@ export function wireAgentButtons(container, listingLookup) {
     e.preventDefault();
 
     const action = btn.dataset.action;
-    const row = btn.closest('.kco-agent-panel') || btn.closest('.kco-agent-row');
+    const row = btn.closest('.kco-support-section') || btn.closest('.kco-agent-row-compact') || btn.closest('.kco-agent-panel') || btn.closest('.kco-agent-row');
     const listingId = row?.dataset.listingId || '';
 
     const listing = typeof listingLookup === 'function'
