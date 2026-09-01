@@ -293,7 +293,7 @@ function getAllHeroVehicles() {
   return visible([...dbVehicles, ...staticVehicles]);
 }
 
-export { getAllHeroVehicles, heroStyles, sp, isVehicle, vehicleKindLabel };
+export { getAllHeroVehicles, heroStyles, sp, isVehicle, vehicleKindLabel, videoSection };
 
 function esc(value) {
   return String(value ?? '')
