@@ -11005,6 +11005,7 @@ async function renderBrandManager() {
     const fallbackBrandName = d.brand_name || d.site_name || DEFAULT_BRAND_NAME;
     const fallbackBrandSlogan = d.brand_slogan || d.site_tagline || DEFAULT_BRAND_SLOGAN;
     const fallbackBrandLogo = d.brand_logo || d.brand_header_logo || '';
+    const ringAudioUrl = d.ringtone_audio || d.ringtone_url || '';
 
     function imgSlot(label, fieldName, currentUrl, hint = '', accent = 'blue') {
       const hasImg = !!(currentUrl && currentUrl.trim());
@@ -11082,6 +11083,39 @@ async function renderBrandManager() {
           </div>
           <p class="text-[10px] text-gray-500">This is how your brand will appear on every page. Click Save to apply everywhere.</p>
         </div>
+
+          <!-- â”€â”€ Call Ringtone â”€â”€ -->
+          <div class="glass-soft border border-emerald-500/15 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="phone-call" class="w-4 h-4 text-emerald-400"></i> Call Ringtone</h3>
+            <p class="text-[11px] text-gray-400">This is the calm sound that plays while a customer waits on the call (for ~25 seconds before the representative picks up). Upload your own audio so it rings with your real sound.</p>
+
+            <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <p class="text-xs font-black text-white">Current Ringtone</p>
+                ${ringAudioUrl ? `<span class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">âœ“ Active</span>` : `<span class="text-[9px] text-gray-600">Not set (built-in melody plays)</span>`}
+              </div>
+
+              ${ringAudioUrl ? `
+              <audio class="w-full" id="ringtone-preview-audio" controls src="${esc(ringAudioUrl)}"></audio>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="downloadRingtone()" class="text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg transition"><i data-lucide="download" class="w-3.5 h-3.5 inline mr-1"></i>Download</button>
+                <button type="button" onclick="clearRingtone()" class="text-[11px] font-bold text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg transition"><i data-lucide="trash-2" class="w-3.5 h-3.5 inline mr-1"></i>Remove</button>
+              </div>
+              <div class="flex gap-2">
+                <input class="input-field text-xs flex-1" id="ringtone-url" value="${esc(ringAudioUrl)}" placeholder="Or paste an audio URL (mp3/wav/ogg)" oninput="saveRingtoneUrl(this.value)">
+              </div>` : `
+              <div class="w-full rounded-xl border-2 border-dashed border-emerald-500/25 hover:border-emerald-500/50 flex flex-col items-center justify-center gap-2 py-8 cursor-pointer transition" onclick="document.getElementById('ringtone-file').click()">
+                <i data-lucide="music" class="w-8 h-8 text-emerald-400"></i>
+                <p class="text-[11px] text-gray-500">Click to upload your ringtone audio</p>
+                <p class="text-[10px] text-gray-600">mp3 / wav / ogg / m4a</p>
+              </div>
+              <input type="file" id="ringtone-file" class="hidden" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" onchange="handleRingtoneUpload(event)">
+            `}
+            </div>
+
+            <p id="ringtone-msg" class="text-[11px] text-emerald-400 hidden"></p>
+            <p class="text-[10px] text-gray-500">Tip: keep it short (3â€“8 seconds) and soft so it sounds like a gentle ring. It plays automatically on every call once uploaded â€” no redeploy needed.</p>
+          </div>
 
         <form id="brand-form" onsubmit="saveBrandSettings(event)" class="space-y-5">
 
@@ -11387,6 +11421,71 @@ window.handleBrandImgUpload = async function(e, field) {
   setTimeout(() => statusEl?.classList.add('hidden'), 4000);
 };
 
+// ── Call Ringtone (admin dashboard) ────────────────────────────────
+window.triggerRingtoneUpload = function() {
+  document.getElementById('ringtone-file')?.click();
+};
+
+window.downloadRingtone = function() {
+  const el = document.getElementById('ringtone-preview-audio');
+  const url = el?.src || document.getElementById('ringtone-url')?.value || '';
+  if (!url) return;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ringtone.' + (url.split('.').pop() || 'mp3');
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
+
+window.saveRingtoneUrl = async function(url) {
+  const v = String(url || '').trim();
+  try {
+    const { data: existing } = await supabase.from('site_settings').select('id').limit(1).maybeSingle();
+    let error;
+    const payload = { ringtone_audio: v };
+    if (existing?.id) { ({ error } = await supabase.from('site_settings').update(payload).eq('id', existing.id)); }
+    else              { ({ error } = await supabase.from('site_settings').insert(payload)); }
+    const msg = document.getElementById('ringtone-msg');
+    if (msg) { msg.classList.remove('hidden'); msg.textContent = error ? ('Saved locally (' + error.message + ')') : 'âœ“ Ringtone URL saved â€” live on calls.'; }
+  } catch (err) {
+    const msg = document.getElementById('ringtone-msg');
+    if (msg) { msg.classList.remove('hidden'); msg.textContent = 'Could not save: ' + err.message; }
+  }
+  setTimeout(() => document.getElementById('ringtone-msg')?.classList.add('hidden'), 3500);
+};
+
+window.handleRingtoneUpload = async function(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const msgEl = document.getElementById('ringtone-msg');
+  if (msgEl) { msgEl.classList.remove('hidden'); msgEl.textContent = `Uploading ${file.name}â€¦`; }
+  try {
+    const ext = (file.name.split('.').pop() || 'mp3').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const path = `ringtone-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('ringtones').upload(path, file, { contentType: file.type || 'audio/mpeg', upsert: true });
+    let url;
+    if (upErr) {
+      url = URL.createObjectURL(file);
+      if (msgEl) msgEl.textContent = `Preview only (storage not available: ${upErr.message})`;
+    } else {
+      const { data } = supabase.storage.from('ringtones').getPublicUrl(path);
+      url = data.publicUrl;
+      await window.saveRingtoneUrl(url);
+    }
+    // Re-render so the player + download button appear with the new audio.
+    renderBrandManager();
+  } catch (err) {
+    if (msgEl) msgEl.textContent = `Upload failed: ${err.message}`;
+    setTimeout(() => msgEl?.classList.add('hidden'), 4000);
+  }
+};
+
+window.clearRingtone = async function() {
+  await window.saveRingtoneUrl('');
+  renderBrandManager();
+};
+
 window.saveBrandSettings = async function(e) {
   e.preventDefault();
   const fd = new FormData(e.target);
@@ -11394,8 +11493,6 @@ window.saveBrandSettings = async function(e) {
   for (const [k, v] of fd.entries()) {
     if (!k.endsWith('_url')) payload[k] = v;
   }
-  // Sync aliases
-  if (payload.brand_name)        payload.site_name        = payload.brand_name;
   if (payload.brand_slogan)      payload.site_tagline     = payload.brand_slogan;
   if (payload.brand_description) payload.site_description = payload.brand_description;
   if (payload.brand_email)       payload.contact_email    = payload.brand_email;

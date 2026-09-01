@@ -9,7 +9,7 @@
    no key) for conversation intelligence. Zero server costs.
    ═══════════════════════════════════════════════════════════════════════ */
 
-import { ANON_KEY, SUPABASE_URL } from './supabase-client.js';
+import { ANON_KEY, SUPABASE_URL, supabase } from './supabase-client.js';
 
 const POLLINATIONS_URL = 'https://text.pollinations.ai/openai';
 
@@ -294,13 +294,13 @@ function stopSpeaking() {
 
 // ── Ring Tone ──────────────────────────────────────────────────────
 // Plays a real, calm, musical ringtone while the customer waits for the
-// representative to pick up (~25s). How to use your own sound:
-//   1. Put your audio file in the project's public/ folder named
-//      ringtone.mp3 (also accepts .wav, .ogg, .m4a). It is served at
-//      https://weverseonlineshop.com/ringtone.mp3 and used automatically.
-//   2. Rebuild + redeploy the site. No code changes needed.
-//   3. If no ringtone file is present, a gentle synthesized melody plays
-//      instead, so there is always a pleasant ring with no extra setup.
+// representative to pick up (~25s). Source priority:
+//   1. The ringtone an admin uploads on the Dashboard (stored in Supabase
+//      and referenced by site_settings.ringtone_audio). This is live
+//      immediately with no redeploy.
+//   2. An audio file dropped into the project's public/ folder (ringtone.mp3
+//      / .wav / .ogg / .m4a) — requires a rebuild + redeploy.
+//   3. A gentle synthesized melody, so there is always a pleasant ring.
 let ringCtx = null;
 let ringTimer = null;
 let ringGain = null;
@@ -310,24 +310,39 @@ let ringBuffer = null;
 let ringBufferPromise = null;
 
 // ── Real audio file playback (optional) ─────────────────────────────
-// Tries ringtone.mp3 / .wav / .ogg / .m4a in order, whichever your team
-// uploaded. Cached after the first successful load so calls start instantly.
-const RING_FILE_CANDIDATES = ['/ringtone.mp3', '/ringtone.wav', '/ringtone.ogg', '/ringtone.m4a'];
-
 function loadRingBuffer(ctx) {
   if (ringBuffer) return Promise.resolve(ringBuffer);
   if (ringBufferPromise) return ringBufferPromise;
-  const tryUrl = (i) => {
-    const url = RING_FILE_CANDIDATES[i];
-    if (!url) return Promise.reject(new Error('no-ring-file'));
-    return fetch(url, { cache: 'force-cache' })
-      .then((res) => { if (!res.ok) throw new Error('404'); return res.arrayBuffer(); })
-      .then((buf) => ctx.decodeAudioData(buf))
-      .catch((e) => (e && e.message === '404') ? tryUrl(i + 1) : Promise.reject(e));
+
+  const decodeUrl = (url) =>
+    fetch(url, { cache: 'force-cache' })
+      .then((res) => { if (!res.ok) throw new Error('bad-status'); return res.arrayBuffer(); })
+      .then((buf) => ctx.decodeAudioData(buf));
+
+  // 1) Live URL set on the admin dashboard, if any.
+  const dashboardUrl = async () => {
+    try {
+      const { data } = await supabase.from('site_settings').select('ringtone_audio,ringtone_url').limit(1).maybeSingle();
+      const url = data?.ringtone_audio || data?.ringtone_url || '';
+      if (!url) throw new Error('no-dashboard-ring');
+      return await decodeUrl(url);
+    } catch (e) { throw new Error('no-dashboard-ring'); }
   };
-  ringBufferPromise = tryUrl(0)
+
+  // 2) A file placed in the public/ folder of the deployment.
+  const folderCandidates = () => {
+    const urls = ['/ringtone.mp3', '/ringtone.wav', '/ringtone.ogg', '/ringtone.m4a'];
+    const tryOne = (i) => {
+      if (i >= urls.length) return Promise.reject(new Error('no-folder-ring'));
+      return decodeUrl(urls[i]).catch((e) => tryOne(i + 1));
+    };
+    return tryOne(0);
+  };
+
+  ringBufferPromise = dashboardUrl()
+    .catch(() => folderCandidates())
     .then((decoded) => { ringBuffer = decoded; return decoded; })
-    .catch((e) => { ringBufferPromise = null; return Promise.reject(e); });
+    .catch(() => { ringBufferPromise = null; throw new Error('no-ring'); });
   return ringBufferPromise;
 }
 
