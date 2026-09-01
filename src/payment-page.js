@@ -968,9 +968,29 @@ function attachEventHandlers(listing, baseAmount, orderNumber, user, isGuest) {
         receiptData.user_id = user.id;
       }
 
-      const { error: dbError } = await supabase
+      // Update the order row that checkout already created (matched by order
+      // number) so one order never produces TWO rows in payment_receipts. When
+      // no row exists yet (e.g. the customer opened the payment page directly),
+      // fall back to inserting a fresh one.
+      const { data: existingOrder } = await supabase
         .from('payment_receipts')
-        .insert(receiptData);
+        .select('id')
+        .eq('order_number', orderNumber)
+        .limit(1);
+
+      let dbError = null;
+      if (existingOrder && existingOrder.length) {
+        const { error: upErr } = await supabase
+          .from('payment_receipts')
+          .update(receiptData)
+          .eq('id', existingOrder[0].id);
+        dbError = upErr || null;
+      } else {
+        const { error: insErr } = await supabase
+          .from('payment_receipts')
+          .insert(receiptData);
+        dbError = insErr || null;
+      }
 
       if (dbError) throw new Error('Failed to save payment: ' + dbError.message);
 
