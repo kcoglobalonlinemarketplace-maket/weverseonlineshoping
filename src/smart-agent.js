@@ -68,7 +68,7 @@ function getAgentName(listing) {
   const locale = detectLocale();
   const lang = locale.language || 'en';
   const names = AGENT_NAMES[lang] || AGENT_NAMES.en;
-  const pool = names.male;
+  const pool = names.female;
   const idx = Math.abs(hashCode(listing?.property_id || 'default')) % pool.length;
   return pool[idx];
 }
@@ -202,15 +202,37 @@ async function getAIReply(messages, systemPrompt, opts = {}) {
 const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
 let speakingVoice = null;
 
+function isFemaleVoiceName(name) {
+  const n = String(name || '').toLowerCase();
+  return /female|woman|girl|samantha|victoria|karen|moira|tessa|fiona|ava|allison|susan|zira|aria|jenny|jennifer|alison|google us english|salli|joanna|kendra|kimberly|ivy|emma|olivia|amanda|ashley/i.test(n);
+}
+
 function pickVoice(lang) {
   if (!synth) return null;
   const voices = synth.getVoices();
   const langPrefix = (lang || 'en').split('-')[0].toLowerCase();
-  const preferred = voices.find(v => v.lang.startsWith(langPrefix) && v.localService);
+  const us = (langPrefix === 'en') ? 'en-us' : langPrefix;
+
+  // Prefer a female-sounding US English voice.
+  const preferred = voices.find(v =>
+    v.lang.toLowerCase().startsWith(us) &&
+    isFemaleVoiceName(v.name)
+  );
   if (preferred) return preferred;
+
+  const anyUS = voices.find(v => v.lang.toLowerCase().startsWith(us) && v.localService);
+  if (anyUS) return anyUS;
+
+  const femaleAny = voices.find(v =>
+    v.lang.toLowerCase().startsWith(langPrefix) &&
+    isFemaleVoiceName(v.name)
+  );
+  if (femaleAny) return femaleAny;
+
   const anyMatch = voices.find(v => v.lang.startsWith(langPrefix));
   if (anyMatch) return anyMatch;
-  return voices.find(v => v.lang.startsWith('en')) || voices[0] || null;
+  return voices.find(v => v.lang.startsWith('en') && isFemaleVoiceName(v.name)) ||
+         voices.find(v => v.lang.startsWith('en')) || voices[0] || null;
 }
 
 function speak(text, lang, onEnd) {
@@ -218,7 +240,7 @@ function speak(text, lang, onEnd) {
   synth.cancel();
   const utter = new SpeechSynthesisUtterance(text);
   utter.voice = pickVoice(lang);
-  utter.rate = 0.95;
+  utter.rate = 1.05;
   utter.pitch = 1.0;
   utter.volume = 1.0;
   utter.onend = () => onEnd?.();
