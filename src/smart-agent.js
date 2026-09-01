@@ -202,6 +202,27 @@ async function getAIReply(messages, systemPrompt, opts = {}) {
 const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
 let speakingVoice = null;
 
+// Cache voices — getVoices() returns [] until the async voiceschanged event.
+let cachedVoices = [];
+
+function refreshVoiceCache() {
+  if (!synth) return;
+  try { cachedVoices = synth.getVoices() || []; } catch { cachedVoices = []; }
+}
+
+function ensureVoicesReady(cb) {
+  if (!synth) { cb(); return; }
+  refreshVoiceCache();
+  if (cachedVoices.length) { cb(); return; }
+  let done = false;
+  const finish = () => { if (!done) { done = true; cleanup(); cb(); } };
+  const onVoicesChanged = () => { refreshVoiceCache(); finish(); };
+  synth.addEventListener('voiceschanged', onVoicesChanged);
+  const cleanup = () => synth.removeEventListener('voiceschanged', onVoicesChanged);
+  // Safety timeout so we never wait forever.
+  setTimeout(finish, 800);
+}
+
 function isFemaleVoiceName(name) {
   const n = String(name || '').toLowerCase();
   const female = /female|woman|girl|samantha|victoria|karen|moira|tessa|fiona|ava|allison|susan|zira|aria|serena|siri|jenny|jennifer|alison|salli|joanna|kendra|kimberly|ivy|emma|olivia|amanda|ashley|michelle|hazel|nicky|libby|sonia|heera|katya|zoey|amy|bella|grace|harriet|natasha|sophie|melina|google us english|google uk english female|mei-jia|tina|zoe|emma|aria|li mu|google british english female|amira|ayesha/.test(n);
@@ -211,7 +232,8 @@ function isFemaleVoiceName(name) {
 
 function pickVoice(lang) {
   if (!synth) return null;
-  const voices = synth.getVoices();
+  let voices = cachedVoices;
+  if (!voices.length) { try { voices = synth.getVoices() || []; } catch { voices = []; } }
 
   // Only genuine US or UK English — never Indian English or other accents.
   const isTargetAccent = (v) => {
@@ -245,16 +267,26 @@ function pickVoice(lang) {
          voices.find(v => v.lang.toLowerCase().startsWith('en')) || voices[0] || null;
 }
 
+// Speak with a guaranteed completion callback (falls back to default voice
+// if none is picked yet, and always fires onEnd so the call never hangs).
 function speak(text, lang, onEnd) {
   if (!synth || !text) { onEnd?.(); return; }
+  const finish = () => onEnd?.();
   synth.cancel();
   const utter = new SpeechSynthesisUtterance(text);
-  utter.voice = pickVoice(lang);
   utter.rate = 1.05;
   utter.pitch = 1.0;
   utter.volume = 1.0;
-  utter.onend = () => onEnd?.();
-  utter.onerror = () => onEnd?.();
+  let voice = pickVoice(lang);
+  if (voice) utter.voice = voice;
+  let ended = false;
+  const once = () => { if (!ended) { ended = true; finish(); } };
+  utter.onend = once;
+  utter.onerror = () => once();
+  // Absolute safety timeout so the call never stalls on speech.
+  const safety = setTimeout(once, 30000);
+  utter.onend = () => { clearTimeout(safety); once(); };
+  utter.onerror = () => { clearTimeout(safety); once(); };
   synth.speak(utter);
 }
 
@@ -578,8 +610,8 @@ async function startCallAgent(listing, isCompany = false) {
   const systemPrompt = buildCallSystemPrompt(listing, isCompany, agentName, greeting);
 
   try {
-    // Simulate the phone ringing for a few rings before the agent answers.
-    await new Promise(resolve => setTimeout(resolve, 3500));
+    // A short, natural ring before the agent answers (keeps it snappy).
+    await new Promise(resolve => setTimeout(resolve, 1600));
     if (!callState.active) return;
     // Agent picks up.
     stopRing();
@@ -587,11 +619,13 @@ async function startCallAgent(listing, isCompany = false) {
 
     // Brief natural pickup pause, then a short welcome — no long self-intro.
     const welcome = `${greeting}! Thank you for calling. How can I help you today?`;
-    speak(welcome, langCode, () => {
-      if (callState.active) {
-        setCallStatus('listening', 'Listening...');
-        startListening(langCode, systemPrompt);
-      }
+    ensureVoicesReady(() => {
+      speak(welcome, langCode, () => {
+        if (callState.active) {
+          setCallStatus('listening', 'Listening...');
+          startListening(langCode, systemPrompt);
+        }
+      });
     });
     addCallMsg(welcome, 'agent');
     callState.history.push({ role: 'assistant', content: welcome });
@@ -685,12 +719,14 @@ async function handleCallUserInput(text, systemPrompt) {
 
     callState.speaking = true;
     setCallStatus('speaking', 'Speaking...');
-    speak(reply, langCode, () => {
-      callState.speaking = false;
-      if (callState.active && !callState.muted) {
-        setCallStatus('listening', 'Listening...');
-        startListening(langCode, systemPrompt);
-      }
+    ensureVoicesReady(() => {
+      speak(reply, langCode, () => {
+        callState.speaking = false;
+        if (callState.active && !callState.muted) {
+          setCallStatus('listening', 'Listening...');
+          startListening(langCode, systemPrompt);
+        }
+      });
     });
   } catch (err) {
     addCallMsg("I'm sorry, could you repeat that? I want to make sure I give you the best help.", 'agent');
@@ -1137,6 +1173,19 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', injectAgentStyles);
 } else {
   injectAgentStyles();
+}
+
+// Warm up the TTS voice list early so a call can start instantly.
+if (synth) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      refreshVoiceCache();
+      synth.addEventListener('voiceschanged', refreshVoiceCache);
+    });
+  } else {
+    refreshVoiceCache();
+    synth.addEventListener('voiceschanged', refreshVoiceCache);
+  }
 }
 
 // Expose for external access
