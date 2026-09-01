@@ -512,9 +512,12 @@ function cardParts(listing) {
     if (specs.length) specsHtml = `<div class="flex items-center gap-2 text-gray-400 text-xs mb-2">${specs.join('')}</div>`;
   }
 
-  // Rating display: only real ratings from actual buyer reviews are shown.
-  // Clicking the stars opens the product's details page (with the interactive
-  // rating widget + real buyer reviews).
+  // Star row is ALWAYS shown on every card — new products and old alike —
+  // so no card ever looks bare. Real ratings from actual buyer reviews are
+  // shown when they exist; a brand-new listing (no reviews yet) gets the
+  // standard "just listed" baseline of 5 stars at 5.0 with (0) reviews.
+  // Clicking the stars opens the product's details page (interactive rating
+  // widget + real buyer reviews).
   //
   // Sold count reuses the exact same real-data convention as the details page
   // (sold_count, falling back to review_count), so the card always matches the
@@ -522,10 +525,10 @@ function cardParts(listing) {
   // data — never fabricated numbers.
   const soldN = Math.round(Number(listing.sold_count) || Number(listing.review_count) || 0);
   const soldLabel = formatCompactCount(soldN);
-  let ratingSoldHtml = '';
-  if (displayRating > 0 || soldLabel) {
-    ratingSoldHtml = `<a href="/details.html?id=${listing.property_id}" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs no-underline rounded-md group/rating transition" title="View ratings & reviews">${displayRating > 0 ? `<span class="flex items-center gap-1"><span class="flex">${renderStars(displayRating, 'w-3.5 h-3.5')}</span><span class="text-gray-900 font-bold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></span>` : ''}${soldLabel ? `<span class="inline-flex items-center gap-1 text-emerald-600 font-bold ml-auto whitespace-nowrap"><i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i>${soldLabel} sold</span>` : ''}</a>`;
-  }
+  const showRating = displayRating > 0;
+  const shownRating = showRating ? Number(displayRating) : 5;
+  const shownReviewCount = showRating ? (reviewCount || 0) : 0;
+  const ratingSoldHtml = `<a href="/details.html?id=${listing.property_id}" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs no-underline rounded-md group/rating transition" title="View ratings & reviews"><span class="flex items-center gap-1"><span class="flex">${renderStars(shownRating, 'w-3.5 h-3.5')}</span><span class="text-gray-900 font-bold">${shownRating.toFixed(1)}</span><span class="text-gray-500">(${shownReviewCount})</span></span>${soldLabel ? `<span class="inline-flex items-center gap-1 text-emerald-600 font-bold ml-auto whitespace-nowrap"><i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i>${soldLabel} sold</span>` : ''}</a>`;
 
   // Product badges (New Arrival, Best Seller, etc.)
   const badgesHtml = '';
