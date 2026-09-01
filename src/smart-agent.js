@@ -466,6 +466,96 @@ function stopRing() {
   if (ringCtx) { try { ringCtx.close(); } catch {} ringCtx = null; }
 }
 
+// ── Home Ambience ─────────────────────────────────────────────────
+// A soft, warm room sound that plays behind the representative's voice
+// after they pick up — like you can hear a real person's home/office in
+// the background. Synthesized with Web Audio (no file needed), very low
+// volume so it never overpowers the voice.
+let homeCtx = null;
+let homeGain = null;
+let homeSources = [];
+
+function makeNoiseBuffer(ctx, seconds, type) {
+  const rate = ctx.sampleRate;
+  const len = Math.floor(rate * seconds);
+  const buf = ctx.createBuffer(1, len, rate);
+  const data = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < len; i++) {
+    const white = Math.random() * 2 - 1;
+    // Brown noise (darker, warmer) or pink-ish for a natural room tone.
+    last = (last + 0.02 * white) / 1.02;
+    data[i] = type === 'brown' ? (last * 3.5) : white;
+  }
+  return buf;
+}
+
+function startHomeAmbience() {
+  stopHomeAmbience();
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    homeCtx = new AC();
+    homeCtx.resume && homeCtx.resume();
+
+    const master = homeCtx.createGain();
+    master.gain.value = 0.0;
+    master.gain.setValueAtTime(0.0, homeCtx.currentTime);
+    master.gain.linearRampToValueAtTime(0.045, homeCtx.currentTime + 1.2);
+    master.connect(homeCtx.destination);
+    homeGain = master;
+
+    // Warm room tone (brown noise), looped.
+    const room = homeCtx.createBufferSource();
+    room.buffer = makeNoiseBuffer(homeCtx, 4, 'brown');
+    room.loop = true;
+    const roomGain = homeCtx.createGain();
+    roomGain.gain.value = 0.7;
+    const roomFilter = homeCtx.createBiquadFilter();
+    roomFilter.type = 'lowpass';
+    roomFilter.frequency.value = 400;
+    room.connect(roomFilter).connect(roomGain).connect(master);
+    room.start();
+    homeSources.push(room);
+
+    // A soft, distant "people / activity" murmur on top (very faint),
+    // which reads as a lived-in home or office rather than a dead silence.
+    const murmur = homeCtx.createBufferSource();
+    murmur.buffer = makeNoiseBuffer(homeCtx, 2.5, 'pink');
+    murmur.loop = true;
+    murmur.playbackRate.value = 0.6;
+    const murmurGain = homeCtx.createGain();
+    murmurGain.gain.value = 0.18;
+    const murmurBand = homeCtx.createBiquadFilter();
+    murmurBand.type = 'bandpass';
+    murmurBand.frequency.value = 900;
+    murmurBand.Q.value = 0.5;
+    // Gentle amplitude undulation so it feels like distant life, not a hum.
+    const lfo = homeCtx.createOscillator();
+    lfo.frequency.value = 0.35;
+    const lfoGain = homeCtx.createGain();
+    lfoGain.gain.value = 0.04;
+    lfo.connect(lfoGain).connect(murmurGain.gain);
+    lfo.start();
+    murmur.connect(murmurBand).connect(murmurGain).connect(master);
+    murmur.start();
+    homeSources.push(murmur, lfo);
+  } catch (e) { /* ambience optional */ }
+}
+
+function stopHomeAmbience() {
+  if (homeGain) {
+    try { homeGain.gain.cancelScheduledValues(0); homeGain.gain.setTargetAtTime(0, 0, 0.2); } catch {}
+  }
+  setTimeout(() => {
+    homeSources.forEach((s) => { try { s.stop(); } catch {} });
+    homeSources = [];
+    if (homeCtx) { try { homeCtx.close(); } catch {} homeCtx = null; }
+    homeGain = null;
+  }, 500);
+}
+
+
 // ── Speech Recognition (STT) ───────────────────────────────────────
 const SpeechRecognition = typeof window !== 'undefined'
   ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
@@ -665,6 +755,8 @@ CRITICAL RULES:
 - Use warm, friendly, confident, humble, respectful, and persuasive language
 - Listen carefully and respond to what the customer actually says
 - Use natural pauses in your responses
+- Talk like a real person chatting on a phone — use contractions, small reactions ("oh", "got it", "sure"), and friendly asides. DO NOT sound like a scripted call-center or FAQ robot, and never answer like a list of bullet points.
+- If the customer asks something you don't know, react naturally and say you'll look it up, rather than giving a canned answer
 - Never make up information you don't have
 - If unsure, say you'll check and get back to them
 - Guide the customer toward a purchase when appropriate, but never pressure
@@ -744,13 +836,20 @@ async function startCallAgent(listing, isCompany = false) {
     // for ~25 seconds before the agent picks up — feels like a real phone.
     await new Promise(resolve => setTimeout(resolve, 25000));
     if (!callState.active) return;
-    // Agent picks up.
+    // Agent picks up — like a real person lifting the phone at home.
     stopRing();
     setCallStatus('speaking', 'Connected');
+    // The caller can hear the representative's own space (home/office) in
+    // the background — warm room tone, faint distant life — not dead silence.
+    startHomeAmbience();
 
-    // Brief natural pickup pause, then a warm human greeting that
-    // introduces the rep by name — sounds like a real person, not an AI.
-    const welcome = `${greeting}! You've reached ${getCompanyName()}, this is ${agentName} speaking. How can I help you today?`;
+    // A natural pause while they actually reach the phone, settle, and speak.
+    await new Promise(resolve => setTimeout(resolve, 1250));
+    if (!callState.active) return;
+
+    // A warm, human, unhurried greeting — sounds like a person answering,
+    // not a corporate auto-announcement jumping straight into a questionnaire.
+    const welcome = `${greeting}! Thank you for calling — this is ${agentName} over at ${getCompanyName()}. Take your time, how can I help you today?`;
     ensureVoicesReady(() => {
       speak(welcome, langCode, () => {
         if (callState.active) {
@@ -763,6 +862,7 @@ async function startCallAgent(listing, isCompany = false) {
     callState.history.push({ role: 'assistant', content: welcome });
   } catch (err) {
     stopRing();
+    stopHomeAmbience();
     setCallStatus('idle', 'Connection issue — please try again');
     setTimeout(() => endCall(), 3000);
   }
@@ -906,6 +1006,7 @@ function showCallTextInput(systemPrompt) {
 function endCall() {
   stopSpeaking();
   stopRing();
+  stopHomeAmbience();
   stopCallTimer();
   animateWaveform(false);
   if (callState.recognizer) { try { callState.recognizer.stop(); } catch {} }
