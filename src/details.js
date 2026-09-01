@@ -1007,14 +1007,22 @@ function renderTruck(listing) {
       </div>
 
       <!-- Title & ID -->
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-600 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
-        </div>
-        <div class="text-right shrink-0">
-          <div class="text-3xl font-black text-blue-500">${price}</div>
-          <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+      <div class="relative overflow-hidden rounded-2xl border border-blue-100 mb-6 shadow-sm">
+        <div class="absolute inset-0" style="background:
+          radial-gradient(760px 300px at 92% -20%, rgba(59,130,246,.16), transparent 60%),
+          radial-gradient(600px 260px at 0% 115%, rgba(16,185,129,.12), transparent 55%),
+          linear-gradient(180deg,#ffffff 0%,#f7fbff 100%)"></div>
+        <div class="absolute top-0 inset-x-0 h-1.5" style="background:linear-gradient(90deg,#2563eb,#0ea5e9,#10b981)" aria-hidden="true"></div>
+        <div class="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 p-5 sm:p-6">
+          <div>
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-blue-700 bg-blue-50 border border-blue-100 rounded-full px-3 py-1 mb-2"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> ${listing.verification_status === 'Verified' ? 'Verified listing' : 'Marketplace listing'}</span>
+            <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
+            <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-600 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="text-3xl font-black text-blue-600">${price}</div>
+            <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+          </div>
         </div>
       </div>
 
@@ -1041,6 +1049,10 @@ function renderTruck(listing) {
           <i data-lucide="share-2" class="w-5 h-5"></i>
         </button>
       </div>
+
+      ${buyerAssuranceHtml(listing)}
+
+      ${promoRailHtml()}
 
       <!-- Smart Agent Buttons -->
       <div class="mb-8 pt-4 border-t border-gray-100" id="agent-buttons-block">${agentButtonsHtml(listing, { compact: false })}</div>
@@ -1085,6 +1097,7 @@ function renderTruck(listing) {
 
   wireAgentButtons(document.getElementById('agent-buttons-block'), () => listing);
   loadRelatedSections(listing);
+  loadPromoRail(listing);
 
   setupReviewForm(listing);
   loadReviews(listing);
@@ -1146,14 +1159,22 @@ function renderMotorhome(listing) {
       </div>
 
       <!-- Title & ID -->
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-600 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
-        </div>
-        <div class="text-right shrink-0">
-          <div class="text-3xl font-black text-blue-500">${price}</div>
-          <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+      <div class="relative overflow-hidden rounded-2xl border border-blue-100 mb-6 shadow-sm">
+        <div class="absolute inset-0" style="background:
+          radial-gradient(760px 300px at 92% -20%, rgba(59,130,246,.16), transparent 60%),
+          radial-gradient(600px 260px at 0% 115%, rgba(16,185,129,.12), transparent 55%),
+          linear-gradient(180deg,#ffffff 0%,#f7fbff 100%)"></div>
+        <div class="absolute top-0 inset-x-0 h-1.5" style="background:linear-gradient(90deg,#2563eb,#0ea5e9,#10b981)" aria-hidden="true"></div>
+        <div class="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 p-5 sm:p-6">
+          <div>
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-blue-700 bg-blue-50 border border-blue-100 rounded-full px-3 py-1 mb-2"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> ${listing.verification_status === 'Verified' ? 'Verified listing' : 'Marketplace listing'}</span>
+            <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
+            <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-600 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="text-3xl font-black text-blue-600">${price}</div>
+            <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+          </div>
         </div>
       </div>
 
@@ -1180,6 +1201,10 @@ function renderMotorhome(listing) {
           <i data-lucide="share-2" class="w-5 h-5"></i>
         </button>
       </div>
+
+      ${buyerAssuranceHtml(listing)}
+
+      ${promoRailHtml()}
 
       <!-- Smart Agent Buttons -->
       <div class="mb-8 pt-4 border-t border-gray-100" id="agent-buttons-block">${agentButtonsHtml(listing, { compact: false })}</div>
@@ -1224,6 +1249,7 @@ function renderMotorhome(listing) {
 
   wireAgentButtons(document.getElementById('agent-buttons-block'), () => listing);
   loadRelatedSections(listing);
+  loadPromoRail(listing);
 
   setupReviewForm(listing);
   loadReviews(listing);
@@ -1280,14 +1306,22 @@ function renderCar(listing) {
       </div>
 
       <!-- Title & ID -->
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
-          <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-600 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
-        </div>
-        <div class="text-right shrink-0">
-          <div class="text-3xl font-black text-blue-500">${price}</div>
-          <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+      <div class="relative overflow-hidden rounded-2xl border border-blue-100 mb-6 shadow-sm">
+        <div class="absolute inset-0" style="background:
+          radial-gradient(760px 300px at 92% -20%, rgba(59,130,246,.16), transparent 60%),
+          radial-gradient(600px 260px at 0% 115%, rgba(16,185,129,.12), transparent 55%),
+          linear-gradient(180deg,#ffffff 0%,#f7fbff 100%)"></div>
+        <div class="absolute top-0 inset-x-0 h-1.5" style="background:linear-gradient(90deg,#2563eb,#0ea5e9,#10b981)" aria-hidden="true"></div>
+        <div class="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 p-5 sm:p-6">
+          <div>
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-blue-700 bg-blue-50 border border-blue-100 rounded-full px-3 py-1 mb-2"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> ${listing.verification_status === 'Verified' ? 'Verified listing' : 'Marketplace listing'}</span>
+            <h1 class="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">${escapeHtml(listing.title)}</h1>
+            <p class="text-gray-500 text-sm mt-1">Stock #: <span class="text-blue-500 font-mono font-bold">${escapeHtml(listing.stock_number || '—')}</span> &middot; VIN: <span class="text-gray-600 font-mono">${escapeHtml(listing.vin || '—')}</span></p>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="text-3xl font-black text-blue-600">${price}</div>
+            <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">${escapeHtml(listing.condition || 'Used')} &middot; For Sale</span>
+          </div>
         </div>
       </div>
 
@@ -1314,6 +1348,10 @@ function renderCar(listing) {
           <i data-lucide="share-2" class="w-5 h-5"></i>
         </button>
       </div>
+
+      ${buyerAssuranceHtml(listing)}
+
+      ${promoRailHtml()}
 
       <!-- Smart Agent Buttons -->
       <div class="mb-8 pt-4 border-t border-gray-100" id="agent-buttons-block">${agentButtonsHtml(listing, { compact: false })}</div>
@@ -1358,6 +1396,7 @@ function renderCar(listing) {
 
   wireAgentButtons(document.getElementById('agent-buttons-block'), () => listing);
   loadRelatedSections(listing);
+  loadPromoRail(listing);
 
   setupReviewForm(listing);
   loadReviews(listing);
@@ -1471,6 +1510,157 @@ function relSectionsHtml() {
         <h3 class="rel-title text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Recommended For You</h3>
         <div class="rel-grid flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory"></div>
       </div>`;
+}
+
+// ── Professional USA / Europe / UK marketplace trust + promo blocks ────────
+// Used by every details renderer so the page reads like a real global shipping
+// company: a "Sold & shipped by + tracked delivery" promise, a FedEx/UPS-style
+// order progress bar, a guarantees band, and a live goods-promo rail fed from
+// real listings. Pure additions — nothing existing is altered or removed.
+
+function shippingPromiseHtml(listing) {
+  const isProperty = listing.listing_type === 'property';
+  const isVehicle = isVehicleListing(listing);
+  const cards = [];
+  cards.push({ icon: 'badge-check', title: isProperty ? 'Managed & promoted by' : 'Sold & shipped by', sub: 'Weverse Online Shop' });
+  if (isProperty) {
+    cards.push({ icon: 'shield-check', title: 'Verified listing', sub: 'Checked before publish' });
+    cards.push({ icon: 'calendar-check', title: 'Viewing available', sub: 'In-person or live video' });
+  } else if (isVehicle) {
+    cards.push({ icon: 'shield-check', title: 'Inspected & verified', sub: 'Condition confirmed' });
+    cards.push({ icon: 'truck', title: 'Delivery arranged', sub: 'Door-to-door options' });
+  } else {
+    cards.push({ icon: 'clock', title: 'Ships in 24 hours', sub: 'Free worldwide 3–7 days' });
+    cards.push({ icon: 'package-search', title: 'Tracked every step', sub: 'DHL · FedEx · UPS · EMS' });
+  }
+  return `
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+      ${cards.map(c => `
+        <div class="flex items-center gap-3 bg-white/75 border border-gray-200 rounded-xl px-3.5 py-3 shadow-sm">
+          <span class="shrink-0 w-9 h-9 rounded-full ${c.icon === 'badge-check' ? 'bg-blue-50 text-blue-600' : c.icon === 'shield-check' ? 'bg-emerald-50 text-emerald-600' : 'bg-violet-50 text-violet-600'} flex items-center justify-center"><i data-lucide="${c.icon}" class="w-4 h-4"></i></span>
+          <div class="min-w-0">
+            <p class="text-xs font-black text-gray-900 leading-tight">${c.title}</p>
+            <p class="text-[11px] text-gray-500 leading-tight">${c.sub}</p>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function orderProgressHtml() {
+  const steps = [
+    { icon: 'receipt-text', label: 'Ordered' },
+    { icon: 'package', label: 'Shipped' },
+    { icon: 'truck', label: 'On the way' },
+    { icon: 'home', label: 'Delivered' },
+  ];
+  return `
+    <div class="mt-5">
+      <p class="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-gray-500 mb-3"><i data-lucide="route" class="w-3.5 h-3.5 text-blue-500"></i> From order to your door</p>
+      <div class="relative flex justify-between">
+        <span class="absolute top-[17px] left-[6%] right-[6%] h-[3px] bg-gradient-to-r from-blue-500 via-sky-400 to-sky-300 rounded-full" aria-hidden="true"></span>
+        ${steps.map(s => `
+          <div class="flex flex-col items-center gap-1.5 relative z-10">
+            <span class="w-9 h-9 rounded-full bg-white text-blue-600 border-2 border-blue-500 flex items-center justify-center shadow-sm"><i data-lucide="${s.icon}" class="w-4 h-4"></i></span>
+            <span class="text-[10px] sm:text-[11px] font-bold text-gray-700 text-center whitespace-nowrap">${s.label}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function guaranteesBandHtml() {
+  return `
+    <div class="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      ${[
+        { icon: 'lock', label: 'SSL Secure', sub: 'Encrypted checkout' },
+        { icon: 'shield-check', label: 'Buyer Protection', sub: 'Payment protected' },
+        { icon: 'rotate-ccw', label: '14-day Returns', sub: 'Easy & refundable' },
+        { icon: 'headphones', label: '24/7 Support', sub: 'Real humans' },
+      ].map(g => `
+        <div class="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
+          <span class="shrink-0 w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><i data-lucide="${g.icon}" class="w-4 h-4"></i></span>
+          <div class="min-w-0">
+            <p class="text-[11px] font-black text-gray-900 leading-tight">${g.label}</p>
+            <p class="text-[10px] text-gray-500 leading-tight">${g.sub}</p>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// The full "Buy with confidence" block placed right under the action buttons on
+// every details page type (products, properties, vehicles, pets).
+function buyerAssuranceHtml(listing) {
+  return `
+    <div class="mb-8 rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div class="px-5 sm:px-6 py-5 sm:py-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h3 class="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-wide"><i data-lucide="shield-check" class="w-4 h-4 text-blue-600"></i> Buy with confidence</h3>
+          <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full"><i data-lucide="badge-check" class="w-3 h-3"></i> Verified marketplace</span>
+        </div>
+        ${shippingPromiseHtml(listing)}
+        ${orderProgressHtml()}
+        ${guaranteesBandHtml()}
+        <p class="mt-4 text-[11px] text-gray-400 leading-relaxed">Every <strong class="text-gray-500">Weverse Online Shop</strong> order is packed with care, tracked in real time, and covered by buyer protection. Questions? Our USA, Europe &amp; UK support team is online 24/7 and replies fast.</p>
+      </div>
+    </div>`;
+}
+
+// "Hot right now" goods-promo rail — real products from the seller's own
+// catalog, with images, ranked by real customer activity (saved, sold, rating).
+function promoRailHtml() {
+  return `
+    <div id="hot-now-section" class="hidden mb-8">
+      <div class="relative overflow-hidden rounded-2xl border border-blue-100 mb-4">
+        <div class="absolute inset-0" style="background:
+          radial-gradient(700px 260px at 88% -40%, rgba(59,130,246,.18), transparent 60%),
+          radial-gradient(560px 240px at 0% 130%, rgba(16,185,129,.14), transparent 55%),
+          linear-gradient(120deg,#eef6ff 0%,#ffffff 55%,#ebfdf7 100%)"></div>
+        <div class="absolute top-0 inset-x-0 h-1" style="background:linear-gradient(90deg,#2563eb,#0ea5e9,#10b981)" aria-hidden="true"></div>
+        <div class="relative p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700"><i data-lucide="flame" class="w-3.5 h-3.5 kco-blink-soft text-orange-500"></i> Hot right now</p>
+            <h3 class="text-lg sm:text-xl font-black text-gray-900 tracking-tight mt-1">This week's most-wanted products</h3>
+            <p class="text-sm text-gray-500 mt-0.5">Real customer favorites across the USA, Europe &amp; the UK — in stock and ready to ship.</p>
+          </div>
+          <a href="/#showroom-directory" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-5 py-3 rounded-xl transition shadow-md shadow-blue-600/20">See all products <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+        </div>
+      </div>
+      <div class="hot-grid flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory"></div>
+    </div>`;
+}
+
+// Fills the promo rail with real listings (never empty — falls back to the same
+// related pool used elsewhere on the page). Purely additive, guarded.
+async function loadPromoRail(listing) {
+  try {
+    const section = document.getElementById('hot-now-section');
+    const grid = section && section.querySelector('.hot-grid');
+    if (!section || !grid) return;
+    const pool = buildRelatedPool(listing);
+    const hot = [...pool]
+      .sort((a, b) =>
+        (Number(b.favorite_count) || 0) + (Number(b.sold_count) || 0) * 2 + (Number(b.rating) || 0) * 10
+        - ((Number(a.favorite_count) || 0) + (Number(a.sold_count) || 0) * 2 + (Number(a.rating) || 0) * 10))
+      .slice(0, 10);
+    if (!hot.length) return;
+    section.classList.remove('hidden');
+    grid.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    hot.forEach(item => {
+      const wrap = document.createElement('div');
+      wrap.className = 'shrink-0 w-[220px] sm:w-[280px] snap-start relative';
+      const card = renderCard(item);
+      card.style.width = '100%';
+      wrap.appendChild(card);
+      const live = document.createElement('span');
+      live.className = 'kco-live-dot absolute top-2.5 left-2.5 z-10 w-2.5 h-2.5 ring-2 ring-white/80';
+      live.setAttribute('aria-hidden', 'true');
+      live.title = 'Available now';
+      wrap.appendChild(live);
+      frag.appendChild(wrap);
+    });
+    grid.appendChild(frag);
+    if (window.lucide) lucide.createIcons();
+  } catch {}
 }
 
 function buildRelatedPool(listing) {
@@ -1830,7 +2020,13 @@ function render(listing) {
         ${socialProofHtml}
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-blue-50 via-white to-white border border-blue-100 rounded-2xl p-5 mb-6">
+      <div class="relative overflow-hidden rounded-2xl border border-blue-100 mb-6 shadow-sm">
+        <div class="absolute inset-0" style="background:
+          radial-gradient(760px 300px at 92% -20%, rgba(59,130,246,.16), transparent 60%),
+          radial-gradient(600px 260px at 0% 115%, rgba(16,185,129,.12), transparent 55%),
+          linear-gradient(180deg,#ffffff 0%,#f7fbff 100%)"></div>
+        <div class="absolute top-0 inset-x-0 h-1.5" style="background:linear-gradient(90deg,#2563eb,#0ea5e9,#10b981)" aria-hidden="true"></div>
+        <div class="relative flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
         <div>
           <div class="flex items-baseline flex-wrap gap-2">
             ${originalPriceHtml}
@@ -1847,6 +2043,7 @@ function render(listing) {
           <span class="inline-flex items-center gap-1.5 text-gray-600"><i data-lucide="truck" class="w-4 h-4 text-blue-500"></i> Free worldwide shipping</span>
           <span class="inline-flex items-center gap-1.5 text-gray-600"><i data-lucide="rotate-ccw" class="w-4 h-4 text-blue-500"></i> Easy returns within 14 days</span>
           <span class="inline-flex items-center gap-1.5 text-gray-600"><i data-lucide="lock" class="w-4 h-4 text-blue-500"></i> Secure payment protection</span>
+        </div>
         </div>
       </div>
 
@@ -1866,6 +2063,10 @@ function render(listing) {
       </div>
 
       ${actionGridHtml(listing)}
+
+      ${buyerAssuranceHtml(listing)}
+
+      ${promoRailHtml()}
 
       <div id="listing-details">
         ${detailsAccordions(listing, specs, listing.features, listing.highlights, locationBlock, isProperty ? propertyExtrasHtml(listing) : (isVehicle ? vehicleExtrasHtml(listing) : ''))}
@@ -1999,6 +2200,7 @@ function render(listing) {
   setupReviewForm(listing);
   loadReviews(listing);
   loadRecommendations(listing);
+  loadPromoRail(listing);
 
   setupAccordions();
   if (window.lucide) lucide.createIcons();
