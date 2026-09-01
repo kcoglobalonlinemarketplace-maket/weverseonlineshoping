@@ -47,6 +47,190 @@ function isHouse(listing) {
   return false;
 }
 
+// ── Property Video Tours ─────────────────────────────────────────────
+// A single full-width horizontal section that shows every property that
+// has a video (house, land, apartment, villa, mansion, etc.), each as one
+// large prominent video card — NOT a small card or two-column grid.
+function isVideoUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (/^data:video\//i.test(url)) return true;
+  if (url.startsWith('blob:')) return false;
+  return /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
+}
+
+// The FIRST valid video URL for a property, from the standalone video fields
+// or from a video merged into the images gallery. Returns null if none.
+function listingVideoUrl(listing) {
+  if (!listing) return null;
+  for (const v of [listing.video, listing.video_url]) {
+    if (isVideoUrl(v)) return v;
+  }
+  if (Array.isArray(listing.images)) {
+    for (const img of listing.images) if (isVideoUrl(img)) return img;
+  }
+  return null;
+}
+
+// The best poster frame (a real image, never a video) for a video card.
+function listingPoster(listing) {
+  if (Array.isArray(listing.images)) {
+    for (const img of listing.images) if (!isVideoUrl(img)) return img;
+  }
+  return FALLBACK_IMG;
+}
+
+// Every property listing that has a video, deduplicated by property_id AND by
+// video URL — one card per DISTINCT video. This guarantees a clean single row
+// with no duplicate videos: if two property rows point at the same video file
+// (common when a listing was duplicated in the DB), only the first is shown.
+function getAllPropertyVideos() {
+  const seenIds = new Set();
+  const seenVideos = new Set();
+  const out = [];
+  for (const l of getAllShowcaseProperties()) {
+    if (!l) continue;
+    const id = l.property_id || l.id;
+    if (!id || seenIds.has(id)) continue;
+    const video = listingVideoUrl(l);
+    if (!video) continue;
+    if (seenVideos.has(video)) continue;
+    seenIds.add(id);
+    seenVideos.add(video);
+    out.push(l);
+  }
+  return out;
+}
+
+function videoCardHtml(listing) {
+  cleanListing(listing);
+  const pid = escapeHtmlAttr(listing.property_id || listing.id);
+  const video = listingVideoUrl(listing);
+  const poster = listingPoster(listing);
+  const priceHtml = formatPrice(listing);
+  const type = houseTypeLabel(listing);
+  const flag = flagEmoji(listing.country_code);
+  const place = [listing.city, listing.state].filter(Boolean).join(', ') || listing.country || '';
+  const loc = place
+    ? `<span class="kco-video-loc"><i data-lucide="map-pin" class="w-3 h-3 shrink-0"></i>${esc(flag ? flag + ' ' + place : place)}</span>`
+    : '';
+
+  const beds = sp(listing, 'bedrooms') != null ? `<span class="kco-hero-chip"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'bedrooms'))} Beds</span>` : '';
+  const baths = sp(listing, 'bathrooms') != null ? `<span class="kco-hero-chip"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'bathrooms'))} Baths</span>` : '';
+  const land = listing.land_size ? `<span class="kco-hero-chip"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${esc(listing.land_size)}</span>` : '';
+
+  return `
+    <a href="/details.html?id=${pid}" class="kco-video-card">
+      <div class="kco-video-media">
+        <video src="${esc(video)}" poster="${esc(poster)}" muted loop playsinline preload="metadata" class="kco-video-el" data-detail-href="/details.html?id=${pid}" aria-label="${esc(listing.title || '')}">
+          <source src="${esc(video)}">
+        </video>
+        <div class="kco-video-bigplay"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+        <span class="kco-hero-type"><i data-lucide="home" class="w-3 h-3"></i>${esc(type)}</span>
+        <span class="kco-video-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Video</span>
+        ${loc}
+      </div>
+      <div class="kco-video-body">
+        <div class="kco-hero-price"><b>${priceHtml}</b><span>${(listing.listing_status === 'rent') ? 'per month · for rent' : 'for sale'}</span></div>
+        <p class="kco-hero-title">${esc(listing.title || '')}</p>
+        ${(beds || baths || land) ? `<div class="kco-hero-chips">${beds}${baths}${land}</div>` : ''}
+        <span class="kco-hero-btn">Watch &amp; View Property <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
+      </div>
+    </a>`;
+}
+
+// Play/pause a video card's <video> when it scrolls into view (desktop), and
+// let taps toggle play on mobile instead of losing the tap to the link alone.
+function wireVideoCards(section) {
+  const io = ('IntersectionObserver' in window)
+    ? new IntersectionObserver((entries) => {
+        for (const en of entries) {
+          const el = en.target;
+          if (!el || typeof el.play !== 'function') continue;
+          if (en.isIntersecting) {
+            el.play().catch(() => {});
+          } else {
+            try { el.pause(); } catch {}
+          }
+        }
+      }, { rootMargin: '120px' })
+    : null;
+
+  section.querySelectorAll('.kco-video-el').forEach((vd) => {
+    // Tapping the video toggles play/pause, but still lets the surrounding
+    // anchor open details when the video is NOT playing.
+    vd.addEventListener('click', (e) => {
+      if (vd.paused) {
+        vd.play().catch(() => {});
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+    if (io) io.observe(vd);
+  });
+
+  // Keep the observer reference so the section can be replaced without leaking.
+  Object.defineProperty(section, '_kcoVideoIO', { value: io, configurable: true });
+  if (!('_kcoVideoCleanup' in section)) {
+    Object.defineProperty(section, '_kcoVideoCleanup', { value: () => io && io.disconnect(), configurable: true });
+  }
+}
+
+function videoSection() {
+  const listings = getAllPropertyVideos();
+  if (!listings.length) return document.createDocumentFragment();
+
+  const sec = document.createElement('section');
+  sec.className = 'kco-hero-section kco-video-section';
+  sec.setAttribute('aria-label', 'Property Video Tours');
+  sec.setAttribute('data-property-videos', 'true');
+
+  const head = `
+    <div class="kco-hero-panel">
+      <div class="kco-hero-head">
+        <div class="kco-hero-headleft">
+          <span class="kco-hero-ic kco-video-ic"><i data-lucide="video" class="w-5 h-5 text-white"></i></span>
+          <div class="min-w-0">
+            <h3 class="kco-video-h3">Property Video Tours</h3>
+            <p>Watch every home, apartment, villa &amp; mansion on video.</p>
+          </div>
+        </div>
+        <span class="kco-hero-count">${listings.length} Videos</span>
+        <a class="kco-hero-seeall" href="/showroom.html?cat=real-estate">See All <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>
+      </div>
+      <div class="kco-video-hscroll">
+        ${listings.map(l => videoCardHtml(l)).join('')}
+      </div>
+      <button class="kco-hero-arrow left" aria-label="Scroll Property Videos left">${SVG_CH_L}</button>
+      <button class="kco-hero-arrow right" aria-label="Scroll Property Videos right">${SVG_CH_R}</button>
+    </div>`;
+
+  sec.innerHTML = head;
+
+  const track = sec.querySelector('.kco-video-hscroll');
+  wireDrag(track);
+  const left = sec.querySelector('.kco-hero-arrow.left');
+  const right = sec.querySelector('.kco-hero-arrow.right');
+  const update = () => {
+    const max = track.scrollWidth - track.clientWidth - 2;
+    left.disabled = track.scrollLeft <= 2;
+    right.disabled = track.scrollLeft >= max;
+  };
+  left.addEventListener('click', () => track.scrollBy({ left: -track.clientWidth * 0.8, behavior: 'smooth' }));
+  right.addEventListener('click', () => track.scrollBy({ left: track.clientWidth * 0.8, behavior: 'smooth' }));
+  track.addEventListener('scroll', update, { passive: true });
+  update();
+
+  // Pause sidebar work whenever the whole page is hidden so background scans
+  // never keep playing hidden videos.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) sec.querySelectorAll('.kco-video-el').forEach(v => { try { v.pause(); } catch {} });
+  });
+
+  requestAnimationFrame(() => wireVideoCards(sec));
+  if (window.lucide) lucide.createIcons();
+  return sec;
+}
+
 function dedupe(listings) {
   const seen = new Set();
   const out = [];
@@ -155,6 +339,25 @@ function heroStyles() {
 .kco-hero-re .kco-hero-btn{background:linear-gradient(90deg,#059669,#0d9488)}
 .kco-hero-veh .kco-hero-btn{background:linear-gradient(90deg,#f59e0b,#ea580c)}
 .kco-hero-empty{padding:1.2rem;text-align:center;color:rgba(255,255,255,.75);font-size:.85rem;font-weight:600;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.25);border-radius:1rem}
+.kco-video-section{background:linear-gradient(135deg,#0b1020 0%,#111a3a 45%,#1e3a8a 130%)}
+.kco-video-ic{background:rgba(59,130,246,.28);border-color:rgba(96,165,250,.4)}
+.kco-video-h3{color:#fff}
+.kco-video-hscroll{display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:.4rem 2px .7rem;cursor:grab}
+.kco-video-hscroll::-webkit-scrollbar{display:none}
+.kco-video-hscroll.dragging{cursor:grabbing;scroll-snap-type:none;-webkit-user-select:none;user-select:none}
+.kco-video-card{flex:0 0 auto;scroll-snap-align:start;width:min(92vw,360px);min-width:min(92vw,360px);border-radius:1.4rem;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.16);box-shadow:0 16px 34px -14px rgba(0,0,0,.55);transition:transform .18s ease,box-shadow .18s ease;text-decoration:none;display:flex;flex-direction:column}
+@media(min-width:640px){.kco-video-card{width:460px;min-width:460px}}
+@media(min-width:1024px){.kco-video-card{width:560px;min-width:560px}}
+.kco-video-card:hover{transform:translateY(-3px);box-shadow:0 24px 48px -16px rgba(0,0,0,.6)}
+.kco-video-media{position:relative;aspect-ratio:16/9;background:#0b1120;overflow:hidden}
+.kco-video-media video{width:100%;height:100%;object-fit:cover;display:block}
+.kco-video-bigplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.92;transition:opacity .2s ease}
+.kco-video-bigplay svg{width:3.4rem;height:3.4rem;color:#fff;filter:drop-shadow(0 4px 14px rgba(0,0,0,.5))}
+.kco-video-card:hover .kco-video-bigplay,.kco-video-media.video-playing .kco-video-bigplay{opacity:0}
+.kco-video-badge{position:absolute;top:.7rem;right:.7rem;display:inline-flex;align-items:center;gap:.3rem;background:rgba(220,38,38,.92);color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.3rem .6rem;border-radius:999px;border:1px solid rgba(255,255,255,.25);box-shadow:0 4px 12px -2px rgba(0,0,0,.4)}
+.kco-video-badge svg{width:.8rem;height:.8rem}
+.kco-video-loc{position:absolute;bottom:.7rem;left:.7rem;right:.7rem;display:flex;align-items:center;gap:.4rem;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:11px;font-weight:600;padding:.35rem .7rem;border-radius:.8rem}
+.kco-video-body{display:flex;flex-direction:column;gap:.55rem;padding:.85rem .95rem 1rem}
 .kco-hero-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem}
 .kco-hero-headleft{display:flex;align-items:center;gap:.7rem;min-width:0}
 .kco-hero-ic{flex:0 0 auto;width:2.6rem;height:2.6rem;border-radius:.85rem;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22)}
@@ -335,6 +538,9 @@ function renderHeroRows() {
   const houses = getAllHeroHouses();
   const vehicles = getAllHeroVehicles();
   const frag = document.createDocumentFragment();
+  // Dedicated full-width horizontal PROPERTY VIDEO section (single row of large
+  // video cards). Shows nothing when there are no property videos yet.
+  frag.appendChild(videoSection());
   frag.appendChild(heroSection({
     kindCls: 'kco-hero-re',
     title: '🏡 Houses & Real Estate', subtitle: 'Your dream home starts here.',
