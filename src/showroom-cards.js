@@ -470,12 +470,6 @@ function cardParts(listing) {
   const listingId = listing.id || listing.property_id;
   const cover = listing.images?.[0] || FALLBACK_IMG;
   const isCoverVideo = isVideoUrl(cover);
-  // Houses (property) and cars (vehicles) keep the Call Agent card button;
-  // regular products only get Chat Company on their detail page.
-  const isHouseOrCar = listing.listing_type === 'property'
-    || listing.listing_type === 'vehicle'
-    || /(real estate|houses|homes|apartment|villa|mansion|land|property|condo|townhouse|estate|cars|trucks|vehicle|automotive|motorhome)/i.test(String(listing.category || ''));
-  const showCallAgentBtn = isHouseOrCar;
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
   const statusBadge = listing.listing_type === 'product' ? 'New' : ((isProperty || isPet) ? 'For Sale' : '');
 
@@ -617,9 +611,6 @@ export function renderCard(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
       </button>
-      ${p.showCallAgentBtn ? `<button class="kco-card-call-agent mt-2 w-full min-w-0 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30">
-        <i data-lucide="phone" class="w-4 h-4 shrink-0"></i> <span class="truncate">Call Agent</span>
-      </button>` : ''}
     </div>
   `;
 
@@ -684,9 +675,6 @@ export function renderFeedCard(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
       </button>
-      ${p.showCallAgentBtn ? `<button class="kco-card-call-agent mt-2 w-full min-w-0 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30">
-        <i data-lucide="phone" class="w-4 h-4 shrink-0"></i> <span class="truncate">Call Agent</span>
-      </button>` : ''}
     </div>
   `;
 
@@ -708,7 +696,6 @@ function attachCardListeners(card, listing) {
   card.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
   card.querySelector('.cart-btn')?.addEventListener('click', (e) => { e.stopPropagation(); addToCart(listing); });
   card.querySelector('.details-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/details.html?id=${listing.property_id}`; });
-  card.querySelector('.kco-card-call-agent')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/details.html?id=${listing.property_id}`; });
 }
 
 async function handleBuyNow(listing) {
@@ -986,26 +973,6 @@ function adoptPrerendered(container) {
         const listing = listings.find(l => (l.id || l.property_id) === id);
         const target = listing || (id ? { id, property_id: id, title: id } : null);
         if (!target) return;
-        // Inject a single 'Call Agent' front button into build-time baked cards
-        // that don't already have one so it opens the View Details page. Only
-        // houses and cars keep it (regular products show Chat Company only).
-        const isHouseOrCarBaked = !!(listing && (listing.listing_type === 'property'
-          || listing.listing_type === 'vehicle'
-          || /(real estate|houses|homes|apartment|villa|mansion|land|property|condo|townhouse|estate|cars|trucks|vehicle|automotive|motorhome)/i.test(String(listing.category || ''))));
-        if (isHouseOrCarBaked && !card.querySelector('.kco-card-call-agent')) {
-          const btnWrap = card.querySelector('.agent-btns-wrap') || (() => {
-            const w = document.createElement('div');
-            w.className = 'agent-btns-wrap mt-2 pt-2 border-t border-gray-100';
-            card.querySelector('.showroom-card .px-3\\.5', card)?.appendChild(w) ||
-              card.appendChild(w);
-            return w;
-          })();
-          btnWrap.innerHTML = `<button type="button" class="kco-card-call-agent mt-2 w-full min-w-0 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30 mt-2"><i data-lucide="phone" class="w-4 h-4 shrink-0"></i><span class="truncate">Call Agent</span></button>`;
-          btnWrap.querySelector('.kco-card-call-agent')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            window.location.href = `/details.html?id=${target.property_id || target.id}`;
-          });
-        }
         attachCardListeners(card, target);
       });
     }

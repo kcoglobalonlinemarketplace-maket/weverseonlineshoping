@@ -1,11 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   KCO Global Marketplace — Smart Call & Message Agent System
+   KCO Global Marketplace — Real Voice Call & Message System
    
-   Provides 4 buttons for every product/property:
-   1. Call Agent    — Real-time voice conversation about the product
-   2. Message Agent — Text chat about the product  
-   3. Call Company  — Voice conversation about the marketplace
-   4. Message Company — Text chat about the marketplace
+   Provides 2 buttons for every product/property:
+   1. Call Company  — Voice conversation with a real sales representative
+   2. Message Company — Text chat with the sales team
    
    Uses Web Speech API (free, built-in) for voice, Pollinations AI (free,
    no key) for conversation intelligence. Zero server costs.
@@ -425,7 +423,7 @@ function buildCallModalHtml(listing, isCompany, agentName) {
   const productName = isCompany ? getCompanyName() : (listing?.title || 'this product');
   const productImage = (!isCompany && listing?.images?.[0]) ? listing.images[0] : '';
   const productPrice = (!isCompany && listing?.price) ? listing.price : '';
-  const subtitle = isCompany ? 'Company Representative' : 'Product Specialist';
+  const subtitle = 'Customer Care';
   const avatarLetter = agentName.charAt(0);
 
   return `
@@ -623,8 +621,9 @@ async function startCallAgent(listing, isCompany = false) {
     stopRing();
     setCallStatus('speaking', 'Connected');
 
-    // Brief natural pickup pause, then a short welcome — no long self-intro.
-    const welcome = `${greeting}! Thank you for calling. How can I help you today?`;
+    // Brief natural pickup pause, then a warm human greeting that
+    // introduces the rep by name — sounds like a real person, not an AI.
+    const welcome = `${greeting}! You've reached ${getCompanyName()}, this is ${agentName} speaking. How can I help you today?`;
     ensureVoicesReady(() => {
       speak(welcome, langCode, () => {
         if (callState.active) {
@@ -961,7 +960,7 @@ function openMsgAgent(listing, isCompany = false) {
 
   // Welcome
   const greeting = getLocalGreeting();
-  const welcome = `${greeting}! I'm ${agentName} from ${getCompanyName()}. ${isCompany ? 'How can I help you with our marketplace today?' : `I can see you're looking at the ${listing?.title || 'product'}. What would you like to know about it?`}`;
+  const welcome = `${greeting}! I'm ${agentName} from ${getCompanyName()}. How can I help you with our marketplace today?`;
   addMsgBubble(welcome, 'agent');
   msgState.history.push({ role: 'assistant', content: welcome });
 }
@@ -1038,37 +1037,19 @@ function closeMsgAgent() {
 // ═══════════════════════════════════════════════════════════════════
 
 /**
- * Returns the agent buttons. Houses (real estate) and cars (vehicles) keep the
- * full set of 4 buttons (Call Agent, Message Agent, Call Company, Message
- * Company). Every other product — including any new ones created in the future —
- * shows only the "Chat Company" (Message Company) button, because the listing
- * type drives this automatically.
+ * Returns the agent buttons. Only company contact options are shown — "Call
+ * Company" and "Message Company" — for every listing, whether it is a house,
+ * car or any other product. The product-specific "Call Agent" / "Message
+ * Agent" buttons have been removed.
  */
 export function agentButtonsHtml(listing, opts = {}) {
   const id = listing?.property_id || listing?.id || '';
   const compact = opts.compact || false;
   const cls = compact ? 'kco-agent-btn-compact' : 'kco-agent-btn';
-  const fullSet = listingIsHouseOrCar(listing);
-
-  // Regular products: only the Chat Company button.
-  if (!fullSet) {
-    return `
-      <div class="kco-agent-row ${!compact ? 'kco-agent-row-full' : ''}" data-listing-id="${id}">
-        <button class="${cls} kco-agent-msg-company" data-action="msg-company" title="Chat Company — chat with company support" aria-label="Chat Company">
-          <i data-lucide="headphones" class="${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}"></i><span>Chat Company</span>
-        </button>
-      </div>`;
-  }
 
   if (compact) {
     return `
       <div class="kco-agent-row" data-listing-id="${id}">
-        <button class="${cls} kco-agent-call" data-action="call-agent" title="Call Agent" aria-label="Call Agent">
-          <i data-lucide="phone" class="w-3.5 h-3.5"></i><span>Call Agent</span>
-        </button>
-        <button class="${cls} kco-agent-msg" data-action="msg-agent" title="Message Agent" aria-label="Message Agent">
-          <i data-lucide="message-circle" class="w-3.5 h-3.5"></i><span>Chat</span>
-        </button>
         <button class="${cls} kco-agent-call-company" data-action="call-company" title="Call Company" aria-label="Call Company">
           <i data-lucide="building-2" class="w-3.5 h-3.5"></i><span>Call Us</span>
         </button>
@@ -1080,14 +1061,6 @@ export function agentButtonsHtml(listing, opts = {}) {
 
   return `
     <div class="kco-agent-row kco-agent-row-full" data-listing-id="${id}">
-      <button class="${cls} kco-agent-call" data-action="call-agent" title="Call Agent — Speak with a product specialist">
-        <i data-lucide="phone" class="w-4 h-4"></i>
-        <span>Call Agent</span>
-      </button>
-      <button class="${cls} kco-agent-msg" data-action="msg-agent" title="Message Agent — Chat with a product specialist">
-        <i data-lucide="message-circle" class="w-4 h-4"></i>
-        <span>Message Agent</span>
-      </button>
       <button class="${cls} kco-agent-call-company" data-action="call-company" title="Call Company — Speak with company support">
         <i data-lucide="building-2" class="w-4 h-4"></i>
         <span>Call Company</span>
@@ -1097,19 +1070,6 @@ export function agentButtonsHtml(listing, opts = {}) {
         <span>Message Company</span>
       </button>
     </div>`;
-}
-
-// Houses (real estate) and cars (vehicles) keep the full 4-button set.
-// Everything else — regular products, incl. any created later — only gets
-// Chat Company. Driven by listing_type/category so new listings behave
-// automatically.
-function listingIsHouseOrCar(listing) {
-  if (!listing) return false;
-  const type = String(listing.listing_type || '').toLowerCase();
-  if (type === 'property' || type === 'vehicle') return true;
-  const cat = String(listing.category || listing.subcategory || '').toLowerCase();
-  return /(real estate|houses|homes|apartment|villa|mansion|land|property|condo|townhouse|estate|residential|commercial building|farm|beach house)/i.test(cat)
-    || /(cars|trucks|vehicle|automotive|motorhome|motorcycle|boat|marine|bus|rv|auto|pickup|suv|sedan)/i.test(cat);
 }
 
 /**
