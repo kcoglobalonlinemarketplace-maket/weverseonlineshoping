@@ -615,9 +615,9 @@ async function startCallAgent(listing, isCompany = false) {
   const systemPrompt = buildCallSystemPrompt(listing, isCompany, agentName, greeting);
 
   try {
-    // Let the phone ring a few times (ring ... pause ... ring ... pause)
-    // before the agent picks up — feels like a real phone call.
-    await new Promise(resolve => setTimeout(resolve, 8500));
+    // Let the phone ring many times (ring ... pause ... ring ... pause)
+    // for ~25 seconds before the agent picks up — feels like a real phone.
+    await new Promise(resolve => setTimeout(resolve, 25000));
     if (!callState.active) return;
     // Agent picks up.
     stopRing();
