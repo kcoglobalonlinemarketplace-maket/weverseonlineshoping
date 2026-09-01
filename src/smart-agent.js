@@ -233,36 +233,42 @@ function pickVoice(lang) {
   let voices = cachedVoices;
   if (!voices.length) { try { voices = synth.getVoices() || []; } catch { voices = []; } }
 
-  // Only genuine US or UK English — never Indian English or other accents.
-  const isTargetAccent = (v) => {
-    const l = (v.lang || '').toLowerCase();
-    if (l.startsWith('en-us')) return true;
-    if (l.startsWith('en-gb')) return true;
-    if (l.startsWith('en')) {
-      const tag = l.split('-')[1] || '';
-      // Explicitly avoid Indian, Filipino, South-African, NZ, AU voices.
-      if (/^(in|ph|za|ng|gh|ke|au|nz)$/.test(tag)) return false;
-      return true;
-    }
-    return false;
-  };
+  // Strong US-female voice preference (highest quality / most natural first).
+  const US_FEMALE_ORDER = [
+    'google us english', 'aria', 'jenny', 'salli', 'joanna',
+    'zira', 'samantha', 'allison', 'ava', 'emma', 'olivia',
+    'michelle', 'susan', 'kendra', 'ashley', 'google us english female',
+  ];
 
-  const femaleVoice = voices.find(v => isTargetAccent(v) && isFemaleVoiceName(v.name));
-  if (femaleVoice) return femaleVoice;
+  const enUS = (v) => (v.lang || '').toLowerCase().startsWith('en-us');
+  const isFemale = (name) => /female|woman|girl|samantha|victoria|karen|moira|tessa|fiona|ava|allison|susan|zira|aria|serena|siri|jenny|jennifer|alison|salli|joanna|kendra|kimberly|ivy|emma|olivia|amanda|ashley|michelle|hazel|nicky|libby|google us english|naturalweather|female/.test(String(name || '').toLowerCase());
 
-  const nonIndianEn = voices.find(v => isTargetAccent(v));
-  if (nonIndianEn) return nonIndianEn;
-
-  const anyUS = voices.find(v => v.lang.toLowerCase().startsWith('en-us'));
+  // 1) Walk the ranked list of known-great US female voices in order of quality.
+  for (const frag of US_FEMALE_ORDER) {
+    const hit = voices.find((v) => enUS(v) && String(v.name || '').toLowerCase().includes(frag));
+    if (hit) return hit;
+  }
+  // 2) Any en-US female voice.
+  const usFemale = voices.find((v) => enUS(v) && isFemale(v.name));
+  if (usFemale) return usFemale;
+  // 3) Any en-US voice (male ok — still a clean American accent).
+  const anyUS = voices.find((v) => enUS(v));
   if (anyUS) return anyUS;
-  const anyGB = voices.find(v => v.lang.toLowerCase().startsWith('en-gb'));
+  // 4) A female UK voice as a second choice (still a natural accent, never Indian).
+  const gbFemale = voices.find((v) => (v.lang || '').toLowerCase().startsWith('en-gb') && isFemale(v.name));
+  if (gbFemale) return gbFemale;
+  const anyGB = voices.find((v) => (v.lang || '').toLowerCase().startsWith('en-gb'));
   if (anyGB) return anyGB;
-  const anyEn = voices.find(v => v.lang.toLowerCase().startsWith('en') && !/^en-(in|ph|za|ng|gh|ke|au|nz)$/i.test(v.lang));
-  if (anyEn) return anyEn;
-
-  // Absolute last resort — any female English voice.
-  return voices.find(v => v.lang.toLowerCase().startsWith('en') && isFemaleVoiceName(v.name)) ||
-         voices.find(v => v.lang.toLowerCase().startsWith('en')) || voices[0] || null;
+  // 5) Any other English, EXCLUDING accents that sound wrong to people hoping
+  //    for a North American voice (Indian, Filipino, South African, Nigerian,
+  //    Kenyan, Australian, New Zealand).
+  const banned = /^en-(in|ph|za|ng|gh|ke|au|nz|ie|jm|tt|sg|pk)$/i;
+  const cleanEnFemale = voices.find((v) => (v.lang || '').toLowerCase().startsWith('en') && !banned.test(v.lang.toLowerCase()) && isFemale(v.name));
+  if (cleanEnFemale) return cleanEnFemale;
+  const cleanEn = voices.find((v) => (v.lang || '').toLowerCase().startsWith('en') && !banned.test(v.lang.toLowerCase()));
+  if (cleanEn) return cleanEn;
+  // 6) Absolute last resort — never an Indian/Filipino/etc. accent.
+  return null;
 }
 
 // Speak with a guaranteed completion callback (falls back to default voice
@@ -272,7 +278,7 @@ function speak(text, lang, onEnd) {
   const finish = () => onEnd?.();
   synth.cancel();
   const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 1.05;
+  utter.rate = 0.98;
   utter.pitch = 1.0;
   utter.volume = 1.0;
   let voice = pickVoice(lang);
