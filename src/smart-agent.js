@@ -204,35 +204,45 @@ let speakingVoice = null;
 
 function isFemaleVoiceName(name) {
   const n = String(name || '').toLowerCase();
-  return /female|woman|girl|samantha|victoria|karen|moira|tessa|fiona|ava|allison|susan|zira|aria|jenny|jennifer|alison|google us english|salli|joanna|kendra|kimberly|ivy|emma|olivia|amanda|ashley/i.test(n);
+  const female = /female|woman|girl|samantha|victoria|karen|moira|tessa|fiona|ava|allison|susan|zira|aria|serena|siri|jenny|jennifer|alison|salli|joanna|kendra|kimberly|ivy|emma|olivia|amanda|ashley|michelle|hazel|nicky|libby|sonia|heera|katya|zoey|amy|bella|grace|harriet|natasha|sophie|melina|google us english|google uk english female|mei-jia|tina|zoe|emma|aria|li mu|google british english female|amira|ayesha/.test(n);
+  const male = /male|man|guy|boy|david|mark|daniel|james|oliver|jack|matthew|alex|tom|ben|sam|ryan|eric|guy|alexander|liam|noah|lucas|george|charlie|thomas|joseph|michael|william|henry|arthur|ethan|mason|jacob/.test(n);
+  return female && !male;
 }
 
 function pickVoice(lang) {
   if (!synth) return null;
   const voices = synth.getVoices();
-  const langPrefix = (lang || 'en').split('-')[0].toLowerCase();
-  const us = (langPrefix === 'en') ? 'en-us' : langPrefix;
 
-  // Prefer a female-sounding US English voice.
-  const preferred = voices.find(v =>
-    v.lang.toLowerCase().startsWith(us) &&
-    isFemaleVoiceName(v.name)
-  );
-  if (preferred) return preferred;
+  // Only genuine US or UK English — never Indian English or other accents.
+  const isTargetAccent = (v) => {
+    const l = (v.lang || '').toLowerCase();
+    if (l.startsWith('en-us')) return true;
+    if (l.startsWith('en-gb')) return true;
+    if (l.startsWith('en')) {
+      const tag = l.split('-')[1] || '';
+      // Explicitly avoid Indian, Filipino, South-African, NZ, AU voices.
+      if (/^(in|ph|za|ng|gh|ke|au|nz)$/.test(tag)) return false;
+      return true;
+    }
+    return false;
+  };
 
-  const anyUS = voices.find(v => v.lang.toLowerCase().startsWith(us) && v.localService);
+  const femaleVoice = voices.find(v => isTargetAccent(v) && isFemaleVoiceName(v.name));
+  if (femaleVoice) return femaleVoice;
+
+  const nonIndianEn = voices.find(v => isTargetAccent(v));
+  if (nonIndianEn) return nonIndianEn;
+
+  const anyUS = voices.find(v => v.lang.toLowerCase().startsWith('en-us'));
   if (anyUS) return anyUS;
+  const anyGB = voices.find(v => v.lang.toLowerCase().startsWith('en-gb'));
+  if (anyGB) return anyGB;
+  const anyEn = voices.find(v => v.lang.toLowerCase().startsWith('en') && !/^en-(in|ph|za|ng|gh|ke|au|nz)$/i.test(v.lang));
+  if (anyEn) return anyEn;
 
-  const femaleAny = voices.find(v =>
-    v.lang.toLowerCase().startsWith(langPrefix) &&
-    isFemaleVoiceName(v.name)
-  );
-  if (femaleAny) return femaleAny;
-
-  const anyMatch = voices.find(v => v.lang.startsWith(langPrefix));
-  if (anyMatch) return anyMatch;
-  return voices.find(v => v.lang.startsWith('en') && isFemaleVoiceName(v.name)) ||
-         voices.find(v => v.lang.startsWith('en')) || voices[0] || null;
+  // Absolute last resort — any female English voice.
+  return voices.find(v => v.lang.toLowerCase().startsWith('en') && isFemaleVoiceName(v.name)) ||
+         voices.find(v => v.lang.toLowerCase().startsWith('en')) || voices[0] || null;
 }
 
 function speak(text, lang, onEnd) {
@@ -395,13 +405,12 @@ function buildCallModalHtml(listing, isCompany, agentName) {
       <div class="kco-call-status">
         <div class="kco-call-status-text">
           <span class="kco-call-status-dot thinking" id="kco-call-dot"></span>
-          <span id="kco-call-status-label">Connecting...</span>
+          <span id="kco-call-status-label">Calling...</span>
         </div>
       </div>
       <div class="kco-call-waveform" id="kco-call-waveform">
         ${Array.from({length: 20}, () => '<div class="kco-call-wave-bar" style="height:4px"></div>').join('')}
       </div>
-      <div class="kco-call-transcript" id="kco-call-transcript"></div>
       <div class="kco-call-controls">
         <button class="kco-call-ctrl-btn mute" id="kco-call-mute-btn" title="Mute">
           <i data-lucide="mic" class="w-5 h-5"></i>
@@ -433,14 +442,8 @@ function buildCallModalHtml(listing, isCompany, agentName) {
   `;
 }
 
-function addCallMsg(text, role) {
-  const transcript = document.getElementById('kco-call-transcript');
-  if (!transcript) return;
-  const msg = document.createElement('div');
-  msg.className = `kco-call-msg ${role}`;
-  msg.textContent = text;
-  transcript.appendChild(msg);
-  transcript.scrollTop = transcript.scrollHeight;
+function addCallMsg() {
+  // Transcript display is hidden — the call is an audio-only phone call.
 }
 
 function setCallStatus(status, label) {
@@ -568,7 +571,7 @@ async function startCallAgent(listing, isCompany = false) {
   });
 
   // Ring the agent first — the call rings a few times before someone picks up.
-  setCallStatus('thinking', 'Ringing...');
+  setCallStatus('thinking', 'Calling...');
   animateWaveform(false);
   startRing();
 
