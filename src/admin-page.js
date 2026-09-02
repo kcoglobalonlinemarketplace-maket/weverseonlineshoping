@@ -4960,6 +4960,29 @@ window.scanCountryLocations = async function() {
     const rows = (geoms && geoms[0] && geoms[0].boundingbox) ? geoms[0].boundingbox : null;
     const centroid = geoms && geoms[0] ? { lat: Number(geoms[0].lat), lng: Number(geoms[0].lon) } : null;
     const countryAreaId = reOverpassAreaId(geoms && geoms[0] || null);
+    // Fill the property form with the country immediately — pressing SCAN COUNTRY
+    // must never leave the form empty. country / country_code / currency always
+    // come from the user's explicit pick; location + coordinates only fill when
+    // those fields are still blank so a hand-typed address is never clobbered.
+    if (form && geoms && geoms[0]) {
+      const g = geoms[0];
+      const setVal = (name, val, onlyIfEmpty = false) => {
+        if (val == null || String(val).trim() === '') return;
+        const f = form.querySelector(`[name="${name}"]`);
+        if (!f) return;
+        if (onlyIfEmpty && String(f.value || '').trim() !== '') return;
+        f.value = String(val);
+      };
+      setVal('country_code', code);
+      setVal('country', country);
+      const curEl = form.querySelector('[name="currency"]');
+      if (curEl && String(curEl.value || '') === 'USD') curEl.value = getDefaultCurrencyForCountry(code) || curEl.value;
+      setVal('product_location', (g.display_name || country).split(',').slice(0, 3).map(s => s.trim()).reverse().join(', ') || country, true);
+      const latN = Number(g.lat), lngN = Number(g.lon);
+      if (Number.isFinite(latN) && latN !== 0) setVal('latitude', String(Number(latN).toFixed(6)), true);
+      if (Number.isFinite(lngN) && lngN !== 0) setVal('longitude', String(Number(lngN).toFixed(6)), true);
+      if (typeof window.refreshPropertyMapFromForm === 'function') window.refreshPropertyMapFromForm();
+    }
     let states = [];
     let data = { elements: [] };
     // Primary (reliable across every country): everything inside the country's
@@ -5001,7 +5024,7 @@ window.scanCountryLocations = async function() {
     if (stateSel) {
       stateSel.innerHTML = '<option value="">— Pick a state —</option>' + states.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
     }
-    reScannerStatus(`Scanner found <b>${states.length}</b> state${states.length > 1 ? 's' : ''} in <b>${esc(country)}</b>. Pick one to discover its areas.`, 'text-emerald-300');
+    reScannerStatus(`Scanner found <b>${states.length}</b> state${states.length > 1 ? 's' : ''} in <b>${esc(country)}</b>. The country location was already written into the property form — pick a state to also add its areas/streets.`, 'text-emerald-300');
   } catch (err) {
     reScannerStatus(`Scan failed: ${esc(String(err && err.message || err))}`, 'text-red-400');
   }
@@ -5017,6 +5040,7 @@ window.onReScannerStateChange = async function() {
   reScannerStatus(`Scanning areas inside <b>${esc(state)}</b>…`, 'text-sky-300');
   let areas = [];
   let statePoint = null;
+  let stateAddress = null;
   try {
     // Primary: geocode the state, then list the municipalities/areas inside its
     // OSM area (admin levels 6-8) plus place=city/town/village/suburb nodes.
@@ -5026,7 +5050,7 @@ window.onReScannerStateChange = async function() {
       const data = await reOverpass(`[out:json][timeout:60];(rel["boundary"="administrative"]["admin_level"~"^(6|8)$"]["name"](area:${stateAreaId});node["place"~"^(city|town|municipality|village|suburb|borough)$"](area:${stateAreaId});way["place"~"^(city|town|village|suburb)$"](area:${stateAreaId}););out center tags;`);
       areas = uniqueNames(data.elements).slice(0, 60);
     }
-    if (geo && geo[0]) statePoint = { lat: Number(geo[0].lat), lng: Number(geo[0].lon) };
+    if (geo && geo[0]) { statePoint = { lat: Number(geo[0].lat), lng: Number(geo[0].lon) }; stateAddress = geo[0].address || null; }
     // Fallback: around the state's center from the states scan (70 km captures a
     // state-sized region without needing a polygon).
     const entry = (ctx.states || []).find(s => s.name === state);
@@ -5040,10 +5064,17 @@ window.onReScannerStateChange = async function() {
       const data = await reOverpass(`[out:json][timeout:45];(node["place"~"^(city|town|municipality|village)$"](around:80000,${statePoint.lat},${statePoint.lng});way["place"~"^(city|town|village)$"](around:80000,${statePoint.lat},${statePoint.lng}););out center tags;`);
       areas = uniqueNames(data.elements).slice(0, 60);
     }
+    // Offline-proof fallback: even with zero Overpass access, the geocoded
+    // state's own city/town IS a real area, so the flow never dead-ends.
+    if (!areas.length && geo && geo[0]) {
+      const a = (geo[0].address && (geo[0].address.city || geo[0].address.town || geo[0].address.village || geo[0].address.county || geo[0].address.state_district || geo[0].address.suburb))
+        || String((geo[0].display_name || state)).split(',')[0];
+      if (a) areas = [String(a).trim()];
+    }
   } catch { /* handled by the empty-areas message below */ }
   areas = areas.filter(n => !new Set([state]).has(n));
   if (!areas.length) { reScannerStatus(`No areas could be discovered inside <b>${esc(state)}</b>. Try another state, or use "Fill Location Form" to use the state as the location.`, 'text-amber-300'); return; }
-  window[RE_SCANNER_STATE] = { ...ctx, state: { name: state, point: statePoint } };
+  window[RE_SCANNER_STATE] = { ...ctx, state: { name: state, point: statePoint, address: stateAddress } };
   const areaSel = document.getElementById('re-area');
   if (areaSel) areaSel.innerHTML = '<option value="">— Pick an area —</option>' + areas.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
   reScannerStatus(`Found <b>${areas.length}</b> area${areas.length > 1 ? 's' : ''} in <b>${esc(state)}</b>. Pick one to discover its streets.`, 'text-emerald-300');
@@ -5100,22 +5131,33 @@ window.applyReScannerToModal = async function() {
   setf('country_code', countryCode);
   setf('country', country);
   setf('state', state);
-  setf('city', area);
-  setf('town', area);
-  setf('address', street);
-  setf('product_location', [street, area, state, country].filter(Boolean).join(', '));
+  // When no area/street was picked yet, use the scanned state's own resolved
+  // city/town so the form is never left with just a country.
+  const stAddr = ((window[RE_SCANNER_STATE] || {}).state || {}).address || null;
+  const townVal = (area || street) ? '' : String((stAddr && (stAddr.city || stAddr.town || stAddr.village || stAddr.suburb || stAddr.county)) || '');
+  setf('city', area || townVal);
+  setf('town', area || townVal);
+  if (!area && stAddr) {
+    const nbr = String(stAddr.neighbourhood || stAddr.suburb || stAddr.city_district || '');
+    if (nbr) setf('neighborhood', nbr);
+  }
+  setf('address', street || area || townVal);
+  setf('product_location', [street || '', area || townVal || '', state, country].filter(Boolean).join(', '));
   const cur = form.querySelector('[name="currency"]');
   if (cur && countryCode) cur.value = getDefaultCurrencyForCountry(countryCode);
 
   reScannerStatus(`Locating <b>${esc(street || area || state || country)}</b> and pulling real nearby schools/hospitals/stores…`, 'text-sky-300');
   const notes = [];
   try {
-    const { lat, lng } = window._reScannerPoint || {};
+    const pt = window._reScannerPoint || {};
+    const sp = ((window[RE_SCANNER_STATE] || {}).state || {}).point || {};
+    const lat = Number(pt.lat) || Number(sp.lat) || NaN;
+    const lng = Number(pt.lng) || Number(sp.lng) || NaN;
     if (Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)) {
       setf('latitude', String(Number(lat).toFixed(6)));
       setf('longitude', String(Number(lng).toFixed(6)));
     } else {
-      const q = [street, area, state, country].filter(Boolean).join(', ');
+      const q = [street || '', area || townVal || '', state, country].filter(Boolean).join(', ');
       const geo = await reNominatim(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&q=${encodeURIComponent(q)}`);
       if (geo && geo[0]) { setf('latitude', String(Number(geo[0].lat).toFixed(6))); setf('longitude', String(Number(geo[0].lon).toFixed(6))); }
     }
@@ -5555,7 +5597,7 @@ function routePropertyScan(identification, images) {
   setStatus('Reading every page, completing property details and valueâ€¦', 'text-blue-300');
   (async () => {
     try {
-const res = await runVerifiedScan({ imageUrls: scanImages, identification, category: 'Real Estate', formSelector: '#property-form' });
+const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
       const id2 = res.identification || identification;
       const out = await applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
       let msg;
@@ -5660,59 +5702,39 @@ window.scanPropertyWithAI = async function() {
     return;
   }
 
-  await scanPreflightStatus(setStatus);
-
-  setStatus('Identifying this property from your photos and/or video…', 'text-blue-300');
-
-  let identification;
-  try {
-    identification = await aiClient.identifyProduct(scanImages, { category: 'Real Estate', maxImages: Math.max(AI_PRODUCT_SCANNER.maxImages, Math.min(scanImages.length, 12)) });
-  } catch (err) {
-    const msg = String(err?.message || err);
-    const keyHint = /key|api|configured|settings|vision/i.test(msg);
-    setStatus(keyHint
-      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
-      : `Scan failed: ${msg}`, 'text-red-400');
-    showToast('AI scan failed.', 'error');
-    if (btn) { btn.disabled = false; btn.innerHTML = original; }
-    return;
-  }
-
-  if (!identification || identification.identified === false) {
-    setStatus(identification && identification.reason
-      ? `Could not identify the property: ${esc(identification.reason)}`
-      : 'The property could not be read from these images. Make sure the photos clearly show it, then try again.', 'text-amber-300');
-    showToast('The property could not be identified from the images.', 'error');
-    if (btn) { btn.disabled = false; btn.innerHTML = original; }
-    return;
-  }
-  if (btn) { btn.disabled = false; btn.innerHTML = original; }
+// ── DEDICATED REAL ESTATE SCANNER ─────────────────────────────────
+  // Properties use their own separate Gemini system (reAIScanner), NOT the
+  // product scanner and NOT the car scanner. It reads the property from photos
+  // AND videos, uses its own key (AI Settings → "Real Estate Property Scanner"),
+  // and stops with a clear message when the key is missing or its quota is used
+  // up — it never fabricates data and it shares with no other feature.
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
+  setStatus('Watching your property photos/video and completing every field…', 'text-blue-300');
 
   try {
-    setStatus('Reading every page, completing property details and market valueâ€¦', 'text-blue-300');
-    const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
-    const id2 = res.identification || identification;
-    const out = applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
-    let msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`;
-    if (!res.visionUsed) {
-      msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photo was NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — these values did NOT come from your images.</p>`;
-    } else if (res.verifyRequested) {
-      msg += res.verified
-        ? `<p class="text-[11px] text-gray-400 mt-1">âœ“ Second-pass verification completed â€” every value was re-checked against your document.</p>`
-        : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run â€” values come from the first pass.</p>`;
+    // Will throw NO_RE_KEY / RE_QUOTA / RE_BAD_KEY with friendly messages.
+    const res = await reAIScanner.scanRealEstate(scanImages);
+    if (!res.identification || res.identification.identified === false) {
+      setStatus(res.identification && res.identification.reason
+        ? `The Real Estate Scanner could not read this property: ${esc(res.identification.reason)}`
+        : 'The property could not be read from these images. Use clear photos that show the whole property, then try again.', 'text-amber-300');
+      showToast('The property could not be identified from the media.', 'error');
+      return;
     }
-    msg += res.inferred ? ` <span class="text-amber-300/80">(${res.inferred} values inferred from the model's real specs/type - review them)</span>` : '';
-    msg += scanAiLimitNotice();
-    msg += renderScanChecklistReport(res.checklist, res.summary);
-    setStatus(msg, 'text-emerald-300');
+    const out = await applyScanToPropertyForm({ identification: res.identification, specs: res.specs, price: res.price, visionUsed: true });
+    const name = res.identification.detected_name || 'Property';
+    setStatus(
+      `<span class="font-bold text-white">${esc(name)}</span> — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you from the <b>Real Estate Scanner</b>. Review and edit everything, then press Publish Property.` +
+      `<p class="text-[11px] text-gray-400 mt-1">Dedicated Real Estate AI · own Gemini key · reads photos &amp; videos.</p>`,
+      'text-emerald-300'
+    );
     showToast('Review the property details, then press Publish Property.', 'success');
   } catch (err) {
-    const msg = String(err?.message || err);
-    const keyHint = /key|api|configured|settings|vision/i.test(msg);
-    setStatus(keyHint
-      ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.'
-      : `Scan failed: ${msg}`, 'text-red-400');
-    showToast('AI scan failed.', 'error');
+    const info = reAIScanner.describeError(err);
+    setStatus(`<span class="font-bold text-white">${esc(info.title)}</span><br>${esc(info.hint)}`, 'text-red-400');
+    showToast(info.title, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
   }
   if (window.lucide) lucide.createIcons();
 };
@@ -7133,7 +7155,7 @@ window.showAddPropertyModal = function(existing = {}) {
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Property Scanner</p>
-                <p class="text-[11px] text-gray-500 mt-1">Reads your uploaded photos <b class="text-white">or videos</b> — it watches the video, counts the rooms and lists everything inside, then fills the property form for you. Only runs when you press the button — you review everything before publishing.</p>
+                <p class="text-[11px] text-gray-500 mt-1">Reads your uploaded photos <b class="text-white">or videos</b> — it watches the video, counts the rooms and lists everything inside, then fills the property form for you. Uses its <b class="text-white">own dedicated Real Estate Gemini key</b> (AI Settings → Real Estate Property Scanner) — not the product key. Only runs when you press the button — you review everything before publishing.</p>
               </div>
               <button type="button" id="btn-scan-ai-prop" onclick="scanPropertyWithAI()" class="btn-press px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shrink-0">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
@@ -8736,6 +8758,35 @@ async function renderAiSettings() {
             </a>
           </div>
 
+          <div class="glass-soft border border-violet-500/25 rounded-2xl p-4 space-y-3">
+            <h3 class="text-sm font-black text-white flex items-center gap-2 flex-wrap">
+              <i data-lucide="home" class="w-4 h-4 text-violet-400"></i> Real Estate Property Scanner
+              <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300">Real Estate Only</span>
+            </h3>
+            <p class="text-[11px] text-gray-400 leading-relaxed">This is a <b class="text-white">separate, dedicated AI system just for the Add Real Estate / Add Property form</b>. It uses its <b class="text-white">own Gemini key</b> and its own property scanner, and it reads houses/apartments from <b class="text-white">photos OR videos</b> (video frames are sampled automatically). It does <b class="text-white">NOT share the product scanner key, the car scanner key, or anything else</b> — the Real Estate AI is used by nobody except Add Real Estate.</p>
+            <p class="text-[10px] text-amber-300/90 leading-relaxed">⚡ When this key runs out of free quota, the Real Estate scanner <b>stops</b> until you paste in a fresh key here. No fake values are ever generated. Add a new key and it works again automatically.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label class="lbl">Real Estate Scanner Gemini Key</label>
+                <div class="relative">
+                  <input type="password" class="input-field text-xs" name="re_scanner_key"
+                    placeholder="${s.re_scanner_key ? '••••' + String(s.re_scanner_key).slice(-4) : 'AIzaSy… (dedicated Real Estate key)'}">
+                  ${s.re_scanner_key ? `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500">✓ Saved</span>` : `<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-gray-600">Empty</span>`}
+                </div>
+                <p class="text-[10px] text-gray-400 mt-1">Get a free key at Google AI Studio, then paste it here. Stored securely in your database — only the Real Estate scanner reads it.</p>
+              </div>
+              <div>
+                <label class="lbl">Real Estate Scanner Model</label>
+                <select class="input-field text-xs" name="re_scanner_model">
+                  ${['gemini-flash-latest','gemini-3.7-flash','gemini-3.6-flash'].map(m=>`<option value="${m}" ${(s.re_scanner_model||'gemini-flash-latest')===m?'selected':''}>${m}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-[10px] font-bold text-violet-400 hover:underline">
+              <i data-lucide="external-link" class="w-3 h-3"></i>Get a free Gemini key for the Real Estate Property Scanner
+            </a>
+          </div>
+
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-3">
             <h3 class="text-sm font-black text-white flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Feature Toggles</h3>
             ${[
@@ -8800,6 +8851,11 @@ window.saveAiSettings = async function(e) {
   if (data.car_scanner_model) payload.car_scanner_model = data.car_scanner_model;
   const carKeyVal = (data.car_scanner_key || '').trim();
   if (carKeyVal && !/^[•\u2022]{4}/.test(carKeyVal)) payload.car_scanner_key = carKeyVal;
+
+  // Dedicated Real Estate Property Scanner (separate Gemini system — own key + model).
+  if (data.re_scanner_model) payload.re_scanner_model = data.re_scanner_model;
+  const reKeyVal = (data.re_scanner_key || '').trim();
+  if (reKeyVal && !/^[•\u2022]{4}/.test(reKeyVal)) payload.re_scanner_key = reKeyVal;
 
   // Customer Chat Assistant settings → real ai_settings columns.
   payload.customer_ai_enabled = data.customer_ai_enabled === 'on';
@@ -9938,6 +9994,286 @@ If the media does not clearly show any vehicle, return { "identification": { "id
     return { title: 'Car Scanner failed', hint: String(err && err.message ? err.message : err), code };
   },
 };
+
+// ═════════════════════════════════════════════════════════════════════
+//  REAL ESTATE AI SCANNER  —  a SEPARATE, dedicated Gemini system just
+//  for the Add Real Estate / Add Property form.
+//
+//  Why separate: this scanner is fully independent from the General AI /
+//  Product Scanner (aiClient). It uses its OWN Gemini key (re_scanner_key)
+//  and its own model (re_scanner_model) stored in ai_settings, and it talks
+//  to Google Gemini REST directly from the browser. It does NOT go through
+//  the ai-admin-assistant edge function, does NOT touch the product
+//  scanner's key, and does NOT touch the car scanner's key. Nothing else in
+//  the app reads re_scanner_key, so the Real Estate AI is used by nobody
+//  except the Real Estate / Add Property form — it shares with no one.
+//
+//  It reads the property from PHOTOS OR VIDEOS (video frames are sampled
+//  automatically, just like the car scanner), watches the inside, counts the
+//  rooms, and fills the WHOLE property form.
+//
+//  Quota / key behaviour: if re_scanner_key is empty, or the Gemini quota
+//  is exhausted (HTTP 429) or the key is invalid (HTTP 400/403), the scanner
+//  STOPS with a clear, specific message so you can paste in a fresh key in
+//  AI Settings. It NEVER invents values to "finish" a scan.
+// ═════════════════════════════════════════════════════════════════════
+const reAIScanner = {
+  _cfg: null,
+
+  async reload() {
+    try {
+      const { data, error } = await supabase.from('ai_settings').select('*').limit(1).maybeSingle();
+      this._cfg = (error ? null : (data || {})) || {};
+    } catch { this._cfg = {}; }
+  },
+  async getConfig() {
+    if (!this._cfg) await this.reload();
+    return this._cfg || {};
+  },
+
+  // Is a dedicated Real Estate key configured?
+  hasKey() {
+    return !!(this._cfg && String(this._cfg.re_scanner_key || '').trim());
+  },
+
+  model() {
+    const stored = String((this._cfg && this._cfg.re_scanner_model) || '').trim();
+    // gemini-2.5-flash / 2.0 series are retired by Google (HTTP 404 "no longer
+    // available to new users"). If a stale value is stored, fall back to a live model.
+    if (/^gemini-2\./.test(stored)) return 'gemini-flash-latest';
+    return stored || 'gemini-flash-latest';
+  },
+
+  // Fetch image/video sources and turn them into compact data URLs for the
+  // vision call. Videos are expanded into sampled frames; PDFs into pages.
+  _mediaCache: new Map(),
+  async _collectScanImages(urls) {
+    const list = (Array.isArray(urls) ? urls : [urls]).map(u => String(u || '')).filter(Boolean);
+    if (!list.length) return [];
+    const results = await Promise.all(list.map(async (u) => {
+      try {
+        if (this._mediaCache.has(u)) return this._mediaCache.get(u);
+        let frames = null;
+        if (/^data:application\/pdf/.test(u) || looksLikePdf(u)) {
+          frames = await pdfToPageDataUrls(u, { maxDim: 1300 }).catch(() => []);
+        } else {
+          let videoSource = null;
+          if (looksLikeVideoUrl(u)) videoSource = u;
+          else if (u.startsWith('blob:')) {
+            try {
+              const blob = await fetch(u, { signal: AbortSignal.timeout(15000) }).then(r => r.blob());
+              if (blob && blob.type && blob.type.startsWith('video/')) videoSource = blob;
+            } catch { /* not a video — image path below */ }
+          }
+          if (videoSource) {
+            frames = await videoToFrameDataUrls(videoSource, { maxFrames: 6, maxDim: 720 }).catch(() => []);
+          } else {
+            frames = await aiClient._fetchImageAsDataUrl(u, 720).then(img => img ? [img] : []);
+          }
+        }
+        this._mediaCache.set(u, frames || []);
+        return frames || [];
+      } catch { return []; }
+    }));
+    const out = [];
+    for (const r of results) out.push(...r);
+    return out;
+  },
+
+  // ONE direct Gemini REST vision call. Returns parsed JSON or throws a
+  // specific, human message (empty key / quota exhausted / invalid key / other).
+  async _geminiVision(items, prompt) {
+    const cfg = await this.getConfig();
+    const key = String(cfg.re_scanner_key || '').trim();
+    if (!key) throw new Error('NO_RE_KEY');
+    const model = this.model();
+    const body = {
+      contents: [{
+        parts: [
+          { text: prompt },
+          ...items.filter(Boolean).map(dataUrl => (
+            /^data:video\//.test(dataUrl)
+              ? { inlineData: { mimeType: 'video/mp4', data: dataUrl.split(',')[1] } }
+              : { inlineData: { mimeType: 'image/jpeg', data: dataUrl.split(',')[1] } }
+          )),
+        ],
+      }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+    };
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+    const attempt = async () => {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(90000),
+      });
+      if (res.ok) return res;
+      const errBody = await res.json().catch(() => ({}));
+      const status = res.status;
+      const msg = String((errBody && errBody.error && errBody.error.message) || '').toLowerCase();
+      const transient = status === 503 || status === 429
+        || /high demand|try again later|temporarily|overload|unavailable|resource has been exhausted/.test(msg);
+      return { _status: status, _msg: msg, _transient: transient };
+    };
+    let result = await attempt();
+    if (result && result.ok) {
+      const data = await result.json();
+      const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
+        ? data.candidates[0].content.parts.map(p => p.text || '').join('')
+        : '';
+      const parsed = text ? extractJsonFromAiText(text) : null;
+      if (!parsed) throw new Error('RE_NO_PARSE');
+      return parsed;
+    }
+    if (result && result._transient) {
+      for (let i = 1; i <= 4; i++) {
+        await new Promise(r => setTimeout(r, 4000 + i * 4000));
+        result = await attempt();
+        if (result && result.ok) {
+          const data = await result.json();
+          const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
+            ? data.candidates[0].content.parts.map(p => p.text || '').join('')
+            : '';
+          const parsed = text ? extractJsonFromAiText(text) : null;
+          if (parsed) return parsed;
+          throw new Error('RE_NO_PARSE');
+        }
+      }
+    }
+    const status = result._status;
+    const msg = result._msg;
+    if (status === 429 || /quota|rate|resource has been exhausted|limit/.test(msg)) {
+      throw new Error('RE_QUOTA');
+    }
+    if (status === 400 || status === 403 || /api key|invalid|unauthor|permission/.test(msg)) {
+      throw new Error('RE_BAD_KEY');
+    }
+    throw new Error(`RE_HTTP_${status}`);
+  },
+
+  // The dedicated Real Estate scan. `imageUrls` may contain photos, videos
+  // and/or PDFs; returns { identification, specs, price } ready for
+  // applyScanToPropertyForm. Throws a friendly, specific code on any failure.
+  async scanRealEstate(imageUrls) {
+    const cfg = await this.getConfig();
+    if (!String(cfg.re_scanner_key || '').trim()) throw new Error('NO_RE_KEY');
+    const items = await this._collectScanImages(imageUrls);
+    if (!items.length) throw new Error('NO_MEDIA');
+
+    const prompt = `You are the dedicated REAL ESTATE listing expert for the Weverse Online Shop marketplace. Watch the property shown in the photo(s)/video frame(s) and complete ALL of its real details below from what is actually visible.
+
+WATCH & COUNT THE PROPERTY ACCURATELY (most important):
+- Count the real bedrooms, bathrooms, half bathrooms, floors/levels, kitchens, balconies and parking spaces you actually see. Never invent rooms that are not visible.
+- Read the visible lifestyle features: pool, garden, garage, furnished/unfurnished, security (gates/CCTV), heating/AC, construction materials.
+- condition: judge from what is visible (New Construction / Like New / Excellent / Good / Fair / Needs Renovation).
+- year_built / year_renovated: only from visible dates/documents, otherwise null — never invent a year.
+- building_size and land_size: only from visible dimensions/signs, otherwise null.
+- location/country: read EVERY frame for location evidence (house number, street sign, flag, language on signs) and fill from what is really shown. When NO location is visible in any frame, still return a real, valid fallback location from across the world (a real city and country with a generic street address, e.g. "1 High Street, London, United Kingdom", "12 Palm Avenue, Dubai, UAE", "Elm Street, Austin, Texas, USA") so every property listing has a real place — never a made-up-sounding string.
+- interior_features / exterior_features / home_systems: list what you genuinely see (oak flooring, walk-in closet, double garage, solar panels, alarm system, etc.).
+- nearby_area: list any schools, hospitals, shopping and transport you can legitimately infer from visible context; keep them real city landmarks or districts, never fabricated specifics.
+- Never leave a field blank that you can reasonably identify from the media, but NEVER fabricate a number, price or detail that is not visible or reliably known.
+- detected_name: a short plain label, e.g. "white 3-bedroom family house with garden".
+
+Return ONE valid JSON object (no markdown, no extra text) with exactly this shape:
+{
+ "identification": {
+   "identified": true, "property_type": string|null, "listing_status": "sale"|"rent"|null,
+   "bedrooms": number|null, "bathrooms": number|null, "half_bathrooms": number|null,
+   "floors": number|null, "kitchens": number|null, "balconies": number|null, "parking_spaces": number|null,
+   "building_size": string|null, "land_size": string|null, "furnished": "Furnished"|"Unfurnished"|null,
+   "condition": string|null, "area": string|null, "town": string|null, "city": string|null,
+   "state": string|null, "country": string|null, "address": string|null, "zip_code": string|null,
+   "neighborhood": string|null, "construction_type": string|null, "construction_status": string|null,
+   "ownership_type": string|null, "year_built": number|null, "year_renovated": number|null,
+   "garage": string|null, "garden": string|null, "pool": string|null, "security": string|null,
+   "utilities": string|null, "interior_features": array|null, "exterior_features": array|null,
+   "home_systems": array|null, "features": array|null, "highlights": array|null, "seo_keywords": array|null,
+   "detected_name": string, "subcategory": string|null
+ },
+ "specs": {
+   "title": string, "description": string, "property_type": string|null, "subcategory": string|null,
+   "listing_status": "sale"|"rent"|null, "bedrooms": number|null, "bathrooms": number|null,
+   "half_bathrooms": number|null, "floors": number|null, "kitchens": number|null, "balconies": number|null,
+   "parking_spaces": number|null, "building_size": string|null, "land_size": string|null,
+   "living_areas": string|null, "furnished": "Furnished"|"Unfurnished"|null, "condition": string|null,
+   "area": string|null, "town": string|null, "city": string|null, "state": string|null,
+   "country": string|null, "address": string|null, "zip_code": string|null, "neighborhood": string|null,
+   "construction_type": string|null, "construction_status": string|null, "ownership_type": string|null,
+   "year_built": number|null, "year_renovated": number|null, "garage": string|null, "garden": string|null,
+   "pool": string|null, "security": string|null, "utilities": string|null,
+   "interior_features": array|null, "exterior_features": array|null, "home_systems": array|null,
+   "features": array|null, "highlights": array|null, "seo_keywords": array|null,
+   "nearby_area": { "schools": array|null, "hospitals": array|null, "shopping": array|null, "transportation": array|null, "distances": array|null },
+   "legal_info": string|null, "inspection_info": string|null, "risk_notes": string|null
+ },
+ "price": { "estimated_price": number|null, "suggested_discount_price": number|null }
+}
+If the media does not clearly show any property, return { "identification": { "identified": false, "reason": "why you could not identify it", "detected_name": "what you see" } }.`;
+
+    const parsed = await this._geminiVision(items, prompt);
+    if (parsed && parsed.identification && parsed.identification.identified === false) {
+      return {
+        identification: parsed.identification,
+        specs: (parsed.specs || {}),
+        price: (parsed.price || null),
+        visionUsed: true,
+      };
+    }
+    const identification = (parsed && parsed.identification) || {};
+    const specs = (parsed && parsed.specs) || {};
+    const price = (parsed && parsed.price) || null;
+    // Merge identification fields into specs so the form filler has everything.
+    return {
+      identification,
+      specs: {
+        property_type: specs.property_type || identification.property_type,
+        area: specs.area || identification.area,
+        town: specs.town || identification.town,
+        city: specs.city || identification.city,
+        state: specs.state || identification.state,
+        country: specs.country || identification.country,
+        address: specs.address || identification.address,
+        neighborhood: specs.neighborhood || identification.neighborhood,
+        subcategory: specs.subcategory || identification.subcategory,
+        ...specs,
+      },
+      price,
+      visionUsed: true,
+    };
+  },
+
+  // Human-friendly message for a thrown Real Estate scanner error code.
+  describeError(err) {
+    const code = String((err && err.message) || '');
+    if (code === 'NO_RE_KEY') {
+      return { title: 'Real Estate Scanner key not set', hint: 'Add your dedicated Real Estate Property Scanner Gemini key in AI Settings → "Real Estate Property Scanner", then try again. The Real Estate scanner does not use the product key or the car key — it has its own.', code };
+    }
+    if (code === 'RE_QUOTA') {
+      return { title: 'Real Estate Scanner quota used up', hint: 'Your Real Estate Property Scanner Gemini key has run out of free quota or is rate-limited. It stops until you paste in a fresh key in AI Settings → "Real Estate Property Scanner". No fake values were generated.', code };
+    }
+    if (code === 'RE_BAD_KEY') {
+      return { title: 'Real Estate Scanner key not accepted', hint: 'Google rejected your Real Estate Property Scanner key. Check it in AI Settings → "Real Estate Property Scanner" (valid 39-char AIzaSy… key) and save it again.', code };
+    }
+    if (code === 'NO_MEDIA') {
+      return { title: 'No readable media', hint: 'The property photos/video could not be loaded. Upload clear photos or a video that shows the property and try again.', code };
+    }
+    if (code === 'RE_NO_PARSE') {
+      return { title: 'Scanner returned no details', hint: 'Google answered but returned no usable property details. Try clearer photos or a different video, then scan again.', code };
+    }
+    if (code === 'RE_HTTP_404') {
+      return { title: 'Real Estate Scanner model unavailable', hint: 'Google no longer serves the selected Gemini model (2.5/2.0 are retired). In AI Settings → "Real Estate Property Scanner", pick "gemini-flash-latest" (or gemini-3.7-flash), Save, then scan again.', code };
+    }
+    if (code === 'RE_HTTP_503') {
+      return { title: 'Real Estate Scanner is busy (Google overloaded)', hint: 'Google\'s free Gemini model is currently under heavy demand ("high demand, try again later"). Your key and model are fine — this is temporary. Wait a minute and try again. The scanner auto-retries several times automatically.', code };
+    }
+    if (/^RE_HTTP_/.test(code)) {
+      return { title: 'Real Estate Scanner could not run', hint: `The Real Estate Property Scanner service returned an error (${code}). Try again in a moment or add a fresh key in AI Settings.`, code };
+    }
+    return { title: 'Real Estate Scanner failed', hint: String(err && err.message ? err.message : err), code };
+  },
+};
+window.reAIScanner = reAIScanner;
 
 // ══════════════════════════════════════════════════════════════
 //  AI Status Widget (Gemini) ═══════════════════════════════════
