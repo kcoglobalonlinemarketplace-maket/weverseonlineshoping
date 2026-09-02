@@ -2304,8 +2304,14 @@ for (const key of Object.keys(CAT_FIELDS)) {
   });
 }
 
-function renderCountryOptions(selectedCode = '') {
-  return COUNTRIES.map(country => `<option value="${country.code}" ${selectedCode === country.code ? 'selected' : ''}>${country.flag} ${country.name}</option>`).join('');
+// The owner's own two home countries are excluded from the property scanner so
+// the "Real Estate Country Scanner" only targets EVERY other country worldwide.
+const PROPERTY_SCANNER_EXCLUDED_COUNTRIES = new Set(['NG', 'GH']);
+
+function renderCountryOptions(selectedCode = '', opts = {}) {
+  const exclude = opts && opts.scannerExcluded ? PROPERTY_SCANNER_EXCLUDED_COUNTRIES : null;
+  const countries = exclude ? COUNTRIES.filter(c => !exclude.has(c.code)) : COUNTRIES;
+  return countries.map(country => `<option value="${country.code}" ${selectedCode === country.code ? 'selected' : ''}>${country.flag} ${country.name}</option>`).join('');
 }
 
 function renderCurrencyOptions(selectedCurrency = 'USD') {
@@ -4636,14 +4642,15 @@ function fmtKm(m) {
 }
 
 async function overpassNearby(lat, lng, radiusM = 4000) {
+  const radius = Number.isFinite(Number(radiusM)) && Number(radiusM) > 0 ? Number(radiusM) : 4000;
   const query = `
     [out:json][timeout:25];
     (
-      nwr["amenity"="school"](around:${radiusM},${lat},${lng});
-      nwr["amenity"~"^(hospital|clinic|doctors)$"](around:${radiusM},${lat},${lng});
-      nwr["shop"~"^(supermarket|mall|convenience|marketplace|department_store)$"](around:${radiusM},${lat},${lng});
-      nwr["amenity"~"^(bus_station|ferry_terminal|charging_station|fuel)$"](around:${radiusM},${lat},${lng});
-      nwr["railway"="station"](around:${radiusM},${lat},${lng});
+      nwr["amenity"="school"](around:${radius},${lat},${lng});
+      nwr["amenity"~"^(hospital|clinic|doctors)$"](around:${radius},${lat},${lng});
+      nwr["shop"~"^(supermarket|mall|convenience|marketplace|department_store)$"](around:${radius},${lat},${lng});
+      nwr["amenity"~"^(bus_station|ferry_terminal|charging_station|fuel)$"](around:${radius},${lat},${lng});
+      nwr["railway"="station"](around:${radius},${lat},${lng});
     );
     out center tags;`;
   try {
@@ -4661,16 +4668,17 @@ async function overpassNearby(lat, lng, radiusM = 4000) {
 }
 async function overpassMirrorNearby(lat, lng, radiusM = 4000) {
   try {
+    const radius = Number.isFinite(Number(radiusM)) && Number(radiusM) > 0 ? Number(radiusM) : 4000;
     const res = await fetch('https://overpass.kumi.systems/api/interpreter', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: 'data=' + encodeURIComponent(`
         [out:json][timeout:25];
         (
-          nwr["amenity"="school"](around:${radiusM},${lat},${lng});
-          nwr["amenity"~"^(hospital|clinic)$"](around:${radiusM},${lat},${lng});
-          nwr["shop"~"^(supermarket|mall|convenience)$"](around:${radiusM},${lat},${lng});
-          nwr["railway"="station"](around:${radiusM},${lat},${lng});
+          nwr["amenity"="school"](around:${radius},${lat},${lng});
+          nwr["amenity"~"^(hospital|clinic)$"](around:${radius},${lat},${lng});
+          nwr["shop"~"^(supermarket|mall|convenience)$"](around:${radius},${lat},${lng});
+          nwr["railway"="station"](around:${radius},${lat},${lng});
         );
         out center tags;`),
     });
@@ -4694,9 +4702,9 @@ function nearbyElementName(el) {
   return (t.name || t['addr:street'] || t.brand || t.operator || t['ref:housenumber'] || 'Nearby location');
 }
 
-async function fetchRealNearbyPlaces(lat, lng) {
-  let prim = await overpassNearby(lat, lng);
-  if (!prim.elements || !prim.elements.length) prim = await overpassMirrorNearby(lat, lng);
+async function fetchRealNearbyPlaces(lat, lng, radiusM) {
+  let prim = await overpassNearby(lat, lng, radiusM);
+  if (!prim.elements || !prim.elements.length) prim = await overpassMirrorNearby(lat, lng, radiusM);
   const elements = (prim && prim.elements) || [];
   const groups = {
     schools: [],
@@ -4840,6 +4848,297 @@ function pickPropertyFallbackLocation() {
   const arr = PROPERTY_FALLBACK_LOCATIONS;
   return arr[_propLocationFallbackIdx % arr.length];
 }
+
+// ── REAL ESTATE COUNTRY SCANNER ──────────────────────────────────
+// Pick any country in the world (Nigeria & Ghana are excluded by the owner).
+// Using only free real data (Nominatim for geocoding + Overpass for OSM):
+//   1. Discovers the country's STATES / provinces (first-order administrative
+//      divisions) from real OSM relations.
+//   2. For a chosen state, discovers its AREAS / cities / towns.
+//   3. For a chosen area, discovers real STREETS from OSM highways.
+//   4. Filling the form geocodes the chosen street with Nominatim and pulls
+//      REAL nearby schools / hospitals / shopping / transport from Overpass,
+//      then writes country/state/city/town/address/lat/lng into the property
+//      form and refreshes the live map.
+const RE_SCANNER_STATE = '_reScannerState';
+function reScannerStatus(html, cls) {
+  const el = document.getElementById('re-scanner-status');
+  if (!el) return;
+  el.classList.remove('hidden', 'text-red-400', 'text-emerald-300', 'text-amber-300', 'text-blue-300', 'text-sky-300');
+  if (cls) el.classList.add(cls);
+  el.innerHTML = html;
+}
+const RE_OVERPASS_SERVERS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.snappy.network/api/interpreter',
+  'https://overpass.osm.jp/api/interpreter',
+];
+async function reOverpass(query) {
+  // Public Overpass mirrors come and go — try them all, POST first, then GET
+  // (a few instances only answer GET with ?data=).
+  for (const url of RE_OVERPASS_SERVERS) {
+    try {
+      for (const makeReq of [
+        () => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(query) }),
+        () => fetch(url + '?data=' + encodeURIComponent(query)),
+      ]) {
+        const res = await makeReq();
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data) return data;
+        }
+      }
+    } catch { /* try the next mirror */ }
+  }
+  return { elements: [], __offline: true };
+}
+
+// Overpass area() handles the hierarchical "everything inside X" filter. A
+// country/state/region is a relation in OSM, so its area reference is
+// 3600000000 + osm_id (per the Overpass common area id rules).
+function reOverpassAreaId(nominatimRow) {
+  if (!nominatimRow) return null;
+  const id = Number(nominatimRow.osm_id);
+  if (!id) return null;
+  if (nominatimRow.osm_type === 'way') return 2400000000 + id;
+  return 3600000000 + id; // relation is the usual entity for admin boundaries
+}
+async function reNominatim(url) {
+  try { const res = await fetch(url); if (res.ok) return await res.json(); } catch {}
+  return null;
+}
+function uniqueNames(elements) {
+  const seen = new Set(); const out = [];
+  for (const el of elements || []) {
+    const n = ((el && el.tags && el.tags.name) || '').trim();
+    if (!n || seen.has(n)) continue;
+    seen.add(n); out.push(n);
+  }
+  return out.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+function elementCenter(el) {
+  if (el && Number.isFinite(el.lat) && Number.isFinite(el.lon)) return { lat: el.lat, lng: el.lon };
+  if (el && el.center && Number.isFinite(el.center.lat) && Number.isFinite(el.center.lon)) return { lat: el.center.lat, lng: el.center.lon };
+  const m = el && el.bounds;
+  if (m && m.minlat != null && m.maxlat != null) return { lat: (m.minlat + m.maxlat) / 2, lng: (m.minlon + m.maxlon) / 2 };
+  return null;
+}
+function reResetSelect(id, first = '') {
+  const s = document.getElementById(id);
+  if (s) { s.innerHTML = first ? `<option value="">${first}</option>` : '<option value="">—</option>'; }
+}
+window.onReScannerCountryChange = async function() {
+  reResetSelect('re-state', '— Rescanning states…');
+  reResetSelect('re-area', '— Pick a state first —');
+  reResetSelect('re-street', '— Pick an area first —');
+  if (window._reScannerStateTimer) clearTimeout(window._reScannerStateTimer);
+  window._reScannerStateTimer = setTimeout(() => window.scanCountryLocations(), 350);
+};
+window.scanCountryLocations = async function() {
+  const codeSel = document.getElementById('re-country_code');
+  const code = codeSel ? codeSel.value : '';
+  const country = ((COUNTRIES || []).find(c => c.code === code) || {}).name || '';
+  if (!country) { reScannerStatus('Pick a country to scan first.', 'text-amber-300'); return; }
+  if (PROPERTY_SCANNER_EXCLUDED_COUNTRIES.has(code)) { reScannerStatus('Nigeria &amp; Ghana are excluded by the owner. Pick any other country.', 'text-amber-300'); return; }
+
+  // Pre-seed the property form's country fields right away.
+  const form = document.getElementById('property-form');
+  const cc = form && form.querySelector('[name="country_code"]');
+  if (cc && !cc.value) cc.value = code;
+  const cnt = form && form.querySelector('[name="country"]');
+  if (cnt && !cnt.value) cnt.value = country;
+  const cur = form && form.querySelector('[name="currency"]');
+  if (cur && cur.value === 'USD') cur.value = getDefaultCurrencyForCountry(code);
+
+  reResetSelect('re-state', '— Scanning states…');
+  reScannerStatus(`Scanning <b>${esc(country)}</b> — finding every state/province…`, 'text-sky-300');
+  try {
+    // 1) Nominatim lookup for the country itself (bbox + centroid + OSM ids).
+    const geoms = await reNominatim(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&addressdetails=1&countrycodes=${encodeURIComponent(code)}&q=${encodeURIComponent(country)}`);
+    const rows = (geoms && geoms[0] && geoms[0].boundingbox) ? geoms[0].boundingbox : null;
+    const centroid = geoms && geoms[0] ? { lat: Number(geoms[0].lat), lng: Number(geoms[0].lon) } : null;
+    const countryAreaId = reOverpassAreaId(geoms && geoms[0] || null);
+    let states = [];
+    let data = { elements: [] };
+    // Primary (reliable across every country): everything inside the country's
+    // OSM area at first administrative level.
+    if (countryAreaId) {
+      data = await reOverpass(`[out:json][timeout:60];(rel["boundary"="administrative"]["admin_level"~"^(4|5)$"]["name"](area:${countryAreaId});node["place"~"^(state|province)$"](area:${countryAreaId}););out center tags;`);
+      states = uniqueNames(data.elements);
+    }
+    // Fallback A: bounding box over first-level admin relations (needed when the
+    // country has no single root relation — e.g. tiny islands or enclaves).
+    if (!states.length && rows && rows.length === 4) {
+      const [south, north, west, east] = rows.map(Number);
+      data = await reOverpass(`[out:json][timeout:60];(relation["boundary"="administrative"]["admin_level"~"^(1|2|4|5)$"](bbox:${south},${west},${north},${east});node["place"~"^(state|province)$"](bbox:${south},${west},${north},${east}););out center tags;`);
+      states = uniqueNames(data.elements);
+      // bbox-on-relations also returns the country itself at admin_level 2 — drop
+      // entries equal to the searched country so we keep real states only.
+      states = states.filter(n => n.toLowerCase() !== country.toLowerCase());
+    }
+    // Fallback B: around the centroid (works for city-states & small countries).
+    if (!states.length && centroid) {
+      data = await reOverpass(`[out:json][timeout:60];(relation["boundary"="administrative"]["admin_level"~"^(4|5|6)$"](around:150000,${centroid.lat},${centroid.lng});node["place"~"^(state|province)$"](around:150000,${centroid.lat},${centroid.lng}););out center tags;`);
+      states = uniqueNames(data.elements).filter(n => n.toLowerCase() !== country.toLowerCase());
+      if (!states.length && geoms && geoms[0]) states = [String((geoms[0].address && geoms[0].address.state || geoms[0].display_name || '').split(',')[0]).trim()].filter(Boolean);
+    }
+    if (!states.length) {
+      reScannerStatus(
+        data && data.__offline
+          ? `Live map data (Overpass) is unreachable right now. Try again in a minute, or pick a country manually.`
+          : `No states could be discovered for ${esc(country)}. Try a different country.`,
+        'text-amber-300'
+      );
+      return;
+    }
+    // Store state center coords for the area sub-queries.
+    const centers = {};
+    for (const el of (data && data.elements) || []) { const c = elementCenter(el); if (c) centers[(el.tags && el.tags.name) || ''] = c; }
+    window[RE_SCANNER_STATE] = { country, code, states: states.map(n => ({ name: n, center: centers[n] })), bbox: rows, centroid, countryAreaId };
+    const stateSel = document.getElementById('re-state');
+    if (stateSel) {
+      stateSel.innerHTML = '<option value="">— Pick a state —</option>' + states.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    }
+    reScannerStatus(`Scanner found <b>${states.length}</b> state${states.length > 1 ? 's' : ''} in <b>${esc(country)}</b>. Pick one to discover its areas.`, 'text-emerald-300');
+  } catch (err) {
+    reScannerStatus(`Scan failed: ${esc(String(err && err.message || err))}`, 'text-red-400');
+  }
+};
+window.onReScannerStateChange = async function() {
+  const stateSel = document.getElementById('re-state');
+  const state = stateSel ? stateSel.value : '';
+  reResetSelect('re-area', state ? '— Scanning areas…' : '— Pick a state first —');
+  reResetSelect('re-street', '— Pick an area first —');
+  if (!state) return;
+  const ctx = window[RE_SCANNER_STATE] || {};
+  const entry = (ctx.states || []).find(s => s.name === state);
+  reScannerStatus(`Scanning areas inside <b>${esc(state)}</b>…`, 'text-sky-300');
+  let areas = [];
+  let statePoint = null;
+  try {
+    // Primary: geocode the state, then list the municipalities/areas inside its
+    // OSM area (admin levels 6-8) plus place=city/town/village/suburb nodes.
+    const geo = await reNominatim(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&q=${encodeURIComponent(`${state}, ${ctx.country || ''}`)}`);
+    const stateAreaId = reOverpassAreaId(geo && geo[0] || null);
+    if (stateAreaId) {
+      const data = await reOverpass(`[out:json][timeout:60];(rel["boundary"="administrative"]["admin_level"~"^(6|8)$"]["name"](area:${stateAreaId});node["place"~"^(city|town|municipality|village|suburb|borough)$"](area:${stateAreaId});way["place"~"^(city|town|village|suburb)$"](area:${stateAreaId}););out center tags;`);
+      areas = uniqueNames(data.elements).slice(0, 60);
+    }
+    if (geo && geo[0]) statePoint = { lat: Number(geo[0].lat), lng: Number(geo[0].lon) };
+    // Fallback: around the state's center from the states scan (70 km captures a
+    // state-sized region without needing a polygon).
+    const entry = (ctx.states || []).find(s => s.name === state);
+    const c = (entry && entry.center) || null;
+    if (!areas.length && c && Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
+      const data = await reOverpass(`[out:json][timeout:45];(node["place"~"^(city|town|municipality|village|suburb|borough)$"](around:70000,${c.lat},${c.lng});relation["boundary"="administrative"]["admin_level"~"^(6|7|8)$"](around:70000,${c.lat},${c.lng});way["place"~"^(city|town|village|suburb)$"](around:70000,${c.lat},${c.lng}););out center tags;`);
+      areas = uniqueNames(data.elements).slice(0, 60);
+    }
+    // Last resort: center the search on the geocoded state point.
+    if (!areas.length && statePoint) {
+      const data = await reOverpass(`[out:json][timeout:45];(node["place"~"^(city|town|municipality|village)$"](around:80000,${statePoint.lat},${statePoint.lng});way["place"~"^(city|town|village)$"](around:80000,${statePoint.lat},${statePoint.lng}););out center tags;`);
+      areas = uniqueNames(data.elements).slice(0, 60);
+    }
+  } catch { /* handled by the empty-areas message below */ }
+  areas = areas.filter(n => !new Set([state]).has(n));
+  if (!areas.length) { reScannerStatus(`No areas could be discovered inside <b>${esc(state)}</b>. Try another state, or use "Fill Location Form" to use the state as the location.`, 'text-amber-300'); return; }
+  window[RE_SCANNER_STATE] = { ...ctx, state: { name: state, point: statePoint } };
+  const areaSel = document.getElementById('re-area');
+  if (areaSel) areaSel.innerHTML = '<option value="">— Pick an area —</option>' + areas.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  reScannerStatus(`Found <b>${areas.length}</b> area${areas.length > 1 ? 's' : ''} in <b>${esc(state)}</b>. Pick one to discover its streets.`, 'text-emerald-300');
+};
+window.onReScannerAreaChange = async function() {
+  const areaSel = document.getElementById('re-area');
+  const area = areaSel ? areaSel.value : '';
+  reResetSelect('re-street', area ? '— Scanning streets…' : '— Pick an area first —');
+  if (!area) return;
+  const ctx = window[RE_SCANNER_STATE] || {};
+  const state = (document.getElementById('re-state') || {}).value || '';
+  reScannerStatus(`Scanning streets/addresses in <b>${esc(area)}</b>…`, 'text-sky-300');
+  try {
+    const geo = await reNominatim(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&q=${encodeURIComponent(`${area}, ${state}, ${ctx.country || ''}`)}`);
+    if (!geo || !geo[0]) { reScannerStatus(`Could not map <b>${esc(area)}</b>. Try another area.`, 'text-amber-300'); return; }
+    const data = await reOverpass(`[out:json][timeout:45];way["highway"~"^(residential|primary|secondary|tertiary|unclassified|service|living_street)$"](around:4500,${geo[0].lat},${geo[0].lon});out center tags;`);
+    let streets = uniqueNames(data.elements).slice(0, 80);
+    window._reScannerPoint = { lat: geo[0].lat, lng: geo[0].lon, area, state, country: ctx.country };
+    if (!streets.length) streets = [`${area} main area`];
+    const streetSel = document.getElementById('re-street');
+    if (streetSel) streetSel.innerHTML = '<option value="">— Pick a street —</option>' + streets.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    reScannerStatus(`Found <b>${streets.length}</b> street${streets.length > 1 ? 's' : ''} in <b>${esc(area)}</b>. Pick one, then press <b>Fill Location Form</b>.`, 'text-emerald-300');
+  } catch (err) {
+    reScannerStatus(`Street scan failed: ${esc(String(err && err.message || err))}`, 'text-red-400');
+  }
+};
+window.onReScannerStreetChange = async function() {
+  const streetSel = document.getElementById('re-street');
+  const street = streetSel ? streetSel.value : '';
+  const ctx = window._reScannerPoint || {};
+  if (!street) return;
+  try {
+    const geo = await reNominatim(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&q=${encodeURIComponent(`${street}, ${ctx.area || ''}, ${ctx.state || ''}, ${ctx.country || ''}`)}`);
+    if (geo && geo[0]) { window._reScannerPoint = { ...ctx, lat: geo[0].lat, lng: geo[0].lon }; }
+    reScannerStatus(`<b>${esc(street)}</b> selected. Press <b>Fill Location Form</b> to write it + nearby schools into the property form.`, 'text-sky-300');
+  } catch {}
+};
+window.applyReScannerToModal = async function() {
+  const form = document.getElementById('property-form');
+  if (!form) { reScannerStatus('Open the property form first.', 'text-red-400'); return; }
+  const ctx = window._reScannerPoint || {};
+  const street = (document.getElementById('re-street') || {}).value || '';
+  const area = (document.getElementById('re-area') || {}).value || ctx.area || '';
+  const state = (document.getElementById('re-state') || {}).value || ctx.state || '';
+  const countryCode = (document.getElementById('re-country_code') || {}).value || '';
+  const country = ((COUNTRIES || []).find(c => c.code === countryCode) || {}).name || ctx.country || '';
+  const radius = Number((document.getElementById('re-radius') || {}).value) || 4000;
+  if (!country) { reScannerStatus('Pick a country first, then press Scan Country.', 'text-amber-300'); return; }
+
+  const setf = (name, val) => {
+    const f = form.querySelector(`[name="${name}"]`);
+    if (f && val != null && String(val).trim() !== '') f.value = String(val);
+  };
+  setf('country_code', countryCode);
+  setf('country', country);
+  setf('state', state);
+  setf('city', area);
+  setf('town', area);
+  setf('address', street);
+  setf('product_location', [street, area, state, country].filter(Boolean).join(', '));
+  const cur = form.querySelector('[name="currency"]');
+  if (cur && countryCode) cur.value = getDefaultCurrencyForCountry(countryCode);
+
+  reScannerStatus(`Locating <b>${esc(street || area || state || country)}</b> and pulling real nearby schools/hospitals/stores…`, 'text-sky-300');
+  const notes = [];
+  try {
+    const { lat, lng } = window._reScannerPoint || {};
+    if (Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)) {
+      setf('latitude', String(Number(lat).toFixed(6)));
+      setf('longitude', String(Number(lng).toFixed(6)));
+    } else {
+      const q = [street, area, state, country].filter(Boolean).join(', ');
+      const geo = await reNominatim(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&q=${encodeURIComponent(q)}`);
+      if (geo && geo[0]) { setf('latitude', String(Number(geo[0].lat).toFixed(6))); setf('longitude', String(Number(geo[0].lon).toFixed(6))); }
+    }
+    const latV = parseFloat(form.querySelector('[name="latitude"]')?.value);
+    const lngV = parseFloat(form.querySelector('[name="longitude"]')?.value);
+    if (Number.isFinite(latV) && Number.isFinite(lngV) && (latV || lngV)) {
+      const { groups, distances } = await fetchRealNearbyPlaces(latV, lngV, radius);
+      const seta = (name, arr) => {
+        const f = form.querySelector(`[name="${name}"]`);
+        if (f && Array.isArray(arr) && arr.length && !String(f.value || '').trim()) f.value = arr.join(', ');
+      };
+      seta('nearby_schools_text', groups.schools);
+      seta('nearby_hospitals_text', groups.hospitals);
+      seta('nearby_shopping_text', groups.shopping);
+      seta('nearby_transportation_text', groups.transportation);
+      seta('nearby_distances_text', distances);
+      const total = groups.schools.length + groups.hospitals.length + groups.shopping.length + groups.transportation.length;
+      if (total) notes.push(`found ${total} real nearby places`);
+    }
+  } catch {}
+  if (typeof window.refreshPropertyMapFromForm === 'function') window.refreshPropertyMapFromForm();
+  reScannerStatus(`✅ Filled the location form for <b>${esc(street || area || state || country)}</b>${notes.length ? ` — ${notes.join(', ')}` : ''}. Review the fields, then Publish Property.`, 'text-emerald-300');
+};
 
 async function enhancePropertyFormWithRealData() {
   const form = document.getElementById('property-form');
@@ -5256,7 +5555,7 @@ function routePropertyScan(identification, images) {
   setStatus('Reading every page, completing property details and valueâ€¦', 'text-blue-300');
   (async () => {
     try {
-      const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
+const res = await runVerifiedScan({ imageUrls: scanImages, identification, category: 'Real Estate', formSelector: '#property-form' });
       const id2 = res.identification || identification;
       const out = await applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
       let msg;
@@ -5287,15 +5586,62 @@ function routePropertyScan(identification, images) {
 }
 
 // â”€â”€ AI Property Scanner (Properties Manager) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Turns the form's uploaded media (photos AND videos) into a single list of
+// scan images. Videos are decoded into representative frames so the AI vision
+// pipeline can watch the inside, count the rooms and list everything it sees —
+// exactly like a photo scan, one frame per scene. Non-video entries pass
+// through unchanged (any http/data: URL the AI already handled before).
+async function mediaToScanFrames(mediaUrls, setStatus = () => {}) {
+  const frames = [];
+  let vidCount = 0;
+  let imgCount = 0;
+  for (const u of mediaUrls) {
+    let videoSource = null;
+    if (looksLikeVideoUrl(u)) {
+      videoSource = u;
+    } else if (u.startsWith('blob:')) {
+      // Uploaded videos often only have a blob: URL — sniff it by MIME type.
+      try {
+        const blob = await fetch(u, { signal: AbortSignal.timeout(15000) }).then(r => r.blob());
+        if (blob && blob.type && blob.type.startsWith('video/')) videoSource = blob;
+      } catch { /* not sniffable — treat as an image below */ }
+    }
+    if (videoSource) {
+      vidCount += 1;
+      const n = vidCount;
+      setStatus(`Watching your video #${n} — extracting frames so the AI can count rooms and list the interior…`, 'text-blue-300');
+      const vf = await videoToFrameDataUrls(videoSource, {
+        maxFrames: 8,
+        maxDim: 1024,
+        onProgress: (got, total) => {
+          if (total > 1) setStatus(`Watching your video #${n} — extracting frame ${got}/${total}…`, 'text-blue-300');
+        },
+      }).catch(() => []);
+      frames.push(...vf);
+      continue;
+    }
+    imgCount += 1;
+    frames.push(u);
+  }
+  if (vidCount && !imgCount) {
+    setStatus(`Video decoded — ${frames.length} frame${frames.length === 1 ? '' : 's'} ready for the AI to read the property.`, 'text-blue-300');
+  } else if (vidCount && imgCount) {
+    setStatus(`${imgCount} photo(s) + ${vidCount} video(s) — ${frames.length} visual${frames.length === 1 ? '' : 's'} ready for the AI.`, 'text-blue-300');
+  }
+  // Bounded cost: many videos could otherwise produce dozens of frames. 12 keeps
+  // the visual pipeline fast on free-tier AI limits while covering every scene.
+  return frames.length > 12 ? frames.slice(0, 12) : frames;
+}
+
 window.scanPropertyWithAI = async function() {
   const form = document.getElementById('property-form');
   if (!form) { showToast('Open the property form first.', 'error'); return; }
   const btn = document.getElementById('btn-scan-ai-prop');
   const status = document.getElementById('scan-ai-prop-status');
 
-  const images = [...(document.querySelectorAll('#image-url-inputs [name="images"]') || [])]
+  const mediaUrls = [...(document.querySelectorAll('#image-url-inputs [name="images"]') || [])]
     .map((el) => el.value).filter(Boolean);
-  if (!images.length) { showToast('Upload at least one property image before scanning.', 'error'); return; }
+  if (!mediaUrls.length) { showToast('Upload at least one property image or video before scanning.', 'error'); return; }
 
   const original = btn ? btn.innerHTML : '';
   const setStatus = (html, cls) => {
@@ -5305,14 +5651,22 @@ window.scanPropertyWithAI = async function() {
     status.innerHTML = html;
   };
 
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanning…'; }
+  const scanImages = await mediaToScanFrames(mediaUrls, setStatus);
+  if (!scanImages.length) {
+    showToast('No readable media. Upload a clear property photo or video, then try again.', 'error');
+    setStatus('Nothing usable was read from your uploads — add a clear photo, or a video that shows the property.', 'text-amber-300');
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    return;
+  }
+
   await scanPreflightStatus(setStatus);
 
-  if (btn) { btn.disabled = true; btn.innerHTML = 'Scanningâ€¦'; }
-  setStatus('Identifying this property from your imagesâ€¦', 'text-blue-300');
+  setStatus('Identifying this property from your photos and/or video…', 'text-blue-300');
 
   let identification;
   try {
-    identification = await aiClient.identifyProduct(images, { category: 'Real Estate', maxImages: AI_PRODUCT_SCANNER.maxImages });
+    identification = await aiClient.identifyProduct(scanImages, { category: 'Real Estate', maxImages: Math.max(AI_PRODUCT_SCANNER.maxImages, Math.min(scanImages.length, 12)) });
   } catch (err) {
     const msg = String(err?.message || err);
     const keyHint = /key|api|configured|settings|vision/i.test(msg);
@@ -6580,11 +6934,35 @@ window.showAddPropertyModal = function(existing = {}) {
             </div>
             <div class="form-grid form-grid-2">
               <div class="sm:col-span-2"><label class="lbl">Property Template</label><select class="input-field" name="catalog_template_id" id="ppf-catalog_template_id" onchange="applyPropertyCatalogTemplate()"><option value="">Choose a property template...</option>${propertyTemplates.map(template => `<option value="${template.id}">${esc(template.label)} - ${esc(template.propertyType || template.subcategory)}</option>`).join('')}</select></div>
-              <div><label class="lbl">Country</label><select class="input-field" name="country_code" id="ppf-country_code" onchange="syncPropertyCountry(); applyPropertyCatalogTemplate()">${renderCountryOptions(selectedCountryCode)}</select></div>
+              <div><label class="lbl">Country</label><select class="input-field" name="country_code" id="ppf-country_code" onchange="syncPropertyCountry(); applyPropertyCatalogTemplate()">${renderCountryOptions(selectedCountryCode, { scannerExcluded: !isEdit })}</select></div>
               <div><label class="lbl">Currency</label><select class="input-field" name="currency" id="ppf-currency" onchange="applyPropertyCatalogTemplate()">${renderCurrencyOptions(selectedCurrency)}</select></div>
             </div>
             <p id="ppf-image-requirement" class="text-[11px] text-gray-400">Any number of images is fine â€” save and publish anytime.</p>
             <input type="hidden" name="required_image_count" id="ppf-required_image_count" value="">
+          </div>
+
+          <div class="glass-soft border border-emerald-500/25 rounded-2xl p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-2">
+                <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/25 shrink-0"><i data-lucide="globe-2" class="w-4.5 h-4.5 text-emerald-400"></i></div>
+                <div>
+                  <p class="text-xs font-bold text-white uppercase tracking-wide flex items-center gap-2">Real Estate Country Scanner <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-400"></i></p>
+                  <p class="text-[11px] text-gray-500 mt-1">Pick <b class="text-white">any country in the world</b> (except Nigeria &amp; Ghana). The scanner discovers that country's <b class="text-white">states → areas → streets</b> using real OpenStreetMap data, then auto-fills the location, address and nearby schools/hospitals below. No images needed.</p>
+                </div>
+              </div>
+              <button type="button" onclick="scanCountryLocations()" class="btn-press px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-xl transition shrink-0 flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i> SCAN COUNTRY</button>
+            </div>
+            <div class="form-grid form-grid-2">
+              <div><label class="lbl">Country to scan *</label><select class="input-field" name="re_country_code" id="re-country_code" onchange="onReScannerCountryChange()">${renderCountryOptions(existing.country_code || 'US', { scannerExcluded: true })}</select></div>
+              <div><label class="lbl">State / Province <span class="text-gray-600">(auto from scan)</span></label><select class="input-field" name="re_state" id="re-state" onchange="onReScannerStateChange()"><option value="">— Scan country first —</option></select></div>
+              <div><label class="lbl">Area / City <span class="text-gray-600">(auto from scan)</span></label><select class="input-field" name="re_area" id="re-area" onchange="onReScannerAreaChange()"><option value="">— Pick a state first —</option></select></div>
+              <div><label class="lbl">Street / Address <span class="text-gray-600">(auto from scan)</span></label><select class="input-field" name="re_street" id="re-street" onchange="onReScannerStreetChange()"><option value="">— Pick an area first —</option></select></div>
+              <div><label class="lbl">Nearby radius (km)</label><select class="input-field" name="re_radius" id="re-radius"><option value="4000">4 km (city block)</option><option value="8000">8 km (city)</option><option value="15000">15 km (metro)</option></select></div>
+              <div class="flex items-end justify-end">
+                <button type="button" onclick="applyReScannerToModal()" class="btn-press px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded-xl transition flex items-center gap-1.5 shrink-0"><i data-lucide="wand-2" class="w-4 h-4"></i> FILL LOCATION FORM</button>
+              </div>
+            </div>
+            <div id="re-scanner-status" class="hidden text-xs mt-1 font-medium"></div>
           </div>
 
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-4 space-y-3">
@@ -6755,7 +7133,7 @@ window.showAddPropertyModal = function(existing = {}) {
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Property Scanner</p>
-                <p class="text-[11px] text-gray-500 mt-1">Reads your uploaded images and fills the property form for you. Only runs when you press the button â€” you review everything before publishing.</p>
+                <p class="text-[11px] text-gray-500 mt-1">Reads your uploaded photos <b class="text-white">or videos</b> — it watches the video, counts the rooms and lists everything inside, then fills the property form for you. Only runs when you press the button — you review everything before publishing.</p>
               </div>
               <button type="button" id="btn-scan-ai-prop" onclick="scanPropertyWithAI()" class="btn-press px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shrink-0">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> SCAN WITH AI
