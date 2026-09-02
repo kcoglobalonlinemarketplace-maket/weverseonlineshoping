@@ -129,6 +129,22 @@ export async function videoToFrameDataUrls(src, {
     if (src instanceof Blob) {
       srcUrl = URL.createObjectURL(src);
       revokeUrl = srcUrl;
+    } else if (typeof src === 'string' && !/^(data:|blob:)/i.test(src)) {
+      // Cross-origin http(s) videos (e.g. Supabase public URLs) taint the canvas
+      // and make toDataURL throw, so drawing frames yields nothing. Fetch the
+      // media into a same-origin blob and decode it from an object URL instead —
+      // canvas reads always succeed, so video scans never silently return zero
+      // frames because of the video host's missing CORS headers.
+      try {
+        const remote = await fetch(src, { signal: AbortSignal.timeout(30000) });
+        if (remote && remote.ok) {
+          const blob = await remote.blob();
+          if (blob && blob.size) {
+            srcUrl = URL.createObjectURL(blob);
+            revokeUrl = srcUrl;
+          }
+        }
+      } catch { /* fall through to decoding the URL directly */ }
     }
     try {
       video.src = srcUrl;

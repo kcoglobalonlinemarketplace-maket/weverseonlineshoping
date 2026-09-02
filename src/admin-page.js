@@ -4857,30 +4857,43 @@ function reScannerStatus(html, cls) {
   el.innerHTML = html;
 }
 const RE_OVERPASS_SERVERS = [
+  // Ordered by measured reliability: overpass-api.de (the "canonical" instance)
+  // returns HTTP 406 for these area-based queries right now (anti-abuse geo/load
+  // limiting), and several mirrors time out or 502 — so the responsive ones go
+  // first and the flaky ones stay as fallbacks. Every request has a hard timeout
+  // so one dead mirror can never freeze the whole SCAN COUNTRY flow for minutes.
+  'https://overpass.osm.ch/api/interpreter',
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
   'https://overpass.snappy.network/api/interpreter',
   'https://overpass.osm.jp/api/interpreter',
+  'https://overpass.openstreetmap.ru/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ];
 async function reOverpass(query) {
   // Public Overpass mirrors come and go — try them all, POST first, then GET
-  // (a few instances only answer GET with ?data=).
+  // (a few instances only answer GET with ?data=). Each individual request gets
+  // a hard timeout so one dead/hanging mirror can never freeze the whole
+  // SCAN COUNTRY flow for minutes — the scanner moves on to the next mirror
+  // and then to the Nominatim geo-fallback, so a country scan always completes.
+  const lastErr = [];
   for (const url of RE_OVERPASS_SERVERS) {
     try {
       for (const makeReq of [
-        () => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(query) }),
-        () => fetch(url + '?data=' + encodeURIComponent(query)),
+        () => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: 'data=' + encodeURIComponent(query), signal: AbortSignal.timeout(18000) }),
+        () => fetch(url + '?data=' + encodeURIComponent(query), { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(18000) }),
       ]) {
         const res = await makeReq();
         if (res && res.ok) {
           const data = await res.json();
           if (data) return data;
         }
+        if (res) { lastErr.push(`${res.status} ${url}`); } else { lastErr.push(`empty ${url}`); }
       }
-    } catch { /* try the next mirror */ }
+    } catch (e) { lastErr.push(`${e && e.name === 'AbortError' ? 'timeout' : ((e && e.message) || '?')} ${url}`); }
   }
-  return { elements: [], __offline: true };
+  return { elements: [], __offline: true, __mirrors: lastErr };
 }
 
 // Overpass area() handles the hierarchical "everything inside X" filter. A
@@ -4894,7 +4907,10 @@ function reOverpassAreaId(nominatimRow) {
   return 3600000000 + id; // relation is the usual entity for admin boundaries
 }
 async function reNominatim(url) {
-  try { const res = await fetch(url); if (res.ok) return await res.json(); } catch {}
+  // Nominatim's public usage policy requires a descriptive User-Agent — requests
+  // without one are refused with "Access denied". Sending a real app identifier
+  // keeps SCAN COUNTRY's geo lookup working reliably.
+  try { const res = await fetch(url, { headers: { 'User-Agent': 'WeverseOnlineShop/1.0 (https://weverseonlineshop.com; admin listing scanner)' } }); if (res.ok) return await res.json(); } catch {}
   return null;
 }
 function uniqueNames(elements) {
