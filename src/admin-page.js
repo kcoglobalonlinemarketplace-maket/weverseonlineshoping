@@ -3485,18 +3485,6 @@ function validateScanExtraction(fields, rawSpecs) {
   return { specs, checklist, flags, summary };
 }
 
-// The user-visible field checklist â€” every field, its status, nothing hidden.
-function renderScanChecklistReport(checklist, summary) {
-  if (!checklist || !checklist.length) return '';
-  const icon = { filled: '<span class="text-emerald-400 font-bold">âœ“</span>', estimated: '<span class="text-blue-300 font-bold">â‰ˆ</span>', flagged: '<span class="text-red-400 font-bold">!</span>', missing: '<span class="text-gray-500">â€”</span>', 'empty-ok': '<span class="text-gray-700">Â·</span>' };
-  const rows = checklist.filter(c => c.status !== 'empty-ok').map((c) =>
-    `<li class="flex items-start gap-2"><span class="shrink-0 w-4">${icon[c.status] || ''}</span><span><b>${esc(c.label)}</b> <span class="text-gray-600">(${esc(c.key)})</span>${c.value ? ` â€” <span class="text-gray-300">${esc(String(c.value))}</span>` : ''}${c.note ? ` <span class="text-gray-500">${esc(c.note)}</span>` : ''}</span></li>`).join('');
-  const notApplicable = summary.total - summary.filled - summary.estimated - summary.flagged - summary.missing;
-  return `<details class="mt-2 rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
-    <summary class="cursor-pointer text-[11px] font-bold text-violet-300 select-none">Field checklist â€” ${summary.filled} filled Â· ${summary.missing} not present in document Â· ${summary.flagged} need review${summary.estimated ? ` Â· ${summary.estimated} estimates` : ''}${notApplicable > 0 ? ` Â· ${notApplicable} not applicable to this listing type` : ''}</summary>
-    <ul class="mt-2 space-y-1.5 text-[11px] text-gray-300 max-h-64 overflow-y-auto pr-1">${rows || '<li class="text-gray-500">No applicable fields found.</li>'}</ul>
-  </details>`;
-}
 
 
 const AI_PRODUCT_SCANNER = {
@@ -5316,14 +5304,6 @@ const SCAN_IDENTIFICATION_KEYS = ['brand', 'model', 'year', 'year_estimated', 'b
   'driver_assistance', 'technology', 'wheels_tires', 'dimensions', 'cargo_capacity', 'ownership_history',
   'service_history', 'accident_history', 'previous_owners', 'registration_status', 'inspection_status',
   'warranty', 'vin', 'location', 'seller_name', 'seller_phone', 'seller_email'];
-// Honest status: when the Gemini key hit its free limit mid-scan (or none is
-// set), say so plainly instead of letting results silently look thin.
-function scanAiLimitNotice() {
-  if (Date.now() < (typeof aiClient !== 'undefined' ? (aiClient._geminiQuotaUntil || 0) : 0)) {
-    return `<p class="text-[11px] text-amber-300 mt-1">⚠ Your Gemini key hit its FREE rate limit during this scan — parts were completed from saved details only. Wait ~1 minute and scan again for full AI reading.</p>`;
-  }
-  return '';
-}
 
 // Second-pass verification toggle. It doubles free-tier request usage per
 // product, so it defaults to OFF; enable it from the General AI Scanner modal
@@ -5574,8 +5554,9 @@ window.scanProductWithAI = async function() {
   }
 };
 
-// Route an identified property into the Properties Manager with its images and
-// the same scan â†’ confirm â†’ fill â†’ review flow (still never auto-publishes).
+// Route an identified property into the Properties Manager with its images.
+// Uses the SAME dedicated Real Estate Gemini system as the property form's
+// "SCAN WITH AI" button (reAIScanner) - one property pipeline, never two.
 function routePropertyScan(identification, images) {
   if (window._pfEscapeHandler) { document.removeEventListener('keydown', window._pfEscapeHandler); window._pfEscapeHandler = null; }
   showAddPropertyModal();
@@ -5594,35 +5575,29 @@ function routePropertyScan(identification, images) {
     if (cls) status.classList.add(cls);
     status.innerHTML = html;
   };
-  setStatus('Reading every page, completing property details and valueâ€¦', 'text-blue-300');
+  setStatus('Watching your property photos and completing every field...', 'text-blue-300');
   (async () => {
     try {
-const res = await runVerifiedScan({ imageUrls: images, identification, category: 'Real Estate', formSelector: '#property-form' });
-      const id2 = res.identification || identification;
-      const out = await applyScanToPropertyForm({ identification: id2, specs: res.specs, price: res.price, visionUsed: res.visionUsed });
-      let msg;
-      if (!res.price) {
-        msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} fields ready. Price estimate skipped â€” set the price manually, then press Publish Property.`;
-      } else {
-        msg = `${esc(id2.detected_name || 'Property')} â€” ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`;
+      const res = await reAIScanner.scanRealEstate(images);
+      if (!res.identification || res.identification.identified === false) {
+        setStatus(res.identification && res.identification.reason
+          ? `The Real Estate Scanner could not read this property: ${esc(res.identification.reason)}`
+          : 'The property could not be read from these images. Use clear photos that show the whole property, then try again.', 'text-amber-300');
+        showToast('The property could not be identified from the media.', 'error');
+        return;
       }
-      if (!res.visionUsed) {
-        msg += `<p class="text-[11px] text-red-300 mt-1">⚠ Photo was NOT read by AI (${esc(res.providerLabel || 'text fallback')}) — these values did NOT come from your images.</p>`;
-      } else if (res.verifyRequested) {
-        msg += res.verified
-          ? `<p class="text-[11px] text-gray-400 mt-1">✓ Second-pass verification completed — every value was re-checked against your document.</p>`
-          : `<p class="text-[11px] text-amber-300/80 mt-1">Second-pass verification could not run — values come from the first pass.</p>`;
-      }
-      msg += res.inferred ? ` <span class="text-amber-300/80">(${res.inferred} values inferred from the model's real specs/type - review them)</span>` : '';
-    msg += scanAiLimitNotice();
-      msg += renderScanChecklistReport(res.checklist, res.summary);
+      const out = await applyScanToPropertyForm({ identification: res.identification, specs: res.specs, price: res.price, visionUsed: true });
+      let msg = `${esc(res.identification.detected_name || 'Property')} - ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you. Review and edit everything, then press Publish Property.`;
+      if (!res.price) msg += `<p class="text-[11px] text-amber-300 mt-1">Price estimate skipped - set the price manually, then press Publish Property.</p>`;
+      if (res.usedSharedKey) msg += `<p class="text-[11px] text-amber-300/90 mt-1">No dedicated Real Estate key yet - this scan used your main Gemini key. Add a dedicated one in AI Settings -> "Real Estate Property Scanner" to keep this scanner fully separate.</p>`;
+      msg += `<p class="text-[11px] text-gray-400 mt-1">Dedicated Real Estate AI - own key ready - reads photos and videos.</p>`;
       setStatus(msg, res.price ? 'text-emerald-300' : 'text-amber-300');
       showToast('Review the property details, then press Publish Property.', 'success');
       if (window.lucide) lucide.createIcons();
     } catch (err) {
-      const keyHint = /key|api|configured|settings|vision/i.test(String(err?.message || err));
-      setStatus(keyHint ? 'The scanner could not run right now. Confirm your free key is set in AI Settings, then try again.' : `Scan failed: ${String(err?.message || err)}`, 'text-red-400');
-      showToast('AI scan failed.', 'error');
+      const info = reAIScanner.describeError(err);
+      setStatus(`<span class="font-bold text-white">${esc(info.title)}</span><br>${esc(info.hint)}`, 'text-red-400');
+      showToast(info.title, 'error');
     }
   })();
 }
@@ -5725,7 +5700,9 @@ window.scanPropertyWithAI = async function() {
     const name = res.identification.detected_name || 'Property';
     setStatus(
       `<span class="font-bold text-white">${esc(name)}</span> — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you from the <b>Real Estate Scanner</b>. Review and edit everything, then press Publish Property.` +
-      `<p class="text-[11px] text-gray-400 mt-1">Dedicated Real Estate AI · own Gemini key · reads photos &amp; videos.</p>`,
+      (res.usedSharedKey
+        ? `<p class="text-[11px] text-amber-300/90 mt-1">No dedicated Real Estate key yet — this scan used your main Gemini key. Add a dedicated one in AI Settings → "Real Estate Property Scanner" to keep this scanner fully separate.</p>`
+        : `<p class="text-[11px] text-gray-400 mt-1">Dedicated Real Estate AI · own Gemini key · reads photos &amp; videos.</p>`),
       'text-emerald-300'
     );
     showToast('Review the property details, then press Publish Property.', 'success');
@@ -5925,7 +5902,9 @@ window.scanVehicleWithAI = async function() {
     const name = res.identification.detected_name || 'Vehicle';
     setStatus(
       `<span class="font-bold text-white">${esc(name)}</span> — ${out.filled.length} field${out.filled.length > 1 ? 's' : ''} ready for you from the <b>Car &amp; Truck Scanner</b>. Review and edit everything, then press Publish Vehicle.` +
-      `<p class="text-[11px] text-gray-400 mt-1">Dedicated car scanner · own Gemini key · reads photos &amp; videos.</p>`,
+      (res.usedSharedKey
+        ? `<p class="text-[11px] text-amber-300/90 mt-1">Your dedicated car key is missing or was disabled by Google — this scan used your main Gemini key. Paste a fresh key in AI Settings → "Car &amp; Truck Scanner" to give cars their own key again.</p>`
+        : `<p class="text-[11px] text-gray-400 mt-1">Dedicated car scanner · own Gemini key · reads photos &amp; videos.</p>`),
       'text-emerald-300'
     );
     showToast('Review the vehicle details, then press Publish Vehicle.', 'success');
@@ -8736,6 +8715,7 @@ async function renderAiSettings() {
             </h3>
             <p class="text-[11px] text-gray-400 leading-relaxed">This is a <b class="text-white">separate, dedicated AI system just for Cars, Trucks &amp; Motorhomes</b>. It uses its own Gemini key, its own car-specific scanner, and reads cars from <b class="text-white">photos OR videos</b> (video frames are sampled automatically). It does NOT use the product scanner or its key — it is fully independent.</p>
             <p class="text-[10px] text-amber-300/90 leading-relaxed">⚡ When this key runs out of free quota, the car scanner <b>stops</b> until you paste in a fresh key here. No fake values are ever generated. Add a new key and the car scanner works again automatically.</p>
+            ${!s.car_scanner_key ? '<p class="text-[10px] font-bold text-amber-300 leading-relaxed">No dedicated car key saved yet - the Car Scanner is falling back to your main Gemini key (General AI Scanner) until you add one above. Scans work now.</p>' : '<p class="text-[10px] font-bold text-emerald-400 leading-relaxed">Dedicated car key saved - this scanner uses ONLY its own key. If Google ever deletes or disables that key, it automatically falls back to your main Gemini key so scans never stop.</p>'}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label class="lbl">Car Scanner Gemini Key</label>
@@ -8765,6 +8745,7 @@ async function renderAiSettings() {
             </h3>
             <p class="text-[11px] text-gray-400 leading-relaxed">This is a <b class="text-white">separate, dedicated AI system just for the Add Real Estate / Add Property form</b>. It uses its <b class="text-white">own Gemini key</b> and its own property scanner, and it reads houses/apartments from <b class="text-white">photos OR videos</b> (video frames are sampled automatically). It does <b class="text-white">NOT share the product scanner key, the car scanner key, or anything else</b> — the Real Estate AI is used by nobody except Add Real Estate.</p>
             <p class="text-[10px] text-amber-300/90 leading-relaxed">⚡ When this key runs out of free quota, the Real Estate scanner <b>stops</b> until you paste in a fresh key here. No fake values are ever generated. Add a new key and it works again automatically.</p>
+            ${!s.re_scanner_key ? '<p class="text-[10px] font-bold text-amber-300 leading-relaxed">No dedicated Real Estate key saved yet - the Real Estate scanner is falling back to your main Gemini key (General AI Scanner) until you add one above. Scans work now. Paste a dedicated key here to keep this scanner fully separate, as designed.</p>' : '<p class="text-[10px] font-bold text-emerald-400 leading-relaxed">Dedicated Real Estate key saved - this scanner uses ONLY its own key. If Google ever deletes or disables that key, it automatically falls back to your main Gemini key so scans never stop.</p>'}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label class="lbl">Real Estate Scanner Gemini Key</label>
@@ -9807,8 +9788,21 @@ const carAIScanner = {
   // specific, human message (empty key / quota exhausted / invalid key / other).
   async _geminiVision(items, prompt) {
     const cfg = await this.getConfig();
-    const key = String(cfg.car_scanner_key || '').trim();
-    if (!key) throw new Error('NO_CAR_KEY');
+    const primaryKey = String(cfg.car_scanner_key || '').trim();
+    const sharedKey = String(cfg.gemini_key || '').trim();
+    // Dedicated car key first. If it is missing — or Google rejects it because
+    // the saved key was deleted / disabled (its bound service account no longer
+    // works, a silent killer of previously-working car keys) — fall back to the
+    // admin's WORKING shared Gemini key so the Car Scanner always runs. The scan
+    // result reports "used the shared key" so the switch is never silent; pasting
+    // a fresh dedicated key in AI Settings takes over again instantly.
+    let key = primaryKey || '';
+    let usedSharedKey = false;
+    if (!key) {
+      if (!sharedKey) throw new Error('NO_CAR_KEY');
+      key = sharedKey;
+      usedSharedKey = true;
+    }
     const model = this.model();
     const body = {
       contents: [{
@@ -9823,11 +9817,12 @@ const carAIScanner = {
       }],
       generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
     };
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+    const buildEndpoint = (k) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(k)}`;
+    let endpoint = buildEndpoint(key);
     // Google's free tier frequently returns 503 "model is currently experiencing
     // high demand" (transient) and 429 (rate) — both intermittent and worth retrying.
-    // Hard errors (model retired 404, bad key 400/403, quota exhausted 429-permanent)
-    // are NOT retried.
+    // Hard errors (model retired 404, bad key 400/401/403, quota exhausted) are NOT
+    // retried; a bad/dead dedicated key triggers the shared-key fallback below.
     const attempt = async () => {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -9844,6 +9839,15 @@ const carAIScanner = {
       return { _status: status, _msg: msg, _transient: transient };
     };
     let result = await attempt();
+    // Deleted/disabled or rejected dedicated key → retry once with the shared key.
+    if (result && !result.ok && !usedSharedKey && sharedKey && sharedKey !== primaryKey
+      && (result._status === 401 || result._status === 403
+        || (/api key|invalid|unauthor|permission|service account|disabled|deleted/.test(result._msg) && result._status !== 404))) {
+      key = sharedKey;
+      usedSharedKey = true;
+      endpoint = buildEndpoint(key);
+      result = await attempt();
+    }
     if (result && result.ok) {
       const data = await result.json();
       const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
@@ -9851,6 +9855,7 @@ const carAIScanner = {
         : '';
       const parsed = text ? extractJsonFromAiText(text) : null;
       if (!parsed) throw new Error('CAR_NO_PARSE');
+      parsed._usedSharedKey = usedSharedKey;
       return parsed;
     }
     if (result && result._transient) {
@@ -9864,7 +9869,7 @@ const carAIScanner = {
             ? data.candidates[0].content.parts.map(p => p.text || '').join('')
             : '';
           const parsed = text ? extractJsonFromAiText(text) : null;
-          if (parsed) return parsed;
+          if (parsed) { parsed._usedSharedKey = usedSharedKey; return parsed; }
           throw new Error('CAR_NO_PARSE');
         }
       }
@@ -9885,7 +9890,6 @@ const carAIScanner = {
   // Throws with a friendly, specific message on any failure.
   async scanCars(imageUrls) {
     const cfg = await this.getConfig();
-    if (!String(cfg.car_scanner_key || '').trim()) throw new Error('NO_CAR_KEY');
     const items = await this._collectScanImages(imageUrls);
     if (!items.length) throw new Error('NO_MEDIA');
 
@@ -9940,6 +9944,7 @@ If the media does not clearly show any vehicle, return { "identification": { "id
         specs: (parsed.specs || {}),
         price: (parsed.price || null),
         visionUsed: true,
+        usedSharedKey: !!(parsed && parsed._usedSharedKey),
       };
     }
     const identification = (parsed && parsed.identification) || {};
@@ -9961,6 +9966,7 @@ If the media does not clearly show any vehicle, return { "identification": { "id
       },
       price,
       visionUsed: true,
+      usedSharedKey: !!(parsed && parsed._usedSharedKey),
     };
   },
 
@@ -9968,13 +9974,13 @@ If the media does not clearly show any vehicle, return { "identification": { "id
   describeError(err) {
     const code = String((err && err.message) || '');
     if (code === 'NO_CAR_KEY') {
-      return { title: 'Car Scanner key not set', hint: 'Add your dedicated Car & Truck Scanner Gemini key in AI Settings → "Car & Truck Scanner", then try again. The car scanner does not use the product key.', code };
+      return { title: 'No Gemini key is set at all', hint: 'Neither the dedicated Car Scanner key nor your main Gemini key is saved. Add the dedicated key in AI Settings → "Car & Truck Scanner" (or the main Gemini key in "General AI Scanner"), then try again.', code };
     }
     if (code === 'CAR_QUOTA') {
-      return { title: 'Car Scanner quota used up', hint: 'Your Car & Truck Scanner Gemini key has run out of free quota or is rate-limited. It will stop until you paste in a fresh key in AI Settings → "Car & Truck Scanner". No fake values were generated.', code };
+      return { title: 'Car Scanner quota used up', hint: 'The Gemini key in use has run out of free quota or is rate-limited. If this is your dedicated key, paste a fresh one in AI Settings → "Car & Truck Scanner" — with no dedicated key the Car Scanner falls back to your main Gemini key automatically. No fake values were generated.', code };
     }
     if (code === 'CAR_BAD_KEY') {
-      return { title: 'Car Scanner key not accepted', hint: 'Google rejected your Car & Truck Scanner key. Check it in AI Settings → "Car & Truck Scanner" (valid 39-char AIzaSy… key) and save it again.', code };
+      return { title: 'Gemini key not accepted', hint: 'Google rejected the key in use. If you have a dedicated car key saved, it or its fallback is failing — check it in AI Settings → "Car & Truck Scanner" (valid 39-char AIzaSy… key) and save it again.', code };
     }
     if (code === 'NO_MEDIA') {
       return { title: 'No readable media', hint: 'The car photos/video could not be loaded. Upload clear photos or a video of the vehicle and try again.', code };
@@ -10084,8 +10090,21 @@ const reAIScanner = {
   // specific, human message (empty key / quota exhausted / invalid key / other).
   async _geminiVision(items, prompt) {
     const cfg = await this.getConfig();
-    const key = String(cfg.re_scanner_key || '').trim();
-    if (!key) throw new Error('NO_RE_KEY');
+    const primaryKey = String(cfg.re_scanner_key || '').trim();
+    const sharedKey = String(cfg.gemini_key || '').trim();
+    // Dedicated Real Estate key first (full separation — no other feature reads
+    // re_scanner_key). When it is missing, or Google rejects it because the saved
+    // key was deleted / disabled, fall back to the admin's WORKING shared Gemini
+    // key so the Real Estate scanner always runs; the scan result reports
+    // "used the shared key" so this is never a silent switch. Pasting a fresh
+    // dedicated key in AI Settings takes over again instantly.
+    let key = primaryKey || '';
+    let usedSharedKey = false;
+    if (!key) {
+      if (!sharedKey) throw new Error('NO_RE_KEY');
+      key = sharedKey;
+      usedSharedKey = true;
+    }
     const model = this.model();
     const body = {
       contents: [{
@@ -10100,7 +10119,8 @@ const reAIScanner = {
       }],
       generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
     };
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+    const buildEndpoint = (k) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(k)}`;
+    let endpoint = buildEndpoint(key);
     const attempt = async () => {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -10117,6 +10137,15 @@ const reAIScanner = {
       return { _status: status, _msg: msg, _transient: transient };
     };
     let result = await attempt();
+    // Deleted/disabled or rejected dedicated key → retry once with the shared key.
+    if (result && !result.ok && !usedSharedKey && sharedKey && sharedKey !== primaryKey
+      && (result._status === 401 || result._status === 403
+        || (/api key|invalid|unauthor|permission|service account|disabled|deleted/.test(result._msg) && result._status !== 404))) {
+      key = sharedKey;
+      usedSharedKey = true;
+      endpoint = buildEndpoint(key);
+      result = await attempt();
+    }
     if (result && result.ok) {
       const data = await result.json();
       const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
@@ -10124,6 +10153,7 @@ const reAIScanner = {
         : '';
       const parsed = text ? extractJsonFromAiText(text) : null;
       if (!parsed) throw new Error('RE_NO_PARSE');
+      parsed._usedSharedKey = usedSharedKey;
       return parsed;
     }
     if (result && result._transient) {
@@ -10136,7 +10166,7 @@ const reAIScanner = {
             ? data.candidates[0].content.parts.map(p => p.text || '').join('')
             : '';
           const parsed = text ? extractJsonFromAiText(text) : null;
-          if (parsed) return parsed;
+          if (parsed) { parsed._usedSharedKey = usedSharedKey; return parsed; }
           throw new Error('RE_NO_PARSE');
         }
       }
@@ -10156,8 +10186,6 @@ const reAIScanner = {
   // and/or PDFs; returns { identification, specs, price } ready for
   // applyScanToPropertyForm. Throws a friendly, specific code on any failure.
   async scanRealEstate(imageUrls) {
-    const cfg = await this.getConfig();
-    if (!String(cfg.re_scanner_key || '').trim()) throw new Error('NO_RE_KEY');
     const items = await this._collectScanImages(imageUrls);
     if (!items.length) throw new Error('NO_MEDIA');
 
@@ -10218,6 +10246,7 @@ If the media does not clearly show any property, return { "identification": { "i
         specs: (parsed.specs || {}),
         price: (parsed.price || null),
         visionUsed: true,
+        usedSharedKey: !!(parsed && parsed._usedSharedKey),
       };
     }
     const identification = (parsed && parsed.identification) || {};
@@ -10240,6 +10269,7 @@ If the media does not clearly show any property, return { "identification": { "i
       },
       price,
       visionUsed: true,
+      usedSharedKey: !!(parsed && parsed._usedSharedKey),
     };
   },
 
@@ -10247,13 +10277,13 @@ If the media does not clearly show any property, return { "identification": { "i
   describeError(err) {
     const code = String((err && err.message) || '');
     if (code === 'NO_RE_KEY') {
-      return { title: 'Real Estate Scanner key not set', hint: 'Add your dedicated Real Estate Property Scanner Gemini key in AI Settings → "Real Estate Property Scanner", then try again. The Real Estate scanner does not use the product key or the car key — it has its own.', code };
+      return { title: 'No Gemini key is set at all', hint: 'Neither the dedicated Real Estate key nor your main Gemini key is saved. Add the dedicated key in AI Settings → "Real Estate Property Scanner" (or the main Gemini key in "General AI Scanner"), then try again.', code };
     }
     if (code === 'RE_QUOTA') {
-      return { title: 'Real Estate Scanner quota used up', hint: 'Your Real Estate Property Scanner Gemini key has run out of free quota or is rate-limited. It stops until you paste in a fresh key in AI Settings → "Real Estate Property Scanner". No fake values were generated.', code };
+      return { title: 'Real Estate Scanner quota used up', hint: 'The Gemini key in use has run out of free quota or is rate-limited. If this is your dedicated key, paste a fresh one in AI Settings → "Real Estate Property Scanner" — with no dedicated key the Real Estate scanner falls back to your main Gemini key automatically. No fake values were generated.', code };
     }
     if (code === 'RE_BAD_KEY') {
-      return { title: 'Real Estate Scanner key not accepted', hint: 'Google rejected your Real Estate Property Scanner key. Check it in AI Settings → "Real Estate Property Scanner" (valid 39-char AIzaSy… key) and save it again.', code };
+      return { title: 'Gemini key not accepted', hint: 'Google rejected the key in use. If you have a dedicated Real Estate key saved, it or its fallback is failing — check it in AI Settings → "Real Estate Property Scanner" (valid 39-char AIzaSy… key) and save it again.', code };
     }
     if (code === 'NO_MEDIA') {
       return { title: 'No readable media', hint: 'The property photos/video could not be loaded. Upload clear photos or a video that shows the property and try again.', code };
