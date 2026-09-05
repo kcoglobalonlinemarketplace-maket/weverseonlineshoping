@@ -37,24 +37,23 @@
     .kco-tabs{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:20px auto 26px}
     .kco-tab{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:14px;background:#fff;border:1px solid #e2e8f0;color:#334155;font-size:13px;font-weight:800;text-decoration:none;box-shadow:0 2px 10px -4px rgba(0,0,0,.08);transition:all .15s}
     .kco-tab:hover{border-color:#3b82f6;color:#1d4ed8;transform:translateY(-1px)}
-    .kco-tab.active{background:#0f172a;border-color:#0f172a;color:#fff}
+    .kco-tab.active{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 6px 16px -8px rgba(37,99,235,.5)}
     .kco-catbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0 auto 30px;max-width:960px}
     .kco-cat{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#334155;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none}
     .kco-cat:hover{border-color:#94a3b8}
-    .kco-cat.active{background:#059669;border-color:#059669;color:#fff}
-    .kco-cat.veh.active{background:#f59e0b;border-color:#f59e0b}
+    .kco-cat.active,.kco-cat.veh.active{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
     .kco-group{margin:0 0 34px}
     .kco-group-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-    .kco-group-head .kco-gh-ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;background:#059669;box-shadow:0 8px 18px -8px rgba(5,150,105,.6);font-size:20px}
-    .kco-group-head.veh .kco-gh-ic{background:#d97706;box-shadow:0 8px 18px -8px rgba(217,119,6,.6)}
+    .kco-group-head .kco-gh-ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;font-size:20px}
+    .kco-group-head.veh .kco-gh-ic{background:#eff6ff;border-color:#bfdbfe;color:#2563eb}
     .kco-group-head h2{font-size:19px;font-weight:900;margin:0;color:#0f172a}
     .kco-group-head span{font-size:12px;font-weight:700;color:#64748b}
     .kco-grid{display:grid;grid-template-columns:1fr;gap:18px}
     @media(min-width:640px){.kco-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(min-width:1024px){.kco-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-    .kco-card{width:100%;min-width:0;border-radius:1.25rem;overflow:hidden;background:#fff;border:1px solid #e2e8f0;box-shadow:0 10px 24px -14px rgba(2,6,23,.18);display:flex;flex-direction:column;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease}
-    .kco-card:hover{transform:translateY(-3px);box-shadow:0 18px 34px -14px rgba(2,6,23,.28)}
-    .kco-empty{grid-column:1/-1;padding:34px;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:1.25rem;color:#94a3b8;font-size:14px;font-weight:600}
+    .kco-card{width:100%;min-width:0;border-radius:1rem;overflow:hidden;background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,.06);display:flex;flex-direction:column;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+    .kco-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px -12px rgba(2,6,23,.2);border-color:#bfdbfe}
+    .kco-empty{grid-column:1/-1;padding:34px;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:1rem;color:#94a3b8;font-size:14px;font-weight:600}
   </style>
 </head>
 <body>

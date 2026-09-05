@@ -27,6 +27,7 @@ Disallow: /payment.html
 Disallow: /cart
 Disallow: /cart.html
 Disallow: /api/
+Disallow: /seo-audit
 Disallow: /publish-preview.html
 
 Sitemap: https://weverseonlineshop.com/sitemap.xml

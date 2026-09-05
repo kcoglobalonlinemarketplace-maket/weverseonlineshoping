@@ -40,8 +40,20 @@ function showroomMasthead(isRe, list) {
   if (!mast) return;
   mast.innerHTML = `
     <h1 id="kco-cat-title">${isRe ? 'Houses For Sale' : 'Cars &amp; Trucks'}</h1>
-    <p id="kco-cat-sub">${isRe ? 'Every listed home, ready to tour on video — see it before you visit.' : 'Your next ride starts here.'}</p>`;
+    <p id="kco-cat-sub">${isRe ? 'Homes listed for sale or rent by their sellers, with video tours available.' : 'New and used cars, trucks, buses and motorhomes listed by their sellers.'}</p>`;
 }
+
+const HOUSE_ICONS = {
+  'Single-Family Home': 'home', 'Apartment': 'building-2', 'Condo': 'building-2', 'Townhouse': 'home',
+  'Villa': 'castle', 'Mansion': 'warehouse', 'Beach House': 'waves', 'Farm House': 'tractor',
+  'House': 'home', 'Homes': 'home', 'Duplex': 'building-2', 'Penthouse': 'building-2',
+  'Bungalow': 'home', 'Cottage': 'home', 'Chalet': 'mountain', 'Studio': 'building-2', 'Loft': 'building-2',
+};
+
+const VEHICLE_ICONS = {
+  'Car': 'car-front', 'Truck': 'truck', 'Bus': 'bus', 'Motorhome / RV': 'van',
+  'Motorcycle': 'bike', 'Boat / Marine': 'ship',
+};
 
 function render(cat, filterType) {
   const results = document.getElementById('kco-results');
@@ -77,7 +89,7 @@ function render(cat, filterType) {
     return `
       <section class="kco-group">
         <div class="kco-group-head ${veh ? 'veh' : ''}">
-          <span class="kco-gh-ic">${icon(isRe ? 'home' : 'car-front')}</span>
+          <span class="kco-gh-ic">${icon(isRe ? (HOUSE_ICONS[key] || 'home') : (VEHICLE_ICONS[key] || 'car-front'))}</span>
           <h2>${esc(key)}</h2>
           <span>${items.length} listing${items.length === 1 ? '' : 's'}</span>
         </div>

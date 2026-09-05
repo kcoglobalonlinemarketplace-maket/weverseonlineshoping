@@ -120,14 +120,38 @@ const ORDER_STEPS = [
   { id: 'order_placed', label: 'Order Placed', icon: 'shopping-bag', color: 'text-blue-600', bg: 'bg-blue-50' },
   { id: 'payment_received', label: 'Payment Received', icon: 'credit-card', color: 'text-cyan-600', bg: 'bg-cyan-50' },
   { id: 'pending_verification', label: 'Pending Verification', icon: 'shield-alert', color: 'text-amber-600', bg: 'bg-amber-50' },
+  { id: 'documentation_pending', label: 'Documentation Pending', icon: 'file-question', color: 'text-amber-600', bg: 'bg-amber-50' },
   { id: 'payment_approved', label: 'Approved', icon: 'check-circle', color: 'text-emerald-600', bg: 'bg-emerald-50' },
   { id: 'order_processing', label: 'Processing', icon: 'package', color: 'text-blue-600', bg: 'bg-blue-50' },
   { id: 'order_shipped', label: 'Shipped', icon: 'truck', color: 'text-indigo-600', bg: 'bg-indigo-50' },
   { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'bike', color: 'text-blue-600', bg: 'bg-blue-50' },
   { id: 'order_delivered', label: 'Delivered', icon: 'package-check', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { id: 'order_completed', label: 'Order Completed', icon: 'check-check', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { id: 'refund_processing', label: 'Refund Processing', icon: 'rotate-ccw', color: 'text-orange-600', bg: 'bg-orange-50' },
+  { id: 'payment_failed', label: 'Payment Failed', icon: 'x-circle', color: 'text-red-600', bg: 'bg-red-50' },
+  { id: 'rejected', label: 'Payment Rejected', icon: 'x-circle', color: 'text-red-600', bg: 'bg-red-50' },
+  { id: 'cancelled', label: 'Cancelled', icon: 'x-circle', color: 'text-red-600', bg: 'bg-red-50' },
 ];
 
-const STATUS_ALIASES = { approved: 'payment_approved', submitted: 'payment_received', placed: 'order_placed' };
+const STATUS_ALIASES = {
+  approved: 'payment_approved',
+  submitted: 'payment_received',
+  placed: 'order_placed',
+  paid: 'payment_approved',
+  payment_verified: 'payment_approved',
+  processing: 'order_processing',
+  shipped: 'order_shipped',
+  in_transit: 'order_shipped',
+  delivered: 'order_delivered',
+};
+const STATUS_LABELS = {
+  rejected: 'Payment Rejected',
+  cancelled: 'Cancelled',
+  refund_processing: 'Refund Processing',
+  payment_failed: 'Payment Failed',
+  documentation_pending: 'Documentation Pending',
+  order_completed: 'Order Completed',
+};
 function normalizeStatus(s) { return STATUS_ALIASES[s] || s; }
 function stepIndex(status) { const i = ORDER_STEPS.findIndex(s => s.id === normalizeStatus(status)); return i >= 0 ? i : 0; }
 
@@ -161,11 +185,11 @@ function statusBadge(status) {
     'text-amber-600': 'bg-amber-50 text-amber-600 border-amber-200',
     'text-emerald-600': 'bg-emerald-50 text-emerald-600 border-emerald-200',
     'text-indigo-600': 'bg-indigo-50 text-indigo-600 border-indigo-200',
-    'text-blue-600': 'bg-blue-50 text-blue-600 border-blue-200',
+    'text-orange-600': 'bg-orange-50 text-orange-600 border-orange-200',
     'text-red-600': 'bg-red-50 text-red-600 border-red-200',
   };
   const cls = colorMap[step.color] || colorMap['text-blue-600'];
-  const label = status === 'rejected' ? 'Rejected' : step.label;
+  const label = STATUS_LABELS[status] || STATUS_LABELS[norm] || step.label;
   return `<span class="inline-flex items-center gap-1 ${cls} border text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">${label}</span>`;
 }
 
@@ -393,9 +417,9 @@ function pageTitle(title, subtitle) {
 /* ── Stats helper ───────────────────────────────────────────── */
 function orderStats() {
   const total = state.orders.length;
-  const pending = state.orders.filter(o => ['order_placed', 'payment_received', 'pending_verification', 'order_processing'].includes(normalizeStatus(o.status))).length;
-  const completed = state.orders.filter(o => normalizeStatus(o.status) === 'order_delivered').length;
-  const cancelled = state.orders.filter(o => o.status === 'rejected').length;
+  const pending = state.orders.filter(o => ['order_placed', 'payment_received', 'pending_verification', 'documentation_pending', 'refund_processing', 'order_processing'].includes(normalizeStatus(o.status))).length;
+  const completed = state.orders.filter(o => ['order_delivered', 'order_completed'].includes(normalizeStatus(o.status))).length;
+  const cancelled = state.orders.filter(o => ['rejected', 'cancelled'].includes(o.status)).length;
   return { total, pending, completed, cancelled };
 }
 
@@ -805,7 +829,7 @@ async function renderSpecialOrders() {
 }
 
 function renderTracking() {
-  const activeOrders = state.orders.filter(o => !['order_delivered', 'rejected'].includes(normalizeStatus(o.status)));
+  const activeOrders = state.orders.filter(o => !['order_delivered', 'order_completed', 'rejected', 'cancelled', 'payment_failed'].includes(normalizeStatus(o.status)));
   return `
     ${pageTitle('Order Tracking', 'Track your active orders in real time.')}
     ${activeOrders.length === 0 ? renderEmptyState('No Active Orders', 'All your orders have been delivered.', 'check-circle', 'Browse Marketplace') : `

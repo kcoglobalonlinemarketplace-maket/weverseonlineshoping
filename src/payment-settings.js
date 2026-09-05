@@ -2,18 +2,17 @@ import { supabase } from './supabase-client.js';
 import { detectCurrency, getCountryByCode, SUPPORTED_CURRENCIES } from './country-data.js';
 
 export const PAYMENT_SETTINGS_CACHE_KEY = 'kco_payment_settings_v1';
+export const BANK_ACCOUNTS_CACHE_KEY = 'kco_bank_accounts_v1';
 
-export const DEFAULT_MANUAL_PAYMENT_ACCOUNTS = [
-  { currency: 'USD', currencyName: 'United States Dollar', flag: 'US', country: 'United States', bankName: 'Citibank', transferType: 'Local & International', beneficiary: 'KENNETH CHIDERA ODENYI', accountNumber: '70589490002447647', accountType: 'Checking', iban: '', swift: 'CITIUS33', routing: '031100209', sortCode: '', bankCode: '', branchCode: '', institutionNumber: '', transitNumber: '', bsbCode: '', address: '111 Wall Street, New York, NY 10043, USA' },
-  { currency: 'GBP', currencyName: 'British Pound', flag: 'GB', country: 'United Kingdom', bankName: 'Citibank', transferType: 'Local & International', beneficiary: 'KENNETH CHIDERA ODENYI', accountNumber: '56468624', accountType: '', iban: 'GB94CITI18500856468624', swift: 'CITIGB2L', routing: '', sortCode: '185008', bankCode: '', branchCode: '', institutionNumber: '', transitNumber: '', bsbCode: '', address: 'Canada Square, Canary Wharf, London E14 5LB, United Kingdom' },
-  { currency: 'EUR', currencyName: 'Euro', flag: 'EU', country: 'Eurozone', bankName: 'Citibank', transferType: 'Local & International', beneficiary: 'KENNETH CHIDERA ODENYI', accountNumber: '', accountType: '', iban: 'IE70CITI99005171297018', swift: 'CITIIE2X', routing: '', sortCode: '', bankCode: '', branchCode: '', institutionNumber: '', transitNumber: '', bsbCode: '', address: '1 North Wall Quay, IFSC, Dublin 1, Ireland' },
-  { currency: 'CAD', currencyName: 'Canadian Dollar', flag: 'CA', country: 'Canada', bankName: 'Citibank NA Canadian Branch', transferType: 'Local Transfer', beneficiary: 'KENNETH CHIDERA ODENYI', accountNumber: '3001440544', accountType: 'Checking', iban: '', swift: '', routing: '', sortCode: '', bankCode: '', branchCode: '', institutionNumber: '0328', transitNumber: '20012', bsbCode: '', address: '123 Front St. West, Toronto, ON M5J 2M3, Canada' },
-  { currency: 'AUD', currencyName: 'Australian Dollar', flag: 'AU', country: 'Australia', bankName: 'Citibank', transferType: 'Local & International', beneficiary: 'KENNETH CHIDERA ODENYI', accountNumber: '10674571', accountType: '', iban: '', swift: '', routing: '', sortCode: '', bankCode: '', branchCode: '', institutionNumber: '', transitNumber: '', bsbCode: '248024', address: '2 Park Street, Sydney NSW 2000, Australia' },
-  { currency: 'SGD', currencyName: 'Singapore Dollar', flag: 'SG', country: 'Singapore', bankName: 'Citibank N.A. Singapore Branch', transferType: 'Local & International', beneficiary: 'KENNETH CHIDERA ODENYI', accountNumber: '44990709533', accountType: '', iban: '', swift: 'CITISGSG', routing: '', sortCode: '', bankCode: '7214', branchCode: '001', institutionNumber: '', transitNumber: '', bsbCode: '', address: '8 Marina View, #17-01 Asia Square Tower 1, Singapore 018960' },
-  { currency: 'JPY', currencyName: 'Japanese Yen', flag: 'JP', country: 'Japan', bankName: 'MUFG Bank Ltd.', transferType: 'Local Transfer', beneficiary: 'KENNETH CHIDERA ODENYI', accountNumber: '4682719', accountType: 'Savings / Futsu', iban: '', swift: '', routing: '', sortCode: '', bankCode: '0005', branchCode: '869', institutionNumber: '', transitNumber: '', bsbCode: '', address: '7-1 Marunouchi 2-Chome, Chiyoda-ku, Tokyo, Japan' },
-  { currency: 'MXN', currencyName: 'Mexican Peso', flag: 'MX', country: 'Mexico', bankName: 'Sistema de Transferencias y Pagos', transferType: 'Local Transfer', beneficiary: 'KENNETH CHIDERA ODENYI', accountNumber: '646010504200345127', accountType: '', iban: '', swift: '', routing: '', sortCode: '', bankCode: '646', branchCode: '010', institutionNumber: '', transitNumber: '', bsbCode: '', address: 'Av. Insurgentes Sur 1425, Ciudad de México, México' },
-  { currency: 'IDR', currencyName: 'Indonesian Rupiah', flag: 'ID', country: 'Indonesia', bankName: 'Deutsche Bank AG Jakarta Branch', transferType: 'Local Transfer', beneficiary: 'KENNETH CHIDERA ODENYI', accountNumber: '974400000904', accountType: '', iban: '', swift: '', routing: '', sortCode: '', bankCode: '', branchCode: '0670304', institutionNumber: '', transitNumber: '', bsbCode: '', address: 'Jl. Imam Bonjol 80, Jakarta 10310, Indonesia' },
-];
+// High-value security rule: any order worth 1,000 USD (or the equivalent in
+// EUR/GBP/any other supported currency) or more is paid ONLY by manual bank
+// transfer. Card/ATM payment is offered for orders below this threshold.
+// The business rule lives here as plain logic (not a secret) and is easily
+// adjustable.
+export const MANUAL_REQUIRED_THRESHOLD_USD = 1000;
+export function isManualTransferRequired(totalUsd) {
+  return (parseFloat(totalUsd) || 0) >= MANUAL_REQUIRED_THRESHOLD_USD;
+}
 
 export function getFlagEmojiFromCountryCode(code) {
   if (!code || code.length !== 2) return '🏦';
@@ -107,7 +106,47 @@ export function getManualPaymentAccounts(settings = {}) {
   if (current.length > 0) return current;
   const legacy = getLegacyManualPaymentAccounts(settings);
   if (legacy.length > 0) return legacy;
-  return DEFAULT_MANUAL_PAYMENT_ACCOUNTS.map((account, index) => normalizeAccount(account, index));
+  return [];
+}
+
+// Loads the ACTIVE bank accounts from the locked `bank_accounts` table via the
+// SECURITY DEFINER RPC. The RPC is the only public window into these details —
+// nothing lives in the client bundle. Falls back to any admin-configured
+// jsonb/legacy values in site_settings (migrated data), and to a short
+// localStorage cache for offline resilience.
+let _bankCache = null;
+export async function getActiveBankAccounts() {
+  if (_bankCache) return _bankCache;
+  let fromCache = true;
+  try {
+    const raw = localStorage.getItem(BANK_ACCOUNTS_CACHE_KEY);
+    if (raw) {
+      const c = JSON.parse(raw);
+      if (c && Array.isArray(c.accounts) && c.ts && (Date.now() - c.ts) < 6 * 3600 * 1000) {
+        _bankCache = c.accounts;
+        return _bankCache;
+      }
+    }
+  } catch {}
+  let accounts = [];
+  try {
+    const { data, error } = await supabase.rpc('get_active_bank_accounts');
+    if (!error && Array.isArray(data) && data.length) {
+      accounts = normalizeManualPaymentAccounts(data);
+      fromCache = false;
+    }
+  } catch {}
+  if (!accounts.length) {
+    const settings = await loadPaymentSettings();
+    accounts = getManualPaymentAccounts(settings);
+  }
+  if (accounts.length) {
+    _bankCache = accounts;
+    if (!fromCache) {
+      try { localStorage.setItem(BANK_ACCOUNTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), accounts })); } catch {}
+    }
+  }
+  return accounts;
 }
 
 export function getPaymentInstructions(settings = {}) {
@@ -115,7 +154,7 @@ export function getPaymentInstructions(settings = {}) {
 }
 
 export function getUsdFallbackAccount(accounts) {
-  return accounts.find(account => account.currency === 'USD') || accounts[0] || normalizeAccount(DEFAULT_MANUAL_PAYMENT_ACCOUNTS[0], 0);
+  return accounts.find(account => account.currency === 'USD') || accounts[0] || null;
 }
 
 export function resolveAccountForCountry(accounts, countryCode, selectedCurrency) {
@@ -123,12 +162,12 @@ export function resolveAccountForCountry(accounts, countryCode, selectedCurrency
   const currency = (selectedCurrency || detectedCurrency || 'USD').toUpperCase();
   if (!selectedCurrency && !detectedCurrency && countryCode && countryCode !== 'US') {
     const fallback = getUsdFallbackAccount(accounts);
-    return { currency: fallback.currency || 'USD', account: fallback, isFallback: true };
+    return { currency: fallback?.currency || 'USD', account: fallback, isFallback: !!fallback };
   }
   const exact = accounts.find(account => account.currency === currency);
   if (exact) return { currency, account: exact, isFallback: false };
   const fallback = getUsdFallbackAccount(accounts);
-  return { currency: fallback.currency || 'USD', account: fallback, isFallback: true };
+  return { currency: fallback?.currency || 'USD', account: fallback, isFallback: !!fallback };
 }
 
 export async function loadPaymentSettings() {

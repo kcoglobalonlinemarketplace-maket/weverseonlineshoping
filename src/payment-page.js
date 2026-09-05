@@ -9,7 +9,7 @@ import { getCurrentUser } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { supabase } from './supabase-client.js';
 import { detectCurrency, getCountryByCode, SUPPORTED_CURRENCIES } from './country-data.js';
-import { buildFallbackNotice, getManualPaymentAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
+import { buildFallbackNotice, getActiveBankAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
 import { convertFromUSD, fmtLocal, preloadFx } from './fx.js';
 
 const FALLBACK_IMG = '/fallback.svg';
@@ -21,127 +21,6 @@ let paymentSettings = null;
 let manualPaymentAccounts = [];
 let manualPaymentInstructions = '';
 let autoDetectedCurrency = '';
-
-/* ── Bank account details per currency ─────────────────────── */
-const BANK_ACCOUNTS = {
-  USD: {
-    currency: 'USD', currencyName: 'United States Dollar', flag: '🇺🇸', country: 'United States',
-    bankName: 'Citibank', transferType: 'Local & International',
-    beneficiary: 'KENNETH CHIDERA ODENYI',
-    accountNumber: '70589490002447647',
-    accountType: 'Checking',
-    iban: '', swift: 'CITIUS33',
-    routing: '031100209',
-    sortCode: '', branchCode: '', institutionNumber: '', transitNumber: '', bsbCode: '',
-    address: '111 Wall Street, New York, NY 10043, USA',
-  },
-  GBP: {
-    currency: 'GBP', currencyName: 'British Pound', flag: '🇬🇧', country: 'United Kingdom',
-    bankName: 'Citibank', transferType: 'Local & International',
-    beneficiary: 'KENNETH CHIDERA ODENYI',
-    accountNumber: '56468624',
-    accountType: '',
-    iban: 'GB94CITI18500856468624', swift: 'CITIGB2L',
-    routing: '', sortCode: '185008',
-    branchCode: '', institutionNumber: '', transitNumber: '', bsbCode: '',
-    address: 'Canada Square, Canary Wharf, London E14 5LB, United Kingdom',
-  },
-  EUR: {
-    currency: 'EUR', currencyName: 'Euro', flag: '🇪🇺', country: 'Eurozone',
-    bankName: 'Citibank', transferType: 'Local & International',
-    beneficiary: 'KENNETH CHIDERA ODENYI',
-    accountNumber: '',
-    accountType: '',
-    iban: 'IE70CITI99005171297018', swift: 'CITIIE2X',
-    routing: '', sortCode: '',
-    branchCode: '', institutionNumber: '', transitNumber: '', bsbCode: '',
-    address: '1 North Wall Quay, IFSC, Dublin 1, Ireland',
-  },
-  CAD: {
-    currency: 'CAD', currencyName: 'Canadian Dollar', flag: '🇨🇦', country: 'Canada',
-    bankName: 'Citibank NA Canadian Branch', transferType: 'Local Transfer',
-    beneficiary: 'KENNETH CHIDERA ODENYI',
-    accountNumber: '3001440544',
-    accountType: 'Checking',
-    iban: '', swift: '',
-    routing: '', sortCode: '',
-    branchCode: '', institutionNumber: '0328', transitNumber: '20012', bsbCode: '',
-    address: '123 Front St. West, Toronto, ON M5J 2M3, Canada',
-  },
-  AUD: {
-    currency: 'AUD', currencyName: 'Australian Dollar', flag: '🇦🇺', country: 'Australia',
-    bankName: 'Citibank', transferType: 'Local & International',
-    beneficiary: 'KENNETH CHIDERA ODENYI',
-    accountNumber: '10674571',
-    accountType: '',
-    iban: '', swift: '',
-    routing: '', sortCode: '',
-    branchCode: '', institutionNumber: '', transitNumber: '', bsbCode: '248024',
-    address: '2 Park Street, Sydney NSW 2000, Australia',
-  },
-  SGD: {
-    currency: 'SGD', currencyName: 'Singapore Dollar', flag: '🇸🇬', country: 'Singapore',
-    bankName: 'Citibank N.A. Singapore Branch', transferType: 'Local & International',
-    beneficiary: 'KENNETH CHIDERA ODENYI',
-    accountNumber: '44990709533',
-    accountType: '',
-    iban: '', swift: 'CITISGSG',
-    routing: '', sortCode: '',
-    bankCode: '7214', branchCode: '001', institutionNumber: '', transitNumber: '', bsbCode: '',
-    address: '8 Marina View, #17-01 Asia Square Tower 1, Singapore 018960',
-  },
-  JPY: {
-    currency: 'JPY', currencyName: 'Japanese Yen', flag: '🇯🇵', country: 'Japan',
-    bankName: 'MUFG Bank Ltd.', transferType: 'Local Transfer',
-    beneficiary: 'KENNETH CHIDERA ODENYI',
-    accountNumber: '4682719',
-    accountType: 'Savings / Futsu',
-    iban: '', swift: '',
-    routing: '', sortCode: '',
-    bankCode: '0005', branchCode: '869', institutionNumber: '', transitNumber: '', bsbCode: '',
-    address: '7-1 Marunouchi 2-Chome, Chiyoda-ku, Tokyo, Japan',
-  },
-  MXN: {
-    currency: 'MXN', currencyName: 'Mexican Peso', flag: '🇲🇽', country: 'Mexico',
-    bankName: 'Sistema de Transferencias y Pagos', transferType: 'Local Transfer',
-    beneficiary: 'KENNETH CHIDERA ODENYI',
-    accountNumber: '646010504200345127',
-    accountType: '',
-    iban: '', swift: '',
-    routing: '', sortCode: '',
-    bankCode: '646', branchCode: '010', institutionNumber: '', transitNumber: '', bsbCode: '',
-    address: 'Av. Insurgentes Sur 1425, Ciudad de México, México',
-  },
-  IDR: {
-    currency: 'IDR', currencyName: 'Indonesian Rupiah', flag: '🇮🇩', country: 'Indonesia',
-    bankName: 'Deutsche Bank AG Jakarta Branch', transferType: 'Local Transfer',
-    beneficiary: 'KENNETH CHIDERA ODENYI',
-    accountNumber: '974400000904',
-    accountType: '',
-    iban: '', swift: '',
-    routing: '', sortCode: '',
-    branchCode: '0670304', institutionNumber: '', transitNumber: '', bsbCode: '',
-    address: 'Jl. Imam Bonjol 80, Jakarta 10310, Indonesia',
-  },
-};
-
-/* ── Coming Soon payment methods ───────────────────────────── */
-const COMING_SOON_METHODS = [
-  { name: 'PayPal', icon: 'wallet', color: 'text-blue-600' },
-  { name: 'Stripe', icon: 'credit-card', color: 'text-violet-600' },
-  { name: 'Flutterwave', icon: 'zap', color: 'text-blue-600' },
-  { name: 'Paystack', icon: 'layers', color: 'text-cyan-600' },
-  { name: 'Apple Pay', icon: 'smartphone', color: 'text-gray-700' },
-  { name: 'Google Pay', icon: 'smartphone', color: 'text-green-600' },
-  { name: 'Visa', icon: 'credit-card', color: 'text-blue-500' },
-  { name: 'Mastercard', icon: 'credit-card', color: 'text-red-500' },
-  { name: 'American Express', icon: 'credit-card', color: 'text-blue-700' },
-  { name: 'Discover', icon: 'credit-card', color: 'text-blue-500' },
-  { name: 'Verve', icon: 'credit-card', color: 'text-green-500' },
-  { name: 'Bitcoin (BTC)', icon: 'bitcoin', color: 'text-yellow-500' },
-  { name: 'Ethereum (ETH)', icon: 'bitcoin', color: 'text-indigo-600' },
-  { name: 'USDT', icon: 'bitcoin', color: 'text-green-600' },
-];
 
 /* ── Order progress tracker steps ─────────────────────────── */
 const ORDER_STEPS = [
@@ -263,12 +142,13 @@ function renderOrderSummary(listing, cover, isProperty, selectedCurrency) {
 }
 
 /* ── Render: Bank account card ─────────────────────────────── */
-function renderBankAccount(account, fallbackNotice, instructions) {
-  const fields = [
-    { label: 'Country', value: account.country },
+function renderBankAccount(account, fallbackNotice, instructions, opts = {}) {
+  const group = [
+    { label: 'Beneficiary Name', value: account.beneficiary },
     { label: 'Bank Name', value: account.bankName },
     { label: 'Transfer Type', value: account.transferType },
-    { label: 'Beneficiary Name', value: account.beneficiary },
+  ];
+  const fields = [
     { label: 'Account Number', value: account.accountNumber },
     { label: 'Account Type', value: account.accountType },
     { label: 'IBAN', value: account.iban },
@@ -283,38 +163,62 @@ function renderBankAccount(account, fallbackNotice, instructions) {
     { label: 'Bank Address', value: account.address },
   ].filter(f => f.value && f.value.trim() !== '');
 
-  const copyFields = fields.map(f => ({ label: f.label, value: f.value }));
+  const allCopyFields = [...group, ...fields];
+  const copyAllText = allCopyFields.map(f => `${f.label}: ${f.value}`).join('\n');
+  const amountLabel = opts.amountLabel || '';
+  const orderNumber = opts.orderNumber || '';
 
   return `
     <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
       ${fallbackNotice ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">${fallbackNotice.message}</div>` : ''}
-      <div class="flex items-center gap-3 mb-5">
+      <div class="flex items-center gap-3 mb-3">
         <div class="p-2.5 bg-blue-50 rounded-lg"><i data-lucide="landmark" class="w-5 h-5 text-blue-600"></i></div>
         <div class="flex-1">
-          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Receiving Bank Account</h3>
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Business Receiving Account</h3>
           <p class="text-gray-500 text-xs">${account.flag} ${account.currencyName} (${account.currency})</p>
         </div>
-        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-200">
-          <i data-lucide="shield-check" class="w-3 h-3"></i> Verified
+        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-600 text-[10px] font-bold px-2.5 py-1 rounded-full border border-blue-200">
+          <i data-lucide="building-2" class="w-3 h-3"></i> Official Business
         </span>
       </div>
+
+      <div class="bg-blue-600 text-white rounded-2xl p-4 mb-4 overflow-hidden relative">
+        <div class="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full"></div>
+        <div class="absolute -bottom-8 -left-4 w-28 h-28 bg-white/10 rounded-full"></div>
+        <div class="relative">
+          <div class="text-[10px] uppercase tracking-widest text-blue-100">Amount to transfer (${account.currency})</div>
+          <div class="text-2xl font-bold mt-0.5" id="bank-amount">${amountLabel}</div>
+          <div class="mt-3 flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <div class="text-[10px] uppercase tracking-widest text-blue-100">Your order/reference number</div>
+              <div class="text-sm font-bold font-mono mt-0.5" id="bank-ref">${orderNumber}</div>
+            </div>
+            <button onclick="copyToClipboard('${orderNumber}')" class="shrink-0 flex items-center gap-1.5 bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 text-xs font-bold transition">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy reference
+            </button>
+          </div>
+          <p class="text-[11px] text-blue-100 mt-2">Include this reference in your transfer so our team can match your payment instantly.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 mb-2">
+        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide">Transfer to</h4>
+        <button onclick="copyToClipboard(this.getAttribute('data-copy'))" data-copy="${copyAllText.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\n/g, '&#10;')}" class="shrink-0 text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy all details</button>
+      </div>
       <div class="space-y-2">
-        ${fields.map(f => `
+        ${allCopyFields.map(f => `
           <div class="flex items-center justify-between gap-3 bg-gray-50 border border-blue-100 rounded-xl px-4 py-2.5">
             <div class="min-w-0 flex-1">
               <div class="text-gray-500 text-[11px] uppercase tracking-wide">${f.label}</div>
               <div class="text-gray-900 text-sm font-medium font-mono break-all">${f.value}</div>
             </div>
-            <button onclick="copyToClipboard('${f.value.replace(/'/g, "\\'")}', this)" class="shrink-0 p-2 bg-gray-100 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition group" title="Copy ${f.label}">
-              <i data-lucide="copy" class="w-4 h-4 text-gray-600 group-hover:text-blue-600"></i>
+            <button onclick="copyToClipboard('${f.value.replace(/'/g, "\\'")}', this)" class="shrink-0 p-2 bg-gray-100 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition" title="Copy ${f.label}">
+              <i data-lucide="copy" class="w-4 h-4 text-gray-600"></i>
             </button>
           </div>
         `).join('')}
       </div>
-      <button onclick='copyAllDetails(${JSON.stringify(copyFields).replace(/'/g, "&#39;")})' class="btn-press w-full mt-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 font-bold py-2.5 rounded-xl uppercase text-xs tracking-wider transition flex items-center justify-center gap-2 relative overflow-hidden">
-        <i data-lucide="copy-check" class="w-4 h-4"></i> Copy All Account Details
-      </button>
-      <div class="mt-4 p-3 bg-gray-50 border border-blue-100 rounded-xl text-xs text-gray-700 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
+      <div class="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-gray-700 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
     </div>
   `;
 }
@@ -386,32 +290,6 @@ function renderBankTransferMethod() {
   `;
 }
 
-/* ── Render: Coming soon methods ───────────────────────────── */
-function renderComingSoonMethods() {
-  return `
-    <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
-      <div class="flex items-center gap-3 mb-4">
-        <div class="p-2.5 bg-gray-100 rounded-lg"><i data-lucide="lock" class="w-5 h-5 text-gray-500"></i></div>
-        <div>
-          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">More Payment Methods</h3>
-          <p class="text-gray-500 text-xs">Coming soon to Weverse Online Shop</p>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-        ${COMING_SOON_METHODS.map(m => `
-          <div class="relative bg-gray-50 border border-blue-100 rounded-xl p-3 opacity-50 cursor-not-allowed select-none">
-            <span class="absolute top-1.5 right-1.5 bg-gray-200 text-gray-600 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full">Soon</span>
-            <div class="flex items-center gap-2 mb-0.5">
-              <i data-lucide="${m.icon}" class="w-4 h-4 ${m.color}"></i>
-              <span class="text-xs font-bold text-gray-600">${m.name}</span>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-}
-
 /* ── Render: Order progress tracker ────────────────────────── */
 function renderOrderTracker(currentStep) {
   const stepIndex = ORDER_STEPS.findIndex(s => s.id === currentStep);
@@ -449,7 +327,7 @@ function renderOrderTracker(currentStep) {
 }
 
 /* ── Render: Upload receipt form ───────────────────────────── */
-function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
+function renderUploadForm(orderNumber, listing, amount, currency, isGuest, amountLabel = '') {
   const guestShippingBlock = isGuest ? `
         <div class="glass-soft border border-blue-100 rounded-xl p-4">
           <div class="flex items-center gap-2 mb-4">
@@ -535,6 +413,29 @@ function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
         <input type="hidden" id="form-currency" value="${currency}">
         <input type="hidden" id="form-is-guest" value="${isGuest ? '1' : '0'}">
 
+        <div class="bg-blue-600 text-white rounded-2xl p-4 overflow-hidden relative">
+          <div class="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full"></div>
+          <div class="absolute -bottom-8 -left-4 w-28 h-28 bg-white/10 rounded-full"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <div class="text-[10px] uppercase tracking-widest text-blue-100">Amount to transfer (${currency})</div>
+                <div class="text-2xl font-bold mt-0.5" id="transfer-amount-display">${amountLabel}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] uppercase tracking-widest text-blue-100">Order / Reference number</div>
+                <div class="text-sm font-bold font-mono mt-0.5">${orderNumber}</div>
+              </div>
+            </div>
+            <p class="text-[11px] text-blue-100 mt-2">Transfer the exact amount above to the business account, then upload your receipt below.</p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 leading-relaxed">
+          <p class="font-bold flex items-center gap-1.5"><i data-lucide="shield-alert" class="w-4 h-4"></i> Payment status: Documentation Pending</p>
+          <p class="mt-1">Once you upload your receipt, our finance team will verify the payment against our business bank account before your order is approved. Your order stays pending until the payment is confirmed.</p>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Order Number</label>
@@ -576,19 +477,22 @@ function renderUploadForm(orderNumber, listing, amount, currency, isGuest) {
         <div>
           <label class="block text-xs font-bold uppercase text-gray-600 mb-1.5">Upload Receipt *</label>
           <div id="file-drop-zone" class="border-2 border-dashed border-blue-200 hover:border-blue-300 rounded-2xl p-8 text-center cursor-pointer transition group">
-            <input type="file" id="form-receipt-file" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" capture="environment" class="hidden">
+            <input type="file" id="form-receipt-file" accept="image/*,.jpg,.jpeg,.png,.webp,.pdf" class="hidden">
             <div id="file-prompt">
               <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-50 rounded-2xl mb-3 group-hover:bg-blue-100 transition">
                 <i data-lucide="upload-cloud" class="w-7 h-7 text-blue-600 group-hover:scale-110 transition"></i>
               </div>
-              <p class="text-sm text-gray-700 font-medium">Click to upload, take a photo, or drag and drop</p>
-              <p class="text-xs text-gray-600 mt-1">JPG, JPEG, PNG, WEBP, or PDF — Max 20 MB</p>
-              <div class="flex items-center justify-center gap-2 mt-3">
+              <p class="text-sm text-gray-700 font-medium">Click to open Gallery, take a photo, or drag and drop</p>
+              <p class="text-xs text-gray-600 mt-1">Photo or PDF receipt — Max 20 MB</p>
+              <div class="flex items-center justify-center gap-2 mt-3 flex-wrap">
+                <button type="button" id="btn-open-gallery" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition flex items-center gap-1.5">
+                  <i data-lucide="images" class="w-4 h-4"></i> Open Gallery
+                </button>
                 <button type="button" id="btn-take-photo" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition flex items-center gap-1.5">
                   <i data-lucide="camera" class="w-4 h-4"></i> Take Photo
                 </button>
-                <button type="button" id="btn-choose-file" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition flex items-center gap-1.5">
-                  <i data-lucide="folder-open" class="w-4 h-4"></i> Choose File
+                <button type="button" id="btn-choose-pdf" class="btn-press text-xs font-bold px-4 py-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition flex items-center gap-1.5">
+                  <i data-lucide="file-text" class="w-4 h-4"></i> Choose PDF
                 </button>
               </div>
             </div>
@@ -700,7 +604,16 @@ async function init() {
     listing = findListingById(id);
   }
   if (!listing) {
-    root.innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>';
+    root.innerHTML = `
+      <div class="text-center py-20 text-gray-500 fade-in">
+        <i data-lucide="shopping-bag" class="w-12 h-12 text-gray-300 mx-auto mb-4"></i>
+        <h2 class="text-xl font-bold text-gray-800 mb-2">No order selected</h2>
+        <p class="text-sm mb-6 max-w-sm mx-auto">This page completes payment for a checkout. Please add a product to your cart and place your order first.</p>
+        <a href="/" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Browse Marketplace
+        </a>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
     return;
   }
 
@@ -723,7 +636,7 @@ async function init() {
   const orderNumber = urlOrderNumber || generateOrderNumber();
   const baseAmount = listing.price;
   paymentSettings = await loadPaymentSettings();
-  manualPaymentAccounts = getManualPaymentAccounts(paymentSettings);
+  manualPaymentAccounts = await getActiveBankAccounts();
   manualPaymentInstructions = getPaymentInstructions(paymentSettings);
 
   // Live exchange rates so the amount paid matches the selected currency
@@ -753,11 +666,9 @@ async function init() {
 
       <div id="currency-selector-container">${renderCurrencySelector(selectedCurrency, countryName, countryCode)}</div>
 
-      <div id="bank-account-container">${resolved.isFallback ? renderUnsupportedCurrency(resolved.fallbackNotice) : renderBankAccount(resolved.account, null, manualPaymentInstructions)}</div>
+      <div id="bank-account-container">${resolved.isFallback ? renderUnsupportedCurrency(resolved.fallbackNotice) : renderBankAccount(resolved.account, null, manualPaymentInstructions, { amountLabel: fmtLocal(localAmount, selectedCurrency), orderNumber })}</div>
 
-      <div id="upload-form-container">${renderUploadForm(orderNumber, listing, localAmount, selectedCurrency, isGuest)}</div>
-
-      ${renderComingSoonMethods()}
+      <div id="upload-form-container">${renderUploadForm(orderNumber, listing, localAmount, selectedCurrency, isGuest, fmtLocal(localAmount, selectedCurrency))}</div>
 
       ${renderOrderTracker('submitted')}
 
@@ -806,6 +717,11 @@ function attachEventHandlers(listing, baseAmount, orderNumber, user, isGuest) {
     if (currencyHidden) currencyHidden.value = currency;
     const amountPaid = document.getElementById('form-amount-paid');
     if (amountPaid) amountPaid.value = convertFromUSD(listing.price, currency);
+    const newAmount = fmtLocal(convertFromUSD(listing.price, currency), currency);
+    const bankAmount = document.getElementById('bank-amount');
+    if (bankAmount) bankAmount.textContent = newAmount;
+    const transferAmount = document.getElementById('transfer-amount-display');
+    if (transferAmount) transferAmount.textContent = newAmount;
     if (window.lucide) lucide.createIcons();
   };
 
@@ -869,15 +785,74 @@ function attachEventHandlers(listing, baseAmount, orderNumber, user, isGuest) {
     if (window.lucide) lucide.createIcons();
   };
 
+  const btnOpenGallery = document.getElementById('btn-open-gallery');
   const btnTakePhoto = document.getElementById('btn-take-photo');
-  const btnChooseFile = document.getElementById('btn-choose-file');
+  const btnChoosePdf = document.getElementById('btn-choose-pdf');
+
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
+  // Opens the device photo gallery (system Photo Picker on the native app, the
+  // gallery chooser on web) so customers upload a receipt photo from their
+  // Gallery — exactly like reviewing a bank receipt.
+  const openGallery = async (e) => {
+    if (e) e.stopPropagation();
+    if (isNative) {
+      try {
+        const { Camera, MediaTypeSelection } = await import('@capacitor/camera');
+        const { results } = await Camera.chooseFromGallery({
+          mediaType: MediaTypeSelection.Images,
+          allowMultipleSelection: false,
+        });
+        const r = results && results[0];
+        if (!r || !r.webPath) return;
+        const blob = await fetch(r.webPath).then(x => x.blob());
+        const fmt = (((r.metadata && r.metadata.format) || 'jpg') + '').toLowerCase().replace(/^jpeg$/, 'jpg');
+        const file = new File([blob], `receipt-${Date.now()}.${fmt}`, { type: blob.type || 'image/jpeg' });
+        handleFile(file);
+      } catch (err) {
+        console.warn('Native gallery picker unavailable:', err);
+        fileInput.setAttribute('accept', 'image/*');
+        fileInput.removeAttribute('capture');
+        fileInput.click();
+      }
+      return;
+    }
+    fileInput.setAttribute('accept', 'image/*,.jpg,.jpeg,.png,.webp');
+    fileInput.removeAttribute('capture');
+    fileInput.click();
+  };
 
   dropZone.addEventListener('click', (e) => {
-    if (e.target.closest('#btn-take-photo') || e.target.closest('#btn-choose-file') || e.target.closest('#file-info')) return;
+    if (e.target.closest('#btn-open-gallery') || e.target.closest('#btn-take-photo') || e.target.closest('#btn-choose-pdf') || e.target.closest('#file-info')) return;
+    openGallery(e);
+  });
+  if (btnOpenGallery) btnOpenGallery.addEventListener('click', (e) => openGallery(e));
+  if (btnTakePhoto) btnTakePhoto.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isNative) {
+      import('@capacitor/camera').then(async ({ Camera, CameraSource }) => {
+        const photo = await Camera.getPhoto({ source: CameraSource.Camera, quality: 90, allowEditing: false });
+        if (photo && photo.webPath) {
+          const blob = await fetch(photo.webPath).then(x => x.blob());
+          handleFile(new File([blob], `receipt-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' }));
+        }
+      }).catch(() => {
+        fileInput.setAttribute('capture', 'environment');
+        fileInput.setAttribute('accept', 'image/*');
+        fileInput.click();
+      });
+    } else {
+      fileInput.setAttribute('capture', 'environment');
+      fileInput.setAttribute('accept', 'image/*');
+      fileInput.click();
+    }
+  });
+  if (btnChoosePdf) btnChoosePdf.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.setAttribute('accept', '.pdf,application/pdf');
+    fileInput.removeAttribute('capture');
     fileInput.click();
   });
-  if (btnTakePhoto) btnTakePhoto.addEventListener('click', (e) => { e.stopPropagation(); fileInput.setAttribute('capture', 'environment'); fileInput.click(); });
-  if (btnChooseFile) btnChooseFile.addEventListener('click', (e) => { e.stopPropagation(); fileInput.removeAttribute('capture'); fileInput.click(); });
   fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
 
   dropZone.addEventListener('dragover', (e) => {

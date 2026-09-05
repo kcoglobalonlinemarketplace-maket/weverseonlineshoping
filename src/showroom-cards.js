@@ -340,7 +340,7 @@ async function toggleWishlist(listing, btn) {
 const REAL_ESTATE_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Homes for sale or rent — scroll down to see them all, two at a time.',
+    subtitle: 'Homes for sale or rent, listed by their sellers.',
     rows: [
       { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
@@ -365,14 +365,14 @@ const REAL_ESTATE_SECTIONS = [
   },
   {
     id: 'cars', label: 'Cars', icon: 'car-front',
-    subtitle: 'Brand new car arrivals — bright, shiny and ready to drive home. Scroll to see them all.',
+    subtitle: 'Cars listed by their sellers, from new arrivals to well-maintained used vehicles.',
     rows: [
       { id: 'all-cars', label: 'New Cars', icon: 'car-front', allCars: true },
     ],
   },
   {
     id: 'washing-machines', label: 'Washing Machines', icon: 'washing-machine',
-    subtitle: 'Every washer, dryer and laundry item, gathered in one long scroll.',
+    subtitle: 'Washers, dryers and laundry appliances, listed by their sellers.',
     rows: [
       { id: 'all-washing-machines', label: 'Washing Machines', icon: 'washing-machine', allWashingMachines: true },
     ],
@@ -386,14 +386,14 @@ const REAL_ESTATE_SECTIONS = [
   },
   {
     id: 'motorhomes-boats', label: 'Motorhomes', icon: 'bus',
-    subtitle: 'Luxury motorhomes and RVs for travel and adventure — scroll down to see them all.',
+    subtitle: 'Motorhomes and RVs listed by their sellers, ready for travel.',
     rows: [
       { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
     ],
   },
   {
     id: 'products', label: 'Products', icon: 'package',
-    subtitle: 'Premium shop products — jewelry, watches, fashion and more.',
+    subtitle: 'Jewelry, watches, fashion and more, available from sellers.',
     rows: PRODUCT_ROWS,
   },
 ];

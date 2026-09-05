@@ -70,7 +70,7 @@ function categoryNoun(label) {
 }
 
 function pageHtml(opts) {
-  const { canonical, title, desc, h1, sub, cards, breadcrumbs, jsonLd, related } = opts;
+  const { canonical, title, desc, h1, sub, cards, breadcrumbs, jsonLd, related, relPrev, relNext, pager } = opts;
   const crumbs = breadcrumbs.map((b, i) =>
     i === breadcrumbs.length - 1
       ? `<li aria-current="page" class="crumb-cur">${escAttr(b.label)}</li>`
@@ -85,6 +85,8 @@ function pageHtml(opts) {
 <meta name="description" content="${escAttr(desc)}">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="${escAttr(canonical)}">
+${relPrev ? `<link rel="prev" href="${escAttr(relPrev)}">` : ''}
+${relNext ? `<link rel="next" href="${escAttr(relNext)}">` : ''}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Weverse Online Shop">
 <meta property="og:title" content="${escAttr(title)}">
@@ -132,6 +134,10 @@ function pageHtml(opts) {
   .rel a{text-decoration:none;color:var(--brand);font-size:13px;font-weight:700;border:1px solid #bfdbfe;background:#eff6ff;padding:8px 14px;border-radius:999px}
   footer{border-top:1px solid var(--line);padding:22px 0;margin-top:48px;color:var(--muted);font-size:13px}
   .empty{background:#fff;border:1px dashed #d1d5db;border-radius:16px;padding:48px 24px;text-align:center;color:var(--muted);margin-top:24px}
+  .pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:28px;flex-wrap:wrap}
+  .pager a{text-decoration:none;color:var(--brand);font-size:14px;font-weight:800;border:2px solid var(--brand);border-radius:12px;padding:9px 18px}
+  .pager a:hover{background:#eff6ff}
+  .pager .pg-num{font-size:13px;font-weight:700;color:var(--muted)}
   @media(max-width:640px){h1{font-size:24px}.grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -147,6 +153,7 @@ function pageHtml(opts) {
   <h1>${escAttr(h1)}</h1>
   ${sub ? `<p class="sub">${escAttr(sub)}</p>` : ''}
   ${cards ? `<div class="grid">${cards}</div>` : `<div class="empty">No products here yet — <a href="/showroom" style="color:#1d4ed8;font-weight:700">browse the showroom</a> while more inventory is listed.</div>`}
+  ${pager || ''}
   ${related ? `<section class="related"><h2>Explore more</h2><div class="rel">${related}</div></section>` : ''}
 </main>
 <footer>
@@ -189,15 +196,24 @@ export default async function handler(req, res) {
         ? hubCategoryFor(r)?.slug === slug
         : slugify(r.country || '') === slug
     );
-    const cap = filtered.slice(0, 150);
-    if (cap.length === 0) return notFound(res, siteUrl);
+    const total = filtered.length;
+    if (total === 0) return notFound(res, siteUrl);
+
+    const pageRaw = Number.parseInt(url.searchParams.get('page') || '1', 10);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const perPage = 36;
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (page > totalPages) return notFound(res, siteUrl);
+    const startIdx = (page - 1) * perPage;
+    const cap = filtered.slice(startIdx, startIdx + perPage);
 
     let h1 = label;
     let title;
     let desc;
+    const pageSuffix = page > 1 ? ` — Page ${page}` : '';
     if (type === 'category') {
-      title = `${label} — Worldwide | Weverse Online Shop`;
-      desc = `Browse ${label.toLowerCase()} from around the world on Weverse Online Shop — ${cap.length} listings and growing, all priced in USD with secure checkout, buyer protection and tracked worldwide delivery.`;
+      title = `${label} — Worldwide | Weverse Online Shop${pageSuffix}`;
+      desc = `Browse ${label.toLowerCase()} from around the world on Weverse Online Shop — ${total} listings and growing, all priced in USD with secure checkout, buyer protection and tracked worldwide delivery.`;
       h1 = `${label} worldwide`;
     } else {
       const cats = [];
@@ -208,12 +224,19 @@ export default async function handler(req, res) {
         if (seen.size >= 3) break;
       }
       const nouns = cats.length ? `${cats.join(' & ')} in ` : 'Marketplace in ';
-      title = `${nouns}${label} | Weverse Online Shop`;
-      desc = `Shop ${nouns.toLowerCase()}${label} on Weverse Online Shop — ${cap.length} active listings, priced in USD, with secure checkout, buyer protection and tracked worldwide delivery.`;
+      title = `${nouns}${label} | Weverse Online Shop${pageSuffix}`;
+      desc = `Shop ${nouns.toLowerCase()}${label} on Weverse Online Shop — ${total} active listings, priced in USD, with secure checkout, buyer protection and tracked worldwide delivery.`;
       h1 = `${nouns}${label}`;
     }
+    if (page > 1) desc = `${desc} Page ${page} of ${totalPages}.`;
 
-    const canonical = `${siteUrl}/${type === 'category' ? 'category' : 'country'}/${encodeURIComponent(slug)}`;
+    const baseCanonical = `${siteUrl}/${type === 'category' ? 'category' : 'country'}/${encodeURIComponent(slug)}`;
+    const canonical = page > 1 ? `${baseCanonical}?page=${page}` : baseCanonical;
+    const relPrev = page > 1 ? (page === 2 ? baseCanonical : `${baseCanonical}?page=${page - 1}`) : null;
+    const relNext = page < totalPages ? `${baseCanonical}?page=${page + 1}` : null;
+    const pager = totalPages > 1
+      ? `<nav class="pager" aria-label="Pagination">${relPrev ? `<a rel="prev" href="${escAttr(relPrev)}">&#8592; Previous</a>` : ''}<span class="pg-num">Page ${page} of ${totalPages}</span>${relNext ? `<a rel="next" href="${escAttr(relNext)}">Next &#8594;</a>` : ''}</nav>`
+      : '';
     const cards = cap.map((r) => card(r, siteUrl)).join('\n');
     const jsonLd = JSON.stringify({
       '@context': 'https://schema.org',
@@ -270,15 +293,20 @@ export default async function handler(req, res) {
       title,
       desc,
       h1,
-      sub: `${cap.length} active listing${cap.length === 1 ? '' : 's'} · prices in USD · illustrative entries are clearly labeled`,
+      sub: total > perPage
+        ? `Showing ${startIdx + 1}&#8211;${Math.min(startIdx + perPage, total)} of ${total} active listings &middot; prices in USD &middot; illustrative entries are clearly labeled`
+        : `${total} active listing${total === 1 ? '' : 's'} &middot; prices in USD &middot; illustrative entries are clearly labeled`,
       cards,
       breadcrumbs: [
         { label: 'Home', url: siteUrl + '/' },
         { label: 'Showroom', url: siteUrl + '/showroom' },
-        { label, url: canonical },
+        { label: page > 1 ? `${label} · Page ${page}` : label, url: canonical },
       ],
       jsonLd,
       related: related.join(''),
+      relPrev,
+      relNext,
+      pager,
     });
 
     res.statusCode = 200;

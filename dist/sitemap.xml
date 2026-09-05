@@ -51,7 +51,7 @@
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://weverseonlineshop.com/category/houses</loc>
+    <loc>https://weverseonlineshop.com/category/cars</loc>
     <lastmod>2026-09-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -63,7 +63,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://weverseonlineshop.com/category/cars</loc>
+    <loc>https://weverseonlineshop.com/category/houses</loc>
     <lastmod>2026-09-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -87,19 +87,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://weverseonlineshop.com/product/WS-A-001-0004</loc>
-    <lastmod>2026-09-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://weverseonlineshop.com/product/WS-T-001-0003</loc>
-    <lastmod>2026-09-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://weverseonlineshop.com/product/WS-C-001-0003</loc>
+    <loc>https://weverseonlineshop.com/product/WS-C-001-0002</loc>
     <lastmod>2026-09-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -111,25 +99,19 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://weverseonlineshop.com/product/WS-C-001-0004</loc>
+    <loc>https://weverseonlineshop.com/product/WS-A-001-0004</loc>
     <lastmod>2026-09-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://weverseonlineshop.com/product/WS-C-001-0002</loc>
+    <loc>https://weverseonlineshop.com/product/WS-C-001-0003</loc>
     <lastmod>2026-09-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://weverseonlineshop.com/product/WS-C-001-0001</loc>
-    <lastmod>2026-09-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://weverseonlineshop.com/product/WS-T-001-0001</loc>
     <lastmod>2026-09-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -166,12 +148,6 @@
   </url>
   <url>
     <loc>https://weverseonlineshop.com/product/KCO-PR008</loc>
-    <lastmod>2026-09-02</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://weverseonlineshop.com/product/KCO-IMP-0146</loc>
     <lastmod>2026-09-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1053,12 +1029,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://weverseonlineshop.com/product/KCO-IMP-0130</loc>
-    <lastmod>2026-08-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://weverseonlineshop.com/product/KCO-IMP-0129</loc>
     <lastmod>2026-08-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -1114,12 +1084,6 @@
   </url>
   <url>
     <loc>https://weverseonlineshop.com/product/KCO-IMP-0123</loc>
-    <lastmod>2026-08-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://weverseonlineshop.com/product/KCO-IMP-0121</loc>
     <lastmod>2026-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1744,12 +1708,6 @@
   </url>
   <url>
     <loc>https://weverseonlineshop.com/product/KCO-IMP-0036</loc>
-    <lastmod>2026-08-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://weverseonlineshop.com/product/KCO-IMP-0031</loc>
     <lastmod>2026-08-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

@@ -9,7 +9,7 @@ import { getPhoneById } from './phone-data.js';
 import { PRODUCT_LISTINGS } from './products-data.js';
 import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { detectCurrency, getCountryByCode, COUNTRIES, SUPPORTED_CURRENCIES } from './country-data.js';
-import { buildFallbackNotice, getManualPaymentAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
+import { buildFallbackNotice, getActiveBankAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, isManualTransferRequired, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
 import { convertFromUSD, fmtLocal, flwSupportedCurrency, preloadFx } from './fx.js';
 
 const PRODUCT_LOOKUP = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
@@ -18,19 +18,6 @@ function findProductById(id) {
 }
 
 const FALLBACK_IMG = '/fallback.svg';
-
-/* ── Bank accounts (same as payment-page) ──────────────────── */
-const BANK_ACCOUNTS = {
-  USD: { currency:'USD', currencyName:'United States Dollar', flag:'🇺🇸', country:'United States', bankName:'Citibank', transferType:'Local & International', beneficiary:'KENNETH CHIDERA ODENYI', accountNumber:'70589490002447647', accountType:'Checking', iban:'', swift:'CITIUS33', routing:'031100209', sortCode:'', branchCode:'', institutionNumber:'', transitNumber:'', bsbCode:'', address:'111 Wall Street, New York, NY 10043, USA' },
-  GBP: { currency:'GBP', currencyName:'British Pound', flag:'🇬🇧', country:'United Kingdom', bankName:'Citibank', transferType:'Local & International', beneficiary:'KENNETH CHIDERA ODENYI', accountNumber:'56468624', accountType:'', iban:'GB94CITI18500856468624', swift:'CITIGB2L', routing:'', sortCode:'185008', branchCode:'', institutionNumber:'', transitNumber:'', bsbCode:'', address:'Canada Square, Canary Wharf, London E14 5LB, United Kingdom' },
-  EUR: { currency:'EUR', currencyName:'Euro', flag:'🇪🇺', country:'Eurozone', bankName:'Citibank', transferType:'Local & International', beneficiary:'KENNETH CHIDERA ODENYI', accountNumber:'', accountType:'', iban:'IE70CITI99005171297018', swift:'CITIIE2X', routing:'', sortCode:'', branchCode:'', institutionNumber:'', transitNumber:'', bsbCode:'', address:'1 North Wall Quay, IFSC, Dublin 1, Ireland' },
-  CAD: { currency:'CAD', currencyName:'Canadian Dollar', flag:'🇨🇦', country:'Canada', bankName:'Citibank NA Canadian Branch', transferType:'Local Transfer', beneficiary:'KENNETH CHIDERA ODENYI', accountNumber:'3001440544', accountType:'Checking', iban:'', swift:'', routing:'', sortCode:'', branchCode:'', institutionNumber:'0328', transitNumber:'20012', bsbCode:'', address:'123 Front St. West, Toronto, ON M5J 2M3, Canada' },
-  AUD: { currency:'AUD', currencyName:'Australian Dollar', flag:'🇦🇺', country:'Australia', bankName:'Citibank', transferType:'Local & International', beneficiary:'KENNETH CHIDERA ODENYI', accountNumber:'10674571', accountType:'', iban:'', swift:'', routing:'', sortCode:'', branchCode:'', institutionNumber:'', transitNumber:'', bsbCode:'248024', address:'2 Park Street, Sydney NSW 2000, Australia' },
-  SGD: { currency:'SGD', currencyName:'Singapore Dollar', flag:'🇸🇬', country:'Singapore', bankName:'Citibank N.A. Singapore Branch', transferType:'Local & International', beneficiary:'KENNETH CHIDERA ODENYI', accountNumber:'44990709533', accountType:'', iban:'', swift:'CITISGSG', routing:'', sortCode:'', bankCode:'7214', branchCode:'001', institutionNumber:'', transitNumber:'', bsbCode:'', address:'8 Marina View, #17-01 Asia Square Tower 1, Singapore 018960' },
-  JPY: { currency:'JPY', currencyName:'Japanese Yen', flag:'🇯🇵', country:'Japan', bankName:'MUFG Bank Ltd.', transferType:'Local Transfer', beneficiary:'KENNETH CHIDERA ODENYI', accountNumber:'4682719', accountType:'Savings / Futsu', iban:'', swift:'', routing:'', sortCode:'', bankCode:'0005', branchCode:'869', institutionNumber:'', transitNumber:'', bsbCode:'', address:'7-1 Marunouchi 2-Chome, Chiyoda-ku, Tokyo, Japan' },
-  MXN: { currency:'MXN', currencyName:'Mexican Peso', flag:'🇲🇽', country:'Mexico', bankName:'Sistema de Transferencias y Pagos', transferType:'Local Transfer', beneficiary:'KENNETH CHIDERA ODENYI', accountNumber:'646010504200345127', accountType:'', iban:'', swift:'', routing:'', sortCode:'', bankCode:'646', branchCode:'010', institutionNumber:'', transitNumber:'', bsbCode:'', address:'Av. Insurgentes Sur 1425, Ciudad de México, México' },
-  IDR: { currency:'IDR', currencyName:'Indonesian Rupiah', flag:'🇮🇩', country:'Indonesia', bankName:'Deutsche Bank AG Jakarta Branch', transferType:'Local Transfer', beneficiary:'KENNETH CHIDERA ODENYI', accountNumber:'974400000904', accountType:'', iban:'', swift:'', routing:'', sortCode:'', branchCode:'0670304', institutionNumber:'', transitNumber:'', bsbCode:'', address:'Jl. Imam Bonjol 80, Jakarta 10310, Indonesia' },
-};
 
 /* ── State ──────────────────────────────────────────────────── */
 let state = {
@@ -62,6 +49,7 @@ let state = {
   manualPaymentAccounts: [],
   manualPaymentInstructions: '',
   paymentGateway: 'both',
+  supportEmail: '',
   autoDetectedCurrency: '',
   currencyManuallySelected: false,
 };
@@ -185,7 +173,19 @@ async function init() {
     if (!state.listing) {
       state.listing = findListingById(listingId);
     }
-    if (!state.listing) { root.innerHTML = '<div class="text-center py-20 text-gray-500">Listing not found.</div>'; return; }
+    if (!state.listing) {
+      root.innerHTML = `
+        <div class="text-center py-20 text-gray-500 fade-in">
+          <i data-lucide="shopping-bag" class="w-12 h-12 text-gray-300 mx-auto mb-4"></i>
+          <h2 class="text-xl font-bold text-gray-800 mb-2">No order selected</h2>
+          <p class="text-sm mb-6 max-w-sm mx-auto">This page completes checkout for a product. Please add an item to your cart first.</p>
+          <a href="/" class="btn-press inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Browse Marketplace
+          </a>
+        </div>`;
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
     state.cartItems = [{ listing: state.listing, quantity: 1 }];
   } else {
     // Load from cart
@@ -222,11 +222,12 @@ async function init() {
   state.selectedCurrency = state.autoDetectedCurrency || 'USD';
   state.shippingCountry = state.countryCode;
   state.paymentSettings = await loadPaymentSettings();
-  state.manualPaymentAccounts = getManualPaymentAccounts(state.paymentSettings);
+  state.manualPaymentAccounts = await getActiveBankAccounts();
   state.manualPaymentInstructions = getPaymentInstructions(state.paymentSettings);
   state.paymentGateway = state.paymentSettings.payment_gateway || 'both';
-  if (state.paymentGateway === 'manual') state.paymentMethod = 'manual_bank_transfer';
-  if (state.paymentGateway === 'flutterwave') state.paymentMethod = 'flutterwave';
+  state.supportEmail = state.paymentSettings.contact_email || state.paymentSettings.brand_email || '';
+  if (state.paymentGateway === 'manual' || isManualTransferRequired(getTotal())) state.paymentMethod = 'manual_bank_transfer';
+  if (state.paymentGateway === 'flutterwave' && !isManualTransferRequired(getTotal())) state.paymentMethod = 'flutterwave';
   if (!getSupportedCurrenciesFromAccounts(state.manualPaymentAccounts).includes(state.selectedCurrency)) state.selectedCurrency = 'USD';
 
   // Preload live exchange rates so every amount below is shown in the visitor's
@@ -260,6 +261,16 @@ function getSubtotal() {
 
 function getShippingCost() {
   return 0;
+}
+
+// Large/bulk goods (houses, land, vehicles, etc.) are delivered or collected on
+// an individual, quoted basis — never advertised as "Free" shipping.
+function isBulkItem(listing) {
+  if (!listing) return false;
+  const lt = String(listing.listing_type || listing.type || '').toLowerCase();
+  if (['property', 'land', 'house', 'vehicle', 'car', 'truck', 'motorhome', 'fitting'].includes(lt)) return true;
+  const hay = String(listing.category || listing.subcategory || listing.title || '').toLowerCase();
+  return /real estate|house|land|villa|apartment|penthouse|duplex|compound|farm|warehouse|plaza|shop|cinema|truck|car\b|vehicle|motorhome|inverter|generator/.test(hay);
 }
 
 function getTaxRate() {
@@ -499,22 +510,55 @@ function renderStep2() {
 function renderStep3() {
   const supportedCurrencies = getSupportedCurrenciesFromAccounts(state.manualPaymentAccounts);
   const manualPayment = getResolvedManualPayment();
-  const showFlutterwave = state.paymentGateway === 'both' || state.paymentGateway === 'flutterwave';
-  const showManual = state.paymentGateway === 'both' || state.paymentGateway === 'manual';
+  const isHighValue = isManualTransferRequired(getTotal());
+  const noAccounts = state.manualPaymentAccounts.length === 0;
+  const showFlutterwave = (state.paymentGateway === 'both' || state.paymentGateway === 'flutterwave') && !isHighValue;
+  const showManual = (state.paymentGateway === 'both' || state.paymentGateway === 'manual') && !noAccounts;
+  const canPlaceOrder = state.paymentMethod === 'manual_bank_transfer'
+    ? !!(manualPayment.account && state.paymentSettings)
+    : showFlutterwave;
   return `
+    <!-- High-value: manual transfer is mandatory -->
+    ${isHighValue ? `
+    <div class="glass border-2 border-amber-300 rounded-2xl p-5 slide-up">
+      <div class="flex items-start gap-3">
+        <div class="p-2.5 bg-amber-100 rounded-xl shrink-0"><i data-lucide="shield-alert" class="w-5 h-5 text-amber-600"></i></div>
+        <div class="flex-1 min-w-0">
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Manual Bank Transfer Required for High-Value Orders</h3>
+          <p class="text-xs text-gray-600 leading-relaxed mt-2">For purchases of 1,000 USD, EUR, GBP, or more, manual bank transfer is required for security and order verification. This allows us to confirm the payment directly through our business bank account and properly verify the customer's delivery or collection information.</p>
+          <p class="text-xs text-gray-600 leading-relaxed mt-2">After completing the transfer, upload your payment receipt and provide your correct delivery address or collection details. Our team will verify the payment before the order is approved.</p>
+          <p class="text-xs text-gray-600 leading-relaxed mt-2">Your order will remain pending until the payment has been confirmed by our bank.</p>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- No bank accounts configured yet -->
+    ${noAccounts ? `
+    <div class="glass border border-amber-300 rounded-2xl p-5 slide-up">
+      <div class="flex items-start gap-3">
+        <div class="p-2.5 bg-amber-100 rounded-xl"><i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600"></i></div>
+        <div class="flex-1">
+          <h3 class="text-sm font-bold text-gray-900">Bank transfer is temporarily unavailable</h3>
+          <p class="text-xs text-gray-600 mt-1">Our bank transfer channels are being configured. Please contact support at ${state.supportEmail ? `<a class="text-blue-600 underline" href="mailto:${state.supportEmail}">${state.supportEmail}</a>` : '<a class="text-blue-600 underline" href="/contact.html">our contact page</a>'} to complete your order securely.</p>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
     <!-- Payment method selection -->
     <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-4">
         <i data-lucide="credit-card" class="w-4 h-4 text-blue-600"></i> Payment Method
       </h3>
       <div class="space-y-3">
-        <!-- Flutterwave -->
+        <!-- Flutterwave (card/ATM) — only for orders below the high-value threshold -->
         ${showFlutterwave ? `<div onclick="selectPaymentMethod('flutterwave')" class="pay-method cursor-pointer p-4 border rounded-xl transition ${state.paymentMethod === 'flutterwave' ? 'selected' : 'bg-gray-50 border-blue-100 hover:border-blue-200'}">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="w-5 h-5 text-blue-600"></i></div>
+            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center"><i data-lucide="credit-card" class="w-5 h-5 text-blue-600"></i></div>
             <div class="flex-1">
-              <h4 class="text-sm font-bold text-gray-900">Flutterwave</h4>
-              <p class="text-xs text-gray-500">Pay with card, bank transfer, USSD, or mobile money</p>
+              <h4 class="text-sm font-bold text-gray-900">Card / ATM / Bank Transfer</h4>
+              <p class="text-xs text-gray-500">Pay instantly by card, ATM, or mobile money (Flutterwave)</p>
             </div>
             <div class="w-5 h-5 rounded-full border-2 ${state.paymentMethod === 'flutterwave' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'} flex items-center justify-center">
               ${state.paymentMethod === 'flutterwave' ? '<div class="w-2 h-2 bg-white rounded-full"></div>' : ''}
@@ -527,8 +571,8 @@ function renderStep3() {
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center"><i data-lucide="landmark" class="w-5 h-5 text-blue-600"></i></div>
             <div class="flex-1">
-              <h4 class="text-sm font-bold text-gray-900">Manual Bank Transfer</h4>
-              <p class="text-xs text-gray-500">Pay to the matched country account and upload your receipt</p>
+              <h4 class="text-sm font-bold text-gray-900">Manual Bank Transfer ${isHighValue ? '<span class="ml-1 text-[9px] align-middle bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full border border-amber-300">REQUIRED</span>' : ''}</h4>
+              <p class="text-xs text-gray-500">Pay the exact amount to the matched account below, then upload your receipt</p>
             </div>
             <div class="w-5 h-5 rounded-full border-2 ${state.paymentMethod === 'manual_bank_transfer' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'} flex items-center justify-center">
               ${state.paymentMethod === 'manual_bank_transfer' ? '<div class="w-2 h-2 bg-white rounded-full"></div>' : ''}
@@ -555,17 +599,17 @@ function renderStep3() {
     </div>
 
     <!-- Bank account details (if manual) -->
-    ${state.paymentMethod === 'manual_bank_transfer' ? renderBankDetails(manualPayment.account, manualPayment.fallbackNotice, state.manualPaymentInstructions) : ''}
+    ${state.paymentMethod === 'manual_bank_transfer' && manualPayment.account ? renderBankDetails(manualPayment.account, manualPayment.fallbackNotice, state.manualPaymentInstructions, { isHighValue }) : ''}
 
     <!-- Place order button -->
     <div class="space-y-3">
       ${state.paymentMethod === 'flutterwave' ? `
         <button onclick="payWithFlutterwave()" id="flw-pay-btn" class="btn-press w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">
-          <i data-lucide="zap" class="w-5 h-5"></i> Pay ${fmtLocalTotal()} with Flutterwave
+          <i data-lucide="credit-card" class="w-5 h-5"></i> Pay ${fmtLocalTotal()} with Card / ATM
         </button>
       ` : `
-        <button onclick="placeOrderManual()" id="manual-pay-btn" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-wide transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 relative overflow-hidden">
-          <i data-lucide="check-circle" class="w-5 h-5"></i> Place Order & Upload Receipt
+        <button onclick="placeOrderManual()" id="manual-pay-btn" ${canPlaceOrder ? '' : 'disabled'} class="btn-press w-full ${canPlaceOrder ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 shadow-lg shadow-blue-600/30' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} text-white font-bold py-4 rounded-xl text-sm uppercase tracking-wide transition flex items-center justify-center gap-2 relative overflow-hidden">
+          <i data-lucide="landmark" class="w-5 h-5"></i> ${isHighValue ? `Pay ${fmtLocalTotal()} by Bank Transfer` : 'Place Order & Upload Receipt'}
         </button>
       `}
       <button onclick="goToStep(2)" class="btn-press w-full bg-gray-100 hover:bg-gray-100 border border-blue-200 text-gray-600 font-bold py-3 rounded-xl text-sm uppercase tracking-wide transition relative overflow-hidden">
@@ -579,43 +623,73 @@ function renderStep3() {
   `;
 }
 
-function renderBankDetails(acc, fallbackNotice, instructions) {
+function renderBankDetails(acc, fallbackNotice, instructions, opts = {}) {
+  const group = [
+    { label: 'Beneficiary Name', value: acc.beneficiary },
+    { label: 'Bank Name', value: acc.bankName },
+  ];
   const fields = [
-    { label:'Beneficiary Name', value:acc.beneficiary },
-    { label:'Bank Name', value:acc.bankName },
-    { label:'Account Number', value:acc.accountNumber },
-    { label:'IBAN', value:acc.iban },
-    { label:'SWIFT / BIC', value:acc.swift },
-    { label:'Routing (ABA)', value:acc.routing },
-    { label:'Sort Code', value:acc.sortCode },
-    { label:'Bank Code', value:acc.bankCode },
-    { label:'Branch Code', value:acc.branchCode },
-    { label:'Institution Number', value:acc.institutionNumber },
-    { label:'Transit Number', value:acc.transitNumber },
-    { label:'BSB Code', value:acc.bsbCode },
-    { label:'Bank Address', value:acc.address },
+    { label: 'Account Number', value: acc.accountNumber },
+    { label: 'Account Type', value: acc.accountType },
+    { label: 'IBAN', value: acc.iban },
+    { label: 'SWIFT / BIC', value: acc.swift },
+    { label: 'Routing (ABA)', value: acc.routing },
+    { label: 'Sort Code', value: acc.sortCode },
+    { label: 'Bank Code', value: acc.bankCode },
+    { label: 'Branch Code', value: acc.branchCode },
+    { label: 'Institution Number', value: acc.institutionNumber },
+    { label: 'Transit Number', value: acc.transitNumber },
+    { label: 'BSB Code', value: acc.bsbCode },
+    { label: 'Bank Address', value: acc.address },
   ].filter(f => f.value && f.value.trim() !== '');
+
+  const allCopyFields = [...group, ...fields];
+  const copyAllText = allCopyFields.map(f => `${f.label}: ${f.value}`).join('\n');
 
   return `
     <div class="glass border border-blue-200 rounded-2xl p-5 slide-up">
       ${fallbackNotice ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">${fallbackNotice.message}</div>` : ''}
-      <div class="flex items-center gap-3 mb-4">
+      <div class="flex items-center gap-3 mb-3">
         <div class="p-2.5 bg-blue-50 rounded-lg"><i data-lucide="landmark" class="w-5 h-5 text-blue-600"></i></div>
         <div class="flex-1">
-          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Receiving Bank Account</h3>
+          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Business Receiving Account</h3>
           <p class="text-gray-500 text-xs">${acc.flag} ${acc.currencyName} (${acc.currency})</p>
         </div>
-        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-200"><i data-lucide="shield-check" class="w-3 h-3"></i> Verified</span>
+        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-600 text-[10px] font-bold px-2.5 py-1 rounded-full border border-blue-200"><i data-lucide="building-2" class="w-3 h-3"></i> Official Business</span>
+      </div>
+
+      <div class="bg-blue-600 text-white rounded-2xl p-4 mb-4 overflow-hidden relative">
+        <div class="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full"></div>
+        <div class="absolute -bottom-8 -left-4 w-28 h-28 bg-white/10 rounded-full"></div>
+        <div class="relative">
+          <div class="text-[10px] uppercase tracking-widest text-blue-100">Amount to transfer (${acc.currency})</div>
+          <div class="text-2xl font-bold mt-0.5">${fmtLocalTotal()}</div>
+          <div class="mt-3 flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <div class="text-[10px] uppercase tracking-widest text-blue-100">Your order/reference number</div>
+              <div class="text-sm font-bold font-mono mt-0.5">${state.orderNumber}</div>
+            </div>
+            <button onclick="copyToClipboard('${state.orderNumber}')" class="shrink-0 flex items-center gap-1.5 bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 text-xs font-bold transition">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy reference
+            </button>
+          </div>
+          <p class="text-[11px] text-blue-100 mt-2">Include this reference when you transfer so our team can match your payment instantly.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 mb-2">
+        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide">Transfer to</h4>
+        <button onclick="copyToClipboard(this.getAttribute('data-copy'))" data-copy="${copyAllText.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\n/g, '&#10;')}" class="shrink-0 text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy all details</button>
       </div>
       <div class="space-y-2">
-        ${fields.map(f => `
+        ${allCopyFields.map((f, i) => `
           <div class="flex items-center justify-between gap-3 bg-gray-50 border border-blue-100 rounded-xl px-4 py-2.5">
             <div class="min-w-0 flex-1"><div class="text-gray-500 text-[11px] uppercase tracking-wide">${f.label}</div><div class="text-gray-900 text-sm font-medium font-mono break-all">${f.value}</div></div>
             <button onclick="copyToClipboard('${f.value.replace(/'/g, "\\'")}')" class="shrink-0 p-2 bg-gray-100 hover:bg-blue-100 border border-blue-200 rounded-lg transition"><i data-lucide="copy" class="w-4 h-4 text-gray-600"></i></button>
           </div>
         `).join('')}
       </div>
-      <div class="mt-4 p-3 bg-gray-50 border border-blue-100 rounded-xl text-xs text-gray-700 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
+      <div class="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-gray-700 leading-relaxed">${instructions || 'After payment, upload your receipt for verification so your goods can be shipped immediately.'}</div>
     </div>
   `;
 }
@@ -648,7 +722,7 @@ function renderOrderSummary() {
       </div>
       <div class="space-y-2 pt-4 border-t border-blue-100">
         <div class="flex justify-between text-sm"><span class="text-gray-500">Subtotal</span><span class="text-gray-900 font-bold">${fmtLocal(convertFromUSD(subtotal, state.selectedCurrency), state.selectedCurrency)}</span></div>
-        <div class="flex justify-between text-sm"><span class="text-gray-500">Shipping</span><span class="text-emerald-600 font-bold">${getShippingCost() === 0 ? 'Free' : fmtLocal(convertFromUSD(getShippingCost(), state.selectedCurrency), state.selectedCurrency)}</span></div>
+        <div class="flex justify-between text-sm"><span class="text-gray-500">Shipping</span><span class="text-emerald-600 font-bold">${getShippingCost() === 0 ? (isBulkItem(state.listing) ? 'To be quoted' : 'Free') : fmtLocal(convertFromUSD(getShippingCost(), state.selectedCurrency), state.selectedCurrency)}</span></div>
         ${getTaxAmount() > 0 ? `<div class="flex justify-between text-sm"><span class="text-gray-500">Tax</span><span class="text-gray-900 font-bold">${fmtLocal(convertFromUSD(getTaxAmount(), state.selectedCurrency), state.selectedCurrency)}</span></div>` : ''}
         <div class="flex justify-between text-lg pt-2 border-t border-blue-100"><span class="text-gray-900 font-bold">Total</span><span class="text-amber-600 font-black">${fmtLocalTotal()}</span></div>
       </div>
@@ -725,6 +799,7 @@ window.removeCartItem = (i) => {
 window.goToStep = (step) => {
   if (step === 3 && !validateStep2()) return;
   if (step === 2) saveStep2Data();
+  if (step === 3 && isManualTransferRequired(getTotal())) state.paymentMethod = 'manual_bank_transfer';
   state.step = step;
   render();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -782,7 +857,11 @@ window.toggleBilling = () => {
   document.getElementById('billing-fields').classList.toggle('hidden', state.billingSame);
 };
 
-window.selectPaymentMethod = (method) => { state.paymentMethod = method; render(); };
+window.selectPaymentMethod = (method) => {
+  if (method === 'flutterwave' && isManualTransferRequired(getTotal())) { showToast('High-value orders must be paid by manual bank transfer.'); return; }
+  state.paymentMethod = method;
+  render();
+};
 window.selectCurrency = (currency) => { state.currencyManuallySelected = true; state.selectedCurrency = currency; render(); };
 window.copyToClipboard = copyToClipboard;
 

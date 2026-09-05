@@ -563,32 +563,26 @@ body[class*="bg-[#070b16]"] [class*="bg-[#030712]"] [class*="text-white"] { colo
   box-shadow: 0 12px 26px rgba(37, 99, 235, 0.15) !important;
 }
 
-/* View mode picker: blue card, thick white text */
+/* View mode picker: neutral segmented control */
 .view-mode-option {
   cursor: pointer;
   outline: none;
 }
 .view-mode-option:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
-.view-mode-option .view-mode-dot {
-  opacity: 0;
-  transform: scale(0.4);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.view-mode-option:hover {
+  background: #f8fafc;
+  color: #1d4ed8;
 }
 .view-mode-option.view-mode-active {
-  border-color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.6), 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  box-shadow: inset 0 0 0 1px #bfdbfe;
 }
-.view-mode-option.view-mode-active .view-mode-dot {
-  opacity: 1;
-  transform: scale(1);
-}
-.view-mode-option.view-mode-active .view-mode-radio {
-  background: #2563eb;
-  border-color: #ffffff;
+.view-mode-option.view-mode-active [data-lucide] {
+  color: #2563eb;
 }
 
 /* Vertical one-by-one feed cards — full-width, image left / content right */

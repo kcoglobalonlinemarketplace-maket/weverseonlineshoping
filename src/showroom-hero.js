@@ -185,28 +185,28 @@ function videoSection() {
 
   const sec = document.createElement('section');
   sec.className = 'kco-hero-section kco-video-section';
-  sec.setAttribute('aria-label', 'Houses and Real Estate Video Tours');
+  sec.setAttribute('aria-label', 'Houses For Sale & Rent — Video Tours');
   sec.setAttribute('data-property-videos', 'true');
 
   const head = `
     <div class="kco-hero-panel kco-video-panel">
       <div class="kco-video-promo">
         <div class="kco-video-copy">
-          <span class="kco-video-eyebrow">Real Estate</span>
-          <h3 class="kco-video-h3">Houses and Real Estate Video Tours</h3>
-          <p>Watch every home, apartment, villa &amp; mansion on video.</p>
+          <span class="kco-video-eyebrow"><i data-lucide="home" class="w-3 h-3"></i> Real Estate</span>
+          <h3 class="kco-video-h3">HOUSES FOR SALE &amp; RENT</h3>
+          <p>Find homes, apartments, and villas available for sale or rent directly from us. Many listings include a video tour so you can see the property clearly.</p>
         </div>
         <div class="kco-video-actions">
-          <span class="kco-hero-count"><b>${listings.length}</b> Homes</span>
-          <a class="kco-hero-seeall" href="/showroom.html?cat=real-estate">See More Homes <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>
+          <span class="kco-hero-count"><b>${listings.length}</b> Listing${listings.length === 1 ? '' : 's'}</span>
+          <a class="kco-hero-seeall" href="/showroom.html?cat=real-estate">SEE MORE HOMES <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>
         </div>
       </div>
       <div class="kco-video-carousel">
         <div class="kco-video-hscroll">
           ${listings.map(l => videoCardHtml(l)).join('')}
         </div>
-        <button class="kco-hero-arrow left" aria-label="Scroll Houses and Real Estate Video Tours left">${SVG_CH_L}</button>
-        <button class="kco-hero-arrow right" aria-label="Scroll Houses and Real Estate Video Tours right">${SVG_CH_R}</button>
+        <button class="kco-hero-arrow left" aria-label="Scroll Houses For Sale left">${SVG_CH_L}</button>
+        <button class="kco-hero-arrow right" aria-label="Scroll Houses For Sale right">${SVG_CH_R}</button>
       </div>
     </div>`;
 
@@ -309,98 +309,86 @@ function heroStyles() {
   st.id = 'kco-hero-styles';
   st.textContent = `
 #kco-hero-rows{display:block}
-.kco-hero-section{position:relative;border-radius:1.5rem;overflow:hidden;box-shadow:0 10px 30px -12px rgba(2,6,23,.25)}
-.kco-hero-section+.kco-hero-section{margin-top:1.5rem}
-.kco-hero-panel{position:relative;padding:1.25rem 1rem 1.4rem}
-@media(min-width:640px){.kco-hero-panel{padding:1.6rem 1.75rem 1.7rem}}
-.kco-hero-re{background:linear-gradient(135deg,#022c22 0%,#064e3b 45%,#0d9488 130%)}
-.kco-hero-veh{background:linear-gradient(135deg,#111827 0%,#1f2937 45%,#92400e 135%)}
-.kco-hero-hscroll{display:flex;gap:.9rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:.4rem 2px .7rem;cursor:grab}
-.kco-hero-hscroll::-webkit-scrollbar{display:none}
-.kco-hero-hscroll.dragging{cursor:grabbing;scroll-snap-type:none;-webkit-user-select:none;user-select:none}
-.kco-hero-card{flex:0 0 auto;scroll-snap-align:start;width:272px;min-width:272px;border-radius:1.25rem;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 26px -12px rgba(0,0,0,.45);transition:transform .18s ease,box-shadow .18s ease;text-decoration:none;display:flex;flex-direction:column}
-@media(min-width:640px){.kco-hero-card{width:372px;min-width:372px}}
-@media(min-width:1024px){.kco-hero-card{width:450px;min-width:450px}}
-.kco-hero-card:hover{transform:translateY(-3px);box-shadow:0 20px 40px -14px rgba(0,0,0,.5)}
-.kco-hero-media{position:relative;aspect-ratio:16/10;background:#0b1120;overflow:hidden}
-.kco-hero-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
-.kco-hero-card:hover .kco-hero-media img{transform:scale(1.04)}
-.kco-hero-type{position:absolute;top:.7rem;left:.7rem;display:inline-flex;align-items:center;gap:.35rem;background:rgba(0,0,0,.68);backdrop-filter:blur(6px);color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.3rem .65rem;border-radius:999px;border:1px solid rgba(255,255,255,.2)}
-.kco-hero-loc{position:absolute;bottom:.7rem;left:.7rem;right:.7rem;display:flex;align-items:center;gap:.4rem;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:11px;font-weight:600;padding:.35rem .7rem;border-radius:.8rem}
-.kco-hero-body{display:flex;flex-direction:column;gap:.55rem;padding:.85rem .95rem 1rem}
-.kco-hero-price{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
-.kco-hero-price b{font-size:1.35rem;font-weight:900;color:#0f172a;line-height:1}
-@media(min-width:640px){.kco-hero-price b{font-size:1.55rem}}
-.kco-hero-price span{font-size:.72rem;font-weight:700}
-.kco-hero-title{font-size:.98rem;line-height:1.3;font-weight:800;color:#0f172a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-@media(min-width:640px){.kco-hero-title{font-size:1.12rem}}
-.kco-hero-chips{display:flex;flex-wrap:wrap;gap:.4rem}
-.kco-hero-chip{display:inline-flex;align-items:center;gap:.3rem;font-size:10.5px;font-weight:700;color:#334155;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:.6rem;padding:.28rem .55rem}
-.kco-hero-btn{margin-top:.15rem;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;width:100%;border-radius:.9rem;padding:.6rem;font-size:.8rem;font-weight:900;color:#fff;letter-spacing:.02em;text-align:center;transition:filter .15s ease}
-.kco-hero-btn:hover{filter:brightness(1.08)}
-.kco-hero-re .kco-hero-btn{background:linear-gradient(90deg,#059669,#0d9488)}
-.kco-hero-veh .kco-hero-btn{background:linear-gradient(90deg,#f59e0b,#ea580c)}
-.kco-hero-empty{padding:1.2rem;text-align:center;color:rgba(255,255,255,.75);font-size:.85rem;font-weight:600;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.25);border-radius:1rem}
-.kco-video-section{background:linear-gradient(135deg,#043a1c 0%,#0b6b3c 48%,#059669 100%);border:1px solid rgba(209,250,229,.22);box-shadow:0 18px 46px -22px rgba(4,58,28,.55)}
-.kco-video-panel{padding:1.5rem 1.15rem 1.6rem}
-@media(min-width:640px){.kco-video-panel{padding:1.7rem 1.75rem 1.8rem}}
-.kco-video-promo{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem 1.5rem;flex-wrap:wrap}
-.kco-video-copy{flex:1 1 auto;min-width:0;max-width:44ch}
-.kco-video-eyebrow{display:inline-flex;align-items:center;font-size:.7rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#050505;background:#ffffff;border-radius:999px;padding:.3rem .8rem;margin-bottom:.5rem;box-shadow:0 4px 12px -4px rgba(0,0,0,.4)}
-.kco-video-section .kco-video-h3{color:#ffffff;font-size:clamp(1.7rem,4.2vw,3.1rem);font-weight:900;letter-spacing:-.015em;line-height:1.04;text-transform:uppercase;margin:0;max-width:14ch;text-shadow:0 3px 18px rgba(0,0,0,.45)}
-.kco-video-copy p{color:#ffffff;font-size:.88rem;font-weight:700;line-height:1.45;margin:.5rem 0 0;text-shadow:0 1px 10px rgba(0,0,0,.35)}
-.kco-video-actions{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:.55rem;padding-top:.1rem}
-.kco-video-section .kco-hero-count{background:#ffffff;border:none;color:#040a06;box-shadow:0 4px 14px -4px rgba(0,0,0,.35)}
-.kco-video-section .kco-hero-count b,.kco-video-section .kco-hero-count strong{color:#065f46}
-.kco-video-section .kco-hero-seeall{background:#050505;border:1.5px solid #ffffff;color:#ffffff;white-space:nowrap}
-.kco-video-section .kco-hero-seeall:hover{background:#065f46;border-color:#ffffff;color:#ffffff}
-.kco-video-carousel{position:relative;margin-top:1.35rem}
-@media(max-width:640px){.kco-video-section .kco-hero-seeall{padding:.5rem .85rem;font-size:.74rem}}
-@media(max-width:380px){
-.kco-video-promo{flex-direction:column;align-items:stretch;gap:1rem}
-.kco-video-copy{max-width:none}
-.kco-video-actions{flex-direction:row;align-items:center;justify-content:space-between;padding-top:0}
-}
-.kco-video-hscroll{display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:.4rem 2px .7rem;cursor:grab}
-.kco-video-hscroll::-webkit-scrollbar{display:none}
-.kco-video-hscroll.dragging{cursor:grabbing;scroll-snap-type:none;-webkit-user-select:none;user-select:none}
-.kco-video-card{flex:0 0 auto;scroll-snap-align:start;width:272px;min-width:272px;border-radius:1.1rem;overflow:hidden;background:#fff;border:1px solid #e2e8f0;box-shadow:0 8px 22px -12px rgba(2,6,23,.18);transition:transform .18s ease,box-shadow .18s ease;text-decoration:none;display:flex;flex-direction:column}
-@media(min-width:640px){.kco-video-card{width:372px;min-width:372px}}
-@media(min-width:1024px){.kco-video-card{width:440px;min-width:440px}}
-.kco-video-card:hover{transform:translateY(-4px);box-shadow:0 20px 38px -16px rgba(2,6,23,.32);border-color:#bfdbfe}
-.kco-video-media{position:relative;aspect-ratio:16/10;background:#0b1120;overflow:hidden}
-.kco-video-media video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
-.kco-video-card:hover .kco-video-media video{transform:scale(1.04)}
-.kco-video-bigplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.95;transition:opacity .2s ease}
-.kco-video-playcircle{width:3.4rem;height:3.4rem;border-radius:999px;background:rgba(255,255,255,.94);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px -6px rgba(0,0,0,.45);transition:transform .18s ease}
-.kco-video-playcircle svg{width:1.5rem;height:1.5rem;color:#1e3a8a;margin-left:.15rem}
-.kco-video-card:hover .kco-video-bigplay,.kco-video-media.video-playing .kco-video-bigplay{opacity:0}
-.kco-video-card:hover .kco-video-playcircle{transform:scale(1.1)}
-.kco-video-badge{position:absolute;top:.7rem;right:.7rem;display:inline-flex;align-items:center;gap:.3rem;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.3rem .6rem;border-radius:999px;box-shadow:0 4px 12px -2px rgba(0,0,0,.3)}
-.kco-video-badge.kco-sale-buy{background:#059669;color:#fff;border:1px solid rgba(255,255,255,.25)}
-.kco-video-badge.kco-sale-rent{background:#d97706;color:#fff;border:1px solid rgba(255,255,255,.25)}
-.kco-video-badge svg{width:.8rem;height:.8rem}
-.kco-video-loc{position:absolute;bottom:.7rem;left:.7rem;right:.7rem;display:flex;align-items:center;gap:.4rem;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:11px;font-weight:600;padding:.35rem .7rem;border-radius:.8rem}
-.kco-video-section .kco-video-loc{left:.7rem}
-.kco-video-body{display:flex;flex-direction:column;gap:.55rem;padding:.9rem 1rem 1rem}
-.kco-video-section .kco-video-body .kco-hero-price b{color:#0f172a;font-size:1.45rem}
-.kco-video-section .kco-video-body .kco-hero-price span{color:#059669;font-weight:800}
-.kco-video-section .kco-video-body .kco-hero-btn{background:linear-gradient(90deg,#1d4ed8,#2563eb);box-shadow:0 8px 16px -6px rgba(37,99,235,.45)}
-.kco-hero-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem}
+.kco-hero-section{position:relative;border-radius:1.25rem;overflow:hidden;background:#ffffff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.kco-hero-section+.kco-hero-section{margin-top:1.25rem}
+.kco-hero-section::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+.kco-hero-veh::before{background:linear-gradient(90deg,#475569,#94a3b8)}
+.kco-video-section::before{background:linear-gradient(90deg,#059669,#34d399)}
+.kco-hero-panel{position:relative;padding:1.35rem 1rem 1.5rem}
+@media(min-width:640px){.kco-hero-panel{padding:1.6rem 1.5rem 1.7rem}}
+.kco-hero-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.1rem}
 .kco-hero-headleft{display:flex;align-items:center;gap:.7rem;min-width:0}
-.kco-hero-ic{flex:0 0 auto;width:2.6rem;height:2.6rem;border-radius:.85rem;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22)}
-.kco-hero-head h3{color:#fff;font-size:1.05rem;font-weight:900;letter-spacing:.02em;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kco-hero-head p{color:rgba(255,255,255,.72);font-size:.72rem;font-weight:600;margin:.12rem 0 0}
-.kco-hero-count{display:none;font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.28rem .6rem;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;white-space:nowrap}
+.kco-hero-ic{flex:0 0 auto;width:2.5rem;height:2.5rem;border-radius:.75rem;display:flex;align-items:center;justify-content:center;background:#eff6ff;border:1px solid #bfdbfe}
+.kco-hero-ic [data-lucide]{color:#2563eb !important}
+.kco-hero-head h3{color:#0f172a;font-size:1.05rem;font-weight:900;letter-spacing:-.01em;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kco-hero-head p{color:#64748b;font-size:.78rem;font-weight:600;margin:.18rem 0 0}
+.kco-hero-count{font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.34rem .7rem;border-radius:999px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;white-space:nowrap;display:none;align-items:center;gap:.3rem}
 @media(min-width:640px){.kco-hero-count{display:inline-flex}}
-.kco-hero-seeall{flex:0 0 auto;display:inline-flex;align-items:center;gap:.45rem;padding:.6rem 1.15rem;border-radius:.95rem;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:#fff;font-size:.78rem;font-weight:900;text-decoration:none;transition:background .15s ease,transform .15s ease;white-space:nowrap}
-.kco-hero-seeall:hover{background:rgba(255,255,255,.26);transform:translateY(-1px)}
-.kco-hero-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:2.25rem;height:2.25rem;border-radius:999px;display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.92);color:#0f172a;border:none;box-shadow:0 6px 16px -4px rgba(0,0,0,.35);cursor:pointer;transition:background .15s ease}
-.kco-hero-arrow:hover{background:#fff}
-.kco-hero-arrow svg{width:1.15rem;height:1.15rem}
+.kco-hero-count b,.kco-hero-count strong{color:#0f172a}
+.kco-hero-seeall{flex:0 0 auto;display:inline-flex;align-items:center;gap:.4rem;padding:.5rem .95rem;border-radius:.75rem;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;font-size:.78rem;font-weight:800;text-decoration:none;transition:background .15s ease,border-color .15s ease;white-space:nowrap}
+.kco-hero-seeall:hover{background:#dbeafe;border-color:#93c5fd}
+.kco-video-section{background:#ffffff;border-color:#e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.kco-video-panel{padding:1.35rem 1rem 1.5rem}
+@media(min-width:640px){.kco-video-panel{padding:1.6rem 1.5rem 1.7rem}}
+.kco-video-promo{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem 1.5rem;flex-wrap:wrap}
+.kco-video-copy{flex:1 1 auto;min-width:0}
+.kco-video-eyebrow{display:inline-flex;align-items:center;gap:.35rem;font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:999px;padding:.3rem .7rem;margin-bottom:.55rem}
+.kco-video-eyebrow [data-lucide]{width:.75rem;height:.75rem;color:#047857}
+.kco-video-section .kco-video-h3{color:#0f172a;font-size:clamp(1.3rem,3vw,1.85rem);font-weight:900;letter-spacing:-.015em;line-height:1.15;margin:0}
+.kco-video-copy p{color:#64748b;font-size:.85rem;font-weight:600;line-height:1.45;margin:.4rem 0 0}
+.kco-video-actions{flex:0 0 auto;display:flex;flex-direction:row;align-items:center;gap:.6rem;padding-top:.1rem;flex-wrap:wrap}
+.kco-video-carousel{position:relative;margin-top:1.25rem}
+@media(max-width:380px){.kco-video-promo{flex-direction:column;align-items:stretch;gap:1rem}.kco-video-copy{max-width:none}}
+.kco-hero-hscroll,.kco-video-hscroll{display:flex;gap:.85rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:.4rem 2px .7rem;cursor:grab}
+.kco-hero-hscroll::-webkit-scrollbar,.kco-video-hscroll::-webkit-scrollbar{display:none}
+.kco-hero-hscroll.dragging,.kco-video-hscroll.dragging{cursor:grabbing;scroll-snap-type:none;-webkit-user-select:none;user-select:none}
+.kco-hero-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:2.25rem;height:2.25rem;border-radius:999px;display:none;align-items:center;justify-content:center;background:#ffffff;color:#0f172a;border:1px solid #e2e8f0;box-shadow:0 4px 12px -2px rgba(15,23,42,.18);cursor:pointer;transition:background .15s ease,border-color .15s ease}
+.kco-hero-arrow:hover{background:#f1f5f9;border-color:#cbd5e1}
+.kco-hero-arrow svg{width:1.1rem;height:1.1rem}
 @media(min-width:1024px){.kco-hero-arrow{display:flex}}
-.kco-hero-arrow.left{left:.8rem}.kco-hero-arrow.right{right:.8rem}
+.kco-hero-arrow.left{left:.7rem}.kco-hero-arrow.right{right:.7rem}
 .kco-hero-arrow:disabled{opacity:.35;pointer-events:none}
+.kco-video-card,.kco-hero-card{flex:0 0 auto;scroll-snap-align:start;width:272px;min-width:272px;border-radius:1rem;overflow:hidden;background:#ffffff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,.06);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;text-decoration:none;display:flex;flex-direction:column}
+@media(min-width:640px){.kco-video-card,.kco-hero-card{width:360px;min-width:360px}}
+@media(min-width:1024px){.kco-video-card,.kco-hero-card{width:420px;min-width:420px}}
+.kco-video-card:hover,.kco-hero-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px -12px rgba(2,6,23,.2);border-color:#bfdbfe}
+.kco-video-media,.kco-hero-media{position:relative;aspect-ratio:16/10;background:#f1f5f9;overflow:hidden}
+.kco-video-media img,.kco-video-media video,.kco-hero-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+.kco-video-card:hover .kco-video-media img,.kco-video-card:hover .kco-video-media video,.kco-hero-card:hover .kco-hero-media img{transform:scale(1.03)}
+.kco-hero-type{position:absolute;top:.65rem;left:.65rem;display:inline-flex;align-items:center;gap:.3rem;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);color:#0f172a;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:.28rem .6rem;border-radius:999px;border:1px solid #e2e8f0;box-shadow:0 2px 6px rgba(15,23,42,.12)}
+.kco-hero-type svg{width:.8rem;height:.8rem;color:#475569}
+.kco-hero-loc,.kco-video-loc{position:absolute;bottom:.65rem;left:.65rem;right:.65rem;display:flex;align-items:center;gap:.35rem;background:rgba(15,23,42,.62);backdrop-filter:blur(6px);color:#ffffff;font-size:11px;font-weight:600;padding:.32rem .65rem;border-radius:.7rem}
+.kco-hero-loc svg,.kco-video-loc svg{width:.85rem;height:.85rem}
+.kco-video-badge{position:absolute;top:.65rem;right:.65rem;display:inline-flex;align-items:center;gap:.3rem;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:.28rem .6rem;border-radius:999px;box-shadow:0 2px 8px -2px rgba(0,0,0,.25)}
+.kco-video-badge.kco-sale-buy{background:#059669;color:#ffffff}
+.kco-video-badge.kco-sale-rent{background:#d97706;color:#ffffff}
+.kco-video-badge svg{width:.8rem;height:.8rem}
+.kco-video-bigplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:1;transition:opacity .2s ease}
+.kco-video-playcircle{width:2.75rem;height:2.75rem;border-radius:999px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px -4px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.8);transition:transform .18s ease}
+.kco-video-playcircle svg{width:1.1rem;height:1.1rem;color:#2563eb;margin-left:.1rem}
+.kco-video-card:hover .kco-video-bigplay,.kco-video-media.video-playing .kco-video-bigplay{opacity:0}
+.kco-video-card:hover .kco-video-playcircle{transform:scale(1.08)}
+.kco-video-body,.kco-hero-body{display:flex;flex-direction:column;gap:.5rem;padding:.85rem .9rem .95rem}
+.kco-hero-price{display:flex;align-items:baseline;gap:.45rem;flex-wrap:wrap}
+.kco-hero-price b{font-size:1.25rem;font-weight:900;color:#0f172a;line-height:1}
+@media(min-width:640px){.kco-hero-price b{font-size:1.4rem}}
+.kco-hero-price span{font-size:.72rem;font-weight:700;color:#64748b}
+.kco-hero-title{font-size:.95rem;line-height:1.3;font-weight:700;color:#0f172a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+@media(min-width:640px){.kco-hero-title{font-size:1.02rem}}
+.kco-hero-chips{display:flex;flex-wrap:wrap;gap:.35rem}
+.kco-hero-chip{display:inline-flex;align-items:center;gap:.3rem;font-size:10.5px;font-weight:700;color:#475569;background:#f8fafc;border:1px solid #e2e8f0;border-radius:.55rem;padding:.26rem .5rem}
+.kco-hero-chip svg{width:.8rem;height:.8rem}
+.kco-hero-btn{margin-top:.1rem;display:inline-flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:800;color:#2563eb;letter-spacing:.01em;text-decoration:none;align-self:flex-start;transition:color .15s ease}
+.kco-hero-btn:hover{color:#1d4ed8}
+.kco-hero-btn svg{width:.9rem;height:.9rem}
+.kco-video-section .kco-video-body .kco-hero-price span{color:#059669;font-weight:800}
+.kco-hero-empty{padding:1.2rem;text-align:center;color:#64748b;font-size:.85rem;font-weight:600;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:1rem}
+/* Explicit icon sizing — works even on pages without Tailwind (e.g. showroom.html) */
+.kco-hero-section [data-lucide].w-3,.kco-video-section [data-lucide].w-3{width:.75rem;height:.75rem}
+.kco-hero-section [data-lucide].w-3\.5,.kco-video-section [data-lucide].w-3\.5{width:.875rem;height:.875rem}
+.kco-hero-section [data-lucide].w-4,.kco-video-section [data-lucide].w-4{width:1rem;height:1rem}
+.kco-hero-section [data-lucide].w-5,.kco-video-section [data-lucide].w-5{width:1.25rem;height:1.25rem}
+.kco-hero-section [data-lucide].shrink-0,.kco-video-section [data-lucide].shrink-0{flex-shrink:0}
 `;
   document.head.appendChild(st);
 }
@@ -481,7 +469,7 @@ function vehicleKindLabel(listing) {
 }
 
 function icon(name) {
-  return `<i data-lucide="${name}" class="w-5 h-5 text-white"></i>`;
+  return `<i data-lucide="${name}" class="w-5 h-5"></i>`;
 }
 
 function wireDrag(track) {
@@ -526,8 +514,8 @@ function heroSection(opts) {
             <p>${esc(opts.subtitle)}</p>
           </div>
         </div>
-        <span class="kco-hero-count">${opts.listings.length} Available</span>
-        ${opts.seeAll ? `<a class="kco-hero-seeall" href="/showroom.html?cat=${opts.cat}">See All <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>` : ''}
+        <span class="kco-hero-count">${opts.listings.length} Listing${opts.listings.length === 1 ? '' : 's'}</span>
+        ${opts.seeAll ? `<a class="kco-hero-seeall" href="/showroom.html?cat=${opts.cat}">${esc(opts.seeAllLabel || 'See All')} <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>` : ''}
       </div>
       <div class="kco-hero-hscroll">
         ${opts.listings.length
@@ -570,8 +558,8 @@ function renderHeroRows() {
   frag.appendChild(videoSection());
   frag.appendChild(heroSection({
     kindCls: 'kco-hero-veh',
-    title: '🚗 Cars & Trucks', subtitle: 'Your next ride starts here.',
-    icon: '', cat: 'cars-trucks', seeAll: true,
+    title: 'Cars & Trucks', subtitle: 'Browse new and used cars, trucks, buses and motorhomes listed by their sellers.',
+    icon: 'car-front', cat: 'cars-trucks', seeAll: true, seeAllLabel: 'See All Vehicles',
     listings: vehicles, card: (l) => heroCardHtml(l, 'vehicle'),
   }));
   container.replaceChildren(frag);

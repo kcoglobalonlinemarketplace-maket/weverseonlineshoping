@@ -5,6 +5,7 @@
 
 const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
 const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
+const SITE_URL = 'https://weverseonlineshop.com';
 
 let client = null;
 
@@ -47,5 +48,100 @@ export async function resolveFromDb(id) {
   } catch (err) {
     console.error('[og-lookup] resolveFromDb failed:', err && err.message ? err.message : err);
     return null;
+  }
+}
+
+// ── Related-product internal links (SSR, crawler-visible) ───────────────
+// Fetches a slim, cached catalog snapshot and ranks siblings by real shared
+// category / country / listing type, so product pages cross-link to genuinely
+// relevant products (never invented neighbours).
+let relatedCache = { at: 0, rows: null, busy: null };
+
+function relRowId(r) { return r?.property_id || r?.id || r?.sku || ''; }
+
+function relImageUrl(r) {
+  const imgs = Array.isArray(r?.images) ? r.images : [];
+  return imgs.find((u) => typeof u === 'string' && u.startsWith('http') && !/\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i.test(u)) || '';
+}
+
+async function fetchRelatedIndex() {
+  const now = Date.now();
+  if (relatedCache.rows && now - relatedCache.at < 10 * 60 * 1000) return relatedCache.rows;
+  if (relatedCache.busy) return relatedCache.busy;
+  relatedCache.busy = (async () => {
+    const c = await getDbClient();
+    const { data, error } = await c
+      .from('showroom_listings')
+      .select('id, property_id, title, price, currency, category, subcategory, listing_type, country, images, availability_status, stock_quantity')
+      .eq('is_active', true)
+      .order('updated_at', { ascending: false })
+      .limit(6000);
+    if (error) throw new Error(error.message);
+    const rows = (data || []).filter((r) => relRowId(r));
+    relatedCache = { at: Date.now(), rows, busy: null };
+    return rows;
+  })();
+  try {
+    return await relatedCache.busy;
+  } catch (err) {
+    relatedCache.busy = null;
+    console.error('[og-lookup] related index failed:', err && err.message ? err.message : err);
+    return [];
+  }
+}
+
+export async function findRelatedListings(listing, limit = 4) {
+  try {
+    const rows = await fetchRelatedIndex();
+    if (!rows.length) return [];
+    const selfId = relRowId(listing);
+    const cat = String(listing?.category || listing?.subcategory || '').toLowerCase().trim();
+    const country = String(listing?.country || '').toLowerCase().trim();
+    const type = String(listing?.listing_type || '').toLowerCase().trim();
+
+    const scored = rows
+      .map((r) => {
+        const id = relRowId(r);
+        if (!id || id === selfId) return null;
+        let s = 0;
+        const rc = String(r.category || '').toLowerCase().trim();
+        const rsub = String(r.subcategory || '').toLowerCase().trim();
+        const rco = String(r.country || '').toLowerCase().trim();
+        if (cat && (rc === cat || rsub === cat)) s += 3;
+        else if (cat && (rc.includes(cat) || cat.includes(rc))) s += 2;
+        if (country && rco === country) s += 2;
+        if (type && String(r.listing_type || '').toLowerCase().trim() === type) s += 1;
+        return { r, s };
+      })
+      .filter((x) => x && x.s > 0)
+      .sort((a, b) => b.s - a.s);
+
+    const picked = scored.slice(0, limit).map((x) => x.r);
+    if (picked.length < limit) {
+      const have = new Set(picked.map(relRowId));
+      for (const r of rows) {
+        if (picked.length >= limit) break;
+        const id = relRowId(r);
+        if (!id || id === selfId || have.has(id)) continue;
+        picked.push(r);
+        have.add(id);
+      }
+    }
+    return picked.map((r) => {
+      const id = relRowId(r);
+      return {
+        id,
+        title: String(r.title || ''),
+        price: Number(r.price) || 0,
+        currency: r.currency || 'USD',
+        image: relImageUrl(r),
+        url: `${SITE_URL}/product/${encodeURIComponent(id)}`,
+        category: r.category || null,
+        country: r.country || null,
+      };
+    });
+  } catch (err) {
+    console.error('[og-lookup] findRelatedListings failed:', err && err.message ? err.message : err);
+    return [];
   }
 }

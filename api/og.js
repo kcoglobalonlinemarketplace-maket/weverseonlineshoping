@@ -25,6 +25,7 @@ import { PRODUCT_LISTINGS } from '../src/products-data.js';
 import { PRODUCT_EXTRA_LISTINGS } from '../src/products-extra.js';
 import { generateListingById } from '../src/catalog.js';
 import { productVideo, productPoster } from './lib/product-media.mjs';
+import { findRelatedListings } from './lib/listing-lookup.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_NAME = 'Weverse Online Shop';
@@ -146,6 +147,9 @@ function availabilityParts(listing) {
   let schema = 'https://schema.org/InStock';
   if (/out\s*of\s*stock|sold\s*out/i.test(raw)) {
     label = 'Out of Stock';
+    schema = 'https://schema.org/OutOfStock';
+  } else if (/discontinued|obsolete|no\s*longer\s*(available|manufactured)/i.test(raw)) {
+    label = 'Discontinued';
     schema = 'https://schema.org/OutOfStock';
   } else if (/pre-?order|reservation|coming\s*soon/i.test(raw)) {
     label = 'Pre-Order';
@@ -273,7 +277,7 @@ function locationOf(listing) {
 }
 
 function renderSsrBody(listing, opts) {
-  const { canonical, origin, priceLabel, availLabel, heroImage } = opts;
+  const { canonical, origin, priceLabel, availLabel, heroImage, related } = opts;
   const id = listing.property_id || listing.id || '';
   const title = cleanText(listing.title, 300) || SITE_NAME;
   const description = cleanText(listing.description, 4000) || '';
@@ -322,14 +326,28 @@ function renderSsrBody(listing, opts) {
   const ratingHtml = rating > 0 && reviews > 0
     ? `<span class="inline-flex items-center gap-1 text-amber-500 font-bold text-sm">★ ${rating.toFixed(1)} <span class="text-gray-400 font-semibold">(${reviews})</span></span>`
     : '';
-  const badgeColor = availLabel.toLowerCase().includes('out') ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700';
+  const badgeColor = availLabel.toLowerCase().includes('out') || availLabel.toLowerCase().includes('discontinue') ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700';
+  const highlightsList = (Array.isArray(listing.highlights) && listing.highlights.length ? listing.highlights : [])
+    .concat(Array.isArray(listing.features) && listing.features.length ? listing.features : [])
+    .filter((x) => typeof x === 'string' && x.trim())
+    .slice(0, 6);
+  const highlightsHtml = highlightsList.length
+    ? `<div class="mt-5">
+        <h3 class="text-sm font-black text-gray-900 mb-2">Highlights</h3>
+        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 list-disc pl-5 text-sm text-gray-600">
+          ${highlightsList.map((h) => `<li>${escapeAttr(cleanText(h, 140))}</li>`).join('')}
+        </ul>
+      </div>`
+    : '';
   const specsHtml = specs.length
     ? `<section class="mt-10">
         <h2 class="text-lg font-black text-gray-900 mb-3">Key Details</h2>
+        <h3 class="text-sm font-black text-gray-500 uppercase tracking-wide mb-3">Specifications</h3>
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 bg-gray-50 border border-gray-100 rounded-2xl p-4 sm:p-5">
           ${specs.map(([k, v]) => `<div class="flex flex-col gap-0.5"><dt class="text-[11px] font-bold uppercase tracking-wide text-gray-400">${escapeAttr(k)}</dt><dd class="text-sm font-semibold text-gray-800 break-words">${escapeAttr(v)}</dd></div>`).join('')}
         </dl>
-      </section>` : '';
+        ${highlightsHtml}
+      </section>` : highlightsHtml ? `<section class="mt-10"><h2 class="text-lg font-black text-gray-900 mb-3">Key Details</h2>${highlightsHtml}</section>` : '';
   const descHtml = description
     ? `<div class="text-[15px] leading-relaxed text-gray-700 whitespace-pre-line">${escapeAttr(description)}</div>`
     : `<p class="text-gray-500 text-sm">Full product details are available on the checkout page.</p>`;
@@ -338,6 +356,20 @@ function renderSsrBody(listing, opts) {
   if (cat) relatedLinks.push(`<a class="hover:text-blue-600" href="/category/${escapeAttr(cat.slug)}">More ${escapeAttr(cat.label.toLowerCase())}</a>`);
   if (cty) relatedLinks.push(`<a class="hover:text-blue-600" href="/country/${escapeAttr(cty.slug)}">More in ${escapeAttr(cty.label)}</a>`);
   if (loc) relatedLinks.push(`<a class="hover:text-blue-600" href="/showroom">Browse the global showroom</a>`);
+  const relCards = (related && related.length)
+    ? `<section class="mt-10">
+        <h2 class="text-lg font-black text-gray-900 mb-3">Related products</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          ${related.map((r) => `<a href="${escapeAttr(r.url)}" class="group block rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-lg transition">
+            <div class="aspect-[4/3] bg-gray-100 overflow-hidden">${r.image ? `<img src="${escapeAttr(r.image)}" alt="${escapeAttr(cleanText(r.title, 90))}" loading="lazy" decoding="async" class="w-full h-full object-cover">` : ''}</div>
+            <div class="p-3">
+              <p class="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">${escapeAttr(cleanText(r.title, 90))}</p>
+              <p class="mt-1 text-sm font-black text-blue-600">${Number(r.price) > 0 ? formatSharePrice({ price: Number(r.price), currency: r.currency }) : 'Contact us'}</p>
+            </div>
+          </a>`).join('')}
+        </div>
+      </section>`
+    : '';
   const relatedHtml = relatedLinks.length
     ? `<section class="mt-10">
         <h2 class="text-lg font-black text-gray-900 mb-3">Explore more</h2>
@@ -395,6 +427,7 @@ function renderSsrBody(listing, opts) {
       ${descHtml}
     </section>
     ${specsHtml}
+    ${relCards}
     ${relatedHtml}
     <p class="mt-8 text-xs text-gray-400">Prices in USD. Availability and price are updated live from the store database.</p>
   </div>`;
@@ -441,16 +474,19 @@ export default async function handler(req, res) {
       const loc = locationOf(listing);
       const cat = hubCategory(listing);
       const cty = hubCountry(listing);
-      let seoTitle = title;
-      if (loc && !title.toLowerCase().includes(loc.split(',')[0].trim().toLowerCase())) {
-        seoTitle = `${title} — ${loc}`;
+      let seoTitle = String(listing.seo_title || '').trim() || title;
+      if (loc && !seoTitle.toLowerCase().includes(loc.split(',')[0].trim().toLowerCase()) && !String(listing.seo_title || '').trim()) {
+        seoTitle = `${seoTitle} — ${loc}`;
       }
       const price = formatSharePrice(listing);
       const priceNum = Number(listing.price && typeof listing.price === 'object' ? listing.price.price : listing.price) || 0;
       const avail = availabilityParts(listing);
       const descCore = cleanText(listing.description, 170);
       const locPart = loc ? ` Located in ${loc}.` : '';
-      const desc = `${seoTitle}${price ? ` for ${price}` : ''} — ${avail.label || 'Available'}.${locPart} ${descCore || `Available now at ${SITE_NAME} with secure checkout and tracked worldwide delivery.`}`;
+      const customDesc = String(listing.meta_description || '').trim();
+      const desc = customDesc
+        ? cleanText(customDesc, 235)
+        : `${seoTitle}${price ? ` for ${price}` : ''} — ${avail.label || 'Available'}.${locPart} ${descCore || `Available now at ${SITE_NAME} with secure checkout and tracked worldwide delivery.`}`;
       const canonical = isProductPath || id
         ? `${siteUrl}/product/${encodeURIComponent(id)}`
         : `${siteUrl}/details.html?id=${encodeURIComponent(id)}`;
@@ -525,12 +561,14 @@ export default async function handler(req, res) {
       out = out.replace('</head>', `  ${breadcrumbJsonLd}\n</head>`);
 
       // Server-render the product body into the initial HTML.
+      const relatedProducts = await findRelatedListings(listing, 4);
       const body = renderSsrBody(listing, {
         canonical,
         origin: siteUrl,
         priceLabel: price,
         availLabel: avail.label,
         heroImage: posterPhoto || ogImage,
+        related: relatedProducts,
       });
       out = out.replace(/(<div id="details-content"[^>]*>)[\s\S]*?(<\/div>\s*<\/main>)/, (m, open, close) => `${open}\n        ${body}\n      ${close}`);
     } else if (id) {

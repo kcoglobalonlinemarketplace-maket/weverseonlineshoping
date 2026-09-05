@@ -13,8 +13,10 @@
     { "src": "^/country/([^/]+)$", "dest": "/api/hub?type=country&slug=$1" },
     { "src": "^/showroom$", "dest": "/showroom.html" },
     { "src": "^/(about|contact|team|help|privacy|terms|shipping-policy|refund-policy)$", "dest": "/$1.html" },
+    { "src": "^/(checkout|payment|account|cart|auth|admin|admin-ai|admin-shipping|admin-domains)$", "dest": "/$1.html" },
     { "src": "^/sitemap\\.xml$", "dest": "/api/sitemap.xml" },
     { "src": "^/merchant-feed\\.xml$", "dest": "/api/merchant-feed.xml" },
+    { "src": "^/seo-audit$", "dest": "/api/seo-audit" },
     { "handle": "filesystem" }
   ],
   "functions": {

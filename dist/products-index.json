@@ -1,33 +1,13 @@
 [
   {
-    "id": "WS-A-001-0004",
-    "title": "Charming Terrace Townhouse (3 Bed, 2 Bath) in Greater Tallahassee, Tallahassee",
-    "price": 665000,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Houses",
-    "image": "https://images.pexels.com/photos/210617/pexels-photo-210617.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-A-001-0004"
-  },
-  {
-    "id": "WS-T-001-0003",
-    "title": "2022 Ram 1500 — Pickup Truck for Sale in Southside, Jacksonville",
-    "price": 45400,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Trucks",
-    "image": "https://images.pexels.com/photos/1840427/pexels-photo-1840427.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-T-001-0003"
-  },
-  {
-    "id": "WS-C-001-0003",
-    "title": "2022 Honda Civic — Hatchback for Sale in Southside, Jacksonville",
-    "price": 28600,
+    "id": "WS-C-001-0002",
+    "title": "2019 Toyota Camry — Sedan for Sale in Downtown Orlando, Orlando",
+    "price": 29400,
     "currency": "USD",
     "availability": "Available (Illustrative Listing)",
     "category": "Cars",
-    "image": "https://images.pexels.com/photos/210019/pexels-photo-210019.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-C-001-0003"
+    "image": "https://images.pexels.com/photos/1149831/pexels-photo-1149831.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "url": "https://weverseonlineshop.com/product/WS-C-001-0002"
   },
   {
     "id": "WS-T-001-0002",
@@ -40,24 +20,24 @@
     "url": "https://weverseonlineshop.com/product/WS-T-001-0002"
   },
   {
-    "id": "WS-C-001-0004",
-    "title": "2025 Honda Accord — Sedan for Sale in Greater Tallahassee, Tallahassee",
-    "price": 25300,
+    "id": "WS-A-001-0004",
+    "title": "Charming Terrace Townhouse (3 Bed, 2 Bath) in Greater Tallahassee, Tallahassee",
+    "price": 665000,
     "currency": "USD",
     "availability": "Available (Illustrative Listing)",
-    "category": "Cars",
-    "image": "https://images.pexels.com/photos/1007410/pexels-photo-1007410.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-C-001-0004"
+    "category": "Houses",
+    "image": "https://images.pexels.com/photos/210617/pexels-photo-210617.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "url": "https://weverseonlineshop.com/product/WS-A-001-0004"
   },
   {
-    "id": "WS-C-001-0002",
-    "title": "2019 Toyota Camry — Sedan for Sale in Downtown Orlando, Orlando",
-    "price": 29400,
+    "id": "WS-C-001-0003",
+    "title": "2022 Honda Civic — Hatchback for Sale in Southside, Jacksonville",
+    "price": 28600,
     "currency": "USD",
     "availability": "Available (Illustrative Listing)",
     "category": "Cars",
-    "image": "https://images.pexels.com/photos/1149831/pexels-photo-1149831.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-C-001-0002"
+    "image": "https://images.pexels.com/photos/210019/pexels-photo-210019.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "url": "https://weverseonlineshop.com/product/WS-C-001-0003"
   },
   {
     "id": "WS-C-001-0001",
@@ -68,16 +48,6 @@
     "category": "Cars",
     "image": "https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=1200",
     "url": "https://weverseonlineshop.com/product/WS-C-001-0001"
-  },
-  {
-    "id": "WS-T-001-0001",
-    "title": "2023 Ford F-150 — Pickup Truck for Sale in Brickell, Miami",
-    "price": 41500,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Trucks",
-    "image": "https://images.pexels.com/photos/2467273/pexels-photo-2467273.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-T-001-0001"
   },
   {
     "id": "WS-A-001-0002",
@@ -138,16 +108,6 @@
     "category": "Fashion",
     "image": null,
     "url": "https://weverseonlineshop.com/product/KCO-PR008"
-  },
-  {
-    "id": "KCO-IMP-0146",
-    "title": "Glam Tufted Upholstered Queen Bed Frame with Crystal Accents",
-    "price": 499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://wttnvwpoqmbxryivcerf.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0146.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0146"
   },
   {
     "id": "KCO-IMP-0186",
@@ -1610,16 +1570,6 @@
     "url": "https://weverseonlineshop.com/product/KCO-IMP-0132"
   },
   {
-    "id": "KCO-IMP-0130",
-    "title": "Modern Upholstered Tantra Chaise Lounge Chair for Bedroom",
-    "price": 350,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://wttnvwpoqmbxryivcerf.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0130.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0130"
-  },
-  {
     "id": "KCO-IMP-0129",
     "title": "King Koil Aloe Vera Series Mattress and Upholstered Bed Frame",
     "price": 1200,
@@ -1718,16 +1668,6 @@
     "category": "Furniture",
     "image": "https://wttnvwpoqmbxryivcerf.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0123.jpg",
     "url": "https://weverseonlineshop.com/product/KCO-IMP-0123"
-  },
-  {
-    "id": "KCO-IMP-0121",
-    "title": "Enchant Tufted Upholstered Bed Frame with Adjustable Mattress",
-    "price": 1850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://wttnvwpoqmbxryivcerf.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0121.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0121"
   },
   {
     "id": "KCO-IMP-0119",
@@ -2768,16 +2708,6 @@
     "category": "Pets",
     "image": "https://wttnvwpoqmbxryivcerf.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0036.jpg",
     "url": "https://weverseonlineshop.com/product/KCO-IMP-0036"
-  },
-  {
-    "id": "KCO-IMP-0031",
-    "title": "Modern Gray Platform Bed Frame with Headboard",
-    "price": 249,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://wttnvwpoqmbxryivcerf.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0031.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0031"
   },
   {
     "id": "KCO-IMP-0019",

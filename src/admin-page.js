@@ -3,7 +3,7 @@ import { COUNTRIES } from './country-data.js';
 import { ALL_CURRENCIES } from './localization.js';
 import { GLOBAL_PRICE_MAX, GLOBAL_PRICE_MIN, buildCatalogDraft, getDefaultCurrencyForCountry, getTemplatesForCategory } from './global-product-catalog.js';
 import { getLocalShowroomListingById, listLocalShowroomListings, patchLocalShowroomListing, removeLocalShowroomListing, upsertLocalShowroomListing } from './local-showroom-store.js';
-import { getFlagEmojiFromCountryCode, getManualPaymentAccounts, getPaymentInstructions, loadPaymentSettingsCache, savePaymentSettingsCache } from './payment-settings.js';
+import { getFlagEmojiFromCountryCode, getPaymentInstructions, loadPaymentSettingsCache, savePaymentSettingsCache } from './payment-settings.js';
 import { SHOWROOM_LISTINGS } from './showroom-data.js';
 import { PRODUCT_LISTINGS } from './products-data.js';
 import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
@@ -162,17 +162,27 @@ function generateVideoThumbnail(file) {
 
 function badge(status) {
   const map = {
-    pending_verification: ['bg-amber-500/10 text-amber-400 border-amber-500/20', 'Pending'],
-    approved: ['bg-emerald-500/10 text-emerald-400 border-emerald-500/20', 'Approved'],
-    rejected: ['bg-red-500/10 text-red-400 border-red-500/20', 'Rejected'],
-    payment_approved: ['bg-blue-500/10 text-blue-400 border-blue-500/20', 'Paid'],
-    order_placed: ['bg-amber-500/10 text-amber-400 border-amber-500/20', 'Placed'],
-    processing: ['bg-indigo-500/10 text-indigo-400 border-indigo-500/20', 'Processing'],
-    shipped: ['bg-violet-500/10 text-violet-400 border-violet-500/20', 'Shipped'],
-    in_transit: ['bg-violet-500/10 text-violet-400 border-violet-500/20', 'In Transit'],
-    out_for_delivery: ['bg-cyan-500/10 text-cyan-400 border-cyan-500/20', 'Out for Delivery'],
-    delivered: ['bg-emerald-500/10 text-emerald-400 border-emerald-500/20', 'Delivered'],
-    cancelled: ['bg-red-500/10 text-red-400 border-red-500/20', 'Cancelled'],
+    pending_verification: ['bg-amber-400/20 text-amber-300 border-amber-400/30', 'Pending Verification'],
+    approved: ['bg-emerald-400/20 text-emerald-300 border-emerald-400/30', 'Approved'],
+    rejected: ['bg-red-400/20 text-red-300 border-red-400/30', 'Payment Rejected'],
+    payment_received: ['bg-cyan-400/20 text-cyan-300 border-cyan-400/30', 'Payment Received'],
+    payment_approved: ['bg-emerald-400/20 text-emerald-300 border-emerald-400/30', 'Payment Approved'],
+    payment_verified: ['bg-emerald-400/20 text-emerald-300 border-emerald-400/30', 'Payment Verified'],
+    paid: ['bg-emerald-400/20 text-emerald-300 border-emerald-400/30', 'Paid'],
+    payment_failed: ['bg-red-400/20 text-red-300 border-red-400/30', 'Payment Failed'],
+    documentation_pending: ['bg-amber-400/20 text-amber-300 border-amber-400/30', 'Documentation Pending'],
+    refund_processing: ['bg-orange-400/20 text-orange-300 border-orange-400/30', 'Refund Processing'],
+    order_completed: ['bg-emerald-400/20 text-emerald-300 border-emerald-400/30', 'Order Completed'],
+    order_placed: ['bg-amber-400/20 text-amber-300 border-amber-400/30', 'Placed'],
+    processing: ['bg-indigo-400/20 text-indigo-300 border-indigo-400/30', 'Processing'],
+    order_processing: ['bg-indigo-400/20 text-indigo-300 border-indigo-400/30', 'Processing'],
+    shipped: ['bg-violet-400/20 text-violet-300 border-violet-400/30', 'Shipped'],
+    order_shipped: ['bg-violet-400/20 text-violet-300 border-violet-400/30', 'Shipped'],
+    in_transit: ['bg-violet-400/20 text-violet-300 border-violet-400/30', 'In Transit'],
+    out_for_delivery: ['bg-cyan-400/20 text-cyan-300 border-cyan-400/30', 'Out for Delivery'],
+    delivered: ['bg-emerald-400/20 text-emerald-300 border-emerald-400/30', 'Delivered'],
+    order_delivered: ['bg-emerald-400/20 text-emerald-300 border-emerald-400/30', 'Delivered'],
+    cancelled: ['bg-red-400/20 text-red-300 border-red-400/30', 'Cancelled'],
     active: ['bg-emerald-500/10 text-emerald-400 border-emerald-500/20', 'Active'],
     inactive: ['bg-gray-500/10 text-gray-400 border-gray-500/20', 'Inactive'],
     sale: ['bg-blue-500/10 text-blue-400 border-blue-500/20', 'For Sale'],
@@ -7440,7 +7450,7 @@ window.showAddVehicleModal = function(existing = {}) {
             <div class="flex items-start gap-3">
               <span class="shrink-0 w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center"><i data-lucide="car-front" class="w-4.5 h-4.5 text-amber-400"></i></span>
               <div>
-                <p class="text-xs font-bold text-white uppercase tracking-wide">Cars &amp; Trucks — Your next ride starts here.</p>
+                <p class="text-xs font-bold text-white uppercase tracking-wide">Cars &amp; Trucks — Direct seller listings</p>
                 <p class="text-[11px] text-gray-500 mt-0.5">This professional listing lives in the Vehicles row above Real Estate. Every field the AI scanner can read is auto-filled from your photos — you review everything before publishing.</p>
               </div>
             </div>
@@ -7661,14 +7671,14 @@ window.editProperty = async function(pid) {
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  4. ORDERS MANAGER
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-const ORDER_STATUSES = ['pending_verification', 'payment_received', 'payment_approved', 'processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'rejected'];
+const ORDER_STATUSES = ['pending_verification', 'payment_received', 'payment_approved', 'documentation_pending', 'refund_processing', 'processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered', 'order_completed', 'cancelled', 'rejected'];
 
 async function renderOrders() {
   const content = document.getElementById('content');
   try {
     const { data: orders } = await supabase.from('payment_receipts').select('*').order('created_at', { ascending: false }).limit(300);
     const items = orders || [];
-    const tabs = ['All', 'Pending', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+    const tabs = ['All', 'Pending Verification', 'Paid', 'Documentation', 'Processing', 'Shipped', 'Delivered', 'Rejected'];
     let activeTab = 'All';
     content.innerHTML = `
       <div class="space-y-4 fade-in">
@@ -7727,12 +7737,13 @@ window.filterOrders = function(tab) {
   document.querySelectorAll('.order-row').forEach(row => {
     const s = row.dataset.status || '';
     const show = tab === 'All' ||
-      (tab === 'Pending' && ['pending_verification', 'payment_received', 'order_placed'].includes(s)) ||
-      (tab === 'Paid' && ['payment_approved'].includes(s)) ||
-      (tab === 'Processing' && ['processing'].includes(s)) ||
-      (tab === 'Shipped' && ['shipped', 'in_transit', 'out_for_delivery'].includes(s)) ||
-      (tab === 'Delivered' && s === 'delivered') ||
-      (tab === 'Cancelled' && ['cancelled', 'rejected'].includes(s));
+      (tab === 'Pending Verification' && ['pending_verification', 'payment_received', 'order_placed', 'receipt_requested'].includes(s)) ||
+      (tab === 'Paid' && ['payment_approved', 'payment_verified', 'paid', 'approved'].includes(s)) ||
+      (tab === 'Documentation' && ['documentation_pending'].includes(s)) ||
+      (tab === 'Processing' && ['processing', 'order_processing'].includes(s)) ||
+      (tab === 'Shipped' && ['shipped', 'order_shipped', 'in_transit', 'out_for_delivery'].includes(s)) ||
+      (tab === 'Delivered' && ['delivered', 'order_delivered', 'order_completed'].includes(s)) ||
+      (tab === 'Rejected' && ['cancelled', 'rejected', 'refund_processing', 'payment_failed'].includes(s));
     row.style.display = show ? '' : 'none';
   });
 };
@@ -7747,6 +7758,17 @@ window.searchOrders = function(q) {
 window.viewOrder = async function(id) {
   const o = (window._ordersData || []).find(x => x.id === id);
   if (!o) return;
+  let receiptHtml = '';
+  if (o.receipt_file_path) {
+    receiptHtml = `
+      <div class="p-3 glass-soft border border-blue-500/15 rounded-xl">
+        <p class="text-[10px] text-gray-500 font-bold uppercase mb-1.5 flex items-center justify-between">
+          <span><i data-lucide="receipt" class="w-3.5 h-3.5 inline mr-1 align-[-2px]"></i> Payment Receipt ${o.receipt_file_name ? '(' + esc(o.receipt_file_name) + ')' : ''}</span>
+          <a href="#" data-receipt-view="true" class="text-blue-400 hover:underline font-bold uppercase">View</a>
+        </p>
+        <iframe data-receipt-iframe="true" class="w-full h-40 rounded-lg bg-black/20 border border-blue-500/10 mt-1" title="Receipt preview"></iframe>
+      </div>`;
+  }
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box">
@@ -7756,10 +7778,21 @@ window.viewOrder = async function(id) {
         </div>
         <div class="space-y-3 text-sm">
           <div class="grid grid-cols-2 gap-3">
-            ${[['Customer', o.full_name], ['Email', o.email], ['Phone', o.phone], ['Amount', fmtMoney(o.amount, o.currency)], ['Product', o.listing_title || o.listing_id], ['Date', fmtDT(o.created_at)]].map(([l, v]) => `<div><p class="text-[10px] text-gray-500 uppercase font-bold mb-0.5">${l}</p><p class="text-xs text-white font-medium">${esc(v) || 'â€”'}</p></div>`).join('')}
+            ${[['Customer', o.full_name], ['Email', o.email], ['Phone', o.phone], ['Amount', `${fmtMoney(o.amount, o.currency || 'USD')}`], ['Product', o.listing_title || o.listing_id], ['Date', fmtDT(o.created_at)], ['Method', o.payment_method === 'flutterwave' ? 'Card / ATM (Flutterwave)' : 'Manual Bank Transfer'], ['Qty', o.quantity || 1]].map(([l, v]) => `<div><p class="text-[10px] text-gray-500 uppercase font-bold mb-0.5">${l}</p><p class="text-xs text-white font-medium">${esc(v) || '—'}</p></div>`).join('')}
           </div>
+          ${o.guest_shipping_address ? `<div><p class="text-[10px] text-gray-500 uppercase font-bold mb-0.5">Shipping Address</p><p class="text-xs text-gray-300">${esc(o.guest_shipping_address || o.billing_address) || '—'}</p></div>` : ''}
           ${o.transaction_reference ? `<div class="p-3 glass-soft border border-blue-500/15 rounded-xl"><p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Transaction Reference</p><p class="text-xs font-mono text-blue-300">${esc(o.transaction_reference)}</p></div>` : ''}
           ${o.additional_notes ? `<div class="p-3 glass-soft border border-amber-500/15 rounded-xl"><p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Notes</p><p class="text-xs text-gray-300">${esc(o.additional_notes)}</p></div>` : ''}
+          ${receiptHtml}
+          <div>
+            <label class="lbl">Verification Actions</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="quickOrderAction('${o.id}','payment_approved')" class="btn-press px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition"><i data-lucide="shield-check" class="w-3.5 h-3.5 inline mr-1 align-[-2px]"></i> Approve Payment</button>
+              <button onclick="quickOrderAction('${o.id}','documentation_pending')" class="btn-press px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition"><i data-lucide="file-question" class="w-3.5 h-3.5 inline mr-1 align-[-2px]"></i> Request Docs</button>
+              <button onclick="quickOrderAction('${o.id}','rejected')" class="btn-press px-3 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition"><i data-lucide="x-circle" class="w-3.5 h-3.5 inline mr-1 align-[-2px]"></i> Reject Payment</button>
+              <button onclick="quickOrderAction('${o.id}','refund_processing')" class="btn-press px-3 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl transition"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5 inline mr-1 align-[-2px]"></i> Refund Processing</button>
+            </div>
+          </div>
           <div>
             <label class="lbl">Update Order Status</label>
             <div class="flex gap-2">
@@ -7769,15 +7802,46 @@ window.viewOrder = async function(id) {
               <button onclick="updateOrderStatus('${o.id}')" class="btn-press px-4 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition">Update</button>
             </div>
           </div>
+          <div>
+            <label class="lbl">Admin Notes</label>
+            <textarea id="order-admin-notes" rows="2" class="input-field w-full" placeholder="Verification notes…">${esc(o.admin_notes || '')}</textarea>
+            <button onclick="saveOrderAdminNotes('${o.id}')" class="btn-press mt-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold rounded-xl transition">Save Notes</button>
+          </div>
         </div>
       </div>
     </div>`);
+
+  if (o.receipt_file_path) {
+    try {
+      const { data, error } = await supabase.storage.from('payment-receipts').createSignedUrl(o.receipt_file_path, 3600);
+      const url = !error && data?.signedUrl ? data.signedUrl : null;
+      const frame = document.querySelector('[data-receipt-iframe="true"]');
+      const link = document.querySelector('[data-receipt-view="true"]');
+      if (frame && url) frame.src = url;
+      if (link && url) link.href = url;
+      if (link && !url) link.remove();
+    } catch { /* unsigned */ }
+  }
+};
+
+window.saveOrderAdminNotes = async function(id) {
+  const notes = document.getElementById('order-admin-notes')?.value;
+  const { error } = await supabase.from('payment_receipts').update({ admin_notes: notes || null, admin_reviewed_at: new Date().toISOString() }).eq('id', id);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Notes saved');
+};
+
+window.quickOrderAction = async function(id, status) {
+  const { error } = await supabase.from('payment_receipts').update({ status, admin_reviewed_at: new Date().toISOString() }).eq('id', id);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Order updated to ' + status.replace(/_/g, ' '));
+  closeModal(); renderOrders();
 };
 
 window.updateOrderStatus = async function(id) {
   const status = document.getElementById('order-status-select')?.value;
   if (!status) return;
-  const { error } = await supabase.from('payment_receipts').update({ status }).eq('id', id);
+  const { error } = await supabase.from('payment_receipts').update({ status, admin_reviewed_at: new Date().toISOString() }).eq('id', id);
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Order status updated');
   closeModal(); renderOrders();
@@ -11063,6 +11127,15 @@ async function renderSeo() {
   content.innerHTML = `
     <div class="space-y-5 fade-in">
       <h2 class="text-xl font-black text-white">SEO Manager</h2>
+      <a href="/seo-audit" target="_blank" rel="noopener" class="block p-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 transition">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-black text-emerald-300">SEO Audit Dashboard</p>
+            <p class="text-xs text-emerald-200/70 mt-1">Live 20-point audit of every product page, duplicate detection, and one-click revive of missing titles.</p>
+          </div>
+          <span class="text-emerald-300 font-black text-xl">&rarr;</span>
+        </div>
+      </a>
       <form id="seo-form" onsubmit="saveSeo(event)" class="space-y-4">
         <div class="glass-soft border border-blue-500/15 rounded-2xl p-5 space-y-4">
           <h3 class="text-sm font-black text-white">Homepage SEO</h3>
@@ -12599,6 +12672,160 @@ window.updateManualPaymentCountry = function(index, countryCode) {
   renderManualPaymentAccountsEditor();
 };
 
+/* ── Receiving accounts manager (new bank_accounts table) ──
+   The real receiving accounts live in the locked `bank_accounts` DB table.
+   ONLY rows returned by the get_active_bank_accounts() RPC are ever shown to
+   customers — nothing here is embedded in the public bundle. */
+window._bankAccounts = [];
+
+async function loadBankAccounts() {
+  try {
+    const { data, error } = await supabase.from('bank_accounts').select('*').order('sort_order', { ascending: true }).order('currency', { ascending: true });
+    if (error) { showToast(error.message, 'error'); return []; }
+    window._bankAccounts = data || [];
+  } catch (e) { window._bankAccounts = []; }
+  return window._bankAccounts;
+}
+
+async function renderBankAccountsManager() {
+  const container = document.getElementById('bank-accounts-manager');
+  if (!container) return;
+  container.innerHTML = '<div class="flex items-center justify-center py-6 text-blue-300 text-sm"><i data-lucide="loader-2" class="w-4 h-4 animate-spin mr-2"></i> Loading accounts…</div>';
+  if (window.lucide) lucide.createIcons();
+  await loadBankAccounts();
+  container.innerHTML = `
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h4 class="text-xs font-black text-white uppercase tracking-wide">Receiving Accounts</h4>
+        <span class="badge bg-blue-500/10 text-blue-400 border-blue-500/20">${window._bankAccounts.length} total</span>
+      </div>
+      <div class="space-y-2">
+        ${window._bankAccounts.length === 0 ? '<div class="p-4 glass-soft border border-blue-500/10 rounded-xl text-xs text-gray-400">No receiving accounts yet — add your first one.</div>' : window._bankAccounts.map(a => `
+          <div class="flex items-center gap-3 p-3 glass-soft border ${a.is_active !== false ? 'border-blue-500/20' : 'border-red-500/20 opacity-60'} rounded-xl">
+            <span class="text-xl">${a.flag || getFlagEmojiFromCountryCode(a.country_code || (a.currency === 'EUR' ? 'EU' : 'US'))}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-black text-white flex items-center gap-2">${esc(a.display_name || a.currency + ' Receiving Account')} <span class="text-[10px] text-blue-400 font-bold">${esc(a.currency || '')}</span></p>
+              <p class="text-[10px] text-gray-500 truncate font-mono">${esc(a.bank_name || '')} · ${esc(a.beneficiary || '')}</p>
+            </div>
+            <button onclick="toggleBankAccount('${a.id}')" class="btn-press px-2.5 py-1.5 rounded-lg text-[10px] font-bold ${a.is_active !== false ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'} transition">${a.is_active !== false ? 'Active' : 'Inactive'}</button>
+            <button onclick="editBankAccount('${a.id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+            <button onclick="deleteBankAccount('${a.id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>
+        `).join('')}
+      </div>
+      <button onclick="editBankAccount(null)" class="btn-press w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wide transition flex items-center justify-center gap-2 relative overflow-hidden">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Receiving Account
+      </button>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.editBankAccount = function(id) {
+  const existing = id ? (window._bankAccounts || []).find(x => x.id === id) : null;
+  const f = {
+    display_name: '', currency: 'USD', currency_name: 'United States Dollar', flag: '',
+    country: 'United States', country_code: 'US', bank_name: '', transfer_type: 'Local & International',
+    beneficiary: '', account_number: '', account_type: '', iban: '', swift: '', routing: '',
+    sort_code: '', bank_code: '', branch_code: '', institution_number: '', transit_number: '',
+    bsb_code: '', address: '', is_active: true,
+    ...(existing || {}),
+  };
+  const r = (label, key, ph = '', extra = '') => `
+    <div>
+      <label class="lbl">${label}</label>
+      <input class="input-field ${ph.includes('mono') ? 'font-mono' : ''}" id="ba-${key}" value="${esc(f[key] || '')}" placeholder="${ph.replace(/"/g, '&quot;')}" ${extra}>
+    </div>`;
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-base font-black text-white">${id ? 'Edit Receiving Account' : 'Add Receiving Account'}</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1.5 align-[-2px]"></i> Back</button>
+        </div>
+        <div class="form-grid form-grid-2 space-y-3">
+          ${r('Display Name', 'display_name', 'e.g. USD Receiving Account')}
+          <div><label class="lbl">Currency *</label><select class="input-field" id="ba-currency" onchange="document.getElementById('ba-currency_name').value=this.value">${SORTED_CURRENCIES.map(c => `<option value="${c}" ${f.currency === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+          ${r('Beneficiary / Account Name *', 'beneficiary', 'Full legal name on the account')}
+          ${r('Bank Name *', 'bank_name', 'e.g. Citibank')}
+          ${r('Country', 'country')}
+          <div class="flex items-end"><div class="flex-1"><label class="lbl">Country Code</label><select class="input-field" id="ba-country_code">${renderCountryOptions(esc(f.country_code || 'US'))}</select></div></div>
+          <div class="flex items-end"><div class="flex-1"><label class="lbl">Active</label><div class="flex items-center gap-2 pt-2"><input type="checkbox" id="ba-is_active" class="accent-blue-500" ${f.is_active !== false ? 'checked' : ''}><span class="text-xs text-gray-400">Visible at checkout</span></div></div></div>
+          ${r('Account Number', 'account_number', 'mono')}
+          ${r('Account Type', 'account_type', 'Checking, Savings…')}
+          ${r('Transfer Type', 'transfer_type')}
+          ${r('IBAN', 'iban', 'mono')}
+          ${r('SWIFT / BIC', 'swift', 'mono')}
+          ${r('Routing (ABA)', 'routing', 'mono')}
+          ${r('Sort Code', 'sort_code', 'mono')}
+          ${r('Bank Code', 'bank_code', 'mono')}
+          ${r('Branch Code', 'branch_code', 'mono')}
+          ${r('Institution Number', 'institution_number', 'mono')}
+          ${r('Transit Number', 'transit_number', 'mono')}
+          ${r('BSB Code', 'bsb_code', 'mono')}
+          <div class="sm:col-span-2">${r('Bank Address', 'address')}</div>
+        </div>
+        <div class="flex gap-2 mt-5">
+          <button onclick="saveBankAccount('${id || ''}')" class="btn-press flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wide transition"><i data-lucide="save" class="w-4 h-4 inline mr-1 align-[-2px]"></i> Save Account</button>
+          <button onclick="closeModal()" class="btn-press px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 rounded-xl text-xs transition flex items-center gap-1.5"><i data-lucide="x" class="w-4 h-4"></i> Cancel</button>
+        </div>
+      </div>
+    </div>`);
+  if (window.lucide) lucide.createIcons();
+};
+
+window.saveBankAccount = async function(id) {
+  const val = (key) => (document.getElementById('ba-' + key) || {}).value || '';
+  const payload = {
+    display_name: val('display_name'),
+    currency: (val('currency') || 'USD').toUpperCase(),
+    currency_name: val('currency_name') || val('currency'),
+    flag: val('flag'),
+    country: val('country'),
+    country_code: val('country_code'),
+    bank_name: val('bank_name'),
+    transfer_type: val('transfer_type'),
+    beneficiary: val('beneficiary'),
+    account_number: val('account_number'),
+    account_type: val('account_type'),
+    iban: val('iban'),
+    swift: val('swift'),
+    routing: val('routing'),
+    sort_code: val('sort_code'),
+    bank_code: val('bank_code'),
+    branch_code: val('branch_code'),
+    institution_number: val('institution_number'),
+    transit_number: val('transit_number'),
+    bsb_code: val('bsb_code'),
+    address: val('address'),
+    is_active: !!(document.getElementById('ba-is_active') || {}).checked,
+  };
+  if (!payload.currency || !payload.beneficiary || !payload.bank_name) { showToast('Currency, beneficiary and bank name are required.', 'error'); return; }
+  const { error } = id
+    ? await supabase.from('bank_accounts').update(payload).eq('id', id)
+    : await supabase.from('bank_accounts').insert(payload);
+  if (error) { showToast(error.message, 'error'); return; }
+  closeModal();
+  showToast('Receiving account saved');
+  renderBankAccountsManager();
+};
+
+window.toggleBankAccount = async function(id) {
+  const a = (window._bankAccounts || []).find(x => x.id === id);
+  if (!a) return;
+  const { error } = await supabase.from('bank_accounts').update({ is_active: !(a.is_active !== false) }).eq('id', id);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast(a.is_active !== false ? 'Account deactivated — hidden from checkout.' : 'Account activated — visible at checkout.');
+  renderBankAccountsManager();
+};
+
+window.deleteBankAccount = async function(id) {
+  if (!window.confirm('Delete this receiving account permanently?')) return;
+  const { error } = await supabase.from('bank_accounts').delete().eq('id', id);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Receiving account deleted');
+  renderBankAccountsManager();
+};
+
 async function renderPaymentSettings() {
   const content = document.getElementById('content');
   if (content) content.innerHTML = loading();
@@ -12606,7 +12833,7 @@ async function renderPaymentSettings() {
     const { data: s } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
     const cached = loadPaymentSettingsCache() || {};
     const d = { ...cached, ...(s || {}) };
-    window._manualPaymentAccounts = getManualPaymentAccounts(d).map(account => ({ ...account }));
+    window._bankAccounts = (window._bankAccounts || []).map(a => ({ ...a }));
 
     content.innerHTML = `
       <div class="space-y-5 fade-in">
@@ -12627,7 +12854,7 @@ async function renderPaymentSettings() {
                 </div>
                 <div>
                   <h3 class="text-sm font-black text-white">Manual Payment (Bank / ATM Transfer)</h3>
-                  <p class="text-[11px] text-gray-500">Show the right receiving account based on the customer country and currency.</p>
+                  <p class="text-[11px] text-gray-500">Store the real receiving accounts below — these are hidden from the public site and shown to customers at checkout only from the database.</p>
                 </div>
               </div>
               <label class="toggle-switch shrink-0">
@@ -12636,8 +12863,7 @@ async function renderPaymentSettings() {
               </label>
             </div>
             <div class="p-5 space-y-4">
-              <input type="hidden" id="manual-payment-accounts-json" name="manual_payment_accounts_json" value="">
-              <div id="manual-accounts-editor"></div>
+              <div id="bank-accounts-manager"></div>
               <div>
                 <label class="lbl">Payment Instructions (shown to customer after checkout)</label>
                 <textarea class="input-field" name="manual_payment_instructions" rows="4" placeholder="Explain how customers should pay and upload their receipt.">${esc(getPaymentInstructions(d))}</textarea>
@@ -12648,7 +12874,7 @@ async function renderPaymentSettings() {
               </div>
               <div class="p-3 bg-blue-500/5 border border-blue-500/15 rounded-xl text-[11px] text-blue-300">
                 <i data-lucide="info" class="w-3.5 h-3.5 inline mr-1"></i>
-                Customers will see the account that matches their detected country currency. If no match exists, they will be guided to use your USD account and upload a receipt for quick verification and shipping.
+                Only currencies with an <em>active</em> receiving account are offered at checkout. A transfer of 1,000 USD (or equivalent) or more must be paid by manual bank transfer — card/ATM is reserved for smaller orders.
               </div>
             </div>
           </div>
@@ -12708,7 +12934,7 @@ async function renderPaymentSettings() {
           <button type="submit" class="btn-press w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Save Payment Settings</button>
         </form>
       </div>`;
-    renderManualPaymentAccountsEditor();
+    renderBankAccountsManager();
     if (window.lucide) lucide.createIcons();
   } catch (err) { if (content) content.innerHTML = `<div class="p-6 text-red-400">${esc(err.message)}</div>`; }
 }
@@ -12731,25 +12957,6 @@ window.savePaymentSettings = async function(e) {
 
   payload.manual_payment_enabled = data.manual_payment_enabled === 'on';
   payload.flutterwave_enabled = data.flutterwave_enabled === 'on';
-
-  let manualAccounts = [];
-  try { manualAccounts = JSON.parse(data.manual_payment_accounts_json || '[]'); } catch {}
-  payload.manual_payment_accounts = manualAccounts;
-
-  const bank1 = manualAccounts[0] || {};
-  const bank2 = manualAccounts[1] || {};
-  payload.bank1_account_name = bank1.beneficiary || '';
-  payload.bank1_account_number = bank1.accountNumber || '';
-  payload.bank1_bank_name = bank1.bankName || '';
-  payload.bank1_transfer_type = bank1.transferType || '';
-  payload.bank1_sort_code = bank1.sortCode || bank1.routing || '';
-  payload.bank1_currency = bank1.currency || 'USD';
-  payload.bank2_account_name = bank2.beneficiary || '';
-  payload.bank2_account_number = bank2.accountNumber || '';
-  payload.bank2_bank_name = bank2.bankName || '';
-  payload.bank2_transfer_type = bank2.transferType || '';
-  payload.bank2_sort_code = bank2.sortCode || bank2.routing || '';
-  payload.bank2_currency = bank2.currency || 'USD';
 
   savePaymentSettingsCache(payload);
 

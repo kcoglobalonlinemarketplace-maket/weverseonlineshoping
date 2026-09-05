@@ -95,7 +95,7 @@ const VEHICLE_SECTION_IDS = new Set(['cars', 'trucks-buses']);
 const PRE_RENDER_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Homes for sale or rent — scroll down to see them all, two at a time.',
+    subtitle: 'Homes for sale or rent, listed by their sellers.',
     rows: [
       { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
