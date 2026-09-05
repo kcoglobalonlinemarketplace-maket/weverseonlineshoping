@@ -200,3 +200,44 @@ export async function videoToFrameDataUrls(src, {
   const frames = await job;
   return frames ? [...frames] : [];
 }
+
+function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    if (typeof FileReader === 'undefined') { resolve(''); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      resolve(result.split(',')[1] || '');
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(blob);
+  });
+}
+
+export async function blobToDataVideoUrl(blob, maxBytes = 50 * 1024 * 1024) {
+  try {
+    if (!blob || !blob.size) return null;
+    if (blob.size > maxBytes) return null;
+    const mime = /^video\//i.test(blob.type || '') ? blob.type : 'video/mp4';
+    const b64 = await blobToBase64(blob);
+    if (!b64) return null;
+    return `data:${mime};base64,${b64}`;
+  } catch { return null; }
+}
+
+export async function videoUrlToDataUrl(url, maxBytes = 50 * 1024 * 1024) {
+  if (typeof fetch === 'undefined') return null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(60000) });
+      if (!r || !r.ok) return null;
+      const blob = await r.blob();
+      const out = await blobToDataVideoUrl(blob, maxBytes);
+      if (out) return out;
+      return null;
+    } catch {
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+  }
+  return null;
+}

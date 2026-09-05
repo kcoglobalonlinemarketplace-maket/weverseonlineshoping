@@ -14,7 +14,7 @@ import { invalidatePromoBackgrounds } from './promo-backgrounds.js';
 import { invalidateSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
 import { MARKETPLACE_CATEGORIES, MARKETPLACE_AUTOMOTIVE, normalizeToMarketplaceCategory } from './categories.js';
 import { looksLikePdf, pdfToPageDataUrls } from './pdf-pages.js';
-import { looksLikeVideoUrl, videoToFrameDataUrls } from './video-frames.js';
+import { looksLikeVideoUrl, videoToFrameDataUrls, videoUrlToDataUrl, blobToDataVideoUrl } from './video-frames.js';
 
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -5592,6 +5592,7 @@ async function mediaToScanFrames(mediaUrls, setStatus = () => {}) {
   const frames = [];
   let vidCount = 0;
   let imgCount = 0;
+  let fallbackUsed = false;
   for (const u of mediaUrls) {
     let videoSource = null;
     if (looksLikeVideoUrl(u)) {
@@ -5614,16 +5615,27 @@ async function mediaToScanFrames(mediaUrls, setStatus = () => {}) {
           if (total > 1) setStatus(`Watching your video #${n} — extracting frame ${got}/${total}…`, 'text-blue-300');
         },
       }).catch(() => []);
-      frames.push(...vf);
+      if (vf.length) {
+        frames.push(...vf);
+      } else {
+        let embedded = null;
+        if (typeof videoSource === 'string') embedded = await videoUrlToDataUrl(videoSource);
+        else embedded = await blobToDataVideoUrl(videoSource);
+        if (embedded) {
+          frames.push(embedded);
+          fallbackUsed = true;
+          setStatus(`Your browser couldn't decode video #${n} locally — sending the original video to the AI to watch instead.`, 'text-amber-300');
+        }
+      }
       continue;
     }
     imgCount += 1;
     frames.push(u);
   }
   if (vidCount && !imgCount) {
-    setStatus(`Video decoded — ${frames.length} frame${frames.length === 1 ? '' : 's'} ready for the AI to read the property.`, 'text-blue-300');
+    setStatus(`Video decoded — ${frames.length} frame${frames.length === 1 ? '' : 's'} ready for the AI to read the property.` + (fallbackUsed ? ' <span class="text-amber-300">(The AI is watching the original video directly because this browser could not render it.)</span>' : ''), 'text-blue-300');
   } else if (vidCount && imgCount) {
-    setStatus(`${imgCount} photo(s) + ${vidCount} video(s) — ${frames.length} visual${frames.length === 1 ? '' : 's'} ready for the AI.`, 'text-blue-300');
+    setStatus(`${imgCount} photo(s) + ${vidCount} video(s) — ${frames.length} visual${frames.length === 1 ? '' : 's'} ready for the AI.` + (fallbackUsed ? ' <span class="text-amber-300">(One video could not be rendered here — sending it to the AI directly instead.)</span>' : ''), 'text-blue-300');
   }
   // Bounded cost: many videos could otherwise produce dozens of frames. 12 keeps
   // the visual pipeline fast on free-tier AI limits while covering every scene.
@@ -10091,7 +10103,9 @@ const reAIScanner = {
       try {
         if (this._mediaCache.has(u)) return this._mediaCache.get(u);
         let frames = null;
-        if (/^data:application\/pdf/.test(u) || looksLikePdf(u)) {
+        if (/^data:video\//i.test(u)) {
+          frames = [u];
+        } else if (/^data:application\/pdf/.test(u) || looksLikePdf(u)) {
           frames = await pdfToPageDataUrls(u, { maxDim: 1300 }).catch(() => []);
         } else {
           let videoSource = null;
@@ -10104,10 +10118,17 @@ const reAIScanner = {
           }
           if (videoSource) {
             frames = await videoToFrameDataUrls(videoSource, { maxFrames: 6, maxDim: 720 }).catch(() => []);
+            if (!frames.length) {
+              let embedded = null;
+              if (typeof videoSource === 'string') embedded = await videoUrlToDataUrl(videoSource);
+              else embedded = await blobToDataVideoUrl(videoSource);
+              if (embedded) frames = [embedded];
+            }
           } else {
             frames = await aiClient._fetchImageAsDataUrl(u, 720).then(img => img ? [img] : []);
           }
         }
+        if (frames && frames.length === 1 && /^data:video\//i.test(frames[0])) return frames[0];
         this._mediaCache.set(u, frames || []);
         return frames || [];
       } catch { return []; }
