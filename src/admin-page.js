@@ -11135,6 +11135,26 @@ async function renderAnalytics() {
     const catCount = {};
     (prods.data || []).forEach(p => { catCount[p.category] = (catCount[p.category] || 0) + 1; });
     const topCats = Object.entries(catCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+    // Public visitor analytics — visitor_analytics allows public writes but
+    // admin-only reads, so these counts are visible solely inside this panel.
+    const toYMD = (dt) => new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const today = toYMD(new Date());
+    const weekAgo = toYMD(new Date(Date.now() - 6 * 864e5));
+    const { data: visitsData, error: visitsErr } = await supabase.from('visitor_analytics').select('visit_date,page_views,device_type').order('visit_date', { ascending: false }).limit(1000);
+    const visits = visitsData || [];
+    const sum = (rows) => rows.reduce((s, v) => s + (parseInt(v.page_views, 10) || 1), 0);
+    const todayViews = sum(visits.filter(v => v.visit_date === today));
+    const weekViews = sum(visits.filter(v => v.visit_date >= weekAgo));
+    const totalViews = sum(visits);
+    const mobileShare = visits.length > 0 ? Math.round((visits.filter(v => v.device_type === 'mobile').length / visits.length) * 100) : 0;
+    const last14 = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = toYMD(new Date(Date.now() - i * 864e5));
+      last14.push({ d, n: sum(visits.filter(v => v.visit_date === d)) });
+    }
+    const max14 = Math.max(1, ...last14.map(x => x.n));
+
     content.innerHTML = `
       <div class="space-y-6 fade-in">
         <h2 class="text-xl font-black text-white">Analytics</h2>
@@ -11144,11 +11164,27 @@ async function renderAnalytics() {
           ${statCard('Customers', customers.count || 0, 'users', 'violet')}
           ${statCard('Conversion Rate', conversionRate + '%', 'trending-up', 'amber')}
         </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          ${statCard('Visits Today', todayViews, 'eye', 'blue')}
+          ${statCard('Visits (7 Days)', weekViews, 'users', 'violet')}
+          ${statCard('Total Visits', totalViews, 'globe', 'amber')}
+          ${statCard('Mobile Share', mobileShare + '%', 'smartphone', 'emerald')}
+        </div>
+        ${visitsErr ? `<p class="text-xs text-red-400">${esc(visitsErr.message)}</p>` : ''}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
             <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-400"></i> Revenue (Last 6 Months)</h3>
             <canvas id="analytics-chart" height="220"></canvas>
           </div>
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i> Public Visitors (Last 14 Days)</h3>
+            <p class="text-[11px] text-gray-500 mb-3">One row per public page load — collected invisibly on product, hub, and home pages; shown only here.</p>
+            <div class="flex items-end gap-1 h-32">
+              ${last14.map(x => `<div class="flex-1 flex flex-col items-center justify-end gap-1"><div class="w-full rounded-t bg-emerald-500/70 hover:bg-emerald-400 transition" style="height:${Math.round((x.n / max14) * 100) + 2}px" title="${x.d}: ${x.n} visit(s)"></div><span class="text-[9px] text-gray-500">${x.d.slice(5)}</span></div>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="glass-soft border border-blue-500/15 rounded-2xl p-5">
             <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-violet-400"></i> Top Categories by Listings</h3>
             ${topCats.length === 0 ? '<p class="text-xs text-gray-500 text-center py-8">No data</p>' : topCats.map(([cat, count]) => `

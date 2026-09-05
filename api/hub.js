@@ -159,6 +159,7 @@ ${relNext ? `<link rel="next" href="${escAttr(relNext)}">` : ''}
 <footer>
   <div class="wrap">Weverse Online Shop — worldwide marketplace. Prices in USD. Secure checkout, buyer protection, tracked delivery worldwide.</div>
 </footer>
+<script>(function(){try{if(window.__wv_tracked){return}window.__wv_tracked=true;var t=new Date().toISOString().slice(0,10);var d=(window.screen&&window.screen.width<768)?'mobile':'desktop';setTimeout(function(){fetch('https://wttnvwpoqmbxryivcerf.supabase.co/rest/v1/visitor_analytics',{method:'POST',headers:{'apikey':'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa','Authorization':'Bearer sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa','Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({visit_date:t,page_views:1,unique_visitors:1,device_type:d})}).catch(function(){})},1200)}catch(e){}})();</script>
 </body>
 </html>
 `;

@@ -31,6 +31,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_NAME = 'Weverse Online Shop';
 const FALLBACK_IMG = '/fallback.svg';
 
+// Invisible visitor beacon — writes one row per page load to Supabase
+// visitor_analytics with the anon key (INSERT policy is public; SELECT is
+// admin-only, so counts are visible solely in the admin Analytics panel).
+const VISITOR_BEACON = `<script>(function(){try{if(window.__wv_tracked){return}window.__wv_tracked=true;var t=new Date().toISOString().slice(0,10);var d=(window.screen&&window.screen.width<768)?'mobile':'desktop';setTimeout(function(){fetch('https://wttnvwpoqmbxryivcerf.supabase.co/rest/v1/visitor_analytics',{method:'POST',headers:{'apikey':'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa','Authorization':'Bearer sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa','Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({visit_date:t,page_views:1,unique_visitors:1,device_type:d})}).catch(function(){})},1200)}catch(e){}})();</script>`;
+
 let cachedHtml = null;
 
 function findHtmlPath() {
@@ -613,6 +618,7 @@ export default async function handler(req, res) {
     res.statusCode = status;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300');
+    if (out.includes('</body>')) out = out.replace('</body>', `${VISITOR_BEACON}\n</body>`);
     res.end(out);
   } catch (err) {
     res.statusCode = 500;
