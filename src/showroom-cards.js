@@ -473,6 +473,18 @@ function cardParts(listing) {
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
   const statusBadge = listing.listing_type === 'product' ? 'New' : ((isProperty || isPet) ? 'For Sale' : '');
 
+  // Auto-published showcase rows (WS-A/WS-C/WS-T/WS-P) and anything flagged
+  // realistic-illustrative get honest badges; featured rows are "Priority".
+  const isIllustrative = listing.verification_status === 'Illustrative'
+    || /illustrative/i.test(String(listing.availability_status || ''))
+    || /^WS-[ACPT]-/.test(String(listing.property_id || ''));
+  const isPriority = listing.is_featured === true;
+
+  let badgeRow = '';
+  if (isPriority) badgeRow += `<span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-300 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"><i data-lucide="star" class="w-3 h-3"></i>Priority</span>`;
+  if (isIllustrative) badgeRow += `<span class="inline-flex items-center gap-1 bg-orange-50 text-orange-600 border border-orange-200 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">Illustrative Listing</span>`;
+  if (badgeRow) badgeRow = `<div class="flex flex-wrap items-center gap-1.5 mb-1.5">${badgeRow}</div>`;
+
   // Real ratings only — never show fake or estimated ratings.
   const hasRealReviews = (listing.rating_count || 0) > 0;
   const displayRating = hasRealReviews ? Number(listing.rating) || 0 : 0;
@@ -522,7 +534,7 @@ function cardParts(listing) {
   const showRating = displayRating > 0;
   const shownRating = showRating ? Number(displayRating) : 5;
   const shownReviewCount = showRating ? (reviewCount || 0) : 0;
-  const ratingSoldHtml = `<a href="/details.html?id=${listing.property_id}" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs no-underline rounded-md group/rating transition" title="View ratings & reviews"><span class="flex items-center gap-1"><span class="flex">${renderStars(shownRating, 'w-3.5 h-3.5')}</span><span class="text-gray-900 font-bold">${shownRating.toFixed(1)}</span><span class="text-gray-500">(${shownReviewCount})</span></span>${soldLabel ? `<span class="inline-flex items-center gap-1 text-emerald-600 font-bold ml-auto whitespace-nowrap"><i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i>${soldLabel} sold</span>` : ''}</a>`;
+  const ratingSoldHtml = `<a href="/product/${listing.property_id}" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs no-underline rounded-md group/rating transition" title="View ratings & reviews"><span class="flex items-center gap-1"><span class="flex">${renderStars(shownRating, 'w-3.5 h-3.5')}</span><span class="text-gray-900 font-bold">${shownRating.toFixed(1)}</span><span class="text-gray-500">(${shownReviewCount})</span></span>${soldLabel ? `<span class="inline-flex items-center gap-1 text-emerald-600 font-bold ml-auto whitespace-nowrap"><i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i>${soldLabel} sold</span>` : ''}</a>`;
 
   // Product badges (New Arrival, Best Seller, etc.)
   const badgesHtml = '';
@@ -557,7 +569,7 @@ function cardParts(listing) {
     isProperty, isPet, isTruck, isMotorhome, isCar,
     listingId, cover, isCoverVideo, price, statusBadge,
     locationHtml, specsHtml, ratingSoldHtml, mapPreviewHtml,
-    discountBadge, originalPriceHtml,
+    discountBadge, originalPriceHtml, badgeRow,
   };
 }
 
@@ -592,6 +604,7 @@ export function renderCard(listing) {
     </div>
     <div class="px-3.5 sm:px-4 pt-2.5 sm:pt-3 pb-3 sm:pb-3.5 flex flex-col flex-1">
       <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1.5">${listing.title}</h3>
+      ${p.badgeRow}
       ${p.ratingSoldHtml}
       <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
         ${p.originalPriceHtml}
@@ -608,8 +621,8 @@ export function renderCard(listing) {
           <i data-lucide="shopping-cart" class="w-4 h-4 shrink-0"></i> <span class="truncate">Cart</span>
         </button>
       </div>
-      <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
-        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+      <button class="details-btn mt-2 w-full min-w-0 bg-blue-50 hover:bg-blue-100 active:scale-[0.97] text-blue-700 text-[13px] font-black py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
+        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Product Details →</span>
       </button>
     </div>
   `;
@@ -649,6 +662,7 @@ export function renderFeedCard(listing) {
     </div>
     <div class="flex-1 px-4 pt-2.5 pb-4 sm:p-5 lg:p-6 flex flex-col min-w-0">
       <h3 class="text-base sm:text-lg font-bold text-gray-900 leading-snug mb-1.5 line-clamp-2 group-hover:text-blue-700 transition-colors">${listing.title}</h3>
+      ${p.badgeRow}
       ${p.ratingSoldHtml}
       ${p.locationHtml}
       ${p.specsHtml}
@@ -672,8 +686,8 @@ export function renderFeedCard(listing) {
           <i data-lucide="shopping-cart" class="w-4 h-4 shrink-0"></i> <span class="truncate">Cart</span>
         </button>
       </div>
-      <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
-        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+      <button class="details-btn mt-2 w-full min-w-0 bg-blue-50 hover:bg-blue-100 active:scale-[0.97] text-blue-700 text-[13px] font-black py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
+        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Product Details →</span>
       </button>
     </div>
   `;
@@ -689,13 +703,13 @@ export function renderFeedCard(listing) {
 function attachCardListeners(card, listing) {
   card.addEventListener('click', (e) => {
     if (e.target.closest('button')) return;
-    window.location.href = `/details.html?id=${listing.property_id}`;
+    window.location.href = `/product/${listing.property_id}`;
   });
   card.querySelector('.buy-btn').addEventListener('click', (e) => { e.stopPropagation(); handleBuyNow(listing); });
   card.querySelector('.wishlist-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleWishlist(listing, e.currentTarget); });
   card.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
   card.querySelector('.cart-btn')?.addEventListener('click', (e) => { e.stopPropagation(); addToCart(listing); });
-  card.querySelector('.details-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/details.html?id=${listing.property_id}`; });
+  card.querySelector('.details-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/product/${listing.property_id}`; });
 }
 
 async function handleBuyNow(listing) {

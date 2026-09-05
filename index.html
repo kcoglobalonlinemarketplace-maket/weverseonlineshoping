@@ -8,6 +8,7 @@
   <meta name="keywords" content="Weverse Online Shop, global marketplace, online shopping, international commerce, premium products, secure payments, worldwide shipping">
   <meta name="author" content="Weverse Online Shop">
   <meta name="theme-color" content="#ffffff">
+  <meta name="google-site-verification" content="4XceF2HN6CKzm2gy8O5ldbQ-yk1onaa0RuR4bqn2zyE">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Weverse Online Shop">
@@ -144,12 +145,31 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "OnlineStore",
-    "name": "Weverse Online Shop",
-    "url": "https://weverseonlineshop.com",
-    "description": "Your trusted global shop for premium products, secure payments, and reliable worldwide shipping.",
-    "email": "support@weverseonlineshop.com",
-    "sameAs": ["https://weverseonlineshop.com"]
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://weverseonlineshop.com/#organization",
+        "name": "Weverse Online Shop",
+        "url": "https://weverseonlineshop.com",
+        "email": "support@weverseonlineshop.com",
+        "logo": "https://weverseonlineshop.com/brand-logo.jpeg"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://weverseonlineshop.com/#website",
+        "url": "https://weverseonlineshop.com",
+        "name": "Weverse Online Shop",
+        "publisher": { "@id": "https://weverseonlineshop.com/#organization" }
+      },
+      {
+        "@type": "OnlineStore",
+        "name": "Weverse Online Shop",
+        "url": "https://weverseonlineshop.com",
+        "description": "Your trusted global shop for premium products, secure payments, and reliable worldwide shipping.",
+        "email": "support@weverseonlineshop.com",
+        "parentOrganization": { "@id": "https://weverseonlineshop.com/#organization" }
+      }
+    ]
   }
   </script>
   <link rel="stylesheet" crossorigin href="/assets/localization-B_HxL1KQ-B_HxL1KQ.css">

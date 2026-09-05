@@ -58,7 +58,7 @@ export function formatSharePrice(listing) {
 
 function productUrl(listing) {
   const id = listing?.property_id || listing?.id;
-  return `${window.location.origin}/details.html?id=${encodeURIComponent(id)}`;
+  return `${window.location.origin}/product/${encodeURIComponent(id)}`;
 }
 
 function productMeta(listing) {

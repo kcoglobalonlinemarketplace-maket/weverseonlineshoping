@@ -1,5 +1,11 @@
 User-agent: *
 Allow: /
+Allow: /product
+Allow: /category
+Allow: /country
+Allow: /showroom
+Disallow: /details.html
+Disallow: /details
 Disallow: /admin
 Disallow: /admin.html
 Disallow: /admin-ai
@@ -18,5 +24,9 @@ Disallow: /checkout
 Disallow: /checkout.html
 Disallow: /payment
 Disallow: /payment.html
+Disallow: /cart
+Disallow: /cart.html
+Disallow: /api/
+Disallow: /publish-preview.html
 
 Sitemap: https://weverseonlineshop.com/sitemap.xml

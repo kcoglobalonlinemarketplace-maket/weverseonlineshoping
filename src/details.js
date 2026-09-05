@@ -984,7 +984,19 @@ function ratingsBreakdownHtml(listing, breakdown, total) {
 
 function getListingId() {
   const params = new URLSearchParams(window.location.search);
-  return params.get('id');
+  const queryId = params.get('id');
+  if (queryId) return queryId;
+  // Clean /product/<id> URLs (server-rendered by /api/og.js) resolve the listing
+  // the same way as the legacy ?id= link format.
+  const match = window.location.pathname.match(/^\/product\/([^/]+)\/?$/);
+  if (match && match[1]) {
+    try {
+      return decodeURIComponent(match[1]);
+    } catch {
+      return match[1];
+    }
+  }
+  return null;
 }
 
 const ALL_PRODUCTS = [...PRODUCT_LISTINGS];
@@ -3083,7 +3095,7 @@ async function loadRecommendations(listing) {
     const img = (p.images && p.images[0]) || '/fallback.svg';
     const pprice = typeof p.price === 'number' ? p.price : parseFloat(p.price || 0);
     const cur = p.currency || 'USD';
-    return `<a href="/details.html?id=${p.property_id}" class="block bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition group">
+    return `<a href="/product/${p.property_id}" class="block bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition group">
       <div class="aspect-square overflow-hidden bg-gray-100"><img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></div>
       <div class="p-2"><p class="text-xs text-gray-900 font-bold truncate">${escapeHtml(p.title)}</p><p class="text-xs text-blue-500 font-bold mt-1">${cur} ${pprice.toLocaleString()}</p></div>
     </a>`;
@@ -3125,6 +3137,21 @@ async function init() {
     else if (l === getCarById(id)) renderCar(l);
     else { render(l); try { loadRelatedSections(l); } catch {} }
   };
+
+  // Pre-rendered by /api/og.js: the full product page is already in the
+  // initial HTML (great for SEO + crawlers). Keep it, never flash or nuke it,
+  // and quietly hydrate with the freshest live row in the background so admin
+  // edits still show up.
+  const ssrRoot = document.getElementById('details-content');
+  const ssrMarker = ssrRoot?.querySelector('[data-ssr-product]');
+  if (ssrMarker && ssrMarker.getAttribute('data-ssr-product') === id) {
+    loadFullListingById(id).then((live) => {
+      if (live && live.property_id === id) {
+        try { renderListing(live); } catch {}
+      }
+    }).catch(() => {});
+    return;
+  }
 
   const staticListing = staticSource();
   if (staticListing) {
@@ -3194,6 +3221,7 @@ function failSafe(err) {
   try {
     const el = document.getElementById('details-content');
     if (!el) return;
+    if (el.querySelector('[data-ssr-product]')) return;
     if (el.innerHTML !== loadingHtml || el.querySelector('.fade-in, #reviews-section')) return;
     el.innerHTML = '<div class="text-center py-20 text-gray-500">We couldn\u2019t load this listing right now. Please check your connection and try again.</div>';
   } catch {}

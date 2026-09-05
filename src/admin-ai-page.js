@@ -111,7 +111,7 @@ function setPreviewForHome(note = 'Showing the live storefront homepage.') {
 function setPreviewForListing(item, note) {
   if (!item?.propertyId) return;
   state.lastPreviewItem = item;
-  setPreviewFrameUrl(`/details.html?id=${encodeURIComponent(item.propertyId)}`, {
+  setPreviewFrameUrl(`/product/${encodeURIComponent(item.propertyId)}`, {
     label: 'Latest AI Item Preview',
     itemLabel: `${item.title || 'Untitled item'} (${item.propertyId})`,
     status: 'Previewing the item the AI just created.',

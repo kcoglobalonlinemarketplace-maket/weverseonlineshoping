@@ -95,7 +95,7 @@ function showToast(l) {
   el.style.opacity = '0';
   el.style.transform = 'translateY(14px)';
 
-  const href = `/details.html?id=${encodeURIComponent(id)}`;
+  const href = `/product/${encodeURIComponent(id)}`;
   const close = el.querySelector('.live-promo-close');
 
   const open = (e) => {

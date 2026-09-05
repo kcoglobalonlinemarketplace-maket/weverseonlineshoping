@@ -1,11 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/product", "destination": "/showroom.html", "permanent": true },
+    { "source": "/category", "destination": "/showroom.html", "permanent": true },
+    { "source": "/country", "destination": "/showroom.html", "permanent": true }
+  ],
   "routes": [
     { "src": "^/details\\.html$", "dest": "/api/og" },
     { "src": "^/details$", "dest": "/api/og" },
-    { "src": "^/product$", "dest": "/api/og" },
     { "src": "^/product/([^/]+)$", "dest": "/api/og?id=$1" },
-    { "src": "^/showroom$", "dest": "/index.html" },
+    { "src": "^/category/([^/]+)$", "dest": "/api/hub?type=category&slug=$1" },
+    { "src": "^/country/([^/]+)$", "dest": "/api/hub?type=country&slug=$1" },
+    { "src": "^/showroom$", "dest": "/showroom.html" },
+    { "src": "^/(about|contact|team|help|privacy|terms|shipping-policy|refund-policy)$", "dest": "/$1.html" },
+    { "src": "^/sitemap\\.xml$", "dest": "/api/sitemap.xml" },
+    { "src": "^/merchant-feed\\.xml$", "dest": "/api/merchant-feed.xml" },
     { "handle": "filesystem" }
   ],
   "functions": {

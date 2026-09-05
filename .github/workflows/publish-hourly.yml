@@ -1,0 +1,42 @@
+name: Hourly Auto-Publish
+
+on:
+  schedule:
+    # Every hour at minute 17 (offset to avoid top-of-the-hour alignment).
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: 'Locations to publish this run (rows = 3× batch; 4× after round 4)'
+        required: false
+        default: '8'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WEVERSE_SERVICE_ROLE_KEY: ${{ secrets.WEVERSE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish next batch (live)
+        run: node scripts/publish.mjs --live --batch=${{ github.event.inputs.batch || '8' }}
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "hourly auto-publish failed" >> "$GITHUB_STEP_SUMMARY"

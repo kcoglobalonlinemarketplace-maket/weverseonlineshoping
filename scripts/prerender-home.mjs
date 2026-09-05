@@ -213,7 +213,7 @@ function cardHtml(listing) {
 
   let ratingStars = '';
   if (displayRating > 0) {
-    ratingStars = `<a href="/details.html?id=${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
+    ratingStars = `<a href="/product/${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
   }
 
   let mapPreviewHtml = '';
@@ -314,7 +314,7 @@ function feedCardHtml(listing) {
 
   let ratingStars = '';
   if (displayRating > 0) {
-    ratingStars = `<a href="/details.html?id=${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
+    ratingStars = `<a href="/product/${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
   }
 
   let mapPreviewHtml = '';

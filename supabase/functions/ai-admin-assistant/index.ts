@@ -454,9 +454,12 @@ async function runCloudVision(params: {
   prompt: string;
   images: string[];
   maxTokens?: number;
+  scannerKey?: string;
 }): Promise<{ text: string; provider: string; model: string }> {
-  const { settings, prompt, images, maxTokens } = params;
-  const geminiKey = String(settings.gemini_api_key || settings.gemini_key || '').trim();
+  const { settings, prompt, images, maxTokens, scannerKey } = params;
+  // Per-scanner key: when a dedicated scanner key is provided (product scanner),
+  // use ONLY that key. Otherwise fall back to the shared Gemini key (chat).
+  const geminiKey = String(scannerKey || settings.gemini_api_key || settings.gemini_key || '').trim();
   const groqKey = String(settings.groq_key || '').trim();
   if (!geminiKey && !groqKey) {
     throw new Error('No vision provider is configured. Add a Gemini key (primary) or Groq key (backup) in AI Settings.');
@@ -682,7 +685,8 @@ Deno.serve(async (req) => {
   // key material is ever echoed back.
   if (action === 'test_providers') {
     const cfg = settings as Record<string, unknown>;
-    const geminiKey = String(cfg.gemini_api_key || cfg.gemini_key || '').trim();
+    const scannerKey = String(payload.scanner_key || '').trim();
+    const geminiKey = String(scannerKey || cfg.gemini_api_key || cfg.gemini_key || '').trim();
     const groqKey = String(cfg.groq_key || '').trim();
     const result: Record<string, unknown> = {};
 
@@ -733,6 +737,7 @@ Deno.serve(async (req) => {
         prompt,
         images,
         maxTokens: Number(payload.max_tokens) || 4096,
+        scannerKey: String(payload.scanner_key || '').trim() || undefined,
       });
       return jsonResponse({ success: true, text: result.text, provider: result.provider, model: result.model });
     } catch (err) {

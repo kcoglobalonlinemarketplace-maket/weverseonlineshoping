@@ -987,14 +987,8 @@ async function renderProducts() {
               <button onclick="showAddProductStep1()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-black px-6 py-3.5 rounded-2xl transition shadow-xl shadow-blue-700/25">
                 <i data-lucide="plus" class="w-5 h-5"></i> Add Product
               </button>
-              <button onclick="openGeneralAiScanner()" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition shadow-xl shadow-violet-700/25" title="Scan product photos with AI â€” detect, analyze and add products to your manager">
-                <i data-lucide="scan-search" class="w-5 h-5"></i> General AI Scanner
-              </button>
               <button onclick="openGeneralAiScanner(true)" class="btn-press flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition shadow-xl shadow-amber-700/25" title="Scan every product that has no price â€” AI reads the photo, fills the form and assigns a fair price automatically">
                 <i data-lucide="dollar-sign" class="w-5 h-5"></i> Scan Missing Prices
-              </button>
-              <button onclick="clearAllProducts()" class="btn-press flex items-center justify-center gap-2 bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-black px-5 py-3.5 rounded-2xl transition" title="Delete every product from the manager & database. Your showroom catalog stays.">
-                <i data-lucide="trash-2" class="w-5 h-5"></i> Clear All Products
               </button>
             </div>
           </div>
@@ -1753,7 +1747,7 @@ window.publishProduct = function(pid) { return toggleProductActive(pid, true); }
 window.unpublishProduct = function(pid) { return toggleProductActive(pid, false); };
 
 window.shareProduct = async function(pid) {
-  const url = `${window.location.origin}/details.html?id=${encodeURIComponent(pid)}`;
+  const url = `${window.location.origin}/product/${encodeURIComponent(pid)}`;
   const item = (window._productsData || []).find(p => p.property_id === pid)
     || (window._propertiesData || []).find(p => p.property_id === pid)
     || getLocalShowroomListingById(pid);
@@ -1820,46 +1814,6 @@ window.deleteProduct = async function(pid) {
     showToast('Product deleted');
   }
   if (item && item.listing_type === 'property') { renderProperties(); } else { renderProducts(); }
-};
-
-// Delete EVERY product in the Product Manager (and the database) at once.
-// Runs with the logged-in admin session (the database only lets admins delete),
-// then clears the browser's local fallback store so the manager shows exactly
-// the showroom catalog and nothing old remains.
-window.clearAllProducts = async function() {
-  const total = (window._productsData || []).length;
-  if (!confirm(`Delete ALL ${total} product(s) from the Product Manager and the database now?\n\nThis is permanent and cannot be undone. Your Real Estate row, Cars & Trucks row and built-in showroom catalog will stay.`)) return;
-  const KEEP = new Set(['Cars', 'Cars & Vehicles', 'Trucks', 'Buses', 'Buses & Coaches', 'Motorhomes', 'Motorcycles', 'Marine & Boating', 'RV & Camper Accessories', 'Vehicles']);
-  let ids = [];
-  try {
-    const { data: rows, error: listErr } = await supabase.from('showroom_listings').select('property_id, listing_type, category').neq('property_id', '__none__');
-    if (listErr) {
-      if (isRlsDenied(listErr)) return showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
-      return showToast('Clear failed: ' + listErr.message, 'error');
-    }
-    ids = ((rows || []).filter(r => r.listing_type === 'product' && !KEEP.has(r.category))).map(r => r.property_id).filter(Boolean);
-  } catch (scanErr) {
-    return showToast('Clear failed: ' + scanErr.message, 'error');
-  }
-  if (ids.length) {
-    for (let i = 0; i < ids.length; i += 500) {
-      const { error } = await supabase.from('showroom_listings').delete().in('property_id', ids.slice(i, i + 500));
-      if (error) {
-        if (isRlsDenied(error)) return showToast('⚠️ Delete blocked: database admin role rejected the write. Re-run the admin permission migration.', 'error');
-        return showToast('Clear failed: ' + error.message, 'error');
-      }
-    }
-  }
-  try {
-    const saved = JSON.parse(localStorage.getItem('kco_local_showroom_listings_v1') || '[]');
-    const kept = (Array.isArray(saved) ? saved : []).filter(item => {
-      if (item.listing_type && item.listing_type !== 'product') return true;
-      return KEEP.has(item.category);
-    });
-    localStorage.setItem('kco_local_showroom_listings_v1', JSON.stringify(kept));
-  } catch {}
-  showToast('All products deleted. Real Estate, Cars & Trucks and your showroom catalog stay.');
-  renderProducts();
 };
 
 window.openProductMoreActions = function(pid) {
@@ -3980,14 +3934,14 @@ let scanReviewActiveIndex = -1;
 const scannerReviewId = 'scanner-scan-status';
 
 // ── Auto-scan state ──────────────────────────────────────────────────
-// When the General AI Scanner runs in fully autonomous mode, it fills and
+// When the Scan Missing Prices scanner runs in fully autonomous mode, it fills and
 // publishes every product without showing a review list or asking questions.
 let _autoScannerActive = false;
 let _autoScannerTotal = 0;
 let _autoScannerPublished = 0;
 let _autoScannerErrors = 0;
 
-// One-by-one streaming scan state: the General AI Scanner processes products
+// One-by-one streaming scan state: the AI Price Scanner processes products
 // sequentially and shows a one-click Publish button on every card THE MOMENT
 // it is scanned, while the remaining products keep scanning in the background.
 let _streamScanActive = false;
@@ -4095,7 +4049,7 @@ window.scanReviewContinue = async function(i) {
     try { localStorage.removeItem(productAutoSaveKey(cat, '')); } catch {}
     step1Images = [];
     scannerImages = [];
-    // Scanned from an existing product (General AI Scanner) â€” open its EDIT
+    // Scanned from an existing product (AI Price Scanner) â€” open its EDIT
     // form so the owner updates that listing instead of creating a duplicate.
     let existing = p.property_id ? scanReviewSourceProducts[p.property_id] : null;
     if (existing && existing.specifications && typeof existing.specifications === 'object') {
@@ -5322,7 +5276,7 @@ const SCAN_IDENTIFICATION_KEYS = ['brand', 'model', 'year', 'year_estimated', 'b
   'warranty', 'vin', 'location', 'seller_name', 'seller_phone', 'seller_email'];
 
 // Second-pass verification toggle. It doubles free-tier request usage per
-// product, so it defaults to OFF; enable it from the General AI Scanner modal
+// product, so it defaults to OFF; enable it from the AI Price Scanner modal
 // when you want maximum accuracy on a few items.
 function scanVerifyPassEnabled() {
   try { return localStorage.getItem('weverse_scan_verify') === 'on'; } catch { return false; }
@@ -6065,7 +6019,7 @@ window.scanFirstWithAI = async function() {
   showToast(`${products.length} distinct product${products.length > 1 ? 's' : ''} detected â€” review each one, then continue.`, 'info');
 };
 
-// â”€â”€ General AI Scanner (Product Manager) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ AI Price Scanner / Scan Missing Prices (Product Manager) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Standalone scanner in the Product Manager: it scans the owner's existing
 // products (database + locally saved) â€” no image upload required â€” and uses
 // AI to identify each one, complete its specifications, write the description
@@ -6075,7 +6029,7 @@ window.scanFirstWithAI = async function() {
 let scannerImages = [];
 let scanReviewSourceProducts = {};
 
-// When true, the General AI Scanner only processes products that still have NO
+// When true, the AI Price Scanner only processes products that still have NO
 // price (the "Scan Missing Prices" mode). Clearing a price in the manager marks
 // it for the next missing-price scan.
 let _scannerOnlyMissingPrice = false;
@@ -6180,7 +6134,7 @@ if (Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < scanRevie
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
-          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> General AI Scanner</h3>
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> Scan Missing Prices</h3>
           <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">âœ• Close</button>
         </div>
         <div class="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-3 mb-3">
@@ -6255,29 +6209,27 @@ async function autoScanOne(det, index) {
   }
 }
 
-window.openGeneralAiScanner = async function(onlyMissingPrice = false) {
-  _scannerOnlyMissingPrice = !!onlyMissingPrice;
+window.openGeneralAiScanner = async function() {
+  _scannerOnlyMissingPrice = true;
   scannerImages = [];
   const products = await scannerSourceProducts();
   openModal(`
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
-          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> ${_scannerOnlyMissingPrice ? 'AI Price Scanner' : 'General AI Scanner'}</h3>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">× Close</button>
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> Scan Missing Prices</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">×</button>
         </div>
 
         <div class="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 space-y-3">
-          <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> ${_scannerOnlyMissingPrice ? 'Scan products with no price and auto-fill them' : 'Scan your products with AI'}</p>
-          <p class="text-[11px] text-gray-500">${_scannerOnlyMissingPrice
-            ? 'Every product in your Product Manager that still has no price is scanned: the AI reads its existing photos, identifies the item, assigns a fair current market price, completes the specifications and writes the description. Everything is filled and published automatically — no questions asked. Duplicates are skipped silently.'
-            : 'The scanner works on the products already in your Product Manager — no image upload needed. It reads each product\'s existing photos to identify it, complete its specifications, write the description and features, pick the correct category, and suggest a fair price. Everything is filled and published automatically — no questions asked. Duplicates are skipped silently.'}</p>
+          <p class="text-xs font-bold text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Scan products with no price and auto-fill them</p>
+          <p class="text-[11px] text-gray-500">Every product in your Product Manager that still has no price is scanned: the AI reads its existing photos, identifies the item, assigns a fair current market price, completes the specifications and writes the description. Everything is filled and published automatically — no questions asked. Duplicates are skipped silently.</p>
           <div class="flex items-center gap-2 text-[11px] font-bold text-gray-300 bg-white/5 border border-violet-500/20 rounded-xl px-3 py-2.5">
             <i data-lucide="scan-search" class="w-4 h-4 text-violet-400 animate-pulse shrink-0"></i>
             <span>${products.length} product${products.length === 1 ? '' : 's'} ready to scan. Starting automatically now…</span>
           </div>
           <button type="button" id="btn-scanner-scan" onclick="scanGeneralWithAI()" class="btn-press w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
-            <i data-lucide="scan-search" class="w-4 h-4"></i> ${_scannerOnlyMissingPrice ? 'SCAN & FILL ALL PRICES' : 'SCAN ALL WITH AI'}
+            <i data-lucide="scan-search" class="w-4 h-4"></i> SCAN &amp; FILL ALL PRICES
           </button>
           <label class="flex items-start gap-2 text-[11px] text-gray-400 select-none cursor-pointer">
             <input type="checkbox" class="accent-violet-500 mt-0.5" ${scanVerifyPassEnabled() ? 'checked' : ''} onchange="setScanVerifyPass(this.checked)">
@@ -6296,7 +6248,7 @@ window.openGeneralAiScanner = async function(onlyMissingPrice = false) {
 
 // â”€â”€ Timeout-safe scan guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Runs a promise but stops waiting for it if it does not finish within `ms`.
-// The General AI Scanner uses this so a slow, unreachable AI call or image
+// The AI Price Scanner uses this so a slow, unreachable AI call or image
 // fetch can NEVER leave the scanner stuck on "Scanningâ€¦" forever â€” the scan
 // always moves on and always finishes with a clear success or error message.
 function aiScanTimeout(promise, ms) {
@@ -6394,7 +6346,7 @@ if (!products.length) {
 
 // ── One-by-one streaming renderer ─────────────────────────────────────
 // Renders the live list of scanned products inside #scanner-scan-status.
-// Works for the General AI Scanner AND the AI Price Scanner (missing prices).
+// Works for the AI Price Scanner (Scan Missing Prices).
 window.scanStreamRender = function() {
   const el = document.getElementById('scanner-scan-status');
   if (!el) return;
@@ -6488,7 +6440,7 @@ function openStreamReviewModal(successMsg) {
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-box">
         <div class="flex items-center justify-between mb-5">
-          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> ${_scannerOnlyMissingPrice ? 'AI Price Scanner' : 'General AI Scanner'}</h3>
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-violet-400"></i> Scan Missing Prices</h3>
           <button onclick="closeModal()" class="text-gray-500 hover:text-white transition" title="Close">x Close</button>
         </div>
         <div class="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-3 mb-3">
@@ -7489,7 +7441,7 @@ window.showAddVehicleModal = function(existing = {}) {
               <span class="shrink-0 w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center"><i data-lucide="car-front" class="w-4.5 h-4.5 text-amber-400"></i></span>
               <div>
                 <p class="text-xs font-bold text-white uppercase tracking-wide">Cars &amp; Trucks — Your next ride starts here.</p>
-                <p class="text-[11px] text-gray-500 mt-0.5">This professional listing lives in the Vehicles row above Real Estate. Every field the AI scanner can read is auto-filled from your photos — you review everything before publishing. Vehicles are never deleted by Clear All Products.</p>
+                <p class="text-[11px] text-gray-500 mt-0.5">This professional listing lives in the Vehicles row above Real Estate. Every field the AI scanner can read is auto-filled from your photos — you review everything before publishing.</p>
               </div>
             </div>
             <div class="mt-3 rounded-xl border border-violet-500/25 bg-violet-500/10 p-3">
@@ -8718,10 +8670,9 @@ async function renderAiSettings() {
 
           <div class="glass-soft border border-purple-500/15 rounded-2xl p-4 space-y-3">
             <h3 class="text-sm font-black text-white flex items-center gap-2 flex-wrap">
-              <i data-lucide="hard-drive" class="w-4 h-4 text-purple-400"></i> General AI Scanner
-              <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300">uses Gemini / Groq</span>
+              <i data-lucide="scan-search" class="w-4 h-4 text-purple-400"></i> Product Scanner
             </h3>
-            <p class="text-[11px] text-gray-400 leading-relaxed">The General AI Scanner processes product photos through your Gemini key (primary) with Groq backup — no local software needed. Both keys are already saved above. Works from any device.</p>
+            <p class="text-[11px] text-gray-400 leading-relaxed">This is the Add Product scanner and the Scan Missing Prices scanner. It processes product photos through your Gemini key (primary) with Groq backup — no local software needed. Both keys are already saved above. Works from any device.</p>
           </div>
 
           <div class="glass-soft border border-cyan-500/25 rounded-2xl p-4 space-y-3">
@@ -8731,7 +8682,7 @@ async function renderAiSettings() {
             </h3>
             <p class="text-[11px] text-gray-400 leading-relaxed">This is a <b class="text-white">separate, dedicated AI system just for Cars, Trucks &amp; Motorhomes</b>. It uses its own Gemini key, its own car-specific scanner, and reads cars from <b class="text-white">photos OR videos</b> (video frames are sampled automatically). It does NOT use the product scanner or its key — it is fully independent.</p>
             <p class="text-[10px] text-amber-300/90 leading-relaxed">⚡ When this key runs out of free quota, the car scanner <b>stops</b> until you paste in a fresh key here. No fake values are ever generated. Add a new key and the car scanner works again automatically.</p>
-            ${!s.car_scanner_key ? '<p class="text-[10px] font-bold text-amber-300 leading-relaxed">No dedicated car key saved yet - the Car Scanner is falling back to your main Gemini key (General AI Scanner) until you add one above. Scans work now.</p>' : '<p class="text-[10px] font-bold text-emerald-400 leading-relaxed">Dedicated car key saved - this scanner uses ONLY its own key. If Google ever deletes or disables that key, it automatically falls back to your main Gemini key so scans never stop.</p>'}
+            ${!s.car_scanner_key ? '<p class="text-[10px] font-bold text-amber-300 leading-relaxed">No dedicated car key saved yet - the Car Scanner is falling back to your main Gemini key until you add one above. Scans work now.</p>' : '<p class="text-[10px] font-bold text-emerald-400 leading-relaxed">Dedicated car key saved - this scanner uses ONLY its own key. If Google ever deletes or disables that key, it automatically falls back to your main Gemini key so scans never stop.</p>'}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label class="lbl">Car Scanner Gemini Key</label>
@@ -8761,7 +8712,7 @@ async function renderAiSettings() {
             </h3>
             <p class="text-[11px] text-gray-400 leading-relaxed">This is a <b class="text-white">separate, dedicated AI system just for the Add Real Estate / Add Property form</b>. It uses its <b class="text-white">own Gemini key</b> and its own property scanner, and it reads houses/apartments from <b class="text-white">photos OR videos</b> (video frames are sampled automatically). It does <b class="text-white">NOT share the product scanner key, the car scanner key, or anything else</b> — the Real Estate AI is used by nobody except Add Real Estate.</p>
             <p class="text-[10px] text-amber-300/90 leading-relaxed">⚡ When this key runs out of free quota, the Real Estate scanner <b>stops</b> until you paste in a fresh key here. No fake values are ever generated. Add a new key and it works again automatically.</p>
-            ${!s.re_scanner_key ? '<p class="text-[10px] font-bold text-amber-300 leading-relaxed">No dedicated Real Estate key saved yet - the Real Estate scanner is falling back to your main Gemini key (General AI Scanner) until you add one above. Scans work now. Paste a dedicated key here to keep this scanner fully separate, as designed.</p>' : '<p class="text-[10px] font-bold text-emerald-400 leading-relaxed">Dedicated Real Estate key saved - this scanner uses ONLY its own key. If Google ever deletes or disables that key, it automatically falls back to your main Gemini key so scans never stop.</p>'}
+            ${!s.re_scanner_key ? '<p class="text-[10px] font-bold text-amber-300 leading-relaxed">No dedicated Real Estate key saved yet - the Real Estate scanner is falling back to your main Gemini key until you add one above. Scans work now. Paste a dedicated key here to keep this scanner fully separate, as designed.</p>' : '<p class="text-[10px] font-bold text-emerald-400 leading-relaxed">Dedicated Real Estate key saved - this scanner uses ONLY its own key. If Google ever deletes or disables that key, it automatically falls back to your main Gemini key so scans never stop.</p>'}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label class="lbl">Real Estate Scanner Gemini Key</label>
@@ -9990,7 +9941,7 @@ If the media does not clearly show any vehicle, return { "identification": { "id
   describeError(err) {
     const code = String((err && err.message) || '');
     if (code === 'NO_CAR_KEY') {
-      return { title: 'No Gemini key is set at all', hint: 'Neither the dedicated Car Scanner key nor your main Gemini key is saved. Add the dedicated key in AI Settings → "Car & Truck Scanner" (or the main Gemini key in "General AI Scanner"), then try again.', code };
+      return { title: 'No Gemini key is set at all', hint: 'Neither the dedicated Car Scanner key nor your main Gemini key is saved. Add the dedicated key in AI Settings → "Car & Truck Scanner" (or the main Gemini key in "Product Scanner"), then try again.', code };
     }
     if (code === 'CAR_QUOTA') {
       return { title: 'Car Scanner quota used up', hint: 'The Gemini key in use has run out of free quota or is rate-limited. If this is your dedicated key, paste a fresh one in AI Settings → "Car & Truck Scanner" — with no dedicated key the Car Scanner falls back to your main Gemini key automatically. No fake values were generated.', code };
@@ -10293,7 +10244,7 @@ If the media does not clearly show any property, return { "identification": { "i
   describeError(err) {
     const code = String((err && err.message) || '');
     if (code === 'NO_RE_KEY') {
-      return { title: 'No Gemini key is set at all', hint: 'Neither the dedicated Real Estate key nor your main Gemini key is saved. Add the dedicated key in AI Settings → "Real Estate Property Scanner" (or the main Gemini key in "General AI Scanner"), then try again.', code };
+      return { title: 'No Gemini key is set at all', hint: 'Neither the dedicated Real Estate key nor your main Gemini key is saved. Add the dedicated key in AI Settings → "Real Estate Property Scanner" (or the main Gemini key in "Product Scanner"), then try again.', code };
     }
     if (code === 'RE_QUOTA') {
       return { title: 'Real Estate Scanner quota used up', hint: 'The Gemini key in use has run out of free quota or is rate-limited. If this is your dedicated key, paste a fresh one in AI Settings → "Real Estate Property Scanner" — with no dedicated key the Real Estate scanner falls back to your main Gemini key automatically. No fake values were generated.', code };
@@ -10419,9 +10370,6 @@ window.testScanProviders = async function() {
   } catch (e) {
     html += row('✖', 'bg-red-500', 'Cloud providers (server test)', String((e && e.message) || e));
   }
-
-  // General AI Scanner — now uses the same Gemini/Groq edge function as Product Scanner.
-  html += row('✓', 'bg-purple-400', 'General AI Scanner (via edge function)', 'Uses Gemini primary + Groq backup through server — no local install needed.');
 
   box.innerHTML = html;
   btn.disabled = false;

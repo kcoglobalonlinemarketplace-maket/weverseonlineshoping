@@ -1554,14 +1554,14 @@ async function renderWishlist() {
           return `
             <div class="glass border border-blue-100 rounded-2xl overflow-hidden group">
               <div class="relative aspect-square overflow-hidden bg-gray-50">
-                <a href="/details.html?id=${p.property_id}"><img src="${escapeHtml(img)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></a>
+                <a href="/product/${p.property_id}"><img src="${escapeHtml(img)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></a>
                 <button onclick="removeFromWishlist('${w.id}')" class="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-red-500/80 rounded-full flex items-center justify-center transition" title="Remove"><i data-lucide="heart-crack" class="w-4 h-4 text-white"></i></button>
               </div>
               <div class="p-3">
-                <a href="/details.html?id=${p.property_id}" class="text-sm text-gray-900 font-bold hover:text-blue-600 transition line-clamp-2">${escapeHtml(p.title)}</a>
+                <a href="/product/${p.property_id}" class="text-sm text-gray-900 font-bold hover:text-blue-600 transition line-clamp-2">${escapeHtml(p.title)}</a>
                 <div class="flex items-center justify-between mt-2">
                   <span class="text-sm text-amber-600 font-bold">${p.currency || 'USD'} ${price.toLocaleString()}</span>
-                  <a href="/details.html?id=${p.property_id}" class="text-xs font-bold text-blue-600 hover:text-blue-700 transition">View</a>
+                  <a href="/product/${p.property_id}" class="text-xs font-bold text-blue-600 hover:text-blue-700 transition">View</a>
                 </div>
               </div>
             </div>`;

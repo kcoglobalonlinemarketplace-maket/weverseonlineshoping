@@ -31,3 +31,6 @@ verify-out.txt
 n8n-local-ollama-*.json
 ollama-vision.js
 vite.config.js.timestamp-*.mjs
+
+# Auto-publisher dry-run artifact (contains full generated row payloads)
+.publish-plan.json

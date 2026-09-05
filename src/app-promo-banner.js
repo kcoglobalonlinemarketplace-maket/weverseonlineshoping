@@ -206,7 +206,7 @@ function phoneScreen(products) {
     const img = esc(coverOf(l));
     const title = esc((l.title || l.name || '').slice(0, 34));
     return `
-      <a href="/details.html?id=${encodeURIComponent(l.property_id || l.id)}"
+      <a href="/product/${encodeURIComponent(l.property_id || l.id)}"
          class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
         <div class="aspect-square bg-gray-100 overflow-hidden">
           <img src="${img}" alt="${title}" loading="lazy" decoding="async"
@@ -398,12 +398,12 @@ function startPhoneCycling(pool) {
     const tA = esc((a.title || a.name || '').slice(0, 34));
     const tB = esc((b.title || b.name || '').slice(0, 34));
     grid.innerHTML = `
-      <a href="/details.html?id=${encodeURIComponent(a.property_id || a.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
+      <a href="/product/${encodeURIComponent(a.property_id || a.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
         <div class="aspect-square bg-gray-100 overflow-hidden"><img src="${imgA}" alt="${tA}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'"></div>
         <div class="p-2"><p class="text-[10px] text-gray-700 font-bold leading-tight line-clamp-2 min-h-[26px]">${tA}</p>
         <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-blue-600 font-black">${priceHtml(a)}</span><span class="bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded-lg">Buy</span></div></div>
       </a>
-      <a href="/details.html?id=${encodeURIComponent(b.property_id || b.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
+      <a href="/product/${encodeURIComponent(b.property_id || b.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
         <div class="aspect-square bg-gray-100 overflow-hidden"><img src="${imgB}" alt="${tB}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'"></div>
         <div class="p-2"><p class="text-[10px] text-gray-700 font-bold leading-tight line-clamp-2 min-h-[26px]">${tB}</p>
         <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-blue-600 font-black">${priceHtml(b)}</span><span class="bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded-lg">Buy</span></div></div>

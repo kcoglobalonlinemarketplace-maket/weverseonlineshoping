@@ -565,7 +565,7 @@ import{D as q,l as g,b}from"./promo-backgrounds-KEhHWHvl.js";import{d as H,W as 
                C364 588 356 572 354 552 C352 516 360 486 372 470 Z" fill="url(#hSkinShade)"/>
     </g>
   </svg>`}function se(e){const t=e[0],a=e[1],r=(i,n)=>{const l=u(w(i)),s=u((i.title||i.name||"").slice(0,34));return`
-      <a href="/details.html?id=${encodeURIComponent(i.property_id||i.id)}"
+      <a href="/product/${encodeURIComponent(i.property_id||i.id)}"
          class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
         <div class="aspect-square bg-gray-100 overflow-hidden">
           <img src="${l}" alt="${s}" loading="lazy" decoding="async"
@@ -707,12 +707,12 @@ import{D as q,l as g,b}from"./promo-backgrounds-KEhHWHvl.js";import{d as H,W as 
         </div>
       </div>
     </section>`}let y=null;function de(e){y&&(clearInterval(y),y=null);const t=document.getElementById("promo-phone-screen"),a=document.getElementById("promo-phone-grid");if(!t||!a||!e.length)return;const r=e.slice();let i=0;const n=()=>{if(!a||!r.length)return;const l=r[i%r.length],s=r[(i+1)%r.length],p=u(w(l)),h=u(w(s)),c=u((l.title||l.name||"").slice(0,34)),m=u((s.title||s.name||"").slice(0,34));if(a.innerHTML=`
-      <a href="/details.html?id=${encodeURIComponent(l.property_id||l.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
+      <a href="/product/${encodeURIComponent(l.property_id||l.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
         <div class="aspect-square bg-gray-100 overflow-hidden"><img src="${p}" alt="${c}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${C}'"></div>
         <div class="p-2"><p class="text-[10px] text-gray-700 font-bold leading-tight line-clamp-2 min-h-[26px]">${c}</p>
         <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-blue-600 font-black">${v(l)}</span><span class="bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded-lg">Buy</span></div></div>
       </a>
-      <a href="/details.html?id=${encodeURIComponent(s.property_id||s.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
+      <a href="/product/${encodeURIComponent(s.property_id||s.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
         <div class="aspect-square bg-gray-100 overflow-hidden"><img src="${h}" alt="${m}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${C}'"></div>
         <div class="p-2"><p class="text-[10px] text-gray-700 font-bold leading-tight line-clamp-2 min-h-[26px]">${m}</p>
         <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-blue-600 font-black">${v(s)}</span><span class="bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded-lg">Buy</span></div></div>

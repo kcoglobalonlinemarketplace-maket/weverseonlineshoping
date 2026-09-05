@@ -123,9 +123,9 @@ function videoCardHtml(listing) {
   const land = listing.land_size ? `<span class="kco-hero-chip"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${esc(listing.land_size)}</span>` : '';
 
   return `
-    <a href="/details.html?id=${pid}" class="kco-video-card">
+    <a href="/product/${pid}" class="kco-video-card">
       <div class="kco-video-media">
-        <video src="${esc(video)}" poster="${esc(poster)}" muted loop playsinline preload="metadata" class="kco-video-el" data-detail-href="/details.html?id=${pid}" aria-label="${esc(listing.title || '')}">
+        <video src="${esc(video)}" poster="${esc(poster)}" muted loop playsinline preload="metadata" class="kco-video-el" data-detail-href="/product/${pid}" aria-label="${esc(listing.title || '')}">
           <source src="${esc(video)}">
         </video>
         <div class="kco-video-bigplay"><span class="kco-video-playcircle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
@@ -430,7 +430,7 @@ export function heroCardHtml(listing, kind, cardCls) {
     chips = c.join('');
     if (!loc) loc = '';
     const markup = `
-      <a href="/details.html?id=${pid}" class="${cls}">
+      <a href="/product/${pid}" class="${cls}">
         <div class="kco-hero-media">
           <img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">
           <span class="kco-hero-type"><i data-lucide="home" class="w-3 h-3"></i>${esc(t)}</span>
@@ -454,7 +454,7 @@ export function heroCardHtml(listing, kind, cardCls) {
   if (sp(listing, 'body_type')) c.push(`<span class="kco-hero-chip"><i data-lucide="car-front" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'body_type'))}</span>`);
   chips = c.join('');
   return `
-      <a href="/details.html?id=${pid}" class="${cls}">
+      <a href="/product/${pid}" class="${cls}">
         <div class="kco-hero-media">
           <img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">
           <span class="kco-hero-type"><i data-lucide="car-front" class="w-3 h-3"></i>${esc(vehicleKindLabel(listing))}</span>

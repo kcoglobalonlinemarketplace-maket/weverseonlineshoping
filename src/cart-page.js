@@ -76,11 +76,11 @@ function renderCart(items) {
     const cover = listing.images?.[0] || FALLBACK_IMG;
     return `
       <div class="flex flex-wrap items-center gap-x-4 gap-y-3 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-xl" data-cart-row="${listing.property_id}">
-        <a href="/details.html?id=${listing.property_id}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-gray-100 ring-1 ring-gray-200">
+        <a href="/product/${listing.property_id}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-gray-100 ring-1 ring-gray-200">
           <img src="${cover}" alt="${listing.title}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='${FALLBACK_IMG}'">
         </a>
         <div class="flex-1 min-w-[160px] flex flex-col gap-1.5">
-          <a href="/details.html?id=${listing.property_id}" class="text-sm font-bold text-gray-900 break-words hover:text-blue-600 transition">${listing.title}</a>
+          <a href="/product/${listing.property_id}" class="text-sm font-bold text-gray-900 break-words hover:text-blue-600 transition">${listing.title}</a>
           <p class="text-[10px] text-gray-400">${listing.property_id}</p>
           <div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm leading-snug">${priceCellHtml(listing)}</div>
         </div>

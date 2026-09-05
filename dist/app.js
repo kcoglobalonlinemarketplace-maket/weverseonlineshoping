@@ -820,7 +820,7 @@ window.openSpecialOrderFromSearch=function(title,brand,category,price,currency){
 };
 window.openProductFromSearch=function(propertyId){
   closeSearchResults();
-  if(propertyId)window.location.href="/details.html?id="+encodeURIComponent(propertyId);
+  if(propertyId)window.location.href="/product/"+encodeURIComponent(propertyId);
   else showToast("Product not available");
 };
 
@@ -892,7 +892,7 @@ window.openSlideLink=function(idx){
   const link=slideLink(slide);
   if(!link)return;
   if(link.type==='product'){
-    window.location.href='details.html?id='+encodeURIComponent(link.target);
+    window.location.href='/product/'+encodeURIComponent(link.target);
     return;
   }
   if(link.type==='category'){
