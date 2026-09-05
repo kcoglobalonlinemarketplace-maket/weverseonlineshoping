@@ -2,14 +2,14 @@ name: Hourly Auto-Publish
 
 on:
   schedule:
-    # Every hour at minute 17 (offset to avoid top-of-the-hour alignment).
+    # Every hour at minute 17 UTC (offset to avoid top-of-the-hour alignment).
     - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       batch:
-        description: 'Locations to publish this run (rows = 3× batch; 4× after round 4)'
+        description: 'Locations to publish this run (each = 7 kinds: motorhome, house, car, truck, fridge, washer, dog; +1 product after round 4)'
         required: false
-        default: '8'
+        default: '12'
         type: string
 
 permissions:
@@ -18,9 +18,13 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       WEVERSE_SERVICE_ROLE_KEY: ${{ secrets.WEVERSE_SERVICE_ROLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Without the service-role key the run completes as a dry-run plan and
+      # reports exactly what to fix — it never shows a confusing failure.
+      PUBLISH_ALLOW_DRY_FALLBACK: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,9 +38,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Publish next batch (live)
-        run: node scripts/publish.mjs --live --batch=${{ github.event.inputs.batch || '8' }}
+      - name: Publish next batch
+        run: node scripts/publish.mjs --live --batch=${{ github.event.inputs.batch || '12' }}
 
-      - name: Notify on failure
-        if: failure()
-        run: echo "hourly auto-publish failed" >> "$GITHUB_STEP_SUMMARY"
+      - name: Summarize this run
+        if: always()
+        shell: bash
+        run: |
+          BATCH="${{ github.event.inputs.batch || '12' }}"
+          KEY_VAR="unset"
+          if [ -n "${{ secrets.WEVERSE_SERVICE_ROLE_KEY }}" ] || [ -n "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then KEY_VAR="set"; fi
+          {
+            echo "## Hourly worldwide auto-publisher"
+            echo ""
+            echo "- Run type: \`${{ github.event_name }}\` (cron: schedule)."
+            echo "- Locations attempted this run: \`$BATCH\` (each yields the 7 showcase kinds + a marketplace product after round 4)."
+            echo "- Service-role key secret: **$KEY_VAR**."
+            echo "- If the secret is \`unset\`, this run stayed a DRY-RUN — the publisher cannot insert rows until you add \`WEVERSE_SERVICE_ROLE_KEY\` (or \`SUPABASE_SERVICE_ROLE_KEY\`) in **Repository → Settings → Secrets and variables → Actions**. After adding it, use *Actions → Hourly Auto-Publish → Run workflow* to publish immediately."
+            echo "- New pages appear within minutes in the live sitemap: https://weverseonlineshop.com/sitemap.xml (and are submitted to Bing/Yandex/Naver/Seznam via IndexNow once inserted)."
+            echo "- Google discovers the sitemap through robots.txt; Search Console at https://search.google.com/search-console shows what Googlebot actually indexed."
+          } >> "$GITHUB_STEP_SUMMARY"

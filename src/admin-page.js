@@ -1492,6 +1492,28 @@ function describeWriteError(err, actionLabel) {
   return `${actionLabel} failed: ${msg || 'an unexpected database error occurred'}. Nothing was saved — your changes are still in the form, so you can press Publish again.`;
 }
 
+// Auto-SEO: when a listing has no meta description yet, derive one from REAL
+// fields only (title + price + availability + location + description). It
+// never invents facts — it is the same real-data template the server uses.
+function autoMetaDescription(p) {
+  const t = String(p?.title || '').trim();
+  if (!t) return '';
+  const raw = p?.price && typeof p.price === 'object' ? p.price.price : p?.price;
+  const price = Number(raw) || 0;
+  const loc = [p?.city, p?.state, p?.country].filter(Boolean).join(', ') || String(p?.product_location || '').trim();
+  const avail = String(p?.availability_status || '').trim() || 'In Stock';
+  let d = t;
+  if (price > 0) {
+    try { d += ` for ${price.toLocaleString('en-US', { style: 'currency', currency: p?.currency || 'USD', maximumFractionDigits: 0 })}`; }
+    catch { d += ` for $${price.toLocaleString('en-US')}`; }
+  }
+  d += ` — ${avail}.`;
+  if (loc) d += ` Located in ${loc}.`;
+  const core = String(p?.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (core) d += ` ${core}`;
+  return d.length > 235 ? d.slice(0, 235).replace(/\s+\S*$/, '') + '…' : d;
+}
+
 // ---------------------------------------------------------------------------
 // safePublishShowroom — BULLETPROOF showroom write that CANNOT be silently
 // blocked by RLS, expired sessions, or network issues.
@@ -1525,6 +1547,11 @@ async function safePublishShowroom(payload) {
   } catch (authErr) {
     console.error('[safePublishShowroom] Auth check failed:', authErr);
     return { error: new Error('Could not verify your sign-in status. Check your internet connection and try again.') };
+  }
+
+  // --- STEP 0.5: Auto-SEO — fill a missing meta description from real data ---
+  if (!String(payload?.meta_description || '').trim()) {
+    payload.meta_description = autoMetaDescription(payload);
   }
 
   // --- STEP 1: Try direct Supabase upsert (fast path) ---

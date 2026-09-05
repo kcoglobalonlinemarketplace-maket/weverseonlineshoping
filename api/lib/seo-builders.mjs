@@ -29,13 +29,17 @@ export function slugify(s) {
 
 // Keyword landing-page tunnels (internal links + sitemap entries). Each
 // category hub matches rows BY KEYWORD so the regexes stay useful for any
-// catalog layout. Order matters: trucks must be checked before generic cars.
+// catalog layout. Order matters: motorhomes must precede houses (motorhome
+// ends in "home") and vehicles, trucks before generic cars.
 export const CATEGORY_HUBS = [
+  { slug: 'motorhomes', label: 'Motorhomes for Sale', match: /motor\s*home|rv\b|camper|caravan/i, listingTypes: ['vehicle'] },
   { slug: 'houses', label: 'Houses for Sale', match: /house|villa|townhouse|apartment|duplex|cottage|estate|mansion|penthouse|bungalow|home\b/i, listingTypes: ['property'] },
   { slug: 'trucks', label: 'Trucks for Sale', match: /truck|pickup/i, listingTypes: ['vehicle'] },
   { slug: 'cars', label: 'Cars for Sale', match: /car\b|vehicle|sedan|suv|coupe|hatchback|convertible|wagon/i, listingTypes: ['vehicle'] },
   { slug: 'phones', label: 'Mobile Phones', match: /phone|smartphone|pixel|galaxy|iphone|xiaomi|tablet/i, listingTypes: ['product'] },
   { slug: 'electronics', label: 'Electronics', match: /laptop|computer|macbook|notebook|headphone|audio|speaker|camera|television|tv\b|console|gaming|watch|wearable/i, listingTypes: ['product'] },
+  { slug: 'appliances', label: 'Appliances', match: /appliance|fridge|refrigerator|refrigerant|washer|washing\s*machine|dryer|kitchen|oven|microwave|espresso|blender|vacuum|air\s*fryer|grill/i, listingTypes: ['product'] },
+  { slug: 'pets', label: 'Dogs & Pets', match: /dog|puppy|cat|kitten|pet\b/i, listingTypes: ['product'] },
 ];
 
 export function hubCategoryFor(row) {

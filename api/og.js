@@ -253,11 +253,14 @@ function slugify(s) {
 }
 
 const HUB_CATEGORIES = [
+  { slug: 'motorhomes', label: 'Motorhomes', match: /motor\s*home|rv\b|camper|caravan/i },
   { slug: 'houses', label: 'Houses', match: /house|villa|townhouse|apartment|duplex|cottage|estate|mansion|penthouse|bungalow|home\b/i },
   { slug: 'trucks', label: 'Trucks', match: /truck|pickup/i },
   { slug: 'cars', label: 'Cars', match: /car\b|vehicle|sedan|suv|coupe|hatchback|convertible|wagon/i },
   { slug: 'phones', label: 'Mobile Phones', match: /phone|smartphone|pixel|galaxy|iphone|xiaomi|tablet/i },
   { slug: 'electronics', label: 'Electronics', match: /laptop|computer|macbook|notebook|headphone|audio|speaker|camera|television|tv\b|console|gaming|watch|wearable/i },
+  { slug: 'appliances', label: 'Appliances', match: /appliance|fridge|refrigerator|refrigerant|washer|washing\s*machine|dryer|kitchen|oven|microwave|espresso|blender|vacuum|air\s*fryer|grill/i },
+  { slug: 'pets', label: 'Dogs & Pets', match: /dog|puppy|cat|kitten|pet\b/i },
 ];
 
 function hubCategory(listing) {

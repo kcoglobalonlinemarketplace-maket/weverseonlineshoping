@@ -3,10 +3,12 @@
  * Publishes deterministic, per-location showcase listings across every
  * non-African country (country → state → city → town/area order).
  *
- * Priority order: houses (WS-A) > cars (WS-C) > trucks (WS-T). After 4 full
- * cycles a general marketplace product (WS-P) is added per location. The
- * publisher NEVER stops and NEVER edits or deletes existing rows — every
- * listing is published once and kept forever.
+ * Every location receives all seven showcase kinds during each cycle:
+ * motorhome (WS-M), house (WS-A), car (WS-C), truck (WS-T), refrigerator
+ * (WS-R), washing machine (WS-W) and dog (WS-D). After 4 full cycles a
+ * general marketplace product (WS-P) is added per location. The publisher
+ * NEVER stops and NEVER edits or deletes existing rows — every listing is
+ * published once and kept forever.
  *
  * All auto rows are clearly labeled Illustrative Listings (demonstration
  * entries). Geographic data (country/state/city/area/postal/coordinates) is
@@ -135,6 +137,62 @@ const PRODUCT_POOL = [
   ['Leather Weekend Tote', 'Bags', 159],
 ];
 
+const MOTORHOME_POOL = [
+  ['Winnebago Vista', 'Class C Motorhome', 98500],
+  ['Thor Motor Coach Apex', 'Travel Trailer', 41500],
+  ['Coachmen Leprechaun', 'Class C Motorhome', 82900],
+  ['Jayco Greyhawk', 'Class C Motorhome', 88900],
+  ['Forest River Sunseeker', 'Class C Motorhome', 76900],
+  ['Airstream Classic', 'Travel Trailer', 112000],
+  ['Keystone Cougar', 'Fifth Wheel', 53900],
+  ['Winnebago Travato', 'Class B Camper Van', 96500],
+  ['Pleasure-Way Tofino', 'Class B Camper Van', 92800],
+  ['Grand Design Solitude', 'Fifth Wheel', 64900],
+  ['Itasca Sunova', 'Class A Motorhome', 109000],
+  ['McKenzie Towne Hall', 'Travel Trailer', 38900],
+];
+
+const FRIDGE_POOL = [
+  ['Samsung French Door Refrigerator', 'Refrigerator', 1899],
+  ['LG InstaView Refrigerator', 'Refrigerator', 2299],
+  ['Whirlpool Side-by-Side Refrigerator', 'Refrigerator', 1399],
+  ['Bosch Built-In Refrigerator', 'Refrigerator', 3199],
+  ['Panasonic Two-Door Refrigerator', 'Refrigerator', 1049],
+  ['Siemens NoFrost Fridge-Freezer', 'Refrigerator', 1699],
+  ['Miele Refrigerator', 'Refrigerator', 2799],
+  ['Electrolux Bottom-Freezer Refrigerator', 'Refrigerator', 1249],
+  ['Haier Compact Refrigerator', 'Mini Fridge', 449],
+  ['Gorenje Retro Refrigerator', 'Refrigerator', 899],
+];
+
+const WASHER_POOL = [
+  ['Bosch Serie 6 Front Load Washer', 'Washing Machine', 899],
+  ['Samsung AddWash Washer', 'Washing Machine', 949],
+  ['LG TurboWash Washer', 'Washing Machine', 1049],
+  ['Miele W1 Washer', 'Washing Machine', 1699],
+  ['Whirlpool Top Load Washer', 'Washing Machine', 649],
+  ['Electrolux PerfectCare Washer', 'Washing Machine', 929],
+  ['Panasonic NA Washer', 'Washing Machine', 849],
+  ['Haier Load & Go Washer', 'Washing Machine', 699],
+  ['AEG L7 Washer', 'Washing Machine', 1099],
+  ['Siemens iQ700 Washer', 'Washing Machine', 1299],
+];
+
+const DOG_POOL = [
+  ['Golden Retriever Puppy', 'Dog', 950],
+  ['Labrador Retriever Puppy', 'Dog', 850],
+  ['German Shepherd Puppy', 'Dog', 1100],
+  ['French Bulldog Puppy', 'Dog', 2100],
+  ['Beagle Puppy', 'Dog', 700],
+  ['Poodle Puppy', 'Dog', 1200],
+  ['Corgi Puppy', 'Dog', 1600],
+  ['Siberian Husky Puppy', 'Dog', 1150],
+  ['Boxer Puppy', 'Dog', 980],
+  ['Dachshund Puppy', 'Dog', 750],
+  ['Rottweiler Puppy', 'Dog', 1050],
+  ['Shih Tzu Puppy', 'Dog', 890],
+];
+
 const PEXELS = {
   house: [
     'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1200',
@@ -183,6 +241,34 @@ const PEXELS = {
     'https://images.pexels.com/photos/186077/pexels-photo-186077.jpeg?auto=compress&cs=tinysrgb&w=1200',
     'https://images.pexels.com/photos/1007410/pexels-photo-1007410.jpeg?auto=compress&cs=tinysrgb&w=1200',
   ],
+  motorhome: [
+    'https://images.pexels.com/photos/7737214/pexels-photo-7737214.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/7126186/pexels-photo-7126186.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/8219580/pexels-photo-8219580.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/1239655/pexels-photo-1239655.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/908184/pexels-photo-908184.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  ],
+  fridge: [
+    'https://images.pexels.com/photos/6965054/pexels-photo-6965054.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/3612182/pexels-photo-3612182.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/6586693/pexels-photo-6586693.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/4700386/pexels-photo-4700386.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/3621145/pexels-photo-3621145.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  ],
+  washer: [
+    'https://images.pexels.com/photos/8067051/pexels-photo-8067051.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/5945667/pexels-photo-5945667.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/2531411/pexels-photo-2531411.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/362550/pexels-photo-362550.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/3957997/pexels-photo-3957997.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  ],
+  dog: [
+    'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/2607544/pexels-photo-2607544.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/406014/pexels-photo-406014.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/2023384/pexels-photo-2023384.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/235805/pexels-photo-235805.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  ],
 };
 
 /* ── Location dataset ────────────────────────────────────────────────────── */
@@ -190,10 +276,19 @@ const PEXELS = {
 const { orderedLocations } = await import('./geo/world-locations.mjs');
 const LOCATIONS = orderedLocations();
 
-const AUTO_ID_RE = /^WS-(A|C|T|P)-(\d{3})-(\d{4})$/;
+const AUTO_ID_RE = /^WS-(A|C|T|P|M|R|W|D)-(\d{3})-(\d{4})$/;
 
 function prefixFor(kind) {
-  return kind === 'house' ? 'A' : kind === 'car' ? 'C' : kind === 'truck' ? 'T' : 'P';
+  return (
+    kind === 'house' ? 'A'
+      : kind === 'car' ? 'C'
+        : kind === 'truck' ? 'T'
+          : kind === 'motorhome' ? 'M'
+            : kind === 'fridge' ? 'R'
+              : kind === 'washer' ? 'W'
+                : kind === 'dog' ? 'D'
+                  : 'P'
+  );
 }
 
 function propId(kind, cycle, seq) {
@@ -360,6 +455,91 @@ function productRow(loc, cycle, seq) {
   };
 }
 
+function motorhomeRow(loc, cycle, seq) {
+  const area = areaFor(loc, cycle);
+  const idx = (seq + cycle - 2) % MOTORHOME_POOL.length;
+  const [model, bodyType, base] = MOTORHOME_POOL[idx];
+  const year = 2019 + ((seq * 2 + cycle) % 6);
+  const title = `${year} ${model} ${bodyType} for Sale in ${area ? area + ', ' : ''}${loc.city}`;
+  const img = PEXELS.motorhome[seq % PEXELS.motorhome.length];
+  return {
+    ...baseFields('motorhome', loc, cycle, seq),
+    listing_type: 'vehicle',
+    category: 'Motorhomes',
+    subcategory: 'Vehicles & Parts > Vehicles > Motorhomes',
+    property_type: bodyType,
+    brand: model.split(' ')[0],
+    title,
+    description:
+      `${title}. ${year} ${model} ${bodyType} offered in ${placeLabel(loc, area)}. ` +
+      `Illustrative motorhome listing with a representative photo (not an actual current unit). ${ILLUSTRATIVE_NOTE}`,
+    price: base + ((seq + cycle) % 5) * 1800,
+    images: [img],
+    condition: year >= 2024 ? 'New' : 'Like New',
+    color: 'Not provided - requires verification',
+    size: null,
+    warranty: null,
+    specifications: {
+      model_year: String(year),
+      fuel_type: 'Not provided - requires verification',
+      sleeping_capacity: 'Not provided - requires verification',
+      length: 'Not provided - requires verification',
+    },
+    features: ['Air Conditioning', 'Galley Kitchen', 'Sleeping Areas', 'Onboard Bathroom'],
+  };
+}
+
+function applianceRow(loc, cycle, seq, kind) {
+  const pool = kind === 'fridge' ? FRIDGE_POOL : WASHER_POOL;
+  const area = areaFor(loc, cycle);
+  const idx = (seq + cycle - 2) % pool.length;
+  const [model, type, base] = pool[idx];
+  const title = `${model} ${type} in ${area ? area + ', ' : ''}${loc.city}`;
+  const img = PEXELS[kind][seq % PEXELS[kind].length];
+  return {
+    ...baseFields(kind, loc, cycle, seq),
+    listing_type: 'product',
+    category: 'Home Appliances',
+    subcategory: kind === 'fridge' ? 'Kitchen Appliances > Refrigerators' : 'Home Appliances > Laundry > Washers',
+    property_type: type,
+    brand: model.split(' ')[0],
+    title,
+    description:
+      `${title}. A ${type.toLowerCase()} available in ${placeLabel(loc, area)}. ${ILLUSTRATIVE_NOTE}`,
+    price: base + ((seq + cycle) % 4) * 25,
+    images: [img],
+    condition: 'New',
+    color: 'Not provided - requires verification',
+    features: ['Energy Efficient', 'Quiet Operation', 'Warranty Available'],
+    specifications: { model, capacity: 'Not provided - requires verification' },
+  };
+}
+
+function dogRow(loc, cycle, seq) {
+  const area = areaFor(loc, cycle);
+  const idx = (seq + cycle - 2) % DOG_POOL.length;
+  const [breed, type, base] = DOG_POOL[idx];
+  const title = `${breed} in ${area ? area + ', ' : ''}${loc.city} — ${loc.country}`;
+  const img = PEXELS.dog[seq % PEXELS.dog.length];
+  return {
+    ...baseFields('dog', loc, cycle, seq),
+    listing_type: 'product',
+    category: 'Pets',
+    subcategory: 'Dogs',
+    property_type: type,
+    brand: null,
+    title,
+    description:
+      `${title}. A ${breed} ${type.toLowerCase()} available from ${placeLabel(loc, area)}. ${ILLUSTRATIVE_NOTE}`,
+    price: base + ((seq + cycle) % 4) * 50,
+    images: [img],
+    condition: 'New',
+    color: 'Not provided - requires verification',
+    features: ['Socialized', 'Health Check', 'Pedigree Available'],
+    specifications: { breed, age: 'Not provided - requires verification', temperament: 'Not provided - requires verification' },
+  };
+}
+
 /* ── DB access ───────────────────────────────────────────────────────────── */
 
 let clients = {};
@@ -433,9 +613,13 @@ function rowsForCycle(cycle) {
   for (let seq = 1; seq <= LOCATIONS.length; seq += 1) {
     const loc = LOCATIONS[seq - 1];
     out.push(
+      { kind: 'motorhome', row: motorhomeRow(loc, cycle, seq) },
       { kind: 'house', row: houseRow(loc, cycle, seq) },
       { kind: 'car', row: carRow(loc, cycle, seq, 'car') },
       { kind: 'truck', row: carRow(loc, cycle, seq, 'truck') },
+      { kind: 'fridge', row: applianceRow(loc, cycle, seq, 'fridge') },
+      { kind: 'washer', row: applianceRow(loc, cycle, seq, 'washer') },
+      { kind: 'dog', row: dogRow(loc, cycle, seq) },
     );
     if (cycle >= 5) {
       out.push({ kind: 'product', row: productRow(loc, cycle, seq) });
@@ -444,10 +628,44 @@ function rowsForCycle(cycle) {
   return out;
 }
 
+/* ── IndexNow (Bing / Yandex / Naver / Seznam instant indexing) ──────────── */
+
+const INDEXNOW_KEY = 'e7dab8295af2814019cf65154c4147d1';
+const INDEXNOW_KEY_URL = `${SITE_URL}/indexnow-${INDEXNOW_KEY}.txt`;
+
+export async function submitIndexNow(canonicalUrls) {
+  const urlList = [...new Set(canonicalUrls.map((u) => String(u || '')))]
+    .filter((u) => u.startsWith(SITE_URL))
+    .slice(0, 10000);
+  if (!urlList.length) return { submitted: 0, note: 'no eligible URLs' };
+  try {
+    const res = await fetch('https://api.indexnow.org/indexnow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({
+        host: new URL(SITE_URL).host,
+        key: INDEXNOW_KEY,
+        keyLocation: INDEXNOW_KEY_URL,
+        urlList,
+      }),
+    });
+    const ok = res.status >= 200 && res.status < 300;
+    const body = (await res.text()).slice(0, 120);
+    return { submitted: ok ? urlList.length : 0, note: ok ? `HTTP ${res.status} — accepted` : `HTTP ${res.status} — ${body}` };
+  } catch (err) {
+    return { submitted: 0, note: `request failed: ${err && err.message ? err.message : err}` };
+  }
+}
+
 /* ── CLI ─────────────────────────────────────────────────────────────────── */
 
 export async function runPublish({ live = false, batch = 8 } = {}) {
   const countries = new Set(LOCATIONS.map((l) => l.countryCode)).size;
+  const dryFallback = !SERVICE_ROLE_KEY && process.env.PUBLISH_ALLOW_DRY_FALLBACK === '1';
+  if (live && dryFallback) {
+    console.warn('[publish] Service-role key missing — PUBLISH_ALLOW_DRY_FALLBACK is set, running a DRY-RUN plan instead. Add the WEVERSE_SERVICE_ROLE_KEY secret to the GitHub workflow to insert real rows.');
+    live = false;
+  }
   console.log(`[publish] mode=${live ? 'LIVE' : 'dry-run'} batch=${batch} locations=${LOCATIONS.length} countries=${countries}`);
   const { ids, maxCycle, maxSeq } = await loadExistingIds();
   console.log(`[publish] existing auto rows=${ids.size} maxCycle=${maxCycle} maxSeq=${maxSeq}`);
@@ -478,6 +696,7 @@ export async function runPublish({ live = false, batch = 8 } = {}) {
 
   let inserted = [];
   let failed = [];
+  let indexNow = null;
   if (live) {
     const res = await insertRows(planned.map((p) => p.row));
     inserted = res.inserted;
@@ -485,6 +704,10 @@ export async function runPublish({ live = false, batch = 8 } = {}) {
     console.log(`[publish] inserted=${inserted.length} failed=${failed.length}`);
     for (const f of failed) console.log(`  FAIL ${f.property_id}: ${f.error}`);
     for (const u of urls) console.log(`  ${u}`);
+    if (inserted.length) {
+      indexNow = await submitIndexNow(inserted.map((id) => `${SITE_URL}/product/${encodeURIComponent(id)}`));
+      console.log(`[publish] indexnow: ${indexNow.note} (${indexNow.submitted}/${inserted.length} URLs)`);
+    }
     console.log('[publish] done');
   } else {
     console.log('[publish] DRY-RUN — no rows inserted. Re-run with --live to publish.');
@@ -503,12 +726,12 @@ export async function runPublish({ live = false, batch = 8 } = {}) {
     console.log('[publish] plan written to .publish-plan.json');
   }
 
-  return { mode: live ? 'live' : 'dry-run', batch, locations: LOCATIONS.length, countries, existing: ids.size, newRows: planned.length, skipped: skipped.length, urls, breakdown, inserted, failed, maxCycle, maxSeq };
+  return { mode: live ? 'live' : 'dry-run', batch, locations: LOCATIONS.length, countries, existing: ids.size, newRows: planned.length, skipped: skipped.length, urls, breakdown, inserted, failed, maxCycle, maxSeq, indexNow };
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { rowsForCycle, houseRow, carRow, productRow, propId, LOCATIONS, ILLUSTRATIVE_NOTE };
+export { rowsForCycle, houseRow, carRow, motorhomeRow, applianceRow, dogRow, productRow, propId, LOCATIONS, ILLUSTRATIVE_NOTE, INDEXNOW_KEY, INDEXNOW_KEY_URL };
 
 if (isMain) {
   const args = process.argv.slice(2);
