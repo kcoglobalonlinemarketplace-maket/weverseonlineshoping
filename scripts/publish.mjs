@@ -633,28 +633,34 @@ function rowsForCycle(cycle) {
 const INDEXNOW_KEY = 'e7dab8295af2814019cf65154c4147d1';
 const INDEXNOW_KEY_URL = `${SITE_URL}/indexnow-${INDEXNOW_KEY}.txt`;
 
+const INDEXNOW_ENDPOINTS = ['https://api.indexnow.org/indexnow', 'https://indexnow.api.bing.com/indexnow'];
+
 export async function submitIndexNow(canonicalUrls) {
   const urlList = [...new Set(canonicalUrls.map((u) => String(u || '')))]
     .filter((u) => u.startsWith(SITE_URL))
     .slice(0, 10000);
   if (!urlList.length) return { submitted: 0, note: 'no eligible URLs' };
-  try {
-    const res = await fetch('https://api.indexnow.org/indexnow', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      body: JSON.stringify({
-        host: new URL(SITE_URL).host,
-        key: INDEXNOW_KEY,
-        keyLocation: INDEXNOW_KEY_URL,
-        urlList,
-      }),
-    });
-    const ok = res.status >= 200 && res.status < 300;
-    const body = (await res.text()).slice(0, 120);
-    return { submitted: ok ? urlList.length : 0, note: ok ? `HTTP ${res.status} — accepted` : `HTTP ${res.status} — ${body}` };
-  } catch (err) {
-    return { submitted: 0, note: `request failed: ${err && err.message ? err.message : err}` };
+  for (const endpoint of INDEXNOW_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          host: new URL(SITE_URL).host,
+          key: INDEXNOW_KEY,
+          keyLocation: INDEXNOW_KEY_URL,
+          urlList,
+        }),
+      });
+      const ok = res.status >= 200 && res.status < 300;
+      if (ok) return { submitted: urlList.length, note: `${endpoint} HTTP ${res.status} — accepted` };
+      const body = (await res.text()).slice(0, 120);
+      console.warn(`[publish] indexnow ${endpoint}: HTTP ${res.status} — ${body}`);
+    } catch (err) {
+      console.warn(`[publish] indexnow ${endpoint}: request failed — ${err && err.message ? err.message : err}`);
+    }
   }
+  return { submitted: 0, note: 'all IndexNow endpoints unreachable. Skipped.' };
 }
 
 /* ── CLI ─────────────────────────────────────────────────────────────────── */
