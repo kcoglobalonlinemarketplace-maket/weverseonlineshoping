@@ -9,8 +9,8 @@
 // live from the active catalog so they stay correct as the hourly auto-
 // publisher adds listings across all 120 non-African countries.
 
-import { CATEGORY_HUBS, slugify, cleanText, escAttr } from './lib/seo-builders.mjs';
-import { hubCategoryFor, hubCountryFor } from './lib/seo-builders.mjs';
+import { CATEGORY_HUBS, slugify, cleanText, escAttr } from '../shared/seo-builders.mjs';
+import { hubCategoryFor, hubCountryFor } from '../shared/seo-builders.mjs';
 
 const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
 const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';

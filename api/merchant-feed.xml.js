@@ -3,8 +3,8 @@
 // from Supabase so every newly auto-published listing is in the feed within
 // minutes. Illustrative listings are labeled in their description / title.
 
-import { buildFeed } from './lib/seo-builders.mjs';
-import { rowId } from './lib/seo-builders.mjs';
+import { buildFeed } from '../shared/seo-builders.mjs';
+import { rowId } from '../shared/seo-builders.mjs';
 
 const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
 const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';

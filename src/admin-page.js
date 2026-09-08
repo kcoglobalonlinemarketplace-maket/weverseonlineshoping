@@ -15,6 +15,7 @@ import { invalidateSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
 import { MARKETPLACE_CATEGORIES, MARKETPLACE_AUTOMOTIVE, normalizeToMarketplaceCategory } from './categories.js';
 import { looksLikePdf, pdfToPageDataUrls } from './pdf-pages.js';
 import { looksLikeVideoUrl, videoToFrameDataUrls, videoUrlToDataUrl, blobToDataVideoUrl } from './video-frames.js';
+import { renderSocialMedia } from './social-admin.js';
 
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -48,9 +49,13 @@ const NAV = [
     { id: 'ads',         label: 'Advertisements',     icon: 'megaphone' },
     { id: 'notifications', label: 'Notifications',    icon: 'bell' },
   ]},
+{ group: 'Marketing', items: [
+    { id: 'social', label: 'Social Media Automation', icon: 'share-2' },
+  ]},
 { group: 'Configuration', items: [
     { id: 'ai', label: 'AI Assistant',      icon: 'sparkles' },
     { id: 'payment-settings', label: 'Payment Settings',  icon: 'credit-card' },
+    { id: 'social-settings', label: 'Social Media Integrations', icon: 'plug' },
     { id: 'ai-settings', label: 'AI Settings',        icon: 'bot' },
     { id: 'homepage-branding', label: 'Homepage Branding', icon: 'image' },
     { id: 'promo-bg',     label: 'Promo & Backgrounds', icon: 'image' },
@@ -82,6 +87,7 @@ messages: 'Messages & Support', coupons: 'Coupons Manager', ads: 'Advertisement 
   seo: 'SEO Manager', email: 'Email Settings', analytics: 'Analytics',
   security: 'Security', activity: 'Activity Logs', backup: 'Backup & Restore',
   settings: 'Settings', publish: 'Publish & Deploy',
+  social: 'Social Media Automation', 'social-settings': 'Social Media Integrations',
 };
 
 const SORTED_CURRENCIES = [...ALL_CURRENCIES].sort();
@@ -258,6 +264,7 @@ window.navigate = function(section) {
     brand: renderBrandManager,
     'payment-settings': renderPaymentSettings,
     backup: renderBackup, settings: renderSettings, publish: renderPublish,
+    social: () => renderSocialMedia('overview'), 'social-settings': () => renderSocialMedia('platforms'),
   };
   const fn = renderers[section] || (() => { const c = document.getElementById('content'); if (c) c.innerHTML = emptyState('construction', 'Coming Soon', `${title} is being built.`); });
   fn();
@@ -788,7 +795,12 @@ function showAdminUI() {
   const emailEl = document.getElementById('admin-user-email');
   if (emailEl && state.user) emailEl.textContent = state.user.email || 'Admin';
   enforceAdminEmailInputs();
-  navigate('dashboard');
+  const target = (window.location.hash || '').replace(/^#/, '');
+  if (target === 'social' || target === 'social-settings') {
+    navigate(target);
+  } else {
+    navigate('dashboard');
+  }
 }
 
 // â”€â”€ Sign out â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -16,8 +16,8 @@
 // No fake data is ever generated: a missing description is reported as an
 // error that needs the owner, never invented.
 
-import { fetchCatalog, auditCatalog, auditListing, buildImprovements, renderedTitle, renderedMetaDescription, listingTitle, locationOf, priceNum, availabilityInfo, rowId, SITE_URL, SITE_NAME } from './lib/seo-audit.mjs';
-import { escXml } from './lib/seo-builders.mjs';
+import { fetchCatalog, auditCatalog, auditListing, buildImprovements, renderedTitle, renderedMetaDescription, listingTitle, locationOf, priceNum, availabilityInfo, rowId, SITE_URL, SITE_NAME } from '../shared/seo-audit.mjs';
+import { escXml } from '../shared/seo-builders.mjs';
 
 const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
 const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';

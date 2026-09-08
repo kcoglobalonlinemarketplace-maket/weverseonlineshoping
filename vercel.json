@@ -6,6 +6,13 @@
     { "source": "/country", "destination": "/showroom.html", "permanent": true }
   ],
   "routes": [
+    { "src": "^/api/social/publish(?:/.*)?$", "dest": "/api/social/admin?__path=/api/social/publish&" },
+    { "src": "^/api/social/posts(?:/.*)?$", "dest": "/api/social/admin?__path=/api/social/posts&" },
+    { "src": "^/api/social/accounts(?:/.*)?$", "dest": "/api/social/admin?__path=/api/social/accounts&" },
+    { "src": "^/api/social/status(?:/.*)?$", "dest": "/api/social/admin?__path=/api/social/status&" },
+    { "src": "^/api/social/scheduler(?:/.*)?$", "dest": "/api/social/admin?__path=/api/social/scheduler&" },
+    { "src": "^/api/social/oauth/start(?:/.*)?$", "dest": "/api/social/oauth?__path=/api/social/oauth/start&" },
+    { "src": "^/api/social/oauth/callback(?:/.*)?$", "dest": "/api/social/oauth?__path=/api/social/oauth/callback&" },
     { "src": "^/details\\.html$", "dest": "/api/og" },
     { "src": "^/details$", "dest": "/api/og" },
     { "src": "^/product/([^/]+)$", "dest": "/api/og?id=$1" },
@@ -22,6 +29,8 @@
   "functions": {
     "api/og-image.js": {
       "includeFiles": "node_modules/ffmpeg-static/ffmpeg*"
-    }
+    },
+    "api/social/admin.js": { "maxDuration": 120 },
+    "api/social/oauth.js": { "maxDuration": 30 }
   }
 }

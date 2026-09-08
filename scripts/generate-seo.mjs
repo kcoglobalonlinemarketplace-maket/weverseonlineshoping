@@ -3,7 +3,7 @@
 //   public/sitemap.xml          — every static page + every /product/<id> URL
 //   public/merchant-feed.xml    — Google Merchant Center product feed
 //   public/products-index.json  — lightweight id/title/price index
-// The builders live in api/lib/seo-builders.mjs and are shared verbatim with
+// The builders live in shared/seo-builders.mjs and are shared verbatim with
 // the live /sitemap.xml and /merchant-feed.xml endpoints so both can never
 // drift apart. Falls back to products-scan.json; on total failure it keeps
 // the previous generated files so a build can never ship an empty feed.
@@ -11,8 +11,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSitemap, buildFeed, buildIndex, collectHubs } from '../api/lib/seo-builders.mjs';
-import { rowId } from '../api/lib/seo-builders.mjs';
+import { buildSitemap, buildFeed, buildIndex, collectHubs } from '../shared/seo-builders.mjs';
+import { rowId } from '../shared/seo-builders.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');

@@ -24,8 +24,8 @@ import { getPhoneById } from '../src/phone-data.js';
 import { PRODUCT_LISTINGS } from '../src/products-data.js';
 import { PRODUCT_EXTRA_LISTINGS } from '../src/products-extra.js';
 import { generateListingById } from '../src/catalog.js';
-import { productVideo, productPoster } from './lib/product-media.mjs';
-import { findRelatedListings } from './lib/listing-lookup.mjs';
+import { productVideo, productPoster } from '../shared/product-media.mjs';
+import { findRelatedListings } from '../shared/listing-lookup.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_NAME = 'Weverse Online Shop';
@@ -124,7 +124,7 @@ async function withTimeoutMs(promise, ms) {
 // Shared with the /api/og-image generator (fast, persistSession:false).
 async function resolveFromDb(id) {
   const result = await withTimeoutMs(
-    import('./lib/listing-lookup.mjs').then((m) => m.resolveFromDb(id)),
+    import('../shared/listing-lookup.mjs').then((m) => m.resolveFromDb(id)),
     4000,
   );
   return result === '__timeout__' ? null : result;

@@ -19,8 +19,8 @@ import { writeFile, readFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import ffmpegPath from 'ffmpeg-static';
-import { resolveFromDb } from './lib/listing-lookup.mjs';
-import { productPoster, productVideo } from './lib/product-media.mjs';
+import { resolveFromDb } from '../shared/listing-lookup.mjs';
+import { productPoster, productVideo } from '../shared/product-media.mjs';
 
 const W = 1200;
 const H = 630;

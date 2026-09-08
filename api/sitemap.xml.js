@@ -2,8 +2,8 @@
 // Serves the current active catalog verbatim from Supabase so every newly
 // auto-published listing appears in the sitemap within minutes of publishing.
 
-import { buildSitemap, collectHubs } from './lib/seo-builders.mjs';
-import { rowId } from './lib/seo-builders.mjs';
+import { buildSitemap, collectHubs } from '../shared/seo-builders.mjs';
+import { rowId } from '../shared/seo-builders.mjs';
 
 const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
 const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
