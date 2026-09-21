@@ -150,16 +150,20 @@ const LANGUAGES = [
 ];
 
 // ---- DATA: Categories ----
+// The customer marketplace sells HOUSES ONLY, so the bar is built from the
+// property chips (All Houses, For Sale, For Rent, Villas, Apartments, …).
+// Vehicles and products are no longer offered; their data stays untouched.
 const CATEGORIES = [
-  {name:"All",icon:"layout-grid",color:"blue"},
-  {name:"Women",icon:"shopping-bag",color:"pink"},{name:"Men",icon:"shirt",color:"blue"},{name:"Kids",icon:"baby",color:"amber"},
-  {name:"Home",icon:"home",color:"emerald"},{name:"Sports",icon:"dumbbell",color:"lime"},{name:"Jewellery",icon:"gem",color:"cyan"},
-  {name:"Electronics",icon:"circuit-board",color:"sky"},{name:"Cars",icon:"car",color:"red"},{name:"Motorcycles",icon:"motorcycle",color:"blue"},
-  {name:"Phones",icon:"smartphone",color:"violet"},{name:"Computers",icon:"laptop",color:"indigo"},{name:"Furniture",icon:"armchair",color:"teal"},
-  {name:"Beauty",icon:"sparkles",color:"rose"},{name:"Fashion",icon:"scissors",color:"fuchsia"},{name:"Real Estate",icon:"building-2",color:"slate"},
-  {name:"Bicycles",icon:"bike",color:"green"},{name:"Trucks",icon:"truck",color:"yellow"},{name:"Land",icon:"map-pin",color:"lime"},
-  {name:"Kitchen",icon:"cooking-pot",color:"blue"},{name:"Food",icon:"shopping-basket",color:"emerald"},{name:"Pets",icon:"paw-print",color:"brown"},
-  {name:"Books",icon:"book-open",color:"blue"},{name:"Toys",icon:"gamepad-2",color:"purple"},{name:"Services",icon:"wrench",color:"gray"},
+  {name:"All Houses",icon:"home",color:"blue"},
+  {name:"For Sale",icon:"tag",color:"emerald"},
+  {name:"For Rent",icon:"key",color:"amber"},
+  {name:"Villas",icon:"castle",color:"violet"},
+  {name:"Apartments",icon:"building-2",color:"sky"},
+  {name:"Mansions",icon:"landmark",color:"indigo"},
+  {name:"Beach Houses",icon:"waves",color:"cyan"},
+  {name:"Luxury Homes",icon:"gem",color:"rose"},
+  {name:"Commercial Property",icon:"store",color:"slate"},
+  {name:"Land",icon:"map-pin",color:"lime"},
 ];
 
 // Tailwind color class maps for category accents (text + bg + border + glow)
@@ -187,18 +191,11 @@ const CAT_COLORS = {
 
 // ---- DATA: Search Suggestions ----
 const SEARCH_SUGGESTIONS = [
-  "Luxury Hypercars","Sports Cars","SUVs","Motorhomes","Trucks","Delivery Trucks",
   "Luxury Houses","Family Houses","Beach Houses","Smart Homes","Villas","Mansions",
-  "Apartments","Luxury Apartments","Commercial Buildings","Hotels","Resorts",
-  "Men's Fashion","Women's Fashion","Baby Clothes","Baby Products","Shoes",
-  "Luxury Watches","Gold Jewelry","Diamond Jewelry","Luxury Handbags",
-  "Beauty Products","Perfumes","Cosmetics","iPhone","Samsung Galaxy","Google Pixel",
-  "Gaming Laptops","Desktop Computers","Smart TVs","Electronics","Furniture",
-  "Home Appliances","Gaming Accessories","Sports Equipment","Food Markets",
-  "Fresh Vegetables","Supermarkets","Restaurants","Travel","Tourism",
-  "Agriculture","Construction Equipment","Health Products","Fitness Equipment",
-  "Toys","Books","Pet Supplies","DHL Shipping","FedEx Delivery","UPS Worldwide",
-  "Aramex Logistics","Cargo Ships","Delivery Aircraft","Warehouses","Distribution Centers",
+  "Apartments","Luxury Apartments","Townhouses","Condos","Lofts","Penthouses",
+  "Farm Houses","Cottages","Waterfront Homes","Land for Sale","Plots","Acreage",
+  "Commercial Buildings","Office Buildings","Retail Spaces","Hotels","Resorts",
+  "Houses for Rent","Apartments for Rent","Houses for Sale","New Build Homes","Modern Homes",
 ];
 
 // ---- DATA: Holiday Engine ----
@@ -251,18 +248,14 @@ const BRAND_FALLBACK_SLIDE = {
   brandOnly: true,
   badge: "Weverse Online Shop",
   titles: { en: "Weverse Online Shop" },
-  descs: { en: "Premium products, delivered worldwide." },
+  descs: { en: "Premium houses, available worldwide." },
 };
 
 
-// The single word shown over each hero slide: Home, Truck, Motorhome or Car.
-// No long titles, descriptions or badges — just the category name.
+// The single word shown over each hero slide. The marketplace sells houses
+// only, so every slide is labeled with the Home category name.
 function carouselCategoryName(slide) {
-  const text = [slide.badge, slide.titles && slide.titles.en, slide.descs && slide.descs.en].filter(Boolean).join(' ').toLowerCase();
-  if (/\b(house|houses|homes|apartment|apartments|villa|villas|condo|condominium|townhouse|townhouses|bungalow|mansion|mansions|penthouse|duplex|resort|resorts|hotels?|estates?|property|real estate|commercial buildings?|office buildings?|shopping malls?|vacation home|waterfront home|farm house|land for sale)\b/.test(text)) return 'Home';
-  if (/\b(trucks?|pickup|delivery trucks?|last-mile)\b/.test(text)) return 'Truck';
-  if (/\b(motorhomes?|campers?|rvs?|trailers?|fifth-wheel|mobile home|caravan)\b/.test(text)) return 'Motorhome';
-  return 'Car';
+  return 'Home';
 }
 
 // ---- STATE ----
@@ -311,15 +304,11 @@ function dedupSlides(arr, seen) {
 
 // Build the showcase: admin advertisements (by sort order) first, then
 // live marketplace listings, then the default brand collection as fallback.
-// Only Home, Truck, Motorhome and Car slides are ever shown — anything else
-// (fashion, electronics, food, boats, …) is dropped.
+// The marketplace sells houses only, so only Home slides ever show — vehicles
+// and products are never promoted on the hero.
 function isAllowedHeroSlide(s) {
   const text = [s.badge, s.titles && s.titles.en, s.descs && s.descs.en, s.category].filter(Boolean).join(' ').toLowerCase();
-  const isHome = /\b(house|houses|homes|apartment|apartments|villa|villas|condo|condominium|townhouse|townhouses|bungalow|mansion|mansions|penthouse|duplex|resort|resorts|hotels?|estates?|property|real estate|commercial buildings?|office buildings?|shopping malls?|vacation home|waterfront home|farm house|land for sale)\b/.test(text);
-  const isTruck = /\b(trucks?|pickup|delivery trucks?|last-mile)\b/.test(text);
-  const isMotorhome = /\b(motorhomes?|campers?|rvs?|trailers?|fifth-wheel|mobile home|caravan)\b/.test(text);
-  const isCar = /\b(cars?|sedans?|suvs?|coupes?|hatchbacks?|convertibles?|hypercars?|supercars?|electric vehicles?|hybrid vehicles?|vans?|minivans?|autos?|concept cars?|sports car)\b/.test(text);
-  return isHome || isTruck || isMotorhome || isCar;
+  return /\b(house|houses|homes|apartment|apartments|villa|villas|condo|condominium|townhouse|townhouses|bungalow|mansion|mansions|penthouse|duplex|resort|resorts|hotels?|estates?|property|real estate|commercial buildings?|office buildings?|shopping malls?|vacation home|waterfront home|farm house|land for sale)\b/.test(text);
 }
 function mergeAdSlides(){
   const seen = new Set();
@@ -354,17 +343,10 @@ function populateSelectors(){
 }
 
 // ---- INIT: Render Categories (data-driven mega-menu departments) ----
-// Departments group every category found in the live showroom data. Any new
-// category that appears in the showroom automatically lands in a department
-// (or the "More" catch-all) without any manual curation.
+// The customer marketplace sells houses only, so there is a single Real
+// Estate department holding every property chip.
 const STATIC_DEPARTMENTS = [
-  { id:'fashion', label:'Fashion', icon:'shirt', color:'pink', cats:['Women','Men','Kids','Fashion','Beauty','Jewellery','Watches & Accessories','Baby'] },
-  { id:'electronics', label:'Electronics & Tech', icon:'cpu', color:'sky', cats:['Electronics','Phones','Computers','Gaming','Cameras & Photography','Software & Digital Products','Home Appliances'] },
-  { id:'home', label:'Home & Living', icon:'home', color:'emerald', cats:['Home','Furniture','Kitchen','Garden & Outdoor','Pool & Spa','Cleaning Supplies'] },
-  { id:'vehicles', label:'Cars & Vehicles', icon:'car', color:'red', cats:['Cars','Motorcycles','Trucks','Bicycles','Marine & Boating','RV & Camper Accessories'] },
-  { id:'realestate', label:'Real Estate & Land', icon:'building-2', color:'amber', cats:['Real Estate','Land'] },
-  { id:'sports', label:'Sports & Outdoors', icon:'dumbbell', color:'lime', cats:['Sports','Fitness Equipment','Camping & Hiking'] },
-  { id:'everyday', label:'Everyday & More', icon:'shopping-basket', color:'teal', cats:['Food','Pets','Books','Toys','Office','Health & Medical','Music','Arts & Crafts','Services','Travel & Luggage'] },
+  { id:'realestate', label:'Real Estate', icon:'building-2', color:'blue', cats:['All Houses','For Sale','For Rent','Villas','Apartments','Mansions','Beach Houses','Luxury Homes','Commercial Property','Land'] },
 ];
 
 let _activeCategory="All";
@@ -375,20 +357,10 @@ let _deptLabels={};
 // Exact marketplace category order shown in the customer category bar.
 // The authoritative list lives in src/categories.js (window.MARKETPLACE_CATEGORIES
 // on the homepage); this fallback guarantees the bar renders correctly even
-// before the ES modules have executed.
+// before the ES modules have executed. Houses only.
 const CATEGORY_BAR_FALLBACK=[
-  'Women','Men','Kids','Home','Cars','Trucks','Fashion','Jewelry','Beauty','Sports',
-  'Electronics','Phones','Computers','Gaming','Motorcycles','Bicycles','Houses','Land',
-  'Furniture','Kitchen','Home Appliances','Food & Groceries','Baby','Pets','Agriculture',
-  'Books','Office','Business & Industrial','Auto Parts','Health & Medical',
-  'Musical Instruments','Arts & Crafts','Toys & Hobbies','Travel & Luggage',
-  'Watches & Accessories','Garden & Outdoor','Party & Event Supplies','Cameras & Photography',
-  'Software & Digital Products','Jewellery Making Supplies','Collectibles & Memorabilia',
-  'Safety & Security','Fitness Equipment','Camping & Hiking','Pool & Spa',
-  'Industrial Tools & Equipment','Packaging & Shipping Supplies','Cleaning Supplies',
-  'Religious & Spiritual Items','Flowers & Gifts','Luxury Goods','Wedding Supplies',
-  'Costumes & Cosplay','Coins & Bullion','Fireplace & Heating','Marine & Boating',
-  'RV & Camper Accessories','Educational Supplies','Funeral & Memorial Supplies',
+  'All Houses','For Sale','For Rent','Villas','Apartments','Mansions',
+  'Beach Houses','Luxury Homes','Commercial Property','Land',
 ];
 
 function getBarCategories(){
@@ -953,7 +925,7 @@ function renderCarousel(){
         : '<div class="absolute inset-0 z-10 flex items-center justify-center text-center p-6 sm:p-10">'+
         '<div class="glass-hero-panel">'+
         '<h2 id="slide-title-'+idx+'" class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]"></h2>'+
-        '<p class="mt-3 text-base sm:text-lg font-extrabold text-amber-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">Delivering worldwide 🚛🚒</p>'+
+        '<p class="mt-3 text-base sm:text-lg font-extrabold text-amber-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">Houses, villas and apartments &mdash; worldwide</p>'+
         '</div>'+
         '</div>');
     sc.appendChild(el);
@@ -1469,7 +1441,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
   initAds();
 });
-// Re-render the category nav once the live showroom data (DB products,
-// generated catalog, trucks) is loaded so new categories appear automatically.
+// Re-render the category nav once the live showroom data (DB houses) is
+// loaded so new categories appear automatically.
 document.addEventListener("smart-search-ready",()=>{renderCategories();});
 document.addEventListener("showroom-categories-ready",()=>{renderCategories();});

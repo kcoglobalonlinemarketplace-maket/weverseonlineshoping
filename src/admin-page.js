@@ -1566,8 +1566,33 @@ async function safePublishShowroom(payload) {
     payload.meta_description = autoMetaDescription(payload);
   }
 
+  // --- STEP 0.6: Timestamp safety ─────────────────────────────
+  // The DB columns created_at / updated_at are timestamptz. Ever since an
+  // edit was rebuilt from a fetched row it could carry these back as ISO
+  // text; sending them as raw strings makes the RPC/direct write fail with
+  // "column 'created_at' is of type timestamp with time zone but expression
+  // is of type text". Normalize both to ISO strings (or drop them so the DB
+  // owns the values). This is defensive for ANY caller of this function.
+  const ts = { ...(payload || {}) };
+  for (const k of ['created_at', 'updated_at', 'published_at']) {
+    const v = ts[k];
+    if (v == null || v === '') {
+      delete ts[k];
+      continue;
+    }
+    if (typeof v === 'string') {
+      const d = new Date(v);
+      ts[k] = Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+    } else if (v instanceof Date && !Number.isNaN(v.getTime())) {
+      ts[k] = v.toISOString();
+    } else {
+      // Object / number / other — cannot be sent as a timestamptz text.
+      delete ts[k];
+    }
+  }
+
   // --- STEP 1: Try direct Supabase upsert (fast path) ---
-  const directPayload = { ...payload, updated_at: new Date().toISOString() };
+  const directPayload = { ...payload, ...ts, updated_at: new Date().toISOString() };
   if (directPayload.property_id) {
     const { error: upErr } = await supabase
       .from('showroom_listings')

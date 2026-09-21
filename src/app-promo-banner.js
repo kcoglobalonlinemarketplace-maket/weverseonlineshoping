@@ -253,12 +253,12 @@ function phoneScreen(products) {
       <div class="px-3 pt-2">
         <div class="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-[9px] text-gray-400">
           <i data-lucide="search" class="w-3 h-3"></i>
-          <span>Search products, cars, homes…</span>
+          <span>Search houses, villas, apartments…</span>
         </div>
       </div>
       <!-- category chips -->
       <div class="flex gap-1.5 px-3 pt-2 overflow-hidden">
-        ${['All', 'Cars', 'Phones', 'Fashion', 'Homes', 'Electronics'].map((c, i) => `
+        ${['All Houses', 'Villas', 'Apartments', 'Beach Houses', 'Land', 'Mansions'].map((c, i) => `
           <span class="shrink-0 px-2 py-1 rounded-full text-[8px] font-black ${i === 0 ? 'bg-blue-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}">${c}</span>`).join('')}
       </div>
       <!-- live product cards -->

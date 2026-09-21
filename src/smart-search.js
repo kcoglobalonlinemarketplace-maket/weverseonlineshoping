@@ -40,32 +40,21 @@ function dedupe(key, fn) {
 }
 
 // ── Synonyms for query expansion ──────────────────────────────
+// Property-focussed so a house search can never surface vehicle/product terms.
 const SYNONYMS = {
-  phone: ['smartphone', 'mobile', 'cellphone'],
-  laptop: ['notebook', 'computer', 'macbook'],
-  car: ['vehicle', 'auto', 'sedan', 'suv'],
-  house: ['home', 'property', 'apartment', 'villa'],
-  tv: ['television', 'monitor'],
-  headphones: ['earphones', 'earbuds', 'headset'],
-  shoes: ['sneakers', 'footwear', 'boots'],
-  watch: ['smartwatch', 'timepiece'],
-  bag: ['handbag', 'purse', 'backpack'],
-  camera: ['dslr', 'mirrorless'],
-  motorhome: ['camper', 'rv', 'diesel pusher', 'class a', 'class b', 'class c'],
-  truck: ['pickup', 'lorry', 'semi'],
-  suv: ['crossover', 'jeep'],
-  villa: ['mansion', 'estate'],
-  apartment: ['condo', 'flat', 'studio'],
-  furniture: ['chair', 'table', 'sofa', 'desk'],
-  jewellery: ['jewelry', 'ring', 'necklace', 'bracelet'],
-  fashion: ['clothing', 'apparel', 'clothes'],
-  electronics: ['gadget', 'device', 'tech'],
-  samsung: ['galaxy'],
-  apple: ['iphone', 'macbook', 'ipad', 'airpods'],
-  mercedes: ['benz', 'amg'],
-  bmw: ['bimmer'],
-  toyota: ['camry', 'corolla', 'hilux'],
-  honda: ['civic', 'accord'],
+  house: ['home', 'property', 'residence'],
+  home: ['house', 'property', 'residence'],
+  property: ['house', 'home', 'real estate'],
+  apartment: ['condo', 'flat', 'studio', 'loft', 'townhouse'],
+  villa: ['mansion', 'luxury home', 'estate'],
+  mansion: ['villa', 'estate', 'luxury home'],
+  condo: ['apartment', 'flat', 'condominium'],
+  lease: ['rent', 'rental'],
+  rent: ['lease', 'rental'],
+  land: ['plot', 'acreage', 'parcel', 'lot'],
+  beach: ['coastal', 'waterfront', 'seaside', 'lakefront'],
+  waterfront: ['beach', 'coastal', 'seaside'],
+  commercial: ['office', 'retail', 'business property'],
 };
 
 function expandQuery(query) {
@@ -78,6 +67,17 @@ function expandQuery(query) {
     if (singular !== word) expanded.push(singular);
   }
   return [...new Set(expanded)].join(' ');
+}
+
+// Houses-only gate: the customer marketplace sells real estate, so vehicles,
+// special orders and products never appear in search results or suggestions.
+function isPropertyResult(r) {
+  if (!r) return false;
+  const et = String(r.entity_type || r.listing_type || '').toLowerCase();
+  if (et === 'property') return true;
+  if (et === 'vehicle' || et === 'special_order' || et === 'product') return false;
+  const hay = [r.category, r.subcategory, r.title].filter(Boolean).join(' ').toLowerCase();
+  return /(real estate|houses?|homes?|apartment|condo|villa|mansion|townhouse|duplex|penthouse|bungalow|cottage|chalet|loft|studio|farm house|beach house|commercial property|hotel|resort|land for sale)/.test(hay);
 }
 
 // ── Local catalog search ─────────────────────────────────────────
@@ -107,8 +107,10 @@ function getCatalogIndex() {
     import('./truck-data.js'),
     import('./motorhome-data.js'),
   ]).then(([sd, pd, pe, td, md]) => {
+    // Houses only — vehicles and products stay out of the search index.
     _catalogIndex = [...(sd.SHOWROOM_LISTINGS || []), ...(pd.PRODUCT_LISTINGS || []), ...(pe.PRODUCT_EXTRA_LISTINGS || []), ...(td.TRUCK_LISTINGS || []), ...(md.MOTORHOME_LISTINGS || [])]
       .filter(p => p && p.property_id)
+      .filter(p => isPropertyResult({ ...p, listing_type: p.listing_type || (p.product ? 'product' : undefined) }))
       .map(p => ({ p, hay: catalogHaystack(p) }));
     return _catalogIndex;
   }).catch(() => { _catalogIndex = []; return _catalogIndex; });
@@ -205,10 +207,10 @@ export async function smartSearch(query, limit = 30, onPartialResults) {
 
     let results = [];
     if (!error && marketplaceResults && marketplaceResults.length > 0) {
-      results = marketplaceResults;
+      results = marketplaceResults.filter(isPropertyResult);
     }
 
-    // Merge built-in catalog matches (site products not stored in the DB).
+    // Merge built-in catalog matches (site homes not stored in the DB).
     // Database rows win on duplicate ids.
     await getCatalogIndex().catch(() => {});
     const local = localCatalogSearch(trimmed, limit);
@@ -222,60 +224,21 @@ export async function smartSearch(query, limit = 30, onPartialResults) {
       onPartialResults(results, { count: results.length, marketplaceCount: results.length, supplierCount: 0 });
     }
 
-    // ── Background supplier search (non-blocking) ──
-    let supplierResults = [];
-    if (results.length < limit) {
-      try {
-        const { data: supplierData, error: supplierError } = await supabase.rpc('search_supplier_catalogue', {
-          p_query: trimmed, p_limit: limit - results.length,
-        });
-        if (!supplierError && supplierData && supplierData.length > 0) {
-          supplierResults = supplierData.map(item => ({
-            listing_id: null,
-            supplier_item_id: item.id,
-            title: item.title,
-            brand: item.brand,
-            description: item.description,
-            category: item.category,
-            images: item.images,
-            thumbnail: Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null,
-            price: item.selling_price,
-            currency: item.supplier_currency,
-            entity_type: 'special_order',
-            available_quantity: item.available_quantity,
-            estimated_delivery_days: item.estimated_delivery_days,
-            shipping_cost: item.shipping_cost,
-            supplier_name: item.supplier_name,
-            is_special_order: true,
-          }));
-
-          // Deliver supplier results as they arrive
-          if (onPartialResults && supplierResults.length > 0) {
-            onPartialResults([...results, ...supplierResults], {
-              count: results.length + supplierResults.length,
-              marketplaceCount: results.length,
-              supplierCount: supplierResults.length,
-            });
-          }
-        }
-      } catch {}
-    }
-
     // Record analytics (fire-and-forget)
     try {
       const sessionKey = getSessionKey();
       supabase.rpc('record_search', {
         p_query: trimmed,
-        p_result_count: results.length + supplierResults.length,
+        p_result_count: results.length,
         p_session_key: sessionKey,
       }).then(() => {}, () => {});
     } catch {}
 
     const result = {
-      results: [...results, ...supplierResults],
-      count: results.length + supplierResults.length,
+      results,
+      count: results.length,
       marketplaceCount: results.length,
-      supplierCount: supplierResults.length,
+      supplierCount: 0,
       _final: true,
     };
     cacheSet(cacheKey, result);
@@ -344,13 +307,13 @@ export async function getLiveSuggestions(query, limit = 8) {
 
     let results = [];
     if (rpc && !rpc.error && rpc.data && rpc.data.length > 0) {
-      results = rpc.data;
+      results = rpc.data.filter(isPropertyResult);
     } else if (rpc && rpc.error) {
       // Fallback to fuzzy
       const fuzzy = await withTimeout(supabase.rpc('smart_search_fuzzy', {
         p_query: trimmed.toLowerCase(), p_limit: limit,
       }), 1500);
-      if (fuzzy && fuzzy.data) results = fuzzy.data;
+      if (fuzzy && fuzzy.data) results = fuzzy.data.filter(isPropertyResult);
     }
 
     for (const r of results) {
@@ -426,7 +389,7 @@ export async function getTrendingSearches(limit = 8) {
     const { data, error } = await supabase.rpc('smart_search_trending', { p_limit: limit });
     if (!error && data) return data.map(d => d.query);
   } catch {}
-  return ['Samsung Galaxy', 'iPhone', 'Mercedes', 'Real Estate', 'Laptop', 'Villa', 'Beach House', 'Motorhome'];
+  return ['Real Estate', 'Beach House', 'Villa', 'Luxury House', 'Apartment', 'Mansion', 'House for Sale', 'Land for Sale'];
 }
 
 // ── Voice search ─────────────────────────────────────────────

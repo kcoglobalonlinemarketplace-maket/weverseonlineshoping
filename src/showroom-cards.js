@@ -8,7 +8,7 @@ import { isCatalogListingHidden, loadHiddenCatalogIds } from './catalog-hidden-s
 import { addToCart as cartAddToCart } from './cart.js';
 import { openShareSheet } from './share.js';
 import { renderCardMaps } from './static-map.js';
-import { canonicalCategoriesForLabel } from './categories.js';
+import { isPropertyListing, propertyCategoryForListing, PROPERTY_CATEGORIES } from './categories.js';
 import './smart-agent.js';
 
 const FALLBACK_IMG = '/fallback.svg';
@@ -18,6 +18,77 @@ function isVideoUrl(url) {
   if (/^data:video\//i.test(url)) return true;
   if (url.startsWith('blob:')) return false;
   return /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
+}
+
+// The FIRST valid video URL for a listing: the standalone video fields first,
+// then any video merged into the images gallery. Returns null if none.
+function hasVideo(listing) {
+  if (!listing) return null;
+  for (const v of [listing.video, listing.video_url]) {
+    if (isVideoUrl(v)) return v;
+  }
+  if (Array.isArray(listing.images)) {
+    for (const im of listing.images) if (isVideoUrl(im)) return im;
+  }
+  return null;
+}
+
+// Shared "▶ Video Tour" badge shown on cards that carry a video so the video
+// never hides behind the still image. The tap opens the inline player below.
+function videoTourBadgeHtml() {
+  return `<button type="button" class="video-tour-btn absolute bottom-2 left-2 z-10 inline-flex items-center gap-1.5 bg-black/70 hover:bg-black/85 backdrop-blur-sm text-white pl-1.5 pr-2.5 py-1 rounded-full text-[10px] font-bold shadow-md transition cursor-pointer">
+    <span class="w-4 h-4 rounded-full bg-white/95 flex items-center justify-center"><svg class="w-2.5 h-2.5 text-gray-900 ml-px" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+    Video Tour
+  </button>`;
+}
+
+let _videoTourModalStyle = false;
+function ensureVideoTourModalStyle() {
+  if (_videoTourModalStyle) return;
+  _videoTourModalStyle = true;
+  const s = document.createElement('style');
+  s.textContent = `
+    @keyframes vtFade{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+    .vt-modal-root{position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,.92);backdrop-filter:blur(4px);padding:16px}
+    .vt-modal-frame{width:100%;max-width:900px;animation:vtFade .2s ease}
+    .vt-modal-video{width:100%;max-height:72vh;background:#000;border-radius:1rem;outline:none}
+  `;
+  document.head.appendChild(s);
+}
+
+// Full-screen inline video player so the big ▶ play button plays a house's
+// video tour directly — no blank areas, no dead links, mobile-friendly.
+function openListingVideoModal(listing) {
+  const video = hasVideo(listing);
+  if (!video) return;
+  const poster = (Array.isArray(listing.images) ? listing.images.find(u => !isVideoUrl(u)) : null) || FALLBACK_IMG;
+  const pid = listing.property_id || listing.id || '';
+  ensureVideoTourModalStyle();
+  const root = document.createElement('div');
+  root.id = 'video-tour-modal';
+  root.className = 'vt-modal-root';
+  root.innerHTML = `
+    <div class="absolute inset-0" data-vt-close></div>
+    <div class="vt-modal-frame relative">
+      <div class="flex items-center justify-between mb-3 text-white">
+        <div class="min-w-0 pr-4">
+          <p class="text-[10px] font-black uppercase tracking-widest text-sky-300">Video Tour</p>
+          <p class="text-sm font-bold truncate">${escapeHtml(listing.title || '')}</p>
+        </div>
+        <button type="button" data-vt-close class="shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer" aria-label="Close">✕</button>
+      </div>
+      <video src="${escapeHtml(video)}" poster="${escapeHtml(poster)}" controls autoplay playsinline preload="auto" class="vt-modal-video"></video>
+      <a href="/product/${encodeURIComponent(pid)}" class="inline-flex items-center gap-2 mt-3 text-xs font-bold text-blue-300 hover:text-blue-200 transition">
+        View full listing <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+      </a>
+    </div>
+  `;
+  document.body.appendChild(root);
+  document.body.style.overflow = 'hidden';
+  const close = () => { root.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  root.querySelectorAll('[data-vt-close]').forEach(el => el.addEventListener('click', close));
+  document.addEventListener('keydown', onKey);
 }
 
 function escapeHtml(value) {
@@ -335,66 +406,37 @@ async function toggleWishlist(listing, btn) {
   }
 }
 
-// ── Section 1: Real Estate & Vehicles ──
-// Each listing ID appears in exactly ONE row — no overlaps, no duplicates.
+// ── Section 1: Real Estate ──
+// The customer marketplace shows HOUSES ONLY. Vehicles and products are no
+// longer offered for browsing (their data stays in the database untouched).
 const REAL_ESTATE_SECTIONS = [
   {
     id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Homes for sale or rent, listed by their sellers.',
+    subtitle: 'Homes, apartments and townhouses for sale or rent, listed by their sellers.',
     rows: [
       { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
   },
   {
-    id: 'modern-luxury', label: 'Modern Homes & Luxury Properties', icon: 'building-2',
-    subtitle: 'Contemporary villas, mansions, and new-build family homes.',
+    id: 'modern-luxury', label: 'Luxury Homes, Villas & Apartments', icon: 'building-2',
+    subtitle: 'Contemporary villas, mansions, modern homes and new-build family properties.',
     rows: [
       { id: 'new-homes', label: 'New Homes', icon: 'home', ids: ['W10018', 'W10019', 'W10020', 'W10021', 'W10022', 'W10023', 'W10024', 'W10025', 'W10026', 'W10027'] },
       { id: 'modern-homes', label: 'Modern Homes', icon: 'building-2', ids: ['W10006', 'W10009'] },
       { id: 'mansion-homes', label: 'Mansions', icon: 'landmark', ids: ['W10007'] },
       { id: 'farm-house', label: 'Farm Houses', icon: 'wheat', ids: ['W10010'] },
+      { id: 'apartment-homes', label: 'Apartments & Condos', icon: 'building-2', propertyCategories: ['Apartments', 'Apartment', 'Condos', 'Condo', 'Condominium', 'Townhouses', 'Townhouse'] },
+      { id: 'beach-houses', label: 'Beach Houses', icon: 'waves', propertyCategories: ['Beach Houses', 'Beach House', 'Coastal'] },
     ],
   },
   {
     id: 'commercial-land', label: 'Commercial Properties & Land', icon: 'briefcase',
-    subtitle: 'Retail buildings, hotels, and investment-grade commercial real estate.',
+    subtitle: 'Retail buildings, hotels, and investment-grade commercial real estate and land.',
     rows: [
       { id: 'commercial', label: 'Commercial Buildings', icon: 'store', ids: ['W10011'] },
       { id: 'hotels', label: 'Hotels & Hospitality', icon: 'bed-double', ids: ['W10013'] },
+      { id: 'land-parcels', label: 'Land & Plots', icon: 'map-pin', propertyCategories: ['Land', 'Land & Plots', 'Plots', 'Acreage', 'Land Parcels'] },
     ],
-  },
-  {
-    id: 'cars', label: 'Cars', icon: 'car-front',
-    subtitle: 'Cars listed by their sellers, from new arrivals to well-maintained used vehicles.',
-    rows: [
-      { id: 'all-cars', label: 'New Cars', icon: 'car-front', allCars: true },
-    ],
-  },
-  {
-    id: 'washing-machines', label: 'Washing Machines', icon: 'washing-machine',
-    subtitle: 'Washers, dryers and laundry appliances, listed by their sellers.',
-    rows: [
-      { id: 'all-washing-machines', label: 'Washing Machines', icon: 'washing-machine', allWashingMachines: true },
-    ],
-  },
-  {
-    id: 'trucks-buses', label: 'Trucks', icon: 'truck',
-    subtitle: 'Heavy-duty trucks and commercial transport vehicles.',
-    rows: [
-      { id: 'all-trucks', label: 'All Trucks', icon: 'truck', allTrucks: true },
-    ],
-  },
-  {
-    id: 'motorhomes-boats', label: 'Motorhomes', icon: 'bus',
-    subtitle: 'Motorhomes and RVs listed by their sellers, ready for travel.',
-    rows: [
-      { id: 'all-motorhomes', label: 'All Motorhomes', icon: 'bus', allMotorhomes: true },
-    ],
-  },
-  {
-    id: 'products', label: 'Products', icon: 'package',
-    subtitle: 'Jewelry, watches, fashion and more, available from sellers.',
-    rows: PRODUCT_ROWS,
   },
 ];
 
@@ -470,8 +512,11 @@ function cardParts(listing) {
   const listingId = listing.id || listing.property_id;
   const cover = listing.images?.[0] || FALLBACK_IMG;
   const isCoverVideo = isVideoUrl(cover);
+  const listingVideo = hasVideo(listing);
+  const listingPoster = (Array.isArray(listing.images) ? listing.images.find(u => !isVideoUrl(u)) : null) || FALLBACK_IMG;
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
-  const statusBadge = listing.listing_type === 'product' ? 'New' : ((isProperty || isPet) ? 'For Sale' : '');
+  const statusBadge = listing.listing_type === 'product' ? 'New' : ((isProperty || isPet) ? ((listing.listing_status === 'rent') ? 'For Rent' : 'For Sale') : '');
+  const propcat = isProperty ? (propertyCategoryForListing(listing) || []) : [];
 
   // Auto-published showcase rows (WS-A/WS-C/WS-T/WS-P) and anything flagged
   // realistic-illustrative get honest badges; featured rows are "Priority".
@@ -568,6 +613,7 @@ function cardParts(listing) {
   return {
     isProperty, isPet, isTruck, isMotorhome, isCar,
     listingId, cover, isCoverVideo, price, statusBadge,
+    listingVideo, listingPoster, propcat,
     locationHtml, specsHtml, ratingSoldHtml, mapPreviewHtml,
     discountBadge, originalPriceHtml, badgeRow,
   };
@@ -579,6 +625,9 @@ export function renderCard(listing) {
   const card = document.createElement('div');
   card.className = 'showroom-card group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col cursor-pointer';
   card.dataset.id = p.listingId;
+  card.dataset.istype = p.isProperty ? 'property' : (p.isPet ? 'pet' : 'product');
+  card.dataset.status = p.propcat && p.propcat.includes('For Rent') ? 'rent' : 'sale';
+  card.dataset.propcat = (p.propcat || []).join(',').toLowerCase();
 
   const wishSaved = isSaved(listing);
 
@@ -592,6 +641,7 @@ export function renderCard(listing) {
              onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
       }
       ${p.statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${p.statusBadge}</span>` : ''}
+      ${p.listingVideo ? videoTourBadgeHtml() : ''}
       ${p.discountBadge}
       <div class="absolute top-2 right-2 flex flex-col gap-1.5">
         <button class="share-btn shrink-0 w-9 h-9 bg-white/90 hover:bg-white text-gray-500 hover:text-blue-600 rounded-full shadow-sm transition flex items-center justify-center" title="Share product" aria-label="Share product">
@@ -622,7 +672,7 @@ export function renderCard(listing) {
         </button>
       </div>
       <button class="details-btn mt-2 w-full min-w-0 bg-blue-50 hover:bg-blue-100 active:scale-[0.97] text-blue-700 text-[13px] font-black py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
-        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Product Details →</span>
+        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details →</span>
       </button>
     </div>
   `;
@@ -642,6 +692,9 @@ export function renderFeedCard(listing) {
   const card = document.createElement('div');
   card.className = 'showroom-card showroom-feed-card group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 flex flex-col sm:flex-row cursor-pointer';
   card.dataset.id = p.listingId;
+  card.dataset.istype = p.isProperty ? 'property' : (p.isPet ? 'pet' : 'product');
+  card.dataset.status = p.propcat && p.propcat.includes('For Rent') ? 'rent' : 'sale';
+  card.dataset.propcat = (p.propcat || []).join(',').toLowerCase();
 
   const wishSaved = isSaved(listing);
 
@@ -655,6 +708,7 @@ export function renderFeedCard(listing) {
              onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
       }
       ${p.statusBadge ? `<span class="absolute top-2.5 left-2.5 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${p.statusBadge}</span>` : ''}
+      ${p.listingVideo ? videoTourBadgeHtml() : ''}
       ${p.discountBadge}
       <span class="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <i data-lucide="expand" class="w-3.5 h-3.5"></i> View
@@ -687,7 +741,7 @@ export function renderFeedCard(listing) {
         </button>
       </div>
       <button class="details-btn mt-2 w-full min-w-0 bg-blue-50 hover:bg-blue-100 active:scale-[0.97] text-blue-700 text-[13px] font-black py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
-        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Product Details →</span>
+        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details →</span>
       </button>
     </div>
   `;
@@ -710,6 +764,7 @@ function attachCardListeners(card, listing) {
   card.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
   card.querySelector('.cart-btn')?.addEventListener('click', (e) => { e.stopPropagation(); addToCart(listing); });
   card.querySelector('.details-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/product/${listing.property_id}`; });
+  card.querySelector('.video-tour-btn')?.addEventListener('click', (e) => { e.stopPropagation(); openListingVideoModal(listing); });
 }
 
 async function handleBuyNow(listing) {
@@ -762,6 +817,7 @@ function showToast(msg) {
 // rows (and any locally-saved listings) instead of regenerated old products.
 function dbListingsForRow(rowDef) {
   const db = getDBListings() || [];
+  if (rowDef.propertyCategories) return db.filter(l => isPropertyListing(l) && rowDef.propertyCategories.some(c => String(l.category || '') === c));
   if (rowDef.allTrucks) return db.filter(l => l.category === 'Trucks');
   if (rowDef.allMotorhomes) return db.filter(l => l.category === 'Motorhomes');
   if (rowDef.allCars) return db.filter(l => l.category === 'Cars' || l.category === 'Cars & Vehicles');
@@ -775,7 +831,12 @@ function dbListingsForRow(rowDef) {
 
 function getRowListings(rowDef) {
   let listings;
-  if (rowDef.allTrucks) {
+  if (rowDef.propertyCategories) {
+    listings = [];
+    for (const cat of rowDef.propertyCategories) {
+      listings = [...listings, ...ALL_HOUSES.filter(l => String(l.category || '') === cat)];
+    }
+  } else if (rowDef.allTrucks) {
     listings = ALL_TRUCKS;
   } else if (rowDef.allMotorhomes) {
     listings = ALL_MOTORHOMES;
@@ -803,7 +864,7 @@ function getRowListings(rowDef) {
     listings = [...listings, l];
   }
   let catalogExtra = [];
-  if (!rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.newHouses && !rowDef.allProducts && !rowDef.productCategory && !rowDef.allWashingMachines) {
+  if (!rowDef.propertyCategories && !rowDef.allTrucks && !rowDef.allMotorhomes && !rowDef.allCars && !rowDef.newHouses && !rowDef.allProducts && !rowDef.productCategory && !rowDef.allWashingMachines) {
     catalogExtra = getCatalogListingsForRow(rowDef, listings.map(l => l.property_id));
   }
   if (catalogExtra.length > 0) {
@@ -815,9 +876,9 @@ function getRowListings(rowDef) {
 function renderRow(rowDef) {
   const listings = getRowListings(rowDef);
   const hasItems = listings.length > 0;
-  // Every section (houses, cars, trucks, motorhomes, products) uses the
-  // compact 2-column grid in grid mode so customers scroll down to browse
-  // and always see 2 products side by side on a phone.
+  // Every house section uses the compact 2-column grid in grid mode so
+  // customers scroll down to browse and always see 2 properties side by side
+  // on a phone.
   const isGrid = viewMode === 'grid' || rowDef.layout === 'grid';
   const lineMode = isLineMode() && !isGrid;
 
@@ -935,22 +996,20 @@ function renderGrid(gridName) {
   const accent = 'blue';
 
   if (gridName === 'real-estate') {
-    // Compact homepage: 1 line houses, 1 line cars, 1 line washing
-    // machines, 1 line trucks, 1 line motorhomes, then products.
+    // Compact homepage: all three house sections (Local Houses, Luxury/Villas/
+    // Apartments, Commercial & Land) so every property is browsable right on
+    // the homepage. Vehicles and products are intentionally not offered.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'cars', 'washing-machines', 'trucks-buses', 'motorhomes-boats', 'products']) {
+    for (const id of ['local-houses', 'modern-luxury', 'commercial-land']) {
       const section = byId.get(id);
       if (!section) continue;
       const alreadyRendered = section.rows.some(r => hasRow(r.id));
       if (!alreadyRendered && sectionHasItems(section)) {
-        const isTeaser = HOUSE_SECTION_IDS.has(id) || VEHICLE_SECTION_IDS.has(id);
         try {
-          container.appendChild(renderSection(section, accent, isTeaser ? 1 : undefined));
+          container.appendChild(renderSection(section, accent));
         } catch { /* skip a section that can't be rendered */ }
       }
     }
-    // modern-luxury & commercial-land are intentionally left off the
-    // homepage — every property stays reachable in the All Houses overlay.
   } else {
     sections.forEach(section => {
       if (!sectionHasItems(section)) return;
@@ -987,6 +1046,14 @@ function adoptPrerendered(container) {
         const listing = listings.find(l => (l.id || l.property_id) === id);
         const target = listing || (id ? { id, property_id: id, title: id } : null);
         if (!target) return;
+        if (listing) {
+          // Prerendered cards carry no category chips — stamp them from the
+          // listing so the card-level property filters work on first paint.
+          const cat = propertyCategoryForListing(listing);
+          card.dataset.istype = listing.listing_type === 'property' ? 'property' : 'product';
+          card.dataset.status = listing.listing_type === 'property' && listing.listing_status === 'rent' ? 'rent' : 'sale';
+          card.dataset.propcat = (cat || []).join(',').toLowerCase();
+        }
         attachCardListeners(card, target);
       });
     }
@@ -1027,52 +1094,36 @@ function collectAllRows() {
     .flatMap(s => s.rows.map(r => ({ section: s, row: r })));
 }
 
-// Canonical marketplace category names a given showroom section/row belongs
-// to. Fixed gathered sections (houses, cars, trucks, motorhomes, land,
-// washing machines) map directly to their canonical bar names; product rows
-// are matched by keyword through the shared canonical category list so the
-// customer bar, admin manager and AI scanner always agree.
-function rowCanonicalNames(section, row) {
-  const sId = section.id || '';
-  if (sId === 'local-houses' || sId === 'modern-luxury') return ['houses'];
-  if (sId === 'commercial-land') return ['land'];
-  if (sId === 'cars') return ['cars'];
-  if (sId === 'trucks-buses') return ['trucks'];
-  if (sId === 'motorhomes-boats') return ['rv & camper accessories'];
-  if (sId === 'washing-machines') return ['home appliances'];
-  return canonicalCategoriesForLabel(row.label);
+// ── Card-level category filtering ──
+// A house belongs to MANY chips at once (Villas + For Sale + Luxury Homes),
+// so category matching happens per card via the data-status / data-propcat
+// attributes written by renderCard. Cards are hidden, then rows and sections
+// that end up with no visible card are dropped and an empty state is shown.
+
+function cardMatchesCategory(catName, card) {
+  const n = String(catName || '').toLowerCase().trim();
+  if (!n || n === 'all' || n === 'all houses' || n === 'houses' || n === 'homes' || n === 'home' || n === 'real estate' || n === 'realestate') return true;
+  if (n === 'for sale') return card.dataset.status !== 'rent';
+  if (n === 'for rent') return card.dataset.status === 'rent';
+  return (card.dataset.propcat || '').split(',').includes(n);
 }
 
-function rowBelongsToCategory(catName, section, row) {
-  const n = String(catName || '').toLowerCase();
-  if (n === 'all' || !n) return true;
-  const names = rowCanonicalNames(section, row);
-  if (names.includes(n)) return true;
-  const raw = String(row.label || '').toLowerCase();
-  return raw === n || String(section.label || '').toLowerCase() === n;
-}
-
-function categoryMatches(catName, sectionLabel, rowLabel) {
-  if (catName === 'All') return true;
-  const n = String(catName || '').toLowerCase();
-  const s = String(sectionLabel || '').toLowerCase();
-  const r = String(rowLabel || '').toLowerCase();
-  if (s === n || r === n) return true;
-  return canonicalCategoriesForLabel(r).includes(n) || canonicalCategoriesForLabel(s).includes(n);
-}
-
-function applyRowVisibility(grid, predicate) {
-  const allRows = collectAllRows();
+function applyCardVisibility(grid, matcher) {
+  const matchFn = typeof matcher === 'function' ? matcher : (card) => cardMatchesCategory(matcher, card);
+  const cards = Array.from(grid.querySelectorAll('.showroom-card'));
   let anyVisible = false;
-  allRows.forEach(({ section, row }) => {
-    const rowEl = grid.querySelector(`[data-row-id="${row.id}"]`);
-    if (!rowEl) return;
-    const match = predicate(section, row);
-    rowEl.style.display = match ? '' : 'none';
+  cards.forEach(card => {
+    const match = matchFn(card);
+    card.style.display = match ? '' : 'none';
     if (match) anyVisible = true;
   });
+  collectAllRows().forEach(({ row }) => {
+    const rowEl = grid.querySelector(`[data-row-id="${row.id}"]`);
+    if (!rowEl) return;
+    rowEl.style.display = rowEl.querySelector('.showroom-card:not([style*="display: none"])') ? '' : 'none';
+  });
   grid.querySelectorAll('.showroom-section').forEach(sec => {
-    const visibleRows = sec.querySelectorAll('.showroom-row:not([style*="display: none"])');
+    const visibleRows = Array.from(sec.querySelectorAll('.showroom-row:not([style*="display: none"])'));
     sec.style.display = visibleRows.length > 0 ? '' : 'none';
   });
   const empty = grid.querySelector('[data-category-empty]');
@@ -1080,10 +1131,10 @@ function applyRowVisibility(grid, predicate) {
     if (!empty) {
       grid.insertAdjacentHTML('beforeend',
         '<div data-category-empty class="category-empty flex flex-col items-center justify-center text-center py-16 px-4">'
-        + '<span class="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-4">'
-        + '<i data-lucide="package-open" class="w-7 h-7 text-gray-400"></i></span>'
-        + '<p class="text-sm font-bold text-gray-700">No products available in this category yet</p>'
-        + '<p class="text-xs text-gray-500 mt-1">Check back soon — new items are added regularly.</p></div>');
+        + '<span class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4">'
+        + '<i data-lucide="home" class="w-7 h-7 text-blue-500"></i></span>'
+        + '<p class="text-sm font-bold text-gray-700">No houses found under this option yet</p>'
+        + '<p class="text-xs text-gray-500 mt-1">Check back soon — new properties are added regularly.</p></div>');
       if (window.lucide) window.lucide.createIcons();
     }
   } else if (empty) {
@@ -1094,14 +1145,14 @@ function applyRowVisibility(grid, predicate) {
 export function filterShowroomByCategory(categoryName) {
   const grid = document.querySelector('[data-showroom-grid="real-estate"]');
   if (!grid) return;
-  applyRowVisibility(grid, (section, row) => rowBelongsToCategory(categoryName, section, row));
+  applyCardVisibility(grid, categoryName);
   grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 export function clearShowroomFilter() {
   const grids = document.querySelectorAll('[data-showroom-grid]');
   grids.forEach(grid => {
-    grid.querySelectorAll('.showroom-row, .showroom-section').forEach(el => {
+    grid.querySelectorAll('.showroom-card, .showroom-row, .showroom-section').forEach(el => {
       el.style.display = '';
     });
     const empty = grid.querySelector('[data-category-empty]');
@@ -1109,94 +1160,69 @@ export function clearShowroomFilter() {
   });
 }
 
-// ── Data-driven category inventory ──────────────────────────────
-// Aggregates every category that actually exists in the showroom
-// (seed + DB products + catalog + trucks). The homepage nav is built
-// from this list, so new products/categories appear automatically.
-const DEPT_KEYWORDS = {
-  fashion: ['women', 'men', 'kids', 'fashion', 'beauty', 'jewel', 'watch', 'shoe', 'handbag', 'apparel', 'dress', 'baby'],
-  electronics: ['electronic', 'phone', 'computer', 'laptop', 'gaming', 'camera', 'software', 'digital', 'tv', 'audio', 'appliance'],
-  realestate: ['real estate', 'houses', 'homes', 'apartment', 'villa', 'mansion', 'land', 'commercial', 'hotel', 'condominium', 'property', 'beach house', 'farm house', 'estate'],
-  home: ['home', 'furniture', 'kitchen', 'garden', 'decor', 'pool', 'spa', 'cleaning', 'laundry', 'bedroom', 'bathroom'],
-  vehicles: ['car', 'motorcycle', 'truck', 'bicycle', 'marine', 'boating', 'rv', 'camper', 'auto', 'vehicle'],
-  sports: ['sport', 'fitness', 'camping', 'hiking', 'outdoor', 'gym', 'athletic', 'bike'],
-  everyday: ['food', 'grocer', 'pet', 'book', 'toy', 'office', 'health', 'medical', 'music', 'instrument', 'art', 'craft', 'service', 'travel', 'luggage', 'religious', 'flower', 'gift', 'party', 'wedding', 'costume', 'coin', 'funeral', 'packaging', 'safety', 'security', 'industrial', 'business', 'educational', 'collectible', 'fireplace', 'pharmacy'],
-};
+// ── Property-only category inventory ────────────────────────────
+// The homepage nav is built entirely from the PROPERTY_CATEGORIES chips
+// (For Sale, Villas, Apartments, Luxury Homes …), counted across every house
+// the showroom can render. Chips that currently have no items are omitted.
+// Returns a single Real Estate department so the nav reads as one marketplace.
 
-export async function getShowroomCategoryInventory() {
-  const counts = new Map();
-  const add = (cat, sub, n = 1) => {
-    if (!cat) return;
-    let key = String(cat).trim();
-    // Merged gathered lines: "Cars & Vehicles" belongs to the Cars chip.
-    const merge = { 'Cars & Vehicles': 'Cars', 'Houses & Real Estate': 'Houses', 'Real Estate': 'Houses' };
-    if (merge[key]) key = merge[key];
-    if (!counts.has(key)) counts.set(key, { name: key, count: 0, subs: new Set() });
-    const e = counts.get(key);
-    e.count += n;
-    if (sub) e.subs.add(String(sub).trim());
-  };
-  [...SHOWROOM_LISTINGS, ...getDBListings()].forEach(l => add(l.category, l.subcategory));
-  TRUCK_LISTINGS.forEach(l => add(l.category, l.subcategory));
-  PRODUCT_LISTINGS.forEach(l => add(l.category, l.subcategory));
-  PRODUCT_EXTRA_LISTINGS.forEach(l => add(l.category, l.subcategory));
-
-  // Only categories that actually have items are surfaced in the nav. The
-  // owner's live database listings are the source of truth, so every DB
-  // category survives — an old hardcoded whitelist would drop Fashion,
-  // Watches, New Arrivals, Jewelry and Phones.
-  const dbCats = new Set((getDBListings() || []).map(l => String(l.category || '').trim()).filter(Boolean));
-  counts.forEach((entry, name) => {
-    const hasItems = dbCats.has(name) || (entry.count || 0) > 0;
-    if (!hasItems) counts.delete(name);
+function propertySourceListings() {
+  const out = [];
+  const seen = new Set();
+  const push = (arr) => (arr || []).forEach(l => {
+    if (!l || !isPropertyListing(l)) return;
+    const id = l.property_id || l.id;
+    if (id && seen.has(id)) return;
+    if (id) seen.add(id);
+    out.push(l);
   });
-
-  // Display order
-  const deptMeta = {
-    fashion: { label: 'Fashion', icon: 'shopping-bag', color: 'pink' },
-    electronics: { label: 'Electronics', icon: 'smartphone', color: 'blue' },
-    home: { label: 'Home', icon: 'home', color: 'emerald' },
-    vehicles: { label: 'Vehicles', icon: 'car-front', color: 'red' },
-    realestate: { label: 'Real Estate', icon: 'building-2', color: 'slate' },
-    sports: { label: 'Sports', icon: 'dumbbell', color: 'lime' },
-    everyday: { label: 'Everyday', icon: 'shopping-basket', color: 'amber' },
-  };
-  const deptIds = ['fashion', 'electronics', 'home', 'vehicles', 'realestate', 'sports', 'everyday'];
-  const depts = deptIds.map(id => ({ id, ...deptMeta[id], categories: [] }));
-  const more = { id: 'more', label: 'More', icon: 'grid', color: 'gray', categories: [] };
-  // Match priority (real-estate terms must win over the generic "home" keyword)
-  const matchOrder = ['fashion', 'electronics', 'realestate', 'home', 'vehicles', 'sports', 'everyday'];
-
-  counts.forEach((entry, name) => {
-    const n = name.toLowerCase();
-    const deptId = matchOrder.find(id => DEPT_KEYWORDS[id].some(k => n.includes(k)));
-    const dept = depts.find(d => d.id === deptId);
-    (dept || more).categories.push(entry);
-  });
-
-  const out = depts.map(d => {
-    d.categories.sort((a, b) => b.count - a.count);
-    return d;
-  }).filter(d => d.categories.length);
-  if (more.categories.length) out.push(more);
+  push(SHOWROOM_LISTINGS);
+  push(getDBListings());
+  push(ALL_HOUSES);
+  push(PRODUCT_EXTRA_LISTINGS);
+  push(PRODUCT_LISTINGS);
   return out;
 }
 
+export async function getShowroomCategoryInventory() {
+  const counts = new Map();
+  propertySourceListings().forEach(l => {
+    for (const chip of propertyCategoryForListing(l)) {
+      if (!counts.has(chip)) counts.set(chip, { name: chip, count: 0 });
+      counts.get(chip).count += 1;
+    }
+  });
+  const total = counts.get('All Houses')?.count || 0;
+  const cats = PROPERTY_CATEGORIES
+    .map(c => {
+      const e = counts.get(c.name);
+      const has = c.name === 'All Houses' ? total > 0 : (e && e.count > 0);
+      return has ? { name: c.name, count: c.name === 'All Houses' ? total : e.count, icon: c.icon, color: c.color } : null;
+    })
+    .filter(Boolean);
+  if (cats.length === 0) return [];
+  return [{ id: 'realestate', label: 'Real Estate', icon: 'building-2', color: 'blue', categories: cats }];
+}
+
+// The marketplace now offers a single department (Real Estate), so filtering
+// by it shows everything. Any other dept id filters to its chip names.
 export async function filterShowroomByDepartment(deptId) {
+  const id = String(deptId || '').toLowerCase();
+  if (id === 'realestate' || id === 'real-estate') {
+    clearShowroomFilter();
+    return;
+  }
   const inventory = await getShowroomCategoryInventory();
   let names = [];
-  inventory.forEach(d => { if (d.id === deptId) names = d.categories.map(c => c.name); });
-  filterShowroomByCategories(names.length ? names : [deptId]);
+  inventory.forEach(d => { if (d.id === id) names = d.categories.map(c => c.name); });
+  filterShowroomByCategories(names.length ? names : [id]);
 }
 
 export function filterShowroomByCategories(names) {
   const grid = document.querySelector('[data-showroom-grid="real-estate"]');
   if (!grid) return;
   const list = (names || []).map(n => String(n).toLowerCase()).filter(Boolean);
-  applyRowVisibility(grid, (section, row) => {
-    if (list.length === 0) return true;
-    return list.some(n => rowBelongsToCategory(n, section, row));
-  });
+  applyCardVisibility(grid, (card) => list.length === 0 || list.some(n => cardMatchesCategory(n, card)));
 }
 
 // ── Initialization ──
@@ -1211,34 +1237,35 @@ let _dbSectionAdded = false;
 // Maps a product's category/subcategory field to the marketplace
 // section row where it should appear.  This ensures AI-created
 // products land in the correct section instead of only "New Arrivals".
+// Maps a listing's category/subcategory field to the marketplace section row
+// where it should appear. Only real-estate rows exist now — this ensures every
+// house from the database lands in the right property row (not just Examples).
 const CATEGORY_TO_SECTION_ROW = {
-  // Real estate & vehicles
-  'Real Estate': { section: 'local-houses', row: 'affordable-homes' },
+  'Real Estate': { section: 'local-houses', row: 'new-houses' },
+  'Houses & Real Estate': { section: 'local-houses', row: 'new-houses' },
   'Apartments': { section: 'local-houses', row: 'apartment-homes' },
   'Villas': { section: 'modern-luxury', row: 'modern-homes' },
   'Mansions': { section: 'modern-luxury', row: 'mansion-homes' },
-  'Beach Houses': { section: 'local-houses', row: 'beach-houses' },
+  'Beach Houses': { section: 'modern-luxury', row: 'beach-houses' },
   'Luxury Condominiums': { section: 'modern-luxury', row: 'modern-homes' },
   'Farm Houses': { section: 'modern-luxury', row: 'farm-house' },
   'Commercial Buildings': { section: 'commercial-land', row: 'commercial' },
   'Hotels': { section: 'commercial-land', row: 'hotels' },
-  'Cars': { section: 'cars', row: 'all-cars' },
-  'Motorhomes': { section: 'motorhomes-boats', row: 'all-motorhomes' },
-  'Trucks': { section: 'trucks-buses', row: 'all-trucks' },
+  'Land': { section: 'commercial-land', row: 'land-parcels' },
+  'Land & Plots': { section: 'commercial-land', row: 'land-parcels' },
 };
 
-// Fuzzy keyword matching for categories not found exactly
+// Fuzzy keyword matching for category names not found exactly above.
 const CATEGORY_KEYWORDS = [
-  { keywords: ['car', 'vehicle', 'auto', 'sedan', 'suv'], target: { section: 'cars', row: 'all-cars' } },
-  { keywords: ['truck', 'pickup', 'lorry'], target: { section: 'trucks-buses', row: 'all-trucks' } },
-  { keywords: ['motorhome', 'camper', 'rv'], target: { section: 'motorhomes-boats', row: 'all-motorhomes' } },
-  { keywords: ['apartment', 'condo', 'flat'], target: { section: 'local-houses', row: 'apartment-homes' } },
-  { keywords: ['villa', 'luxury home'], target: { section: 'modern-luxury', row: 'modern-homes' } },
+  { keywords: ['house', 'home'], target: { section: 'local-houses', row: 'new-houses' } },
+  { keywords: ['apartment', 'condo', 'flat', 'townhouse'], target: { section: 'local-houses', row: 'apartment-homes' } },
+  { keywords: ['villa', 'luxury home', 'luxury'], target: { section: 'modern-luxury', row: 'modern-homes' } },
   { keywords: ['mansion', 'estate'], target: { section: 'modern-luxury', row: 'mansion-homes' } },
-  { keywords: ['beach', 'coastal'], target: { section: 'local-houses', row: 'beach-houses' } },
+  { keywords: ['beach', 'coastal', 'waterfront', 'seaside'], target: { section: 'modern-luxury', row: 'beach-houses' } },
   { keywords: ['farm'], target: { section: 'modern-luxury', row: 'farm-house' } },
-  { keywords: ['commercial', 'retail', 'store'], target: { section: 'commercial-land', row: 'commercial' } },
-  { keywords: ['hotel', 'hospitality'], target: { section: 'commercial-land', row: 'hotels' } },
+  { keywords: ['land', 'plot', 'acreage'], target: { section: 'commercial-land', row: 'land-parcels' } },
+  { keywords: ['commercial', 'retail', 'store', 'office'], target: { section: 'commercial-land', row: 'commercial' } },
+  { keywords: ['hotel', 'hospitality', 'resort'], target: { section: 'commercial-land', row: 'hotels' } },
 ];
 
 function findSectionRowForCategory(category, subcategory) {
@@ -1305,9 +1332,8 @@ export async function initAllShowrooms() {
     if (dbOnly.length > 0 && !_dbSectionAdded) {
       _dbSectionAdded = true;
 
-      // Distribute each DB product into its correct category section.
-      // Products that don't map to a kept section (real estate, cars,
-      // trucks, motorhomes) are simply skipped.
+      // Distribute each DB house into its correct property row. Listings that
+      // don't map onto a kept house row (vehicles, products) are skipped.
       for (const listing of dbOnly) {
         const target = findSectionRowForCategory(listing.category, listing.subcategory);
         if (!target) continue;
@@ -1320,15 +1346,6 @@ export async function initAllShowrooms() {
         if (!row.ids.includes(listing.property_id)) {
           row.ids.push(listing.property_id);
         }
-      }
-
-      // Rebuild the Products section rows from the owner's live database
-      // listings so products like jewelry, watches, phones and fashion
-      // always appear (the old static catalog no longer provides them).
-      const productsSection = REAL_ESTATE_SECTIONS.find(s => s.id === 'products');
-      if (productsSection) {
-        const dbRows = buildDbCategoryRows();
-        if (dbRows.length) productsSection.rows = dbRows;
       }
     }
   } catch {

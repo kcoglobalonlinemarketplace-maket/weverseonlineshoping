@@ -551,16 +551,17 @@ function renderHeroRows() {
   const container = document.getElementById(CONTAINER_ID);
   if (!container) return;
   heroStyles();
-  const vehicles = getAllHeroVehicles();
+  const properties = getAllShowcaseProperties();
   const frag = document.createDocumentFragment();
-  // Houses show ONLY as video tours (single full-width row of large video
-  // cards) — no card grid, so every home is seen as a real walkthrough.
+  // Houses show as video tours (single full-width row of large video cards),
+  // then the Houses For Sale & Rent gallery. Vehicles and products are no
+  // longer offered on the customer marketplace.
   frag.appendChild(videoSection());
   frag.appendChild(heroSection({
-    kindCls: 'kco-hero-veh',
-    title: 'Cars & Trucks', subtitle: 'Browse new and used cars, trucks, buses and motorhomes listed by their sellers.',
-    icon: 'car-front', cat: 'cars-trucks', seeAll: true, seeAllLabel: 'See All Vehicles',
-    listings: vehicles, card: (l) => heroCardHtml(l, 'vehicle'),
+    kindCls: 'kco-hero-house',
+    title: 'Houses For Sale & Rent', subtitle: 'Browse villas, mansions, apartments, beach houses, commercial properties and land listed by their sellers.',
+    icon: 'home', cat: 'real-estate', seeAll: true, seeAllLabel: 'See All Homes',
+    listings: properties, card: (l) => heroCardHtml(l, 'house'),
   }));
   container.replaceChildren(frag);
   if (window.lucide) lucide.createIcons();

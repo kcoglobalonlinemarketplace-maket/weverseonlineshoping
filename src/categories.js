@@ -106,10 +106,69 @@ export function normalizeToMarketplaceCategory(raw) {
   return s;
 }
 
-// Register for the classic app.js script (homepage category bar).
+// ── Customer-facing real estate marketplace ────────────────────────────
+// The customer homepage, showroom grid, category bar and search all show
+// HOUSES ONLY. These property chips drive the homepage category bar and the
+// card-level filtering in showroom-cards.js. The original MARKETPLACE_CATEGORIES
+// list above is NOT touched because the admin Products Manager and the AI
+// scanner (admin-page.js) still need it for product/vehicle listings.
+export const PROPERTY_CATEGORIES = [
+  { name: 'All Houses', icon: 'home', color: 'blue', keywords: ['house', 'home', 'real estate', 'property', 'villa', 'apartment', 'condo', 'mansion', 'townhouse', 'duplex', 'penthouse', 'bungalow', 'cottage', 'chalet', 'loft', 'studio', 'farm house', 'beach house', 'land', 'commercial property', 'hotel', 'resort', 'waterfront'] },
+  { name: 'For Sale', icon: 'tag', color: 'emerald', keywords: ['for sale'] },
+  { name: 'For Rent', icon: 'key', color: 'amber', keywords: ['for rent', 'rental', 'lease'] },
+  { name: 'Villas', icon: 'castle', color: 'violet', keywords: ['villa', 'villas'] },
+  { name: 'Apartments', icon: 'building-2', color: 'sky', keywords: ['apartment', 'apartments', 'condo', 'condominium', 'townhouse', 'duplex', 'flat', 'penthouse', 'studio', 'loft'] },
+  { name: 'Mansions', icon: 'landmark', color: 'indigo', keywords: ['mansion', 'mansions', 'estate'] },
+  { name: 'Beach Houses', icon: 'waves', color: 'cyan', keywords: ['beach house', 'coastal', 'waterfront', 'seaside', 'lakefront', 'vacation home'] },
+  { name: 'Luxury Homes', icon: 'gem', color: 'rose', keywords: ['luxury', 'luxury home', 'modern home', 'executive', 'premium'] },
+  { name: 'Commercial Property', icon: 'store', color: 'slate', keywords: ['commercial', 'office', 'retail', 'business building', 'hotel', 'hospitality', 'resort', 'shopping mall'] },
+  { name: 'Land', icon: 'map-pin', color: 'lime', keywords: ['land', 'plot', 'acreage', 'lot', 'parcel'] },
+];
+
+export const PROPERTY_CATEGORY_NAMES = PROPERTY_CATEGORIES.map(c => c.name);
+
+function _listingHaystack(listing) {
+  return [listing.category, listing.subcategory, listing.property_type, listing.title, listing.highlights && Array.isArray(listing.highlights) ? listing.highlights.join(' ') : '']
+    .filter(Boolean).join(' ').toLowerCase();
+}
+
+export function isPropertyListing(listing) {
+  if (!listing) return false;
+  if (listing.listing_type === 'property') return true;
+  const cat = String(listing.category || '').toLowerCase();
+  if (cat === 'houses & real estate' || cat === 'real estate') return true;
+  const hay = _listingHaystack(listing);
+  return /(real estate|houses?|homes?|apartment|condo|villa|mansion|townhouse|duplex|penthouse|bungalow|cottage|chalet|loft|studio|farm house|beach house|commercial property|hotel|resort|land for sale)/.test(hay);
+}
+
+// The property chips a listing belongs to. 'For Sale' covers everything that
+// is not explicitly 'For Rent'. Walking order matches PROPERTY_CATEGORIES.
+export function propertyCategoryForListing(listing) {
+  if (!isPropertyListing(listing)) return [];
+  const isRent = String(listing.listing_status || '').toLowerCase() === 'rent';
+  const out = ['All Houses', isRent ? 'For Rent' : 'For Sale'];
+  const hay = _listingHaystack(listing);
+  for (const cat of PROPERTY_CATEGORIES) {
+    if (cat.name === 'All Houses' || cat.name === 'For Sale' || cat.name === 'For Rent') continue;
+    if (cat.keywords.some(k => hay.includes(k)) && !out.includes(cat.name)) out.push(cat.name);
+  }
+  return out;
+}
+
+// Does a property listing belong under this chip? Called by the card-level
+// filter. Returns true for 'All' / 'All Houses' / 'Houses' / 'Real Estate'.
+export function propertyMatchesCategory(catName, listing) {
+  const n = String(catName || '').toLowerCase();
+  if (!n || n === 'all' || n === 'all houses' || n === 'houses' || n === 'homes' || n === 'home' || n === 'real estate') return true;
+  return propertyCategoryForListing(listing).some(c => c.toLowerCase() === n);
+}
+
+// Register for the classic app.js script (homepage category bar). The
+// customer-facing bar now shows the property chips — the admin still imports
+// the original MARKETPLACE_CATEGORIES constant directly, so it is unaffected.
 if (typeof window !== 'undefined') {
-  window.MARKETPLACE_CATEGORIES = MARKETPLACE_CATEGORIES;
-  window.MARKETPLACE_CATEGORY_NAMES = MARKETPLACE_CATEGORY_NAMES;
+  window.MARKETPLACE_CATEGORIES = PROPERTY_CATEGORIES;
+  window.MARKETPLACE_CATEGORY_NAMES = PROPERTY_CATEGORY_NAMES;
   window.normalizeToMarketplaceCategory = normalizeToMarketplaceCategory;
   // Signal the classic app.js category bar to re-render with full icons once
   // this shared module is live (it may have rendered the fallback list first).

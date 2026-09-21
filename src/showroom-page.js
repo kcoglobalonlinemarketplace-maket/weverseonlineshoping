@@ -39,7 +39,7 @@ function showroomMasthead(isRe, list) {
   const mast = document.getElementById('kco-brand-mast') || document.querySelector('.kco-head');
   if (!mast) return;
   mast.innerHTML = `
-    <h1 id="kco-cat-title">${isRe ? 'Houses For Sale' : 'Cars &amp; Trucks'}</h1>
+    <h1 id="kco-cat-title">${isRe ? 'Houses For Sale &amp; Rent' : 'Cars &amp; Trucks'}</h1>
     <p id="kco-cat-sub">${isRe ? 'Homes listed for sale or rent by their sellers, with video tours available.' : 'New and used cars, trucks, buses and motorhomes listed by their sellers.'}</p>`;
 }
 
@@ -98,9 +98,9 @@ function render(cat, filterType) {
   }).join('');
 
   results.innerHTML = html || '<div class="kco-empty">No items in this group yet.</div>';
-  // All property videos go in ONE full-width horizontal line of big cards at the
-  // top (same look as the Houses and Cars & Trucks rows) — not scattered as
-  // normal product cards in the grouped grid below.
+// All property videos go in ONE full-width horizontal line of big cards at the
+// top (same look as the Houses row) — not scattered as normal cards in the
+// grouped grid below.
   try {
     const vs = videoSection();
     if (vs && vs.nodeType) results.insertBefore(vs, results.firstChild);

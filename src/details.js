@@ -2081,6 +2081,7 @@ function render(listing) {
           : `<span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Verified</span>`}
           <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full"><i data-lucide="box" class="w-3.5 h-3.5"></i> ${idLabel}: <span class="font-mono">${escapeHtml(listing.property_id)}</span></span>
           <span class="inline-flex items-center gap-1 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">${listing.listing_status === 'rent' ? 'For Rent' : 'For Sale'}</span>
+          ${firstVideoIdx >= 0 ? `<span class="inline-flex items-center gap-1 text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-1 rounded-full"><i data-lucide="video" class="w-3.5 h-3.5"></i> Video Tour</span>` : ''}
         </div>
         ${socialProofHtml}
       </div>
@@ -2121,6 +2122,11 @@ function render(listing) {
         <div class="absolute inset-0 flex items-end justify-between p-3 opacity-0 group-hover:opacity-100 transition pointer-events-none">
           <span class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-black/50 backdrop-blur px-3 py-1.5 rounded-full"><i data-lucide="expand" class="w-3.5 h-3.5"></i> Tap to enlarge</span>
         </div>
+        ${firstVideoIdx >= 0 ? `
+        <button type="button" id="hero-video-tour-btn" class="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white pl-2 pr-3 py-2 rounded-full text-xs font-bold shadow-lg shadow-blue-600/40 transition cursor-pointer">
+          <span class="w-6 h-6 rounded-full bg-white flex items-center justify-center"><svg class="w-3.5 h-3.5 text-blue-700 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+          Watch Video Tour
+        </button>` : ''}
       </div>
 
       <div class="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-8">
@@ -2160,6 +2166,15 @@ function render(listing) {
   }
   if (heroWrap) {
     const openLightbox = () => openGalleryLightbox(listing, imgs2);
+    const heroVideoBtn = document.getElementById('hero-video-tour-btn');
+    if (heroVideoBtn) {
+      // Big ▶ play button on the house image: opens the gallery exactly at
+      // the video-tour clip and plays it straight away.
+      heroVideoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openGalleryLightbox(listing, imgs2, { startIdx: firstVideoIdx, autoplay: true });
+      });
+    }
     // When the hero is a video, let taps on the video itself play/pause it
     // (clicking the still/white area starts playback) instead of always jumping
     // to the lightbox — so the video always reads as a playable video.
@@ -2306,10 +2321,12 @@ function render(listing) {
 }
 
 // ── Full-screen gallery lightbox (tap to enlarge, swipe, arrows) ──────────
-function openGalleryLightbox(listing, imgs) {
+function openGalleryLightbox(listing, imgs, opts) {
   const images = (Array.isArray(imgs) && imgs.length ? imgs : [listing.images?.[0] || FALLBACK_IMG]).filter(Boolean);
   if (!images.length) return;
-  let current = 0;
+  const startIdx = (opts && Number.isInteger(opts.startIdx) && opts.startIdx >= 0 && opts.startIdx < images.length) ? opts.startIdx : 0;
+  let current = startIdx;
+  let autoFlag = !!(opts && opts.autoplay);
   const root = document.createElement('div');
   root.id = 'gallery-lightbox';
   root.className = 'fixed inset-0 z-[500] bg-black/95 flex flex-col';
@@ -2342,8 +2359,9 @@ function openGalleryLightbox(listing, imgs) {
     mediaContainer.classList.add('lb-fade');
     setTimeout(() => {
       const src = images[current];
+      const auto = autoFlag; autoFlag = false;
       if (isVideoUrl(src)) {
-        mediaContainer.innerHTML = `<video src="${escapeHtml(src)}" controls playsinline preload="auto" class="lb-media max-w-full max-h-[70vh] object-contain rounded-lg"></video>`;
+        mediaContainer.innerHTML = `<video src="${escapeHtml(src)}" ${auto ? 'autoplay ' : ''}controls playsinline preload="auto" class="lb-media max-w-full max-h-[70vh] object-contain rounded-lg"></video>`;
       } else {
         const img = document.createElement('img');
         img.src = src; img.alt = 'Gallery'; img.draggable = false;

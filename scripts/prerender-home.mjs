@@ -258,7 +258,7 @@ function cardHtml(listing) {
         </button>
       </div>
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
-        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details →</span>
       </button>
       <button type="button" class="kco-card-call-agent mt-2 w-full min-w-0 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30">
         <i data-lucide="phone" class="w-4 h-4 shrink-0"></i> <span class="truncate">Call Agent</span>
@@ -362,7 +362,7 @@ function feedCardHtml(listing) {
         </button>
       </div>
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
-        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details</span>
+        <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details →</span>
       </button>
       <button type="button" class="kco-card-call-agent mt-2 w-full min-w-0 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30">
         <i data-lucide="phone" class="w-4 h-4 shrink-0"></i> <span class="truncate">Call Agent</span>
@@ -445,7 +445,7 @@ function heroHtml() {
   <div class="absolute inset-0 z-10 flex items-center justify-center text-center p-6 sm:p-10">
     <div class="glass-hero-panel">
       <h2 id="slide-title-0" class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]">Weverse Online Shop</h2>
-      <p class="mt-3 text-base sm:text-lg font-extrabold text-amber-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">Delivering worldwide 🚛🚒</p>
+      <p class="mt-3 text-base sm:text-lg font-extrabold text-amber-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">Houses, villas and apartments — worldwide</p>
     </div>
   </div>
 </div>`;
