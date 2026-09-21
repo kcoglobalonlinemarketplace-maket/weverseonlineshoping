@@ -1,0 +1,163 @@
+// Regenerates src/houses-data.js for the Weverse shop from the local houses
+// database export + compressed 720p videos. Also copies the compressed videos
+// and a poster frame per video into public/videos/houses/ so the live site
+// serves them at /videos/houses/<uuid>.mp4 (Vite publicDir -> web root).
+//
+// Usage (from repo root):
+//   node scripts/generate-houses-data.mjs [pathToExportJson]
+// Reads export.json from DATA_DIR (default C:\Users\HP\house for sale).
+import { createRequire } from 'module';
+import fs from 'fs';
+import path from 'path';
+import { execFile } from 'child_process';
+
+const require = createRequire(import.meta.url);
+const REPO_ROOT = process.cwd();
+const DATA_DIR = process.env.HOUSES_DATA_DIR || 'C:/Users/HP/house for sale';
+const EXPORT_PATH = process.argv[2] || path.join(DATA_DIR, 'export.json');
+const VIDEOS_DIR = path.join(DATA_DIR, 'build/houses/videos');
+const OUT_JS = path.join(REPO_ROOT, 'src/houses-data.js');
+const OUT_VIDEOS = path.join(REPO_ROOT, 'public/videos/houses');
+const ffmpeg = require('ffmpeg-static');
+
+const exportData = JSON.parse(fs.readFileSync(EXPORT_PATH, 'utf8'));
+const properties = exportData.properties || [];
+const media = exportData.media || exportData.property_media || [];
+const scans = exportData.scan_results || [];
+
+const videosRoot = fs.existsSync(VIDEOS_DIR) ? VIDEOS_DIR : null;
+if (!videosRoot) {
+  console.error(`Missing compressed videos dir: ${VIDEOS_DIR}`);
+  process.exit(1);
+}
+const doneVideos = new Set(
+  videosRoot
+    ? fs.readdirSync(videosRoot).filter(f => f.endsWith('.mp4'))
+    : []
+);
+
+fs.mkdirSync(OUT_VIDEOS, { recursive: true });
+
+// media rows: property_id -> list of media entries (video with file_path name)
+const mediaByProp = new Map();
+for (const m of media) {
+  if (!mediaByProp.has(m.property_id)) mediaByProp.set(m.property_id, []);
+  mediaByProp.get(m.property_id).push(m);
+}
+const scansByMedia = new Map();
+for (const s of scans) scansByMedia.set(s.media_id, s);
+
+function esc(v) {
+  return String(v ?? '')
+    .replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/`/g, '\\`');
+}
+
+function genPoster(uuid) {
+  const mp4 = path.join(OUT_VIDEOS, uuid + '.mp4');
+  const poster = path.join(OUT_VIDEOS, uuid + '.jpg');
+  if (!fs.existsSync(mp4) || fs.existsSync(poster)) return;
+  return new Promise((resolve) => {
+    execFile(ffmpeg, ['-y', '-v', 'error', '-ss', '0.1', '-i', mp4, '-frames:v', '1', '-q:v', '4', poster], (err) => {
+      if (err || !fs.existsSync(poster) || fs.statSync(poster).size === 0) {
+        try { fs.rmSync(poster, { force: true }); } catch {}
+      }
+      resolve();
+    });
+  });
+}
+
+const houses = [];
+for (const p of properties) {
+  const propId = p.id || p.property_id;
+  const rows = mediaByProp.get(propId) || [];
+  const vids = rows.filter(m => (m.media_type || '').toLowerCase() === 'video');
+  const vid = vids[0];
+  if (!vid) continue;
+  const fileBase = String(vid.file_path || '').split('/').pop().replace(/\.mp4$/i, '');
+  if (!fileBase || !doneVideos.has(fileBase + '.mp4')) continue;
+
+  // scan enrichment (title / description when a real AI scan exists)
+  const scan = scansByMedia.get(vid.id);
+  let title = '';
+  let description = '';
+  let features = [];
+  if (scan) {
+    try {
+      const r = JSON.parse(scan.result_json || '{}');
+      if (r.detected) {
+        title = r.detected.title_suggestion || '';
+        description = r.detected.description || '';
+        if (Array.isArray(r.detected.features)) features = r.detected.features;
+      }
+    } catch {}
+  }
+  title = title || p.title || `House ${houses.length + 1}`;
+  description = description || 'Video tour of this property. Contact us for full details and availability.';
+  if (!Array.isArray(features)) features = [];
+
+  houses.push({
+    property_id: propId,
+    listing_type: 'property',
+    category: 'Houses & Real Estate',
+    title,
+    description,
+    price: Number(p.price) || 0,
+    currency: p.currency || 'USD',
+    country: p.country || 'United States',
+    country_code: p.country_code || 'US',
+    city: p.city || '',
+    state: p.state_province || '',
+    town: p.town || '',
+    property_type: p.property_type || 'House',
+    listing_status: p.listing_status || 'sale',
+    bedrooms: Number(p.bedrooms) > 0 ? Number(p.bedrooms) : null,
+    bathrooms: Number(p.bathrooms) > 0 ? Number(p.bathrooms) : null,
+    land_size: p.land_size || '',
+    year_built: p.year_built || '',
+    building_size: p.building_size || '',
+    furnished: p.furnished || '',
+    condition: p.condition || '',
+    is_active: true,
+    images: [`/videos/houses/${fileBase}.mp4`, `/videos/houses/${fileBase}.jpg`],
+    video: `/videos/houses/${fileBase}.mp4`,
+    video_url: `/videos/houses/${fileBase}.mp4`,
+    features,
+    highlights: [],
+    created_at: p.created_at || new Date().toISOString(),
+    updated_at: p.updated_at || new Date().toISOString(),
+  });
+}
+
+// Sort deterministic (by created_at desc, then property_id) so the row stays stable.
+houses.sort((a, b) => (String(b.created_at).localeCompare(String(a.created_at))) || String(a.property_id).localeCompare(String(b.property_id)));
+
+let body = `// AUTO-GENERATED by scripts/generate-houses-data.mjs — do not edit by hand.
+// Rebuild with: node scripts/generate-houses-data.mjs
+// Source: ${path.basename(EXPORT_PATH)} (${houses.length} houses)\n`;
+body += `export const HOUSES_LISTINGS = [\n`;
+for (const h of houses) {
+  body += `  ${JSON.stringify(h)},\n`;
+}
+body += `];\n`;
+fs.writeFileSync(OUT_JS, body, 'utf8');
+
+// Copy compressed videos + generate posters
+(async () => {
+  let copied = 0;
+  for (const f of doneVideos) {
+    if (!f.endsWith('.mp4')) continue;
+    const src = path.join(videosRoot, f);
+    const dst = path.join(OUT_VIDEOS, f);
+    if (!fs.existsSync(dst) || fs.statSync(dst).size !== fs.statSync(src).size) {
+      fs.copyFileSync(src, dst);
+      copied++;
+    }
+  }
+  // Posters sequential to keep ffmpeg CPU sane
+  const bases = [...doneVideos].filter(f => f.endsWith('.mp4')).map(f => f.replace('.mp4', ''));
+  for (const b of bases) await genPoster(b);
+
+  console.log(`HOUSES_DATA: ${houses.length} houses written to ${OUT_JS}`);
+  console.log(`VIDEOS: copied ${copied}/${doneVideos.size} mp4 -> public/videos/houses`);
+  console.log(`POSTERS: ${fs.readdirSync(OUT_VIDEOS).filter(f => f.endsWith('.jpg')).length} posters generated`);
+})();

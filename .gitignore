@@ -34,3 +34,5 @@ vite.config.js.timestamp-*.mjs
 
 # Auto-publisher dry-run artifact (contains full generated row payloads)
 .publish-plan.json
+
+dist/videos/

@@ -70,7 +70,7 @@ const pick = (list) => list.filter(l => {
   _gatheredIds.add(id);
   return true;
 });
-const ALL_HOUSES = pick([...NEW_HOUSES, ...byCategory('Houses & Real Estate')]);
+const ALL_HOUSES = pick([...NEW_HOUSES, ...byCategory('Houses & Real Estate'), ...SHOWROOM_LISTINGS.filter(l => l.listing_type === 'property' || l.category === 'Houses & Real Estate' || l.category === 'Real Estate')]);
 const ALL_CARS = pick([...NEW_CARS, ...byCategory('Cars & Vehicles')]);
 const ALL_TRUCKS = pick([...TRUCK_LISTINGS, ...byCategory('Trucks')]);
 const ALL_MOTORHOMES = pick([...MOTORHOME_LISTINGS, ...byCategory('Motorhomes')]);

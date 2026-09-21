@@ -1,6 +1,8 @@
 // Showroom Phase 1 — 20 professional sample listings
 // Real estate + vehicles. Uses real Pexels stock photo URLs of actual homes.
 
+import { HOUSES_LISTINGS } from './houses-data.js';
+
 const PEXELS = (id, w = 800) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
 // Every house listing builds its gallery from explicit, per-listing Pexels photo IDs —
@@ -34,7 +36,7 @@ function newHomeGallery(ids, interiorIds) {
   return [...base, ...interiors];
 }
 
-export const SHOWROOM_LISTINGS = [];
+export const SHOWROOM_LISTINGS = [...HOUSES_LISTINGS];
 
 // Real-world coordinates for every seeded property listing so showroom cards can
 // render a map preview and the details page map can skip geocoding lookups.
@@ -72,7 +74,9 @@ for (const l of SHOWROOM_LISTINGS) {
 }
 
 export function formatPrice(listing) {
-  const formatted = listing.price.toLocaleString('en-US', { style: 'currency', currency: listing.currency || 'USD', maximumFractionDigits: 0 });
+  const price = Number(listing.price);
+  if (!Number.isFinite(price) || price <= 0) return 'Price on Request';
+  const formatted = price.toLocaleString('en-US', { style: 'currency', currency: listing.currency || 'USD', maximumFractionDigits: 0 });
   return listing.price_period ? `${formatted}/mo` : formatted;
 }
 
