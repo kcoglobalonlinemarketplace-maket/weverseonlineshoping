@@ -94,8 +94,8 @@ const VEHICLE_SECTION_IDS = new Set(['cars', 'trucks-buses']);
 // appended by JS at load.
 const PRE_RENDER_SECTIONS = [
   {
-    id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Homes for sale or rent, listed by their sellers.',
+    id: 'local-houses', label: 'Houses', icon: 'home',
+    subtitle: 'Every home on the marketplace — for sale or for rent — in one continuous line of properties.',
     rows: [
       { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
@@ -375,7 +375,7 @@ function feedCardHtml(listing) {
 function rowHtml(rowDef) {
   const listings = getRowListings(rowDef);
   const hasItems = listings.length > 0;
-  const isGrid = true;
+  const lineMode = true;
 
   let header = `
     <div class="flex items-center justify-between mb-2">
@@ -384,18 +384,26 @@ function rowHtml(rowDef) {
           <i data-lucide="${rowDef.icon}" class="w-4 h-4 text-blue-600"></i>
         </span>
         <h4 class="text-base font-bold text-gray-900 tracking-wide truncate">${rowDef.label}</h4>
-        ${hasItems && isGrid ? `<span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${listings.length} Items</span>` : ''}
+        ${hasItems ? `<span class="hidden sm:inline-flex shrink-0 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${listings.length} Items</span>` : ''}
+      </div>
+      <div class="flex items-center gap-1 ${hasItems ? '' : 'hidden'}">
+        <button class="scroll-left hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll left">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button class="scroll-right hscroll-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" aria-label="Scroll right">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
       </div>
     </div>`;
 
   let track;
   if (hasItems) {
-    track = `<div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'showroom-feed flex flex-col gap-4 sm:gap-5'}">${listings.map(isGrid ? cardHtml : feedCardHtml).join('')}</div>`;
+    track = `<div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1">${listings.map(cardHtml).join('')}</div>`;
   } else {
-    track = `<div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : 'showroom-feed flex flex-col gap-4 sm:gap-5'}"><div class="flex items-center justify-center w-full py-6"><span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-300 rounded-xl px-5 py-3">Coming Soon</span></div></div>`;
+    track = `<div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"><div class="flex items-center justify-center w-full py-6"><span class="inline-flex items-center gap-2 text-sm text-gray-500 uppercase tracking-widest border border-dashed border-gray-300 rounded-xl px-5 py-3">Coming Soon</span></div></div>`;
   }
 
-  return `<div class="showroom-row relative" data-row-id="${rowDef.id}"${isGrid ? ' data-layout="grid"' : ''} data-prerendered="1">${header}${track}</div>`;
+  return `<div class="showroom-row relative" data-row-id="${rowDef.id}" data-layout="line" data-prerendered="1">${header}${track}</div>`;
 }
 
 // section markup identical to renderSection in src/showroom-cards.js.

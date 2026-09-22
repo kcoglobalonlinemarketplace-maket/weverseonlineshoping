@@ -125,53 +125,6 @@ function renderStars(rating, sizeClass = 'w-3.5 h-3.5') {
   return out;
 }
 
-// ── View mode ──────────────────────────────────────────────────
-// The showroom can show products in a compact 2-column grid (default —
-// scroll down to browse), one by one (vertical feed) or in horizontal
-// lines (sideways scroll). The choice is stored so it sticks.
-const VIEW_MODE_KEY = 'kco_showroom_view_mode';
-let viewMode = 'grid'; // 'grid' (2 columns, default) | 'feed' (one by one) | 'line' (by line)
-
-function readSavedViewMode() {
-  try { return localStorage.getItem(VIEW_MODE_KEY) === 'line' ? 'line' : 'grid'; } catch { return 'grid'; }
-}
-viewMode = readSavedViewMode();
-
-const isLineMode = () => viewMode === 'line';
-const isGridMode = () => viewMode === 'grid';
-
-export function setShowroomViewMode(mode) {
-  viewMode = (mode === 'line') ? 'line' : (mode === 'feed') ? 'feed' : 'grid';
-  try { localStorage.setItem(VIEW_MODE_KEY, viewMode); } catch {}
-  document.querySelectorAll('[data-showroom-grid]').forEach(g => {
-    delete g.dataset.initialized;
-    delete g.dataset.prerendered;
-    g.innerHTML = '';
-  });
-  renderAllGrids();
-  if (window.lucide) lucide.createIcons();
-  updateViewModePicker();
-}
-
-function updateViewModePicker() {
-  const picker = document.getElementById('view-mode-picker');
-  if (!picker) return;
-  picker.querySelectorAll('[data-view-mode]').forEach(btn => {
-    const active = btn.dataset.viewMode === viewMode;
-    btn.classList.toggle('view-mode-active', active);
-    btn.setAttribute('aria-checked', active ? 'true' : 'false');
-  });
-}
-
-function wireViewModePicker() {
-  const picker = document.getElementById('view-mode-picker');
-  if (!picker) return;
-  picker.querySelectorAll('[data-view-mode]').forEach(btn => {
-    btn.addEventListener('click', () => setShowroomViewMode(btn.dataset.viewMode));
-  });
-  updateViewModePicker();
-}
-
 function scrollRow(row, dir) {
   const track = row.querySelector('.hscroll');
   if (!track) return;
@@ -411,8 +364,8 @@ async function toggleWishlist(listing, btn) {
 // longer offered for browsing (their data stays in the database untouched).
 const REAL_ESTATE_SECTIONS = [
   {
-    id: 'local-houses', label: 'Local Houses & Real Estate', icon: 'home',
-    subtitle: 'Homes, apartments and townhouses for sale or rent, listed by their sellers.',
+    id: 'local-houses', label: 'Houses', icon: 'home',
+    subtitle: 'Every home on the marketplace — for sale or for rent — in one continuous line of properties.',
     rows: [
       { id: 'new-houses', label: 'Houses', icon: 'home', newHouses: true },
     ],
@@ -876,17 +829,14 @@ function getRowListings(rowDef) {
 function renderRow(rowDef) {
   const listings = getRowListings(rowDef);
   const hasItems = listings.length > 0;
-  // Every house section uses the compact 2-column grid in grid mode so
-  // customers scroll down to browse and always see 2 properties side by side
-  // on a phone.
-  const isGrid = viewMode === 'grid' || rowDef.layout === 'grid';
-  const lineMode = isLineMode() && !isGrid;
+  // Every property section uses the horizontal By Line layout so customers
+  // browse houses side by side in one continuous scrolling line.
+  const lineMode = true;
 
   const row = document.createElement('div');
   row.className = 'showroom-row relative';
   row.dataset.rowId = rowDef.id;
-  if (isGrid) row.dataset.layout = 'grid';
-  if (lineMode) row.dataset.layout = 'line';
+  row.dataset.layout = 'line';
 
   row.innerHTML = `
     <div class="flex items-center justify-between mb-2">
@@ -906,16 +856,16 @@ function renderRow(rowDef) {
         </button>
       </div>
     </div>
-    <div class="${isGrid ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4' : lineMode ? 'hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1' : 'showroom-feed flex flex-col gap-4 sm:gap-5'}"></div>
+    <div class="hscroll flex gap-4 overflow-x-auto scrollbar-none pb-1"></div>
   `;
 
-  const track = row.querySelector(isGrid ? '.grid' : lineMode ? '.hscroll' : '.showroom-feed');
+  const track = row.querySelector('.hscroll');
 
   if (hasItems) {
     const frag = document.createDocumentFragment();
     listings.forEach(listing => {
       try {
-        frag.appendChild(isGrid ? renderCard(listing) : lineMode ? renderCard(listing) : renderFeedCard(listing));
+        frag.appendChild(renderCard(listing));
       } catch { /* skip a listing that can't be rendered */ }
     });
     track.appendChild(frag);
@@ -945,6 +895,24 @@ function countSectionItems(section) {
 function renderSection(section, accentColor, maxRows) {
   const sec = document.createElement('div');
   sec.className = 'showroom-section space-y-3';
+
+  const itemCount = countSectionItems(section);
+  sec.insertAdjacentHTML('beforeend', `
+    <div class="relative pt-2 pb-3">
+      <div class="flex items-center gap-3.5">
+        <div class="p-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 shrink-0" style="box-shadow:0 0 22px rgba(59,130,246,0.25)">
+          <i data-lucide="${section.icon}" class="w-6 h-6 text-blue-300"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
+            <span class="bg-gradient-to-r from-blue-200 via-white to-blue-300 bg-clip-text text-transparent">${section.label}</span>
+          </h3>
+          <p class="text-gray-400 text-xs sm:text-[13px] leading-tight mt-1 truncate">${section.subtitle}</p>
+        </div>
+        <span class="hidden sm:inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300">${itemCount} Items</span>
+      </div>
+      <div class="mt-3 h-px bg-gradient-to-r from-blue-500/40 via-gray-700/40 to-transparent"></div>
+    </div>`);
 
   const rowsToShow = ((maxRows && maxRows > 0) ? section.rows.slice(0, maxRows) : section.rows)
     .filter(r => (getRowListings(r) || []).length > 0);
@@ -996,11 +964,12 @@ function renderGrid(gridName) {
   const accent = 'blue';
 
   if (gridName === 'real-estate') {
-    // Compact homepage: all three house sections (Local Houses, Luxury/Villas/
-    // Apartments, Commercial & Land) so every property is browsable right on
-    // the homepage. Vehicles and products are intentionally not offered.
+    // Clean homepage: ONE "Houses" section showing every house in a single
+    // By Line strip. Luxury and commercial homes aren't split into separate
+    // homepage sub-sections — they all live in the one Houses line and stay
+    // browsable, while the full archive page groups them by type.
     const byId = new Map(sections.map(s => [s.id, s]));
-    for (const id of ['local-houses', 'modern-luxury', 'commercial-land']) {
+    for (const id of ['local-houses']) {
       const section = byId.get(id);
       if (!section) continue;
       const alreadyRendered = section.rows.some(r => hasRow(r.id));
@@ -1039,7 +1008,7 @@ function adoptPrerendered(container) {
     const rowDef = findRowDef(row.dataset.rowId);
     if (!rowDef) return;
     const listings = getRowListings(rowDef);
-    const track = row.querySelector('.showroom-feed, .grid');
+    const track = row.querySelector('.hscroll');
     if (track) {
       track.querySelectorAll('.showroom-card').forEach(card => {
         const id = card.dataset.id;
@@ -1057,6 +1026,8 @@ function adoptPrerendered(container) {
         attachCardListeners(card, target);
       });
     }
+    row.querySelector('.scroll-left')?.addEventListener('click', () => scrollRow(row, -1));
+    row.querySelector('.scroll-right')?.addEventListener('click', () => scrollRow(row, 1));
     delete row.dataset.prerendered;
   });
 }
@@ -1065,14 +1036,6 @@ function adoptPrerendered(container) {
 // position so a background refresh never makes the page jump.
 function renderAllGrids() {
   const grids = document.querySelectorAll('[data-showroom-grid]');
-  if (isLineMode()) {
-    // The baked static HTML is the one-by-one feed; when the saved mode is
-    // "By Line" we must replace it, not adopt it.
-    grids.forEach(g => {
-      delete g.dataset.prerendered;
-      g.innerHTML = '';
-    });
-  }
   grids.forEach((g, i) => {
     const name = g.dataset.showroomGrid;
     const run = () => renderGrid(name);
@@ -1306,7 +1269,6 @@ function findSectionAndRowById(id) {
 export async function initAllShowrooms() {
   loadLocalWishlist();
   injectWishStyles();
-  wireViewModePicker();
 
   // Hydrate the owner's products from the localStorage cache (if any) BEFORE
   // the first paint so the showroom renders real items instantly, without

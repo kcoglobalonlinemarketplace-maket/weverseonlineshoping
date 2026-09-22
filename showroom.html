@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Houses For Sale &amp; Rent | Weverse Online Shop</title>
-  <meta name="description" content="Browse every house and home for sale or rent with video tours on Weverse Online Shop. Villas, mansions, apartments, beach houses, commercial property and land — grouped by type for easy browsing.">
+  <meta name="description" content="Browse every house and home for sale or rent with video tours on Weverse Online Shop. Villas, mansions, apartments, beach houses, commercial property and land — grouped by type in continuous side-scrolling lines.">
   <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Weverse Online Shop">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Weverse Online Shop">
   <meta property="og:title" content="Houses For Sale &amp; Rent | Weverse Online Shop">
-  <meta property="og:description" content="Every house and home for sale or rent with video tours on Weverse Online Shop — villas, mansions, apartments, beach houses, commercial property and land.">
+  <meta property="og:description" content="Every house and home for sale or rent with video tours on Weverse Online Shop — villas, mansions, apartments, beach houses, commercial property and land, in continuous side-scrolling lines.">
   <link rel="canonical" href="https://weverseonlineshop.com/showroom.html">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -42,18 +42,18 @@
     .kco-cat{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#334155;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none}
     .kco-cat:hover{border-color:#94a3b8}
     .kco-cat.active,.kco-cat.veh.active{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
-    .kco-group{margin:0 0 34px}
-    .kco-group-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    .kco-group{position:relative;margin:0 0 34px}
+    .kco-group-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
     .kco-group-head .kco-gh-ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;font-size:20px}
     .kco-group-head.veh .kco-gh-ic{background:#eff6ff;border-color:#bfdbfe;color:#2563eb}
     .kco-group-head h2{font-size:19px;font-weight:900;margin:0;color:#0f172a}
     .kco-group-head span{font-size:12px;font-weight:700;color:#64748b}
-    .kco-grid{display:grid;grid-template-columns:1fr;gap:18px}
-    @media(min-width:640px){.kco-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(min-width:1024px){.kco-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-    .kco-card{width:100%;min-width:0;border-radius:1rem;overflow:hidden;background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,.06);display:flex;flex-direction:column;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
-    .kco-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px -12px rgba(2,6,23,.2);border-color:#bfdbfe}
-    .kco-empty{grid-column:1/-1;padding:34px;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:1rem;color:#94a3b8;font-size:14px;font-weight:600}
+    .kco-group .kco-hero-hscroll{padding-left:2px;padding-right:2px}
+    .kco-group .kco-hero-arrow{top:calc(50% + 18px)}
+    .kco-group .kco-hero-arrow.left{left:.35rem}
+    .kco-group .kco-hero-arrow.right{right:.35rem}
+    @media(max-width:1023px){.kco-group .kco-hero-arrow{display:flex;width:2rem;height:2rem}}
+    .kco-empty{padding:34px;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:1rem;color:#94a3b8;font-size:14px;font-weight:600}
   </style>
 </head>
 <body>
@@ -73,7 +73,7 @@
     <div class="kco-head">
       <span class="kco-eyebrow"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Showroom Archive</span>
       <h1 id="kco-cat-title">Browse Everything</h1>
-      <p id="kco-cat-sub">Every listing grouped by type — scroll to explore it all.</p>
+      <p id="kco-cat-sub">Every house in a continuous side-scrolling line, grouped by type.</p>
     </div>
     <nav class="kco-tabs" id="kco-tabs">
       <a class="kco-tab active" data-cat="real-estate" href="/showroom.html?cat=real-estate"><i data-lucide="home" class="w-4 h-4"></i> Real Estate</a>

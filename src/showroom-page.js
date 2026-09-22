@@ -40,7 +40,7 @@ function showroomMasthead(isRe, list) {
   if (!mast) return;
   mast.innerHTML = `
     <h1 id="kco-cat-title">${isRe ? 'Houses For Sale &amp; Rent' : 'Cars &amp; Trucks'}</h1>
-    <p id="kco-cat-sub">${isRe ? 'Homes listed for sale or rent by their sellers, with video tours available.' : 'New and used cars, trucks, buses and motorhomes listed by their sellers.'}</p>`;
+    <p id="kco-cat-sub">${isRe ? 'Every home for sale or rent, grouped by type in continuous side-scrolling lines with video tours on every listing.' : 'New and used cars, trucks, buses and motorhomes listed by their sellers — grouped in continuous side-scrolling lines.'}</p>`;
 }
 
 const HOUSE_ICONS = {
@@ -54,6 +54,48 @@ const VEHICLE_ICONS = {
   'Car': 'car-front', 'Truck': 'truck', 'Bus': 'bus', 'Motorhome / RV': 'van',
   'Motorcycle': 'bike', 'Boat / Marine': 'ship',
 };
+
+const SVG_CH_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
+const SVG_CH_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+
+function wireGroup(group) {
+  const track = group.querySelector('.kco-hero-hscroll');
+  if (!track) return;
+  let down = false, moved = false, startX = 0, startScroll = 0;
+  track.addEventListener('pointerdown', (e) => {
+    down = true; moved = false;
+    startX = e.clientX; startScroll = track.scrollLeft;
+    track.classList.add('dragging');
+    try { track.setPointerCapture(e.pointerId); } catch { /* older browsers */ }
+  });
+  track.addEventListener('pointermove', (e) => {
+    if (!down) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 5) moved = true;
+    track.scrollLeft = startScroll - dx;
+  });
+  const end = () => { down = false; track.classList.remove('dragging'); };
+  track.addEventListener('pointerup', end);
+  track.addEventListener('pointercancel', end);
+  track.addEventListener('pointerleave', end);
+  track.addEventListener('click', (e) => {
+    if (moved) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+
+  const left = group.querySelector('.kco-hero-arrow.left');
+  const right = group.querySelector('.kco-hero-arrow.right');
+  if (left && right) {
+    const update = () => {
+      const max = track.scrollWidth - track.clientWidth - 2;
+      left.disabled = track.scrollLeft <= 2;
+      right.disabled = track.scrollLeft >= max;
+    };
+    left.addEventListener('click', () => track.scrollBy({ left: -track.clientWidth * 0.8, behavior: 'smooth' }));
+    right.addEventListener('click', () => track.scrollBy({ left: track.clientWidth * 0.8, behavior: 'smooth' }));
+    track.addEventListener('scroll', update, { passive: true });
+    update();
+  }
+}
 
 function render(cat, filterType) {
   const results = document.getElementById('kco-results');
@@ -85,19 +127,22 @@ function render(cat, filterType) {
   const visibleOrder = filterType ? order.filter(k => k === filterType) : order;
   const html = visibleOrder.map(key => {
     const items = groups.get(key);
-    const cards = items.map(l => heroCardHtml(l, isRe ? 'house' : 'vehicle', 'kco-card')).join('');
+    const cards = items.map(l => heroCardHtml(l, isRe ? 'house' : 'vehicle', 'kco-hero-card')).join('');
     return `
-      <section class="kco-group">
+      <section class="kco-group ${veh ? 'veh' : ''}">
         <div class="kco-group-head ${veh ? 'veh' : ''}">
           <span class="kco-gh-ic">${icon(isRe ? (HOUSE_ICONS[key] || 'home') : (VEHICLE_ICONS[key] || 'car-front'))}</span>
           <h2>${esc(key)}</h2>
           <span>${items.length} listing${items.length === 1 ? '' : 's'}</span>
         </div>
-        <div class="kco-grid">${cards}</div>
+        <div class="kco-hero-hscroll">${cards}</div>
+        <button class="kco-hero-arrow left" aria-label="Scroll ${esc(key)} left">${SVG_CH_L}</button>
+        <button class="kco-hero-arrow right" aria-label="Scroll ${esc(key)} right">${SVG_CH_R}</button>
       </section>`;
   }).join('');
 
   results.innerHTML = html || '<div class="kco-empty">No items in this group yet.</div>';
+  results.querySelectorAll('.kco-group').forEach(wireGroup);
   if (window.lucide) lucide.createIcons();
 }
 
