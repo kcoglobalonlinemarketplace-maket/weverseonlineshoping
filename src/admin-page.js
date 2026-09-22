@@ -1162,7 +1162,9 @@ function productSku(product) {
 function pickThumb(p) {
   const imgs = Array.isArray(p && p.images) ? p.images : [];
   const poster = imgs.find(u => typeof u === 'string' && !/\.(mp4|webm|mov|m4v|avi|ogg|ogv)$/i.test(u.split('?')[0]));
-  return poster || imgs[0] || '/fallback.svg';
+  if (poster) return poster;
+  const lone = imgs[0];
+  return (lone && typeof lone === 'string' && !/\.(mp4|webm|mov|m4v|avi|ogg|ogv)$/i.test(lone.split('?')[0])) ? lone : '/fallback.svg';
 }
 
 function productCard(product) {

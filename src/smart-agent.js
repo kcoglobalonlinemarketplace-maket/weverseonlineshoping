@@ -700,7 +700,9 @@ function buildCallModalHtml(listing, isCompany, agentName) {
       </div>
       ${!isCompany && productImage ? `
       <div class="kco-call-product-bar">
-        <img class="kco-call-product-thumb" src="${productImage}" alt="" onerror="this.style.display='none'">
+        ${/\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(productImage.split('?')[0]) || /^data:video\//i.test(productImage)
+          ? `<video class="kco-call-product-thumb" src="${productImage}" muted loop autoplay playsinline></video>`
+          : `<img class="kco-call-product-thumb" src="${productImage}" alt="" onerror="this.style.display='none'">`}
         <div class="kco-call-product-info">
           <div class="kco-call-product-title">${productName}</div>
           ${productPrice ? `<div class="kco-call-product-price">${productPrice}</div>` : ''}

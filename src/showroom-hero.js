@@ -421,10 +421,13 @@ export function heroCardHtml(listing, kind, cardCls) {
   if (sp(listing, 'transmission')) c.push(`<span class="kco-hero-chip"><i data-lucide="cog" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'transmission'))}</span>`);
   if (sp(listing, 'body_type')) c.push(`<span class="kco-hero-chip"><i data-lucide="car-front" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'body_type'))}</span>`);
   chips = c.join('');
+  const mediaHtml = isVideoUrl(cover)
+    ? `<video src="${esc(cover)}" poster="${esc((listing.images || []).find((u) => !isVideoUrl(u)) || FALLBACK_IMG)}" muted loop autoplay playsinline preload="metadata" class="kco-hero-media-video"></video><span class="kco-hero-video-badge"><i data-lucide="play" class="w-3 h-3"></i>Video Tour</span>`
+    : `<img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">`;
   return `
       <a href="/product/${pid}" class="${cls}">
         <div class="kco-hero-media">
-          <img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">
+          ${mediaHtml}
           <span class="kco-hero-type"><i data-lucide="car-front" class="w-3 h-3"></i>${esc(vehicleKindLabel(listing))}</span>
         </div>
         <div class="kco-hero-body">

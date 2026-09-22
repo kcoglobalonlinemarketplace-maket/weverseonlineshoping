@@ -1574,11 +1574,15 @@ async function renderWishlist() {
           const p = w.showroom_listings;
           if (!p) return '';
           const img = (p.images && p.images[0]) || '/fallback.svg';
+          const isVideoThumb = /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(img.split('?')[0]) || /^data:video\//i.test(img);
           const price = typeof p.price === 'number' ? p.price : parseFloat(p.price || 0);
+          const wishMedia = isVideoThumb
+            ? `<video src="${escapeHtml(img)}" muted loop autoplay playsinline class="w-full h-full object-cover group-hover:scale-105 transition" preload="metadata"></video>`
+            : `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'">`;
           return `
             <div class="glass border border-blue-100 rounded-2xl overflow-hidden group">
               <div class="relative aspect-square overflow-hidden bg-gray-50">
-                <a href="/product/${p.property_id}"><img src="${escapeHtml(img)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></a>
+                <a href="/product/${p.property_id}">${wishMedia}</a>
                 <button onclick="removeFromWishlist('${w.id}')" class="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-red-500/80 rounded-full flex items-center justify-center transition" title="Remove"><i data-lucide="heart-crack" class="w-4 h-4 text-white"></i></button>
               </div>
               <div class="p-3">

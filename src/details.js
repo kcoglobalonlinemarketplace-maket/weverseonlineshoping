@@ -3119,10 +3119,14 @@ async function loadRecommendations(listing) {
   section.classList.remove('hidden');
   grid.innerHTML = items.map(p => {
     const img = (p.images && p.images[0]) || '/fallback.svg';
+    const recIsVideo = /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(img.split('?')[0]) || /^data:video\//i.test(img);
     const pprice = typeof p.price === 'number' ? p.price : parseFloat(p.price || 0);
     const cur = p.currency || 'USD';
+    const recMedia = recIsVideo
+      ? `<video src="${escapeHtml(img)}" muted loop autoplay playsinline class="w-full h-full object-cover group-hover:scale-105 transition" preload="metadata"></video>`
+      : `<img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'">`;
     return `<a href="/product/${p.property_id}" class="block bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition group">
-      <div class="aspect-square overflow-hidden bg-gray-100"><img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'"></div>
+      <div class="aspect-square overflow-hidden bg-gray-100">${recMedia}</div>
       <div class="p-2"><p class="text-xs text-gray-900 font-bold truncate">${escapeHtml(p.title)}</p><p class="text-xs text-blue-500 font-bold mt-1">${cur} ${pprice.toLocaleString()}</p></div>
     </a>`;
   }).join('');
