@@ -1,2862 +1,1862 @@
 [
   {
-    "id": "WS-C-001-0002",
-    "title": "2019 Toyota Camry — Sedan for Sale in Downtown Orlando, Orlando",
-    "price": 29400,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Cars",
-    "image": "https://images.pexels.com/photos/1149831/pexels-photo-1149831.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-C-001-0002"
-  },
-  {
-    "id": "WS-T-001-0002",
-    "title": "2019 Chevrolet Silverado 1500 — Pickup Truck for Sale in Downtown Orlando, Orlando",
-    "price": 44300,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Trucks",
-    "image": "https://images.pexels.com/photos/616966/pexels-photo-616966.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-T-001-0002"
-  },
-  {
-    "id": "WS-A-001-0004",
-    "title": "Charming Terrace Townhouse (3 Bed, 2 Bath) in Greater Tallahassee, Tallahassee",
-    "price": 665000,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Houses",
-    "image": "https://images.pexels.com/photos/210617/pexels-photo-210617.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-A-001-0004"
-  },
-  {
-    "id": "WS-C-001-0003",
-    "title": "2022 Honda Civic — Hatchback for Sale in Southside, Jacksonville",
-    "price": 28600,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Cars",
-    "image": "https://images.pexels.com/photos/210019/pexels-photo-210019.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-C-001-0003"
-  },
-  {
-    "id": "WS-C-001-0001",
-    "title": "2023 Toyota Corolla — Sedan for Sale in Brickell, Miami",
-    "price": 24500,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Cars",
-    "image": "https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-C-001-0001"
-  },
-  {
-    "id": "WS-A-001-0002",
-    "title": "Contemporary 3-Bedroom Home (3 Bed, 2 Bath) in Downtown Orlando, Orlando",
-    "price": 495000,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Houses",
-    "image": "https://images.pexels.com/photos/280222/pexels-photo-280222.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-A-001-0002"
-  },
-  {
-    "id": "WS-A-001-0003",
-    "title": "Spacious Executive Residence (5 Bed, 4 Bath) in Southside, Jacksonville",
-    "price": 580000,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Houses",
-    "image": "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-A-001-0003"
-  },
-  {
-    "id": "WS-A-001-0001",
-    "title": "Modern Family Villa (4 Bed, 3 Bath) in Brickell, Miami",
-    "price": 410000,
-    "currency": "USD",
-    "availability": "Available (Illustrative Listing)",
-    "category": "Houses",
-    "image": "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "url": "https://weverseonlineshop.com/product/WS-A-001-0001"
-  },
-  {
-    "id": "KCO-000018",
-    "title": "2017 Mercedes-Benz S-Class S63 AMG Coupe - Obsidian Black",
-    "price": 72000,
+    "id": "340e9c21-393a-48f1-a18c-4ef8a33fa8bd",
+    "title": "House 61",
+    "price": 0,
     "currency": "USD",
     "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://images.pexels.com/photos/10054672/pexels-photo-10054672.jpeg?auto=compress&cs=tinysrgb&w=1000",
-    "url": "https://weverseonlineshop.com/product/KCO-000018"
-  },
-  {
-    "id": "KCO-IMP-0135",
-    "title": "Google Pixel 9a Smartphone - Factory Unlocked, 256GB Storage",
-    "price": 499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0135.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0135"
-  },
-  {
-    "id": "KCO-PR008",
-    "title": "Christian Dior Dway Slide Sandals in White Embroidered Cotton",
-    "price": 695,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Fashion",
+    "category": "Houses & Real Estate",
     "image": null,
-    "url": "https://weverseonlineshop.com/product/KCO-PR008"
+    "url": "https://weverseonlineshop.com/product/340e9c21-393a-48f1-a18c-4ef8a33fa8bd"
   },
   {
-    "id": "KCO-IMP-0186",
-    "title": "Samsung",
-    "price": 1199,
+    "id": "c2745042-9bf0-4214-b106-0d2d949dbf2e",
+    "title": "House 4",
+    "price": 0,
     "currency": "USD",
     "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0186.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0186"
-  },
-  {
-    "id": "KCO-IMP-0190",
-    "title": "Delta 55-Inch 4K Ultra HD Smart LED TV with Bluetooth & HDMI",
-    "price": 349,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0190.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0190"
-  },
-  {
-    "id": "W-692031259",
-    "title": "Modern Two-Story Luxury Estate with Premium Finishes",
-    "price": 1375000,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Townhouse",
+    "category": "Houses & Real Estate",
     "image": null,
-    "url": "https://weverseonlineshop.com/product/W-692031259"
+    "url": "https://weverseonlineshop.com/product/c2745042-9bf0-4214-b106-0d2d949dbf2e"
   },
   {
-    "id": "W-684297759",
-    "title": "Modern Two-Story Luxury Estate with Premium Finishes",
-    "price": 1375000,
+    "id": "ae17bb30-259a-448e-b589-5c95dd539c22",
+    "title": "House 2",
+    "price": 0,
     "currency": "USD",
     "availability": "In Stock",
-    "category": "Townhouse",
+    "category": "Houses & Real Estate",
     "image": null,
-    "url": "https://weverseonlineshop.com/product/W-684297759"
+    "url": "https://weverseonlineshop.com/product/ae17bb30-259a-448e-b589-5c95dd539c22"
   },
   {
-    "id": "KCO-IMP-0147",
-    "title": "Luxury Grey Prevost H3-45 VIP Motorhome",
-    "price": 1750000,
+    "id": "a23b7440-2166-4cfd-b708-fb78dfcc75cf",
+    "title": "Historical Home For Sale",
+    "price": 0,
     "currency": "USD",
-    "availability": "Limited Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0147.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0147"
-  },
-  {
-    "id": "W-151187600",
-    "title": "1967 Ford Mustang Shelby GT500 Eleanor",
-    "price": 195000,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/products/1788009091300-5io4b5g4nlj.jpg",
-    "url": "https://weverseonlineshop.com/product/W-151187600"
-  },
-  {
-    "id": "KCO-IMP-0007",
-    "title": "Samsung 55DU7010 Crystal UHD 4K Smart TV",
-    "price": 410,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0007.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0007"
-  },
-  {
-    "id": "KCO-IMP-0005",
-    "title": "Clearance Furniture Showroom Collection",
-    "price": 720,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0005.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0005"
-  },
-  {
-    "id": "KCO-IMP-0004",
-    "title": "TopShield StormGear Synthetic Roofing Underlayment",
-    "price": 108,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0004.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0004"
-  },
-  {
-    "id": "KCO-IMP-0423",
-    "title": "Polytron 100-Inch LED Smart TV PLD 100QV5925",
-    "price": 2500,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0423.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0423"
-  },
-  {
-    "id": "KCO-IMP-0420",
-    "title": "HUASHU Top Loading Water Cooler Dispenser - 3 Temperature Settings",
-    "price": 115,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0420.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0420"
-  },
-  {
-    "id": "KCO-IMP-0417",
-    "title": "HiFresh Portable Evaporative Tower Cooling Fan with Remote",
-    "price": 115,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0417.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0417"
-  },
-  {
-    "id": "KCO-IMP-0406",
-    "title": "Comforta Perfect Teenager Single Springbed",
-    "price": 225,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0406.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0406"
-  },
-  {
-    "id": "KCO-IMP-0403",
-    "title": "Tecno Spark 50 Smartphone - 128GB Storage",
-    "price": 130,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0403.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0403"
-  },
-  {
-    "id": "KCO-IMP-0397",
-    "title": "LG 55-inch UQ80 Series 4K UHD Smart TV",
-    "price": 449,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0397.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0397"
-  },
-  {
-    "id": "KCO-IMP-0391",
-    "title": "Set Of 4 Black Upholstered Dining Chairs",
-    "price": 315,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0391.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0391"
-  },
-  {
-    "id": "KCO-IMP-0385",
-    "title": "Samsung Bespoke AI Family Hub Refrigerator",
-    "price": 3450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0385.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0385"
-  },
-  {
-    "id": "KCO-IMP-0382",
-    "title": "Minimalist Channel-Tufted Bouclé Bed Frame",
-    "price": 1080,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0382.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0382"
-  },
-  {
-    "id": "KCO-IMP-0379",
-    "title": "Mixed Breed Puppy Litter",
-    "price": 450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Babies & Kids",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0379.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0379"
-  },
-  {
-    "id": "KCO-IMP-0432",
-    "title": "West Elm Cozy Swivel Chair",
-    "price": 799,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0432.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0432"
-  },
-  {
-    "id": "KCO-IMP-0421",
-    "title": "Toshiba Front Load Washing Machine and Heat Pump Tumble Dryer Stack",
-    "price": 2150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0421.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0421"
-  },
-  {
-    "id": "KCO-IMP-0418",
-    "title": "TCL 43-inch Class 4-Series 4K UHD Smart Android TV",
-    "price": 269,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0418.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0418"
-  },
-  {
-    "id": "KCO-IMP-0401",
-    "title": "Sony PlayStation 5 Console",
-    "price": 360,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Gaming",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0401.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0401"
-  },
-  {
-    "id": "KCO-IMP-0395",
-    "title": "Chanel Quilted Pearl Crush Clutch with Chain and Hermes Oran Sandals Set",
-    "price": 4320,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0395.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0395"
-  },
-  {
-    "id": "KCO-IMP-0389",
-    "title": "Whirlpool ACE TurboDry Semi-Automatic Washing Machine",
-    "price": 199,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0389.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0389"
-  },
-  {
-    "id": "KCO-IMP-0386",
-    "title": "Samsung Galaxy Z Fold 7 512GB",
-    "price": 1750,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0386.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0386"
-  },
-  {
-    "id": "KCO-IMP-0383",
-    "title": "Michael Kors Signature Logo Handbag and Ballet Flat Set",
-    "price": 315,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0383.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0383"
-  },
-  {
-    "id": "KCO-IMP-0380",
-    "title": "Purebred Ragdoll Kittens for Adoption",
-    "price": 720,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Babies & Kids",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0380.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0380"
-  },
-  {
-    "id": "KCO-IMP-0377",
-    "title": "Sony PlayStation 5 Console - Standard Edition",
-    "price": 449,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Gaming",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0377.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0377"
-  },
-  {
-    "id": "KCO-IMP-0375",
-    "title": "Portable Solar Power Generator System 20 Watts",
-    "price": 105,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0375.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0375"
-  },
-  {
-    "id": "KCO-IMP-0416",
-    "title": "Dell Alienware m15 R6 Gaming Laptop",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Computers",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0416.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0416"
-  },
-  {
-    "id": "KCO-IMP-0393",
-    "title": "Shark AI Laser Navigation Robot Vacuum with Self-Empty Base",
-    "price": 399,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0393.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0393"
-  },
-  {
-    "id": "KCO-IMP-0390",
-    "title": "Gree GWC-05MOO5 Split Air Conditioner",
-    "price": 250,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Motorhomes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0390.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0390"
-  },
-  {
-    "id": "KCO-IMP-0384",
-    "title": "Saint Laurent Envelope Medium Quilted Shoulder Bag in Taupe Grain de Poudre",
-    "price": 1950,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0384.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0384"
-  },
-  {
-    "id": "KCO-IMP-0381",
-    "title": "Philco Inverter Split Air Conditioner",
-    "price": 599,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0381.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0381"
-  },
-  {
-    "id": "KCO-IMP-0378",
-    "title": "Sony PlayStation 5 Disc Edition Console - Brand New Sealed",
-    "price": 449,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0378.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0378"
-  },
-  {
-    "id": "KCO-IMP-0372",
-    "title": "Pillow Top Arm L-Shape Sectional Sofa with Chaise",
-    "price": 1099,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0372.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0372"
-  },
-  {
-    "id": "KCO-IMP-0370",
-    "title": "Kenmore Top Load Washer and Electric Dryer Set",
-    "price": 950,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0370.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0370"
-  },
-  {
-    "id": "KCO-IMP-0366",
-    "title": "Oversized 270° Swivel Rocker Recliner Chair With Adjustable Headrest & Infinite Position",
-    "price": 495,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0366.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0366"
-  },
-  {
-    "id": "KCO-IMP-0364",
-    "title": "Sony ZV-E10 Mirrorless Camera with 16-50mm Lens and Shooting Grip",
-    "price": 698,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0364.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0364"
-  },
-  {
-    "id": "KCO-IMP-0361",
-    "title": "Nwt 70+ Assorted Women's Jewelry Earrings, Rings, Necklaces,& Bracelets Color Gold Size Os",
-    "price": 110,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0361.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0361"
-  },
-  {
-    "id": "KCO-IMP-0357",
-    "title": "Frigidaire Gallery 4-Door French Door Refrigerator",
-    "price": 2599,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0357.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0357"
-  },
-  {
-    "id": "KCO-IMP-0354",
-    "title": "IKEA MALM Bed Frame with Storage Boxes",
-    "price": 399,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Motorhomes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0354.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0354"
-  },
-  {
-    "id": "KCO-IMP-0351",
-    "title": "Modern Gray Fabric Accent Chair With Gold Metal Side Frame and Channel Tufting",
-    "price": 399,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0351.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0351"
-  },
-  {
-    "id": "KCO-IMP-0348",
-    "title": "Universal Ductless Mini Split Air Conditioner Indoor Unit",
-    "price": 405,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0348.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0348"
-  },
-  {
-    "id": "KCO-IMP-0345",
-    "title": "Meridian Furniture Luna White Faux Fur Acrylic Swing Accent Chair",
-    "price": 1125,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0345.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0345"
-  },
-  {
-    "id": "KCO-IMP-0356",
-    "title": "Homebase Single Door Upright Showcase Fridge",
-    "price": 799,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0356.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0356"
-  },
-  {
-    "id": "KCO-IMP-0353",
-    "title": "Ford F-150 Raptor Style 12V Kids Ride-On Truck",
-    "price": 315,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0353.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0353"
-  },
-  {
-    "id": "KCO-IMP-0350",
-    "title": "Modern Corduroy Compression Sofa Bed - White",
-    "price": 245,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0350.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0350"
-  },
-  {
-    "id": "KCO-IMP-0344",
-    "title": "Mercer41 Oversized Swivel Electric Recliner Chair",
-    "price": 765,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0344.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0344"
-  },
-  {
-    "id": "KCO-IMP-0355",
-    "title": "Modern Upholstered Rocking Beanbag Chair for Living Room",
-    "price": 219,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0355.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0355"
-  },
-  {
-    "id": "KCO-IMP-0349",
-    "title": "Modern Casual Penguin Rocking Chair Single Sofa",
-    "price": 245,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0349.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0349"
-  },
-  {
-    "id": "KCO-IMP-0343",
-    "title": "Mastela Deluxe Multi Motion Baby Cradle",
-    "price": 155,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Babies & Kids",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0343.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0343"
-  },
-  {
-    "id": "KCO-IMP-0342",
-    "title": "Apple MacBook Pro 14-inch (M1 Pro, 2021)",
-    "price": 1450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Computers",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0342.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0342"
-  },
-  {
-    "id": "KCO-IMP-0341",
-    "title": "Luxury Single Bed With Mattress Modern Upholstered Bed",
-    "price": 315,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0341.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0341"
-  },
-  {
-    "id": "KCO-IMP-0340",
-    "title": "Luxury Bridal Jewelry Set, Crystal Necklace Bracelet Earrings Ring, Floral Design",
-    "price": 105,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0340.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0340"
-  },
-  {
-    "id": "KCO-IMP-0338",
-    "title": "Luvu Lounger Elegant Chaise Lounge Chair For Yoga, Exercise, Stretching, Massage And More Fabric Ink Blue Velvet",
-    "price": 399,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0338.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0338"
-  },
-  {
-    "id": "KCO-IMP-0337",
-    "title": "Purebred German Shepherd Puppies",
-    "price": 1350,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0337.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0337"
-  },
-  {
-    "id": "KCO-IMP-0336",
-    "title": "Llinc Store 57-inch Chenille Upholstered Sleeper Chaise Lounge with LED Lighting",
-    "price": 399,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0336.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0336"
-  },
-  {
-    "id": "KCO-IMP-0333",
-    "title": "LioraView Portable 4K Folding Projection Screen with Anti-Light Surface",
-    "price": 219,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0333.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0333"
-  },
-  {
-    "id": "KCO-IMP-0326",
-    "title": "Samsung 4-Door French Door Refrigerator with External Ice and Water Dispenser",
-    "price": 1080,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Kitchen & Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0326.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0326"
-  },
-  {
-    "id": "KCO-IMP-0317",
-    "title": "Jaxpare Golf Cart Diamond Seat Covers Kit for EZGO TXT and RXV",
-    "price": 129,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0317.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0317"
-  },
-  {
-    "id": "KCO-IMP-0314",
-    "title": "Apple iPhone 15 Pro",
-    "price": 899,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0314.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0314"
-  },
-  {
-    "id": "KCO-IMP-0311",
-    "title": "Internet Popular Pumpkin Single Sofa Chair Lazy Couch Lamb Plush",
-    "price": 245,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0311.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0311"
-  },
-  {
-    "id": "KCO-IMP-0277",
-    "title": "Apple AirPods Pro (2nd Generation) Wireless Earbuds with Charging Case",
-    "price": 210,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0277.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0277"
-  },
-  {
-    "id": "KCO-IMP-0331",
-    "title": "LG DUAL Inverter Split Air Conditioner 2023 Series",
-    "price": 495,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0331.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0331"
-  },
-  {
-    "id": "KCO-IMP-0328",
-    "title": "Large Donut Shaped Bean Bag Chair for Adults - Brown",
-    "price": 109,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0328.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0328"
-  },
-  {
-    "id": "KCO-IMP-0325",
-    "title": "KitchenAid 30-Inch 5-Burner Gas Convection Range",
-    "price": 1699,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0325.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0325"
-  },
-  {
-    "id": "W-315891827",
-    "title": "Modern White Tiny House on Wheels",
-    "price": 72000,
-    "currency": "USD",
     "availability": "In Stock",
-    "category": "Townhouse",
+    "category": "Houses & Real Estate",
     "image": null,
-    "url": "https://weverseonlineshop.com/product/W-315891827"
+    "url": "https://weverseonlineshop.com/product/a23b7440-2166-4cfd-b708-fb78dfcc75cf"
   },
   {
-    "id": "KCO-IMP-0316",
-    "title": "iQOO Neo 10 Pro 5G Smartphone",
-    "price": 495,
+    "id": "626e7f91-695a-41a0-b406-cf9eaad86e28",
+    "title": "House 3",
+    "price": 0,
     "currency": "USD",
     "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0316.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0316"
-  },
-  {
-    "id": "KCO-IMP-0310",
-    "title": "Infinix Hot 60 Pro 256GB/8GB Smartphone",
-    "price": 165,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0310.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0310"
-  },
-  {
-    "id": "KCO-IMP-0330",
-    "title": "La-Z-Boy Recliner Gallery Collection",
-    "price": 1169,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0330.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0330"
-  },
-  {
-    "id": "KCO-IMP-0327",
-    "title": "Purebred Labrador Retriever Puppies",
-    "price": 1050,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0327.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0327"
-  },
-  {
-    "id": "KCO-IMP-0321",
-    "title": "Professional Roofing Services by Jose S Roofing",
-    "price": 7650,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0321.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0321"
-  },
-  {
-    "id": "KCO-IMP-0318",
-    "title": "JBL PartyBox Encore Essential 2 Portable Speaker with Wireless Microphones",
-    "price": 250,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0318.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0318"
-  },
-  {
-    "id": "KCO-IMP-0315",
-    "title": "Apple iPhone 14 Pro",
-    "price": 699,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0315.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0315"
-  },
-  {
-    "id": "KCO-IMP-0312",
-    "title": "Apple iPhone 17 Pro Max",
-    "price": 1099,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0312.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0312"
-  },
-  {
-    "id": "KCO-IMP-0304",
-    "title": "Home City Furniture Modern Upholstered Bed Frame - BED-16001",
-    "price": 1125,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0304.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0304"
-  },
-  {
-    "id": "KCO-IMP-0301",
-    "title": "SP5DER Pink Web Hoodie",
-    "price": 225,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Fashion & Shoes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0301.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0301"
-  },
-  {
-    "id": "KCO-IMP-0298",
-    "title": "Samsung 55-inch Curved Full HD Smart LED TV (J6250 Series)",
-    "price": 628,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Motorhomes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0298.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0298"
-  },
-  {
-    "id": "KCO-IMP-0289",
-    "title": "Fricon Horizontal Commercial Freezer - Glass Top Display",
-    "price": 2150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Kitchen & Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0289.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0289"
-  },
-  {
-    "id": "KCO-IMP-0308",
-    "title": "Josee Moyaa Modern Bedroom Decor Set",
-    "price": 765,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0308.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0308"
-  },
-  {
-    "id": "KCO-IMP-0306",
-    "title": "I Love Cat - Domestic Shorthair Kitten",
-    "price": 125,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Babies & Kids",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0306.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0306"
-  },
-  {
-    "id": "KCO-IMP-0303",
-    "title": "Hitachi 1.5 Ton Inverter Split AC - 2026 Model",
-    "price": 599,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0303.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0303"
-  },
-  {
-    "id": "KCO-IMP-0300",
-    "title": "GE Front Load Washing Machine",
-    "price": 799,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0300.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0300"
-  },
-  {
-    "id": "KCO-IMP-0294",
-    "title": "GDFStudio Helena Modern Corduroy Upholstered Bean Bag Chair With 3 Pillows, Beige",
-    "price": 219,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0294.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0294"
-  },
-  {
-    "id": "KCO-IMP-0288",
-    "title": "Danby Chest Freezer",
-    "price": 270,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Kitchen & Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0288.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0288"
-  },
-  {
-    "id": "KCO-IMP-0285",
-    "title": "Fine Paints Of Europe Dutch Door Kit",
-    "price": 215,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0285.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0285"
-  },
-  {
-    "id": "KCO-IMP-0282",
-    "title": "Google Pixel 9 Pro",
-    "price": 899,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0282.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0282"
-  },
-  {
-    "id": "KCO-IMP-0305",
-    "title": "HP ProBook 440 G11 Intel Core Ultra 7 Laptop",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0305.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0305"
-  },
-  {
-    "id": "KCO-IMP-0302",
-    "title": "Hisense 50\" UHD TV Series 7",
-    "price": 285,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0302.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0302"
-  },
-  {
-    "id": "KCO-IMP-0299",
-    "title": "Gucci Ophidia GG Canvas Tote Bag",
-    "price": 1570,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Fashion & Shoes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0299.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0299"
-  },
-  {
-    "id": "KCO-IMP-0293",
-    "title": "Alienware AW3418DW 34-Inch Curved Gaming Monitor",
-    "price": 280,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Computers",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0293.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0293"
-  },
-  {
-    "id": "KCO-IMP-0290",
-    "title": "Mercedes-Benz Sprinter High Roof Custom Passenger Van",
-    "price": 38250,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0290.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0290"
-  },
-  {
-    "id": "KCO-IMP-0287",
-    "title": "GE Cafe Series 30-Inch Slide-In Front Control Gas Range",
-    "price": 1100,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0287.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0287"
-  },
-  {
-    "id": "KCO-IMP-0284",
-    "title": "Faux Fur Bean Bag Sofa Chair With Pull Ring And Non Slip Base",
-    "price": 159,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0284.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0284"
-  },
-  {
-    "id": "KCO-IMP-0281",
-    "title": "Cama Box Solteiro com Cabeceira Estofada e Colchão",
-    "price": 189,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0281.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0281"
-  },
-  {
-    "id": "KCO-IMP-0275",
-    "title": "Louis Vuitton OnTheGo MM Monogram Empreinte Giant",
-    "price": 3150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0275.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0275"
-  },
-  {
-    "id": "KCO-IMP-0272",
-    "title": "HyperX QuadCast S",
-    "price": 135,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0272.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0272"
-  },
-  {
-    "id": "KCO-IMP-0269",
-    "title": "Samsung 28 cu. ft. French Door Refrigerator in Stainless Steel",
-    "price": 1699,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0269.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0269"
-  },
-  {
-    "id": "KCO-IMP-0263",
-    "title": "Crescent Ice Maker Countertop, 35lbs/24h Clear Ice Machine with Self-Cleaning",
-    "price": 159,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0263.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0263"
-  },
-  {
-    "id": "KCO-IMP-0274",
-    "title": "Morkie Puppy (Maltese x Yorkshire Terrier Mix)",
-    "price": 1275,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0274.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0274"
-  },
-  {
-    "id": "KCO-IMP-0271",
-    "title": "Sony MHC-V90DW High-Power Home Audio System with Bluetooth",
-    "price": 580,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0271.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0271"
-  },
-  {
-    "id": "KCO-IMP-0268",
-    "title": "Samsung 36\" Wide French Door Refrigerator",
-    "price": 1699,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0268.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0268"
-  },
-  {
-    "id": "KCO-IMP-0257",
-    "title": "Portable Folding Electric Mobility Scooter",
-    "price": 1080,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0257.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0257"
-  },
-  {
-    "id": "KCO-IMP-0254",
-    "title": "Coach Mini Rowan Satchel in Signature Canvas",
-    "price": 125,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Fashion & Shoes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0254.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0254"
-  },
-  {
-    "id": "KCO-IMP-0280",
-    "title": "Esazn Lounge Chair Stackable Sand Gray Steel Frame Stationary Zero Gravity Chair With Gray Cushioned Seat",
-    "price": 115,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Decor & Storage",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0280.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0280"
-  },
-  {
-    "id": "KCO-IMP-0259",
-    "title": "Modern Digital Thermostatic Shower System with Handheld Sprayer",
-    "price": 245,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0259.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0259"
-  },
-  {
-    "id": "KCO-IMP-0256",
-    "title": "Coach Mini Rowan Satchel in Signature Canvas",
-    "price": 135,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0256.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0256"
-  },
-  {
-    "id": "KCO-IMP-0253",
-    "title": "Child Gadi Electric Ride-On Off-Road SUV",
-    "price": 165,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Fashion & Shoes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0253.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0253"
-  },
-  {
-    "id": "KCO-IMP-0250",
-    "title": "German Shepherd Puppy - Can I Please Have Your Attention Thank You",
-    "price": 1350,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0250.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0250"
-  },
-  {
-    "id": "KCO-IMP-0247",
-    "title": "OROA Modan Swivel Chair in Gray Bouclé",
-    "price": 1665,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0247.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0247"
-  },
-  {
-    "id": "KCO-IMP-0241",
-    "title": "Modern Tower Evaporative Air Cooler and Humidifier",
-    "price": 115,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0241.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0241"
-  },
-  {
-    "id": "KCO-IMP-0238",
-    "title": "Southerland Elbert Mattress and Tufted Bed Frame",
-    "price": 1125,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0238.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0238"
-  },
-  {
-    "id": "KCO-IMP-0229",
-    "title": "LG TrueSteam Dishwasher with QuadWash Technology",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0229.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0229"
-  },
-  {
-    "id": "KCO-IMP-0252",
-    "title": "Whirlpool Side-by-Side Refrigerator with External Ice and Water Dispenser",
-    "price": 1349,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0252.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0252"
-  },
-  {
-    "id": "KCO-IMP-0251",
-    "title": "Modern Upholstered Platform Bed Frame",
-    "price": 1080,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Kitchen & Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0251.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0251"
-  },
-  {
-    "id": "KCO-IMP-0245",
-    "title": "Black Oak Asphalt Roof Replacement Service",
-    "price": 10800,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Kitchen & Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0245.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0245"
-  },
-  {
-    "id": "KCO-IMP-0240",
-    "title": "TCL 65-Inch Class QM7 Series QD-Mini LED 4K UHD Smart Google TV",
-    "price": 999,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0240.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0240"
-  },
-  {
-    "id": "KCO-IMP-0239",
-    "title": "BEST 2X2 Mattress and Base Set",
-    "price": 405,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0239.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0239"
-  },
-  {
-    "id": "KCO-IMP-0237",
-    "title": "Custom Bedazzled Stanley Quencher H2.0 FlowState Tumbler",
-    "price": 110,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0237.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0237"
-  },
-  {
-    "id": "KCO-IMP-0236",
-    "title": "Pottery Barn Balboa Swivel Chair",
-    "price": 1299,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0236.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0236"
-  },
-  {
-    "id": "KCO-IMP-0233",
-    "title": "Asus ROG Rapture GT-AX6000 Dual-Band WiFi 6 Gaming Router",
-    "price": 299,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Babies & Kids",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0233.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0233"
-  },
-  {
-    "id": "KCO-IMP-0231",
-    "title": "Artistic Comfy Lounge Armchair",
-    "price": 585,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Computers",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0231.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0231"
-  },
-  {
-    "id": "KCO-IMP-0228",
-    "title": "Professional HVAC Control Panel Assembly - Carel pCOe+ System",
-    "price": 2550,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Watches",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0228.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0228"
-  },
-  {
-    "id": "KCO-IMP-0227",
-    "title": "Midea Floor Standing Tower Air Conditioner",
-    "price": 765,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0227.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0227"
-  },
-  {
-    "id": "KCO-IMP-0224",
-    "title": "Midea Portable Evaporative Air Cooler and Humidifier",
-    "price": 115,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0224.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0224"
-  },
-  {
-    "id": "KCO-IMP-0221",
-    "title": "Modern Nordic Floor Lamp with Integrated Side Table and Drawer",
-    "price": 219,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0221.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0221"
-  },
-  {
-    "id": "KCO-IMP-0226",
-    "title": "Sony PlayStation 5 Digital Edition Slim Console",
-    "price": 340,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0226.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0226"
-  },
-  {
-    "id": "KCO-IMP-0392",
-    "title": "Fleetwood Tioga Ranger Class C Motorhome",
-    "price": 24900,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Motorhomes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0392.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0392"
-  },
-  {
-    "id": "KCO-IMP-0405",
-    "title": "SPJ TLWTU-7SAM Top Load Washing Machine",
-    "price": 155,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0405.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0405"
-  },
-  {
-    "id": "W-549742108",
-    "title": "Esmaltec Caribe Glass 4-Burner Gas Stove - Black",
-    "price": 125,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Fashion",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0028.jpg",
-    "url": "https://weverseonlineshop.com/product/W-549742108"
-  },
-  {
-    "id": "KCO-IMP-0422",
-    "title": "4x4 Off-Road Style Kids Electric Ride-On Toy Car - Red/Black",
-    "price": 215,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0422.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0422"
-  },
-  {
-    "id": "KCO-IMP-0441",
-    "title": "Xiaomi PatchWall Smart TV 4K UHD LED",
-    "price": 399,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0441.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0441"
-  },
-  {
-    "id": "KCO-IMP-0161",
-    "title": "Shark FlexBreeze Portable Indoor/Outdoor Pedestal Fan",
-    "price": 150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0161.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0161"
-  },
-  {
-    "id": "KCO-IMP-0159",
-    "title": "Mabe Chest Freezer - Compact Energy Efficient White Freezer",
-    "price": 280,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0159.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0159"
-  },
-  {
-    "id": "KCO-IMP-0158",
-    "title": "GE Profile French Door Refrigerator - Fingerprint Resistant Black Slate",
-    "price": 2548,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0158.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0158"
-  },
-  {
-    "id": "KCO-IMP-0156",
-    "title": "Philips 5000 Series Tower Fan - Powerful Yet Quiet Cooling",
-    "price": 115,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0156.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0156"
-  },
-  {
-    "id": "KCO-IMP-0155",
-    "title": "Modern Black Metal Canopy Bed Frame with Matching Bouclé Bench",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0155.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0155"
-  },
-  {
-    "id": "KCO-IMP-0153",
-    "title": "IKEA FULLOSA Upholstered Armchair - Grey",
-    "price": 349,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0153.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0153"
-  },
-  {
-    "id": "KCO-IMP-0143",
-    "title": "Comfee MPPH-09CRN7 3-in-1 Portable Air Conditioner 9000 BTU",
-    "price": 320,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0143.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0143"
-  },
-  {
-    "id": "KCO-IMP-0142",
-    "title": "Balmuir Luxury Bedding Set with Monogram Throw and Decorative Pillows",
-    "price": 450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0142.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0142"
-  },
-  {
-    "id": "KCO-IMP-0140",
-    "title": "Professional Stainless Steel 30-Inch Gas Range with 5 Burners",
-    "price": 1850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0140.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0140"
-  },
-  {
-    "id": "KCO-IMP-0137",
-    "title": "Google Pixel 9 Pro Smartphone - Brand New Factory Sealed",
-    "price": 999,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0137.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0137"
-  },
-  {
-    "id": "KCO-IMP-0134",
-    "title": "Modern Upholstered Single Bed Frame with Matching Bedroom Wardrobe Set",
-    "price": 350,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0134.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0134"
-  },
-  {
-    "id": "KCO-IMP-0132",
-    "title": "Samsung Black Stainless Steel French Door Refrigerator",
-    "price": 1450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0132.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0132"
-  },
-  {
-    "id": "KCO-IMP-0129",
-    "title": "King Koil Aloe Vera Series Mattress and Upholstered Bed Frame",
-    "price": 1200,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0129.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0129"
-  },
-  {
-    "id": "KCO-IMP-0116",
-    "title": "Tufted Wingback Accent Chair with Nailhead Trim - Light Grey",
-    "price": 249,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0116.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0116"
-  },
-  {
-    "id": "KCO-IMP-0113",
-    "title": "Apple iPhone 14/15 Series Smartphones - Retail Display Stock",
-    "price": 799,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0113.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0113"
-  },
-  {
-    "id": "KCO-IMP-0112",
-    "title": "Classic Dark Wood Sleigh Bed Frame - Queen Size",
-    "price": 450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0112.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0112"
-  },
-  {
-    "id": "KCO-IMP-0110",
-    "title": "Kenmore White Gas Range with 4-Burner Cooktop and Oven",
-    "price": 250,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0110.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0110"
-  },
-  {
-    "id": "KCO-IMP-0374",
-    "title": "Sony PlayStation 5 Slim Console Bundle with Custom Pink and White Covers",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Gaming",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0374.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0374"
-  },
-  {
-    "id": "KCO-IMP-0126",
-    "title": "Modern Minimalist Floor Lamp with Integrated Side Table and Drawer",
-    "price": 189,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0126.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0126"
-  },
-  {
-    "id": "KCO-IMP-0120",
-    "title": "Enchant Tufted Upholstered Bed Frame with Adjustable Mattress",
-    "price": 1850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0120.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0120"
-  },
-  {
-    "id": "KCO-IMP-0124",
-    "title": "Google Pixel 6 128GB Smartphone - Sorta Seafoam",
-    "price": 249,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0124.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0124"
-  },
-  {
-    "id": "KCO-IMP-0123",
-    "title": "SleepMaker Miracoil Sports Queen Bed Frame with LED Headboard",
-    "price": 1499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0123.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0123"
-  },
-  {
-    "id": "KCO-IMP-0119",
-    "title": "Modern Wooden Queen Bed Frame with Grid Headboard",
-    "price": 450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0119.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0119"
-  },
-  {
-    "id": "KCO-IMP-0117",
-    "title": "Samsung 50-inch Crystal UHD U8000FD 4K Smart TV (2025 Model)",
-    "price": 268,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0117.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0117"
-  },
-  {
-    "id": "KCO-IMP-0105",
-    "title": "Samsung 4K UHD Smart LED TV - Large Screen Display",
-    "price": 1299,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0105.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0105"
-  },
-  {
-    "id": "KCO-IMP-0103",
-    "title": "Purple Luxe Collection Hybrid Mattress - Premium Comfort Grid Bed",
-    "price": 3299,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0103.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0103"
-  },
-  {
-    "id": "KCO-IMP-0102",
-    "title": "Aireloom Luxury Handmade Mattress and Tufted Headboard Set",
-    "price": 3200,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0102.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0102"
-  },
-  {
-    "id": "KCO-IMP-0101",
-    "title": "IKEA TALLASEN Upholstered Bed Frame",
-    "price": 450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0101.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0101"
-  },
-  {
-    "id": "KCO-IMP-0099",
-    "title": "Sony Concept Touchscreen Wireless Over-Ear Headphones with Display Stand",
-    "price": 499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0099.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0099"
-  },
-  {
-    "id": "KCO-IMP-0094",
-    "title": "IKEA SONGESAND Bed Frame - White Full/Double Size",
-    "price": 215,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0094.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0094"
-  },
-  {
-    "id": "KCO-IMP-0093",
-    "title": "IKEA SONGESAND Bed Frame with Headboard White",
-    "price": 220,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0093.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0093"
-  },
-  {
-    "id": "KCO-IMP-0091",
-    "title": "Modern Bedside Table with Integrated Floor Lamp & Wireless Charger",
-    "price": 149,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0091.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0091"
-  },
-  {
-    "id": "KCO-IMP-0131",
-    "title": "GE Unitized Spacemaker Washer and Electric Dryer Laundry Center",
-    "price": 1349,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0131.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0131"
-  },
-  {
-    "id": "KCO-IMP-0086",
-    "title": "onn. 75 Inch 4K UHD Frameless Roku Smart TV",
-    "price": 498,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0086.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0086"
-  },
-  {
-    "id": "KCO-IMP-0082",
-    "title": "Samsung French Door Refrigerator with AutoFill Water Pitcher",
-    "price": 1150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0082.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0082"
-  },
-  {
-    "id": "KCO-IMP-0079",
-    "title": "LG Portable Air Conditioner with Remote Control",
-    "price": 280,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0079.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0079"
-  },
-  {
-    "id": "KCO-IMP-0078",
-    "title": "Nike Assorted Retro Basketball Sneakers - Bulk Collection",
-    "price": 120,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Shoes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0078.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0078"
-  },
-  {
-    "id": "KCO-IMP-0073",
-    "title": "Modern Upholstered Channel Tufted Bed Frame with LED Mirrors & Nightstands",
-    "price": 1250,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0073.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0073"
-  },
-  {
-    "id": "KCO-IMP-0128",
-    "title": "Samsung Family Hub 4-Door French Door Smart Refrigerator",
-    "price": 2899,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0128.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0128"
-  },
-  {
-    "id": "KCO-IMP-0059",
-    "title": "GE Front Load Washer and Dryer Stacked Set in White",
-    "price": 1256,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0059.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0059"
-  },
-  {
-    "id": "KCO-IMP-0057",
-    "title": "MaxCoil Forest Gems Amethyst II Premium Mattress",
-    "price": 1200,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0057.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0057"
-  },
-  {
-    "id": "KCO-IMP-0053",
-    "title": "Chanel Quilted Tote Bag - White & Black Leather Shoulder Bag",
-    "price": 3800,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Bags",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0053.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0053"
-  },
-  {
-    "id": "KCO-IMP-0052",
-    "title": "Modern L-Shaped Sectional Sofa with Tufted Back and Wooden Accents",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0052.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0052"
-  },
-  {
-    "id": "KCO-IMP-0067",
-    "title": "Forest River Sunseeker Class C Motorhome",
-    "price": 68500,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Motorhomes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0067.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0067"
-  },
-  {
-    "id": "KCO-IMP-0066",
-    "title": "Thor Motor Coach Axis Class A Motorhome",
-    "price": 68500,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Motorhomes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0066.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0066"
-  },
-  {
-    "id": "KCO-IMP-0065",
-    "title": "Coachmen Pursuit Class A Motorhome RV",
-    "price": 64900,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Motorhomes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0065.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0065"
-  },
-  {
-    "id": "KCO-IMP-0064",
-    "title": "Fleetwood Tioga Montara Class C Motorhome",
-    "price": 48500,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Motorhomes",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0064.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0064"
-  },
-  {
-    "id": "KCO-IMP-0058",
-    "title": "Atelier Towers Pear Cut Cubic Zirconia Bridal Jewelry Set",
-    "price": 149,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0058.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0058"
-  },
-  {
-    "id": "KCO-IMP-0047",
-    "title": "Samsung 98-Inch Neo QLED 4K Smart TV",
-    "price": 4999,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0047.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0047"
-  },
-  {
-    "id": "KCO-IMP-0045",
-    "title": "Apple iPhone 11 64GB Purple - Unlocked",
-    "price": 220,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0045.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0045"
-  },
-  {
-    "id": "KCO-IMP-0044",
-    "title": "Huzaro Force 6.0 RGB LED Gaming Chair with Remote Control",
-    "price": 149,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0044.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0044"
-  },
-  {
-    "id": "KCO-IMP-0042",
-    "title": "Hao.Design Futuristic Sci-Fi Gaming Desk and Ergonomic Chair Set",
-    "price": 2499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0042.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0042"
-  },
-  {
-    "id": "KCO-IMP-0039",
-    "title": "Kids Electric Ride-On Buggy Car 12V Battery Powered",
-    "price": 189,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Toys",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0039.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0039"
-  },
-  {
-    "id": "KCO-IMP-0038",
-    "title": "Apple iPhone 13 Pro Max & 14 Pro Max - Assorted Colors & Storage",
-    "price": 849,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0038.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0038"
-  },
-  {
-    "id": "KCO-IMP-0022",
-    "title": "Louis Vuitton Locky BB Monogram Canvas and Leather Handbag",
-    "price": 2150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Bags",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0022.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0022"
-  },
-  {
-    "id": "KCO-IMP-0028",
-    "title": "Esmaltec Caribe Glass 4-Burner Gas Range with Tempered Glass Top",
-    "price": 185,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0028.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0028"
-  },
-  {
-    "id": "KCO-IMP-0188",
-    "title": "Louis Vuitton Christopher PM Monogram Multicolor Backpack",
-    "price": 3850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Bags",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0188.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0188"
-  },
-  {
-    "id": "KCO-PX0006",
-    "title": "Mercedes-AMG GLE 63 S Coupe Custom Edition",
-    "price": 135000,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/products/1786952281671-x5bfwmwkha.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-PX0006"
-  },
-  {
-    "id": "W10016",
-    "title": "MINI Cooper S 2-Door Hardtop - Pepper White with Black Trim",
-    "price": 28500,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/products/1787138484387-o7jgxfdwdwo.jpg",
-    "url": "https://weverseonlineshop.com/product/W10016"
-  },
-  {
-    "id": "KCO-IMP-0041",
-    "title": "10K Yellow Gold Rope Chain Necklace with INRI Crucifix Pendant",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0041.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0041"
-  },
-  {
-    "id": "KCO-IMP-0218",
-    "title": "HyperX QuadCast S RGB USB Condenser Microphone",
-    "price": 120,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0218.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0218"
-  },
-  {
-    "id": "KCO-IMP-0217",
-    "title": "Apple iPhone 15 Smartphone - Brand New Sealed",
-    "price": 799,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0217.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0217"
-  },
-  {
-    "id": "KCO-IMP-0216",
-    "title": "Acer Swift 3 Intel Evo Laptop",
-    "price": 450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0216.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0216"
-  },
-  {
-    "id": "KCO-IMP-0220",
-    "title": "4moms mamaRoo Multi-Motion Baby Swing",
-    "price": 120,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Baby",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0220.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0220"
-  },
-  {
-    "id": "KCO-IMP-0219",
-    "title": "Modern Grey Velvet L-Shaped Sectional Sofa with Ottoman",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0219.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0219"
-  },
-  {
-    "id": "KCO-IMP-0214",
-    "title": "IKEA BRIMNES Bed Frame with Storage",
-    "price": 279,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0214.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0214"
-  },
-  {
-    "id": "KCO-IMP-0212",
-    "title": "Colobox Multimedia 5.1 Channel Home Theater Speaker System",
-    "price": 129,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0212.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0212"
-  },
-  {
-    "id": "KCO-IMP-0208",
-    "title": "Modern Black and White Wooden Queen Bed Frame",
-    "price": 350,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0208.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0208"
-  },
-  {
-    "id": "KCO-IMP-0207",
-    "title": "Samsung Galaxy Z Fold 6 Smartphone",
-    "price": 1400,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0207.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0207"
-  },
-  {
-    "id": "KCO-IMP-0206",
-    "title": "Apple iPhone Smartphone - Brand New Sealed Box",
-    "price": 799,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0206.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0206"
-  },
-  {
-    "id": "KCO-IMP-0205",
-    "title": "IKEA MALM Queen Bed Frame with Storage",
-    "price": 499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0205.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0205"
-  },
-  {
-    "id": "KCO-IMP-0204",
-    "title": "Chrome Hearts Style Graphic Denim Jeans",
-    "price": 120,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Fashion",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0204.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0204"
-  },
-  {
-    "id": "KCO-IMP-0202",
-    "title": "ASUS ROG Strix Gaming Laptop with RGB Cooling Pad",
-    "price": 1200,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0202.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0202"
-  },
-  {
-    "id": "KCO-IMP-0201",
-    "title": "GE UltraFresh Vent Front Load Washer and Dryer Set",
-    "price": 1800,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0201.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0201"
-  },
-  {
-    "id": "KCO-IMP-0200",
-    "title": "Modern Minimalist Light Gray Fabric Sofa",
-    "price": 450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0200.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0200"
-  },
-  {
-    "id": "KCO-IMP-0197",
-    "title": "Kaabo Mantis Z10X High-Performance Electric Scooter",
-    "price": 1499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Sports",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0197.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0197"
-  },
-  {
-    "id": "KCO-IMP-0196",
-    "title": "Can-Am Outlander 570 ATV Camo",
-    "price": 7500,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Sports",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0196.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0196"
-  },
-  {
-    "id": "KCO-IMP-0195",
-    "title": "Canon EOS 5D Mark IV and Sony Alpha 7 II Camera Bundle",
-    "price": 2800,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0195.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0195"
-  },
-  {
-    "id": "KCO-IMP-0194",
-    "title": "Louis Vuitton Monogram Denim Backpack",
-    "price": 1800,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Bags",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0194.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0194"
-  },
-  {
-    "id": "KCO-IMP-0193",
-    "title": "Bigland Queen Size Mattress and Bed Frame Set",
-    "price": 450,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0193.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0193"
-  },
-  {
-    "id": "KCO-IMP-0191",
-    "title": "Foldable Japanese Futon Floor Mattress",
-    "price": 120,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0191.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0191"
-  },
-  {
-    "id": "KCO-IMP-0189",
-    "title": "Modern White LED Upholstered Queen Bed Frame",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0189.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0189"
-  },
-  {
-    "id": "KCO-IMP-0183",
-    "title": "Vestel Floor Standing Air Conditioner",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0183.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0183"
-  },
-  {
-    "id": "KCO-IMP-0182",
-    "title": "Hisense 12kg/8kg Washer Dryer Combo with Auto Dosing",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0182.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0182"
-  },
-  {
-    "id": "KCO-IMP-0181",
-    "title": "Midea 4-Door French Door Refrigerator Stainless Steel",
-    "price": 1200,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0181.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0181"
-  },
-  {
-    "id": "KCO-IMP-0179",
-    "title": "Apple iPhone Custom Orange Edition Smartphone",
-    "price": 899,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0179.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0179"
-  },
-  {
-    "id": "KCO-IMP-0178",
-    "title": "Hermès Birkin 25 Two-Tone Epsom Leather Handbag",
-    "price": 25000,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Bags",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0178.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0178"
-  },
-  {
-    "id": "KCO-IMP-0177",
-    "title": "Shark FlexBreeze Portable Cordless/Corded Fan",
-    "price": 150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0177.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0177"
-  },
-  {
-    "id": "KCO-IMP-0176",
-    "title": "Modern Grey Channel-Tufted Convertible Sleeper Sofa",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0176.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0176"
-  },
-  {
-    "id": "KCO-IMP-0175",
-    "title": "HyperX QuadCast S RGB USB Condenser Microphone - White",
-    "price": 130,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0175.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0175"
-  },
-  {
-    "id": "KCO-IMP-0173",
-    "title": "Samsung 82-inch RU8000 Premium 4K UHD Smart TV",
-    "price": 2579,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0173.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0173"
-  },
-  {
-    "id": "KCO-IMP-0172",
-    "title": "Purebred Maine Coon Kittens",
-    "price": 1500,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Pets",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0172.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0172"
-  },
-  {
-    "id": "KCO-IMP-0171",
-    "title": "IKEA ASKVOLL Bed Frame - White Queen Size",
-    "price": 279,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0171.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0171"
-  },
-  {
-    "id": "KCO-IMP-0170",
-    "title": "GE Profile Front Load Washer and Dryer Set",
-    "price": 1800,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0170.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0170"
-  },
-  {
-    "id": "KCO-IMP-0169",
-    "title": "Instant Pot Duo Multi-Use Pressure Cooker",
-    "price": 120,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Kitchen",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0169.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0169"
-  },
-  {
-    "id": "KCO-IMP-0168",
-    "title": "Modern Grey Faux Leather Office Guest Chair with Chrome Frame",
-    "price": 120,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0168.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0168"
-  },
-  {
-    "id": "KCO-IMP-0167",
-    "title": "German Shepherd Puppy",
-    "price": 1200,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Pets",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0167.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0167"
-  },
-  {
-    "id": "KCO-IMP-0165",
-    "title": "Hohem iSteady M6 Smartphone Gimbal Stabilizer",
-    "price": 169,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0165.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0165"
-  },
-  {
-    "id": "KCO-IMP-0164",
-    "title": "Apple iPhone 14 Pro Max 256GB Smartphone",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0164.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0164"
-  },
-  {
-    "id": "KCO-IMP-0160",
-    "title": "Peterbilt Cabover Semi Truck",
-    "price": 85000,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0160.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0160"
-  },
-  {
-    "id": "KCO-IMP-0157",
-    "title": "Siemens iQ Series Front Load Washing Machine",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0157.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0157"
-  },
-  {
-    "id": "KCO-IMP-0154",
-    "title": "onn. 75-inch Class 4K UHD LED Roku Smart TV",
-    "price": 198,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0154.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0154"
-  },
-  {
-    "id": "KCO-IMP-0141",
-    "title": "Samsung 65-inch Crystal UHD TU7000 4K Smart TV",
-    "price": 568,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0141.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0141"
-  },
-  {
-    "id": "KCO-IMP-0139",
-    "title": "LG Front Load Washer and Electric Dryer Set with Pedestals",
-    "price": 1800,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0139.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0139"
-  },
-  {
-    "id": "KCO-IMP-0136",
-    "title": "Graco 4-in-1 Convertible Car Seat",
-    "price": 150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Baby",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0136.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0136"
-  },
-  {
-    "id": "KCO-IMP-0133",
-    "title": "RGB LED Ergonomic Gaming Chair",
-    "price": 250,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0133.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0133"
-  },
-  {
-    "id": "KCO-IMP-0111",
-    "title": "NewPower Self-Balancing Hoverboard Electric Scooter",
-    "price": 150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Sports",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0111.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0111"
-  },
-  {
-    "id": "KCO-IMP-0109",
-    "title": "Samsung 75\" Neo QLED 4K Smart TV QE75Q83B",
-    "price": 1599,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0109.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0109"
-  },
-  {
-    "id": "KCO-IMP-0108",
-    "title": "LG Steam Direct Drive 2-in-1 Washer Dryer",
-    "price": 850,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0108.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0108"
-  },
-  {
-    "id": "KCO-IMP-0106",
-    "title": "Samsung Stainless Steel Kitchen Appliance Suite",
-    "price": 5087,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Kitchen",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0106.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0106"
-  },
-  {
-    "id": "KCO-IMP-0104",
-    "title": "Beautyrest Black Luxury Firm Mattress",
-    "price": 2499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0104.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0104"
-  },
-  {
-    "id": "KCO-IMP-0100",
-    "title": "Adorable Goldendoodle Puppies",
-    "price": 2500,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Pets",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0100.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0100"
-  },
-  {
-    "id": "KCO-IMP-0098",
-    "title": "IKEA IDANÄS White Bed Frame",
-    "price": 479,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0098.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0098"
-  },
-  {
-    "id": "KCO-IMP-0088",
-    "title": "Portable Air Conditioner Unit with Digital Display",
-    "price": 180,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0088.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0088"
-  },
-  {
-    "id": "KCO-IMP-0087",
-    "title": "Logitech G923 Racing Wheel and Pedals for Xbox & PC",
-    "price": 349,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0087.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0087"
-  },
-  {
-    "id": "KCO-IMP-0085",
-    "title": "Spider Worldwide Young Thug Web Hoodie Assorted Colors",
-    "price": 150,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Fashion",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0085.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0085"
-  },
-  {
-    "id": "KCO-IMP-0081",
-    "title": "Whirlpool 24.5 Cu. Ft. 4-Door French Door Refrigerator",
-    "price": 2499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0081.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0081"
-  },
-  {
-    "id": "KCO-IMP-0076",
-    "title": "Ford F-150 Raptor Pickup Truck",
-    "price": 75000,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0076.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0076"
-  },
-  {
-    "id": "KCO-IMP-0074",
-    "title": "Mercedes-Benz Actros Black Edition Semi Truck Cab",
-    "price": 85000,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0074.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0074"
-  },
-  {
-    "id": "KCO-IMP-0069",
-    "title": "IKEA TUFJORD Upholstered Bed Frame",
-    "price": 799,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0069.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0069"
-  },
-  {
-    "id": "KCO-IMP-0068",
-    "title": "Whirlpool Stainless Steel Side-by-Side Refrigerator",
-    "price": 984,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Home Appliances",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0068.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0068"
-  },
-  {
-    "id": "KCO-IMP-0054",
-    "title": "Samsung Curved Smart TV with Remote",
-    "price": 350,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0054.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0054"
-  },
-  {
-    "id": "KCO-IMP-0051",
-    "title": "onn. 75\" Class 4K UHD LED Roku Smart TV",
-    "price": 398,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0051.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0051"
-  },
-  {
-    "id": "KCO-IMP-0043",
-    "title": "Modern Beige Tufted Sectional Sofa with Ottoman",
-    "price": 1200,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0043.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0043"
-  },
-  {
-    "id": "KCO-IMP-0040",
-    "title": "Spark Furniture Modern U-Shaped Sectional Sofa with Bluetooth Speakers",
-    "price": 2499,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0040.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0040"
-  },
-  {
-    "id": "KCO-IMP-0036",
-    "title": "Purebred Maine Coon Kittens",
-    "price": 1500,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Pets",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0036.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0036"
-  },
-  {
-    "id": "KCO-IMP-0019",
-    "title": "Modern Light Wood Executive Desk",
-    "price": 225,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0019.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0019"
-  },
-  {
-    "id": "KCO-IMP-0012",
-    "title": "Google Pixel 9 Obsidian 128GB Unlocked",
-    "price": 679,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0012.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0012"
-  },
-  {
-    "id": "W10378",
-    "title": "2020 Mercedes-Benz CLA-Class Sedan",
-    "price": 21000,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "New Arrivals",
+    "category": "Houses & Real Estate",
     "image": null,
-    "url": "https://weverseonlineshop.com/product/W10378"
+    "url": "https://weverseonlineshop.com/product/626e7f91-695a-41a0-b406-cf9eaad86e28"
   },
   {
-    "id": "W10379",
-    "title": "2021 Mercedes-Benz AMG GLE 63 S Coupe",
-    "price": 97500,
+    "id": "fc4014b6-5ee7-4fe1-9ab3-471fff37556e",
+    "title": "House 9",
+    "price": 0,
     "currency": "USD",
     "availability": "In Stock",
-    "category": "Cars & Vehicles",
+    "category": "Houses & Real Estate",
     "image": null,
-    "url": "https://weverseonlineshop.com/product/W10379"
+    "url": "https://weverseonlineshop.com/product/fc4014b6-5ee7-4fe1-9ab3-471fff37556e"
   },
   {
-    "id": "KCO-PR005",
-    "title": "Apple iPhone 14 Pro Max Goldgenie Custom Yellow Edition",
-    "price": 3000,
+    "id": "fbb65b21-03ab-45cf-90ed-77a8b8980102",
+    "title": "House 17",
+    "price": 0,
     "currency": "USD",
     "availability": "In Stock",
-    "category": "Phones",
+    "category": "Houses & Real Estate",
     "image": null,
-    "url": "https://weverseonlineshop.com/product/KCO-PR005"
+    "url": "https://weverseonlineshop.com/product/fbb65b21-03ab-45cf-90ed-77a8b8980102"
   },
   {
-    "id": "KCO-PR001",
-    "title": "10KT White Gold 1 CTTW Princess Cut Halo Diamond Ring",
-    "price": 799,
+    "id": "c4fe1564-d607-42e6-8332-cced20c7c0de",
+    "title": "House 13",
+    "price": 0,
     "currency": "USD",
     "availability": "In Stock",
-    "category": "Jewelry",
-    "image": "https://weverseonlineshop.com/products/gold-diamond-ring.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-PR001"
-  },
-  {
-    "id": "W-796367629",
-    "title": "Beige Fabric 3-Seater Sofa",
-    "price": 765,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0005.jpg",
-    "url": "https://weverseonlineshop.com/product/W-796367629"
-  },
-  {
-    "id": "KCO-IMP-0011",
-    "title": "Google Pixel 9 Pro XL - 128GB - Porcelain (Like New)",
-    "price": 820,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Phones",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0011.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-IMP-0011"
-  },
-  {
-    "id": "W-588532359",
-    "title": "2024 Samsung 55DU7010",
-    "price": 540,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0007.jpg",
-    "url": "https://weverseonlineshop.com/product/W-588532359"
-  },
-  {
-    "id": "W-546814951",
-    "title": "Samsung Crystal UHD 7 Series Smart TV",
-    "price": 329,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Electronics",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0013.jpg",
-    "url": "https://weverseonlineshop.com/product/W-546814951"
-  },
-  {
-    "id": "W-452019896",
-    "title": "Giltedge Beds Sapphire Divan Bed with Grey Headboard",
-    "price": 649,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0016.jpg",
-    "url": "https://weverseonlineshop.com/product/W-452019896"
-  },
-  {
-    "id": "W-617937687",
-    "title": "BMW M4 Coupe",
-    "price": 39900,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/products/1787335594174-mwvvdz6u52.jpg",
-    "url": "https://weverseonlineshop.com/product/W-617937687"
-  },
-  {
-    "id": "W-391448987",
-    "title": "Gillespie Grey Upholstered Divan Bed with Mattress",
-    "price": 765,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Furniture",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/imports/2026-08-20/KCO-IMP-0016.jpg",
-    "url": "https://weverseonlineshop.com/product/W-391448987"
-  },
-  {
-    "id": "KCO-PR003",
-    "title": "Custom 24k Gold Rolex Edition iPhone 13 Pro Max",
-    "price": 7900,
-    "currency": "USD",
-    "availability": "Limited Stock",
-    "category": "Watches",
+    "category": "Houses & Real Estate",
     "image": null,
-    "url": "https://weverseonlineshop.com/product/KCO-PR003"
+    "url": "https://weverseonlineshop.com/product/c4fe1564-d607-42e6-8332-cced20c7c0de"
   },
   {
-    "id": "KCO-000017",
-    "title": "Audi R8",
-    "price": 155000,
+    "id": "bf420979-b62b-4c3d-89ad-c45fff2977df",
+    "title": "House 16",
+    "price": 0,
     "currency": "USD",
     "availability": "In Stock",
-    "category": "Cars",
-    "image": "https://mzgrjwvwzgqgivwmlkno.supabase.co/storage/v1/object/public/product-images/products/1786962941069-lcfdmipt40i.jpg",
-    "url": "https://weverseonlineshop.com/product/KCO-000017"
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/bf420979-b62b-4c3d-89ad-c45fff2977df"
+  },
+  {
+    "id": "a2047a9b-3d86-41d7-9cf9-65475d07d231",
+    "title": "House 7",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/a2047a9b-3d86-41d7-9cf9-65475d07d231"
+  },
+  {
+    "id": "960ec8cd-f7ae-48e4-b493-d6ef785a73f9",
+    "title": "House 18",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/960ec8cd-f7ae-48e4-b493-d6ef785a73f9"
+  },
+  {
+    "id": "89fe7857-ffc1-4f31-99df-a19c404eb485",
+    "title": "House 19",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/89fe7857-ffc1-4f31-99df-a19c404eb485"
+  },
+  {
+    "id": "686b5e86-03e8-47c9-9452-8fb289d911b6",
+    "title": "House 12",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/686b5e86-03e8-47c9-9452-8fb289d911b6"
+  },
+  {
+    "id": "521bbf9b-4ae9-46f7-9da1-1621c3f348ba",
+    "title": "House 15",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/521bbf9b-4ae9-46f7-9da1-1621c3f348ba"
+  },
+  {
+    "id": "f854d45d-f30c-4b6e-af30-735d34dc999b",
+    "title": "House 20",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/f854d45d-f30c-4b6e-af30-735d34dc999b"
+  },
+  {
+    "id": "e93d6f21-664f-45a5-a5a5-ee487bd2ca5a",
+    "title": "House 21",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/e93d6f21-664f-45a5-a5a5-ee487bd2ca5a"
+  },
+  {
+    "id": "fbae85f7-74d2-4d76-892f-5a7316303f5d",
+    "title": "House 28",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/fbae85f7-74d2-4d76-892f-5a7316303f5d"
+  },
+  {
+    "id": "ac85eb33-25cb-4359-9c4b-fcfcc91a44ab",
+    "title": "House 31",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/ac85eb33-25cb-4359-9c4b-fcfcc91a44ab"
+  },
+  {
+    "id": "95f45d30-0a25-4793-9a10-20596dd1ca4d",
+    "title": "House 26",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/95f45d30-0a25-4793-9a10-20596dd1ca4d"
+  },
+  {
+    "id": "94c6cf2b-053d-4929-aea4-97cf7e31e435",
+    "title": "House 27",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/94c6cf2b-053d-4929-aea4-97cf7e31e435"
+  },
+  {
+    "id": "94c56e66-8e8e-41dd-af0b-863296600065",
+    "title": "House 29",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/94c56e66-8e8e-41dd-af0b-863296600065"
+  },
+  {
+    "id": "8d06fed7-c739-4e8a-872e-8b093d2ffb50",
+    "title": "House 33",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/8d06fed7-c739-4e8a-872e-8b093d2ffb50"
+  },
+  {
+    "id": "7c3affef-1810-4ab6-85b6-b8f3b2338c4d",
+    "title": "House 36",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/7c3affef-1810-4ab6-85b6-b8f3b2338c4d"
+  },
+  {
+    "id": "7860b240-b9f3-4b8d-946e-f35d042b9ae0",
+    "title": "House 30",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/7860b240-b9f3-4b8d-946e-f35d042b9ae0"
+  },
+  {
+    "id": "76eb77b5-d2d1-4994-b40d-b3570e17f5bc",
+    "title": "House 25",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/76eb77b5-d2d1-4994-b40d-b3570e17f5bc"
+  },
+  {
+    "id": "3cbaf11f-f27a-45b6-85ad-a6cdbe2f0a24",
+    "title": "House 35",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/3cbaf11f-f27a-45b6-85ad-a6cdbe2f0a24"
+  },
+  {
+    "id": "2f7d7b96-8f66-4936-9d34-ed8514214727",
+    "title": "House 34",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/2f7d7b96-8f66-4936-9d34-ed8514214727"
+  },
+  {
+    "id": "25e80db4-f465-4adc-92f5-acc002bb1fc3",
+    "title": "House 32",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/25e80db4-f465-4adc-92f5-acc002bb1fc3"
+  },
+  {
+    "id": "d5751705-3ad9-4120-bd86-4d3fbfea454c",
+    "title": "House 37",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d5751705-3ad9-4120-bd86-4d3fbfea454c"
+  },
+  {
+    "id": "7fb42208-46d2-4d11-81f8-af51726f9b33",
+    "title": "House 40",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/7fb42208-46d2-4d11-81f8-af51726f9b33"
+  },
+  {
+    "id": "3511a1d3-aa18-4df5-ac8a-a267f0aaf96e",
+    "title": "House 38",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/3511a1d3-aa18-4df5-ac8a-a267f0aaf96e"
+  },
+  {
+    "id": "af69e87f-ee07-4d56-a52d-3ba79369b908",
+    "title": "House 44",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/af69e87f-ee07-4d56-a52d-3ba79369b908"
+  },
+  {
+    "id": "62a58970-8757-4b83-8ef2-3186c519632d",
+    "title": "House 43",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/62a58970-8757-4b83-8ef2-3186c519632d"
+  },
+  {
+    "id": "b6910799-f4d7-4c80-9886-e292c09550a5",
+    "title": "House 45",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/b6910799-f4d7-4c80-9886-e292c09550a5"
+  },
+  {
+    "id": "2b8235f1-8c19-4bd6-a66f-8663993d9222",
+    "title": "House 47",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/2b8235f1-8c19-4bd6-a66f-8663993d9222"
+  },
+  {
+    "id": "22e10138-aeb9-44dd-aecb-f705c72abdaa",
+    "title": "House 46",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/22e10138-aeb9-44dd-aecb-f705c72abdaa"
+  },
+  {
+    "id": "ee8c2850-7948-4199-a039-a7d82f88f362",
+    "title": "House 53",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/ee8c2850-7948-4199-a039-a7d82f88f362"
+  },
+  {
+    "id": "c4de0fca-c81b-4fea-adb1-55bf91464cfa",
+    "title": "House 54",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/c4de0fca-c81b-4fea-adb1-55bf91464cfa"
+  },
+  {
+    "id": "81c58d7f-2465-4933-af14-c1269657695c",
+    "title": "House 50",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/81c58d7f-2465-4933-af14-c1269657695c"
+  },
+  {
+    "id": "5e74ddb7-5b50-4c85-93df-afa787bc6bfb",
+    "title": "House 52",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/5e74ddb7-5b50-4c85-93df-afa787bc6bfb"
+  },
+  {
+    "id": "4f4792b2-2562-430b-95c4-b75f95613605",
+    "title": "House 51",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/4f4792b2-2562-430b-95c4-b75f95613605"
+  },
+  {
+    "id": "112912cc-900e-4823-90f4-408a5877d403",
+    "title": "House 49",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/112912cc-900e-4823-90f4-408a5877d403"
+  },
+  {
+    "id": "fafc4dd9-d8ad-4309-a626-d07fa3d5d63a",
+    "title": "House 57",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/fafc4dd9-d8ad-4309-a626-d07fa3d5d63a"
+  },
+  {
+    "id": "f31de235-ba87-404d-bc0c-0fe5764fe3f7",
+    "title": "House 59",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/f31de235-ba87-404d-bc0c-0fe5764fe3f7"
+  },
+  {
+    "id": "ab72325b-b06e-4248-81ad-b37ec927d071",
+    "title": "House 58",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/ab72325b-b06e-4248-81ad-b37ec927d071"
+  },
+  {
+    "id": "9eb0a761-6928-4157-b7bd-ad7124acd858",
+    "title": "House 60",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/9eb0a761-6928-4157-b7bd-ad7124acd858"
+  },
+  {
+    "id": "57b0a89f-6eb3-4606-b6b4-b314d5b7c3e5",
+    "title": "House 56",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/57b0a89f-6eb3-4606-b6b4-b314d5b7c3e5"
+  },
+  {
+    "id": "a8ce8967-9fa6-4d93-b0f5-393beb7783aa",
+    "title": "House 89",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/a8ce8967-9fa6-4d93-b0f5-393beb7783aa"
+  },
+  {
+    "id": "03fb65b7-034c-4d27-a1b4-854febbc09cf",
+    "title": "House 123",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/03fb65b7-034c-4d27-a1b4-854febbc09cf"
+  },
+  {
+    "id": "2a91f8fa-a0a9-48fc-a174-dbb45840aecb",
+    "title": "House 122",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/2a91f8fa-a0a9-48fc-a174-dbb45840aecb"
+  },
+  {
+    "id": "38a2a0bf-467e-4189-b8c6-825375dba038",
+    "title": "House 121",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/38a2a0bf-467e-4189-b8c6-825375dba038"
+  },
+  {
+    "id": "534418f1-881e-4513-85e9-76f57a4f58df",
+    "title": "House 119",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/534418f1-881e-4513-85e9-76f57a4f58df"
+  },
+  {
+    "id": "70b79dbb-b374-4bdf-8aff-a3c377797778",
+    "title": "House 120",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/70b79dbb-b374-4bdf-8aff-a3c377797778"
+  },
+  {
+    "id": "c2351670-25ff-4e53-8478-5e99601a0a19",
+    "title": "House 124",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/c2351670-25ff-4e53-8478-5e99601a0a19"
+  },
+  {
+    "id": "65925ede-a925-4261-afbc-d524c6e2aa2a",
+    "title": "House 117",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/65925ede-a925-4261-afbc-d524c6e2aa2a"
+  },
+  {
+    "id": "376caa03-3774-49fe-8d0b-20af70e22f56",
+    "title": "House 116",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/376caa03-3774-49fe-8d0b-20af70e22f56"
+  },
+  {
+    "id": "479ab2ee-c88f-4105-b5fd-fd59fbb52cfe",
+    "title": "House 114",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/479ab2ee-c88f-4105-b5fd-fd59fbb52cfe"
+  },
+  {
+    "id": "cd5f27fd-538a-4b6a-9c53-5bb12503ea20",
+    "title": "House 111",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/cd5f27fd-538a-4b6a-9c53-5bb12503ea20"
+  },
+  {
+    "id": "d418db05-dd0d-4c5b-bda0-588c31708720",
+    "title": "House 112",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d418db05-dd0d-4c5b-bda0-588c31708720"
+  },
+  {
+    "id": "3181f858-725f-4211-98fb-7a2558de585c",
+    "title": "House 108",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/3181f858-725f-4211-98fb-7a2558de585c"
+  },
+  {
+    "id": "f6858b45-c984-49d0-87c3-d9fb5393a034",
+    "title": "House 109",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/f6858b45-c984-49d0-87c3-d9fb5393a034"
+  },
+  {
+    "id": "07f105f3-ece4-41ec-b052-569de1f59516",
+    "title": "House 106",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/07f105f3-ece4-41ec-b052-569de1f59516"
+  },
+  {
+    "id": "69c8fc1c-828d-4916-945a-50e8deb274d6",
+    "title": "House 105",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/69c8fc1c-828d-4916-945a-50e8deb274d6"
+  },
+  {
+    "id": "85db7b0f-af14-49ea-a057-9d2d396e65d6",
+    "title": "House 107",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/85db7b0f-af14-49ea-a057-9d2d396e65d6"
+  },
+  {
+    "id": "ed2387d5-207e-4e40-abb5-b3016379f78d",
+    "title": "House 103",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/ed2387d5-207e-4e40-abb5-b3016379f78d"
+  },
+  {
+    "id": "04e5c65e-545f-4987-82f3-e5c719e4225d",
+    "title": "House 102",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/04e5c65e-545f-4987-82f3-e5c719e4225d"
+  },
+  {
+    "id": "0c214a82-bf6b-438c-9d34-97009ad70c6f",
+    "title": "House 98",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/0c214a82-bf6b-438c-9d34-97009ad70c6f"
+  },
+  {
+    "id": "a6fa66b7-d4d8-4bc8-abfd-3c3ad6bb0c42",
+    "title": "House 99",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/a6fa66b7-d4d8-4bc8-abfd-3c3ad6bb0c42"
+  },
+  {
+    "id": "b5a13ec6-9118-45d5-984b-0df0f6ecda85",
+    "title": "House 101",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/b5a13ec6-9118-45d5-984b-0df0f6ecda85"
+  },
+  {
+    "id": "23ed4bcd-1488-48f9-9733-1f7fad4c5d19",
+    "title": "House 94",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/23ed4bcd-1488-48f9-9733-1f7fad4c5d19"
+  },
+  {
+    "id": "386ac6bb-54db-4171-aa3a-0ca3388ac809",
+    "title": "House 92",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/386ac6bb-54db-4171-aa3a-0ca3388ac809"
+  },
+  {
+    "id": "4be9a98f-8cdc-4e03-b1a7-41f6ee29c579",
+    "title": "House 95",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/4be9a98f-8cdc-4e03-b1a7-41f6ee29c579"
+  },
+  {
+    "id": "4ff4a414-4c96-46e0-ab42-3ce3f5f07101",
+    "title": "House 97",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/4ff4a414-4c96-46e0-ab42-3ce3f5f07101"
+  },
+  {
+    "id": "93d8b6a1-d7e0-4f50-a137-18c6e229bc40",
+    "title": "House 96",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/93d8b6a1-d7e0-4f50-a137-18c6e229bc40"
+  },
+  {
+    "id": "3874a586-21d4-45cd-b2af-95462eced436",
+    "title": "House 87",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/3874a586-21d4-45cd-b2af-95462eced436"
+  },
+  {
+    "id": "bf454737-b305-4c22-bd5b-649a21b91f8b",
+    "title": "House 88",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/bf454737-b305-4c22-bd5b-649a21b91f8b"
+  },
+  {
+    "id": "061d3fd7-42b5-4461-8488-9501b435b766",
+    "title": "House 83",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/061d3fd7-42b5-4461-8488-9501b435b766"
+  },
+  {
+    "id": "20ff5f5c-9148-44b7-87fb-d08ac5480799",
+    "title": "House 84",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/20ff5f5c-9148-44b7-87fb-d08ac5480799"
+  },
+  {
+    "id": "d2afa29c-7328-4e31-92a9-202bf347c3da",
+    "title": "House 82",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d2afa29c-7328-4e31-92a9-202bf347c3da"
+  },
+  {
+    "id": "e422f520-592b-4f02-9889-4a56264c6e40",
+    "title": "House 85",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/e422f520-592b-4f02-9889-4a56264c6e40"
+  },
+  {
+    "id": "09685f99-1024-4a8e-9a14-18b8627c2d68",
+    "title": "House 79",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/09685f99-1024-4a8e-9a14-18b8627c2d68"
+  },
+  {
+    "id": "45731931-7a6c-4a7b-bfb6-b24b77b7c823",
+    "title": "House 77",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/45731931-7a6c-4a7b-bfb6-b24b77b7c823"
+  },
+  {
+    "id": "15b8bbb5-865c-47f1-b910-b91855282bb4",
+    "title": "House 74",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/15b8bbb5-865c-47f1-b910-b91855282bb4"
+  },
+  {
+    "id": "5c7ae1e8-a96d-4787-86b2-4983f833b274",
+    "title": "House 76",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/5c7ae1e8-a96d-4787-86b2-4983f833b274"
+  },
+  {
+    "id": "91ec8a19-c9d6-4271-b59e-be650d8b49ba",
+    "title": "House 73",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/91ec8a19-c9d6-4271-b59e-be650d8b49ba"
+  },
+  {
+    "id": "d189b97d-e763-4e59-bf2d-6a620c218660",
+    "title": "House 75",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d189b97d-e763-4e59-bf2d-6a620c218660"
+  },
+  {
+    "id": "5f2836fe-a4d6-4c36-abfb-744b25199bbd",
+    "title": "House 72",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/5f2836fe-a4d6-4c36-abfb-744b25199bbd"
+  },
+  {
+    "id": "9ad9e82d-c2e0-4e24-ac01-51b45f10b030",
+    "title": "House 69",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/9ad9e82d-c2e0-4e24-ac01-51b45f10b030"
+  },
+  {
+    "id": "a6234e51-6263-4337-a98e-8061c4b37609",
+    "title": "House 68",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/a6234e51-6263-4337-a98e-8061c4b37609"
+  },
+  {
+    "id": "cd7e0a18-5e98-4a7d-9da8-6f1965b6acb2",
+    "title": "House 70",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/cd7e0a18-5e98-4a7d-9da8-6f1965b6acb2"
+  },
+  {
+    "id": "0e54f1cc-cabf-4d99-8e79-080f5b0d4097",
+    "title": "House 67",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/0e54f1cc-cabf-4d99-8e79-080f5b0d4097"
+  },
+  {
+    "id": "51ff2285-2249-4735-8a14-e6c1e80da2dc",
+    "title": "House 63",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/51ff2285-2249-4735-8a14-e6c1e80da2dc"
+  },
+  {
+    "id": "9a0ade63-f5e0-4205-b683-d0fac678c7be",
+    "title": "House 64",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/9a0ade63-f5e0-4205-b683-d0fac678c7be"
+  },
+  {
+    "id": "b474683e-77d7-4fa9-83ab-6f1a25cf05f5",
+    "title": "House 66",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/b474683e-77d7-4fa9-83ab-6f1a25cf05f5"
+  },
+  {
+    "id": "d148161b-0a26-416c-bd68-2938724ff552",
+    "title": "House 65",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d148161b-0a26-416c-bd68-2938724ff552"
+  },
+  {
+    "id": "e232dc80-1c46-4349-b741-360a1f13ab24",
+    "title": "House 62",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/e232dc80-1c46-4349-b741-360a1f13ab24"
+  },
+  {
+    "id": "11389e79-6316-4efd-9ad2-449040f80204",
+    "title": "House 55",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/11389e79-6316-4efd-9ad2-449040f80204"
+  },
+  {
+    "id": "536aaab8-4f42-4815-8db2-282eaba88892",
+    "title": "House 183",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/536aaab8-4f42-4815-8db2-282eaba88892"
+  },
+  {
+    "id": "666def5d-288e-481a-bb19-3b3ed675f54c",
+    "title": "House 184",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/666def5d-288e-481a-bb19-3b3ed675f54c"
+  },
+  {
+    "id": "cc5af1e2-1d2a-4ad6-84d5-6500bc279374",
+    "title": "House 188",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/cc5af1e2-1d2a-4ad6-84d5-6500bc279374"
+  },
+  {
+    "id": "491410be-8788-4fd9-b8e5-aa4c5f00f0e9",
+    "title": "House 187",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/491410be-8788-4fd9-b8e5-aa4c5f00f0e9"
+  },
+  {
+    "id": "c6b3a289-7946-4dab-a424-f57aa21dec26",
+    "title": "House 189",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/c6b3a289-7946-4dab-a424-f57aa21dec26"
+  },
+  {
+    "id": "60dcaab2-2544-4b1d-beeb-e2a1c0f285f2",
+    "title": "House 191",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/60dcaab2-2544-4b1d-beeb-e2a1c0f285f2"
+  },
+  {
+    "id": "4f9761e8-a9d4-4412-9e34-74219fb07d85",
+    "title": "House 190",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/4f9761e8-a9d4-4412-9e34-74219fb07d85"
+  },
+  {
+    "id": "08f8ab10-530c-4b0a-9799-383d0cc337d5",
+    "title": "House 192",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/08f8ab10-530c-4b0a-9799-383d0cc337d5"
+  },
+  {
+    "id": "d9d69fb9-9d77-4e6c-98d9-046d2fc58d3c",
+    "title": "House 194",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d9d69fb9-9d77-4e6c-98d9-046d2fc58d3c"
+  },
+  {
+    "id": "213435c0-8b9b-47c8-a2ad-9b9e88c05679",
+    "title": "House 195",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/213435c0-8b9b-47c8-a2ad-9b9e88c05679"
+  },
+  {
+    "id": "0ea4e1f6-bac8-4ec1-8ce5-5ff23ca5c2eb",
+    "title": "House 193",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/0ea4e1f6-bac8-4ec1-8ce5-5ff23ca5c2eb"
+  },
+  {
+    "id": "f823d286-b24a-4b99-ac05-7a1b32e037ed",
+    "title": "House 198",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/f823d286-b24a-4b99-ac05-7a1b32e037ed"
+  },
+  {
+    "id": "62558b62-d9fd-41b5-a329-9211fa305ac2",
+    "title": "House 197",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/62558b62-d9fd-41b5-a329-9211fa305ac2"
+  },
+  {
+    "id": "d6a5735d-ac75-4e54-b4f9-27fdfde04935",
+    "title": "House 201",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d6a5735d-ac75-4e54-b4f9-27fdfde04935"
+  },
+  {
+    "id": "c9a0dcd0-ff4d-400d-a20a-aa1b50b8a12c",
+    "title": "House 200",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/c9a0dcd0-ff4d-400d-a20a-aa1b50b8a12c"
+  },
+  {
+    "id": "6dc093bf-2a9f-4d39-9656-ba1e909892a2",
+    "title": "House 145",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/6dc093bf-2a9f-4d39-9656-ba1e909892a2"
+  },
+  {
+    "id": "b0ea42f2-325f-439b-8511-ace1347ec4ea",
+    "title": "House 149",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/b0ea42f2-325f-439b-8511-ace1347ec4ea"
+  },
+  {
+    "id": "b8ffc9f0-0d91-4da3-a55e-8ae70bd72df4",
+    "title": "House 147",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/b8ffc9f0-0d91-4da3-a55e-8ae70bd72df4"
+  },
+  {
+    "id": "d83bc4e5-0bae-4acd-90fc-1a0cc579360c",
+    "title": "House 148",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d83bc4e5-0bae-4acd-90fc-1a0cc579360c"
+  },
+  {
+    "id": "e4d76884-2094-4359-85bf-0d155ff3933c",
+    "title": "House 146",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/e4d76884-2094-4359-85bf-0d155ff3933c"
+  },
+  {
+    "id": "0340ad2e-2403-4013-8598-70a7757c9655",
+    "title": "House 143",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/0340ad2e-2403-4013-8598-70a7757c9655"
+  },
+  {
+    "id": "29f62a05-8288-4bb4-b891-051d9a5f1a40",
+    "title": "House 142",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/29f62a05-8288-4bb4-b891-051d9a5f1a40"
+  },
+  {
+    "id": "3f6e626c-b488-4ede-afc3-378c171c7877",
+    "title": "House 139",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/3f6e626c-b488-4ede-afc3-378c171c7877"
+  },
+  {
+    "id": "50e909e3-2c51-4716-bf1a-6c295568de4e",
+    "title": "House 140",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/50e909e3-2c51-4716-bf1a-6c295568de4e"
+  },
+  {
+    "id": "d17d978a-0eeb-43f0-97d9-8ade3149a845",
+    "title": "House 134",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d17d978a-0eeb-43f0-97d9-8ade3149a845"
+  },
+  {
+    "id": "d22ecbf4-9088-497e-b759-1bab0a550e91",
+    "title": "House 135",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d22ecbf4-9088-497e-b759-1bab0a550e91"
+  },
+  {
+    "id": "d4c18564-e87a-4351-8d62-87e4dff005ca",
+    "title": "House 136",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d4c18564-e87a-4351-8d62-87e4dff005ca"
+  },
+  {
+    "id": "dbefc2f5-de78-4f95-a4fb-15c94fee416c",
+    "title": "House 133",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/dbefc2f5-de78-4f95-a4fb-15c94fee416c"
+  },
+  {
+    "id": "e684e4ac-8df7-44b7-82c5-5aba3dfbcd1b",
+    "title": "House 137",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/e684e4ac-8df7-44b7-82c5-5aba3dfbcd1b"
+  },
+  {
+    "id": "d40e12a4-2987-45ba-808f-95b50cea7d54",
+    "title": "House 132",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d40e12a4-2987-45ba-808f-95b50cea7d54"
+  },
+  {
+    "id": "f4166af0-4ffb-4f7f-8476-6a4afc82225a",
+    "title": "House 131",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/f4166af0-4ffb-4f7f-8476-6a4afc82225a"
+  },
+  {
+    "id": "11ac40e0-c0a7-42cf-9881-52a9f7b1258f",
+    "title": "House 129",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/11ac40e0-c0a7-42cf-9881-52a9f7b1258f"
+  },
+  {
+    "id": "8e4c4ca9-9ba4-469a-88cf-b2accbfd673d",
+    "title": "House 127",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/8e4c4ca9-9ba4-469a-88cf-b2accbfd673d"
+  },
+  {
+    "id": "114be089-be08-4d30-aa60-abae792e7297",
+    "title": "House 176",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/114be089-be08-4d30-aa60-abae792e7297"
+  },
+  {
+    "id": "e0922d63-1a70-46c0-82e3-f339c0a87ed1",
+    "title": "House 179",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/e0922d63-1a70-46c0-82e3-f339c0a87ed1"
+  },
+  {
+    "id": "a7c1b175-91a4-4dec-81b8-bbf352f5a15d",
+    "title": "House 180",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/a7c1b175-91a4-4dec-81b8-bbf352f5a15d"
+  },
+  {
+    "id": "747ae185-1f80-4290-a5be-85924066dcb9",
+    "title": "House 182",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/747ae185-1f80-4290-a5be-85924066dcb9"
+  },
+  {
+    "id": "6ef31158-8265-4c6a-9dec-e384526a16f4",
+    "title": "House 181",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/6ef31158-8265-4c6a-9dec-e384526a16f4"
+  },
+  {
+    "id": "8f520381-c444-470a-a9a1-5979b5f7e28b",
+    "title": "House 185",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/8f520381-c444-470a-a9a1-5979b5f7e28b"
+  },
+  {
+    "id": "6be36a69-dcc1-49db-85a6-715593126485",
+    "title": "House 207",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/6be36a69-dcc1-49db-85a6-715593126485"
+  },
+  {
+    "id": "66149c8d-9f38-4d7f-8f1f-36a974cbed1e",
+    "title": "House 206",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/66149c8d-9f38-4d7f-8f1f-36a974cbed1e"
+  },
+  {
+    "id": "2ee00655-b02e-411c-8bc9-3ceb472ee8c3",
+    "title": "House 208",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/2ee00655-b02e-411c-8bc9-3ceb472ee8c3"
+  },
+  {
+    "id": "427f8911-cd3d-403b-814a-2bf6149d121e",
+    "title": "House 175",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/427f8911-cd3d-403b-814a-2bf6149d121e"
+  },
+  {
+    "id": "d20dcddc-f661-49d1-996f-2a4c25382bdf",
+    "title": "House 177",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d20dcddc-f661-49d1-996f-2a4c25382bdf"
+  },
+  {
+    "id": "07e86fe7-7b57-49cd-9456-5352a0739261",
+    "title": "House 174",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/07e86fe7-7b57-49cd-9456-5352a0739261"
+  },
+  {
+    "id": "0b82562f-2bc3-4237-ab65-9fcfaf5c81cc",
+    "title": "House 173",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/0b82562f-2bc3-4237-ab65-9fcfaf5c81cc"
+  },
+  {
+    "id": "2cb5b978-4709-49bf-be6d-e7a16f87cbb0",
+    "title": "House 169",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/2cb5b978-4709-49bf-be6d-e7a16f87cbb0"
+  },
+  {
+    "id": "3d0a70de-1fb0-42aa-af89-e502533e28fc",
+    "title": "House 168",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/3d0a70de-1fb0-42aa-af89-e502533e28fc"
+  },
+  {
+    "id": "a40a2649-2e0d-46ad-95d0-3ff7c38e7f52",
+    "title": "House 172",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/a40a2649-2e0d-46ad-95d0-3ff7c38e7f52"
+  },
+  {
+    "id": "aafefa2a-59bb-452a-b7ca-4ad9cdb175fe",
+    "title": "House 171",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/aafefa2a-59bb-452a-b7ca-4ad9cdb175fe"
+  },
+  {
+    "id": "fad7d60d-5484-465b-8d55-5d445897550e",
+    "title": "House 170",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/fad7d60d-5484-465b-8d55-5d445897550e"
+  },
+  {
+    "id": "b4ed7ed5-ce20-459d-ae71-e5076b81a42f",
+    "title": "House 163",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/b4ed7ed5-ce20-459d-ae71-e5076b81a42f"
+  },
+  {
+    "id": "e891ac9d-5cf3-4c0b-be9e-51ba8aa8695c",
+    "title": "House 165",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/e891ac9d-5cf3-4c0b-be9e-51ba8aa8695c"
+  },
+  {
+    "id": "fc3ad23e-e4b0-48f0-bf70-be32952f5fe7",
+    "title": "House 164",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/fc3ad23e-e4b0-48f0-bf70-be32952f5fe7"
+  },
+  {
+    "id": "50ff0696-53d5-45f7-9718-62be0adf001f",
+    "title": "House 162",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/50ff0696-53d5-45f7-9718-62be0adf001f"
+  },
+  {
+    "id": "bb8d4883-872e-457d-a62b-59cf512e0c74",
+    "title": "House 160",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/bb8d4883-872e-457d-a62b-59cf512e0c74"
+  },
+  {
+    "id": "d06d916c-41ef-489e-ac2c-ef9644ea596b",
+    "title": "House 161",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d06d916c-41ef-489e-ac2c-ef9644ea596b"
+  },
+  {
+    "id": "7b2acde1-c1b8-47a8-8bd6-7df1cbf7aa88",
+    "title": "House 158",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/7b2acde1-c1b8-47a8-8bd6-7df1cbf7aa88"
+  },
+  {
+    "id": "9ce12424-7e61-40ed-bd2a-21a0bf47e196",
+    "title": "House 159",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/9ce12424-7e61-40ed-bd2a-21a0bf47e196"
+  },
+  {
+    "id": "e3794fea-4ffa-4cdf-bd3d-ee7392bef7c9",
+    "title": "House 156",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/e3794fea-4ffa-4cdf-bd3d-ee7392bef7c9"
+  },
+  {
+    "id": "1bbe7264-e3f9-4ced-b2c7-a6b5817ab042",
+    "title": "House 152",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/1bbe7264-e3f9-4ced-b2c7-a6b5817ab042"
+  },
+  {
+    "id": "510eb67b-b81c-4c38-ac7c-1355a4a08212",
+    "title": "House 150",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/510eb67b-b81c-4c38-ac7c-1355a4a08212"
+  },
+  {
+    "id": "7a1dc0f8-e13e-4632-bc30-b6ff09cff1b9",
+    "title": "House 154",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/7a1dc0f8-e13e-4632-bc30-b6ff09cff1b9"
+  },
+  {
+    "id": "d4263874-c437-4cc6-9488-6a8a46996731",
+    "title": "House 153",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d4263874-c437-4cc6-9488-6a8a46996731"
+  },
+  {
+    "id": "f99840f9-fe4c-4978-82ae-d24090c217a6",
+    "title": "House 155",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/f99840f9-fe4c-4978-82ae-d24090c217a6"
+  },
+  {
+    "id": "d3f673fd-a56c-4e10-bc7b-c5ef1860b8d4",
+    "title": "House 203",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/d3f673fd-a56c-4e10-bc7b-c5ef1860b8d4"
+  },
+  {
+    "id": "729803c5-8968-41a6-bfbb-1fadf7f70ea4",
+    "title": "House 235",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/729803c5-8968-41a6-bfbb-1fadf7f70ea4"
+  },
+  {
+    "id": "8fa5c656-eb0f-49be-afcc-426463314240",
+    "title": "House 238",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/8fa5c656-eb0f-49be-afcc-426463314240"
+  },
+  {
+    "id": "4522cfcf-8bed-4d01-a5f4-e89d8316eb4a",
+    "title": "House 205",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/4522cfcf-8bed-4d01-a5f4-e89d8316eb4a"
+  },
+  {
+    "id": "004fbc73-53e4-44dc-8076-6a2cd5ba2103",
+    "title": "House 237",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/004fbc73-53e4-44dc-8076-6a2cd5ba2103"
+  },
+  {
+    "id": "178a816b-cde6-4fa7-9fd9-74f3f28142a6",
+    "title": "Historic 2-Bedroom, 2-Bath Home with Garden and Water Views",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/178a816b-cde6-4fa7-9fd9-74f3f28142a6"
+  },
+  {
+    "id": "0e79acf0-b38b-4495-8955-bbb0cc37efd9",
+    "title": "House 204",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/0e79acf0-b38b-4495-8955-bbb0cc37efd9"
+  },
+  {
+    "id": "e9e8298d-65c7-4675-89de-77b4c4075447",
+    "title": "House 212",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/e9e8298d-65c7-4675-89de-77b4c4075447"
+  },
+  {
+    "id": "ce2ce757-a415-44cb-b365-87e02a2c6446",
+    "title": "House 211",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/ce2ce757-a415-44cb-b365-87e02a2c6446"
+  },
+  {
+    "id": "540ddd5b-8262-4a2d-86ca-ddd395c14cfc",
+    "title": "House 214",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/540ddd5b-8262-4a2d-86ca-ddd395c14cfc"
+  },
+  {
+    "id": "13d9ae21-d81e-4e57-980f-226ced00f05e",
+    "title": "House 210",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/13d9ae21-d81e-4e57-980f-226ced00f05e"
+  },
+  {
+    "id": "12765c72-9334-4768-8419-25399c387db7",
+    "title": "House 209",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/12765c72-9334-4768-8419-25399c387db7"
+  },
+  {
+    "id": "2e1e726c-934a-47b4-9df5-bdcfd96df290",
+    "title": "House 216",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/2e1e726c-934a-47b4-9df5-bdcfd96df290"
+  },
+  {
+    "id": "0809668b-67c7-4b3c-9b90-00f55fcd9b25",
+    "title": "House 215",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/0809668b-67c7-4b3c-9b90-00f55fcd9b25"
+  },
+  {
+    "id": "aaf12c1d-0573-4732-aa48-7fcec1d02fcc",
+    "title": "House 221",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/aaf12c1d-0573-4732-aa48-7fcec1d02fcc"
+  },
+  {
+    "id": "2c3e7012-ccd2-4166-8cc0-321d1391d43e",
+    "title": "House 218",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/2c3e7012-ccd2-4166-8cc0-321d1391d43e"
+  },
+  {
+    "id": "58eedae2-f2c1-4231-aef8-8b4a4f9322bd",
+    "title": "House 222",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/58eedae2-f2c1-4231-aef8-8b4a4f9322bd"
+  },
+  {
+    "id": "ea2b29df-fdce-4522-8d13-bb89609dfa35",
+    "title": "Modern Home with Kitchen Island and Swimming Pool",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/ea2b29df-fdce-4522-8d13-bb89609dfa35"
+  },
+  {
+    "id": "7a922a9b-3df0-49e9-832f-ee1d50102d76",
+    "title": "Modern home interior tour with wooden beams",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/7a922a9b-3df0-49e9-832f-ee1d50102d76"
+  },
+  {
+    "id": "62d2a59b-6b70-4e8b-a7c0-edbc2307e65e",
+    "title": "Craftsman House in Irvington",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/62d2a59b-6b70-4e8b-a7c0-edbc2307e65e"
+  },
+  {
+    "id": "7cc0850e-2b5b-4bd7-a2de-749bed065004",
+    "title": "House 230",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/7cc0850e-2b5b-4bd7-a2de-749bed065004"
+  },
+  {
+    "id": "272d40e8-c615-401b-807d-433a5a1e7e93",
+    "title": "Apartment with Kitchen, Living Area, and Laundry Room",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/272d40e8-c615-401b-807d-433a5a1e7e93"
+  },
+  {
+    "id": "7796a7c1-9901-428e-88a7-0bbe8e08d95e",
+    "title": "House 232",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/7796a7c1-9901-428e-88a7-0bbe8e08d95e"
+  },
+  {
+    "id": "47f4ca07-919a-47c9-b5b3-f3c2dbf4743e",
+    "title": "House 234",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/47f4ca07-919a-47c9-b5b3-f3c2dbf4743e"
   }
 ]

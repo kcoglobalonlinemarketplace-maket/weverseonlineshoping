@@ -940,7 +940,7 @@ async function renderProducts() {
   const content = document.getElementById('content');
   try {
     const { data: products, error } = await supabase.from('showroom_listings')
-      .select('*').neq('listing_type', 'property').order('created_at', { ascending: false });
+      .select('*').order('created_at', { ascending: false });
     // Show EVERY product from every source â€” database, the local fallback store,
     // and the static showroom seed â€” so nothing is ever missing from the manager.
     // DB/local rows win over seed on duplicate IDs (dedupe by property_id).
@@ -949,11 +949,11 @@ async function renderProducts() {
     for (const p of (error ? [] : (products || []))) {
       if (p && p.property_id && !seen.has(p.property_id)) { seen.add(p.property_id); items.push(p); }
     }
-    for (const p of listLocalShowroomListings().filter(item => item.listing_type !== 'property')) {
+    for (const p of listLocalShowroomListings()) {
       if (p && p.property_id && !seen.has(p.property_id)) { seen.add(p.property_id); items.push(p); }
     }
     if (Array.isArray(SHOWROOM_LISTINGS)) {
-      for (const p of SHOWROOM_LISTINGS.filter(l => l.listing_type !== 'property' && l.property_id)) {
+      for (const p of SHOWROOM_LISTINGS.filter(l => l.property_id)) {
         if (!seen.has(p.property_id)) { seen.add(p.property_id); items.push(p); }
       }
     }
@@ -962,7 +962,7 @@ async function renderProducts() {
     // product listings, trucks and motorhomes. DB/local/seed win on IDs.
     const SHOWROOM_STATIC_PRODUCTS = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS, ...TRUCK_LISTINGS, ...MOTORHOME_LISTINGS];
     for (const p of SHOWROOM_STATIC_PRODUCTS) {
-      if (p && p.property_id && p.listing_type !== 'property' && !seen.has(p.property_id)) { seen.add(p.property_id); items.push(p); }
+      if (p && p.property_id && !seen.has(p.property_id)) { seen.add(p.property_id); items.push(p); }
     }
     items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     // Hide any listing the admin deleted (seed items are tombstones in the
@@ -1159,8 +1159,14 @@ function productSku(product) {
   return product.sku || product.property_id || 'N/A';
 }
 
+function pickThumb(p) {
+  const imgs = Array.isArray(p && p.images) ? p.images : [];
+  const poster = imgs.find(u => typeof u === 'string' && !/\.(mp4|webm|mov|m4v|avi|ogg|ogv)$/i.test(u.split('?')[0]));
+  return poster || imgs[0] || '/fallback.svg';
+}
+
 function productCard(product) {
-  const img = (product.images && product.images[0]) ? product.images[0] : '/fallback.svg';
+  const img = pickThumb(product);
   const tags = normalizeProductTags(product);
   const status = productStatusText(product);
   const selected = window._productSelection?.has(product.property_id);
@@ -1272,7 +1278,7 @@ function renderProductsTable(items) {
   tbody.innerHTML = items.length === 0
     ? '<tr><td colspan="7" class="text-center text-gray-500 py-10">No products found.</td></tr>'
     : items.map(p => {
-        const img = (p.images && p.images[0]) ? p.images[0] : '/fallback.svg';
+        const img = (p && p.images && p.images[0]) ? pickThumb(p) : '/fallback.svg';
         const status = productStatusText(p);
         const selected = window._productSelection?.has(p.property_id);
         const publishFn = p.is_active ? `unpublishProduct('${p.property_id}')` : `publishProduct('${p.property_id}')`;
@@ -6127,15 +6133,15 @@ function productHasNoPrice(p) {
   return !Number.isFinite(n) || n <= 0;
 }
 
-// Every product the Product Manager shows (database + local fallback store),
-// deduped by id. Properties live in the Properties Manager and products
-// without at least one existing photo cannot be scanned visually. In
+// Every listing the Product Manager shows (database + local fallback store),
+// deduped by id — houses and properties included so they can be scanned too.
+// Items without at least one existing photo cannot be scanned visually. In
 // missing-price mode, products that already have a price are excluded.
 async function scannerSourceProducts() {
   const seen = new Set();
   const out = [];
   const add = (p) => {
-    if (!p || !p.property_id || p.listing_type === 'property') return;
+    if (!p || !p.property_id) return;
     if (seen.has(p.property_id)) return;
     if (!Array.isArray(p.images) || !p.images.length) return;
     if (_scannerOnlyMissingPrice && !productHasNoPrice(p)) return;
@@ -6143,7 +6149,7 @@ async function scannerSourceProducts() {
     out.push(p);
   };
   try {
-    const { data, error } = await supabase.from('showroom_listings').select('*').neq('listing_type', 'property');
+    const { data, error } = await supabase.from('showroom_listings').select('*');
     (error ? [] : (data || [])).forEach(add);
   } catch { /* fall through to the local store */ }
   listLocalShowroomListings().forEach(add);
@@ -13758,7 +13764,7 @@ async function renderCatalogManager() {
   const rows = filtered.length
     ? filtered.map(p => {
         const isHidden = hidden.has(p.property_id);
-        const cover = (p.images && p.images[0]) || '/fallback.svg';
+        const cover = pickThumb(p);
         return `
           <div class="flex items-center gap-3 p-3 rounded-xl border ${isHidden ? 'border-red-500/25 bg-red-500/5' : 'border-white/10 bg-white/[0.02]'}">
             <img src="${esc(cover)}" alt="" class="w-12 h-12 rounded-lg object-cover bg-gray-800 shrink-0" loading="lazy">
