@@ -1,0 +1,1 @@
+import{w as s}from"./supabase-client-DvCmNkpI-BBtcpOs0-BkA0pmll.js";async function n(){const{data:{session:t}}=await s.auth.getSession();return t?.user||null}function o(t){sessionStorage.setItem("kco_auth_redirect",t)}export{o as I,n as l};

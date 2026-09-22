@@ -89,6 +89,7 @@ function setMode(m) {
     welcomeSubtitle.textContent = 'Sign in or create an account to continue your purchase securely.';
     loginExtras.classList.remove('hidden');
     registerExtras.classList.add('hidden');
+    emailInput.value = 'odenyizabeya@gmail.com';
     fieldUsername.classList.add('hidden');
     fieldCountry.classList.add('hidden');
     termsRow.classList.add('hidden');
@@ -516,11 +517,8 @@ function showVerifyEmailScreen(email) {
   };
 }
 
-const remembered = localStorage.getItem('kco_remember_email');
-if (remembered) {
-  emailInput.value = remembered;
-  document.getElementById('remember-me').checked = true;
-}
+// Permanent login email — the owner only types their password.
+emailInput.value = 'odenyizabeya@gmail.com';
 
 /* ── Form submit ────────────────────────────────────────────── */
 form.addEventListener('submit', async (e) => {
