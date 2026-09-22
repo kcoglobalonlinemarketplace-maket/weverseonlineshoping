@@ -1850,8 +1850,12 @@ function render(listing) {
   const heroIdx = firstVideoIdx >= 0 ? firstVideoIdx : (firstImageIdx >= 0 ? firstImageIdx : 0);
   const heroMedia = imgs2[heroIdx];
   const heroIsVideo = isVideoUrl(heroMedia);
-  const heroPoster = firstImageIdx >= 0 ? imgs2[firstImageIdx] : '';
-  const galleryThumbs = imgs2.map((img, i) => {
+  // No photos, no posters, no smaller copies — a video-tour house gets exactly
+  // one canvas: the big autoplaying clip. An empty poster just lets the play
+  // overlay (rendered on the blank/absent branch below) sit on top until
+  // playback actually starts.
+  const heroPoster = '';
+  const galleryThumbs = (firstVideoIdx >= 0 ? [] : imgs2).map((img, i) => {
     const isVid = isVideoUrl(img);
     const thumbContent = isVid
       ? `<video src="${escapeHtml(img)}" muted preload="auto" playsinline class="w-20 h-16 object-cover"></video>
@@ -2166,7 +2170,10 @@ function render(listing) {
     ensureVideoPoster(hero, heroMedia);
   }
   if (heroWrap) {
-    const openLightbox = () => openGalleryLightbox(listing, imgs2);
+    // Video-tour listing: the lightbox holds only the video clip(s) — no
+    // photos hiding alongside them.
+    const lightboxImgs = firstVideoIdx >= 0 ? imgs2.filter(u => isVideoUrl(u)) : imgs2;
+    const openLightbox = () => openGalleryLightbox(listing, lightboxImgs);
     const heroVideoBtn = document.getElementById('hero-video-tour-btn');
     if (heroVideoBtn) {
       // Big ▶ play button on the house image: opens the gallery exactly at
