@@ -1,4 +1,4 @@
-import { getAllShowcaseProperties, getAllHeroVehicles, heroCardHtml, houseTypeLabel, vehicleKindLabel, heroStyles, videoSection } from './showroom-hero.js';
+import { getAllShowcaseProperties, getAllHeroVehicles, heroCardHtml, houseTypeLabel, vehicleKindLabel, heroStyles } from './showroom-hero.js';
 import { getDBListings, loadDBListings, hydrateDBListingsFromCache } from './showroom-data.js';
 
 const HOUSE_ORDER = [
@@ -98,13 +98,6 @@ function render(cat, filterType) {
   }).join('');
 
   results.innerHTML = html || '<div class="kco-empty">No items in this group yet.</div>';
-// All property videos go in ONE full-width horizontal line of big cards at the
-// top (same look as the Houses row) — not scattered as normal cards in the
-// grouped grid below.
-  try {
-    const vs = videoSection();
-    if (vs && vs.nodeType) results.insertBefore(vs, results.firstChild);
-  } catch {}
   if (window.lucide) lucide.createIcons();
 }
 

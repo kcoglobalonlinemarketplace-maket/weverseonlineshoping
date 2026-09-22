@@ -551,18 +551,9 @@ function renderHeroRows() {
   const container = document.getElementById(CONTAINER_ID);
   if (!container) return;
   heroStyles();
-  const properties = getAllShowcaseProperties();
   const frag = document.createDocumentFragment();
-  // Houses show as video tours (single full-width row of large video cards),
-  // then the Houses For Sale & Rent gallery. Vehicles and products are no
-  // longer offered on the customer marketplace.
-  frag.appendChild(videoSection());
-  frag.appendChild(heroSection({
-    kindCls: 'kco-hero-house',
-    title: 'Houses For Sale & Rent', subtitle: 'Browse villas, mansions, apartments, beach houses, commercial properties and land listed by their sellers.',
-    icon: 'home', cat: 'real-estate', seeAll: true, seeAllLabel: 'See All Homes',
-    listings: properties, card: (l) => heroCardHtml(l, 'house'),
-  }));
+  // The video-tour row and the Houses For Sale & Rent gallery were removed by
+  // request — the storefront falls straight through to the listings below.
   container.replaceChildren(frag);
   if (window.lucide) lucide.createIcons();
 }
