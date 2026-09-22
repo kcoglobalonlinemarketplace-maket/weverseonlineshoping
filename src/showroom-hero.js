@@ -74,9 +74,10 @@ function listingVideoUrl(listing) {
 // The best poster frame (a real image, never a video) for a video card.
 function listingPoster(listing) {
   if (Array.isArray(listing.images)) {
-    for (const img of listing.images) if (!isVideoUrl(img)) return img;
+    const photo = listing.images.find((u) => !isVideoUrl(u));
+    if (photo) return photo;
   }
-  return FALLBACK_IMG;
+  return '';
 }
 
 // Every property listing that has a video, deduplicated by property_id AND by
@@ -106,6 +107,7 @@ function videoCardHtml(listing) {
   const pid = escapeHtmlAttr(listing.property_id || listing.id);
   const video = listingVideoUrl(listing);
   const poster = listingPoster(listing);
+  const posterAttr = poster ? ` poster="${esc(poster)}"` : '';
   const priceHtml = formatPrice(listing);
   const type = houseTypeLabel(listing);
   const flag = flagEmoji(listing.country_code);
@@ -123,9 +125,9 @@ function videoCardHtml(listing) {
   const land = listing.land_size ? `<span class="kco-hero-chip"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${esc(listing.land_size)}</span>` : '';
 
   return `
-    <a href="/product/${pid}" class="kco-video-card">
+    <a href="/details.html?id=${escapeHtmlAttr(pid)}" class="kco-video-card">
       <div class="kco-video-media">
-        <video src="${esc(video)}" poster="${esc(poster)}" muted loop autoplay playsinline webkit-playsinline preload="metadata" class="kco-video-el" data-detail-href="/product/${pid}" aria-label="${esc(listing.title || '')}">
+        <video src="${esc(video)}"${posterAttr} muted loop autoplay playsinline webkit-playsinline preload="metadata" class="kco-video-el" data-detail-href="/details.html?id=${escapeHtmlAttr(pid)}" aria-label="${esc(listing.title || '')}">
           <source src="${esc(video)}">
         </video>
         <div class="kco-video-bigplay"><span class="kco-video-playcircle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
@@ -374,7 +376,9 @@ function heroStyles() {
 export function heroCardHtml(listing, kind, cardCls) {
   cleanListing(listing);
   const cls = cardCls || 'kco-hero-card';
-  const cover = (listing.images && listing.images[0]) || FALLBACK_IMG;
+  const cover = listingVideoUrl(listing) || (listing.images && listing.images[0]) || FALLBACK_IMG;
+  const poster = listingPoster(listing);
+  const posterAttr = poster ? ` poster="${esc(poster)}"` : '';
   const pid = escapeHtmlAttr(listing.property_id || listing.id);
   const priceHtml = kind === 'vehicle' && listing.category === 'Trucks'
     ? formatTruckPrice(listing)
@@ -396,10 +400,10 @@ export function heroCardHtml(listing, kind, cardCls) {
     chips = c.join('');
     if (!loc) loc = '';
     const markup = `
-      <a href="/product/${pid}" class="${cls}">
+      <a href="/details.html?id=${escapeHtmlAttr(pid)}" class="${cls}">
         <div class="kco-hero-media">
           ${isVideoUrl(cover)
-            ? `<video src="${esc(cover)}" poster="${esc((listing.images || []).find((u) => !isVideoUrl(u)) || FALLBACK_IMG)}" muted loop autoplay playsinline preload="metadata" class="kco-hero-media-video"></video><span class="kco-hero-video-badge"><i data-lucide="play" class="w-3 h-3"></i>Video Tour</span>`
+            ? `<video src="${esc(cover)}"${posterAttr} muted loop autoplay playsinline preload="metadata" class="kco-hero-media-video"></video><span class="kco-hero-video-badge"><i data-lucide="play" class="w-3 h-3"></i>Video Tour</span>`
             : `<img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">`}
           <span class="kco-hero-type"><i data-lucide="home" class="w-3 h-3"></i>${esc(t)}</span>
           ${loc}
@@ -422,10 +426,10 @@ export function heroCardHtml(listing, kind, cardCls) {
   if (sp(listing, 'body_type')) c.push(`<span class="kco-hero-chip"><i data-lucide="car-front" class="w-3.5 h-3.5"></i>${esc(sp(listing, 'body_type'))}</span>`);
   chips = c.join('');
   const mediaHtml = isVideoUrl(cover)
-    ? `<video src="${esc(cover)}" poster="${esc((listing.images || []).find((u) => !isVideoUrl(u)) || FALLBACK_IMG)}" muted loop autoplay playsinline preload="metadata" class="kco-hero-media-video"></video><span class="kco-hero-video-badge"><i data-lucide="play" class="w-3 h-3"></i>Video Tour</span>`
+    ? `<video src="${esc(cover)}"${posterAttr} muted loop autoplay playsinline preload="metadata" class="kco-hero-media-video"></video><span class="kco-hero-video-badge"><i data-lucide="play" class="w-3 h-3"></i>Video Tour</span>`
     : `<img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">`;
   return `
-      <a href="/product/${pid}" class="${cls}">
+      <a href="/details.html?id=${escapeHtmlAttr(pid)}" class="${cls}">
         <div class="kco-hero-media">
           ${mediaHtml}
           <span class="kco-hero-type"><i data-lucide="car-front" class="w-3 h-3"></i>${esc(vehicleKindLabel(listing))}</span>
@@ -456,9 +460,9 @@ function icon(name) {
 }
 
 function wireDrag(track) {
-  let down = false, moved = false, startX = 0, startScroll = 0;
+  let down = false, dragged = false, startX = 0, startScroll = 0;
   track.addEventListener('pointerdown', (e) => {
-    down = true; moved = false;
+    down = true; dragged = false;
     startX = e.clientX; startScroll = track.scrollLeft;
     track.classList.add('dragging');
     try { track.setPointerCapture(e.pointerId); } catch {}
@@ -466,15 +470,20 @@ function wireDrag(track) {
   track.addEventListener('pointermove', (e) => {
     if (!down) return;
     const dx = e.clientX - startX;
-    if (Math.abs(dx) > 5) moved = true;
     track.scrollLeft = startScroll - dx;
   });
-  const end = () => { down = false; track.classList.remove('dragging'); };
+  const end = (e) => {
+    down = false;
+    track.classList.remove('dragging');
+    // Only a real swipe (the track actually scrolled well past tap-jitter)
+    // suppresses the click so the browser navigates the tapped card instead.
+    if (e && Math.abs(track.scrollLeft - startScroll) > 20) dragged = true;
+  };
   track.addEventListener('pointerup', end);
   track.addEventListener('pointercancel', end);
   track.addEventListener('pointerleave', end);
   track.addEventListener('click', (e) => {
-    if (moved) { e.preventDefault(); e.stopPropagation(); }
+    if (dragged) { e.preventDefault(); e.stopPropagation(); }
   }, true);
 }
 

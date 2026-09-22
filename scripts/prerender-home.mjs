@@ -151,6 +151,32 @@ function flagEmoji(countryCode) {
   return String.fromCodePoint(...codePoints);
 }
 
+function isVideoUrl(url) {
+  return url && typeof url === 'string' && /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
+}
+
+// The FIRST valid video URL for a listing: the standalone video fields first,
+// then any video merged into the images gallery. Returns null if none.
+function listingVideo(listing) {
+  if (!listing) return null;
+  for (const v of [listing.video, listing.video_url]) {
+    if (isVideoUrl(v)) return v;
+  }
+  if (Array.isArray(listing.images)) {
+    for (const im of listing.images) if (isVideoUrl(im)) return im;
+  }
+  return null;
+}
+
+// Real poster photo for a video card (never a video, never fallback.svg).
+function listingPhoto(listing) {
+  if (Array.isArray(listing.images)) {
+    const photo = listing.images.find((u) => !isVideoUrl(u));
+    if (photo) return photo;
+  }
+  return '';
+}
+
 // discount markup identical to cardParts in src/showroom-cards.js.
 function discountParts(listing, isTruck) {
   let discountBadge = '';
@@ -176,7 +202,8 @@ function cardHtml(listing) {
   const isMotorhome = listing.listing_type === 'vehicle' && listing.category === 'Motorhomes';
   const isCar = listing.listing_type === 'vehicle' && listing.category === 'Cars';
   const listingId = listing.id || listing.property_id;
-  const cover = listing.images?.[0] || FALLBACK_IMG;
+  const cover = listingVideo(listing) || listing.images?.[0] || FALLBACK_IMG;
+  const posterAttr = listingPhoto(listing) ? ` poster="${listingPhoto(listing)}"` : '';
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
   const statusBadge = listing.listing_type === 'product' ? 'New' : (isProperty || isPet ? 'For Sale' : '');
   const { discountBadge, originalPriceHtml } = discountParts(listing, isTruck);
@@ -213,7 +240,7 @@ function cardHtml(listing) {
 
   let ratingStars = '';
   if (displayRating > 0) {
-    ratingStars = `<a href="/product/${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
+    ratingStars = `<a href="/details.html?id=${encodeURIComponent(listing.property_id)}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
   }
 
   let mapPreviewHtml = '';
@@ -228,7 +255,7 @@ function cardHtml(listing) {
 
   return `<div class="showroom-card group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col cursor-pointer" data-id="${listingId}">
     <div class="relative aspect-[6/5] overflow-hidden bg-gray-100">
-      ${/\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(cover || '') ? `<video src="${cover}" poster="${FALLBACK_IMG}" muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>` : `<img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`}
+      ${/\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(cover || '') ? `<video src="${cover}"${posterAttr} muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>` : `<img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`}
       ${statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${statusBadge}</span>` : ''}
       ${discountBadge}
       <div class="absolute top-2 right-2 flex flex-col gap-1.5">
@@ -260,8 +287,8 @@ function cardHtml(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details →</span>
       </button>
-      <button type="button" class="kco-card-call-agent mt-2 w-full min-w-0 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30">
-        <i data-lucide="phone" class="w-4 h-4 shrink-0"></i> <span class="truncate">Call Agent</span>
+      <button type="button" class="kco-card-msg-company mt-2 w-full min-w-0 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30">
+        <i data-lucide="message-circle" class="w-4 h-4 shrink-0"></i> <span class="truncate">Chat with Us</span>
       </button>
     </div>
   </div>`;
@@ -277,7 +304,8 @@ function feedCardHtml(listing) {
   const isMotorhome = listing.listing_type === 'vehicle' && listing.category === 'Motorhomes';
   const isCar = listing.listing_type === 'vehicle' && listing.category === 'Cars';
   const listingId = listing.id || listing.property_id;
-  const cover = listing.images?.[0] || FALLBACK_IMG;
+  const cover = listingVideo(listing) || listing.images?.[0] || FALLBACK_IMG;
+  const posterAttr = listingPhoto(listing) ? ` poster="${listingPhoto(listing)}"` : '';
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
   const statusBadge = listing.listing_type === 'product' ? 'New' : (isProperty || isPet ? 'For Sale' : '');
   const { discountBadge, originalPriceHtml } = discountParts(listing, isTruck);
@@ -314,7 +342,7 @@ function feedCardHtml(listing) {
 
   let ratingStars = '';
   if (displayRating > 0) {
-    ratingStars = `<a href="/product/${listing.property_id}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
+    ratingStars = `<a href="/details.html?id=${encodeURIComponent(listing.property_id)}" class="flex items-center gap-0.5 text-xs no-underline hover:opacity-80 transition" title="View ratings & reviews"><i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i><span class="text-gray-800 font-semibold">${displayRating.toFixed(1)}</span><span class="text-gray-500">(${reviewCount})</span></a>`;
   }
 
   let mapPreviewHtml = '';
@@ -329,7 +357,7 @@ function feedCardHtml(listing) {
 
   return `<div class="showroom-card showroom-feed-card group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 flex flex-col sm:flex-row cursor-pointer" data-id="${listingId}">
     <div class="relative shrink-0 sm:w-[42%] lg:w-[38%] xl:w-[34%] aspect-[7/5] sm:aspect-auto sm:min-h-[300px] overflow-hidden bg-gray-100">
-      ${/\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(cover || '') ? `<video src="${cover}" poster="${FALLBACK_IMG}" muted loop autoplay playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>` : `<img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`}
+      ${/\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(cover || '') ? `<video src="${cover}"${posterAttr} muted loop autoplay playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>` : `<img src="${cover}" alt="${listing.title}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`}
       ${statusBadge ? `<span class="absolute top-2.5 left-2.5 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${statusBadge}</span>` : ''}
       ${discountBadge}
       <span class="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -364,8 +392,8 @@ function feedCardHtml(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-white hover:bg-blue-50 active:scale-[0.97] text-blue-600 text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details →</span>
       </button>
-      <button type="button" class="kco-card-call-agent mt-2 w-full min-w-0 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30">
-        <i data-lucide="phone" class="w-4 h-4 shrink-0"></i> <span class="truncate">Call Agent</span>
+      <button type="button" class="kco-card-msg-company mt-2 w-full min-w-0 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30">
+        <i data-lucide="message-circle" class="w-4 h-4 shrink-0"></i> <span class="truncate">Chat with Us</span>
       </button>
     </div>
   </div>`;

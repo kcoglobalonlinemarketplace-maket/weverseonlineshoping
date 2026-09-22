@@ -514,7 +514,7 @@ function buyerInfoBlock(listing) {
   const loc = spL(listing, 'location');
   const rows = [];
   if (name) rows.push({ icon: 'user-round', label: 'Company / Contact', value: name });
-  if (phone) rows.push({ icon: 'phone', label: 'Phone / WhatsApp', value: phone, link: 'tel:' + phone.replace(/[^0-9+]/g, '') });
+  if (phone) rows.push({ icon: 'phone', label: 'Phone / WhatsApp', value: phone });
   if (email) rows.push({ icon: 'mail', label: 'Email', value: email, link: 'mailto:' + email });
   if (loc) rows.push({ icon: 'map-pin', label: 'Location', html: locationValueHtml(loc, [loc]) });
   return `
@@ -3125,7 +3125,7 @@ async function loadRecommendations(listing) {
     const recMedia = recIsVideo
       ? `<video src="${escapeHtml(img)}" muted loop autoplay playsinline class="w-full h-full object-cover group-hover:scale-105 transition" preload="metadata"></video>`
       : `<img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'">`;
-    return `<a href="/product/${p.property_id}" class="block bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition group">
+    return `<a href="/details.html?id=${encodeURIComponent(p.property_id)}" class="block bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition group">
       <div class="aspect-square overflow-hidden bg-gray-100">${recMedia}</div>
       <div class="p-2"><p class="text-xs text-gray-900 font-bold truncate">${escapeHtml(p.title)}</p><p class="text-xs text-blue-500 font-bold mt-1">${cur} ${pprice.toLocaleString()}</p></div>
     </a>`;
@@ -3185,7 +3185,14 @@ async function init() {
 
   const staticListing = staticSource();
   if (staticListing) {
-    renderListing(staticListing);
+    try {
+      renderListing(staticListing);
+    } catch {
+      // A malformed/odd listing must never strand the page on "Loading…" or a
+      // half-rendered shell — fall through to the safe slow path quietly.
+      try { notFound(); } catch {}
+      return;
+    }
     // Hydrate with the FULL live row in the background (a single tiny row
     // fetch — never the whole table). Admin edits (title, price, images,
     // publish state) still win when present.

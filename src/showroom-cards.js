@@ -61,7 +61,7 @@ function ensureVideoTourModalStyle() {
 function openListingVideoModal(listing) {
   const video = hasVideo(listing);
   if (!video) return;
-  const poster = (Array.isArray(listing.images) ? listing.images.find(u => !isVideoUrl(u)) : null) || FALLBACK_IMG;
+  const poster = Array.isArray(listing.images) ? listing.images.find(u => !isVideoUrl(u)) || '' : '';
   const pid = listing.property_id || listing.id || '';
   ensureVideoTourModalStyle();
   const root = document.createElement('div');
@@ -78,7 +78,7 @@ function openListingVideoModal(listing) {
         <button type="button" data-vt-close class="shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer" aria-label="Close">✕</button>
       </div>
       <video src="${escapeHtml(video)}" poster="${escapeHtml(poster)}" controls muted loop autoplay playsinline preload="auto" class="vt-modal-video"></video>
-      <a href="/product/${encodeURIComponent(pid)}" class="inline-flex items-center gap-2 mt-3 text-xs font-bold text-blue-300 hover:text-blue-200 transition">
+      <a href="/details.html?id=${encodeURIComponent(pid)}" class="inline-flex items-center gap-2 mt-3 text-xs font-bold text-blue-300 hover:text-blue-200 transition">
         View full listing <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
       </a>
     </div>
@@ -463,10 +463,10 @@ function cardParts(listing) {
   const isMotorhome = listing.listing_type === 'vehicle' && listing.category === 'Motorhomes';
   const isCar = listing.listing_type === 'vehicle' && listing.category === 'Cars';
   const listingId = listing.id || listing.property_id;
-  const cover = listing.images?.[0] || FALLBACK_IMG;
-  const isCoverVideo = isVideoUrl(cover);
   const listingVideo = hasVideo(listing);
-  const listingPoster = (Array.isArray(listing.images) ? listing.images.find(u => !isVideoUrl(u)) : null) || FALLBACK_IMG;
+  const cover = listingVideo || listing.images?.[0] || FALLBACK_IMG;
+  const isCoverVideo = isVideoUrl(cover);
+  const listingPoster = Array.isArray(listing.images) ? listing.images.find(u => !isVideoUrl(u)) || '' : '';
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
   const statusBadge = listing.listing_type === 'product' ? 'New' : ((isProperty || isPet) ? ((listing.listing_status === 'rent') ? 'For Rent' : 'For Sale') : '');
   const propcat = isProperty ? (propertyCategoryForListing(listing) || []) : [];
@@ -532,7 +532,7 @@ function cardParts(listing) {
   const showRating = displayRating > 0;
   const shownRating = showRating ? Number(displayRating) : 5;
   const shownReviewCount = showRating ? (reviewCount || 0) : 0;
-  const ratingSoldHtml = `<a href="/product/${listing.property_id}" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs no-underline rounded-md group/rating transition" title="View ratings & reviews"><span class="flex items-center gap-1"><span class="flex">${renderStars(shownRating, 'w-3.5 h-3.5')}</span><span class="text-gray-900 font-bold">${shownRating.toFixed(1)}</span><span class="text-gray-500">(${shownReviewCount})</span></span>${soldLabel ? `<span class="inline-flex items-center gap-1 text-emerald-600 font-bold ml-auto whitespace-nowrap"><i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i>${soldLabel} sold</span>` : ''}</a>`;
+  const ratingSoldHtml = `<a href="/details.html?id=${encodeURIComponent(listing.property_id)}" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs no-underline rounded-md group/rating transition" title="View ratings & reviews"><span class="flex items-center gap-1"><span class="flex">${renderStars(shownRating, 'w-3.5 h-3.5')}</span><span class="text-gray-900 font-bold">${shownRating.toFixed(1)}</span><span class="text-gray-500">(${shownReviewCount})</span></span>${soldLabel ? `<span class="inline-flex items-center gap-1 text-emerald-600 font-bold ml-auto whitespace-nowrap"><i data-lucide="shopping-bag" class="w-3.5 h-3.5 shrink-0"></i>${soldLabel} sold</span>` : ''}</a>`;
 
   // Product badges (New Arrival, Best Seller, etc.)
   const badgesHtml = '';
@@ -587,7 +587,7 @@ export function renderCard(listing) {
   card.innerHTML = `
     <div class="relative aspect-[6/5] overflow-hidden bg-gray-100">
       ${p.isCoverVideo
-        ? `<video src="${escapeHtml(p.cover)}" poster="${escapeHtml(p.listingPoster)}" muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
+        ? `<video src="${escapeHtml(p.cover)}" muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
         : `<img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -627,6 +627,9 @@ export function renderCard(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-blue-50 hover:bg-blue-100 active:scale-[0.97] text-blue-700 text-[13px] font-black py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details →</span>
       </button>
+      <button type="button" class="kco-card-msg-company mt-2 w-full min-w-0 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30">
+        <i data-lucide="message-circle" class="w-4 h-4 shrink-0"></i> <span class="truncate">Chat with Us</span>
+      </button>
     </div>
   `;
 
@@ -654,7 +657,7 @@ export function renderFeedCard(listing) {
   card.innerHTML = `
     <div class="relative shrink-0 sm:w-[42%] lg:w-[38%] xl:w-[34%] aspect-[7/5] sm:aspect-auto sm:min-h-[300px] overflow-hidden bg-gray-100">
       ${p.isCoverVideo
-        ? `<video src="${escapeHtml(p.cover)}" poster="${escapeHtml(p.listingPoster)}" muted loop autoplay playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
+        ? `<video src="${escapeHtml(p.cover)}" muted loop autoplay playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
         : `<img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
              class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -696,6 +699,9 @@ export function renderFeedCard(listing) {
       <button class="details-btn mt-2 w-full min-w-0 bg-blue-50 hover:bg-blue-100 active:scale-[0.97] text-blue-700 text-[13px] font-black py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 border-2 border-blue-300 hover:border-blue-400 shadow-sm">
         <i data-lucide="eye" class="w-4 h-4 shrink-0"></i> <span class="truncate">View Details →</span>
       </button>
+      <button type="button" class="kco-card-msg-company mt-2 w-full min-w-0 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.97] text-white text-[13px] font-bold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30">
+        <i data-lucide="message-circle" class="w-4 h-4 shrink-0"></i> <span class="truncate">Chat with Us</span>
+      </button>
     </div>
   `;
 
@@ -707,26 +713,49 @@ export function renderFeedCard(listing) {
 
 // Wire the per-card actions onto an existing card element. Used by renderCard
 // and by the pre-render adoption pass (the static cards in index.html).
+// Every lookup is optional-chained and the whole body is isolated so a single
+// malformed card (missing button, odd id) can NEVER throw and unwire the rest
+// of the row — on slow phones that is exactly what left "dead" cards.
 function attachCardListeners(card, listing) {
-  card.addEventListener('click', (e) => {
-    if (e.target.closest('button')) return;
-    window.location.href = `/product/${listing.property_id}`;
-  });
-  card.querySelector('.buy-btn').addEventListener('click', (e) => { e.stopPropagation(); handleBuyNow(listing); });
-  card.querySelector('.wishlist-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleWishlist(listing, e.currentTarget); });
-  card.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
-  card.querySelector('.cart-btn')?.addEventListener('click', (e) => { e.stopPropagation(); addToCart(listing); });
-  card.querySelector('.details-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/product/${listing.property_id}`; });
-  card.querySelector('.video-tour-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/product/${listing.property_id || listing.id}`; });
+  const id = (listing && (listing.property_id || listing.id)) || '';
+  const dest = id ? `/details.html?id=${encodeURIComponent(id)}` : '';
+  try {
+    if (dest) {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        window.location.href = dest;
+      });
+    }
+    card.querySelector('.buy-btn')?.addEventListener('click', (e) => { e.stopPropagation(); handleBuyNow(listing); });
+    card.querySelector('.wishlist-btn')?.addEventListener('click', (e) => { e.stopPropagation(); toggleWishlist(listing, e.currentTarget); });
+    card.querySelector('.share-btn')?.addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
+    card.querySelector('.cart-btn')?.addEventListener('click', (e) => { e.stopPropagation(); addToCart(listing); });
+    card.querySelector('.details-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (dest) window.location.href = dest;
+    });
+    card.querySelector('.video-tour-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (dest) window.location.href = dest;
+    });
+    card.querySelector('.kco-card-msg-company')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.__kcoMsgCompany) window.__kcoMsgCompany();
+      else if (window.__kcoMsgAgent) window.__kcoMsgAgent(listing, true);
+      else showToast('Chat is loading, please try again');
+    });
+  } catch { /* never take down the whole wiring loop for one card */ }
 }
 
 async function handleBuyNow(listing) {
+  const id = (listing && (listing.property_id || listing.id)) || '';
+  if (!id) { showToast('This listing has no valid product id'); return; }
   const user = await getCurrentUser();
   if (user) {
-    window.location.href = `/checkout.html?id=${listing.property_id}`;
+    window.location.href = `/checkout.html?id=${encodeURIComponent(id)}`;
   } else {
-    setRedirectAfterAuth(`/checkout.html?id=${listing.property_id}`);
-    window.location.href = `/auth.html?redirect=${encodeURIComponent('/checkout.html?id=' + listing.property_id)}`;
+    setRedirectAfterAuth(`/checkout.html?id=${encodeURIComponent(id)}`);
+    window.location.href = `/auth.html?redirect=${encodeURIComponent('/checkout.html?id=' + encodeURIComponent(id))}`;
   }
 }
 

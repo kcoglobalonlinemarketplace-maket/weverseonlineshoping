@@ -464,6 +464,32 @@ export default async function handler(req, res) {
       return;
     }
 
+    // ── Real-browser fast path ─────────────────────────────────────────────
+    // Real visitors must get the product page the instant they click. Serving
+    // the static client-side shell here (no database, no SSR, no blocking
+    // work) lets the bundled details.js resolve the id from the URL and render
+    // the full product in milliseconds from in-memory data. Crawlers and
+    // social platforms fall through to the full server-rendered page below so
+    // SEO / link previews keep the per-product meta, JSON-LD and body.
+    const ua = String(req.headers?.['user-agent'] || '');
+    // Bot detection for the FAST PATH ONLY. It must give real human browsers
+    // the instant static shell and reserve full SSR for actual link scrapers.
+    // IMPORTANT: brand words (facebook, instagram, whatsapp, telegram,
+    // pinterest, ...) are NOT bot markers — those phones use in-app browsers
+    // that embed the brand in their UA and are real users who must get the
+    // fast shell. Only explicit crawler tokens are treated as bots.
+    const BOT_RE = /(facebookexternalhit|twitterbot|pinterestbot|pinterest\/|linkedinbot|telegrambot|discordbot|slackbot|skypeuripreview|vkshare|vkShare|baiduspider|bingbot|googlebot|ahrefsbot|adsbotgoogle|mediapartners|duckduckbot|uptimerobot|semrushbot|mj12bot|dotbot|petalbot|slurp|tiktokbot|yandex\b|facebookcatalog|headlesschrome|phantomjs|puppeteer|wget|curl|python-requests|python-urllib|node-fetch|axios|okhttp|w3m|lynx|httpclient|bot[^a-z])/i;
+    const isRealBrowser = /mozilla/i.test(ua) && !BOT_RE.test(ua);
+    if (isRealBrowser) {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600');
+      let fastOut = html;
+      if (fastOut.includes('</body>')) fastOut = fastOut.replace('</body>', `${VISITOR_BEACON}\n</body>`);
+      res.end(fastOut);
+      return;
+    }
+
     let listing = null;
     let fromDb = false;
     if (id) {

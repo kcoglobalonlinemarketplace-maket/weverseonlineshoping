@@ -740,7 +740,9 @@ function renderSearchResults(query,results,meta){
   if(hasResults){
     html+=`<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">`;
     results.forEach(function(r){
-      const img=r.thumbnail||(Array.isArray(r.images)&&r.images.length>0?r.images[0]:"");
+      const imgsArr=Array.isArray(r.images)?r.images:[];
+      const videoCover=imgsArr.find(function(u){return u&&/\.(mp4|webm|mov)(\?|#|$)/i.test(u);})||(r.video&&/\.(mp4|webm|mov)(\?|#|$)/i.test(r.video)?r.video:"")||(r.video_url&&/\.(mp4|webm|mov)(\?|#|$)/i.test(r.video_url)?r.video_url:"");
+      const img=videoCover||r.thumbnail||imgsArr[0]||"";
       const price=r.price!=null?(r.currency||"USD")+" "+Number(r.price).toLocaleString():"";
       const isSpecial=r.is_special_order||r.entity_type==="special_order";
       const typeBadge=isSpecial?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-blue-500/80 text-white border border-blue-400 z-10">Special Order</span>`:(r.entity_type?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-white/90 text-blue-700 border border-blue-200 z-10">${escapeHtmlAttr(r.entity_type)}</span>`:"");
@@ -792,7 +794,7 @@ window.openSpecialOrderFromSearch=function(title,brand,category,price,currency){
 };
 window.openProductFromSearch=function(propertyId){
   closeSearchResults();
-  if(propertyId)window.location.href="/product/"+encodeURIComponent(propertyId);
+  if(propertyId)window.location.href="/details.html?id="+encodeURIComponent(propertyId);
   else showToast("Product not available");
 };
 
@@ -864,7 +866,7 @@ window.openSlideLink=function(idx){
   const link=slideLink(slide);
   if(!link)return;
   if(link.type==='product'){
-    window.location.href='/product/'+encodeURIComponent(link.target);
+    window.location.href='/details.html?id='+encodeURIComponent(link.target);
     return;
   }
   if(link.type==='category'){
