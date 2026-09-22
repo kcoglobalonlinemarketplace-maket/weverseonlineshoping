@@ -224,12 +224,24 @@ async function fileToDataUrl(file) {
   });
 }
 
-// Any attached media (photo OR video) as vision input: photos become one data
-// URL, videos are sampled into a few representative frames so the AI can read
-// products, text and details shown throughout the video.
+// Any attached media (photo OR video) as vision input. Photos become one data
+// URL. Videos go straight to Gemini as the REAL clip — inline video keeps its
+// audio track, so Gemini can see the motion AND hear what's said/narrated in
+// the clip (which is exactly what a video-tour house is all about). Only when
+// a clip is too big to inline (Gemini caps inline data) do we fall back to
+// sampling it into a few still frames — visuals only, no audio.
+const GEMINI_INLINE_VIDEO_MAX_BYTES = 21 * 1024 * 1024; // stay under Gemini's ~20MB inline part cap
+
 async function mediaFileToVisionDataUrls(file, { maxFrames = 6, maxDim = 1024 } = {}) {
   if (!file) return [];
   if (isVideoFile(file)) {
+    // Small clip → inline the whole thing (audio included) so Gemini can both
+    // see inside the video and hear what is being said in it.
+    if (file.size <= GEMINI_INLINE_VIDEO_MAX_BYTES) {
+      const dataUrl = await fileToDataUrl(file).catch(() => null);
+      if (dataUrl) return [dataUrl];
+    }
+    // Large clip → representative still frames (visuals only, no audio).
     return await videoToFrameDataUrls(file, { maxFrames, maxDim }).catch(() => []);
   }
   const dataUrl = await fileToDataUrl(file).catch(() => null);
