@@ -329,10 +329,12 @@ function heroStyles() {
 @media(min-width:1024px){.kco-video-card,.kco-hero-card{width:420px;min-width:420px}}
 .kco-video-card:hover,.kco-hero-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px -12px rgba(2,6,23,.2);border-color:#bfdbfe}
 .kco-video-media,.kco-hero-media{position:relative;aspect-ratio:16/10;background:#f1f5f9;overflow:hidden}
-.kco-video-media img,.kco-video-media video,.kco-hero-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
-.kco-video-card:hover .kco-video-media img,.kco-video-card:hover .kco-video-media video,.kco-hero-card:hover .kco-hero-media img{transform:scale(1.03)}
+.kco-video-media img,.kco-video-media video,.kco-hero-media img,.kco-hero-media video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+.kco-video-card:hover .kco-video-media img,.kco-video-card:hover .kco-video-media video,.kco-hero-card:hover .kco-hero-media img,.kco-hero-card:hover .kco-hero-media video{transform:scale(1.03)}
 .kco-hero-type{position:absolute;top:.65rem;left:.65rem;display:inline-flex;align-items:center;gap:.3rem;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);color:#0f172a;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:.28rem .6rem;border-radius:999px;border:1px solid #e2e8f0;box-shadow:0 2px 6px rgba(15,23,42,.12)}
 .kco-hero-type svg{width:.8rem;height:.8rem;color:#475569}
+.kco-hero-video-badge{position:absolute;top:.65rem;right:.65rem;display:inline-flex;align-items:center;gap:.3rem;background:rgba(239,68,68,.92);backdrop-filter:blur(6px);color:#ffffff;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:.3rem .6rem;border-radius:999px;box-shadow:0 2px 8px rgba(239,68,68,.45)}
+.kco-hero-video-badge svg{width:.75rem;height:.75rem}
 .kco-hero-loc,.kco-video-loc{position:absolute;bottom:.65rem;left:.65rem;right:.65rem;display:flex;align-items:center;gap:.35rem;background:rgba(15,23,42,.62);backdrop-filter:blur(6px);color:#ffffff;font-size:11px;font-weight:600;padding:.32rem .65rem;border-radius:.7rem}
 .kco-hero-loc svg,.kco-video-loc svg{width:.85rem;height:.85rem}
 .kco-video-badge{position:absolute;top:.65rem;right:.65rem;display:inline-flex;align-items:center;gap:.3rem;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:.28rem .6rem;border-radius:999px;box-shadow:0 2px 8px -2px rgba(0,0,0,.25)}
@@ -396,7 +398,9 @@ export function heroCardHtml(listing, kind, cardCls) {
     const markup = `
       <a href="/product/${pid}" class="${cls}">
         <div class="kco-hero-media">
-          <img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">
+          ${isVideoUrl(cover)
+            ? `<video src="${esc(cover)}" poster="${esc((listing.images || []).find((u) => !isVideoUrl(u)) || FALLBACK_IMG)}" muted loop autoplay playsinline preload="metadata" class="kco-hero-media-video"></video><span class="kco-hero-video-badge"><i data-lucide="play" class="w-3 h-3"></i>Video Tour</span>`
+            : `<img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">`}
           <span class="kco-hero-type"><i data-lucide="home" class="w-3 h-3"></i>${esc(t)}</span>
           ${loc}
         </div>

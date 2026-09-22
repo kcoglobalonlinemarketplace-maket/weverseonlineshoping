@@ -5,7 +5,7 @@
 // a finished clip restarts, a paused clip resumes, and none ever
 // plays audio. The user-controlled video-tour modal keeps its native
 // controls so the owner can still pause/scrub it.
-const SELECTOR = '.showroom-card video, [data-showroom-grid] video, .kco-video-section video, .kco-video-el';
+const SELECTOR = '.showroom-card video, [data-showroom-grid] video, .kco-video-section video, .kco-video-el, .kco-hero-media video';
 const IGNORED = '#video-tour-modal video';
 
 function isWatched(el) {

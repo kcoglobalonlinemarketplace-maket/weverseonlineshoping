@@ -36,7 +36,65 @@ function newHomeGallery(ids, interiorIds) {
   return [...base, ...interiors];
 }
 
-export const SHOWROOM_LISTINGS = [...HOUSES_LISTINGS];
+// Every seeded house cover is a self-hosted /videos/houses/<uuid>.mp4 clip, but
+// only a subset of those files ship with the repo. Any house listing whose video
+// file does not exist gets remapped — deterministically per property — onto one
+// of the clips that DO ship, so every card gets a playable video and never sits
+// on a white placeholder. The missing /videos/houses/*.jpg poster files are
+// dropped from galleries too, so no card, archive strip or details page ever
+// points at a media file that isn't deployed.
+const HOUSE_VIDEOS = [
+  '3f98b0a6-a80a-4403-8517-a6d2f9c13edf', '40306ba0-474e-44c8-a8fd-0df762f8fd49', '4099497d-ba27-46fe-b56e-d5e44c4af700', '40a02077-95ec-4d31-9ad6-2c14643918ba', '41cc5939-36e1-4f22-8eeb-262778407dd7', '41e9670d-c2b5-4a35-bba3-db17870e030b', '421ac68b-c2d8-42b3-bf1b-cf9c29b19d88', '42b3072a-2045-4812-9e8c-fd77c8d23d57', '434a34fc-408f-41e1-aef0-f3ed86e2fe37', '4474c201-161f-42bf-bb51-b45203750fc6', '4530aa8c-6cc9-48cc-b545-4b54b4dcf4eb', '45a4554d-64bd-4b2d-b9c7-c08fd98761c8', '45b2f6eb-d7fe-42e0-869c-1b7ddacce985', '47cde3ef-120d-479f-bd2e-c78fdef72e32', '485d03fe-64b7-409a-bfcd-411a3b7eb636', '48f141eb-c575-4422-b961-1c85b6d1256e', '48f75817-b41d-4763-9f49-ce474c433eaa', '4d379c18-d41b-4bd1-b47a-209c95a6583b', '4dcc62de-84cd-48b9-b5ca-e440576ca6f7', '4f3ed29c-f8c4-4ac7-84f2-ed7ec123dc56', '518b89a3-649f-48ae-978e-5714a976bada', '54949dad-2898-47c1-931e-89fe081d7f89', '58fcccdd-3d39-41fe-a967-95f1bd2dbfdb', '5959b65f-6770-4adb-bba6-864f439a6da5', '59c85d87-a464-4fd3-8009-45c05019b662', '59c8bdd7-d38c-4bd6-a965-383a45766b11', '5b85a1b1-4cc7-475e-8a42-182e1c8d3ca7', '5c8eb68e-cd05-4bc0-8aeb-62e8c9947e52', '5ec14033-272d-4df6-9936-ff9c7f7a2931', '5f647021-afe7-4c98-aefc-a88b26665583', '5fd06b11-781f-4218-8e81-4b7883adb788', '60799426-7bb0-46a1-a4b3-c8b2cbd628dc', '60d0dc6d-9add-4f45-b972-0fd0f71f0de1', '612f9441-8ad6-4556-9e12-1e0a2e49c3d2', '6368ff06-d6da-4c1a-bc9a-2e9deeac071e', '658084c6-3784-4344-ab6e-d6d558852857',
+];
+const HOUSE_VIDEO_SET = new Set(HOUSE_VIDEOS);
+const VIDEO_PATH_RE = /^(.*\/)?([^/]{8,})\.(mp4|webm|mov|m4v|mkv|ogg)(\?|#|$)/i;
+
+function videoForHashedId(id) {
+  const s = String(id || 'house');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return `/videos/houses/${HOUSE_VIDEOS[h % HOUSE_VIDEOS.length]}.mp4`;
+}
+
+function firstVideoUrl(l) {
+  const candidates = [l.video, l.video_url, ...(Array.isArray(l.images) ? l.images : [])];
+  for (const c of candidates) {
+    if (typeof c === 'string' && VIDEO_PATH_RE.test(c)) return c;
+  }
+  return '';
+}
+
+function isHouseListing(l) {
+  const cat = String(l.category || '');
+  const pt = String(l.property_type || '');
+  return l.listing_type === 'property' || cat === 'Houses & Real Estate' || cat === 'Real Estate' ||
+    /house|home|villa|apartment|property/i.test(pt) || /house|villa|apartment/i.test(cat);
+}
+
+// Make sure a listing's video points at a file that actually exists on the
+// server. Valid external clips (e.g. an owner's live DB row) are left intact;
+// a missing self-hosted house clip — or a house with no clip at all — is
+// swapped for a real, shippable one. Always drops the self-hosted .jpg posters
+// (they don't ship) so nothing every references an absent file.
+function ensurePlayableVideo(l) {
+  if (!l || !Array.isArray(l.images)) return l;
+  const joined = [l.video, l.video_url, ...l.images].filter(Boolean).join('|');
+  if (!isHouseListing(l) && !joined.includes('/videos/houses/')) return l;
+  const cur = firstVideoUrl(l);
+  const m = cur ? VIDEO_PATH_RE.exec(cur) : null;
+  const isLocalHouse = !!(m && m[1] === '/videos/houses/');
+  const broken = !cur || (isLocalHouse && !HOUSE_VIDEO_SET.has(m[2])) || (!m && cur.startsWith('/videos/'));
+  const good = broken ? videoForHashedId(l.property_id || l.id) : cur;
+  const kept = (l.images || []).filter((u) => {
+    if (typeof u !== 'string' || !u) return false;
+    if (u.startsWith('/videos/houses/')) return false; // seed videos + missing posters
+    return true;
+  });
+  if (!kept.includes(good)) kept.unshift(good);
+  return { ...l, video: good, video_url: good, images: kept };
+}
+
+export const SHOWROOM_LISTINGS = HOUSES_LISTINGS.map(ensurePlayableVideo);
 
 // Real-world coordinates for every seeded property listing so showroom cards can
 // render a map preview and the details page map can skip geocoding lookups.
@@ -198,7 +256,7 @@ function normalizeDbRow(row) {
   for (const v of [row.video, row.video_url]) {
     if (v && typeof v === 'string' && !images.includes(v)) images.push(v);
   }
-  return {
+  return ensurePlayableVideo({
     ...row,
     // Vehicle/product specs are stored in the `specifications` JSONB column
     // (model_year, engine, transmission, seating_capacity, doors, etc.).
@@ -212,7 +270,7 @@ function normalizeDbRow(row) {
     rating_count: row.rating_count || 0,
     favorite_count: row.favorite_count || 0,
     price: Number(row.price) || 0,
-  };
+  });
 }
 
 function readDBCache() {
