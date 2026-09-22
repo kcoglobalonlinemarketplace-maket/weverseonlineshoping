@@ -77,7 +77,7 @@ function openListingVideoModal(listing) {
         </div>
         <button type="button" data-vt-close class="shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer" aria-label="Close">✕</button>
       </div>
-      <video src="${escapeHtml(video)}" poster="${escapeHtml(poster)}" controls autoplay playsinline preload="auto" class="vt-modal-video"></video>
+      <video src="${escapeHtml(video)}" poster="${escapeHtml(poster)}" controls muted loop autoplay playsinline preload="auto" class="vt-modal-video"></video>
       <a href="/product/${encodeURIComponent(pid)}" class="inline-flex items-center gap-2 mt-3 text-xs font-bold text-blue-300 hover:text-blue-200 transition">
         View full listing <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
       </a>

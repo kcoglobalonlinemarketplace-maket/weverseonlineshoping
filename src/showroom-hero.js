@@ -125,7 +125,7 @@ function videoCardHtml(listing) {
   return `
     <a href="/product/${pid}" class="kco-video-card">
       <div class="kco-video-media">
-        <video src="${esc(video)}" poster="${esc(poster)}" muted loop playsinline preload="metadata" class="kco-video-el" data-detail-href="/product/${pid}" aria-label="${esc(listing.title || '')}">
+        <video src="${esc(video)}" poster="${esc(poster)}" muted loop autoplay playsinline webkit-playsinline preload="metadata" class="kco-video-el" data-detail-href="/product/${pid}" aria-label="${esc(listing.title || '')}">
           <source src="${esc(video)}">
         </video>
         <div class="kco-video-bigplay"><span class="kco-video-playcircle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
@@ -142,41 +142,17 @@ function videoCardHtml(listing) {
     </a>`;
 }
 
-// Play/pause a video card's <video> when it scrolls into view (desktop), and
-// let taps toggle play on mobile instead of losing the tap to the link alone.
+// Keep every video-tour card playing forever (muted + loop are set on the
+// tag itself). No pause-on-exit, no scroll-stopping: a clip that finishes
+// simply restarts.
 function wireVideoCards(section) {
-  const io = ('IntersectionObserver' in window)
-    ? new IntersectionObserver((entries) => {
-        for (const en of entries) {
-          const el = en.target;
-          if (!el || typeof el.play !== 'function') continue;
-          if (en.isIntersecting) {
-            el.play().catch(() => {});
-          } else {
-            try { el.pause(); } catch {}
-          }
-        }
-      }, { rootMargin: '120px' })
-    : null;
-
   section.querySelectorAll('.kco-video-el').forEach((vd) => {
-    // Tapping the video toggles play/pause, but still lets the surrounding
-    // anchor open details when the video is NOT playing.
-    vd.addEventListener('click', (e) => {
-      if (vd.paused) {
-        vd.play().catch(() => {});
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
-    if (io) io.observe(vd);
+    vd.muted = true;
+    vd.loop = true;
+    vd.autoplay = true;
+    vd.playsInline = true;
+    vd.play().catch(() => {});
   });
-
-  // Keep the observer reference so the section can be replaced without leaking.
-  Object.defineProperty(section, '_kcoVideoIO', { value: io, configurable: true });
-  if (!('_kcoVideoCleanup' in section)) {
-    Object.defineProperty(section, '_kcoVideoCleanup', { value: () => io && io.disconnect(), configurable: true });
-  }
 }
 
 function videoSection() {
@@ -229,7 +205,7 @@ function videoSection() {
   // Pause sidebar work whenever the whole page is hidden so background scans
   // never keep playing hidden videos.
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) sec.querySelectorAll('.kco-video-el').forEach(v => { try { v.pause(); } catch {} });
+    if (!document.hidden) sec.querySelectorAll('.kco-video-el').forEach(v => { try { v.play().catch(() => {}); } catch {} });
   });
 
   requestAnimationFrame(() => wireVideoCards(sec));
