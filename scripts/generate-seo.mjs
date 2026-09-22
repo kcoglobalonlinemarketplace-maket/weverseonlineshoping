@@ -13,17 +13,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildSitemap, buildFeed, buildIndex, collectHubs } from '../shared/seo-builders.mjs';
 import { rowId } from '../shared/seo-builders.mjs';
+import { MAIN_URL, MAIN_ANON_KEY } from '../shared/supabase-env.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 
-const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
-const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
-
 async function fetchFromDb() {
   const { createClient } = await import('@supabase/supabase-js');
-  const client = createClient(SUPABASE_URL, ANON_KEY, {
+  const client = createClient(MAIN_URL, MAIN_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data, error } = await client

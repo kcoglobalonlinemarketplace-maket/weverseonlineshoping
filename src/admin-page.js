@@ -28,7 +28,7 @@ const DEFAULT_BRAND_SLOGAN = 'GLOBAL SHOPPING â€¢ WORLDWIDE DELIVERY';
 
 // Supabase edge function that proxies AI providers server-side so API keys
 // never leave the server or appear in browser network calls.
-const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
+const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_MAIN_URL || import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL || 'https://mzgrjwvwzgqgivwmlkno.supabase.co').replace(/\/$/, '');
 const AI_FN_URL = import.meta.env.DEV
   ? '/_supabase/functions/v1/ai-admin-assistant'
   : `${SUPABASE_BASE_URL}/functions/v1/ai-admin-assistant`;

@@ -11,9 +11,7 @@
 
 import { CATEGORY_HUBS, slugify, cleanText, escAttr } from '../shared/seo-builders.mjs';
 import { hubCategoryFor, hubCountryFor } from '../shared/seo-builders.mjs';
-
-const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
-const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
+import { MAIN_URL, MAIN_ANON_KEY } from '../shared/supabase-env.mjs';
 
 let cache = { at: 0, rows: null };
 
@@ -21,7 +19,7 @@ async function fetchRows() {
   const now = Date.now();
   if (cache.rows && now - cache.at < 10 * 60 * 1000) return cache.rows;
   const { createClient } = await import('@supabase/supabase-js');
-  const client = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+  const client = createClient(MAIN_URL, MAIN_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data, error } = await client
     .from('showroom_listings')
     .select('id, property_id, title, price, currency, availability_status, images, category, subcategory, listing_type, city, state, country, zip_code, updated_at')
@@ -159,7 +157,7 @@ ${relNext ? `<link rel="next" href="${escAttr(relNext)}">` : ''}
 <footer>
   <div class="wrap">Weverse Online Shop — worldwide marketplace. Prices in USD. Secure checkout, buyer protection, tracked delivery worldwide.</div>
 </footer>
-<script>(function(){try{if(window.__wv_tracked){return}window.__wv_tracked=true;var t=new Date().toISOString().slice(0,10);var d=(window.screen&&window.screen.width<768)?'mobile':'desktop';setTimeout(function(){fetch('https://wttnvwpoqmbxryivcerf.supabase.co/rest/v1/visitor_analytics',{method:'POST',headers:{'apikey':'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa','Authorization':'Bearer sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa','Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({visit_date:t,page_views:1,unique_visitors:1,device_type:d})}).catch(function(){})},1200)}catch(e){}})();</script>
+<script>(function(){try{if(window.__wv_tracked){return}window.__wv_tracked=true;var t=new Date().toISOString().slice(0,10);var d=(window.screen&&window.screen.width<768)?'mobile':'desktop';setTimeout(function(){fetch('${MAIN_URL}/rest/v1/visitor_analytics',{method:'POST',headers:{'apikey':'${MAIN_ANON_KEY}','Authorization':'Bearer ${MAIN_ANON_KEY}','Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({visit_date:t,page_views:1,unique_visitors:1,device_type:d})}).catch(function(){})},1200)}catch(e){}})();</script>
 </body>
 </html>
 `;

@@ -24,24 +24,23 @@
  *
  * Live inserts require the Supabase service-role key (anonymous INSERT is
  * blocked by row-level security):
- *   env WEVERSE_SERVICE_ROLE_KEY=...  (or SUPABASE_SERVICE_ROLE_KEY)
+ *   env SUPABASE_MAIN_SERVICE_ROLE_KEY=...
+ *   (legacy fallbacks accepted: WEVERSE_SERVICE_ROLE_KEY / SUPABASE_SERVICE_ROLE_KEY)
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import { MAIN_URL, MAIN_ANON_KEY, MAIN_SERVICE_ROLE_KEY } from '../shared/supabase-env.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
-const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
 const SITE_URL = 'https://weverseonlineshop.com';
 const TABLE = 'showroom_listings';
 
-const SERVICE_ROLE_KEY =
-  process.env.WEVERSE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const SERVICE_ROLE_KEY = MAIN_SERVICE_ROLE_KEY;
 
 const ILLUSTRATIVE_NOTE =
   'ILLUSTRATIVE LISTING — Demonstration entry for the Weverse online marketplace showcase. ' +
@@ -548,14 +547,14 @@ async function getClient(useServiceRole) {
   const slot = useServiceRole ? 'svc' : 'anon';
   if (clients[slot]) return clients[slot];
   const { createClient } = await import('@supabase/supabase-js');
-  const key = useServiceRole ? SERVICE_ROLE_KEY : ANON_KEY;
+  const key = useServiceRole ? SERVICE_ROLE_KEY : MAIN_ANON_KEY;
   if (useServiceRole && !SERVICE_ROLE_KEY) {
     throw new Error(
       'Publish requires the Supabase Service Role key (anonymous INSERT is blocked by RLS). ' +
         'Provide it as env WEVERSE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY.',
     );
   }
-  const client = createClient(SUPABASE_URL, key, {
+  const client = createClient(MAIN_URL, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   clients[slot] = client;

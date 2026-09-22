@@ -5,11 +5,11 @@ import { videoToFrameDataUrls, isVideoFile } from './video-frames.js';
 
 
 const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1']);
-const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
+const SUPABASE_BASE_URL = (import.meta.env.VITE_SUPABASE_MAIN_URL || import.meta.env.VITE_SUPABASE_URL || 'https://mzgrjwvwzgqgivwmlkno.supabase.co').replace(/\/$/, '');
 const AI_FUNCTION_URL = LOCAL_DEV_HOSTS.has(window.location.hostname)
   ? '/_supabase/functions/v1/ai-admin-assistant'
   : `${SUPABASE_BASE_URL}/functions/v1/ai-admin-assistant`;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_MAIN_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
 const AUTO_EXECUTE_DEVELOPER_ACTIONS = true;
 const PRODUCT_IMAGE_BUCKET = 'product-images';
 const MAX_PENDING_UPLOADS = 24;

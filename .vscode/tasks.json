@@ -34,7 +34,7 @@
 			"args": [
 				"-NoProfile",
 				"-Command",
-				"$headers = @{ apikey = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa'; Authorization = 'Bearer sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa' }; Invoke-RestMethod -Uri 'https://wttnvwpoqmbxryivcerf.supabase.co/rest/v1/site_settings?select=homepage_banner_image,homepage_banner_alt,updated_at&limit=1' -Headers $headers -Method Get | ConvertTo-Json -Depth 5"
+				"$headers = @{ apikey = 'sb_publishable_SqmJ1R-a-_0CYzuVbS1c7w_FSSIfEsX'; Authorization = 'Bearer sb_publishable_SqmJ1R-a-_0CYzuVbS1c7w_FSSIfEsX' }; Invoke-RestMethod -Uri 'https://mzgrjwvwzgqgivwmlkno.supabase.co/rest/v1/site_settings?select=homepage_banner_image,homepage_banner_alt,updated_at&limit=1' -Headers $headers -Method Get | ConvertTo-Json -Depth 5"
 			],
 			"isBackground": false,
 			"problemMatcher": [],

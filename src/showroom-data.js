@@ -264,6 +264,7 @@ export function loadDBListings() {
           .from('showroom_listings')
           .select(LIST_COLUMNS)
           .eq('is_active', true)
+          .eq('listing_type', 'property')
           .order('created_at', { ascending: false }),
         DB_FETCH_TIMEOUT_MS
       );
@@ -273,7 +274,7 @@ export function loadDBListings() {
       // were saved locally (while the database was unavailable) still show up on
       // the store. Database rows win on duplicate IDs.
       const dbIds = new Set(rows.map(row => row.property_id));
-      for (const row of listLocalShowroomListings().filter(item => item.is_active !== false)) {
+      for (const row of listLocalShowroomListings().filter(item => item.listing_type === 'property' && item.is_active !== false)) {
         if (row && row.property_id && !dbIds.has(row.property_id) && isKeepableProduct(row)) { dbIds.add(row.property_id); rows.push(row); }
       }
       if (ok) {
@@ -359,11 +360,11 @@ export function getAllListings() {
   const seen = new Set();
   const all = [];
   for (const l of _dbListings) {
-    if (!l || !l.property_id || hidden.has(l.property_id)) continue;
+    if (!l || !l.property_id || l.listing_type !== 'property' || hidden.has(l.property_id)) continue;
     if (!seen.has(l.property_id)) { seen.add(l.property_id); all.push(l); }
   }
   for (const l of SHOWROOM_LISTINGS) {
-    if (!l || !l.property_id || hidden.has(l.property_id)) continue;
+    if (!l || !l.property_id || l.listing_type !== 'property' || hidden.has(l.property_id)) continue;
     if (!seen.has(l.property_id)) { seen.add(l.property_id); all.push(l); }
   }
   return all;

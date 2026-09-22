@@ -1,7 +1,15 @@
+// src/supabase-client.js — the single real Supabase client.
+// The app runs on ONE free-tier Supabase project (the main/app database):
+// application data, auth, RLS, storage and edge functions all live there.
+// No Turso, no local drop-in gateway.
+//
+// Export surface (kept for every page): SUPABASE_URL, ANON_KEY,
+// isSupabaseConfigured, supabase, getSessionKey.
+
 import { createClient } from '@supabase/supabase-js';
 
-const DEFAULT_SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
+const DEFAULT_SUPABASE_URL = 'https://mzgrjwvwzgqgivwmlkno.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_SqmJ1R-a-_0CYzuVbS1c7w_FSSIfEsX';
 
 function pickFirstNonEmpty(...values) {
   for (const value of values) {
@@ -14,15 +22,21 @@ const runtimeConfig = globalThis?.__KCO_RUNTIME_CONFIG__ || {};
 const env = import.meta.env || {};
 
 export const SUPABASE_URL = pickFirstNonEmpty(
+  env.VITE_SUPABASE_MAIN_URL,
   env.VITE_SUPABASE_URL,
+  runtimeConfig.VITE_SUPABASE_MAIN_URL,
   runtimeConfig.VITE_SUPABASE_URL,
+  globalThis?.VITE_SUPABASE_MAIN_URL,
   globalThis?.VITE_SUPABASE_URL,
   DEFAULT_SUPABASE_URL,
 );
 
 export const ANON_KEY = pickFirstNonEmpty(
+  env.VITE_SUPABASE_MAIN_ANON_KEY,
   env.VITE_SUPABASE_ANON_KEY,
+  runtimeConfig.VITE_SUPABASE_MAIN_ANON_KEY,
   runtimeConfig.VITE_SUPABASE_ANON_KEY,
+  globalThis?.VITE_SUPABASE_MAIN_ANON_KEY,
   globalThis?.VITE_SUPABASE_ANON_KEY,
   DEFAULT_SUPABASE_ANON_KEY,
 );
@@ -38,7 +52,7 @@ function createSafeClient() {
     const noop = () => Promise.resolve({ data: null, error: { message: CONFIG_ERROR_MESSAGE } });
     const chainable = () => ({ select: chainable, insert: noop, update: noop, delete: noop, eq: chainable, neq: chainable, order: chainable, limit: chainable, maybeSingle: noop, single: noop, then: (resolve) => resolve({ data: null, error: { message: CONFIG_ERROR_MESSAGE } }) });
 
-    console.error('[Supabase] Missing configuration. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    console.error('[Supabase] Missing configuration. Set VITE_SUPABASE_MAIN_URL and VITE_SUPABASE_MAIN_ANON_KEY (or VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).');
 
     return {
       from: () => chainable(),
@@ -73,3 +87,5 @@ export function getSessionKey() {
   }
   return key;
 }
+
+export function getSupabase() { return supabase; }

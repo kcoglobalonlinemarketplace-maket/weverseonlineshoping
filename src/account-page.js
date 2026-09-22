@@ -5,8 +5,8 @@ import { requestNotificationPermission, onForegroundMessage } from './firebase-c
 import { trackEvent } from './analytics.js';
 import { getCountryByCode, COUNTRIES, searchCountries } from './country-data.js';
 
-const SUPPORT_AI_URL = `${(import.meta.env.VITE_SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '')}/functions/v1/customer-ai-chat`;
-const SUPPORT_AI_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPPORT_AI_URL = `${(import.meta.env.VITE_SUPABASE_MAIN_URL || import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL || 'https://mzgrjwvwzgqgivwmlkno.supabase.co').replace(/\/$/, '')}/functions/v1/customer-ai-chat`;
+const SUPPORT_AI_KEY = import.meta.env.VITE_SUPABASE_MAIN_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || ANON_KEY || '';
 
 /* ── Instant human-like AI reply for customer support messages ── */
 async function getSupportAiReply(prompt) {

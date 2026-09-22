@@ -18,9 +18,7 @@
 
 import { fetchCatalog, auditCatalog, auditListing, buildImprovements, renderedTitle, renderedMetaDescription, listingTitle, locationOf, priceNum, availabilityInfo, rowId, SITE_URL, SITE_NAME } from '../shared/seo-audit.mjs';
 import { escXml } from '../shared/seo-builders.mjs';
-
-const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
-const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
+import { MAIN_URL, MAIN_ANON_KEY } from '../shared/supabase-env.mjs';
 
 let cache = { at: 0, report: null };
 
@@ -410,7 +408,7 @@ function renderProductView(report, audit, listing) {
 
 async function resolveFullListing(id) {
   const { createClient } = await import('@supabase/supabase-js');
-  const client = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+  const client = createClient(MAIN_URL, MAIN_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data } = await client
     .from('showroom_listings')
     .select('*')
@@ -446,7 +444,7 @@ async function applyRegeneration(id, listing, jwt) {
   }
 
   const { createClient } = await import('@supabase/supabase-js');
-  const client = createClient(SUPABASE_URL, ANON_KEY, {
+  const client = createClient(MAIN_URL, MAIN_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: `Bearer ${jwt}` } },
   });

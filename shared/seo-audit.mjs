@@ -15,14 +15,12 @@
 // descriptions, prices, reviews, addresses or availability.
 
 import { rowId, cleanText, escXml, slugify } from './seo-builders.mjs';
+import { MAIN_URL, MAIN_ANON_KEY } from './supabase-env.mjs';
 
 export { rowId };
 
 export const SITE_URL = 'https://weverseonlineshop.com';
 export const SITE_NAME = 'Weverse Online Shop';
-
-const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
-const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
 
 export const CATALOG_COLUMNS = [
   'id', 'property_id', 'listing_type', 'category', 'subcategory', 'title',
@@ -37,7 +35,7 @@ export const CATALOG_COLUMNS = [
 // ── Real-data catalog fetch (mirrors sitemap.xml.js with richer columns) ──
 export async function fetchCatalog(limit = 5000) {
   const { createClient } = await import('@supabase/supabase-js');
-  const client = createClient(SUPABASE_URL, ANON_KEY, {
+  const client = createClient(MAIN_URL, MAIN_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data, error } = await client

@@ -44,112 +44,87 @@ All 18 SECURITY DEFINER functions in the public schema get `SET search_path = pu
 -- 1. FIX FUNCTION SEARCH PATH MUTABLE (18 SECURITY DEFINER functions)
 -- ============================================================================
 
-ALTER FUNCTION IF EXISTS public.bulk_upsert_showroom_listings(p_data jsonb) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.cleanup_old_rate_limits() SET search_path = public;
-ALTER FUNCTION IF EXISTS public.generate_tracking_number(courier_code text) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.handle_order_status_change() SET search_path = public;
-ALTER FUNCTION IF EXISTS public.is_current_user_admin() SET search_path = public;
-ALTER FUNCTION IF EXISTS public.is_super_admin() SET search_path = public;
-ALTER FUNCTION IF EXISTS public.log_admin_activity(p_user_id uuid, p_action text, p_entity_type text, p_entity_id text, p_details jsonb) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.prevent_admin_escalation() SET search_path = public;
-ALTER FUNCTION IF EXISTS public.protect_is_admin() SET search_path = public;
-ALTER FUNCTION IF EXISTS public.protect_support_message_admin_flag() SET search_path = public;
-ALTER FUNCTION IF EXISTS public.record_search(p_query text, p_result_count integer, p_session_key text) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.smart_search_fts(p_query text, p_limit integer) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.smart_search_fuzzy(p_query text, p_limit integer) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.smart_search_partial(p_query text, p_limit integer) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.smart_search_quick(p_query text, p_limit integer) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.smart_search_trending(p_limit integer) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.sync_search_index() SET search_path = public;
-ALTER FUNCTION IF EXISTS public.sync_search_index_force(r public.showroom_listings) SET search_path = public;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'bulk_upsert_showroom_listings') THEN ALTER FUNCTION public.bulk_upsert_showroom_listings(p_data jsonb) SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'cleanup_old_rate_limits') THEN ALTER FUNCTION public.cleanup_old_rate_limits() SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'generate_tracking_number') THEN ALTER FUNCTION public.generate_tracking_number(courier_code text) SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'handle_order_status_change') THEN ALTER FUNCTION public.handle_order_status_change() SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'is_current_user_admin') THEN ALTER FUNCTION public.is_current_user_admin() SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'is_super_admin') THEN ALTER FUNCTION public.is_super_admin() SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'log_admin_activity') THEN ALTER FUNCTION public.log_admin_activity(p_user_id uuid, p_action text, p_entity_type text, p_entity_id text, p_details jsonb) SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'prevent_admin_escalation') THEN ALTER FUNCTION public.prevent_admin_escalation() SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'protect_is_admin') THEN ALTER FUNCTION public.protect_is_admin() SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'protect_support_message_admin_flag') THEN ALTER FUNCTION public.protect_support_message_admin_flag() SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'record_search') THEN ALTER FUNCTION public.record_search(p_query text, p_result_count integer, p_session_key text) SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'smart_search_fts') THEN ALTER FUNCTION public.smart_search_fts(p_query text, p_limit integer) SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'smart_search_fuzzy') THEN ALTER FUNCTION public.smart_search_fuzzy(p_query text, p_limit integer) SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'smart_search_partial') THEN ALTER FUNCTION public.smart_search_partial(p_query text, p_limit integer) SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'smart_search_quick') THEN ALTER FUNCTION public.smart_search_quick(p_query text, p_limit integer) SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'smart_search_trending') THEN ALTER FUNCTION public.smart_search_trending(p_limit integer) SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'sync_search_index') THEN ALTER FUNCTION public.sync_search_index() SET search_path = public; END IF; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'sync_search_index_force') THEN ALTER FUNCTION public.sync_search_index_force(r public.showroom_listings) SET search_path = public; END IF; END $$;
 
 -- ============================================================================
--- 2. ADD PUBLIC SELECT RLS POLICIES ON UNDERLYING TABLES
--- (Required before switching views to security_invoker so anon can still read)
+-- 2, 3 & 6. RLS POLICIES ON UNDERLYING TABLES + HARDENING + CLEANUP
+-- (Each table is guarded with to_regclass so this migration is safe whether
+--  the tables came from repo migrations or were created out-of-band.)
 -- ============================================================================
 
--- payment_gateways: public can read active gateways only
-DROP POLICY IF EXISTS "public_read_active_gateways" ON public.payment_gateways;
-CREATE POLICY "public_read_active_gateways"
-  ON public.payment_gateways FOR SELECT
-  TO anon, authenticated
-  USING (is_active = true);
+DO $rls$
+BEGIN
+  IF to_regclass('public.payment_gateways') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "public_read_active_gateways" ON public.payment_gateways';
+    EXECUTE 'DROP POLICY IF EXISTS "admin_insert_gateways" ON public.payment_gateways';
+    EXECUTE 'DROP POLICY IF EXISTS "admin_read_all_gateways" ON public.payment_gateways';
+    EXECUTE 'CREATE POLICY "public_read_active_gateways" ON public.payment_gateways FOR SELECT TO anon, authenticated USING (is_active = true)';
+    EXECUTE 'CREATE POLICY "admin_insert_gateways" ON public.payment_gateways FOR INSERT TO authenticated WITH CHECK (is_current_user_admin())';
+  END IF;
 
--- site_settings: public can read all settings (non-sensitive config only)
-DROP POLICY IF EXISTS "public_read_site_settings" ON public.site_settings;
-CREATE POLICY "public_read_site_settings"
-  ON public.site_settings FOR SELECT
-  TO anon, authenticated
-  USING (true);
+  IF to_regclass('public.site_settings') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "public_read_site_settings" ON public.site_settings';
+    EXECUTE 'DROP POLICY IF EXISTS "admin_insert_site_settings" ON public.site_settings';
+    EXECUTE 'CREATE POLICY "public_read_site_settings" ON public.site_settings FOR SELECT TO anon, authenticated USING (true)';
+    EXECUTE 'CREATE POLICY "admin_insert_site_settings" ON public.site_settings FOR INSERT TO authenticated WITH CHECK (is_current_user_admin())';
+  END IF;
 
--- supplier_integrations: public can read active+approved suppliers only
-DROP POLICY IF EXISTS "public_read_active_suppliers" ON public.supplier_integrations;
-CREATE POLICY "public_read_active_suppliers"
-  ON public.supplier_integrations FOR SELECT
-  TO anon, authenticated
-  USING (is_active = true AND is_approved = true);
-
--- ============================================================================
--- 3. HARDEN INSERT POLICIES WITH WITH CHECK CLAUSES
--- ============================================================================
-
--- payment_gateways: admin insert must verify admin status in WITH CHECK
-DROP POLICY IF EXISTS "admin_insert_gateways" ON public.payment_gateways;
-CREATE POLICY "admin_insert_gateways"
-  ON public.payment_gateways FOR INSERT
-  TO authenticated
-  WITH CHECK (is_current_user_admin());
-
--- site_settings: admin insert must verify admin status in WITH CHECK
-DROP POLICY IF EXISTS "admin_insert_site_settings" ON public.site_settings;
-CREATE POLICY "admin_insert_site_settings"
-  ON public.site_settings FOR INSERT
-  TO authenticated
-  WITH CHECK (is_current_user_admin());
-
--- supplier_integrations: admin insert must verify admin status in WITH CHECK
-DROP POLICY IF EXISTS "admin_insert_suppliers" ON public.supplier_integrations;
-CREATE POLICY "admin_insert_suppliers"
-  ON public.supplier_integrations FOR INSERT
-  TO authenticated
-  WITH CHECK (is_current_user_admin());
+  IF to_regclass('public.supplier_integrations') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "public_read_active_suppliers" ON public.supplier_integrations';
+    EXECUTE 'DROP POLICY IF EXISTS "admin_insert_suppliers" ON public.supplier_integrations';
+    EXECUTE 'DROP POLICY IF EXISTS "admin_write_suppliers" ON public.supplier_integrations';
+    EXECUTE 'CREATE POLICY "public_read_active_suppliers" ON public.supplier_integrations FOR SELECT TO anon, authenticated USING (is_active = true AND is_approved = true)';
+    EXECUTE 'CREATE POLICY "admin_insert_suppliers" ON public.supplier_integrations FOR INSERT TO authenticated WITH CHECK (is_current_user_admin())';
+  END IF;
+END
+$rls$;
 
 -- ============================================================================
--- 4. SET security_invoker = true ON ALL VIEWS
--- (Makes views respect RLS on underlying tables instead of bypassing it)
+-- 4 & 5. VIEW HARDENING (only runs when the views exist — they were created
+-- out-of-band on the original project and are not part of this repo's schema)
 -- ============================================================================
 
-ALTER VIEW public.active_payment_gateways SET (security_invoker = true);
-ALTER VIEW public.public_payment_gateways SET (security_invoker = true);
-ALTER VIEW public.public_site_settings SET (security_invoker = true);
-ALTER VIEW public.public_supplier_integrations SET (security_invoker = true);
+DO $view$
+BEGIN
+  IF to_regclass('public.active_payment_gateways') IS NOT NULL THEN
+    ALTER VIEW public.active_payment_gateways SET (security_invoker = true);
+    EXECUTE 'REVOKE ALL ON public.active_payment_gateways FROM anon, authenticated';
+    EXECUTE 'GRANT SELECT ON public.active_payment_gateways TO anon, authenticated';
+  END IF;
 
--- ============================================================================
--- 5. REVOKE OVER-PERMISSIVE GRANTS AND APPLY LEAST PRIVILEGE ON VIEWS
--- ============================================================================
+  IF to_regclass('public.public_payment_gateways') IS NOT NULL THEN
+    ALTER VIEW public.public_payment_gateways SET (security_invoker = true);
+    EXECUTE 'REVOKE ALL ON public.public_payment_gateways FROM anon, authenticated';
+    EXECUTE 'GRANT SELECT ON public.public_payment_gateways TO authenticated';
+  END IF;
 
--- active_payment_gateways: SELECT only for anon + authenticated
-REVOKE ALL ON public.active_payment_gateways FROM anon, authenticated;
-GRANT SELECT ON public.active_payment_gateways TO anon, authenticated;
+  IF to_regclass('public.public_site_settings') IS NOT NULL THEN
+    ALTER VIEW public.public_site_settings SET (security_invoker = true);
+    EXECUTE 'REVOKE ALL ON public.public_site_settings FROM anon, authenticated';
+    EXECUTE 'GRANT SELECT ON public.public_site_settings TO anon, authenticated';
+  END IF;
 
--- public_payment_gateways: exposes sensitive config — authenticated only, SELECT only
-REVOKE ALL ON public.public_payment_gateways FROM anon, authenticated;
-GRANT SELECT ON public.public_payment_gateways TO authenticated;
-
--- public_site_settings: SELECT only for anon + authenticated
-REVOKE ALL ON public.public_site_settings FROM anon, authenticated;
-GRANT SELECT ON public.public_site_settings TO anon, authenticated;
-
--- public_supplier_integrations: SELECT only for anon + authenticated
-REVOKE ALL ON public.public_supplier_integrations FROM anon, authenticated;
-GRANT SELECT ON public.public_supplier_integrations TO anon, authenticated;
-
--- ============================================================================
--- 6. DROP INSECURE FOR ALL POLICY AND REDUNDANT POLICIES
--- ============================================================================
-
--- Drop FOR ALL policy on supplier_integrations (existing per-verb policies cover CRUD)
-DROP POLICY IF EXISTS "admin_write_suppliers" ON public.supplier_integrations;
-
--- Drop redundant duplicate SELECT policy on payment_gateways
-DROP POLICY IF EXISTS "admin_read_all_gateways" ON public.payment_gateways;
+  IF to_regclass('public.public_supplier_integrations') IS NOT NULL THEN
+    ALTER VIEW public.public_supplier_integrations SET (security_invoker = true);
+    EXECUTE 'REVOKE ALL ON public.public_supplier_integrations FROM anon, authenticated';
+    EXECUTE 'GRANT SELECT ON public.public_supplier_integrations TO anon, authenticated';
+  END IF;
+END
+$view$;

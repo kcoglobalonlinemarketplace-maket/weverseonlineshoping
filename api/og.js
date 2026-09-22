@@ -26,6 +26,7 @@ import { PRODUCT_EXTRA_LISTINGS } from '../src/products-extra.js';
 import { generateListingById } from '../src/catalog.js';
 import { productVideo, productPoster } from '../shared/product-media.mjs';
 import { findRelatedListings } from '../shared/listing-lookup.mjs';
+import { MAIN_URL, MAIN_ANON_KEY } from '../shared/supabase-env.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_NAME = 'Weverse Online Shop';
@@ -34,7 +35,7 @@ const FALLBACK_IMG = '/fallback.svg';
 // Invisible visitor beacon — writes one row per page load to Supabase
 // visitor_analytics with the anon key (INSERT policy is public; SELECT is
 // admin-only, so counts are visible solely in the admin Analytics panel).
-const VISITOR_BEACON = `<script>(function(){try{if(window.__wv_tracked){return}window.__wv_tracked=true;var t=new Date().toISOString().slice(0,10);var d=(window.screen&&window.screen.width<768)?'mobile':'desktop';setTimeout(function(){fetch('https://wttnvwpoqmbxryivcerf.supabase.co/rest/v1/visitor_analytics',{method:'POST',headers:{'apikey':'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa','Authorization':'Bearer sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa','Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({visit_date:t,page_views:1,unique_visitors:1,device_type:d})}).catch(function(){})},1200)}catch(e){}})();</script>`;
+const VISITOR_BEACON = `<script>(function(){try{if(window.__wv_tracked){return}window.__wv_tracked=true;var t=new Date().toISOString().slice(0,10);var d=(window.screen&&window.screen.width<768)?'mobile':'desktop';setTimeout(function(){fetch('${MAIN_URL}/rest/v1/visitor_analytics',{method:'POST',headers:{'apikey':'${MAIN_ANON_KEY}','Authorization':'Bearer ${MAIN_ANON_KEY}','Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({visit_date:t,page_views:1,unique_visitors:1,device_type:d})}).catch(function(){})},1200)}catch(e){}})();</script>`;
 
 let cachedHtml = null;
 

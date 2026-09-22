@@ -1355,8 +1355,8 @@ window._showToast=showToast;
 // homepage-promo.js is a Vite module that gets stripped during build, so we
 // load hero video slides directly via a plain fetch() here in app.js.
 (function loadHeroVideos(){
-  const SUPABASE_URL='https://wttnvwpoqmbxryivcerf.supabase.co';
-  const SUPABASE_ANON='sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
+  const SUPABASE_URL='https://mzgrjwvwzgqgivwmlkno.supabase.co';
+  const SUPABASE_ANON='sb_publishable_SqmJ1R-a-_0CYzuVbS1c7w_FSSIfEsX';
   function buildSlide(s,fallback){
     var video=String((s&&s.video)||'').trim();
     var poster=String((s&&s.poster)||'').trim();

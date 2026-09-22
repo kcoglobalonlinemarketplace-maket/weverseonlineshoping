@@ -3,8 +3,8 @@
 // fallback) and `persistSession:false` so it never touches localStorage and
 // never loads the whole table on a crawler request.
 
-const SUPABASE_URL = 'https://wttnvwpoqmbxryivcerf.supabase.co';
-const ANON_KEY = 'sb_publishable_X_6kXsJwApi7v7HwoC1xtA_igns4Rxa';
+import { MAIN_URL, MAIN_ANON_KEY } from './supabase-env.mjs';
+
 const SITE_URL = 'https://weverseonlineshop.com';
 
 let client = null;
@@ -12,7 +12,7 @@ let client = null;
 export async function getDbClient() {
   if (client) return client;
   const { createClient } = await import('@supabase/supabase-js');
-  client = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+  client = createClient(MAIN_URL, MAIN_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   return client;
 }
 

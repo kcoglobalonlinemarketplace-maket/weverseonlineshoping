@@ -6,7 +6,7 @@
 
 import { ANON_KEY, SUPABASE_URL } from './supabase-client.js';
 
-const SUPABASE_BASE_URL = (SUPABASE_URL || 'https://wttnvwpoqmbxryivcerf.supabase.co').replace(/\/$/, '');
+const SUPABASE_BASE_URL = (SUPABASE_URL || 'https://mzgrjwvwzgqgivwmlkno.supabase.co').replace(/\/$/, '');
 const FN_URL = import.meta.env.DEV
   ? '/_supabase/functions/v1/customer-ai-chat'
   : `${SUPABASE_BASE_URL}/functions/v1/customer-ai-chat`;
