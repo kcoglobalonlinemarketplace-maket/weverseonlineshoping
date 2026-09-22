@@ -1843,10 +1843,11 @@ function render(listing) {
   const imgs2 = [...rawImages];
   if (extraVideo && !imgs2.includes(extraVideo)) imgs2.unshift(extraVideo);
   const firstVideoIdx = imgs2.findIndex(u => isVideoUrl(u));
-  // Prefer a real photo as the hero so the page never opens on a blank
-  // auto-playing video. Only use a video hero when no photo is available.
+  // A video-tour listing is all about its video — lead with it, big and
+  // autoplaying. The first real photo only becomes the poster frame so the
+  // player never shows a blank/white box before playback starts.
   const firstImageIdx = imgs2.findIndex(u => !isVideoUrl(u));
-  const heroIdx = firstImageIdx >= 0 ? firstImageIdx : (firstVideoIdx >= 0 ? firstVideoIdx : 0);
+  const heroIdx = firstVideoIdx >= 0 ? firstVideoIdx : (firstImageIdx >= 0 ? firstImageIdx : 0);
   const heroMedia = imgs2[heroIdx];
   const heroIsVideo = isVideoUrl(heroMedia);
   const heroPoster = firstImageIdx >= 0 ? imgs2[firstImageIdx] : '';

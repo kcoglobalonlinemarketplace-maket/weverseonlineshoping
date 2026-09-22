@@ -764,7 +764,7 @@ function attachCardListeners(card, listing) {
   card.querySelector('.share-btn').addEventListener('click', (e) => { e.stopPropagation(); handleShare(listing); });
   card.querySelector('.cart-btn')?.addEventListener('click', (e) => { e.stopPropagation(); addToCart(listing); });
   card.querySelector('.details-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/product/${listing.property_id}`; });
-  card.querySelector('.video-tour-btn')?.addEventListener('click', (e) => { e.stopPropagation(); openListingVideoModal(listing); });
+  card.querySelector('.video-tour-btn')?.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/product/${listing.property_id || listing.id}`; });
 }
 
 async function handleBuyNow(listing) {
