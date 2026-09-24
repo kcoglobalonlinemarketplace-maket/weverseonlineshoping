@@ -1,7 +1,7 @@
 // Regenerates src/houses-data.js for the Weverse shop from the local houses
 // database export + compressed 720p videos. Also copies the compressed videos
-// and a poster frame per video into public/videos/houses/ so the live site
-// serves them at /videos/houses/<uuid>.mp4 (Vite publicDir -> web root).
+// into public/videos/houses/ so the live site serves them at
+// /videos/houses/<uuid>.mp4 (Vite publicDir -> web root).
 //
 // Usage (from repo root):
 //   node scripts/generate-houses-data.mjs [pathToExportJson]
@@ -9,7 +9,6 @@
 import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
-import { execFile } from 'child_process';
 
 const require = createRequire(import.meta.url);
 const REPO_ROOT = process.cwd();
@@ -18,7 +17,6 @@ const EXPORT_PATH = process.argv[2] || path.join(DATA_DIR, 'export.json');
 const VIDEOS_DIR = path.join(DATA_DIR, 'build/houses/videos');
 const OUT_JS = path.join(REPO_ROOT, 'src/houses-data.js');
 const OUT_VIDEOS = path.join(REPO_ROOT, 'public/videos/houses');
-const ffmpeg = require('ffmpeg-static');
 
 const exportData = JSON.parse(fs.readFileSync(EXPORT_PATH, 'utf8'));
 const properties = exportData.properties || [];
@@ -47,20 +45,6 @@ for (const m of media) {
 function esc(v) {
   return String(v ?? '')
     .replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/`/g, '\\`');
-}
-
-function genPoster(uuid) {
-  const mp4 = path.join(OUT_VIDEOS, uuid + '.mp4');
-  const poster = path.join(OUT_VIDEOS, uuid + '.jpg');
-  if (!fs.existsSync(mp4) || fs.existsSync(poster)) return;
-  return new Promise((resolve) => {
-    execFile(ffmpeg, ['-y', '-v', 'error', '-ss', '0.1', '-i', mp4, '-frames:v', '1', '-q:v', '4', poster], (err) => {
-      if (err || !fs.existsSync(poster) || fs.statSync(poster).size === 0) {
-        try { fs.rmSync(poster, { force: true }); } catch {}
-      }
-      resolve();
-    });
-  });
 }
 
 const houses = [];
@@ -100,7 +84,7 @@ for (const p of properties) {
     furnished: p.furnished || '',
     condition: p.condition || '',
     is_active: true,
-    images: [`/videos/houses/${fileBase}.mp4`, `/videos/houses/${fileBase}.jpg`],
+    images: [`/videos/houses/${fileBase}.mp4`],
     video: `/videos/houses/${fileBase}.mp4`,
     video_url: `/videos/houses/${fileBase}.mp4`,
     features,
@@ -123,7 +107,7 @@ for (const h of houses) {
 body += `];\n`;
 fs.writeFileSync(OUT_JS, body, 'utf8');
 
-// Copy compressed videos + generate posters
+// Copy compressed videos
 (async () => {
   let copied = 0;
   for (const f of doneVideos) {
@@ -135,11 +119,7 @@ fs.writeFileSync(OUT_JS, body, 'utf8');
       copied++;
     }
   }
-  // Posters sequential to keep ffmpeg CPU sane
-  const bases = [...doneVideos].filter(f => f.endsWith('.mp4')).map(f => f.replace('.mp4', ''));
-  for (const b of bases) await genPoster(b);
 
   console.log(`HOUSES_DATA: ${houses.length} houses written to ${OUT_JS}`);
   console.log(`VIDEOS: copied ${copied}/${doneVideos.size} mp4 -> public/videos/houses`);
-  console.log(`POSTERS: ${fs.readdirSync(OUT_VIDEOS).filter(f => f.endsWith('.jpg')).length} posters generated`);
 })();
