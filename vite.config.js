@@ -54,7 +54,6 @@ export default defineConfig(({ mode }) => {
           refundPolicy: resolve(__dirname, 'refund-policy.html'),
           shippingPolicy: resolve(__dirname, 'shipping-policy.html'),
           help: resolve(__dirname, 'help.html'),
-          adminAi: resolve(__dirname, 'admin-ai.html'),
           admin: resolve(__dirname, 'admin.html'),
           adminDomains: resolve(__dirname, 'admin-domains.html'),
           showroom: resolve(__dirname, 'showroom.html'),

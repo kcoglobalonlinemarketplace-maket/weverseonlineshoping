@@ -23,7 +23,6 @@ const ffmpeg = require('ffmpeg-static');
 const exportData = JSON.parse(fs.readFileSync(EXPORT_PATH, 'utf8'));
 const properties = exportData.properties || [];
 const media = exportData.media || exportData.property_media || [];
-const scans = exportData.scan_results || [];
 
 const videosRoot = fs.existsSync(VIDEOS_DIR) ? VIDEOS_DIR : null;
 if (!videosRoot) {
@@ -44,8 +43,6 @@ for (const m of media) {
   if (!mediaByProp.has(m.property_id)) mediaByProp.set(m.property_id, []);
   mediaByProp.get(m.property_id).push(m);
 }
-const scansByMedia = new Map();
-for (const s of scans) scansByMedia.set(s.media_id, s);
 
 function esc(v) {
   return String(v ?? '')
@@ -76,24 +73,9 @@ for (const p of properties) {
   const fileBase = String(vid.file_path || '').split('/').pop().replace(/\.mp4$/i, '');
   if (!fileBase || !doneVideos.has(fileBase + '.mp4')) continue;
 
-  // scan enrichment (title / description when a real AI scan exists)
-  const scan = scansByMedia.get(vid.id);
-  let title = '';
-  let description = '';
-  let features = [];
-  if (scan) {
-    try {
-      const r = JSON.parse(scan.result_json || '{}');
-      if (r.detected) {
-        title = r.detected.title_suggestion || '';
-        description = r.detected.description || '';
-        if (Array.isArray(r.detected.features)) features = r.detected.features;
-      }
-    } catch {}
-  }
-  title = title || p.title || `House ${houses.length + 1}`;
-  description = description || 'Video tour of this property. Contact us for full details and availability.';
-  if (!Array.isArray(features)) features = [];
+  const title = p.title || `House ${houses.length + 1}`;
+  const description = 'Video tour of this property. Contact us for full details and availability.';
+  const features = [];
 
   houses.push({
     property_id: propId,

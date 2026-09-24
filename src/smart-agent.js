@@ -271,7 +271,10 @@ function buildMsgPanelHtml(listing, isCompany) {
   const agentName = getAgentName(listing);
   const productTitle = isCompany ? 'General Support' : (listing?.title || 'Product');
   const productPrice = isCompany ? '' : (listing?.price || '');
-  const productImage = (!isCompany && listing?.images?.[0]) ? listing.images[0] : '';
+  const productImage = (!isCompany && (listing?.video || listing?.video_url || (Array.isArray(listing?.images) ? listing.images[0] : ''))) ? (listing.video || listing.video_url || (Array.isArray(listing.images) ? listing.images[0] : '')) : '';
+  const productStripMedia = productImage && /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(productImage.split('?')[0])
+    ? `<video src="${productImage}" muted playsinline preload="metadata" style="width:44px;height:44px;object-fit:cover;border-radius:8px"></video>`
+    : '';
   const avatarLetter = agentName.charAt(0);
   const suggestions = isCompany
     ? ['What products do you have?', 'How does shipping work?', 'What is your return policy?', 'How do I track my order?']
@@ -286,9 +289,9 @@ function buildMsgPanelHtml(listing, isCompany) {
       </div>
       <button class="kco-msg-head-close" id="kco-msg-close" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
-    ${productImage ? `
+    ${productStripMedia ? `
     <div class="kco-msg-product-strip">
-      <img src="${productImage}" alt="" onerror="this.style.display='none'">
+      ${productStripMedia}
       <span class="kco-msg-product-strip-title">${productTitle}</span>
       ${productPrice ? `<span class="kco-msg-product-strip-price">${productPrice}</span>` : ''}
     </div>` : ''}

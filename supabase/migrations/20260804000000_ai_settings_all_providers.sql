@@ -5,14 +5,12 @@
 ALTER TABLE public.ai_settings
   DROP CONSTRAINT IF EXISTS ai_settings_active_provider_check;
 
--- 2. Change active_provider default to 'gemini'
+-- 2. Change active_provider default to 'openai'
 ALTER TABLE public.ai_settings
-  ALTER COLUMN active_provider SET DEFAULT 'gemini';
+  ALTER COLUMN active_provider SET DEFAULT 'openai';
 
 -- 3. Add all new provider API key + model columns
 ALTER TABLE public.ai_settings
-  ADD COLUMN IF NOT EXISTS groq_key          text,
-  ADD COLUMN IF NOT EXISTS groq_model        text NOT NULL DEFAULT 'llama-3.3-70b-versatile',
   ADD COLUMN IF NOT EXISTS deepseek_key      text,
   ADD COLUMN IF NOT EXISTS deepseek_model    text NOT NULL DEFAULT 'deepseek-coder',
   ADD COLUMN IF NOT EXISTS mistral_key       text,
@@ -24,7 +22,7 @@ ALTER TABLE public.ai_settings
   ADD COLUMN IF NOT EXISTS together_key      text,
   ADD COLUMN IF NOT EXISTS together_model    text NOT NULL DEFAULT 'Qwen/Qwen2.5-Coder-32B-Instruct',
   ADD COLUMN IF NOT EXISTS openrouter_key    text,
-  ADD COLUMN IF NOT EXISTS openrouter_model  text NOT NULL DEFAULT 'google/gemini-2.0-flash-exp:free',
+  ADD COLUMN IF NOT EXISTS openrouter_model  text NOT NULL DEFAULT 'meta-llama/llama-3.3-70b-instruct:free',
   ADD COLUMN IF NOT EXISTS cerebras_key      text,
   ADD COLUMN IF NOT EXISTS cerebras_model    text NOT NULL DEFAULT 'llama3.3-70b',
   ADD COLUMN IF NOT EXISTS fireworks_key     text,
@@ -47,7 +45,6 @@ ALTER TABLE public.ai_settings
   ADD COLUMN IF NOT EXISTS ai21_model        text NOT NULL DEFAULT 'jamba-1.5-mini',
   ADD COLUMN IF NOT EXISTS lepton_key        text,
   ADD COLUMN IF NOT EXISTS lepton_model      text NOT NULL DEFAULT 'qwen2-5-coder-32b-instruct',
-  ADD COLUMN IF NOT EXISTS gemini_key        text,
   ADD COLUMN IF NOT EXISTS customer_ai_enabled  boolean NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS product_ai_enabled   boolean NOT NULL DEFAULT true,
   ADD COLUMN IF NOT EXISTS ai_code_assist       boolean NOT NULL DEFAULT true,
@@ -59,7 +56,6 @@ ALTER TABLE public.ai_settings
 
 -- Copy existing key values to new column names if they exist
 UPDATE public.ai_settings SET openai_key = openai_api_key WHERE openai_api_key IS NOT NULL AND openai_key IS NULL;
-UPDATE public.ai_settings SET gemini_key = gemini_api_key WHERE gemini_api_key IS NOT NULL AND gemini_key IS NULL;
 
 -- 5. Drop the old INSERT/UPDATE only policy and add a more permissive admin policy
 DROP POLICY IF EXISTS "admin_update_ai_settings"  ON public.ai_settings;
@@ -83,6 +79,6 @@ CREATE POLICY "admin_update_ai_settings" ON public.ai_settings
 
 -- 6. Ensure the singleton row exists (uses gen_random_uuid for id)
 INSERT INTO public.ai_settings (active_provider)
-SELECT 'gemini'
+SELECT 'openai'
 WHERE NOT EXISTS (SELECT 1 FROM public.ai_settings)
 RETURNING id;

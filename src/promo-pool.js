@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// promo-pool.js — Shared "real products" pool for the App Promotion banner
+// PROMO_POOL_CLEAN_MARKER_2026_SOURCE promo-pool.js — Shared "real products" pool for the App Promotion banner. UNIQUE SOURCE MARKER: "SOURCE_PROMO_POOL_IS_VIDEO_ONLY_7d3f9c2b"
 // and the Live Product Promotions (Featured Product Alerts).
 //
 // Only REAL, currently-visible products are ever used:
@@ -17,12 +17,17 @@ import {
 } from './showroom-data.js';
 import { getSupabase } from './supabase-lazy.js';
 
-const FALLBACK_IMG = '/fallback.svg';
-
 export function esc(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+export function isVideoUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (/^data:video\//i.test(url)) return true;
+  if (url.startsWith('blob:')) return false;
+  return /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
 }
 
 export function asImages(listing) {
@@ -31,9 +36,26 @@ export function asImages(listing) {
   return [];
 }
 
+export const PROMO_POOL_CFG_VERSION = 'SRC_PROMO_POOL_CFG_V9_2026_VIDEO_ONLY_MARKER_9f2c1b7e';
+
+// Video-only cover: products are videos only, so the cover is the first video
+// URL (or null). Never returns an image file / fallback placeholder.
 export function coverOf(listing) {
-  const imgs = asImages(listing);
-  return imgs[0] || FALLBACK_IMG;
+  const vids = asImages(listing).filter(isVideoUrl);
+  if (vids.length) return vids[0];
+  const videoUrl = listing.video || listing.video_url;
+  if (isVideoUrl(videoUrl)) return videoUrl;
+  return null;
+}
+
+// Shared video-only thumbnail markup. If the listing has a video, a <video> is
+// rendered; otherwise an empty "no video" tile. No <img>, no /fallback.svg.
+export function mediaThumbHtml(listing, className) {
+  const src = coverOf(listing);
+  if (src) {
+    return `<video src="${esc(src)}" muted playsinline preload="metadata" class="${esc(className)}"></video>`;
+  }
+  return `<div class="${esc(className || 'w-full h-full')} flex items-center justify-center bg-white/5"><i data-lucide="video-off" class="w-5 h-5 text-gray-500"></i></div>`;
 }
 
 // Real discount = the listing carries a higher real_price than its price.

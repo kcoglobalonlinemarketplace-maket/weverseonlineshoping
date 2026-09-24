@@ -3,10 +3,9 @@
 // Every share always carries the product's EXACT image, name, price and URL.
 
 const SITE_NAME = 'Weverse Online Shop';
-const FALLBACK_IMG = '/fallback.svg';
-// Featured showroom product image (W10000 — first property). Used as the OG
-// preview for the website link (baked into index.html by prerender-home.mjs
-// and mirrored here so the share sheet shows the same image).
+// Featured brand image (W10000 — first property). Used as the OG preview for
+// the website link (baked into index.html by prerender-home.mjs and mirrored
+// here so the share sheet shows the same image).
 const HOMEPAGE_OG_IMAGE = 'https://weverseonlineshop.com/brand-logo.jpeg';
 
 export function absUrl(src) {
@@ -16,20 +15,19 @@ export function absUrl(src) {
 }
 
 // True for blob/data/temp or video-file URLs that must never be used as the
-// share-card thumbnail — the preview needs the product's real, permanent photo.
-function isPermanentImage(src) {
+// share-card thumbnail — the preview needs the product's real, permanent media.
+function isPermanentMedia(src) {
   if (!src || typeof src !== 'string') return false;
   if (src.startsWith('blob:') || src.startsWith('data:')) return false;
-  if (/\.(mp4|webm|mov|avi|mkv)(\?|#|$)/i.test(src)) return false;
   return true;
 }
 
-// Best permanent main image: the first image that is a real persisted photo
-// (never a temp/blob/video). Falls back to the first listed item, then brand logo.
+// Best permanent share media: the first real persisted video (never a
+// temp/blob). Falls back to a persisted image, then the first listed item.
 function mainShareImage(listing) {
   const imgs = Array.isArray(listing?.images) ? listing.images : [];
-  const permanent = imgs.find(isPermanentImage);
-  return permanent || imgs[0] || FALLBACK_IMG;
+  const permanent = imgs.find(isPermanentMedia);
+  return permanent || imgs[0] || '';
 }
 
 // Permanent product video (mp4 and similar). Used to emit og:video so
@@ -65,7 +63,7 @@ function productMeta(listing) {
   const title = String(listing?.title || '').trim() || SITE_NAME;
   const price = formatSharePrice(listing);
   const url = productUrl(listing);
-  const image = absUrl(mainShareImage(listing));
+  const image = absUrl(mainShareImage(listing) || '');
   const video = absUrl(mainShareVideo(listing) || '');
   const text = price ? `${title} — ${price}` : title;
   const caption = price ? `${title}\n${price}\n${url}` : `${title}\n${url}`;
@@ -94,7 +92,7 @@ function primaryMediaSource(listing) {
   const video = mainShareVideo(listing);
   if (video) return absUrl(video);
   const img = mainShareImage(listing);
-  if (img && img !== FALLBACK_IMG) return absUrl(img);
+  if (img) return absUrl(img);
   return '';
 }
 
@@ -249,7 +247,7 @@ function buildSheet() {
       </div>
       <div class="p-5 space-y-5">
         <div class="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-2xl p-3">
-          <img id="share-product-img" class="w-20 h-20 rounded-xl object-cover border border-gray-200 shrink-0" alt="Product" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+          <div id="share-product-media" class="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 shrink-0 bg-gray-100 flex items-center justify-center"></div>
           <div class="min-w-0">
             <div id="share-product-title" class="text-sm font-bold text-gray-900 leading-snug line-clamp-2"></div>
             <div id="share-product-price" class="mt-1 text-sm font-black text-blue-600"></div>
@@ -274,7 +272,13 @@ function openSheet(meta) {
   if (!sheet) sheet = buildSheet();
   sheet.querySelector('#share-product-title').textContent = meta.title;
   sheet.querySelector('#share-product-price').textContent = meta.price || '';
-  sheet.querySelector('#share-product-img').src = meta.image;
+  const mediaEl = sheet.querySelector('#share-product-media');
+  const src = meta.video || ((meta.image && /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(meta.image.split('?')[0])) ? meta.image : '');
+  if (src) {
+    mediaEl.innerHTML = `<video src="${src}" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>`;
+  } else {
+    mediaEl.innerHTML = `<i data-lucide="video-off" class="w-7 h-7 text-gray-300"></i>`;
+  }
   sheet.querySelector('#share-platforms').innerHTML = PLATFORMS.map(platformBtn).join('');
   sheet.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -365,13 +369,16 @@ export function setProductMeta(listing) {
   };
   setMeta('property', 'og:title', meta.title);
   setMeta('property', 'og:description', desc);
-  setMeta('property', 'og:image', meta.image);
-  setMeta('property', 'og:image:secure_url', meta.image);
-  // Recommended preview dimensions so Facebook, WhatsApp, Instagram, TikTok and
-  // others render a large, properly balanced card from the permanent original image.
-  setMeta('property', 'og:image:width', '1200');
-  setMeta('property', 'og:image:height', '630');
-  setMeta('property', 'og:image:type', 'image/jpeg');
+  const ogImage = meta.image && !/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(meta.image.split('?')[0]) ? meta.image : '';
+  if (ogImage) {
+    // Recommended preview dimensions so Facebook, WhatsApp, Instagram, TikTok and
+    // others render a large, properly balanced card from the original photo.
+    setMeta('property', 'og:image', ogImage);
+    setMeta('property', 'og:image:secure_url', ogImage);
+    setMeta('property', 'og:image:width', '1200');
+    setMeta('property', 'og:image:height', '630');
+    setMeta('property', 'og:image:type', 'image/jpeg');
+  }
   setMeta('property', 'og:url', meta.url);
   setMeta('property', 'og:type', 'product');
   if (meta.video) {
@@ -381,7 +388,7 @@ export function setProductMeta(listing) {
   }
   setMeta('name', 'twitter:title', meta.title);
   setMeta('name', 'twitter:description', desc);
-  setMeta('name', 'twitter:image', meta.image);
+  if (ogImage) setMeta('name', 'twitter:image', ogImage);
   document.title = `${meta.title} | ${SITE_NAME}`;
 }
 

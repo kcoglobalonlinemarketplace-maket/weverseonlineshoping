@@ -1,4 +1,5 @@
 import { getSupabase } from './supabase-lazy.js';
+import { isVideoUrl } from './showroom-data.js';
 
 // ── Session key ────────────────────────────────────────────────
 function getSessionKey() {
@@ -132,6 +133,7 @@ function withTimeout(promise, ms) {
 
 function toCatalogResult(p) {
   const images = Array.isArray(p.images) ? p.images : [];
+  const video = (Array.isArray(p.images) ? p.images.find(u => isVideoUrl(u)) : '') || p.video || p.video_url || '';
   return {
     listing_id: p.property_id,
     property_id: p.property_id,
@@ -141,7 +143,7 @@ function toCatalogResult(p) {
     category: p.category,
     subcategory: p.subcategory,
     images,
-    thumbnail: images[0] || null,
+    thumbnail: video || null,
     price: Number(p.price) || 0,
     currency: p.currency || 'USD',
     entity_type: p.listing_type || 'product',

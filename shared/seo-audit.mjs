@@ -203,8 +203,8 @@ export function auditListing(listing, ctx = {}) {
   const loc = locationOf(listing);
   const price = priceNum(listing);
   const imgs = (Array.isArray(listing?.images) ? listing.images : [])
-    .filter((u) => typeof u === 'string' && u.startsWith('http'))
-    .filter((u) => !/\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i.test(u));
+    .filter((u) => typeof u === 'string' && (u.startsWith('http') || u.startsWith('data:video')))
+    .filter((u) => !/^data:(?!video\/)/i.test(u));
   const avail = availabilityInfo(listing);
   const url = `${SITE_URL}/product/${encodeURIComponent(id)}`;
   const checks = [];
@@ -258,12 +258,12 @@ export function auditListing(listing, ctx = {}) {
   checks.push(check('h3', 'H3 headings', hasHighlights ? 'ok' : 'warn', hasHighlights ? 'Page includes H3 sub-sections under Key Details (brand, specs, highlights).' : 'No sub-detail H3 content available because the listing has no features/specifications filled in.', 'Add real feature/specification fields in the admin (e.g. brand, size, colour, condition) — these drive the H3 sections.'));
 
   checks.push(imgs.length > 0
-    ? check('img_count', 'Product images', 'ok', `${imgs.length} image(s) with real URLs.`, 'No action needed.')
-    : check('img_count', 'Product images', 'error', 'No real product image — the page would fall back to the site logo.', 'Upload at least one genuine photo of the product in the admin.'));
+    ? check('img_count', 'Product media', 'ok', `${imgs.length} media item(s) with real URLs.`, 'No action needed.')
+    : check('img_count', 'Product media', 'error', 'No real product video or image — the page would render a "no video" tile.', 'Upload at least one genuine video of the product in the admin.'));
 
   checks.push(imgs.length > 0
-    ? check('img_alt', 'Image ALT text', 'ok', 'Hero image ALT is set from the product title; thumbnails use "title — image N".', 'No action needed.')
-    : check('img_alt', 'Image ALT text', 'warn', 'Nothing to describe without images.', 'Upload a product image.'));
+    ? check('img_alt', 'Media presence', 'ok', 'Hero media is set from the product data; thumbnails are video players.', 'No action needed.')
+    : check('img_alt', 'Media presence', 'warn', 'Nothing to render without video or image media.', 'Upload a product video.'));
 
   // ── Structured data (Product JSON-LD) ──
   const sdFields = [];

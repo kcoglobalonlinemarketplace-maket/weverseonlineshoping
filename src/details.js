@@ -22,8 +22,6 @@ import { agentButtonsHtml, wireAgentButtons, injectAgentStyles } from './smart-a
 import './trust-info-area.js';
 import './app-promo-banner.js';
 
-const FALLBACK_IMG = '/fallback.svg';
-
 // Temu-style attention animations (glow, pulse, blink, shimmer, live dots),
 // injected once per page load. All are pure CSS and only applied to elements
 // that carry real, data-driven content (real discount, real low stock, real
@@ -83,7 +81,7 @@ function reviewKeyHash(s) {
 }
 
 function safeRating(r) { return (typeof r === 'number' && !isNaN(r)) ? r.toFixed(1) : '0.0'; }
-function safeImages(imgs) { return (Array.isArray(imgs) && imgs.length > 0) ? imgs : [FALLBACK_IMG]; }
+function safeImages(imgs) { return (Array.isArray(imgs) && imgs.length > 0) ? imgs : []; }
 function isVideoUrl(url) {
   if (!url || typeof url !== 'string') return false;
   if (/^data:video\//i.test(url)) return true;
@@ -92,6 +90,55 @@ function isVideoUrl(url) {
   // a known type is NOT treated as video (it likely never survives a reload).
   if (url.startsWith('blob:')) return false;
   return /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
+}
+
+// ── Legacy vehicle/house galleries: video-only media ────────────────────────
+// Products are videos now. These renderers support truck/motorhome/house/car
+// listings whose media may be either videos or (pre-purge) stills; the stills
+// branch shows a "no video" tile instead of an <img> + /fallback.svg.
+function legacyThumbContentHtml(img, i) {
+  return isVideoUrl(img)
+    ? `<video src="${escapeHtml(img)}" muted preload="auto" playsinline class="w-20 h-16 object-cover"></video>`
+    : `<div class="w-20 h-16 flex items-center justify-center bg-gray-100"><i data-lucide="video-off" class="w-5 h-5 text-gray-300"></i></div>`;
+}
+
+function legacyHeroHtml(listing) {
+  const first = (Array.isArray(listing.images) && listing.images[0]) || listing.video || listing.video_url || '';
+  if (isVideoUrl(first)) {
+    return `<video id="hero-image" src="${escapeHtml(first)}" muted loop playsinline controls preload="metadata" class="w-full h-full object-contain"></video>`;
+  }
+  // Never render an <img> for a video-only catalog. A pure text fallback tile.
+  return `<div id="hero-image" class="w-full h-full flex items-center justify-center bg-gray-100 text-xs text-gray-400">No video</div>`;
+}
+
+function bindLegacyGallery(root, galleryLabels) {
+  const label = document.getElementById('gallery-label');
+  root.querySelectorAll('.gallery-thumb').forEach((thumb, i) => {
+    thumb.addEventListener('click', () => {
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
+      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-200'));
+      thumb.classList.add('active', 'border-blue-500');
+      thumb.classList.remove('border-gray-200');
+      const src = thumb.dataset.img;
+      const hero = document.getElementById('hero-image');
+      if (hero) {
+        const wrap = hero.closest('.hero-zoom');
+        if (isVideoUrl(src)) {
+          const v = document.createElement('video');
+          v.id = 'hero-image'; v.src = src; v.muted = true; v.loop = true; v.controls = true; v.playsInline = true; v.preload = 'metadata';
+          v.className = 'w-full h-full object-contain';
+          hero.replaceWith(v);
+        } else {
+          const d = document.createElement('div');
+          d.id = 'hero-image';
+          d.className = 'w-full h-full flex items-center justify-center bg-gray-100 text-xs text-gray-400';
+          d.textContent = 'No video';
+          hero.replaceWith(d);
+        }
+      }
+      if (label) label.textContent = galleryLabels[i] || `View ${i + 1}`;
+    });
+  });
 }
 
 // Draws the first available video frame as a poster image (data URL) so a video
@@ -1027,7 +1074,7 @@ function renderTruck(listing) {
   const imgs = safeImages(listing.images);
   const galleryThumbs = imgs.map((img, i) =>
     `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
-      <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${legacyThumbContentHtml(img, i)}
     </button>`
   ).join('');
 
@@ -1091,7 +1138,7 @@ function renderTruck(listing) {
 
       <!-- Main Image -->
       <div class="relative w-full h-[46vh] sm:h-[60vh] lg:h-[72vh] rounded-2xl overflow-hidden bg-gray-100 mb-3 hero-zoom flex items-center justify-center">
-        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-contain" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+        ${legacyHeroHtml(listing)}
         <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
       </div>
 
@@ -1131,18 +1178,7 @@ function renderTruck(listing) {
     </div>
   `;
 
-  const hero = document.getElementById('hero-image');
-  const label = document.getElementById('gallery-label');
-  root.querySelectorAll('.gallery-thumb').forEach((thumb, i) => {
-    thumb.addEventListener('click', () => {
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-200'));
-      thumb.classList.add('active', 'border-blue-500');
-      thumb.classList.remove('border-gray-200');
-      hero.src = thumb.dataset.img;
-      label.textContent = galleryLabels[i] || `View ${i + 1}`;
-    });
-  });
+  bindLegacyGallery(root, galleryLabels);
 
   document.getElementById('buy-now-btn').addEventListener('click', async () => {
     const user = await getCurrentUser();
@@ -1176,7 +1212,7 @@ function renderMotorhome(listing) {
   const imgs = safeImages(listing.images);
   const galleryThumbs = imgs.map((img, i) =>
     `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
-      <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${legacyThumbContentHtml(img, i)}
     </button>`
   ).join('');
 
@@ -1243,7 +1279,7 @@ function renderMotorhome(listing) {
 
       <!-- Main Image -->
       <div class="relative w-full h-[46vh] sm:h-[60vh] lg:h-[72vh] rounded-2xl overflow-hidden bg-gray-100 mb-3 hero-zoom flex items-center justify-center">
-        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-contain" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+        ${legacyHeroHtml(listing)}
         <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
       </div>
 
@@ -1283,18 +1319,7 @@ function renderMotorhome(listing) {
     </div>
   `;
 
-  const hero = document.getElementById('hero-image');
-  const label = document.getElementById('gallery-label');
-  root.querySelectorAll('.gallery-thumb').forEach((thumb, i) => {
-    thumb.addEventListener('click', () => {
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-200'));
-      thumb.classList.add('active', 'border-blue-500');
-      thumb.classList.remove('border-gray-200');
-      hero.src = thumb.dataset.img;
-      label.textContent = galleryLabels[i] || `View ${i + 1}`;
-    });
-  });
+  bindLegacyGallery(root, galleryLabels);
 
   document.getElementById('buy-now-btn').addEventListener('click', async () => {
     const user = await getCurrentUser();
@@ -1328,7 +1353,7 @@ function renderCar(listing) {
   const imgs = safeImages(listing.images);
   const galleryThumbs = imgs.map((img, i) =>
     `<button class="gallery-thumb rounded-lg overflow-hidden border-2 ${i === 0 ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
-      <img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+      ${legacyThumbContentHtml(img, i)}
     </button>`
   ).join('');
 
@@ -1390,7 +1415,7 @@ function renderCar(listing) {
 
       <!-- Main Image -->
       <div class="relative w-full h-[46vh] sm:h-[60vh] lg:h-[72vh] rounded-2xl overflow-hidden bg-gray-100 mb-3 hero-zoom flex items-center justify-center">
-        <img id="hero-image" src="${listing.images[0]}" alt="${listing.title}" class="w-full h-full object-contain" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+        ${legacyHeroHtml(listing)}
         <span id="gallery-label" class="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">${galleryLabels[0]}</span>
       </div>
 
@@ -1430,18 +1455,7 @@ function renderCar(listing) {
     </div>
   `;
 
-  const hero = document.getElementById('hero-image');
-  const label = document.getElementById('gallery-label');
-  root.querySelectorAll('.gallery-thumb').forEach((thumb, i) => {
-    thumb.addEventListener('click', () => {
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active', 'border-blue-500'));
-      root.querySelectorAll('.gallery-thumb').forEach(t => t.classList.add('border-gray-200'));
-      thumb.classList.add('active', 'border-blue-500');
-      thumb.classList.remove('border-gray-200');
-      hero.src = thumb.dataset.img;
-      label.textContent = galleryLabels[i] || `View ${i + 1}`;
-    });
-  });
+  bindLegacyGallery(root, galleryLabels);
 
   document.getElementById('buy-now-btn').addEventListener('click', async () => {
     const user = await getCurrentUser();
@@ -1860,7 +1874,7 @@ function render(listing) {
     const thumbContent = isVid
       ? `<video src="${escapeHtml(img)}" muted preload="auto" playsinline class="w-20 h-16 object-cover"></video>
          <div class="absolute inset-0 flex items-center justify-center"><div class="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center"><svg class="w-2.5 h-2.5 text-gray-800 ml-px" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
-      : `<img src="${escapeHtml(img)}" alt="View ${i + 1}" loading="lazy" class="w-20 h-16 object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`;
+      : `<div class="w-20 h-16 flex items-center justify-center bg-gray-100"><i data-lucide="video-off" class="w-5 h-5 text-gray-300"></i></div>`;
     return `<button class="gallery-thumb relative rounded-lg overflow-hidden border-2 ${i === heroIdx ? 'active border-blue-500' : 'border-gray-200'} shrink-0" data-img="${escapeHtml(img)}">
       ${thumbContent}
     </button>`;
@@ -2122,7 +2136,7 @@ function render(listing) {
         ${heroIsVideo
           ? `<video id="hero-image" src="${escapeHtml(heroMedia)}" ${heroPoster ? `poster="${escapeHtml(heroPoster)}"` : ''} autoplay muted loop playsinline preload="metadata" controls class="w-full h-full object-contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video>
              <div class="absolute inset-0 flex items-center justify-center pointer-events-none" style="display:${heroPoster ? 'none' : 'flex'}"><div class="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-7 h-7 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
-          : `<img id="hero-image" src="${heroMedia}" alt="${listing.title}" class="w-full h-full object-contain" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
+          : `<div id="hero-image" class="w-full h-full flex items-center justify-center bg-gray-100 text-xs text-gray-400">No video</div>`
         }
         <div class="absolute inset-0 flex items-end justify-between p-3 opacity-0 group-hover:opacity-100 transition pointer-events-none">
           <span class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-black/50 backdrop-blur px-3 py-1.5 rounded-full"><i data-lucide="expand" class="w-3.5 h-3.5"></i> Tap to enlarge</span>
@@ -2231,15 +2245,12 @@ function render(listing) {
           wrap.insertBefore(ov, wrap.firstChild?.nextSibling);
         }
       } else {
-        if (currentHero && currentHero.tagName === 'IMG') { currentHero.src = src; }
-        else {
-          const img = document.createElement('img');
-          img.id = 'hero-image'; img.src = src;
-          img.alt = listing.title; img.className = 'w-full h-full object-contain';
-          img.onerror = function() { this.onerror = null; this.src = FALLBACK_IMG; };
-          wrap.insertBefore(img, wrap.firstChild);
-          if (currentHero && currentHero.remove) currentHero.remove();
-        }
+        const d = document.createElement('div');
+        d.id = 'hero-image';
+        d.className = 'w-full h-full flex items-center justify-center bg-gray-100 text-xs text-gray-400';
+        d.textContent = 'No video';
+        wrap.insertBefore(d, wrap.firstChild);
+        if (currentHero && currentHero.remove) currentHero.remove();
       }
     });
   });
@@ -2330,7 +2341,7 @@ function render(listing) {
 
 // ── Full-screen gallery lightbox (tap to enlarge, swipe, arrows) ──────────
 function openGalleryLightbox(listing, imgs, opts) {
-  const images = (Array.isArray(imgs) && imgs.length ? imgs : [listing.images?.[0] || FALLBACK_IMG]).filter(Boolean);
+  const images = (Array.isArray(imgs) && imgs.length ? imgs : [listing.video || listing.video_url || (listing.images?.[0] || '')]).filter(Boolean);
   if (!images.length) return;
   const startIdx = (opts && Number.isInteger(opts.startIdx) && opts.startIdx >= 0 && opts.startIdx < images.length) ? opts.startIdx : 0;
   let current = startIdx;
@@ -2371,12 +2382,7 @@ function openGalleryLightbox(listing, imgs, opts) {
       if (isVideoUrl(src)) {
         mediaContainer.innerHTML = `<video src="${escapeHtml(src)}" ${auto ? 'autoplay ' : ''}controls playsinline preload="auto" class="lb-media max-w-full max-h-[70vh] object-contain rounded-lg"></video>`;
       } else {
-        const img = document.createElement('img');
-        img.src = src; img.alt = 'Gallery'; img.draggable = false;
-        img.className = 'lb-media max-w-full max-h-[70vh] object-contain';
-        img.onerror = function() { this.onerror = null; this.src = FALLBACK_IMG; };
-        mediaContainer.innerHTML = '';
-        mediaContainer.appendChild(img);
+        mediaContainer.innerHTML = `<div class="lb-media max-w-full max-h-[70vh] flex items-center justify-center text-gray-500 text-sm">No video</div>`;
       }
       mediaContainer.classList.remove('lb-fade');
       countEl.textContent = `${current + 1} / ${images.length}`;
@@ -2384,7 +2390,7 @@ function openGalleryLightbox(listing, imgs, opts) {
         const isVid = isVideoUrl(u);
         const thumbContent = isVid
           ? `<div class="w-full h-full flex items-center justify-center bg-gray-800"><svg class="w-3 h-3 text-white ml-px" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>`
-          : `<img src="${escapeHtml(u)}" class="w-full h-full object-cover" onerror="this.style.display='none'">`;
+          : `<div class="w-full h-full flex items-center justify-center bg-gray-800 text-gray-600"><i data-lucide="video-off" class="w-3 h-3"></i></div>`;
         return `<button type="button" data-i="${i}" class="relative w-12 h-9 rounded-lg overflow-hidden border-2 ${i === current ? 'border-blue-500' : 'border-transparent'}" aria-label="Item ${i + 1}">${thumbContent}</button>`;
       }).join('');
       thumbsEl.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => { current = parseInt(b.dataset.i, 10); render(); }));
@@ -3118,13 +3124,13 @@ async function loadRecommendations(listing) {
   if (items.length === 0) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
   grid.innerHTML = items.map(p => {
-    const img = (p.images && p.images[0]) || '/fallback.svg';
+    const img = (p.video || p.video_url || (p.images && p.images[0])) || '';
     const recIsVideo = /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(img.split('?')[0]) || /^data:video\//i.test(img);
     const pprice = typeof p.price === 'number' ? p.price : parseFloat(p.price || 0);
     const cur = p.currency || 'USD';
     const recMedia = recIsVideo
       ? `<video src="${escapeHtml(img)}" muted loop autoplay playsinline class="w-full h-full object-cover group-hover:scale-105 transition" preload="metadata"></video>`
-      : `<img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'">`;
+      : `<div class="w-full h-full flex items-center justify-center bg-gray-100"><i data-lucide="video-off" class="w-6 h-6 text-gray-300"></i></div>`;
     return `<a href="/details.html?id=${encodeURIComponent(p.property_id)}" class="block bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition group">
       <div class="aspect-square overflow-hidden bg-gray-100">${recMedia}</div>
       <div class="p-2"><p class="text-xs text-gray-900 font-bold truncate">${escapeHtml(p.title)}</p><p class="text-xs text-blue-500 font-bold mt-1">${cur} ${pprice.toLocaleString()}</p></div>

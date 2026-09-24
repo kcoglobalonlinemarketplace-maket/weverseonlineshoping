@@ -684,7 +684,7 @@ function renderSuggestionDropdown(dd,results){
   dd.innerHTML=results.map(function(r){
     const t=escapeHtmlAttr(r.title||"");
     const c=r.category?escapeHtmlAttr(r.category):"";
-    const thumb=r.thumbnail?'<img src="'+escapeHtmlAttr(r.thumbnail)+'" class="w-11 h-11 rounded-lg object-cover shrink-0" onerror="this.style.display=\'none\'">':'<div class="w-11 h-11 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-5 h-5 text-gray-400"></i></div>';
+    const thumb=r.thumbnail?(/\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(r.thumbnail.split('?')[0])||/^data:video\//i.test(r.thumbnail)?'<video src="'+escapeHtmlAttr(r.thumbnail)+'" muted playsinline preload="metadata" class="w-11 h-11 rounded-lg object-cover shrink-0"></video>':'<div class="w-11 h-11 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><i data-lucide="video-off" class="w-5 h-5 text-gray-400"></i></div>'):'<div class="w-11 h-11 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-5 h-5 text-gray-400"></i></div>';
     const price=r.price!=null?'<span class="text-sm font-bold text-blue-600 ml-auto">'+(r.currency||"USD")+" "+Number(r.price).toLocaleString()+"</span>":"";
     return '<button onclick="selectSuggestion(\''+t.replace(/'/g,"\\'")+'\')" class="w-full text-left px-4 py-3.5 text-[15px] text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition flex items-center gap-3 border-b border-gray-100 last:border-0">'+thumb+'<div class="flex-1 min-w-0"><p class="truncate font-semibold">'+t+"</p>"+(c?'<p class="text-xs text-gray-500 truncate">'+c+"</p>":"")+"</div>"+price+"</button>";
   }).join("");
@@ -767,11 +767,14 @@ function renderSearchResults(query,results,meta){
   if(hasResults){
     html+=`<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">`;
     results.forEach(function(r){
-      const img=r.thumbnail||(Array.isArray(r.images)&&r.images.length>0?r.images[0]:"");
+      const imgsArr=Array.isArray(r.images)?r.images:[];
+      const videoCover=imgsArr.find(function(u){return u&&/\.(mp4|webm|mov)(\?|#|$)/i.test(u);})||(r.video&&/\.(mp4|webm|mov)(\?|#|$)/i.test(r.video)?r.video:"")||(r.video_url&&/\.(mp4|webm|mov)(\?|#|$)/i.test(r.video_url)?r.video_url:"");
+      const img=videoCover||r.thumbnail||imgsArr[0]||"";
       const price=r.price!=null?(r.currency||"USD")+" "+Number(r.price).toLocaleString():"";
       const isSpecial=r.is_special_order||r.entity_type==="special_order";
       const typeBadge=isSpecial?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-blue-500/80 text-white border border-blue-400 z-10">Special Order</span>`:(r.entity_type?`<span class="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-white/90 text-blue-700 border border-blue-200 z-10">${escapeHtmlAttr(r.entity_type)}</span>`:"");
-      const imgHtml=img?`<img src="${escapeHtmlAttr(img)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'">`:`<div class="w-full h-full flex items-center justify-center"><i data-lucide="package" class="w-10 h-10 text-gray-700"></i></div>`;
+      const isVid=img&&/\.(mp4|webm|mov)(\?|#|$)/i.test(img);
+      const imgHtml=img?(isVid?`<video src="${escapeHtmlAttr(img)}" muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'"></video><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center shadow"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`:`<div class="w-full h-full flex items-center justify-center"><i data-lucide="video-off" class="w-10 h-10 text-gray-300"></i></div>`):`<div class="w-full h-full flex items-center justify-center"><i data-lucide="package" class="w-10 h-10 text-gray-700"></i></div>`;
       const deliveryInfo=isSpecial&&r.estimated_delivery_days?`<p class="text-[10px] text-gray-500 flex items-center gap-1"><i data-lucide="truck" class="w-3 h-3"></i>${r.estimated_delivery_days} days delivery</p>`:"";
       const brandText=r.brand?`<p class="text-[10px] text-gray-500 truncate">${escapeHtmlAttr(r.brand)}</p>`:"";
       const clickAction=isSpecial?`openSpecialOrderFromSearch('${escapeHtmlAttr(r.title||"").replace(/'/g,"\\'")}','${escapeHtmlAttr(r.brand||"").replace(/'/g,"\\'")}','${escapeHtmlAttr(r.category||"").replace(/'/g,"\\'")}',${r.price||0},'${escapeHtmlAttr(r.currency||"USD").replace(/'/g,"\\'")}')`:`openProductFromSearch('${escapeHtmlAttr(r.property_id||"").replace(/'/g,"\\'")}')`;

@@ -39,12 +39,10 @@ ALTER TABLE public.profiles
 -- ── 2. ai_settings (singleton) ───────────────────────────────
 CREATE TABLE IF NOT EXISTS public.ai_settings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  active_provider text NOT NULL DEFAULT 'openai' CHECK (active_provider IN ('openai','gemini','anthropic')),
+  active_provider text NOT NULL DEFAULT 'openai' CHECK (active_provider IN ('openai','anthropic')),
   openai_api_key text,
-  gemini_api_key text,
   anthropic_api_key text,
   openai_model text NOT NULL DEFAULT 'gpt-4o',
-  gemini_model text NOT NULL DEFAULT 'gemini-1.5-flash',
   anthropic_model text NOT NULL DEFAULT 'claude-3-5-sonnet-20241022',
   updated_at timestamptz NOT NULL DEFAULT now()
 );

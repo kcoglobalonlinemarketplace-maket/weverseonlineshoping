@@ -1,7 +1,7 @@
 import { supabase } from './supabase-client.js';
 import { getCurrentUser } from './auth.js';
 import { trackEvent } from './analytics.js';
-import { SHOWROOM_LISTINGS, findListingById, formatPrice, flagEmoji, getAllListings, loadDBListings, loadFullListingById } from './showroom-data.js';
+import { SHOWROOM_LISTINGS, findListingById, formatPrice, flagEmoji, getAllListings, loadDBListings, loadFullListingById, videoCoverOf } from './showroom-data.js';
 import { getTruckById } from './truck-data.js';
 import { getMotorhomeById } from './motorhome-data.js';
 import { getCarById } from './car-data.js';
@@ -17,7 +17,11 @@ function findProductById(id) {
   return PRODUCT_LOOKUP.find(l => l.property_id === id) || null;
 }
 
-const FALLBACK_IMG = '/fallback.svg';
+function videoThumbSrcHtml(listing) {
+  const src = videoCoverOf(listing);
+  return src ? `<video src="${String(src).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')}" class="w-full h-full object-cover" muted playsinline preload="metadata"></video>`
+    : `<div class="w-full h-full flex items-center justify-center bg-gray-50"><i data-lucide="video-off" class="w-5 h-5 text-gray-300"></i></div>`;
+}
 
 /* ── State ──────────────────────────────────────────────────── */
 let state = {
@@ -375,11 +379,10 @@ function renderStep1() {
       </h3>
       <div class="space-y-3">
         ${state.cartItems.map((item, i) => {
-          const cover = item.listing.images?.[0] || FALLBACK_IMG;
           return `
             <div class="flex items-center gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl">
               <div class="w-16 h-16 rounded-lg bg-gray-50 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
-                <img src="${cover}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
+                ${videoThumbSrcHtml(item.listing)}
               </div>
               <div class="flex-1 min-w-0">
                 <h4 class="text-sm font-bold text-gray-900 truncate">${item.listing.title}</h4>
@@ -705,11 +708,10 @@ function renderOrderSummary() {
       </h3>
       <div class="space-y-3 mb-4">
         ${state.cartItems.map(item => {
-          const cover = item.listing.images?.[0] || FALLBACK_IMG;
           return `
             <div class="flex items-center gap-3">
               <div class="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
-                <img src="${cover}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
+                ${videoThumbSrcHtml(item.listing)}
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-xs font-bold text-gray-900 truncate">${item.listing.title}</p>

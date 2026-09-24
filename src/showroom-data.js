@@ -144,6 +144,35 @@ export function flagEmoji(countryCode) {
   return String.fromCodePoint(...codePoints);
 }
 
+export function isVideoUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (/^data:video\//i.test(url)) return true;
+  if (url.startsWith('blob:')) return false;
+  return /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
+}
+
+// Video-only product cover. After the image purge, listings may carry videos in
+// video/video_url/images — return the first playable video or null. Never
+// produces an image placeholder.
+export function videoCoverOf(listing) {
+  if (!listing) return null;
+  const candidates = [listing.video, listing.video_url, ...(Array.isArray(listing.images) ? listing.images : [])];
+  for (const c of candidates) {
+    if (isVideoUrl(c)) return c;
+  }
+  return null;
+}
+
+// Shared video-only thumbnail markup. Renders a <video> when one exists,
+// otherwise an empty "no video" tile. No <img>, no /fallback.svg.
+export function videoThumbHtml(listing, className) {
+  const src = videoCoverOf(listing);
+  if (src) {
+    return `<video src="${String(src).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')}" muted playsinline preload="metadata" class="${String(className || '').replace(/"/g, '&quot;')}"></video>`;
+  }
+  return `<div class="${String(className || 'w-full h-full').replace(/"/g, '&quot;')} flex items-center justify-center bg-gray-100"><i data-lucide="video-off" class="w-5 h-5 text-gray-400"></i></div>`;
+}
+
 // Removes any AI branding, machine-generated phrases, and fake "Stock #STK-…"
 // codes from customer-visible listing text so everything reads like a real,
 // professional marketplace listing.

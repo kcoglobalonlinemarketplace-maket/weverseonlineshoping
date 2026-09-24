@@ -9,9 +9,7 @@ supabase
 # Local working artifacts — never uploaded to Vercel
 *.apk
 *.log
-scan-img
 bad-products.json
-products-scan.json
 renamed-products-report.csv
 fix-results.json
 polish-results.json

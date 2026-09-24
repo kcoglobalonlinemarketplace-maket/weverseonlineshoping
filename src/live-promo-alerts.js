@@ -21,14 +21,13 @@ import {
   loadPromoPool,
   getPromoPool,
   esc,
-  coverOf,
+  mediaThumbHtml,
   priceHtml,
   pickPromoProducts,
   loadPromoSettings,
   DEFAULT_PROMO_SETTINGS,
 } from './promo-pool.js';
 
-const FALLBACK_IMG = '/fallback.svg';
 const HOST = () => document.getElementById('live-promo-alerts');
 const DISMISSED_KEY = 'kco_live_promo_dismissed_v1';
 
@@ -62,7 +61,7 @@ function toastHtml(l) {
   return `
     <div class="live-promo-toast pointer-events-auto flex items-center gap-3 bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-black/15 p-3 pr-4 cursor-pointer hover:shadow-black/25 transition" data-promo-id="${esc(l.property_id || l.id || '')}">
       <div class="shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-gray-100">
-        <img src="${esc(coverOf(l))}" alt="${title}" loading="lazy" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+        ${mediaThumbHtml(l, 'w-full h-full object-cover')}
       </div>
       <div class="min-w-0 flex-1">
         <p class="text-[9px] font-black uppercase tracking-wider text-blue-600 flex items-center gap-1">

@@ -3,14 +3,11 @@
 
 1. Lock provider assignments:
    - OpenAI = Customer Support AI (only)
-   - Gemini = Admin & Developer AI (only)
-   - Anthropic removed entirely
-
+   - Both admin and developer AI modes now route through the customer chat's
+     configured provider instead of a dedicated admin/developer provider.
 2. Add architecture_enforced flag to ai_settings so the edge functions
    can verify the architecture is locked.
-
-3. Add columns for architecture metadata: customer_provider, admin_provider,
-   developer_provider — all hardcoded via a trigger, not user-editable.
+3. Retain columns for backward compatibility.
 */
 
 -- ── Add architecture columns to ai_settings ─────────────────
@@ -20,10 +17,10 @@ BEGIN
     ALTER TABLE ai_settings ADD COLUMN customer_provider text DEFAULT 'openai';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ai_settings' AND column_name = 'admin_provider') THEN
-    ALTER TABLE ai_settings ADD COLUMN admin_provider text DEFAULT 'gemini';
+    ALTER TABLE ai_settings ADD COLUMN admin_provider text DEFAULT 'openai';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ai_settings' AND column_name = 'developer_provider') THEN
-    ALTER TABLE ai_settings ADD COLUMN developer_provider text DEFAULT 'gemini';
+    ALTER TABLE ai_settings ADD COLUMN developer_provider text DEFAULT 'openai';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ai_settings' AND column_name = 'architecture_locked') THEN
     ALTER TABLE ai_settings ADD COLUMN architecture_locked boolean DEFAULT true;
@@ -33,8 +30,8 @@ END $$;
 -- ── Lock the architecture: set defaults on existing rows ─────
 UPDATE ai_settings SET
   customer_provider = 'openai',
-  admin_provider = 'gemini',
-  developer_provider = 'gemini',
+  admin_provider = 'openai',
+  developer_provider = 'openai',
   architecture_locked = true
 WHERE architecture_locked IS NULL OR architecture_locked = true;
 
@@ -51,8 +48,8 @@ AS $$
 BEGIN
   -- Force the architecture to stay locked
   NEW.customer_provider = 'openai';
-  NEW.admin_provider = 'gemini';
-  NEW.developer_provider = 'gemini';
+  NEW.admin_provider = 'openai';
+  NEW.developer_provider = 'openai';
   NEW.architecture_locked = true;
   RETURN NEW;
 END;

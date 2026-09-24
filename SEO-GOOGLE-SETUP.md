@@ -24,9 +24,9 @@ search queries to products (`/category/houses`, `/category/cars`, `/category/
 trucks`, `/category/phones`, `/category/electronics`) and every country hub
 with at least one listing (e.g. `/country/united-states`).
 
-On a machine without network it falls back to `products-scan.json`; on total
-failure it keeps the previous generated files so a build never ships an empty
-sitemap. Verify locally with:
+On a machine without network (or with the catalog unavailable) it keeps the
+previous generated files so a build never ships an empty sitemap. Verify
+locally with:
 
 ```
 node scripts/generate-seo.mjs

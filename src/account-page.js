@@ -69,7 +69,25 @@ async function deliverSupportAiReply(reply) {
   }
 }
 
-const FALLBACK_IMG = '/fallback.svg';
+function isVideoUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (/^data:video\//i.test(url)) return true;
+  if (url.startsWith('blob:')) return false;
+  return /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(url);
+}
+
+// Video-only thumb for order media. listings store playback video in
+// listing_image now that images are purged; never render an <img> / fallback.
+function orderThumbHtml(urlOrListing, className) {
+  const url = typeof urlOrListing === 'string'
+    ? urlOrListing
+    : (urlOrListing?.video || urlOrListing?.video_url || (Array.isArray(urlOrListing?.images) ? urlOrListing.images[0] : ''));
+  const src = isVideoUrl(url) ? url : '';
+  if (src) {
+    return `<video src="${String(src).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')}" class="${className}" muted playsinline preload="metadata"></video>`;
+  }
+  return `<div class="${className} flex items-center justify-center bg-gray-50"><i data-lucide="video-off" class="w-4 h-4 text-gray-300"></i></div>`;
+}
 
 /* ── Navigation config ─────────────────────────────────────── */
 const NAV_SECTIONS = [
@@ -466,7 +484,7 @@ function renderHome() {
         ${recentOrders.length === 0 ? `<p class="text-sm text-gray-500 text-center py-8">No orders yet. <a href="/" class="text-blue-600 font-bold">Start shopping</a></p>` : recentOrders.map(o => `
           <div class="flex items-center gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl mb-2 hover:border-blue-200 transition cursor-pointer" onclick="navigateTo('orders')">
             <div class="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden shrink-0 ring-1 ring-blue-500/10">
-              <img src="${o.listing_image || FALLBACK_IMG}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
+              ${orderThumbHtml(o.listing_image, 'w-full h-full object-cover')}
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-bold text-gray-900 truncate">${o.listing_title}</p>
@@ -703,7 +721,6 @@ function renderOrders() {
 }
 
 function renderOrderCard(order, expanded) {
-  const cover = order.listing_image || FALLBACK_IMG;
   const evs = state.events[order.order_number] || [];
   const isExpanded = expanded === order.order_number;
   return `
@@ -711,7 +728,7 @@ function renderOrderCard(order, expanded) {
       <div class="p-4 sm:p-5 cursor-pointer hover:bg-blue-50 transition" onclick="toggleOrder('${order.order_number}')">
         <div class="flex items-start gap-4">
           <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-gray-50 shrink-0 ring-1 ring-blue-500/10">
-            <img src="${cover}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
+            ${orderThumbHtml(order.listing_image, 'w-full h-full object-cover')}
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-2 mb-1">
@@ -839,7 +856,7 @@ function renderTracking() {
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden ring-1 ring-blue-500/10">
-                  <img src="${o.listing_image || FALLBACK_IMG}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'">
+                  ${orderThumbHtml(o.listing_image, 'w-full h-full object-cover')}
                 </div>
                 <div><h3 class="text-sm font-bold text-gray-900">${o.listing_title}</h3><p class="text-xs text-gray-500 font-mono">${o.order_number}</p></div>
               </div>
@@ -905,7 +922,7 @@ function renderCart() {
             const item = window.SHOWROOM_LISTINGS?.find(l => l.property_id === id);
             if (!item) return '';
             return `<div class="flex items-center gap-3 p-3 bg-gray-50 border border-blue-100 rounded-xl">
-              <div class="w-14 h-14 rounded-lg bg-gray-50 overflow-hidden shrink-0"><img src="${item.images?.[0] || FALLBACK_IMG}" class="w-full h-full object-cover" onerror="this.src='${FALLBACK_IMG}'"></div>
+              <div class="w-14 h-14 rounded-lg bg-gray-50 overflow-hidden shrink-0">${orderThumbHtml(item, 'w-full h-full object-cover')}</div>
               <div class="flex-1 min-w-0"><h3 class="text-sm font-bold text-gray-900 truncate">${item.title}</h3><p class="text-xs text-amber-600 font-bold">${item.price} ${item.currency}${qty > 1 ? ` × ${qty}` : ''}</p></div>
               <button onclick="removeFromCart('${id}')" class="btn-press p-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg transition relative overflow-hidden"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>`;
@@ -1573,12 +1590,12 @@ async function renderWishlist() {
         ${items.map(w => {
           const p = w.showroom_listings;
           if (!p) return '';
-          const img = (p.images && p.images[0]) || '/fallback.svg';
+          const img = (p.video || p.video_url || (p.images && p.images[0])) || '';
           const isVideoThumb = /\.(mp4|webm|mov|m4v|avi|mkv|ogv)(\?|#|$)/i.test(img.split('?')[0]) || /^data:video\//i.test(img);
           const price = typeof p.price === 'number' ? p.price : parseFloat(p.price || 0);
           const wishMedia = isVideoThumb
             ? `<video src="${escapeHtml(img)}" muted loop autoplay playsinline class="w-full h-full object-cover group-hover:scale-105 transition" preload="metadata"></video>`
-            : `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" onerror="this.src='/fallback.svg'">`;
+            : `<div class="w-full h-full flex items-center justify-center bg-gray-50"><i data-lucide="video-off" class="w-6 h-6 text-gray-300"></i></div>`;
           return `
             <div class="glass border border-blue-100 rounded-2xl overflow-hidden group">
               <div class="relative aspect-square overflow-hidden bg-gray-50">

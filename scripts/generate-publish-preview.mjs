@@ -34,12 +34,13 @@ function specsLine(row) {
 }
 
 const cards = rows.map((r) => {
-  const img = (Array.isArray(r.images) && r.images[0]) || (r.photos && r.photos[0]) || '';
+  const media = (Array.isArray(r.images) && r.images[0]) || (r.photos && r.photos[0]) || r.video || r.video_url || '';
+  const isVid = /\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i.test(media || '');
   const loc = r.product_location || [r.city, r.state, r.country].filter(Boolean).join(', ');
   const url = `https://weverseonlineshop.com/product/${r.property_id || r.sku || r.id}`;
   const type = r.listing_type || 'product';
   return `<a href="${url}" target="_blank" rel="noopener" class="group block bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden">
-  <div class="aspect-[4/3] w-full overflow-hidden bg-gray-100">${img ? `<img src="${img}" alt="${ (r.title || '').replace(/"/g, '&quot;') }" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">` : ''}</div>
+  <div class="aspect-[4/3] w-full overflow-hidden bg-gray-100">${media ? (isVid ? `<video src="${media}" muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'"></video>` : `<img src="${media}" alt="${ (r.title || '').replace(/"/g, '&quot;') }" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">`) : ''}</div>
   <div class="p-4">
     <div class="flex items-start justify-between gap-3">
       <span class="text-xl font-black text-gray-900">${money(r.price)}</span>

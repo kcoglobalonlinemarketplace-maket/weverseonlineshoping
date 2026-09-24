@@ -36,9 +36,11 @@ function money(n) {
   return '$' + Number(n).toLocaleString('en-US');
 }
 
-function imgUrl(row) {
+function mediaUrl(row) {
   const imgs = Array.isArray(row.images) ? row.images : [];
-  return imgs.find((u) => typeof u === 'string' && u.startsWith('http') && !/\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i.test(u)) || '';
+  const video = (typeof row.video_url === 'string' && row.video_url) || (typeof row.video === 'string' && row.video) || imgs.find((u) => typeof u === 'string' && /\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i.test(u)) || '';
+  if (video) return video;
+  return imgs.find((u) => typeof u === 'string' && u.startsWith('http')) || '';
 }
 
 function location(row) {
@@ -48,9 +50,10 @@ function location(row) {
 function card(row, siteUrl) {
   const id = row.property_id || row.id || row.sku || '';
   if (!id) return '';
-  const img = imgUrl(row);
+  const media = mediaUrl(row);
+  const thumb = media ? (/\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i.test(media) ? `<video src="${escAttr(media)}" muted loop autoplay playsinline preload="metadata" width="1200" height="900"></video>` : `<img src="${escAttr(media)}" alt="${escAttr(cleanText(row.title, 200))}" loading="lazy" decoding="async" width="1200" height="900">`) : `<div class="thumb-empty"><i data-lucide="video-off" class="w-8 h-8 text-gray-400"></i></div>`;
   return `<a class="card" href="${siteUrl}/product/${encodeURIComponent(id)}">
-  <div class="thumb">${img ? `<img src="${escAttr(img)}" alt="${escAttr(cleanText(row.title, 200))}" loading="lazy" decoding="async" width="1200" height="900">` : ''}</div>
+  <div class="thumb">${thumb}</div>
   <div class="card-body">
     <div class="price">${escAttr(money(row.price))}</div>
     <h3 class="title">${escAttr(cleanText(row.title, 200))}</h3>
@@ -116,8 +119,8 @@ ${relNext ? `<link rel="next" href="${escAttr(relNext)}">` : ''}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:26px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease;display:block}
   .card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.08)}
-  .thumb{aspect-ratio:4/3;background:#eef0f3;overflow:hidden}
-  .thumb img{width:100%;height:100%;object-fit:cover}
+  .thumb{aspect-ratio:4/3;background:#eef0f3;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block}
   .card-body{padding:14px 16px 16px}
   .price{font-size:20px;font-weight:900}
   .title{font-size:14px;font-weight:700;margin-top:6px;line-height:1.35}

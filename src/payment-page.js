@@ -1,4 +1,4 @@
-import { findListingById, formatPrice, flagEmoji, loadFullListingById } from './showroom-data.js';
+import { findListingById, formatPrice, flagEmoji, loadFullListingById, videoCoverOf } from './showroom-data.js';
 import { getTruckById } from './truck-data.js';
 import { getMotorhomeById } from './motorhome-data.js';
 import { getCarById } from './car-data.js';
@@ -12,7 +12,6 @@ import { detectCurrency, getCountryByCode, SUPPORTED_CURRENCIES } from './countr
 import { buildFallbackNotice, getActiveBankAccounts, getPaymentInstructions, getSupportedCurrenciesFromAccounts, loadPaymentSettings, resolveAccountForCountry } from './payment-settings.js';
 import { convertFromUSD, fmtLocal, preloadFx } from './fx.js';
 
-const FALLBACK_IMG = '/fallback.svg';
 const PRODUCT_LOOKUP = [...PRODUCT_LISTINGS, ...PRODUCT_EXTRA_LISTINGS];
 function findProductById(id) {
   return PRODUCT_LOOKUP.find(l => l.property_id === id) || null;
@@ -118,7 +117,7 @@ function spawnParticles() {
 spawnParticles();
 
 /* ── Render: Order summary card ────────────────────────────── */
-function renderOrderSummary(listing, cover, isProperty, selectedCurrency) {
+function renderOrderSummary(listing, isProperty, selectedCurrency) {
   const price = fmtLocal(convertFromUSD(listing.price, selectedCurrency), selectedCurrency);
   return `
     <div class="glass border border-blue-200 rounded-2xl p-5 mb-5 slide-up">
@@ -128,7 +127,7 @@ function renderOrderSummary(listing, cover, isProperty, selectedCurrency) {
       </div>
       <div class="flex gap-4">
         <div class="w-24 h-24 rounded-xl overflow-hidden bg-gray-50 shrink-0 ring-1 ring-blue-500/10">
-          <img src="${cover}" alt="${listing.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+          ${(() => { const v = videoCoverOf(listing); return v ? `<video src="${v}" class="w-full h-full object-cover" muted playsinline preload="metadata"></video>` : `<div class="w-full h-full flex items-center justify-center bg-gray-50"><i data-lucide="video-off" class="w-6 h-6 text-gray-300"></i></div>`; })()}
         </div>
         <div class="flex-1 min-w-0">
           <h4 class="text-sm font-bold text-gray-900 truncate">${listing.title}</h4>
@@ -618,7 +617,6 @@ async function init() {
   }
 
   const isProperty = listing.listing_type === 'property';
-  const cover = listing.images?.[0] || FALLBACK_IMG;
 
   // Load saved country from profile or localStorage
   let countryCode = getStoredCountry();
@@ -660,7 +658,7 @@ async function init() {
       <h1 class="text-2xl sm:text-3xl font-black text-gray-900 mb-2">Secure Checkout</h1>
       <p class="text-gray-500 text-sm mb-6">Complete your purchase using manual bank transfer. Upload your receipt after payment for verification.</p>
 
-      ${renderOrderSummary(listing, cover, isProperty, selectedCurrency)}
+      ${renderOrderSummary(listing, isProperty, selectedCurrency)}
 
       ${renderBankTransferMethod()}
 

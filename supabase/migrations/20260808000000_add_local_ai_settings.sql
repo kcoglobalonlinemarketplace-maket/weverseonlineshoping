@@ -11,5 +11,5 @@ ALTER TABLE public.ai_settings
 
 -- The singleton row keeps defaults even if it already exists.
 INSERT INTO public.ai_settings (active_provider)
-SELECT 'gemini'
+SELECT 'openai'
 WHERE NOT EXISTS (SELECT 1 FROM public.ai_settings);

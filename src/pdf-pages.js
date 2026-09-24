@@ -1,7 +1,7 @@
 // Renders every page of a PDF document into compressed JPEG data URLs so the
-// AI scanner can read ALL pages of an uploaded document (not just the first).
+// document can be read in full (not just the first page).
 // pdf.js is imported lazily so it is code-split out of the main bundle and
-// only downloaded when a PDF is actually scanned.
+// only downloaded when a PDF is actually opened.
 let _pdfjsPromise = null;
 async function getPdfjs() {
   if (!_pdfjsPromise) {

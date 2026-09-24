@@ -6,7 +6,6 @@ import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { isCatalogListingHidden } from './catalog-hidden-store.js';
 
 const CONTAINER_ID = 'kco-hero-rows';
-const FALLBACK_IMG = '/fallback.svg';
 
 const VEHICLE_CATEGORIES = new Set([
   'Cars', 'Cars & Vehicles', 'Trucks', 'Buses', 'Buses & Coaches', 'Motorhomes',
@@ -376,7 +375,7 @@ function heroStyles() {
 export function heroCardHtml(listing, kind, cardCls) {
   cleanListing(listing);
   const cls = cardCls || 'kco-hero-card';
-  const cover = listingVideoUrl(listing) || (listing.images && listing.images[0]) || FALLBACK_IMG;
+  const cover = listingVideoUrl(listing) || '';
   const poster = listingPoster(listing);
   const posterAttr = poster ? ` poster="${esc(poster)}"` : '';
   const pid = escapeHtmlAttr(listing.property_id || listing.id);
@@ -404,7 +403,7 @@ export function heroCardHtml(listing, kind, cardCls) {
         <div class="kco-hero-media">
           ${isVideoUrl(cover)
             ? `<video src="${esc(cover)}"${posterAttr} muted loop autoplay playsinline preload="metadata" class="kco-hero-media-video"></video><span class="kco-hero-video-badge"><i data-lucide="play" class="w-3 h-3"></i>Video Tour</span>`
-            : `<img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">`}
+            : `<div class="w-full h-full flex items-center justify-center bg-gray-100"><i data-lucide="video-off" class="w-8 h-8 text-gray-300"></i></div>`}
           <span class="kco-hero-type"><i data-lucide="home" class="w-3 h-3"></i>${esc(t)}</span>
           ${loc}
         </div>
@@ -427,7 +426,7 @@ export function heroCardHtml(listing, kind, cardCls) {
   chips = c.join('');
   const mediaHtml = isVideoUrl(cover)
     ? `<video src="${esc(cover)}"${posterAttr} muted loop autoplay playsinline preload="metadata" class="kco-hero-media-video"></video><span class="kco-hero-video-badge"><i data-lucide="play" class="w-3 h-3"></i>Video Tour</span>`
-    : `<img src="${esc(cover)}" alt="${esc(listing.title || '')}" loading="lazy">`;
+    : `<div class="w-full h-full flex items-center justify-center bg-gray-100"><i data-lucide="video-off" class="w-8 h-8 text-gray-300"></i></div>`;
   return `
       <a href="/details.html?id=${escapeHtmlAttr(pid)}" class="${cls}">
         <div class="kco-hero-media">

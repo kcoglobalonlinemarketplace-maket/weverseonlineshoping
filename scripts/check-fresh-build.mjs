@@ -2,8 +2,7 @@
 // STALE-BUILD GUARD.
 // Fails when any source file is NEWER than the built dist output - i.e. someone
 // edited src but did not rebuild before deploying. This is exactly the bug that
-// shipped a months-old General AI page (stale adminAi-*.js bundle committed
-// while src/admin-ai-page.js had moved on).
+// previously shipped a months-old page bundle while src had moved on.
 // Runs automatically at the end of `npm run build` and manually anytime via
 // `npm run guard:fresh`.
 import { readdirSync, statSync } from 'node:fs';
@@ -11,7 +10,7 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const SRC_DIRS = ['src'];
-const ROOT_HTML = ['index.html', 'admin.html', 'admin-ai.html'];
+const ROOT_HTML = ['index.html', 'admin.html'];
 
 let newestSrc = { t: 0, f: '' };
 const walk = (dir) => {

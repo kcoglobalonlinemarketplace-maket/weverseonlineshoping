@@ -12,16 +12,12 @@ dev-server.log
 .env*
 .aider*
 
-misc-test-scanner.mjs
-
 # Generated/scratch artifacts (never commit)
 *.log
 *.apk
 *.pid
 *.sql
-scan-img/
 bad-products.json
-products-scan.json
 renamed-products-report.csv
 tmp_*.txt
 _tmp_*

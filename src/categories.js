@@ -110,8 +110,8 @@ export function normalizeToMarketplaceCategory(raw) {
 // The customer homepage, showroom grid, category bar and search all show
 // HOUSES ONLY. These property chips drive the homepage category bar and the
 // card-level filtering in showroom-cards.js. The original MARKETPLACE_CATEGORIES
-// list above is NOT touched because the admin Products Manager and the AI
-// scanner (admin-page.js) still need it for product/vehicle listings.
+// list above is NOT touched because the admin Products Manager
+// still needs it for product/vehicle listings.
 export const PROPERTY_CATEGORIES = [
   { name: 'All Houses', icon: 'home', color: 'blue', keywords: ['house', 'home', 'real estate', 'property', 'villa', 'apartment', 'condo', 'mansion', 'townhouse', 'duplex', 'penthouse', 'bungalow', 'cottage', 'chalet', 'loft', 'studio', 'farm house', 'beach house', 'land', 'commercial property', 'hotel', 'resort', 'waterfront'] },
   { name: 'For Sale', icon: 'tag', color: 'emerald', keywords: ['for sale'] },

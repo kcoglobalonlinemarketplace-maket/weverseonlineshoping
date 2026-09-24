@@ -5,8 +5,8 @@
 //   public/products-index.json  — lightweight id/title/price index
 // The builders live in shared/seo-builders.mjs and are shared verbatim with
 // the live /sitemap.xml and /merchant-feed.xml endpoints so both can never
-// drift apart. Falls back to products-scan.json; on total failure it keeps
-// the previous generated files so a build can never ship an empty feed.
+// drift apart. On total failure it keeps the previous generated files so a
+// build can never ship an empty feed.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -34,29 +34,12 @@ async function fetchFromDb() {
   return (data || []).filter((r) => rowId(r));
 }
 
-function fetchFromFile() {
-  try {
-    const raw = fs.readFileSync(path.join(ROOT, 'products-scan.json'), 'utf8');
-    const arr = JSON.parse(raw);
-    return (Array.isArray(arr) ? arr : arr.listings || arr.products || []).filter((r) => rowId(r));
-  } catch {
-    return null;
-  }
-}
-
 async function main() {
   let listings = null;
   try {
     listings = await fetchFromDb();
   } catch (err) {
     console.warn('[generate-seo] DB fetch failed:', err && err.message ? err.message : err);
-  }
-  if (!listings || listings.length === 0) {
-    const fileList = fetchFromFile();
-    if (fileList && fileList.length > 0) {
-      console.warn(`[generate-seo] using products-scan.json fallback (${fileList.length} rows)`);
-      listings = fileList;
-    }
   }
   if (!listings || listings.length === 0) {
     console.warn('[generate-seo] no catalog available — keeping previous generated files');

@@ -3,12 +3,10 @@
 // No sign-in required. Answers questions about products, orders, shipping,
 // payments, refunds and store policies.
 //
-// NEVER fails to answer: it uses a stacked chain of FREE providers, each with
+// NEVER fails to answer: it uses a stacked chain of providers, each with
 // its own independent quota, so when one runs out the next one answers:
-//   1. Groq        (groq_key,             OpenAI-compatible, generous free)  — if a key is saved
-//   2. OpenRouter  (chat_openrouter_key,  OpenAI-compatible, 28+ free models) — if a key is saved
-//   3. Google Gemini (chat_gemini_key)     — the admin's chat key
-//   4. Pollinations (keyless, free)         — final safety net
+//   1. OpenRouter  (openrouter_key,  OpenAI-compatible, 28+ free models) — if a key is saved
+//   2. Pollinations (keyless, free)                                       — final safety net
 // The shopper is ALWAYS given a real, helpful AI answer that sounds like a
 // friendly human team member — never a raw error or a "rate limit" message.
 //
@@ -174,74 +172,11 @@ function pickIdentity(countryCode: string, language: string, seed: string): { na
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// FREE PROVIDER STACK — every provider has its own independent free quota, so
+// PROVIDER STACK — each provider has its own independent quota, so
 // the chain keeps answering even when individual providers are rate-limited.
 // ════════════════════════════════════════════════════════════════════════════
 
-// Real, widely-available Gemini models.
-const MODEL_FALLBACKS = [
-  'gemini-3-flash-preview',
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-lite',
-];
-
-function modelChain(settings: Record<string, unknown>): string[] {
-  const chain = new Set<string>();
-  const override = String(settings.customer_model_override || settings.chat_model_override || '').trim();
-  const preferred = override || String(settings.gemini_model || '').trim();
-  if (preferred) chain.add(preferred);
-  for (const m of MODEL_FALLBACKS) chain.add(m);
-  return [...chain];
-}
-
-async function callGemini(params: {
-  apiKey: string;
-  model: string;
-  systemPrompt: string;
-  message: string;
-  history: Array<{ role: string; content: string }>;
-  maxTokens?: number;
-}) {
-  const { apiKey, model, systemPrompt, message, history, maxTokens } = params;
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-  const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [
-    { role: 'user', parts: [{ text: systemPrompt }] },
-  ];
-  for (const item of history || []) {
-    const role = item?.role === 'assistant' ? 'model' : 'user';
-    const text = String(item?.content || '').trim();
-    if (!text) continue;
-    contents.push({ role, parts: [{ text }] });
-  }
-  contents.push({ role: 'user', parts: [{ text: message }] });
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents,
-      generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens || 900 },
-    }),
-  });
-
-  const raw = await res.text();
-  const data = raw ? JSON.parse(raw) : {};
-  if (!res.ok) {
-    const err = data?.error?.message || raw || `Gemini request failed (${res.status})`;
-    throw new Error(err);
-  }
-  const text = (data?.candidates?.[0]?.content?.parts || [])
-    .map((p: { text?: string }) => p?.text || '')
-    .join('\n')
-    .trim();
-  if (!text) throw new Error('Gemini returned an empty response.');
-  return { text, usage: data?.usageMetadata || null, model };
-}
-
-// OpenAI-compatible providers (Groq and OpenRouter share the same request shape).
+// OpenAI-compatible provider (OpenRouter shares the same request shape).
 async function callOpenAICompatible(params: {
   apiKey: string;
   baseUrl: string;
@@ -414,37 +349,15 @@ Deno.serve(async (req) => {
   }
 
   // ── RUN THE STACK ──────────────────────────────────────────────────────
-  // The customer chat shares the main Google Gemini key (gemini_key /
-  // gemini_api_key). We never rely on a column that doesn't exist — read the
-  // real, populated columns from ai_settings.
-  const geminiKey = String(settingsRow.gemini_key || settingsRow.gemini_api_key || settingsRow.openai_api_key || '').trim();
-  const groqKey = String(settingsRow.groq_key || '').trim();
   const openrouterKey = String(settingsRow.openrouter_key || '').trim();
 
   // Collect candidate calls in priority order (only those with a key/provider).
   const attempts: Array<() => Promise<{ text: string; provider: string; model: string }>> = [];
 
-  // 1. Groq (OpenAI-compatible) — if the site has a Groq key saved.
-  if (groqKey) {
-    for (const model of ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'allam-2-7b']) {
-      attempts.push(() => callOpenAICompatible({
-        apiKey: groqKey,
-        baseUrl: 'https://api.groq.com/openai/v1',
-        model,
-        systemPrompt,
-        message,
-        history,
-        maxTokens: Number(payload.max_tokens) || 900,
-        provider: 'groq',
-      }).then((r) => ({ text: r.text, provider: 'groq', model: r.model })));
-    }
-  }
-
-  // 2. OpenRouter free models — if the site has an OpenRouter key saved.
+  // 1. OpenRouter free models — if the site has an OpenRouter key saved.
   if (openrouterKey) {
     for (const model of [
       'meta-llama/llama-3.3-70b-instruct:free',
-      'google/gemini-2.5-flash:free',
       'moonshotai/kimi-k2-free:free',
       'deepseek/deepseek-chat-v3-0324:free',
     ]) {
@@ -461,23 +374,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  // 3. Gemini (all configured model variants).
-  if (geminiKey) {
-    for (let attemptI = 0; attemptI < 2; attemptI++) {
-      for (const model of modelChain(settingsRow)) {
-        attempts.push(() => callGemini({
-          apiKey: geminiKey,
-          model,
-          systemPrompt,
-          message,
-          history,
-          maxTokens: Number(payload.max_tokens) || 900,
-        }).then((r) => ({ text: r.text, provider: 'gemini', model: r.model || model })));
-      }
-    }
-  }
-
-  // 4. Pollinations (keyless, final safety net) — but only via the server so a
+  // 2. Pollinations (keyless, final safety net) — but only via the server so a
   //    legit provider limit doesn't surface its own canned "daily message limit".
   attempts.push(async () => {
     const messages = [

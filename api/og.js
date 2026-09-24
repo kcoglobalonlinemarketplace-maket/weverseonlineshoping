@@ -30,7 +30,6 @@ import { MAIN_URL, MAIN_ANON_KEY } from '../shared/supabase-env.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_NAME = 'Weverse Online Shop';
-const FALLBACK_IMG = '/fallback.svg';
 
 // Invisible visitor beacon — writes one row per page load to Supabase
 // visitor_analytics with the anon key (INSERT policy is public; SELECT is
@@ -189,6 +188,17 @@ function productPhotos(listing, origin) {
     .filter(Boolean);
 }
 
+function productVideos(listing, origin) {
+  const imgs = Array.isArray(listing?.images) ? listing.images : [];
+  const vids = [];
+  if (typeof listing?.video_url === 'string' && listing.video_url) vids.push(listing.video_url);
+  if (typeof listing?.video === 'string' && listing.video) vids.push(listing.video);
+  vids.push(...imgs);
+  return vids
+    .map((u) => (typeof u === 'string' && /\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i.test(u) ? absUrl(u, origin) : ''))
+    .filter((u, i, arr) => u && arr.indexOf(u) === i);
+}
+
 function cleanText(s, max) {
   const t = String(s || '')
     .replace(/<[^>]+>/g, ' ')
@@ -220,7 +230,7 @@ function productJsonLd(listing, opts) {
     sku: listing.property_id || listing.sku || listing.id,
     mpn: listing.property_id || listing.sku || listing.id,
     url: canonical,
-    image: photoUrls.length ? photoUrls : [absUrl(productPoster(listing) || FALLBACK_IMG, origin)],
+    image: photoUrls.length ? photoUrls : [absUrl(productPoster(listing) || '/brand-logo.jpeg', origin)],
     brand: listing.brand ? { '@type': 'Brand', name: listing.brand } : { '@type': 'Brand', name: SITE_NAME },
     offers,
   };
@@ -286,12 +296,15 @@ function locationOf(listing) {
 }
 
 function renderSsrBody(listing, opts) {
-  const { canonical, origin, priceLabel, availLabel, heroImage, related } = opts;
+  const { canonical, origin, priceLabel, availLabel, related } = opts;
   const id = listing.property_id || listing.id || '';
   const title = cleanText(listing.title, 300) || SITE_NAME;
   const description = cleanText(listing.description, 4000) || '';
-  const photos = productPhotos(listing, origin);
-  const hero = absUrl(heroImage || FALLBACK_IMG, origin);
+  const heroVideo = productVideo(listing);
+  const heroPoster = absUrl(productPoster(listing) || '', origin);
+  const hero = heroVideo
+    ? `<video src="${escapeAttr(absUrl(heroVideo, origin))}"${heroPoster ? ` poster="${escapeAttr(heroPoster)}"` : ''} muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover" onerror="this.style.display='none'"></video>`
+    : `<div class="w-full h-full flex items-center justify-center bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-12 h-12 text-gray-300"><path d="M10.66 6H14a2 2 0 0 1 2 2v2.5l5.248-3.062A.5.5 0 0 1 22 7.87v8.196"/><path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="m2 2 20 20"/></svg></div>`;
   const breadcrumbTitle = cleanText(title, 40);
   const cat = hubCategory(listing);
   const cty = hubCountry(listing);
@@ -300,8 +313,9 @@ function renderSsrBody(listing, opts) {
     cat ? `<li><a class="hover:text-blue-600" href="/category/${escapeAttr(cat.slug)}">${escapeAttr(cat.label)}</a></li><li aria-hidden="true">/</li>` : '',
     cty ? `<li><a class="hover:text-blue-600" href="/country/${escapeAttr(cty.slug)}">${escapeAttr(cty.label)}</a></li><li aria-hidden="true">/</li>` : '',
   ].join('');
-  const thumbnails = photos.slice(1, 6).map(
-    (u, i) => `<img src="${escapeAttr(u)}" alt="${escapeAttr(title)} — image ${i + 2}" loading="lazy" decoding="async" class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover border border-gray-200" onerror="this.onerror=null;this.style.display='none'">`
+  const thumbVideos = productVideos(listing, origin).slice(1, 6);
+  const thumbnails = thumbVideos.map(
+    (u, i) => `<video src="${escapeAttr(u)}" muted loop playsinline preload="metadata" class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover border border-gray-200" onerror="this.style.display='none'"></video>`
   ).join('');
   const thumbRow = thumbnails
     ? `<div class="flex flex-wrap gap-2 mt-3">${thumbnails}</div>`
@@ -370,7 +384,7 @@ function renderSsrBody(listing, opts) {
         <h2 class="text-lg font-black text-gray-900 mb-3">Related products</h2>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           ${related.map((r) => `<a href="${escapeAttr(r.url)}" class="group block rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-lg transition">
-            <div class="aspect-[4/3] bg-gray-100 overflow-hidden">${r.image ? `<img src="${escapeAttr(r.image)}" alt="${escapeAttr(cleanText(r.title, 90))}" loading="lazy" decoding="async" class="w-full h-full object-cover">` : ''}</div>
+            <div class="aspect-[4/3] bg-gray-100 overflow-hidden">${r.image ? (/\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i.test(r.image) ? `<video src="${escapeAttr(absUrl(r.image, origin))}" muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover" onerror="this.style.display='none'"></video>` : `<img src="${escapeAttr(absUrl(r.image, origin))}" alt="${escapeAttr(cleanText(r.title, 90))}" loading="lazy" decoding="async" class="w-full h-full object-cover">`) : ''}</div>
             <div class="p-3">
               <p class="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">${escapeAttr(cleanText(r.title, 90))}</p>
               <p class="mt-1 text-sm font-black text-blue-600">${Number(r.price) > 0 ? formatSharePrice({ price: Number(r.price), currency: r.currency }) : 'Contact us'}</p>
@@ -402,7 +416,7 @@ function renderSsrBody(listing, opts) {
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
       <div>
         <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-gray-100 ring-1 ring-gray-200">
-          <img src="${escapeAttr(hero)}" alt="${escapeAttr(title)}" fetchpriority="high" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='/fallback.svg'">
+          ${hero}
         </div>
         ${thumbRow}
       </div>
@@ -534,7 +548,7 @@ export default async function handler(req, res) {
       const useSized = fromDb;
       const ogImage = useSized
         ? `${siteUrl}/api/og-image?id=${encodeURIComponent(id)}`
-        : absUrl(posterPhoto || FALLBACK_IMG, siteUrl);
+        : absUrl(posterPhoto || '/brand-logo.jpeg', siteUrl);
       const videoUrl = productVideo(listing);
       const videoTags = videoUrl
         ? [

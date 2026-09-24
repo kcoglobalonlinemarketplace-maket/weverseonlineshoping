@@ -20,7 +20,7 @@ import {
   loadPromoPool,
   getPromoPool,
   esc,
-  coverOf,
+  mediaThumbHtml,
   priceHtml,
   pickPromoProducts,
   loadPromoSettings,
@@ -31,7 +31,6 @@ import { loadPromoBackgrounds, bgMediaLayer, DEFAULT_PROMO_BG } from './promo-ba
 import { loadSiteContent, DEFAULT_SITE_CONTENT } from './site-content.js';
 
 const MOUNT = () => document.getElementById('app-promo-banner');
-const FALLBACK_IMG = '/fallback.svg';
 
 // ── Woman SVG: a premium vector illustration of a woman holding the phone ──
 // Layered: woman (behind phone) → phone (HTML) → hands (in front of phone).
@@ -203,14 +202,12 @@ function phoneScreen(products) {
   const first = products[0];
   const second = products[1];
   const card = (l, i) => {
-    const img = esc(coverOf(l));
     const title = esc((l.title || l.name || '').slice(0, 34));
     return `
       <a href="/details.html?id=${encodeURIComponent(l.property_id || l.id)}"
          class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
         <div class="aspect-square bg-gray-100 overflow-hidden">
-          <img src="${img}" alt="${title}" loading="lazy" decoding="async"
-               class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+          ${mediaThumbHtml(l, 'w-full h-full object-cover')}
         </div>
         <div class="p-2">
           <p class="text-[10px] text-gray-700 font-bold leading-tight line-clamp-2 min-h-[26px]">${title}</p>
@@ -393,18 +390,16 @@ function startPhoneCycling(pool) {
     if (!grid || !items.length) return;
     const a = items[idx % items.length];
     const b = items[(idx + 1) % items.length];
-    const imgA = esc(coverOf(a));
-    const imgB = esc(coverOf(b));
     const tA = esc((a.title || a.name || '').slice(0, 34));
     const tB = esc((b.title || b.name || '').slice(0, 34));
     grid.innerHTML = `
       <a href="/details.html?id=${encodeURIComponent(a.property_id || a.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
-        <div class="aspect-square bg-gray-100 overflow-hidden"><img src="${imgA}" alt="${tA}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'"></div>
+        <div class="aspect-square bg-gray-100 overflow-hidden">${mediaThumbHtml(a, 'w-full h-full object-cover')}</div>
         <div class="p-2"><p class="text-[10px] text-gray-700 font-bold leading-tight line-clamp-2 min-h-[26px]">${tA}</p>
         <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-blue-600 font-black">${priceHtml(a)}</span><span class="bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded-lg">Buy</span></div></div>
       </a>
       <a href="/details.html?id=${encodeURIComponent(b.property_id || b.id)}" class="block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[.98]">
-        <div class="aspect-square bg-gray-100 overflow-hidden"><img src="${imgB}" alt="${tB}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'"></div>
+        <div class="aspect-square bg-gray-100 overflow-hidden">${mediaThumbHtml(b, 'w-full h-full object-cover')}</div>
         <div class="p-2"><p class="text-[10px] text-gray-700 font-bold leading-tight line-clamp-2 min-h-[26px]">${tB}</p>
         <div class="flex items-center justify-between mt-1"><span class="text-[11px] text-blue-600 font-black">${priceHtml(b)}</span><span class="bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded-lg">Buy</span></div></div>
       </a>`;
@@ -432,7 +427,7 @@ async function init() {
   } catch { /* continue with empty pool */ }
   // Even with no products loaded, still render the banner (uses fallback card).
   const cards = pool.length ? pool : [
-    { property_id: 'browse', title: 'Browse the full Weverse Online Shop', price: 0, currency: 'USD', images: ['/fallback.svg'] },
+    { property_id: 'browse', title: 'Browse the full Weverse Online Shop', price: 0, currency: 'USD', images: [] },
   ];
 
   let bg = { ...DEFAULT_PROMO_BG };

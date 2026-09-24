@@ -1,5 +1,5 @@
 -- Complete, professional real-estate listings.
--- Adds the columns the property form, AI scanner, and details page need for a
+-- Adds the columns the property form and details page need for a
 -- full property listing: pricing (real vs discount), construction info,
 -- location details, feature groups, home systems, legal/financial notes,
 -- floor plan, nearby area, and trust/verification data.

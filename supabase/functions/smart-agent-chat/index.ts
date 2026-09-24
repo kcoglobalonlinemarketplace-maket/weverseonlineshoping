@@ -8,7 +8,7 @@
 //
 // It is product-aware: the client sends the full listing facts for the item
 // being discussed, and the agent answers ONLY from those facts (never invents
-// prices/specs/availability). It uses a stacked chain of FREE AI providers so
+// prices/specs/availability). It uses a stacked chain of AI providers so
 // the agent never goes offline, and it presents a localized human sales
 // representative (naming, greeting, language) matching the shopper's market.
 // No real telephone numbers are ever dialled — conversation happens entirely
@@ -87,43 +87,7 @@ function pickIdentity(countryCode: string, browserLang: string, seed: string): {
   return { name, gender, lang, langName };
 }
 
-// ── FREE PROVIDER STACK (same as customer-ai-chat) ─────────────────
-const MODEL_FALLBACKS = ['gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
-
-function modelChain(settings: Record<string, unknown>): string[] {
-  const chain = new Set<string>();
-  const override = String(settings.customer_model_override || settings.chat_model_override || '').trim();
-  const preferred = override || String(settings.gemini_model || '').trim();
-  if (preferred) chain.add(preferred);
-  for (const m of MODEL_FALLBACKS) chain.add(m);
-  return [...chain];
-}
-
-async function callGemini(params: { apiKey: string; model: string; systemPrompt: string; message: string; history: Array<{ role: string; content: string }>; maxTokens?: number }) {
-  const { apiKey, model, systemPrompt, message, history, maxTokens } = params;
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [
-    { role: 'user', parts: [{ text: systemPrompt }] },
-  ];
-  for (const item of history || []) {
-    const role = item?.role === 'assistant' ? 'model' : 'user';
-    const text = String(item?.content || '').trim();
-    if (!text) continue;
-    contents.push({ role, parts: [{ text }] });
-  }
-  contents.push({ role: 'user', parts: [{ text: message }] });
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents, generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens || 700 } }),
-  });
-  const raw = await res.text();
-  const data = raw ? JSON.parse(raw) : {};
-  if (!res.ok) throw new Error(data?.error?.message || raw || `Gemini request failed (${res.status})`);
-  const text = (data?.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p?.text || '').join('\n').trim();
-  if (!text) throw new Error('Gemini returned an empty response.');
-  return { text, model };
-}
+// ── PROVIDER STACK (same as customer-ai-chat) ──────────────────────
 
 async function callOpenAICompatible(params: { apiKey: string; baseUrl: string; model: string; systemPrompt: string; message: string; history: Array<{ role: string; content: string }>; maxTokens?: number; provider: string }) {
   const { apiKey, baseUrl, model, systemPrompt, message, history, maxTokens, provider } = params;
@@ -221,26 +185,14 @@ Deno.serve(async (req) => {
 
   const systemPrompt = buildSystemPrompt({ agentName, langName, localeLang, localeLabel, storeName, contactEmail, productContext, companyContext, personaIntro, mode });
 
-  // ── RUN THE FREE PROVIDER STACK ────────────────────────────────────
-  const geminiKey = String(settingsRow.gemini_key || settingsRow.gemini_api_key || settingsRow.openai_api_key || '').trim();
-  const groqKey = String(settingsRow.groq_key || '').trim();
+  // ── RUN THE PROVIDER STACK ────────────────────────────────────────
   const openrouterKey = String(settingsRow.openrouter_key || '').trim();
 
   const attempts: Array<() => Promise<{ text: string; provider: string; model: string }>> = [];
 
-  if (groqKey) {
-    for (const model of ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b']) {
-      attempts.push(() => callOpenAICompatible({ apiKey: groqKey, baseUrl: 'https://api.groq.com/openai/v1', model, systemPrompt, message, history, maxTokens: 700, provider: 'groq' }).then((r) => ({ text: r.text, provider: 'groq', model: r.model })));
-    }
-  }
   if (openrouterKey) {
-    for (const model of ['meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.5-flash:free', 'moonshotai/kimi-k2-free:free', 'deepseek/deepseek-chat-v3-0324:free']) {
+    for (const model of ['meta-llama/llama-3.3-70b-instruct:free', 'moonshotai/kimi-k2-free:free', 'deepseek/deepseek-chat-v3-0324:free']) {
       attempts.push(() => callOpenAICompatible({ apiKey: openrouterKey, baseUrl: 'https://openrouter.ai/api/v1', model, systemPrompt, message, history, maxTokens: 700, provider: 'openrouter' }).then((r) => ({ text: r.text, provider: 'openrouter', model: r.model })));
-    }
-  }
-  if (geminiKey) {
-    for (const model of modelChain(settingsRow)) {
-      attempts.push(() => callGemini({ apiKey: geminiKey, model, systemPrompt, message, history, maxTokens: 700 }).then((r) => ({ text: r.text, provider: 'gemini', model: r.model || model })));
     }
   }
   attempts.push(async () => {

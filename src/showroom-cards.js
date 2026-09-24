@@ -11,8 +11,6 @@ import { renderCardMaps } from './static-map.js';
 import { isPropertyListing, propertyCategoryForListing, PROPERTY_CATEGORIES } from './categories.js';
 import './smart-agent.js';
 
-const FALLBACK_IMG = '/fallback.svg';
-
 function isVideoUrl(url) {
   if (!url || typeof url !== 'string') return false;
   if (/^data:video\//i.test(url)) return true;
@@ -464,7 +462,7 @@ function cardParts(listing) {
   const isCar = listing.listing_type === 'vehicle' && listing.category === 'Cars';
   const listingId = listing.id || listing.property_id;
   const listingVideo = hasVideo(listing);
-  const cover = listingVideo || listing.images?.[0] || FALLBACK_IMG;
+  const cover = listingVideo || '';
   const isCoverVideo = isVideoUrl(cover);
   const listingPoster = Array.isArray(listing.images) ? listing.images.find(u => !isVideoUrl(u)) || '' : '';
   const price = isTruck ? formatTruckPrice(listing) : formatPrice(listing);
@@ -589,9 +587,7 @@ export function renderCard(listing) {
       ${p.isCoverVideo
         ? `<video src="${escapeHtml(p.cover)}" muted loop autoplay playsinline preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
-        : `<img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
-             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-             onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
+        : `<div class="w-full h-full flex items-center justify-center bg-gray-100"><i data-lucide="video-off" class="w-10 h-10 text-gray-300"></i></div>`
       }
       ${p.statusBadge ? `<span class="absolute top-2 left-2 bg-blue-500 text-white text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${p.statusBadge}</span>` : ''}
       ${p.listingVideo ? videoTourBadgeHtml() : ''}
@@ -659,9 +655,7 @@ export function renderFeedCard(listing) {
       ${p.isCoverVideo
         ? `<video src="${escapeHtml(p.cover)}" muted loop autoplay playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"></video>
            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-11 h-11 rounded-full bg-white/80 flex items-center justify-center shadow-lg"><svg class="w-5 h-5 text-gray-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>`
-        : `<img src="${p.cover}" alt="${listing.title}" loading="lazy" decoding="async"
-             class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-             onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">`
+        : `<div class="absolute inset-0 flex items-center justify-center bg-gray-100"><i data-lucide="video-off" class="w-10 h-10 text-gray-300"></i></div>`
       }
       ${p.statusBadge ? `<span class="absolute top-2.5 left-2.5 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">${p.statusBadge}</span>` : ''}
       ${p.listingVideo ? videoTourBadgeHtml() : ''}

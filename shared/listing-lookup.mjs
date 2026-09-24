@@ -59,9 +59,11 @@ let relatedCache = { at: 0, rows: null, busy: null };
 
 function relRowId(r) { return r?.property_id || r?.id || r?.sku || ''; }
 
-function relImageUrl(r) {
+const VIDEO_EXT_RE = /\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i;
+function relMediaUrl(r) {
   const imgs = Array.isArray(r?.images) ? r.images : [];
-  return imgs.find((u) => typeof u === 'string' && u.startsWith('http') && !/\.(mp4|webm|mov|avi|mkv|m4v|3gp)(\?|#|$)/i.test(u)) || '';
+  const video = (typeof r.video_url === 'string' && r.video_url) || (typeof r.video === 'string' && r.video) || imgs.find((u) => typeof u === 'string' && VIDEO_EXT_RE.test(u)) || '';
+  return video || imgs.find((u) => typeof u === 'string' && u.startsWith('http')) || '';
 }
 
 async function fetchRelatedIndex() {
@@ -134,7 +136,7 @@ export async function findRelatedListings(listing, limit = 4) {
         title: String(r.title || ''),
         price: Number(r.price) || 0,
         currency: r.currency || 'USD',
-        image: relImageUrl(r),
+        image: relMediaUrl(r),
         url: `${SITE_URL}/product/${encodeURIComponent(id)}`,
         category: r.category || null,
         country: r.country || null,

@@ -1,4 +1,4 @@
-import { getAllListings, loadDBListings, findListingById, formatPrice, cleanListing } from './showroom-data.js';
+import { getAllListings, loadDBListings, findListingById, formatPrice, cleanListing, videoThumbHtml } from './showroom-data.js';
 import { getTruckById, formatTruckPrice } from './truck-data.js';
 import { getMotorhomeById } from './motorhome-data.js';
 import { getCarById } from './car-data.js';
@@ -8,8 +8,6 @@ import { PRODUCT_EXTRA_LISTINGS } from './products-extra.js';
 import { getCurrentUser, setRedirectAfterAuth } from './auth.js';
 import { trackEvent } from './analytics.js';
 import { readCart, setCartQty, removeFromCart, clearCart, emitCartChanged } from './cart.js';
-
-const FALLBACK_IMG = '/fallback.svg';
 
 function findProductById(id) {
   return PRODUCT_LISTINGS.find((p) => p.id === id || p.property_id === id)
@@ -73,11 +71,10 @@ function renderCart(items) {
 
   const rows = items.map((it) => {
     const listing = it.listing;
-    const cover = listing.images?.[0] || FALLBACK_IMG;
     return `
       <div class="flex flex-wrap items-center gap-x-4 gap-y-3 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-xl" data-cart-row="${listing.property_id}">
         <a href="/details.html?id=${encodeURIComponent(listing.property_id)}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-gray-100 ring-1 ring-gray-200">
-          <img src="${cover}" alt="${listing.title}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='${FALLBACK_IMG}'">
+          ${videoThumbHtml(listing, 'w-full h-full object-cover')}
         </a>
         <div class="flex-1 min-w-[160px] flex flex-col gap-1.5">
           <a href="/details.html?id=${encodeURIComponent(listing.property_id)}" class="text-sm font-bold text-gray-900 break-words hover:text-blue-600 transition">${listing.title}</a>
