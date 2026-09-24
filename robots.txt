@@ -12,6 +12,8 @@ Disallow: /admin-shipping
 Disallow: /admin-shipping.html
 Disallow: /admin-domains
 Disallow: /admin-domains.html
+Disallow: /admin-video-scanner
+Disallow: /admin-video-scanner.html
 Disallow: /account
 Disallow: /account.html
 Disallow: /auth

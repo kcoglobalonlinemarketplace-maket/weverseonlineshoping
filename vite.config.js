@@ -56,6 +56,7 @@ export default defineConfig(({ mode }) => {
           help: resolve(__dirname, 'help.html'),
           admin: resolve(__dirname, 'admin.html'),
           adminDomains: resolve(__dirname, 'admin-domains.html'),
+          adminVideoScanner: resolve(__dirname, 'admin-video-scanner.html'),
           showroom: resolve(__dirname, 'showroom.html'),
           policies: resolve(__dirname, 'policies.html'),
           policiesUsa: resolve(__dirname, 'policies-usa.html'),

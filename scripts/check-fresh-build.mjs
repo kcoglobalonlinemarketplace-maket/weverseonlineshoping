@@ -10,7 +10,7 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const SRC_DIRS = ['src'];
-const ROOT_HTML = ['index.html', 'admin.html'];
+const ROOT_HTML = ['index.html', 'admin.html', 'admin-video-scanner.html'];
 
 let newestSrc = { t: 0, f: '' };
 const walk = (dir) => {
