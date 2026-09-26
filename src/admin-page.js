@@ -103,7 +103,7 @@ function genId() { return 'W-' + String(Date.now()).slice(-6) + Math.floor(Math.
 // Whitelist of showroom_listings columns known to exist in the live DB.
 // Used to sanitize upsert payloads so seed/local objects (which may carry
 // extra display-only keys) never cause "column does not exist" errors.
-const SHOWROOM_COLUMNS = ['id','property_id','listing_type','category','subcategory','title','description','price','price_period','currency','country','country_code','state','city','town','product_location','latitude','longitude','bedrooms','bathrooms','building_size','land_size','parking_spaces','property_type','furnished','listing_status','images','features','tags','highlights','seo_keywords','specifications','brand','color','size','condition','warranty','shipping_info','delivery_estimate','weight','dimensions','storage_options','ram_options','color_options','availability_status','stock_quantity','sku','is_active','is_featured','is_ai_generated','ai_generated_fields','rating','rating_count','favorite_count','review_count','video','video_url','approval_status','published_at','created_at','updated_at','real_price','year_built','year_renovated','half_bathrooms','floors','garage','zip_code','address','landmarks','interior_features','exterior_features','home_systems','legal_info','risk_notes','floor_plan','nearby_area','verification_status','verification_date','inspection_info','documents','language_info'];
+const SHOWROOM_COLUMNS = ['id','property_id','listing_type','category','subcategory','title','description','price','price_period','currency','country','country_code','state','city','town','product_location','latitude','longitude','bedrooms','bathrooms','building_size','land_size','parking_spaces','property_type','furnished','listing_status','images','features','tags','highlights','seo_keywords','specifications','brand','color','size','condition','warranty','shipping_info','delivery_estimate','weight','dimensions','storage_options','ram_options','color_options','availability_status','stock_quantity','sku','is_active','is_featured','is_ai_generated','ai_generated_fields','rating','rating_count','favorite_count','review_count','video','video_url','approval_status','published_at','created_at','updated_at','real_price','year_built','year_renovated','half_bathrooms','floors','garage','zip_code','address','landmarks','interior_features','exterior_features','home_systems','legal_info','risk_notes','floor_plan','nearby_area','verification_status','verification_date','inspection_info','documents','language_info','ai_video_scan'];
 
 function sanitizeShowroomPayload(obj) {
   const out = {};
@@ -1143,6 +1143,137 @@ function videoOffTile(className, inner) {
   return `<div class="${className} flex items-center justify-center text-gray-600"><i data-lucide="video-off" class="w-6 h-6"></i>${inner || ''}</div>`;
 }
 
+// Primary vendor video of a listing (video, video_url, or first video in images).
+function productPrimaryVideo(p) {
+  if (!p) return '';
+  const direct = [p.video, p.video_url].find(u => typeof u === 'string' && isVideoUrl(u));
+  if (direct) return direct;
+  const imgs = Array.isArray(p.images) ? p.images : [];
+  return imgs.find(u => typeof u === 'string' && isVideoUrl(u)) || '';
+}
+
+// Resolve the (possibly relative) stored video URL into an absolute fetchable URL.
+function productVideoAbsoluteUrl(p) {
+  const src = productPrimaryVideo(p);
+  if (!src) return '';
+  if (/^https?:\/\//i.test(src) || src.startsWith('data:') || src.startsWith('blob:')) return src;
+  return new URL(src, window.location.origin).href;
+}
+
+// Scan a listing's own video with the AI scanner edge function.
+const _scanInFlight = new Set();
+window.scanProductVideo = async function(pid) {
+  if (_scanInFlight.has(pid)) return;
+  const product = (window._productsData || []).find(i => i.property_id === pid)
+    || (await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle()).data;
+  if (!product) return showToast('Product not found', 'error');
+  const url = productVideoAbsoluteUrl(product);
+  if (!url) return showToast('This product has no video to scan.', 'error');
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || '';
+  if (!token) return showToast('Please sign in first.', 'error');
+  _scanInFlight.add(pid);
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="scan-line" class="w-4 h-4 text-violet-400"></i> AI Scanning Video</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">Close</button>
+        </div>
+        <div class="flex flex-col items-center justify-center py-12 text-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center"><i data-lucide="loader-2" class="w-7 h-7 text-violet-400 animate-spin"></i></div>
+          <div>
+            <p class="text-white font-bold">Analyzing the product video with AI…</p>
+            <p class="text-sm text-gray-500 mt-1">${esc(product.title || '')}</p>
+            <p class="text-xs text-gray-600 mt-2">Watching motion + listening to audio. This usually takes 20–90 seconds.</p>
+          </div>
+        </div>
+      </div>
+    </div>`);
+  if (window.lucide) lucide.createIcons();
+  try {
+    const fnUrl = `${SUPABASE_BASE_URL}/functions/v1/video-scanner`;
+    const startedAt = Date.now();
+    const res = await fetch(fnUrl, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'scan_url', url, listing_id: pid, question: '' }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Scanner failed (${res.status})`);
+    const result = data.result || {};
+    const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
+    const updated = { ...product, ai_video_scan: result };
+    const idx = (window._productsData || []).findIndex(i => i.property_id === pid);
+    if (idx >= 0) window._productsData[idx] = updated;
+    renderProducts();
+    openModal(scanResultModalHtml(updated, elapsed, !!data.saved));
+    if (window.lucide) lucide.createIcons();
+    if (!data.saved) showToast('Analysis complete — re-run to save to product', 'info');
+  } catch (err) {
+    openModal(`
+      <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal-box">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i> Scan Failed</h3>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">Close</button>
+          </div>
+          <div class="rounded-2xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-200">${esc(err.message)}</div>
+          <p class="text-xs text-gray-500 mt-3">Free-tier Gemini limits per model per day. If every model is busy, wait a little and try again — the scanner automatically falls back through 4 models.</p>
+          <div class="mt-5 flex gap-2">
+            <button onclick="closeModal();scanProductVideo('${pid}')" class="btn-press flex-1 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold">Try Again</button>
+            <button onclick="closeModal()" class="btn-press px-4 py-3 rounded-2xl bg-white/10 text-gray-200 text-sm font-bold">Close</button>
+          </div>
+        </div>
+      </div>`);
+    if (window.lucide) lucide.createIcons();
+  } finally {
+    _scanInFlight.delete(pid);
+  }
+};
+
+function scanResultModalHtml(product, elapsed, saved) {
+  const r = product?.ai_video_scan || {};
+  const ok = r.status === 'ok';
+  const conf = Math.round(r.confidence || 0);
+  const statusBadge = ok
+    ? '<span class="badge bg-emerald-500/10 text-emerald-300 border-emerald-500/20">Verified</span>'
+    : `<span class="badge bg-amber-500/10 text-amber-300 border-amber-500/20">${esc(r.status === 'error' ? 'Error' : 'Needs Review')}</span>`;
+  const obs = Array.isArray(r.observations) ? r.observations : [];
+  const secs = Array.isArray(r.sections) ? r.sections : [];
+  const warn = Array.isArray(r.warnings) ? r.warnings : [];
+  return `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box wide">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-black text-white flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> AI Video Scan Report</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition">Back</button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-3"><p class="text-2xl font-black text-emerald-300">${conf}%</p><p class="text-[10px] text-gray-500 uppercase tracking-wide font-bold">Confidence</p></div>
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-3"><p class="text-2xl font-black text-blue-300">${esc(r.label || '—')}</p><p class="text-[10px] text-gray-500 uppercase tracking-wide font-bold">Detected</p></div>
+          <div class="glass-soft border border-blue-500/15 rounded-2xl p-3"><p class="text-2xl font-black text-gray-200">${esc(elapsed)}s</p><p class="text-[10px] text-gray-500 uppercase tracking-wide font-bold">Scan Time</p></div>
+        </div>
+        <div class="mb-4">${statusBadge}${saved ? '<span class="badge bg-violet-500/10 text-violet-300 border-violet-500/20">Saved to Product</span>' : '<span class="badge bg-gray-500/10 text-gray-400 border-gray-500/20">Not Saved Yet</span>'}</div>
+        <div class="space-y-4 max-h-[48vh] overflow-y-auto pr-1">
+          <div class="rounded-2xl bg-white/5 border border-white/10 p-4">
+            <p class="text-xs text-gray-400 uppercase tracking-wide font-bold mb-1">Summary</p>
+            <p class="text-sm text-gray-200 leading-relaxed">${esc(r.overall_analysis || 'No summary.')}</p>
+          </div>
+          ${r.reason_if_cannot_determine ? `<div class="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 text-sm text-amber-200">${esc(r.reason_if_cannot_determine)}</div>` : ''}
+          ${obs.length ? `<div class="rounded-2xl bg-white/5 border border-white/10 p-4"><p class="text-xs text-gray-400 uppercase tracking-wide font-bold mb-2">Timeline (${obs.length})</p><div class="space-y-1.5">${obs.map(o => `<div class="flex gap-2 text-sm"><span class="text-violet-300 font-mono text-xs mt-0.5 shrink-0">${esc(o.time || '')}</span><span class="text-gray-300">${esc(o.note || '')}</span></div>`).join('')}</div></div>` : ''}
+          ${secs.length ? `<div class="rounded-2xl bg-white/5 border border-white/10 p-4"><p class="text-xs text-gray-400 uppercase tracking-wide font-bold mb-2">Sections (${secs.length})</p><div class="space-y-2">${secs.map(s => `<div><p class="text-sm font-bold text-white">${esc(s.time || '')} · ${esc(s.title || '')}</p><p class="text-sm text-gray-400">${esc(s.description || '')}</p></div>`).join('')}</div></div>` : ''}
+          ${r.audio_notes ? `<div class="rounded-2xl bg-white/5 border border-white/10 p-4"><p class="text-xs text-gray-400 uppercase tracking-wide font-bold mb-1">Audio</p><p class="text-sm text-gray-300">${esc(r.audio_notes)}</p></div>` : ''}
+          ${warn.length ? `<div class="rounded-2xl bg-red-500/10 border border-red-500/20 p-4"><p class="text-xs text-gray-400 uppercase tracking-wide font-bold mb-1">Warnings</p><ul class="list-disc list-inside text-sm text-red-200 space-y-1">${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
+        </div>
+        <div class="mt-5 flex gap-2">
+          <button onclick="closeModal();editProduct('${product.property_id}')" class="btn-press flex-1 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold">Edit Product</button>
+          <button onclick="closeModal()" class="btn-press px-4 py-3 rounded-2xl bg-white/10 text-gray-200 text-sm font-bold">Close</button>
+        </div>
+      </div>
+    </div>`;
+}
+
 function productCard(product) {
   const thumb = pickThumb(product);
   const tags = normalizeProductTags(product);
@@ -1152,6 +1283,8 @@ function productCard(product) {
   const dateAdded = fmtDate(product.created_at);
   const isFeatured = !!product.is_featured;
   const videoCount = (Array.isArray(product.images) ? product.images : []).filter(isVideoUrl).length;
+  const hasVideo = videoCount > 0 || !!productPrimaryVideo(product);
+  const aiScan = product.ai_video_scan && product.ai_video_scan.status ? product.ai_video_scan : null;
   const thumbHtml = thumb
     ? videoThumbHtml(thumb, 'w-full h-full object-cover')
     : videoOffTile('w-full h-full');
@@ -1172,6 +1305,7 @@ function productCard(product) {
         <p class="text-xs text-gray-500 font-mono mt-1">SKU: ${esc(productSku(product))}</p>
         <div class="mt-2 flex items-center gap-2 flex-wrap">
           ${statusBadge}
+          ${aiScan ? `<span class="badge bg-violet-500/15 text-violet-200 border-violet-500/30" title="AI scanned: ${esc(aiScan.label || '')}">AI Scanned · ${Math.round(aiScan.confidence || 0)}%</span>` : ''}
           <span class="badge bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/20">${esc(product.category || 'Uncategorized')}</span>
         </div>
       </div>
@@ -1198,6 +1332,7 @@ function productCard(product) {
 
     <div class="flex flex-wrap gap-2 mt-auto">
       <button onclick="event.stopPropagation();editProduct('${product.property_id}')" class="btn-press flex-1 min-w-[9.5rem] px-5 py-3.5 rounded-2xl text-sm font-black bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white transition shadow-lg shadow-blue-600/15">Edit Product</button>
+      ${hasVideo ? `<button onclick="event.stopPropagation();scanProductVideo('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-violet-500/15 text-violet-200 hover:bg-violet-500/25 transition">${aiScan ? 'Re-scan Video' : 'Scan Video with AI'}</button>` : ''}
       <button onclick="event.stopPropagation();quickEditProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 transition">Quick Edit</button>
       <button onclick="event.stopPropagation();previewProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-sky-500/15 text-sky-200 hover:bg-sky-500/25 transition">Preview</button>
       <button onclick="event.stopPropagation();${publishFn}" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold ${publishClass} transition">${publishLabel}</button>
@@ -1278,7 +1413,12 @@ function renderProductsTable(items) {
               </div>
             </div>
           </td>
-          <td><span class="text-xs text-gray-300">${esc(p.category || 'Uncategorized')}</span></td>
+          <td>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs text-gray-300">${esc(p.category || 'Uncategorized')}</span>
+              ${p.ai_video_scan && p.ai_video_scan.status ? `<span class="badge bg-violet-500/15 text-violet-200 border-violet-500/30 text-[9px] !px-1.5 !py-0.5" title="AI scanned: ${esc(p.ai_video_scan.label || '')}">AI · ${Math.round(p.ai_video_scan.confidence || 0)}%</span>` : ''}
+            </div>
+          </td>
           <td>
             <div class="text-xs">
               ${(() => {
@@ -1297,6 +1437,7 @@ function renderProductsTable(items) {
           <td>
             <div class="flex gap-1">
               <button onclick="editProduct('${p.property_id}')" class="btn-press p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+              ${productPrimaryVideo(p) ? `<button onclick="scanProductVideo('${p.property_id}')" class="btn-press p-1.5 text-violet-400 hover:bg-violet-500/10 rounded-lg transition" title="Scan Video with AI"><i data-lucide="scan-line" class="w-3.5 h-3.5"></i></button>` : ''}
               <button onclick="quickEditProduct('${p.property_id}')" class="btn-press p-1.5 text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition" title="Quick Edit"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i></button>
               <button onclick="${publishFn}" class="btn-press p-1.5 ${p.is_active ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'} rounded-lg transition" title="${publishLabel}"><i data-lucide="${p.is_active ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i></button>
               <button onclick="archiveProduct('${p.property_id}')" class="btn-press p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Archive"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>
@@ -2555,6 +2696,7 @@ window.showAddProductStep2 = function(category, existingData = {}) {
             <p class="text-sm text-gray-500 mt-1 truncate">${isEdit ? `Editing: ${esc(existingData.property_id)}` : 'Fill in the product details below'}</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
+            ${isEdit && productPrimaryVideo(existingData) ? `<button type="button" onclick="scanProductVideo('${esc(existingData.property_id)}')" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-violet-600/70 hover:bg-violet-500 text-white transition flex items-center gap-1.5"><i data-lucide="scan-line" class="w-4 h-4"></i> Scan Video with AI</button>` : ''}
             ${isEdit ? `<button type="button" onclick="closeProductFormModal()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Product Manager</button>` : `<button type="button" onclick="showAddProductStep1()" class="btn-press px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-700/60 hover:bg-gray-600 text-gray-200 transition flex items-center gap-1.5" title="Change category"><i data-lucide="arrow-left" class="w-4 h-4"></i> Category</button>`}
             <button type="button" onclick="closeProductFormModal()" class="btn-press px-4 h-11 flex items-center justify-center rounded-xl text-sm font-bold uppercase tracking-wide text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Close (X) â€” return to Product Manager">
               <i data-lucide="x" class="w-4 h-4 mr-1.5"></i>Back

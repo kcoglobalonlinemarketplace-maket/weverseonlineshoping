@@ -226,21 +226,7 @@ Rules:
 - If the video is offensive/illegal/unrelated to a product listing, say so in warnings.
 - Timestamps must reference real moments you observed.`;
 
-async function scanVideo(serviceClient, path, models, question) {
-  // ~150s platform idle timeout; keep 15s of headroom so we can always write a
-  // response (even a 504) back to the admin.
-  const deadline = nowMs() + 135000;
-  const { data: blob, error: dlErr } = await serviceClient.storage.from('video-scanner-files').download(path);
-  if (dlErr || !blob) throw new Error('Could not read the uploaded video from storage.');
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  if (bytes.length === 0) throw new Error('The uploaded video is empty.');
-  // Free-tier Edge Functions have a 256MB memory cap — refuse absurdly huge files.
-  if (bytes.length > 180 * 1024 * 1024) throw new Error('Video too large (over 180MB).');
-
-  const mimeType = blob.type || inferMime(path);
-  const apiKey = Deno.env.get('GEMINI_API_KEY') || '';
-  if (!apiKey) throw new Error('Server Gemini API key is not configured.');
-
+async function runGeminiScan(apiKey, bytes, mimeType, models, question, deadline) {
   const file = await geminiUploadFile(apiKey, bytes, mimeType, `weverse-scan-${Date.now()}`, deadline);
   try {
     await geminiWaitActive(apiKey, file.name, deadline);
@@ -256,6 +242,53 @@ async function scanVideo(serviceClient, path, models, question) {
   } finally {
     await geminiDeleteFile(apiKey, file.name);
   }
+}
+
+async function scanVideo(serviceClient, path, models, question) {
+  // ~150s platform idle timeout; keep 15s of headroom so we can always write a
+  // response (even a 504) back to the admin.
+  const deadline = nowMs() + 135000;
+  const { data: blob, error: dlErr } = await serviceClient.storage.from('video-scanner-files').download(path);
+  if (dlErr || !blob) throw new Error('Could not read the uploaded video from storage.');
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  if (bytes.length === 0) throw new Error('The uploaded video is empty.');
+  // Free-tier Edge Functions have a 256MB memory cap — refuse absurdly huge files.
+  if (bytes.length > 180 * 1024 * 1024) throw new Error('Video too large (over 180MB).');
+
+  const mimeType = blob.type || inferMime(path);
+  const apiKey = Deno.env.get('GEMINI_API_KEY') || '';
+  if (!apiKey) throw new Error('Server Gemini API key is not configured.');
+
+  return runGeminiScan(apiKey, bytes, mimeType, models, question, deadline);
+}
+
+// Scans a listing's EXISTING video straight from its public URL, so admins can
+// analyze any product video right from the product manager without re-uploading.
+async function scanVideoUrl(url, listingId, models, question, serviceClient) {
+  const deadline = nowMs() + 135000;
+  const cleanUrl = String(url || '').trim();
+  if (!/^https?:\/\//i.test(cleanUrl)) throw new Error('Invalid video URL.');
+  const res = await fetch(cleanUrl, { signal: AbortSignal.timeout(Math.min(60000, remainingTime(deadline))) });
+  if (!res.ok) throw new Error(`Could not fetch the video (HTTP ${res.status}).`);
+  const respType = String(res.headers.get('content-type') || '');
+  const mimeType = (respType && respType.startsWith('video/')) ? respType.split(';')[0].trim() : inferMime(cleanUrl.split(/[?#]/)[0]);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.length === 0) throw new Error('The video is empty.');
+  if (bytes.length > 180 * 1024 * 1024) throw new Error('Video too large (over 180MB).');
+
+  const apiKey = Deno.env.get('GEMINI_API_KEY') || '';
+  if (!apiKey) throw new Error('Server Gemini API key is not configured.');
+  const result = await runGeminiScan(apiKey, bytes, mimeType, models, question, deadline);
+
+  if (listingId) {
+    const { error: saveErr } = await serviceClient
+      .from('showroom_listings')
+      .update({ ai_video_scan: result })
+      .eq('property_id', listingId)
+      .single();
+    if (!saveErr) return { result, saved: true };
+  }
+  return { result, saved: !!listingId };
 }
 
 function normalizeResult(r) {
@@ -335,6 +368,21 @@ Deno.serve(async (req) => {
       const keepFile = !!body.keep_file;
       if (!keepFile) await serviceClient.storage.from('video-scanner-files').remove([path]).catch(() => {});
       return jsonResponse({ ok: true, result, elapsed_ms: nowMs() - startedAt });
+    }
+
+    if (action === 'scan_url') {
+      const url = String(body.url || '').trim();
+      if (!url) return jsonResponse({ error: 'Missing video URL' }, 400);
+      const listingId = String(body.listing_id || '').trim() || null;
+      const models = dedupe([
+        String(body.model || '').trim(),
+        Deno.env.get('GEMINI_MODEL') || '',
+        ...MODEL_FALLBACKS,
+      ]);
+      const question = String(body.question || '').trim().slice(0, 2000);
+      const startedAt = nowMs();
+      const { result, saved } = await scanVideoUrl(url, listingId, models, question, serviceClient);
+      return jsonResponse({ ok: true, result, saved, elapsed_ms: nowMs() - startedAt });
     }
 
     if (action === 'cleanup') {
