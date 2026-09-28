@@ -1135,9 +1135,29 @@ function pickThumb(p) {
   const direct = p && (p.video || p.video_url);
   return (typeof direct === 'string' && isVideoUrl(direct)) ? direct : '';
 }
-function videoThumbHtml(url, className) {
+function videoThumbHtml(url, className, opts) {
   if (!url) return '';
-  return `<video src="${esc(url)}" class="${className}" muted playsinline preload="metadata"></video>`;
+  const o = opts || {};
+  const auto = o.autoplay ? ' data-autoplay-card="1"' : '';
+  const loop = o.loop ? ' loop' : '';
+  return `<video src="${esc(url)}" class="${className}" muted playsinline preload="metadata"${loop}${auto}></video>`;
+}
+
+// Product videos play only while they are on screen. Decoding every video at
+// once would pin the CPU, so an IntersectionObserver plays/pauses each one.
+let _prodVideoObserver = null;
+function observeProductVideos() {
+  if (!('IntersectionObserver' in window)) return;
+  if (!_prodVideoObserver) {
+    _prodVideoObserver = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        const v = e.target;
+        if (e.isIntersecting) { const p = v.play(); if (p && p.catch) p.catch(() => {}); }
+        else v.pause();
+      }
+    }, { rootMargin: '250px', threshold: 0.15 });
+  }
+  document.querySelectorAll('video[data-autoplay-card]').forEach((v) => _prodVideoObserver.observe(v));
 }
 function videoOffTile(className, inner) {
   return `<div class="${className} flex items-center justify-center text-gray-600"><i data-lucide="video-off" class="w-6 h-6"></i>${inner || ''}</div>`;
@@ -1160,15 +1180,119 @@ function productVideoAbsoluteUrl(p) {
   return new URL(src, window.location.origin).href;
 }
 
-// Scan a listing's own video with the AI scanner edge function.
+// ---------- Watch a product's video, then let an admin scan it with AI ----------
 const _scanInFlight = new Set();
-window.scanProductVideo = async function(pid) {
+const _scanLocalFile = new Map();   // property_id -> File picked off this computer
+const _scanObjectUrl = new Map();   // property_id -> blob: URL used to play it
+
+function releaseScanObjectUrl(pid) {
+  const u = _scanObjectUrl.get(pid);
+  if (u) { URL.revokeObjectURL(u); _scanObjectUrl.delete(pid); }
+}
+
+async function uploadScanFile(file, token) {
+  const safeName = String(file.name || 'clip.mp4').slice(0, 120).replace(/[^\w.\-]+/g, '_');
+  const path = `scans/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+  const fnUrl = `${SUPABASE_BASE_URL}/functions/v1/video-scanner`;
+  const tokRes = await fetch(fnUrl, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'upload_token', path, content_type: file.type || 'video/mp4' }),
+  });
+  const tok = await tokRes.json().catch(() => ({}));
+  if (!tokRes.ok || !tok?.url) throw new Error(tok?.error || `Could not start upload (${tokRes.status}).`);
+  await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', tok.url, true);
+    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`Upload failed (HTTP ${xhr.status}).`));
+    xhr.onerror = () => reject(new Error('Upload failed — check your connection.'));
+    xhr.send(file);
+  });
+  return path;
+}
+
+// Shown when a listing's stored video URL cannot be loaded.
+window.pmVideoBroken = function(pid) {
+  const panel = document.getElementById('pmFallback');
+  if (panel) panel.classList.remove('hidden');
+  const note = document.getElementById('pmVideoNote');
+  if (note) note.textContent = 'This video could not be loaded from the site.';
+};
+
+// Plays the picked file straight from disk and remembers it for the scan.
+window.pmPickLocalVideo = function(pid, input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  _scanLocalFile.set(pid, file);
+  releaseScanObjectUrl(pid);
+  const url = URL.createObjectURL(file);
+  _scanObjectUrl.set(pid, url);
+  const v = document.getElementById('pmScanVideo');
+  if (v) { v.src = url; v.play().catch(() => {}); }
+  const panel = document.getElementById('pmFallback');
+  if (panel) panel.classList.add('hidden');
+  const note = document.getElementById('pmVideoNote');
+  if (note) note.textContent = 'Playing from this computer: ' + file.name;
+  showToast('Video loaded from this computer', 'success');
+};
+
+window.watchProductVideo = async function(pid) {
+  const product = (window._productsData || []).find(i => i.property_id === pid)
+    || (await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle()).data;
+  if (!product) return showToast('Product not found', 'error');
+  const url = productVideoAbsoluteUrl(product);
+  if (!url) return showToast('This product has no video to scan.', 'error');
+  const localUrl = _scanObjectUrl.get(pid);
+  const src = localUrl || url;
+  const ai = product.ai_video_scan && product.ai_video_scan.status ? product.ai_video_scan : null;
+  openModal(`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box" style="max-width:60rem">
+        <div class="flex items-center justify-between mb-4 gap-3">
+          <h3 class="text-base font-black text-white flex items-center gap-2 min-w-0">
+            <i data-lucide="play-circle" class="w-4 h-4 text-violet-400 shrink-0"></i>
+            <span class="truncate">${esc(product.title || 'Product video')}</span>
+          </h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white transition shrink-0">Close</button>
+        </div>
+
+        <video id="pmScanVideo" src="${esc(src)}" controls autoplay muted playsinline preload="auto"
+          class="w-full aspect-video rounded-2xl bg-black border border-white/10"
+          onerror="pmVideoBroken('${pid}')"></video>
+        <p id="pmVideoNote" class="text-xs text-gray-500 mt-2">${localUrl ? 'Playing from this computer.' : 'Watch it, then scan this exact video with AI.'}</p>
+
+        <div id="pmFallback" class="hidden mt-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 p-4">
+          <p class="text-sm text-amber-200 font-bold">Pick the video from this computer</p>
+          <p class="text-xs text-amber-200/70 mt-1">Look in <span class="font-mono">C:\\Users\\HP\\house for sale\\build\\houses\\videos</span> for the file named <span class="font-mono">${esc((productPrimaryVideo(product) || '').split('/').pop())}</span></p>
+          <input type="file" accept="video/mp4,video/*" onchange="pmPickLocalVideo('${pid}', this)"
+            class="mt-3 block w-full text-xs text-gray-300 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:bg-violet-600 file:text-white file:text-xs file:font-bold" />
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 mt-4">
+          <button onclick="runProductVideoScan('${pid}')" class="btn-press flex-1 min-w-[12rem] py-3.5 rounded-2xl text-sm font-black bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white transition">
+            <span class="inline-flex items-center gap-2"><i data-lucide="scan-line" class="w-4 h-4"></i> Scan this video with AI</span>
+          </button>
+          ${ai ? `<span class="badge bg-violet-500/15 text-violet-200 border-violet-500/30">Last scan ${Math.round(ai.confidence || 0)}%</span>` : ''}
+        </div>
+        <p class="text-xs text-gray-600 mt-2">Scanning analyses the same file you are watching above, then saves the report to this product. 20–90 seconds.</p>
+      </div>
+    </div>`);
+  if (window.lucide) lucide.createIcons();
+  const v = document.getElementById('pmScanVideo');
+  if (v) v.play().catch(() => {});
+};
+
+window.scanProductVideo = window.watchProductVideo;
+
+window.runProductVideoScan = async function(pid, file) {
   if (_scanInFlight.has(pid)) return;
   const product = (window._productsData || []).find(i => i.property_id === pid)
     || (await supabase.from('showroom_listings').select('*').eq('property_id', pid).maybeSingle()).data;
   if (!product) return showToast('Product not found', 'error');
   const url = productVideoAbsoluteUrl(product);
   if (!url) return showToast('This product has no video to scan.', 'error');
+  const localFile = file || _scanLocalFile.get(pid) || null;
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || '';
   if (!token) return showToast('Please sign in first.', 'error');
@@ -1194,10 +1318,19 @@ window.scanProductVideo = async function(pid) {
   try {
     const fnUrl = `${SUPABASE_BASE_URL}/functions/v1/video-scanner`;
     const startedAt = Date.now();
+    // A file picked off this computer is uploaded to the private scanner bucket,
+    // scanned, then deleted by the edge function. Otherwise scan the live URL.
+    let body;
+    if (localFile) {
+      const path = await uploadScanFile(localFile, token);
+      body = { action: 'scan', path, listing_id: pid, question: '' };
+    } else {
+      body = { action: 'scan_url', url, listing_id: pid, question: '' };
+    }
     const res = await fetch(fnUrl, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'scan_url', url, listing_id: pid, question: '' }),
+      body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || `Scanner failed (${res.status})`);
@@ -1221,7 +1354,7 @@ window.scanProductVideo = async function(pid) {
           <div class="rounded-2xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-200">${esc(err.message)}</div>
           <p class="text-xs text-gray-500 mt-3">Free-tier Gemini limits per model per day. If every model is busy, wait a little and try again — the scanner automatically falls back through 4 models.</p>
           <div class="mt-5 flex gap-2">
-            <button onclick="closeModal();scanProductVideo('${pid}')" class="btn-press flex-1 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold">Try Again</button>
+            <button onclick="closeModal();runProductVideoScan('${pid}')" class="btn-press flex-1 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold">Try Again</button>
             <button onclick="closeModal()" class="btn-press px-4 py-3 rounded-2xl bg-white/10 text-gray-200 text-sm font-bold">Close</button>
           </div>
         </div>
@@ -1288,6 +1421,14 @@ function productCard(product) {
   const thumbHtml = thumb
     ? videoThumbHtml(thumb, 'w-full h-full object-cover')
     : videoOffTile('w-full h-full');
+  const heroVideo = productPrimaryVideo(product);
+  const heroHtml = heroVideo
+    ? `<div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-blue-500/20 bg-black">
+        ${videoThumbHtml(heroVideo, 'w-full h-full object-cover', { autoplay: true, loop: true })}
+        <span class="absolute bottom-2 left-2 badge bg-black/70 text-white border-white/20 text-[10px] !px-2 !py-0.5">▶ Playing</span>
+        ${aiScan ? `<span class="absolute bottom-2 right-2 badge bg-violet-500/80 text-white border-violet-300/40 text-[10px] !px-2 !py-0.5">AI ${Math.round(aiScan.confidence || 0)}%</span>` : ''}
+      </div>`
+    : '';
   const publishFn = product.is_active ? `unpublishProduct('${product.property_id}')` : `publishProduct('${product.property_id}')`;
   const publishLabel = product.is_active ? 'Unpublish' : 'Publish';
   const publishClass = product.is_active
@@ -1295,11 +1436,12 @@ function productCard(product) {
     : 'bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25';
 
   return `<article data-id="${product.property_id}" data-cat="${esc(product.category || '')}" data-status="${status}" data-featured="${isFeatured ? 'featured' : 'standard'}" onclick="editProduct('${product.property_id}')" title="Tap anywhere to edit this product" class="prod-card glass-soft border ${selected ? 'border-blue-400/60' : 'border-blue-500/15'} rounded-3xl p-5 flex flex-col gap-4 transition hover:border-blue-400/40 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer select-none active:scale-[.99]">
+    ${heroHtml}
     <div class="flex items-start gap-4">
       <input type="checkbox" class="prod-check accent-blue-500 w-5 h-5 mt-1 shrink-0" value="${product.property_id}" ${selected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleProductSelection('${product.property_id}', this.checked)">
-      <div class="relative w-24 h-24 rounded-2xl overflow-hidden border border-blue-500/20 shrink-0 bg-[#0b1124]">
+      ${heroVideo ? '' : `<div class="relative w-24 h-24 rounded-2xl overflow-hidden border border-blue-500/20 shrink-0 bg-[#0b1124]">
         ${thumbHtml}${isFeatured ? '<span class="absolute top-1.5 left-1.5 text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-400 text-[#111827]">Featured</span>' : ''}
-      </div>
+      </div>`}
       <div class="min-w-0 flex-1">
         <h3 class="text-lg font-black text-white leading-snug line-clamp-2">${esc(product.title || 'Untitled Product')}</h3>
         <p class="text-xs text-gray-500 font-mono mt-1">SKU: ${esc(productSku(product))}</p>
@@ -1332,7 +1474,7 @@ function productCard(product) {
 
     <div class="flex flex-wrap gap-2 mt-auto">
       <button onclick="event.stopPropagation();editProduct('${product.property_id}')" class="btn-press flex-1 min-w-[9.5rem] px-5 py-3.5 rounded-2xl text-sm font-black bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white transition shadow-lg shadow-blue-600/15">Edit Product</button>
-      ${hasVideo ? `<button onclick="event.stopPropagation();scanProductVideo('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-violet-500/15 text-violet-200 hover:bg-violet-500/25 transition">${aiScan ? 'Re-scan Video' : 'Scan Video with AI'}</button>` : ''}
+      ${hasVideo ? `<button onclick="event.stopPropagation();watchProductVideo('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-violet-500/15 text-violet-200 hover:bg-violet-500/25 transition">${aiScan ? 'Watch &amp; Re-scan' : 'Watch &amp; Scan with AI'}</button>` : ''}
       <button onclick="event.stopPropagation();quickEditProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 transition">Quick Edit</button>
       <button onclick="event.stopPropagation();previewProduct('${product.property_id}')" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold bg-sky-500/15 text-sky-200 hover:bg-sky-500/25 transition">Preview</button>
       <button onclick="event.stopPropagation();${publishFn}" class="btn-press px-4 py-3.5 rounded-2xl text-sm font-bold ${publishClass} transition">${publishLabel}</button>
@@ -1379,6 +1521,7 @@ function renderProductsShowroomGrid(items) {
   }
   if (empty) empty.classList.toggle('hidden', items.length > 0);
   updateBulkBar();
+  observeProductVideos();
   if (window.lucide) lucide.createIcons();
 }
 

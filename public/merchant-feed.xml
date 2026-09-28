@@ -5,6 +5,36 @@
     <link>https://weverseonlineshop.com</link>
     <description>Weverse Online Shop product catalog — prices in USD.</description>
   <item>
+    <g:id>08f8ab10-530c-4b0a-9799-383d0cc337d5</g:id>
+    <g:item_group_id>08f8ab10-530c-4b0a-9799-383d0cc337d5</g:item_group_id>
+    <g:title>House 192</g:title>
+    <g:description>Video tour of this property. Contact us for full details and availability.</g:description>
+    <g:link>https://weverseonlineshop.com/product/08f8ab10-530c-4b0a-9799-383d0cc337d5</g:link>
+    <g:image_link>https://weverseonlineshop.com/brand-logo.jpeg</g:image_link>
+    <g:availability>in stock</g:availability>
+    <g:price>0.00 USD</g:price>
+    <g:condition>new</g:condition>
+    <g:brand>Weverse Online Shop</g:brand>
+    <g:mpn>08f8ab10-530c-4b0a-9799-383d0cc337d5</g:mpn>
+    <g:google_product_category>Real Estate &gt; Homes</g:google_product_category>
+    <g:identifier_exists>FALSE</g:identifier_exists>
+  </item>
+  <item>
+    <g:id>04e5c65e-545f-4987-82f3-e5c719e4225d</g:id>
+    <g:item_group_id>04e5c65e-545f-4987-82f3-e5c719e4225d</g:item_group_id>
+    <g:title>House 102</g:title>
+    <g:description>Video tour of this property. Contact us for full details and availability.</g:description>
+    <g:link>https://weverseonlineshop.com/product/04e5c65e-545f-4987-82f3-e5c719e4225d</g:link>
+    <g:image_link>https://weverseonlineshop.com/brand-logo.jpeg</g:image_link>
+    <g:availability>in stock</g:availability>
+    <g:price>0.00 USD</g:price>
+    <g:condition>new</g:condition>
+    <g:brand>Weverse Online Shop</g:brand>
+    <g:mpn>04e5c65e-545f-4987-82f3-e5c719e4225d</g:mpn>
+    <g:google_product_category>Real Estate &gt; Homes</g:google_product_category>
+    <g:identifier_exists>FALSE</g:identifier_exists>
+  </item>
+  <item>
     <g:id>c2745042-9bf0-4214-b106-0d2d949dbf2e</g:id>
     <g:item_group_id>c2745042-9bf0-4214-b106-0d2d949dbf2e</g:item_group_id>
     <g:title>House 4</g:title>
@@ -1190,21 +1220,6 @@
     <g:identifier_exists>FALSE</g:identifier_exists>
   </item>
   <item>
-    <g:id>04e5c65e-545f-4987-82f3-e5c719e4225d</g:id>
-    <g:item_group_id>04e5c65e-545f-4987-82f3-e5c719e4225d</g:item_group_id>
-    <g:title>House 102</g:title>
-    <g:description>Video tour of this property. Contact us for full details and availability.</g:description>
-    <g:link>https://weverseonlineshop.com/product/04e5c65e-545f-4987-82f3-e5c719e4225d</g:link>
-    <g:image_link>https://weverseonlineshop.com/brand-logo.jpeg</g:image_link>
-    <g:availability>in stock</g:availability>
-    <g:price>0.00 USD</g:price>
-    <g:condition>new</g:condition>
-    <g:brand>Weverse Online Shop</g:brand>
-    <g:mpn>04e5c65e-545f-4987-82f3-e5c719e4225d</g:mpn>
-    <g:google_product_category>Real Estate &gt; Homes</g:google_product_category>
-    <g:identifier_exists>FALSE</g:identifier_exists>
-  </item>
-  <item>
     <g:id>ed2387d5-207e-4e40-abb5-b3016379f78d</g:id>
     <g:item_group_id>ed2387d5-207e-4e40-abb5-b3016379f78d</g:item_group_id>
     <g:title>House 103</g:title>
@@ -2266,21 +2281,6 @@
     <g:condition>new</g:condition>
     <g:brand>Weverse Online Shop</g:brand>
     <g:mpn>4f9761e8-a9d4-4412-9e34-74219fb07d85</g:mpn>
-    <g:google_product_category>Real Estate &gt; Homes</g:google_product_category>
-    <g:identifier_exists>FALSE</g:identifier_exists>
-  </item>
-  <item>
-    <g:id>08f8ab10-530c-4b0a-9799-383d0cc337d5</g:id>
-    <g:item_group_id>08f8ab10-530c-4b0a-9799-383d0cc337d5</g:item_group_id>
-    <g:title>House 192</g:title>
-    <g:description>Video tour of this property. Contact us for full details and availability.</g:description>
-    <g:link>https://weverseonlineshop.com/product/08f8ab10-530c-4b0a-9799-383d0cc337d5</g:link>
-    <g:image_link>https://weverseonlineshop.com/brand-logo.jpeg</g:image_link>
-    <g:availability>in stock</g:availability>
-    <g:price>0.00 USD</g:price>
-    <g:condition>new</g:condition>
-    <g:brand>Weverse Online Shop</g:brand>
-    <g:mpn>08f8ab10-530c-4b0a-9799-383d0cc337d5</g:mpn>
     <g:google_product_category>Real Estate &gt; Homes</g:google_product_category>
     <g:identifier_exists>FALSE</g:identifier_exists>
   </item>

@@ -262,6 +262,17 @@ async function scanVideo(serviceClient, path, models, question) {
   return runGeminiScan(apiKey, bytes, mimeType, models, question, deadline);
 }
 
+// Persists a finished report onto the product so the admin UI can badge it later.
+async function saveScan(listingId, result, serviceClient) {
+  if (!listingId) return false;
+  const { error: saveErr } = await serviceClient
+    .from('showroom_listings')
+    .update({ ai_video_scan: result })
+    .eq('property_id', listingId)
+    .single();
+  return !saveErr;
+}
+
 // Scans a listing's EXISTING video straight from its public URL, so admins can
 // analyze any product video right from the product manager without re-uploading.
 async function scanVideoUrl(url, listingId, models, question, serviceClient) {
@@ -281,14 +292,10 @@ async function scanVideoUrl(url, listingId, models, question, serviceClient) {
   const result = await runGeminiScan(apiKey, bytes, mimeType, models, question, deadline);
 
   if (listingId) {
-    const { error: saveErr } = await serviceClient
-      .from('showroom_listings')
-      .update({ ai_video_scan: result })
-      .eq('property_id', listingId)
-      .single();
-    if (!saveErr) return { result, saved: true };
+    const saved = await saveScan(listingId, result, serviceClient);
+    return { result, saved };
   }
-  return { result, saved: !!listingId };
+  return { result, saved: false };
 }
 
 function normalizeResult(r) {
@@ -357,6 +364,7 @@ Deno.serve(async (req) => {
     if (action === 'scan') {
       const path = String(body.path || '').trim();
       if (!path) return jsonResponse({ error: 'Missing video path' }, 400);
+      const listingId = String(body.listing_id || '').trim() || null;
       const models = dedupe([
         String(body.model || '').trim(),
         Deno.env.get('GEMINI_MODEL') || '',
@@ -365,9 +373,10 @@ Deno.serve(async (req) => {
       const question = String(body.question || '').trim().slice(0, 2000);
       const startedAt = nowMs();
       const result = await scanVideo(serviceClient, path, models, question);
+      const saved = await saveScan(listingId, result, serviceClient);
       const keepFile = !!body.keep_file;
       if (!keepFile) await serviceClient.storage.from('video-scanner-files').remove([path]).catch(() => {});
-      return jsonResponse({ ok: true, result, elapsed_ms: nowMs() - startedAt });
+      return jsonResponse({ ok: true, result, saved, elapsed_ms: nowMs() - startedAt });
     }
 
     if (action === 'scan_url') {

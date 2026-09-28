@@ -1,5 +1,25 @@
 [
   {
+    "id": "08f8ab10-530c-4b0a-9799-383d0cc337d5",
+    "title": "House 192",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/08f8ab10-530c-4b0a-9799-383d0cc337d5"
+  },
+  {
+    "id": "04e5c65e-545f-4987-82f3-e5c719e4225d",
+    "title": "House 102",
+    "price": 0,
+    "currency": "USD",
+    "availability": "In Stock",
+    "category": "Houses & Real Estate",
+    "image": null,
+    "url": "https://weverseonlineshop.com/product/04e5c65e-545f-4987-82f3-e5c719e4225d"
+  },
+  {
     "id": "c2745042-9bf0-4214-b106-0d2d949dbf2e",
     "title": "House 4",
     "price": 0,
@@ -790,16 +810,6 @@
     "url": "https://weverseonlineshop.com/product/0c214a82-bf6b-438c-9d34-97009ad70c6f"
   },
   {
-    "id": "04e5c65e-545f-4987-82f3-e5c719e4225d",
-    "title": "House 102",
-    "price": 0,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Houses & Real Estate",
-    "image": null,
-    "url": "https://weverseonlineshop.com/product/04e5c65e-545f-4987-82f3-e5c719e4225d"
-  },
-  {
     "id": "ed2387d5-207e-4e40-abb5-b3016379f78d",
     "title": "House 103",
     "price": 0,
@@ -1508,16 +1518,6 @@
     "category": "Houses & Real Estate",
     "image": null,
     "url": "https://weverseonlineshop.com/product/4f9761e8-a9d4-4412-9e34-74219fb07d85"
-  },
-  {
-    "id": "08f8ab10-530c-4b0a-9799-383d0cc337d5",
-    "title": "House 192",
-    "price": 0,
-    "currency": "USD",
-    "availability": "In Stock",
-    "category": "Houses & Real Estate",
-    "image": null,
-    "url": "https://weverseonlineshop.com/product/08f8ab10-530c-4b0a-9799-383d0cc337d5"
   },
   {
     "id": "d9d69fb9-9d77-4e6c-98d9-046d2fc58d3c",
